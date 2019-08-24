@@ -296,7 +296,7 @@ public class TabViewer extends JFrame{
 //			encodingFile = new File("C:/Users/Reinier/Desktop/tab_reconstr-hector/Reinier-Scores/as_caesar.tbp");
 //			encodingFile = new File("C:/Users/Reinier/Desktop/tab_reconstr-hector/test/il_me_souffit-short.tbp");
 			encodingFile = new File("C:/Users/Reinier/Desktop/tab_reconstr-hector/tab/as_caesar_wept-II.tbp");
-			encodingFile = new File("C:/Users/Reinier/Desktop/bm.tbp");
+//			encodingFile = new File("C:/Users/Reinier/Desktop/bm.tbp");
 //			encodingFile = new File("C:/Users/Reinier/Desktop/test-hector/as_caesar.tbp");
 //			encodingFile = new File("C:/Users/Reinier/Desktop/pleni.tbp");
 //			encodingFile = new File("C:/Users/Reinier/Desktop/test/3584_001_pleni_missa_hercules_josquin.tbp");
