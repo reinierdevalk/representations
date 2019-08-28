@@ -473,7 +473,7 @@ public class MEIExport {
 			String barline = "";
 			if (meterChangeBars.contains(i+1)) {
 				int ind = meterChangeBars.indexOf(i+1);
-				System.out.println("ind = " + ind);
+//-*-				System.out.println("ind = " + ind);
 				sb.append(INDENT + "<scoreDef " +
 					nonInitMeters.get(ind)[0] + nonInitMeters.get(ind)[1] + 
 					nonInitMeters.get(ind)[2] + "/>" + "\r\n");
@@ -745,40 +745,39 @@ public class MEIExport {
 				currIndInTrans.add(bnpInd);
 				int currPitch = btp[i][Tablature.PITCH];
 				Rational currOnset = 
-					new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+					new Rational(btp[i][Tablature.ONSET_TIME], 
+					Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+				Rational nextOnset = null;
+				int nextPitch = -1;
 				if (i+1 != btp.length) {
-//					Rational nextOnset = 
-//						new Rational(btp[i+1][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-					// If not lower unison note (i.e., next tab note has the same pitch and 
-					// onset) check for any SNU notes 
-					Rational nextOnset = 
-						new Rational(btp[i+1][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-					int nextPitch = btp[i+1][Tablature.PITCH];
-//					if ((nextOnset.equals(currOnset) && nextPitch == currPitch)) {
-//						System.out.println(i);
-//						System.out.println(currOnset);
-//						System.out.println(currPitch);
-//						System.exit(0);
-//					}
-					if (!(nextOnset.equals(currOnset) && nextPitch == currPitch)) {
-//-*-						System.out.println("grr " + i);
-						// If the next MIDI note has the same pitch and onset: SNU
-						Rational nextOnsetMIDI = 
-							new Rational(bnp[bnpInd+1][Transcription.ONSET_TIME_NUMER], 
-							bnp[bnpInd+1][Transcription.ONSET_TIME_DENOM]);
-
-						if (nextOnsetMIDI.equals(currOnset)) { // && btp[i+1][Tablature.PITCH] != currPitch) {
-							for (int j = bnpInd+1; j < bnp.length; j++) {
-								// If the next note in bnp has the same pitch and onset: SNU
-								if (bnp[j][Transcription.PITCH] == currPitch && 
-									new Rational(bnp[j][Transcription.ONSET_TIME_NUMER],
-										bnp[j][Transcription.ONSET_TIME_DENOM]).equals(currOnset)) {
-									currIndInTrans.add(j);
-									bnpInd++;
-								}
-								else {
-									break;
-								}
+					nextOnset = new Rational(btp[i+1][Tablature.ONSET_TIME], 
+						Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+					nextPitch = btp[i+1][Tablature.PITCH];
+				}
+				// Check for SNU notes
+				// a. not last tab note case: if not lower unison note (i.e., next 
+				// tab note has the same pitch and onset), check for SNU notes
+				// b. last tab note case: if not last note in bnp (i.e., bnp has 
+				// one more element at bnpInd+1), tab note is a SNU note
+				if ((nextOnset != null && 
+					!(nextOnset.equals(currOnset) && nextPitch == currPitch))
+					|| 
+					(nextOnset == null && bnpInd+1 == (bnp.length-1))) {
+					// If the next MIDI note has the same pitch and onset: SNU
+					Rational nextOnsetMIDI = 
+						new Rational(bnp[bnpInd+1][Transcription.ONSET_TIME_NUMER], 
+						bnp[bnpInd+1][Transcription.ONSET_TIME_DENOM]);
+					if (nextOnsetMIDI.equals(currOnset)) { // && btp[i+1][Tablature.PITCH] != currPitch) {
+						for (int j = bnpInd+1; j < bnp.length; j++) {
+							// If the next note in bnp has the same pitch and onset: SNU
+							if (bnp[j][Transcription.PITCH] == currPitch && 
+								new Rational(bnp[j][Transcription.ONSET_TIME_NUMER],
+									bnp[j][Transcription.ONSET_TIME_DENOM]).equals(currOnset)) {
+								currIndInTrans.add(j);
+								bnpInd++;
+							}
+							else {
+								break;
 							}
 						}
 					}
@@ -786,23 +785,22 @@ public class MEIExport {
 				tabToTransInd.add(currIndInTrans);
 				bnpInd++;
 			}
-
 			// transToTabInd contains, for each trans index, the corresponding tab index
 			transToTabInd = new ArrayList<>();
 			for (int i = 0; i <  tabToTransInd.size(); i++) {
-				List<Integer> transInd = tabToTransInd.get(i); 
+				List<Integer> transInd = tabToTransInd.get(i);
 				for (int ind : transInd) {
 					transToTabInd.add(ind, i);
 				}
 			}
-//-*-			System.out.println("tabToTransInd");
-//-*-			for (int j = 0; j < tabToTransInd.size(); j++) {
-//-*-				System.out.println(j + " " + tabToTransInd.get(j));
-//-*-			}
-//-*-			System.out.println("transToTabInd");
-//-*-			for (int j = 0; j < transToTabInd.size(); j++) {
-//-*-				System.out.println(j + " " + transToTabInd.get(j));
-//-*-			}
+//			System.out.println("tabToTransInd");
+//			for (int j = 0; j < tabToTransInd.size(); j++) {
+//				System.out.println(j + " " + tabToTransInd.get(j));
+//			}
+//			System.out.println("transToTabInd");
+//			for (int j = 0; j < transToTabInd.size(); j++) {
+//				System.out.println(j + " " + transToTabInd.get(j));
+//			}
 		}
 
 		// Set initial bar and meter
@@ -826,10 +824,12 @@ public class MEIExport {
 		List<Integer> naturalsInEffect = new ArrayList<Integer>();
 		List<Integer> sharpsInEffect = new ArrayList<Integer>();
 		List<Integer> flatsInEffect = new ArrayList<Integer>();
+//		for (int i = 0; i < bnp.length; i++) {
+//			System.out.println("i = " + i + "; " + Arrays.toString(bnp[i]));
+//		}
 		for (int i = 0; i < bnp.length; i++) {
 			int iTab = -1;
 			if (tab != null) {
-//-*-				System.out.println(bnp.length);
 				iTab = transToTabInd.get(i);
 			}
 //-*-			System.out.println("note at ind = " + i + " (indTab = " + iTab + ")");
