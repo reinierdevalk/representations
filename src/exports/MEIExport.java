@@ -675,16 +675,17 @@ public class MEIExport {
 						}
 					}
 					else {
-						if (inc.contains(tabInd)) {
+						int index = (tabInd != -1) ? tabInd : noteInt[INTS.indexOf("ind")];
+						if (inc.contains(index)) {
 							noteStr += "color='red'" + " ";
 						}
-						else if (over.contains(tabInd)) {
+						else if (over.contains(index)) {
 							noteStr += "color='orange'" + " ";
 						}
-						else if (sup.contains(tabInd)) {
+						else if (sup.contains(index)) {
 							noteStr += "color='lime'" + " ";
 						}
-						else if (half.contains(tabInd)) {
+						else if (half.contains(index)) {
 							noteStr += "color='blue'" + " ";
 						}
 					}
@@ -861,18 +862,18 @@ public class MEIExport {
 			Integer[] currMpcg = mpcg[keyInd];
 			String[] currAg = ag[keyInd];
 			String[] currPcg = pcg[keyInd];
-//-*-			System.out.println("voice                    " + voice);
-//-*-			System.out.println("bar                      " + bar);
-//-*-			System.out.println("pitch                    " + pitch);
-//-*-			System.out.println("midiPitchClass           " + midiPitchClass);
-//-*-			System.out.println("onset                    " + onset);
-//-*-			System.out.println("offset                   " + offset);
-//-*-			System.out.println("metPos                   " + metPos);
-//-*-			System.out.println("durRounded               " + durRounded);
-//-*-			System.out.println("barEnd                   " + barEnd);
-//-*-			System.out.println("currMpcg                 " + Arrays.asList(currMpcg));
-//-*-			System.out.println("currAg                   " + Arrays.asList(currAg));
-//-*-			System.out.println("currPcg                  " + Arrays.asList(currPcg));
+			System.out.println("voice                    " + voice);
+			System.out.println("bar                      " + bar);
+			System.out.println("pitch                    " + pitch);
+			System.out.println("midiPitchClass           " + midiPitchClass);
+			System.out.println("onset                    " + onset);
+			System.out.println("offset                   " + offset);
+			System.out.println("metPos                   " + metPos);
+			System.out.println("durRounded               " + durRounded);
+			System.out.println("barEnd                   " + barEnd);
+			System.out.println("currMpcg                 " + Arrays.asList(currMpcg));
+			System.out.println("currAg                   " + Arrays.asList(currAg));
+			System.out.println("currPcg                  " + Arrays.asList(currPcg));
 
 			// Check for preceding rests
 			List<String[]> pitchOctAccTie = new ArrayList<String[]>();
@@ -965,7 +966,9 @@ public class MEIExport {
 							remainder = remainder.sub(currBarLen);
 						}
 						else {
-							subNoteDurs.add(remainder);
+							if (!remainder.equals(Rational.ZERO)) {
+								subNoteDurs.add(remainder);
+							}
 						}
 					}
 					Collections.reverse(subNoteDurs);
@@ -1122,7 +1125,9 @@ public class MEIExport {
 						remainder = remainder.sub(currBarLen);
 					}
 					else {
-						subNoteDurs.add(remainder);
+						if (!remainder.equals(Rational.ZERO)) {
+							subNoteDurs.add(remainder);
+						}
 					}
 				}
 				// For each subnote
