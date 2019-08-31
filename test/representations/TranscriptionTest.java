@@ -3372,102 +3372,99 @@ public class TranscriptionTest extends TestCase {
 	
 	public void testGetBasicNotePropertiesChord() {		
 		Transcription transcription = new Transcription(midiTestpiece1, null);
-		
-	  // Determine expected
-  	List<Integer[][]> expected = new ArrayList<Integer[][]>();
-  	// Chord 0
-  	Integer[][] expected0 = new Integer[4][8];
-  	expected0[0] = new Integer[]{50, 3, 4, 1, 4, 0, 4, 0}; 
-    expected0[1] = new Integer[]{57, 3, 4, 1, 4, 0, 4, 1};
-    expected0[2] = new Integer[]{65, 3, 4, 1, 4, 0, 4, 2};
-    expected0[3] = new Integer[]{69, 3, 4, 1, 4, 0, 4, 3};
-    // Chord 1
-  	Integer[][] expected1 = new Integer[4][8];
-  	expected1[0] = new Integer[]{45, 1, 1, 3, 16, 1, 4, 0};
-    expected1[1] = new Integer[]{57, 1, 1, 1, 4, 1, 4, 1};
-    expected1[2] = new Integer[]{69, 1, 1, 1, 8, 1, 4, 2};
-    expected1[3] = new Integer[]{72, 1, 1, 1, 4, 1, 4, 3};
-  	// Chord 2
-    Integer[][] expected2 = new Integer[1][8];
-  	expected2[0] = new Integer[]{48, 19, 16, 1, 16, 2, 1, 0};
-  	// Chord 3
-  	Integer[][] expected3 = new Integer[5][8];
-  	expected3[0] = new Integer[]{47, 5, 4, 1, 8, 3, 5, 0};
-    expected3[1] = new Integer[]{50, 5, 4, 1, 4, 3, 5, 1};
-    expected3[2] = new Integer[]{59, 5, 4, 1, 4, 3, 5, 2};
-    expected3[3] = new Integer[]{65, 5, 4, 1, 4, 3, 5, 3};
-    expected3[4] = new Integer[]{65, 5, 4, 1, 8, 3, 5, 4};
-  	// Chord 4
-  	Integer[][] expected4 = new Integer[1][8];
-  	expected4[0] = new Integer[]{45, 11, 8, 1, 8, 4, 1, 0};
-    // Chord 5
-  	Integer[][] expected5 = new Integer[5][8];
-  	expected5[0] = new Integer[]{45, 3, 2, 1, 4, 5, 5, 0};
-    expected5[1] = new Integer[]{57, 3, 2, 1, 2, 5, 5, 1};
-    expected5[2] = new Integer[]{57, 3, 2, 1, 4, 5, 5, 2};
-    expected5[3] = new Integer[]{60, 3, 2, 1, 4, 5, 5, 3};
-    expected5[4] = new Integer[]{69, 3, 2, 1, 4, 5, 5, 4};
-  	// Chord 6
-  	Integer[][] expected6 = new Integer[4][8];
-  	expected6[0] = new Integer[]{45, 7, 4, 1, 4, 6, 4, 0};
-    expected6[1] = new Integer[]{60, 7, 4, 1, 8, 6, 4, 1};
-    expected6[2] = new Integer[]{64, 7, 4, 1, 8, 6, 4, 2};
-    expected6[3] = new Integer[]{69, 7, 4, 1, 4, 6, 4, 3};
-  	// Chord 7
-  	Integer[][] expected7 = new Integer[2][8];
-  	expected7[0] = new Integer[]{59, 15, 8, 1, 8, 7, 2, 0};
-  	expected7[1] = new Integer[]{68, 15, 8, 1, 8, 7, 2, 1};
-  	// Chord 8
-  	Integer[][] expected8 = new Integer[4][8];
-  	expected8[0] = new Integer[]{45, 2, 1, 1, 2, 8, 4, 0};
-    expected8[1] = new Integer[]{57, 2, 1, 1, 2, 8, 4, 1};
-    expected8[2] = new Integer[]{64, 2, 1, 1, 2, 8, 4, 2};
-    expected8[3] = new Integer[]{69, 2, 1, 1, 16, 8, 4, 3};
-  	// Chords 9-14
-    Integer[][] expected9 = new Integer[1][8];
-  	expected9[0] = new Integer[]{68, 33, 16, 1, 16, 9, 1, 0};
-    Integer[][] expected10 = new Integer[1][8];
-  	expected10[0] = new Integer[]{69, 17, 8, 1, 32, 10, 1, 0};
-    Integer[][] expected11 = new Integer[1][8];
-  	expected11[0] = new Integer[]{68, 69, 32, 1, 32, 11, 1, 0};
-    Integer[][] expected12 = new Integer[1][8];
-  	expected12[0] = new Integer[]{66, 35, 16, 1, 32, 12, 1, 0};
-    Integer[][] expected13 = new Integer[1][8];
-  	expected13[0] = new Integer[]{68, 71, 32, 1, 32, 13, 1, 0};
-    Integer[][] expected14 = new Integer[1][8];
-  	expected14[0] = new Integer[]{69, 9, 4, 1, 4, 14, 1, 0};
-    // Chord 15
-  	Integer[][] expected15 = new Integer[4][8];
-  	expected15[0] = new Integer[]{45, 11, 4, 1, 4, 15, 4, 0};
-  	expected15[1] = new Integer[]{57, 11, 4, 1, 4, 15, 4, 1};
-  	expected15[2] = new Integer[]{64, 11, 4, 1, 4, 15, 4, 2};
-  	expected15[3] = new Integer[]{69, 11, 4, 1, 4, 15, 4, 3};
-		
-	  expected.add(expected0); expected.add(expected1); expected.add(expected2); expected.add(expected3);
-	  expected.add(expected4); expected.add(expected5); expected.add(expected6); expected.add(expected7);
-	  expected.add(expected8); expected.add(expected9); expected.add(expected10); expected.add(expected11);
-	  expected.add(expected12); expected.add(expected13); expected.add(expected14); expected.add(expected15);
-		
-  	// Calculate actual
-  	List<Integer[][]> actual = new ArrayList<Integer[][]>();
-  	for (int i = 0; i < expected.size(); i++) {
-  		actual.add(transcription.getBasicNotePropertiesChord(i));
-  	}
-		
-  	// Assert equality
-  	assertEquals(expected.size(), actual.size());
-  	for (int i = 0; i < expected.size(); i++) {
-  		assertEquals(expected.get(i).length, actual.get(i).length);
-  		for (int j = 0; j < expected.get(i).length; j++) {
-  			assertEquals(expected.get(i)[j].length, actual.get(i)[j].length);
-  			for (int k = 0; k < expected.get(i)[j].length; k++) {
-  				assertEquals(expected.get(i)[j][k], actual.get(i)[j][k]);
-  			}
-  		}
-  	}
+
+		List<Integer[][]> expected = new ArrayList<Integer[][]>();
+		// Chord 0
+		Integer[][] expected0 = new Integer[4][8];
+		expected0[0] = new Integer[]{50, 3, 4, 1, 4, 0, 4, 0}; 
+		expected0[1] = new Integer[]{57, 3, 4, 1, 4, 0, 4, 1};
+		expected0[2] = new Integer[]{65, 3, 4, 1, 4, 0, 4, 2};
+		expected0[3] = new Integer[]{69, 3, 4, 1, 4, 0, 4, 3};
+		// Chord 1
+		Integer[][] expected1 = new Integer[4][8];
+		expected1[0] = new Integer[]{45, 1, 1, 3, 16, 1, 4, 0};
+		expected1[1] = new Integer[]{57, 1, 1, 1, 4, 1, 4, 1};
+		expected1[2] = new Integer[]{69, 1, 1, 1, 8, 1, 4, 2};
+		expected1[3] = new Integer[]{72, 1, 1, 1, 4, 1, 4, 3};
+		// Chord 2
+		Integer[][] expected2 = new Integer[1][8];
+		expected2[0] = new Integer[]{48, 19, 16, 1, 16, 2, 1, 0};
+		// Chord 3
+		Integer[][] expected3 = new Integer[5][8];
+		expected3[0] = new Integer[]{47, 5, 4, 1, 8, 3, 5, 0};
+		expected3[1] = new Integer[]{50, 5, 4, 1, 4, 3, 5, 1};
+		expected3[2] = new Integer[]{59, 5, 4, 1, 4, 3, 5, 2};
+		expected3[3] = new Integer[]{65, 5, 4, 1, 4, 3, 5, 3};
+		expected3[4] = new Integer[]{65, 5, 4, 1, 8, 3, 5, 4};
+		// Chord 4
+		Integer[][] expected4 = new Integer[1][8];
+		expected4[0] = new Integer[]{45, 11, 8, 1, 8, 4, 1, 0};
+		// Chord 5
+		Integer[][] expected5 = new Integer[5][8];
+		expected5[0] = new Integer[]{45, 3, 2, 1, 4, 5, 5, 0};
+		expected5[1] = new Integer[]{57, 3, 2, 1, 2, 5, 5, 1};
+		expected5[2] = new Integer[]{57, 3, 2, 1, 4, 5, 5, 2};
+		expected5[3] = new Integer[]{60, 3, 2, 1, 4, 5, 5, 3};
+		expected5[4] = new Integer[]{69, 3, 2, 1, 4, 5, 5, 4};
+		// Chord 6
+		Integer[][] expected6 = new Integer[4][8];
+		expected6[0] = new Integer[]{45, 7, 4, 1, 4, 6, 4, 0};
+		expected6[1] = new Integer[]{60, 7, 4, 1, 8, 6, 4, 1};
+		expected6[2] = new Integer[]{64, 7, 4, 1, 8, 6, 4, 2};
+		expected6[3] = new Integer[]{69, 7, 4, 1, 4, 6, 4, 3};
+		// Chord 7
+		Integer[][] expected7 = new Integer[2][8];
+		expected7[0] = new Integer[]{59, 15, 8, 1, 8, 7, 2, 0};
+		expected7[1] = new Integer[]{68, 15, 8, 1, 8, 7, 2, 1};
+		// Chord 8
+		Integer[][] expected8 = new Integer[4][8];
+		expected8[0] = new Integer[]{45, 2, 1, 1, 2, 8, 4, 0};
+		expected8[1] = new Integer[]{57, 2, 1, 1, 2, 8, 4, 1};
+		expected8[2] = new Integer[]{64, 2, 1, 1, 2, 8, 4, 2};
+		expected8[3] = new Integer[]{69, 2, 1, 1, 16, 8, 4, 3};
+		// Chords 9-14
+		Integer[][] expected9 = new Integer[1][8];
+		expected9[0] = new Integer[]{68, 33, 16, 1, 16, 9, 1, 0};
+		Integer[][] expected10 = new Integer[1][8];
+		expected10[0] = new Integer[]{69, 17, 8, 1, 32, 10, 1, 0};
+		Integer[][] expected11 = new Integer[1][8];
+		expected11[0] = new Integer[]{68, 69, 32, 1, 32, 11, 1, 0};
+		Integer[][] expected12 = new Integer[1][8];
+		expected12[0] = new Integer[]{66, 35, 16, 1, 32, 12, 1, 0};
+		Integer[][] expected13 = new Integer[1][8];
+		expected13[0] = new Integer[]{68, 71, 32, 1, 32, 13, 1, 0};
+		Integer[][] expected14 = new Integer[1][8];
+		expected14[0] = new Integer[]{69, 9, 4, 1, 4, 14, 1, 0};
+		// Chord 15
+		Integer[][] expected15 = new Integer[4][8];
+		expected15[0] = new Integer[]{45, 11, 4, 1, 4, 15, 4, 0};
+		expected15[1] = new Integer[]{57, 11, 4, 1, 4, 15, 4, 1};
+		expected15[2] = new Integer[]{64, 11, 4, 1, 4, 15, 4, 2};
+		expected15[3] = new Integer[]{69, 11, 4, 1, 4, 15, 4, 3};
+
+		expected.add(expected0); expected.add(expected1); expected.add(expected2); expected.add(expected3);
+		expected.add(expected4); expected.add(expected5); expected.add(expected6); expected.add(expected7);
+		expected.add(expected8); expected.add(expected9); expected.add(expected10); expected.add(expected11);
+		expected.add(expected12); expected.add(expected13); expected.add(expected14); expected.add(expected15);
+
+		List<Integer[][]> actual = new ArrayList<Integer[][]>();
+		for (int i = 0; i < expected.size(); i++) {
+			actual.add(transcription.getBasicNotePropertiesChord(i));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).length, actual.get(i).length);
+			for (int j = 0; j < expected.get(i).length; j++) {
+				assertEquals(expected.get(i)[j].length, actual.get(i)[j].length);
+				for (int k = 0; k < expected.get(i)[j].length; k++) {
+					assertEquals(expected.get(i)[j][k], actual.get(i)[j][k]);
+				}
+			}
+		}
 	}
-	
-	
+
+
 	public void testGetPitchesInChord() {
 		Transcription transcription = new Transcription(midiTestpiece1, null);
 
@@ -3514,8 +3511,48 @@ public class TranscriptionTest extends TestCase {
 		 	}
 		}
 	}
-	
-	
+
+
+	public void testGetPitchesInChordWithLowestNoteIndex() {	  	  
+		Transcription transcription = new Transcription(midiTestpiece1, null);
+
+		List<List<Integer>> expected = new ArrayList<List<Integer>>();
+		expected.add(Arrays.asList(new Integer[]{50, 57, 65, 69})); 
+		expected.add(Arrays.asList(new Integer[]{45, 57, 69, 72})); 
+		expected.add(Arrays.asList(new Integer[]{48})); 
+		expected.add(Arrays.asList(new Integer[]{47, 50, 59, 65, 65}));
+		expected.add(Arrays.asList(new Integer[]{45}));
+		expected.add(Arrays.asList(new Integer[]{45, 57, 57, 60, 69})); 
+		expected.add(Arrays.asList(new Integer[]{45, 60, 64, 69})); 
+		expected.add(Arrays.asList(new Integer[]{59, 68})); 
+		expected.add(Arrays.asList(new Integer[]{45, 57, 64, 69}));
+		expected.add(Arrays.asList(new Integer[]{68}));
+		expected.add(Arrays.asList(new Integer[]{69}));
+		expected.add(Arrays.asList(new Integer[]{68}));
+		expected.add(Arrays.asList(new Integer[]{66}));
+		expected.add(Arrays.asList(new Integer[]{68}));
+		expected.add(Arrays.asList(new Integer[]{69}));
+		expected.add(Arrays.asList(new Integer[]{45, 57, 64, 69})); 
+
+		List<List<Integer>> actual = new ArrayList<List<Integer>>();
+		List<List<Note>> transcriptionChords = transcription.getTranscriptionChords();
+		Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
+		int lowestNoteIndex = 0;
+		for (int i = 0; i < transcriptionChords.size(); i++) {
+			actual.add(Transcription.getPitchesInChord(basicNoteProperties, lowestNoteIndex));
+			lowestNoteIndex += transcriptionChords.get(i).size();
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).size(), actual.get(i).size());
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+			}
+		}
+	}
+
+
 //	public void testGetNumberOfCoDsInChord() {    
 //		Tablature tablature = new Tablature(encodingTestpiece1, true);
 //		Transcription transcription = new Transcription();
