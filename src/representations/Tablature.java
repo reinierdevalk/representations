@@ -1232,35 +1232,14 @@ public class Tablature implements Serializable {
 	 * @return
 	 */
 	// TESTED
-	public static List<Integer> getPitchesInChord(Integer[][] btp, /*Integer[][] bnp,*/ int lowestNoteIndex) {
-
-//		Transcription.verifyCase(btp, bnp);
-
+	public static List<Integer> getPitchesInChord(Integer[][] btp, int lowestNoteIndex) {
 		List<Integer> pitchesInChord = new ArrayList<Integer>();	
-		// a. In the tablature case
-//		if (btp != null) {
-			int chordSize = btp[lowestNoteIndex][Tablature.CHORD_SIZE_AS_NUM_ONSETS];
-			for (int i = lowestNoteIndex; i < lowestNoteIndex + chordSize; i++) {
-				Integer[] currentBasicTabSymbolProperties = btp[i];
-				int currentPitch = currentBasicTabSymbolProperties[Tablature.PITCH];
-				pitchesInChord.add(currentPitch);
-			}
-//		}
-//		// b. In the non-tablature case
-//		else if (bnp != null) {	     
-//			int chordSize = bnp[lowestNoteIndex][Transcription.CHORD_SIZE_AS_NUM_ONSETS];
-//			for (int i = lowestNoteIndex; i < lowestNoteIndex + chordSize; i++) {
-//				Integer[] currentBasicNoteProperties = bnp[i];
-//				int currentPitch = currentBasicNoteProperties[Transcription.PITCH];
-//				pitchesInChord.add(currentPitch);
-//			}
-//			// Get the pitches for any sustained previous notes
-////			List<Integer> sustainedPitches = 
-////				getPitchesOfSustainedPreviousNotesInChord(basicNoteProperties, lowestNoteIndex);
-////			// Combine and sort
-////			pitchesInChord.addAll(sustainedPitches);
-////			Collections.sort(pitchesInChord);
-//		}
+		int chordSize = btp[lowestNoteIndex][Tablature.CHORD_SIZE_AS_NUM_ONSETS];
+		for (int i = lowestNoteIndex; i < lowestNoteIndex + chordSize; i++) {
+			Integer[] currentBasicTabSymbolProperties = btp[i];
+			int currentPitch = currentBasicTabSymbolProperties[Tablature.PITCH];
+			pitchesInChord.add(currentPitch);
+		}
 		return pitchesInChord;
 	}
 
