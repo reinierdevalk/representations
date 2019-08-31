@@ -7466,8 +7466,10 @@ public class Transcription implements Serializable {
 	 * @param tablature Is <code>null</code> in the non-tablature case.
 	 * @return
 	 */
-	private String getVoiceCrossingInformation(Tablature tablature) {
+	public String getVoiceCrossingInformation(Tablature tablature) {
 		String voiceCrossingInformation = "";
+		int totalTypeOne = 0;
+		int totalTypeTwo = 0;
 
 		// For each note
 		NoteSequence noteSeq = getNoteSequence();
@@ -7487,7 +7489,6 @@ public class Transcription implements Serializable {
 		else {
 			basicNoteProperties = getBasicNoteProperties();
 			numberOfChords = getTranscriptionChords().size(); // conditions satisfied; external version OK
-//			numberOfChords = getNumberOfChords();
 		}
 
 		// For each chord
@@ -7530,11 +7531,6 @@ public class Transcription implements Serializable {
 				Tablature.getMetricPosition(onsetCurrNote, meterInfo)[1];
 
 			// a. Get the voice crossing information within the chord
-//			FeatureGenerator fg = new FeatureGenerator();
-//			FeatureGeneratorChord fgc = new FeatureGeneratorChord();
-//			List<Integer> pitchesInChord = 
-//				FeatureGenerator.getPitchesInChord(basicTabSymbolProperties, basicNoteProperties, lowestNoteIndex);
-						
 			List<List<Double>> currentChordVoiceLabels = chordVoiceLabels.get(i);
 			List<List<Integer>> voicesInChord = DataConverter.getVoicesInChord(currentChordVoiceLabels);
 			List<List<Integer>> vcInfo = 
@@ -7549,6 +7545,7 @@ public class Transcription implements Serializable {
 //					}
 //					j++;
 //				}
+				totalTypeOne++;
 			}
 
 			// b. For each note in the chord: get the voice crossing information with any previous sustained notes 
@@ -7594,9 +7591,10 @@ public class Transcription implements Serializable {
 										String prevMeasure = "" + Tablature.getMetricPosition(onsetPrevNote, meterInfo)[0].getNumer() + 
 											" " + Tablature.getMetricPosition(onsetPrevNote, meterInfo)[1];
 										voiceCrossingInformation = 
-											voiceCrossingInformation.concat("Type 2 voice crossing at chordIndex " +  i +	"; notes involved are:" + "\n" + 
+											voiceCrossingInformation.concat("Type 2 voice crossing at chordIndex " + i + "; notes involved are:" + "\n" + 
 											"  note at index " + j + " (m. " + currMeasure + "; pitch " + pitchCurrNote + "; voice " + currVoice + ")" + "\n" +  
 											"  note at index " + k + " (m. " + prevMeasure + "; pitch " + pitchPrevNote + "; voice " + prevVoice + ")" + "\n");
+										totalTypeTwo++;
 //										if (Math.abs(currVoice - prevVoice) > 1) {
 //											voiceCrossingInformation = voiceCrossingInformation.concat("  --> HIER2" + "\n");
 //										}
@@ -7609,6 +7607,10 @@ public class Transcription implements Serializable {
 			}
 			lowestNoteIndex += currentChordSize;
 		}
+		voiceCrossingInformation += getPiece().getName() + "\r\n";
+		voiceCrossingInformation += "total type 1: " + totalTypeOne + "\r\n";
+		voiceCrossingInformation += "total type 2: " + totalTypeTwo + "\r\n";
+		voiceCrossingInformation += "total       : " + (totalTypeOne+totalTypeTwo);
 		return voiceCrossingInformation;
 	}
 
