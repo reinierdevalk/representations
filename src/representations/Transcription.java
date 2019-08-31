@@ -5903,6 +5903,51 @@ public class Transcription implements Serializable {
 	}
 
 
+	/**
+	 * Gets the pitches in the chord. Element 0 of the List represents the lowest note's pitch, element 1 the
+	 * second-lowest note's, etc. Sustained previous notes are NOT included. 
+	 * 
+	 * NB1: The List will always be in numerical order.
+	 * NB2: This method applies only to the non-tablature case
+	 * 
+	 * @param bnp
+	 * @param lowestNoteIndex
+	 * @return
+	 */
+	// TESTED
+	public static List<Integer> getPitchesInChord(/*Integer[][] btp,*/ Integer[][] bnp, int lowestNoteIndex) {
+
+//		Transcription.verifyCase(btp, bnp);
+
+		List<Integer> pitchesInChord = new ArrayList<Integer>();	
+//		// a. In the tablature case
+//		if (btp != null) {
+//			int chordSize = btp[lowestNoteIndex][Tablature.CHORD_SIZE_AS_NUM_ONSETS];
+//			for (int i = lowestNoteIndex; i < lowestNoteIndex + chordSize; i++) {
+//				Integer[] currentBasicTabSymbolProperties = btp[i];
+//				int currentPitch = currentBasicTabSymbolProperties[Tablature.PITCH];
+//				pitchesInChord.add(currentPitch);
+//			}
+//		}
+//		// b. In the non-tablature case
+//		else if (bnp != null) {	     
+			int chordSize = bnp[lowestNoteIndex][Transcription.CHORD_SIZE_AS_NUM_ONSETS];
+			for (int i = lowestNoteIndex; i < lowestNoteIndex + chordSize; i++) {
+				Integer[] currentBasicNoteProperties = bnp[i];
+				int currentPitch = currentBasicNoteProperties[Transcription.PITCH];
+				pitchesInChord.add(currentPitch);
+			}
+			// Get the pitches for any sustained previous notes
+//			List<Integer> sustainedPitches = 
+//				getPitchesOfSustainedPreviousNotesInChord(basicNoteProperties, lowestNoteIndex);
+//			// Combine and sort
+//			pitchesInChord.addAll(sustainedPitches);
+//			Collections.sort(pitchesInChord);
+//		}
+		return pitchesInChord;
+	}
+
+
 //  /**
 //   * Returns the number of CoDs the chord at the given index contains.
 //   * 
