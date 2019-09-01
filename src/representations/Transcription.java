@@ -50,7 +50,7 @@ public class Transcription implements Serializable {
 	
 //	private static final long serialVersionUID = -8586909984652950201L;
 	public static int MAXIMUM_NUMBER_OF_VOICES = 5;
-	public static final int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()*2; // 3 for JosquIntab
+	public static final int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()*1; // 3 for JosquIntab
 //	public static final int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
 	public static final int INCORRECT_IND = 0;
 	public static final int ORNAMENTATION_IND = 1;
@@ -7067,8 +7067,8 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED for both fwd and bwd model
-	public static Note getAdjacentNoteInVoice(NotationVoice voice, Note note, /*Direction direction*/
-		boolean directionIsLeft) {
+	public static Note getAdjacentNoteInVoice(NotationVoice voice, Note note, 
+		/*Direction direction*/ boolean directionIsLeft) {
 		Note adjacentNote = null;
 
 		// List all the Notes in voice

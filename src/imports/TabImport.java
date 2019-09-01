@@ -61,27 +61,21 @@ public class TabImport {
 	public static void main(String[] args) {
 		// To convert an ASCII tab or TabCode file into a tab+ file		
 		List<String> pieces = Arrays.asList(new String[]{ 
-//			"ah_golden_hairs-II",
 			"ah_golden_hairs-NEW",	
-//			"an_aged_dame-II",
-//			"as_caesar_wept-II",
-//			"blame_i_confess-II",
+			"an_aged_dame-II",
+			"as_caesar_wept-II",
+			"blame_i_confess-II",
 //			"delight_is_dead-II",
-//			"in_angels_weed-II",
+			"in_angels_weed-II",
 			"in_tower_most_high",
-//			"o_lord_bow_down-II",
-//			"o_that_we_woeful_wretches-II",
+			"o_lord_bow_down-II",
 			"o_that_we_woeful_wretches-NEW",
-//			"quis_me_statim-II",
-//			"rejoyce_unto_the_lord-II",
+			"quis_me_statim-II",
 			"rejoyce_unto_the_lord-NEW",
-//			"sith_death-II",
 			"sith_death-NEW",
-//			"the_lord_is_only_my_support-II",
 			"the_lord_is_only_my_support-NEW",
-//			"the_man_is_blest-II",
 			"the_man_is_blest-NEW",
-//			"while_phoebus-II"
+			"while_phoebus-II"
 
 //			"3610_033_inter_natos_mulierum_morales_T-rev"
 //			"3618_041_benedictus_from_missa_de_l_homme_arme_morales_T"
