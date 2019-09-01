@@ -50,7 +50,7 @@ public class Transcription implements Serializable {
 	
 //	private static final long serialVersionUID = -8586909984652950201L;
 	public static int MAXIMUM_NUMBER_OF_VOICES = 5;
-	public static final int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()*3; // for JosquIntab
+	public static final int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()*2; // 3 for JosquIntab
 //	public static final int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
 	public static final int INCORRECT_IND = 0;
 	public static final int ORNAMENTATION_IND = 1;
@@ -1347,7 +1347,7 @@ public class Transcription implements Serializable {
 	 * @param isGroundTruthTranscription
 	 */
 	// TESTED
-	void handleCoDNotes(Tablature tablature, boolean isGroundTruthTranscription) {			
+	void handleCoDNotes(Tablature tablature, boolean isGroundTruthTranscription) {
 		NoteSequence noteSeq = getNoteSequence();
 		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
 
@@ -1361,6 +1361,9 @@ public class Transcription implements Serializable {
 			for (int i = 0; i < tablature.getBasicTabSymbolProperties().length; i++) {
 				voicesCoD.add(null);
 			}
+			// Set voicesCoD (in case the pieces contains no SNUs and the setting does not 
+			// happen in the for-loop below
+			setVoicesCoDNotes(voicesCoD);
 		}
 
 		// For every chord
@@ -1440,7 +1443,7 @@ public class Transcription implements Serializable {
 						- notesPreceding) +	" (pitch " + coDInfo[j][0]	+	") in that chord removed from the NoteSequence; " + 
 						"list of voice labels and list of durations adapted accordingly." + "\n");
 				}
-			} 
+			}
 		}
 	}
 
