@@ -6075,6 +6075,28 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	public void testGetVoiceRangeInformation() {
+		Transcription transcription = new Transcription(midiTestpiece1, null);
+		
+		List<Integer[]> expected = new ArrayList<>();
+		expected.add(new Integer[]{64, 72});
+		expected.add(new Integer[]{60, 69});
+		expected.add(new Integer[]{57, 60});
+		expected.add(new Integer[]{45, 57});
+		expected.add(new Integer[]{45, 47});
+		
+		List<Integer[]> actual = transcription.getVoiceRangeInformation();
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).length, actual.get(i).length);
+			for (int j = 0; j < expected.get(i).length; j++) {
+				assertEquals(expected.get(i)[j], actual.get(i)[j]);
+			}
+		}
+	}
+
+
 	public void testGenerateChordDictionary() {
 		Transcription transcription = new Transcription(midiTestpiece1, null);
 			

@@ -7486,6 +7486,38 @@ public class Transcription implements Serializable {
 
 
 	/**
+	 * Gets the ranges (in MIDI pitches) of the individual voices, starting with the highest
+	 * voice (voice 0).
+	 *  
+	 * @return
+	 */
+	// TESTED
+	public List<Integer[]> getVoiceRangeInformation() {
+		List<Integer[]> ranges = new ArrayList<>();
+		
+		NotationSystem nSys = getPiece().getScore();
+		// For each voice i
+		for (int i = 0; i < getPiece().getScore().size(); i ++) {
+			int lowestPitch = Integer.MAX_VALUE;
+			int highestPitch = Integer.MIN_VALUE;
+			NotationVoice nv = nSys.get(i).get(0);
+			for (NotationChord nc : nv) {
+				for (Note n : nc) {
+					if (n.getMidiPitch() < lowestPitch) {
+						lowestPitch = n.getMidiPitch();
+					}
+					if (n.getMidiPitch() > highestPitch) {
+						highestPitch = n.getMidiPitch();
+					}
+				}
+			}
+			ranges.add(new Integer[]{lowestPitch, highestPitch});
+		}
+		return ranges;
+	}
+
+
+	/**
 	 * Gets information on the voice crossings in the Transcription. Returns a String containing
 	 * (1) information on each voice crossing between notes with the same onset time (Type 1 vc) encountered 
 	 * (2) information on a voice crossing between notes with different onset times (Type 2 vc) encountered
@@ -7493,7 +7525,7 @@ public class Transcription implements Serializable {
 	 * @param tablature Is <code>null</code> in the non-tablature case.
 	 * @return
 	 */
-	public String getVoiceCrossingInformation(Tablature tablature) {
+	public Integer[] getVoiceCrossingInformation(Tablature tablature) {
 		String voiceCrossingInformation = "";
 		int totalTypeOne = 0;
 		int totalTypeTwo = 0;
@@ -7517,6 +7549,9 @@ public class Transcription implements Serializable {
 			basicNoteProperties = getBasicNoteProperties();
 			numberOfChords = getTranscriptionChords().size(); // conditions satisfied; external version OK
 		}
+		
+		Integer[] timesInvolved = new Integer[MAXIMUM_NUMBER_OF_VOICES];
+		Arrays.fill(timesInvolved, 0);
 
 		// For each chord
 		int lowestNoteIndex = 0;
@@ -7566,6 +7601,9 @@ public class Transcription implements Serializable {
 				voiceCrossingInformation = 
 					voiceCrossingInformation.concat("Type 1 voice crossing at chordindex " +
 					i + " (m. " + currMeasure + "); voices involved are " + vcInfo.get(0) + "\n");
+				for (int v : vcInfo.get(0)) {
+					timesInvolved[v]++;
+				}
 //				for (int j = 0; j < vcInfo.get(1).size(); j++) {
 //					if (Math.abs(vcInfo.get(1).get(j) - vcInfo.get(1).get(j + 1)) > 1) {
 //						voiceCrossingInformation = voiceCrossingInformation.concat("  --> HIER1" + "\n");
@@ -7622,6 +7660,8 @@ public class Transcription implements Serializable {
 											"  note at index " + j + " (m. " + currMeasure + "; pitch " + pitchCurrNote + "; voice " + currVoice + ")" + "\n" +  
 											"  note at index " + k + " (m. " + prevMeasure + "; pitch " + pitchPrevNote + "; voice " + prevVoice + ")" + "\n");
 										totalTypeTwo++;
+										timesInvolved[currVoice]++;
+										timesInvolved[prevVoice]++;
 //										if (Math.abs(currVoice - prevVoice) > 1) {
 //											voiceCrossingInformation = voiceCrossingInformation.concat("  --> HIER2" + "\n");
 //										}
@@ -7634,11 +7674,21 @@ public class Transcription implements Serializable {
 			}
 			lowestNoteIndex += currentChordSize;
 		}
-		voiceCrossingInformation += getPiece().getName() + "\r\n";
 		voiceCrossingInformation += "total type 1: " + totalTypeOne + "\r\n";
 		voiceCrossingInformation += "total type 2: " + totalTypeTwo + "\r\n";
-		voiceCrossingInformation += "total       : " + (totalTypeOne+totalTypeTwo);
-		return voiceCrossingInformation;
+		voiceCrossingInformation += "total       : " + (totalTypeOne+totalTypeTwo) + "\r\n";
+		voiceCrossingInformation += "times each voice is involved" + "\r\n";
+		voiceCrossingInformation += Arrays.toString(timesInvolved);
+//		System.out.println(voiceCrossingInformation);
+		Integer[] res = new Integer[3 + timesInvolved.length];
+		res[0] = totalTypeOne;
+		res[1] = totalTypeTwo;
+		res[2] = totalTypeOne + totalTypeTwo;
+		for (int i = 0; i < timesInvolved.length; i++) {
+			res[3+i] = timesInvolved[i];
+		}
+		System.out.println(Arrays.toString(res));
+		return res;
 	}
 
 
