@@ -284,22 +284,22 @@ public class Transcription implements Serializable {
 	public Transcription(String name, File argEncodingFile, Integer[][] argBtp, 
 		Integer[][] argBnp, int argHiNumVoices, List<List<Double>> argVoiceLabels, 
 		List<List<Double>> argDurationLabels, MetricalTimeLine mtl, SortedContainer<Marker> ks) {
-		
+
 		Encoding encoding = null;
 		if (argEncodingFile != null) {
-			new Encoding(argEncodingFile);
+			encoding = new Encoding(argEncodingFile);
 		}
 		// Create and set the predicted Piece
 		Piece predictedPiece = 
-			createPiece(argBtp, argBnp, argVoiceLabels, argDurationLabels, argHiNumVoices, mtl, ks);
+			createPiece(argBtp, argBnp, argVoiceLabels, argDurationLabels, argHiNumVoices, 
+			mtl, ks);
 /////		setPiece(predictedPiece);
 		predictedPiece.setName(name);
 
 		// Create the Transcription based on the predicted Piece
 		boolean normaliseTuning = true; // is only used in the tablature case
 		boolean isGroundTruthTranscription = false;
-		createTranscription(predictedPiece, encoding, normaliseTuning,
-			isGroundTruthTranscription);
+		createTranscription(predictedPiece, encoding, normaliseTuning, isGroundTruthTranscription);
 		
 		// Set the predicted class fields. When creating a ground truth Transcription, this happens inside
 		// handleCoDNotes() and handleCourseCrossings(), but when creating a predicted Transcription this step
@@ -6358,10 +6358,11 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Gets the mirrorPoint, i.e., the start time of the fictional bar after the last bar, which is needed for
-	 * reversing the piece. If the piece has an anacrusis, the last bar will be a full bar (i.e., the original,
-	 * shortened bar to which the length of the anacrusis is added).
+	 * Gets the mirrorPoint, i.e., the start time of the fictional bar after the last bar, which is 
+	 * needed for reversing the piece. If the piece has an anacrusis, the last bar will be a full 
+	 * bar (i.e., the original, shortened last bar to which the length of the anacrusis is added).
 	 * 
+	 * @param meterInfo
 	 * @return
 	 */
 	// TESTED
@@ -6418,6 +6419,7 @@ public class Transcription implements Serializable {
 				}
 				// Determine currentMirrorPoint; reset mirrorPoint if necessary
 				currentMirrorPoint = onsetTimeLastNote.add(distanceFromOnsetToNextBar).add(durationSucceedingBars);
+				System.out.println(currentMirrorPoint);
 				if (currentMirrorPoint.isGreater(mirrorPoint)) {
 					mirrorPoint = currentMirrorPoint;
 				}

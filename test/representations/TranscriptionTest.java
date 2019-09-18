@@ -1380,7 +1380,7 @@ public class TranscriptionTest extends TestCase {
 		rights.add(r0);
 		rights.add(r1);
 		rights.add(r2);
-		
+
 		// Non-linear
 		int nli0 = ((5+4+5)+(5+5+5)) + ((3+2+3)+(4+4+4)) + ((1+0+1)+(7+7+7));
 		int nli1 = ((5+4+5)+(5+5+7)) + ((3+2+3)+(4+4+8)) + ((1+0+1)+(7+7+5));
@@ -1390,11 +1390,10 @@ public class TranscriptionTest extends TestCase {
 		int li2 = ((2+2+14+0+0) + (1+3+7+0+12));
 		List<Integer> expected = Arrays.asList(new Integer[]{
 			nli0, nli1, nli2, 
-//			li0, li1, li2	
-			nli0 + li0, nli1 + li1, nli2 + li2
-			
+			li0, li1, li2,	
+//			nli0 + li0, nli1 + li1, nli2 + li2
 		});
-		
+
 		List<Integer> actual = new ArrayList<Integer>();
 		for (int i = 0; i < lefts.size(); i++) {
 			actual.add(Transcription.calculateConfigCost(lefts.get(i), rights.get(i), false));
@@ -1402,18 +1401,15 @@ public class TranscriptionTest extends TestCase {
 		for (int i = 0; i < lefts.size(); i++) {
 			actual.add(Transcription.calculateConfigCost(lefts.get(i), rights.get(i), true));
 		}
-		
-		System.out.println(expected);
-		System.out.println(actual);
+
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));		
 		}
 		assertEquals(expected, actual);
-		
 	}
-	
-	
+
+
 	public void testDetermineConfigs() {
 		List<List<Integer>> leftCh= new ArrayList<List<Integer>>();
 		leftCh.add(Arrays.asList(new Integer[]{20, 10, null, null}));
@@ -1859,6 +1855,7 @@ public class TranscriptionTest extends TestCase {
 //	}
 
 
+	// DEZE
 	public void testGetVoiceEntriesOLDER_EXT() {
 		String prefix = "F:/research/data/MIDI/bach-INV/thesis/";
 		List<String> fileNames = Arrays.asList(new String[]{
@@ -1893,7 +1890,7 @@ public class TranscriptionTest extends TestCase {
 		}
 	}
 
-
+	// DEZE
 	public void testGetImitativeVoiceEntries() {
 		String prefix = "F:/research/data/MIDI/bach-WTC/thesis/";
 		List<String> fileNames = Arrays.asList(new String[]{
@@ -4102,67 +4099,84 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetMirrorPoint() {
-		// Onset/offset of last note in last bar in all voices and same in all voices; no anacrusis; lowest voice
-		// ends one bar before the others
+		List<Transcription> trans = new ArrayList<>();
+		// No anacrusis
+		// a. Onset/offset of last note in last bar in all voices but the lowest, which ends
+		// one bar before the others
 		Transcription transcription1 = new Transcription();
-//		transcription1.setFile(midiTestpiece1); 
 		transcription1.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
-//		transcription1.setPiece(null);
-//		transcription1.setMeterInfo(midiTestpiece1);
 		transcription1.setMeterInfo();
-		// Onset/offset of last note in penultimate/last bar in all voices; with anacrusis
+		trans.add(transcription1);
+		// b. Onset/offset of last note in last bar in upper three voices and with bars in between 
+		// in lowest voice
 		Transcription transcription2 = new Transcription();
-//		File file2 = new File(Runner.midiPath + DatasetID.WTC_3vv.getName() + "/thesis/3vv/" + 
-//			"bach-WTC2-fuga_24-BWV_893.mid");
-		File file2 = new File(MEIExport.rootDir + "data/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
-			"bach-WTC2-fuga_24-BWV_893.mid");
-		System.out.println(file2);
-//		transcription2.setFile(file2); 
+		File file2 = new File(MEIExport.rootDir + "data/MIDI/" + "bach-WTC" + "/thesis/4vv/" +
+			"bach-WTC1-fuga_1-BWV_846.mid");
 		transcription2.setPiece(MIDIImport.importMidiFile(file2));
-//		transcription2.setPiece(null);
-//		transcription2.setMeterInfo(file2);
 		transcription2.setMeterInfo();
-		// Onset/offset of last note either in penultimate or in last bar, differing per voice; all voices 
-		// ending with rests; no anacrusis
+		trans.add(transcription2);
+		// c. Onset/offset of last note either in penultimate or in last bar, differing per voice;
+		// all voices ending with rests
 		Transcription transcription3 = new Transcription();
-//		File file3 = new File(Runner.midiPath + DatasetID.WTC_4vv.getName() + "/thesis/4vv/" + 
-//			"bach-WTC2-fuga_16-BWV_885.mid");
 		File file3 = new File(MEIExport.rootDir + "data/MIDI/" + "bach-WTC" + "/thesis/4vv/" + 
 			"bach-WTC2-fuga_16-BWV_885.mid");
-//		transcription3.setFile(file3); 
 		transcription3.setPiece(MIDIImport.importMidiFile(file3));
-//		transcription3.setPiece(null);
-//		transcription3.setMeterInfo(file3);
 		transcription3.setMeterInfo();
-
-		// Onset/offset of last note in last bar in upper three voices and with bars in between in lower voice; 
-		// no anacrusis
+		trans.add(transcription3);
+		// With anacrusis
+		// d. Onset/offset of last note in last bar in all voices
 		Transcription transcription4 = new Transcription();
-//		File file4 = new File(Runner.midiPath + DatasetID.WTC_4vv.getName() + "/thesis/4vv/" +
-//			"bach-WTC1-fuga_1-BWV_846.mid");
-		File file4 = new File(MEIExport.rootDir + "data/MIDI/" + "bach-WTC" + "/thesis/4vv/" +
-			"bach-WTC1-fuga_1-BWV_846.mid");
-//		transcription4.setFile(file4);
+		File file4 = new File(MEIExport.rootDir + "data/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
+			"bach-WTC1-fuga_11-BWV_856.mid");
 		transcription4.setPiece(MIDIImport.importMidiFile(file4));
-//		transcription4.setPiece(null);
-//		transcription4.setMeterInfo(file4);
 		transcription4.setMeterInfo();
+		trans.add(transcription4);
+		// e. Onset/offset of last note in last bar in all voices
+		Transcription transcription5 = new Transcription();
+		File file5 = new File(MEIExport.rootDir + "data/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
+			"bach-WTC2-fuga_10-BWV_879.mid");
+		transcription5.setPiece(MIDIImport.importMidiFile(file5));
+		transcription5.setMeterInfo();
+		trans.add(transcription5);
+		// f. Onset/offset of last note in last bar in all voices
+		Transcription transcription6 = new Transcription();
+		File file6 = new File(MEIExport.rootDir + "data/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
+			"bach-WTC2-fuga_12-BWV_881.mid");
+		transcription6.setPiece(MIDIImport.importMidiFile(file6));
+		transcription6.setMeterInfo();
+		trans.add(transcription6);
+		// g. Onset/offset of last note in last bar in all voices
+		Transcription transcription7 = new Transcription();
+		File file7 = new File(MEIExport.rootDir + "data/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
+			"bach-WTC2-fuga_13-BWV_882.mid");
+		transcription7.setPiece(MIDIImport.importMidiFile(file7));
+		transcription7.setMeterInfo();
+		trans.add(transcription7);
+		// h. Onset/offset of last note in penultimate/last bar in all voices
+		Transcription transcription8 = new Transcription();
+		File file8 = new File(MEIExport.rootDir + "data/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
+			"bach-WTC2-fuga_24-BWV_893.mid");
+		transcription8.setPiece(MIDIImport.importMidiFile(file8));
+		transcription8.setMeterInfo();
+		trans.add(transcription8);
 
+		List<Rational> expected;
 		Rational expected1 = new Rational((3*4), 4);
-		Rational expected2 = new Rational(1, 8).add(new Rational((101*3), 8));
+		Rational expected2 = new Rational((27*4), 4);
 		Rational expected3 = new Rational((84*3), 4);
-		Rational expected4 = new Rational((27*4), 4);
-		List<Rational> expected = new ArrayList<>(); // .asList(expected1, expected2, expected3, expected4);
-		expected.add(expected1);
-		expected.add(expected2);
-		expected.add(expected3);
-		expected.add(expected4);
-		
+		Rational expected4 = new Rational((73*3), 8);
+		Rational expected5 = new Rational((87*4), 4); // = 12/8
+		Rational expected6 = new Rational((86*2), 4); 
+		Rational expected7 = new Rational((85*2), 2); 
+		Rational expected8 = new Rational(102*3, 8);
+		expected = Arrays.asList(new Rational[]{
+			expected1, expected2, expected3, expected4, 
+			expected5, expected6, expected7, expected8});
+
 		List<Rational> actual = new ArrayList<Rational>();
-		actual.add(transcription1.getMirrorPoint(transcription1.getMeterInfo()));
-		actual.add(transcription2.getMirrorPoint(transcription2.getMeterInfo()));
-		actual.add(transcription3.getMirrorPoint(transcription3.getMeterInfo()));
-		actual.add(transcription4.getMirrorPoint(transcription4.getMeterInfo()));
+		for (Transcription t : trans) {
+			actual.add(t.getMirrorPoint(t.getMeterInfo()));
+		}
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
