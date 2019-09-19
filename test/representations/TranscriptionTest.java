@@ -1890,7 +1890,7 @@ public class TranscriptionTest extends TestCase {
 		}
 	}
 
-	// DEZE
+
 	public void testGetImitativeVoiceEntries() {
 		String prefix = "F:/research/data/MIDI/bach-WTC/thesis/";
 		List<String> fileNames = Arrays.asList(new String[]{
@@ -1909,7 +1909,7 @@ public class TranscriptionTest extends TestCase {
 			"4vv/bach-WTC2-fuga_2-BWV_871", // incorrect: false candidate at density 4
 			"4vv/bach-WTC2-fuga_17-BWV_886", // incorrect: wrong motif at density 4
 		});
-		
+
 		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
 		// 3vv
 		List<List<Integer>> bwv847 = new ArrayList<List<Integer>>();
@@ -1937,9 +1937,10 @@ public class TranscriptionTest extends TestCase {
 		expected.add(bwv872);
 		//
 		List<List<Integer>> bwv881 = new ArrayList<List<Integer>>();
-		bwv881.add(Arrays.asList(new Integer[]{-1, -1}));
-		bwv881.add(Arrays.asList(new Integer[]{0, 28, 29, 115, 116, 117}));
-		bwv881.add(Arrays.asList(new Integer[]{0, 1, 0, 2, 1, 0}));
+//		bwv881.add(Arrays.asList(new Integer[]{-1, -1}));
+//		bwv881.add(Arrays.asList(new Integer[]{0, 28, 29, 115, 116, 117}));
+//		bwv881.add(Arrays.asList(new Integer[]{0, 1, 0, 2, 1, 0}));
+		bwv881 = null; // null because more than half of the new entries (of which there are two) are -1
 		expected.add(bwv881);
 		//
 		List<List<Integer>> bwv890 = new ArrayList<List<Integer>>();
@@ -1990,10 +1991,14 @@ public class TranscriptionTest extends TestCase {
 			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + ".mid"), null);
 			actual.add(t.getImitativeVoiceEntries(voices.get(i), 3));
 		}
-		
+
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
-			if (expected.get(i) != null && actual.get(i) != null) {
+			if (expected.get(i) == null) {
+				assertEquals(expected.get(i), actual.get(i));
+			}
+			else {
+//			if (expected.get(i) != null && actual.get(i) != null) {
 				assertEquals(expected.get(i).size(), actual.get(i).size());
 				for (int j = 0; j < expected.get(i).size(); j++) {
 					if (expected.get(i).get(j) != null && actual.get(i).get(j) != null) {

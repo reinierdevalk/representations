@@ -4378,10 +4378,10 @@ public class Transcription implements Serializable {
 		// Return null if configs contains only -1s, i.e., if no motif was found, or
 		// if not enough motifs (more than half of the new entries) were found to make a 
 		// clear prediction
-		// 2vv: configs.size() == 1: one -1 returns null (none)
-		// 3vv: configs.size() == 2: two -1s returns null (881)
-		// 4vv: configs.size() == 3: two or three -1s returns null (none)
-		// 5vv: configs.size() == 4: three or four -1s returns null (849_1)
+		// 2vv: configs.size() == 1: one -1 returns null (none) (there is one new entry; half of it = 1/2)
+		// 3vv: configs.size() == 2: two -1s returns null (881) (there are two new entries; half of them = 2/2)
+		// 4vv: configs.size() == 3: two or three -1s returns null (none) (there are three new entries; half of them = 3/2)
+		// 5vv: configs.size() == 4: three or four -1s returns null (849_1) (there are four new entries; half of them = 4/2)
 		int minusOnes = Collections.frequency(configs, -1); 
 		if ((ToolBox.sumListInteger(configs) == -configs.size()) ||
 			((double)minusOnes/configs.size() > 0.5)) {
