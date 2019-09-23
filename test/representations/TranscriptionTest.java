@@ -1855,26 +1855,24 @@ public class TranscriptionTest extends TestCase {
 //	}
 
 
-	// DEZE
 	public void testGetVoiceEntriesOLDER_EXT() {
 		String prefix = "F:/research/data/MIDI/bach-INV/thesis/";
 		List<String> fileNames = Arrays.asList(new String[]{
-//			"3vv/bach-INV-inventio_1-BWV_787",
-			"3vv/bach-INV-inventio_1-BWV_787-copy",
-//			"3vv/bach-INV-inventio_2-BWV_788",
-//			"3vv/bach-INV-inventio_3-BWV_789",
-//			"3vv/bach-INV-inventio_4-BWV_790",
-//			"3vv/bach-INV-inventio_5-BWV_791",
-//			"3vv/bach-INV-inventio_6-BWV_792",
-//			"3vv/bach-INV-inventio_7-BWV_793",
-//			"3vv/bach-INV-inventio_8-BWV_794",
-//			"3vv/bach-INV-inventio_9-BWV_795",
-//			"3vv/bach-INV-inventio_10-BWV_796",
-//			"3vv/bach-INV-inventio_11-BWV_797",
-//			"3vv/bach-INV-inventio_12-BWV_798",
-//			"3vv/bach-INV-inventio_13-BWV_799",
-//			"3vv/bach-INV-inventio_14-BWV_800",
-//			"3vv/bach-INV-inventio_15-BWV_801"	
+			"3vv/bach-INV-inventio_1-BWV_787",
+			"3vv/bach-INV-inventio_2-BWV_788",
+			"3vv/bach-INV-inventio_3-BWV_789",
+			"3vv/bach-INV-inventio_4-BWV_790",
+			"3vv/bach-INV-inventio_5-BWV_791",
+			"3vv/bach-INV-inventio_6-BWV_792",
+			"3vv/bach-INV-inventio_7-BWV_793",
+			"3vv/bach-INV-inventio_8-BWV_794",
+			"3vv/bach-INV-inventio_9-BWV_795",
+			"3vv/bach-INV-inventio_10-BWV_796",
+			"3vv/bach-INV-inventio_11-BWV_797",
+			"3vv/bach-INV-inventio_12-BWV_798",
+			"3vv/bach-INV-inventio_13-BWV_799",
+			"3vv/bach-INV-inventio_14-BWV_800",
+			"3vv/bach-INV-inventio_15-BWV_801"	
 		});
 		
 		List<List<List<Integer>>> actual = new ArrayList<List<List<Integer>>>();

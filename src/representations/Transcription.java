@@ -50,7 +50,7 @@ public class Transcription implements Serializable {
 	
 //	private static final long serialVersionUID = -8586909984652950201L;
 	public static int MAXIMUM_NUMBER_OF_VOICES = 5;
-	public static final int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()*1; // 3 for JosquIntab
+	public static final int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()*2; // 3 for JosquIntab; 2 for Byrd
 //	public static final int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
 	public static final int INCORRECT_IND = 0;
 	public static final int ORNAMENTATION_IND = 1;
@@ -2839,10 +2839,9 @@ public class Transcription implements Serializable {
 
 
 	List<List<Double>> getVoiceEntriesOLDER_EXT(int highestNumVoices, int n, boolean useAverage) {
-		Integer[][] bnp = getBasicNoteProperties();		
-//		FeatureGenerator fg = new FeatureGenerator();
+		Integer[][] bnp = getBasicNoteProperties();
 		List<Integer> noteDensities = getNoteDensity();
-		
+
 		List<List<Double>> res = new ArrayList<List<Double>>();
 
 		int leftDensity = noteDensities.get(0);
@@ -3186,12 +3185,18 @@ public class Transcription implements Serializable {
 //		TranscriptionTest.opt += 
 //			optimalConfigs2.toString().substring(optimalConfigs2.toString().indexOf("[")+1,
 //			optimalConfigs2.toString().indexOf("]")) + "\n";
+
 		System.out.println(optimalConfigs);
-		res.add(Arrays.asList(dict.get(optimalConfigs)));
+		if (dict.get(optimalConfigs) != null) {
+			res.add(Arrays.asList(dict.get(optimalConfigs)));
+		}
+		else {
+			res.add(null);
+		}
 		return res;
 	}
-	
-	
+
+
 	/**
 	 * Determines the sequence of voice entries, using pitch information only. 
 	 * 
@@ -3603,7 +3608,6 @@ public class Transcription implements Serializable {
 		final int isHMN = 3;
 
 		Integer[][] bnp = getBasicNoteProperties();
-//		FeatureGenerator fg = new FeatureGenerator();
 
 		List<Integer> lowestNoteIndicesFirstChords = new ArrayList<Integer>();
 		lowestNoteIndicesFirstChords.add(0);
