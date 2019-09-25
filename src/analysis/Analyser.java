@@ -4,7 +4,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationStaff;
@@ -235,6 +239,29 @@ public class Analyser {
 //			results = results.concat(hasMoreThanOneUnison(folderName, s));
 //		}
 //		System.out.println(results);
+	}
+
+
+	/**
+	 * Returns the scientific pitch notation for the given MIDI pitch. Covers C0 (MIDI pitch 12) up
+	 * to and including C8 (MIDI pitch = 108).
+	 * See https://en.wikipedia.org/wiki/Scientific_pitch_notation
+	 * 
+	 * @param midiPitch
+	 * @return
+	 */
+	// TESTED
+	public static String getScientificNotation(int midiPitch) {
+		List<Integer> pitchesInt = IntStream.rangeClosed(12, 108).boxed().collect(Collectors.toList());
+		List<String> pitchesStr = Arrays.asList(new String[]{
+			"C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"});
+		Map<Integer, String> scientific = new LinkedHashMap<Integer, String>();
+		for (int i : pitchesInt) {
+			// Example: 61 is in octave 4: ( (61-1)/12 ) - 1 = 4
+			int octave = ((i-(i%12))/12) - 1;
+			scientific.put(i, pitchesStr.get(i%12) + "" + octave);
+		}
+		return scientific.get(midiPitch);
 	}
 
 
