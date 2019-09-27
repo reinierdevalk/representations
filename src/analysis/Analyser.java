@@ -21,6 +21,7 @@ import exports.MEIExport;
 import representations.Tablature;
 import representations.Transcription;
 import tbp.TabSymbol;
+import tools.ToolBox;
 import utility.DataConverter;
 
 public class Analyser {
@@ -29,17 +30,40 @@ public class Analyser {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		// 1. Tablature data
-		List<String> pieceNames = new ArrayList<String>();    
-		pieceNames.add("Ochsenkun 1558 - Absolon fili mi");
-		pieceNames.add("Ochsenkun 1558 - In exitu Israel de Egipto");
-		pieceNames.add("Ochsenkun 1558 - Qui habitat");
-		pieceNames.add("Rotta 1546 - Bramo morir per non patir piu morte");
-		pieceNames.add("Phalese 1547 - Tant que uiuray [a4]");
-		pieceNames.add("Ochsenkun 1558 - Herr Gott lass dich erbarmen");
-		pieceNames.add("Abondante 1548 - mais mamignone"); 
-		pieceNames.add("Phalese 1563 - LAs on peult");
-		pieceNames.add("Barbetta 1582 - Il nest plaisir");
+
+		List<String> pieces = Arrays.asList(new String[]{
+			"ah_golden_hairs-NEW",
+			"an_aged_dame-II",
+			"as_caesar_wept-II",
+			"blame_i_confess-II",
+			"in_angels_weed-II",
+			"o_lord_bow_down-II",
+			"o_that_we_woeful_wretches-NEW",
+			"quis_me_statim-II",
+			"rejoyce_unto_the_lord-NEW",
+			"sith_death-NEW",
+			"the_lord_is_only_my_support-NEW",
+			"the_man_is_blest-NEW",
+			"while_phoebus-II"
+		});
+		String path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/mapped/";
+		path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/MIDI/";
+//		path = "F:/research/data/MIDI/bach-WTC/thesis/4vv/";
+		boolean asMIDIPitches = true;
+		analyseVoiceRanges(path, pieces, asMIDIPitches);
+		System.exit(0);
+		
+//		// 1. Tablature data
+//		List<String> pieceNames = new ArrayList<String>();    
+//		pieceNames.add("Ochsenkun 1558 - Absolon fili mi");
+//		pieceNames.add("Ochsenkun 1558 - In exitu Israel de Egipto");
+//		pieceNames.add("Ochsenkun 1558 - Qui habitat");
+//		pieceNames.add("Rotta 1546 - Bramo morir per non patir piu morte");
+//		pieceNames.add("Phalese 1547 - Tant que uiuray [a4]");
+//		pieceNames.add("Ochsenkun 1558 - Herr Gott lass dich erbarmen");
+//		pieceNames.add("Abondante 1548 - mais mamignone"); 
+//		pieceNames.add("Phalese 1563 - LAs on peult");
+//		pieceNames.add("Barbetta 1582 - Il nest plaisir");
 
 //		pieceNames.add("Judenkunig 1523 - Elslein liebes Elslein");
 //		pieceNames.add("Newsidler 1536 - Disant adiu madame");
@@ -239,6 +263,156 @@ public class Analyser {
 //			results = results.concat(hasMoreThanOneUnison(folderName, s));
 //		}
 //		System.out.println(results);
+	}
+	
+	
+	static void analyseVoiceRanges(String path, List<String> pieces, boolean asMIDIPitches) {
+		boolean doVoiceCrossing = true;
+
+//		List<String> pieces = Dataset.BYRD_4VV_NAMES;
+		List<String> voiceNames = Arrays.asList(new String[]{"medius", "contra", "tenor", "bassus"});
+		List<String> shortPieceNames = new ArrayList<>();
+		for (String piece : pieces) {
+			shortPieceNames.add(ToolBox.getShortName(piece));
+		}
+
+		// Excel output
+		String outputExcel = "";
+		String outputExcelOverlap = "";
+		
+		// LaTeX output
+		String[][] dataArrLaTeX = new String[pieces.size()][9];
+
+		// Python output
+		String outputPython = "";
+		List<String> outputPythonPerVoice = new ArrayList<>();
+		for (String s : voiceNames) {
+			outputPythonPerVoice.add(s + "_vals = [");
+		}
+
+		if (doVoiceCrossing) {
+			outputExcel = "piece " + "\t" + 
+				"type_1" + "\t" + "type_2" + "\t" + "total" + "\t" +
+				"involvement per voice" + "\t" + "\t" + "\t" + "\t" + "\r\n" +
+				"\t" + "\t" + "\t" + "\t" + "\t" +
+				"voice_0" + "\t" + 
+				"voice_1" + "\t" + 
+				"voice_2" + "\t" + 
+				"voice_3" + "\t" +
+//				"voice_4" + "\t" + 
+				"\r\n";
+		}
+		else {
+			outputExcel += "piece " + "\t" + 
+				"voice_0" + "\t" + "\t" + 
+				"voice_1" + "\t" + "\t" +
+				"voice_2" + "\t" + "\t" +
+				"voice_3" + "\t" + "\t" + "\r\n" +
+				"" + "\t" +
+				"min " + "\t" + "max" + "\t" +
+				"min " + "\t" + "max" + "\t" +
+				"min " + "\t" + "max" + "\t" +
+				"min " + "\t" + "max" + "\t" + "\r\n";
+			outputExcelOverlap = 
+				"piece " + "\t" + "M/C" + "\t" + "C/T" + "\t" + "T/B" + "\r\n";
+		}
+
+		for (int i = 0; i < pieces.size(); i++) {
+			Transcription tt = new Transcription(new File(path + pieces.get(i) + ".mid"), null);
+			String shortName = shortPieceNames.get(i);
+
+			if (doVoiceCrossing) {
+				String res = ((shortName.length() < 4) ? shortName : shortName.substring(0, 3)) + "\t";
+				for (int j : tt.getVoiceCrossingInformation(null)) {
+					res += j + "\t";
+				}
+				res += "\r\n";
+				outputExcel += res; 
+			}
+			else {
+				// Excel output
+				outputExcel += shortName + "\t";
+				outputExcelOverlap += shortName + "\t";
+
+				// LaTeX output
+				dataArrLaTeX[i][0] = shortName;
+
+				List<Integer[]> voiceRanges = tt.getVoiceRangeInformation();
+				for (int j = 0; j < voiceRanges.size(); j++) {
+					Integer[] in = voiceRanges.get(j);
+					String min = asMIDIPitches ? "" + in[0] : Analyser.getScientificNotation(in[0]);
+					String max = asMIDIPitches ? "" + in[1] : Analyser.getScientificNotation(in[1]);
+
+					// Excel output
+					outputExcel += min + "\t" + max + ((j != voiceRanges.size()-1 ) ? "\t" : "\r\n");
+					if (j+1 < voiceRanges.size()) {
+						Integer[] inNext = voiceRanges.get(j+1);
+						// Get ranges of current and next voices
+						List<Integer> range =  
+							IntStream.rangeClosed(in[0], in[1]).boxed().collect(Collectors.toList());
+						List<Integer> rangeNext =  
+							IntStream.rangeClosed(inNext[0], inNext[1]).boxed().collect(Collectors.toList());
+						// Get overall lowest and highest value and combined range
+						int totalLo = Collections.min(Arrays.asList(new Integer[]{
+							Collections.min(range),Collections.min(rangeNext)}));
+						int totalHi = Collections.max(Arrays.asList(new Integer[]{
+							Collections.max(range),Collections.max(rangeNext)}));
+						List<Integer> combRange = 	
+							IntStream.rangeClosed(totalLo, totalHi).boxed().collect(Collectors.toList());
+						// Check both ranges for pitches that are in both (add only once)
+						List<Integer> inBoth = new ArrayList<>();
+						for (int k : range) {
+							if (rangeNext.contains(k)) {
+								inBoth.add(k);
+							}
+						}
+						double perc = 100 * (inBoth.size() / (double) combRange.size());
+						outputExcelOverlap += 
+							ToolBox.formatDouble(perc, 2, 5) + 
+							((j+1 < voiceRanges.size()-1) ? "\t" : "\r\n");
+					}
+
+					// LaTeX output
+					if (!asMIDIPitches) {
+						// Escape #
+						min = min.replace("#", "\\#");
+						max = max.replace("#", "\\#");
+						// Make octaves subscript
+						min = min.substring(0, min.length()-1) + "$_" + min.charAt(min.length()-1) + "$";
+						max = max.substring(0, max.length()-1) + "$_" + max.charAt(max.length()-1) + "$";
+					}
+					dataArrLaTeX[i][((j*2)+1)] = min;
+					dataArrLaTeX[i][((j*2)+2)] = max;
+					
+					// Python output
+					outputPythonPerVoice.set(j, outputPythonPerVoice.get(j) + "[" + min + ", " + max + "]" +
+						((i != pieces.size() - 1) ? ", " : "]"));
+				}
+			}
+		}
+
+		// Excel output
+		System.out.println("FOR EXCEL");
+		System.out.println(outputExcel);
+		System.out.println(outputExcelOverlap);
+
+		// LaTeX output 
+		System.out.println("FOR LaTeX");
+		System.out.println(ToolBox.createLaTeXTable(null, dataArrLaTeX, null, null, -1, -1));
+
+		// Python output
+		System.out.println("FOR PYTHON");
+		// Add pieces
+		outputPython = "pieces = [";
+		for (int j = 0; j < shortPieceNames.size(); j++) {
+			outputPython += "'" + shortPieceNames.get(j) + "'" +
+				((j != shortPieceNames.size()-1) ? "," : "]" + "\r\n");
+		}
+		// Add values per voice
+		for (String s : outputPythonPerVoice) {
+			outputPython += s + "\r\n";
+		}
+		System.out.println(outputPython);
 	}
 
 
