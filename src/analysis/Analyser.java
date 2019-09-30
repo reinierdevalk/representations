@@ -46,13 +46,14 @@ public class Analyser {
 			"the_man_is_blest-NEW",
 			"while_phoebus-II"
 		});
+		
 		String path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/mapped/";
-		path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/MIDI/";
+//		path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/MIDI/";
 //		path = "F:/research/data/MIDI/bach-WTC/thesis/4vv/";
 		boolean asMIDIPitches = true;
 		analyseVoiceRanges(path, pieces, asMIDIPitches);
 		System.exit(0);
-		
+
 //		// 1. Tablature data
 //		List<String> pieceNames = new ArrayList<String>();    
 //		pieceNames.add("Ochsenkun 1558 - Absolon fili mi");
@@ -268,8 +269,10 @@ public class Analyser {
 	
 	static void analyseVoiceRanges(String path, List<String> pieces, boolean asMIDIPitches) {
 		boolean doVoiceCrossing = true;
+		boolean includeAvg = doVoiceCrossing ? true : false;
+		int numVoices = // TODO it is assumed that every piece in the dataset has the same number of voices 
+			new Transcription(new File(path + pieces.get(0) + ".mid"), null).getNumberOfVoices(); 
 
-//		List<String> pieces = Dataset.BYRD_4VV_NAMES;
 		List<String> voiceNames = Arrays.asList(new String[]{"medius", "contra", "tenor", "bassus"});
 		List<String> shortPieceNames = new ArrayList<>();
 		for (String piece : pieces) {
@@ -281,7 +284,15 @@ public class Analyser {
 		String outputExcelOverlap = "";
 		
 		// LaTeX output
-		String[][] dataArrLaTeX = new String[pieces.size()][9];
+		int numCols = !doVoiceCrossing ? 9 : (1 + 1 + 3 + (2*numVoices) + 1);
+		List<Integer> doubleInds = 
+			IntStream.rangeClosed((numCols-(numVoices+1)), numCols-1).boxed().collect(Collectors.toList());	
+		List<Integer> colsToSkip = Arrays.asList(new Integer[]{0});
+		List<Object> listsToAvg = getListsToAvg(numCols, doubleInds, colsToSkip);
+		Integer[] intsToAvg = (Integer[]) listsToAvg.get(0);
+		Double[] doublesToAvg = (Double[]) listsToAvg.get(1);
+		int numRows = !includeAvg ? pieces.size() : (pieces.size() + 1);
+		String[][] dataArrLaTeX = new String[numRows][numCols];
 
 		// Python output
 		String outputPython = "";
@@ -289,55 +300,84 @@ public class Analyser {
 		for (String s : voiceNames) {
 			outputPythonPerVoice.add(s + "_vals = [");
 		}
+		if (doVoiceCrossing) {
+			outputPythonPerVoice.add("avg_vals = [");
+		}
 
 		if (doVoiceCrossing) {
-			outputExcel = "piece " + "\t" + 
-				"type_1" + "\t" + "type_2" + "\t" + "total" + "\t" +
-				"involvement per voice" + "\t" + "\t" + "\t" + "\t" + "\r\n" +
-				"\t" + "\t" + "\t" + "\t" + "\t" +
-				"voice_0" + "\t" + 
-				"voice_1" + "\t" + 
-				"voice_2" + "\t" + 
-				"voice_3" + "\t" +
-//				"voice_4" + "\t" + 
-				"\r\n";
+			outputExcel = 
+				"piece " + "\t" + "N" + "\t" + "type" + "\t\t\t" + "notes involved in voice crossing" + 
+					"\t\t\t\t\t\t\t\t" + "\r\n" +
+				"\t" + "\t" + "1" + "\t" + "2" + "\t" + "all" + "\t" + "counts" + "\t\t\t\t" + 
+					"percentages" + "\t\t\t\t" + "\r\n" +
+				"\t\t\t\t\t" + "voice_0" + "\t" + "voice_1" + "\t" + "voice_2" + "\t" + "voice_3" + "\t" +
+					"voice_0" + "\t" + "voice_1" + "\t" + "voice_2" + "\t" + "voice_3" + "\t" + "avg" + "\t" + "\r\n";
 		}
 		else {
-			outputExcel += "piece " + "\t" + 
-				"voice_0" + "\t" + "\t" + 
-				"voice_1" + "\t" + "\t" +
-				"voice_2" + "\t" + "\t" +
-				"voice_3" + "\t" + "\t" + "\r\n" +
-				"" + "\t" +
-				"min " + "\t" + "max" + "\t" +
-				"min " + "\t" + "max" + "\t" +
-				"min " + "\t" + "max" + "\t" +
-				"min " + "\t" + "max" + "\t" + "\r\n";
+			outputExcel += 
+				"piece " + "\t" + "voice_0" + "\t\t" + "voice_1" + "\t\t" + "voice_2" + "\t\t" +
+					"voice_3" + "\t\t" + "\r\n" +
+				"" + "\t" + "min " + "\t" + "max" + "\t" + "min " + "\t" + "max" + "\t" +
+					"min " + "\t" + "max" + "\t" + "min " + "\t" + "max" + "\t" + "\r\n";
 			outputExcelOverlap = 
 				"piece " + "\t" + "M/C" + "\t" + "C/T" + "\t" + "T/B" + "\r\n";
 		}
 
 		for (int i = 0; i < pieces.size(); i++) {
-			Transcription tt = new Transcription(new File(path + pieces.get(i) + ".mid"), null);
+			Transcription trans = new Transcription(new File(path + pieces.get(i) + ".mid"), null);
 			String shortName = shortPieceNames.get(i);
 
+			// Excel output
+			outputExcel += shortName + "\t";
+			
+			// LaTeX output
+			dataArrLaTeX[i][0] = shortName;
+
 			if (doVoiceCrossing) {
-				String res = ((shortName.length() < 4) ? shortName : shortName.substring(0, 3)) + "\t";
-				for (int j : tt.getVoiceCrossingInformation(null)) {
-					res += j + "\t";
+				Integer[] vcInfo = trans.getVoiceCrossingInformation(null);
+				numVoices = trans.getNumberOfVoices();
+
+				double percSum = 0;
+				for (int j = 0; j < vcInfo.length + 1; j++) {
+					// ints (counts); indices 0-7					
+					if (j < vcInfo.length - numVoices) {
+						int val = vcInfo[j];
+						intsToAvg[j+1] += val;
+						outputExcel += val + "\t";
+						dataArrLaTeX[i][j+1] = String.valueOf(val); 
+					}
+					// doubles (percentages); indices 8-11
+					else if (j < vcInfo.length) {
+						double perc = 100*(vcInfo[j-numVoices] / (double) vcInfo[j]);
+						doublesToAvg[j+1] += perc;
+						percSum += perc;
+						String formatted = ToolBox.formatDouble(perc, 2, 5); 
+						outputExcel += formatted + "\t";
+						dataArrLaTeX[i][j+1] = formatted;
+						int voice = j - 2*numVoices;
+						outputPythonPerVoice.set(voice, outputPythonPerVoice.get(voice) + 
+//							formatted + ((j != pieces.size() - 1) ? ", " : "]"));
+							formatted +	", ");
+					}
+					// double (avg percentage)
+					else {
+						double avgPerc = percSum / (double) numVoices;
+						doublesToAvg[j+1] += avgPerc;
+						String formatted = ToolBox.formatDouble(avgPerc, 2, 5); 
+						outputExcel += formatted + "\r\n";
+						dataArrLaTeX[i][j+1] = formatted;
+						int voice = numVoices;
+						outputPythonPerVoice.set(voice, outputPythonPerVoice.get(voice) + 
+//							formatted + ((j != pieces.size() - 1) ? ", " : "]"));
+							formatted +	", ");
+					}
 				}
-				res += "\r\n";
-				outputExcel += res; 
 			}
 			else {
 				// Excel output
-				outputExcel += shortName + "\t";
 				outputExcelOverlap += shortName + "\t";
 
-				// LaTeX output
-				dataArrLaTeX[i][0] = shortName;
-
-				List<Integer[]> voiceRanges = tt.getVoiceRangeInformation();
+				List<Integer[]> voiceRanges = trans.getVoiceRangeInformation();
 				for (int j = 0; j < voiceRanges.size(); j++) {
 					Integer[] in = voiceRanges.get(j);
 					String min = asMIDIPitches ? "" + in[0] : Analyser.getScientificNotation(in[0]);
@@ -390,6 +430,14 @@ public class Analyser {
 				}
 			}
 		}
+		// Add values for averaged piece
+		if (doVoiceCrossing) {
+			String[] avgs = ToolBox.getAveragesForMixedList(intsToAvg, doublesToAvg, pieces.size(), 2, 5);
+			for (int i = avgs.length - (numVoices+1); i < avgs.length; i++) {
+				int voice = i - ((2*numVoices)+1);
+				outputPythonPerVoice.set(voice, outputPythonPerVoice.get(voice) + avgs[i] + "]");
+			}
+		}
 
 		// Excel output
 		System.out.println("FOR EXCEL");
@@ -398,21 +446,48 @@ public class Analyser {
 
 		// LaTeX output 
 		System.out.println("FOR LaTeX");
-		System.out.println(ToolBox.createLaTeXTable(null, dataArrLaTeX, null, null, -1, -1));
+		System.out.println(ToolBox.createLaTeXTable(dataArrLaTeX, intsToAvg, 
+			doublesToAvg, 2, 5, includeAvg));
 
 		// Python output
 		System.out.println("FOR PYTHON");
 		// Add pieces
 		outputPython = "pieces = [";
 		for (int j = 0; j < shortPieceNames.size(); j++) {
-			outputPython += "'" + shortPieceNames.get(j) + "'" +
-				((j != shortPieceNames.size()-1) ? "," : "]" + "\r\n");
+//			outputPython += "'" + shortPieceNames.get(j) + "'" +
+//				((j != shortPieceNames.size()-1) ? "," : "]" + "\r\n");
+			outputPython += "'" + shortPieceNames.get(j) + "'";
+			if (j != shortPieceNames.size()-1) {
+				outputPython += ",";
+			}
+			else {
+				outputPython += (!doVoiceCrossing) ? "]" + "\r\n" : "," + "'avg'" + "]" + "\r\n"; 
+			}
 		}
 		// Add values per voice
 		for (String s : outputPythonPerVoice) {
 			outputPython += s + "\r\n";
 		}
 		System.out.println(outputPython);
+	}
+
+
+	public static List<Object> getListsToAvg(int numCols, List<Integer> doubleIndices, List<Integer> colsToSkip) {
+		Integer[] intsToAvg = new Integer[numCols];
+		Arrays.fill(intsToAvg, 0);
+		Double[] doublesToAvg = new Double[numCols];
+		Arrays.fill(doublesToAvg, 0.0);
+		// Set to null values for the first element (name) and all double indices (intsToAvg) or 
+		// al int indices (doublesToAvg)
+		for (int i = 0; i < intsToAvg.length; i++) {
+			if (colsToSkip.contains(i) || doubleIndices.contains(i)) {
+				intsToAvg[i] = null;
+			}
+			if (colsToSkip.contains(i) || !doubleIndices.contains(i)) {
+				doublesToAvg[i] = null;
+			}
+		}
+		return Arrays.asList(new Object[]{intsToAvg, doublesToAvg});
 	}
 
 

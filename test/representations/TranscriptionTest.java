@@ -4348,6 +4348,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testCreateDurationLabel() {
+		Transcription.DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
 		List<List<Double>> expected = new ArrayList<List<Double>>(); 		
 		// 32nd
 		expected.add(Arrays.asList(new Double[]{1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -4880,69 +4881,63 @@ public class TranscriptionTest extends TestCase {
 
 	public void testListNotesPerVoice() {
 //    Tablature tablature = new Tablature(encodingTestpiece1, true);
-    Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
-   
-   	// Determine expected
-   	List<List<Integer>> expected = new ArrayList<List<Integer>>();
-   	// Voice 0
-   	expected.add(Arrays.asList(new Integer[]{3, 6, 12, 18, 21, 24, 28, 29, 30, 31, 32, 33, 34, 38}));
-    // Voice 1
-    expected.add(Arrays.asList(new Integer[]{2, 7, 12, 17, 22, 27, 37}));
-    // Voice 2
-    expected.add(Arrays.asList(new Integer[]{1, 5, 11, 16, 20, 23, 26, 36}));
-    // Voice 3
-    expected.add(Arrays.asList(new Integer[]{0, 4, 8, 10, 15, 25, 35}));
-    // Voice 4
-    expected.add(Arrays.asList(new Integer[]{9, 13, 14, 19}));
-    	
-    // Calculate actual
-    List<List<Double>> groundTruthVoiceLabels = transcription.getVoiceLabels();
-    List<List<Integer>> actual = Transcription.listNotesPerVoice(groundTruthVoiceLabels);
-    	
-    // Assert equality
-    assertEquals(expected.size(), actual.size());
-    for (int i = 0; i < expected.size(); i++) {
-    	assertEquals(expected.get(i).size(), actual.get(i).size());
-    	for (int j = 0; j < expected.get(i).size(); j++) {
-    		assertEquals(expected.get(i).get(j), actual.get(i).get(j));
-    	}
-    }
-    assertEquals(expected, actual);
+		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+
+		List<List<Integer>> expected = new ArrayList<List<Integer>>();
+		// Voice 0
+		expected.add(Arrays.asList(new Integer[]{3, 6, 12, 18, 21, 24, 28, 29, 30, 31, 32, 33, 34, 38}));
+		// Voice 1
+		expected.add(Arrays.asList(new Integer[]{2, 7, 12, 17, 22, 27, 37}));
+		// Voice 2
+		expected.add(Arrays.asList(new Integer[]{1, 5, 11, 16, 20, 23, 26, 36}));
+		// Voice 3
+		expected.add(Arrays.asList(new Integer[]{0, 4, 8, 10, 15, 25, 35}));
+		// Voice 4
+		expected.add(Arrays.asList(new Integer[]{9, 13, 14, 19}));
+
+		List<List<Double>> groundTruthVoiceLabels = transcription.getVoiceLabels();
+		List<List<Integer>> actual = Transcription.listNotesPerVoice(groundTruthVoiceLabels);
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).size(), actual.get(i).size());
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+			}
+		}
+		assertEquals(expected, actual);
 	}
-	
-	
+
+
 	public void testListNotesPerVoiceNonTab() {
 		Transcription transcription = new Transcription(midiTestpiece1, null);
-    
-    // Determine expected
-    List<List<Integer>> expected = new ArrayList<List<Integer>>();
-    // Voice 0
-    expected.add(Arrays.asList(new Integer[]{3, 7, 12, 19, 22, 25, 29, 30, 31, 32, 33, 34, 35, 39}));
-    // Voice 1
-    expected.add(Arrays.asList(new Integer[]{2, 6, 13, 18, 23, 28, 38}));
-    // Voice 2
-    expected.add(Arrays.asList(new Integer[]{1, 5, 11, 17, 21, 24, 27, 37}));
-    // Voice 3
-    expected.add(Arrays.asList(new Integer[]{0, 4, 8, 10, 16, 26, 36}));
-    // Voice 4
-    expected.add(Arrays.asList(new Integer[]{9, 14, 15, 20}));
-    
-    // Calculate actual
-    List<List<Double>> groundTruthVoiceLabels = transcription.getVoiceLabels();
-    List<List<Integer>> actual = Transcription.listNotesPerVoice(groundTruthVoiceLabels);
-    	
-    // Assert equality
-    assertEquals(expected.size(), actual.size());
-    for (int i = 0; i < expected.size(); i++) {
-    	assertEquals(expected.get(i).size(), actual.get(i).size());
-    	for (int j = 0; j < expected.get(i).size(); j++) {
-    		assertEquals(expected.get(i).get(j), actual.get(i).get(j));
-    	}
-    }
-    assertEquals(expected, actual);
+
+		List<List<Integer>> expected = new ArrayList<List<Integer>>();
+		// Voice 0
+		expected.add(Arrays.asList(new Integer[]{3, 7, 12, 19, 22, 25, 29, 30, 31, 32, 33, 34, 35, 39}));
+		// Voice 1
+		expected.add(Arrays.asList(new Integer[]{2, 6, 13, 18, 23, 28, 38}));
+		// Voice 2
+		expected.add(Arrays.asList(new Integer[]{1, 5, 11, 17, 21, 24, 27, 37}));
+		// Voice 3
+		expected.add(Arrays.asList(new Integer[]{0, 4, 8, 10, 16, 26, 36}));
+		// Voice 4
+		expected.add(Arrays.asList(new Integer[]{9, 14, 15, 20}));
+
+		List<List<Double>> groundTruthVoiceLabels = transcription.getVoiceLabels();
+		List<List<Integer>> actual = Transcription.listNotesPerVoice(groundTruthVoiceLabels);
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).size(), actual.get(i).size());
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+			}
+		}
+		assertEquals(expected, actual);
 	}
-	
-	
+
+
 	public void testGetVoiceAssignments() {
 //		Tablature tablature = new Tablature(encodingTestpiece1, true);
 		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
