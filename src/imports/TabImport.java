@@ -60,23 +60,25 @@ public class TabImport {
 
 	public static void main(String[] args) {
 		// To convert an ASCII tab or TabCode file into a tab+ file		
-		List<String> pieces = Arrays.asList(new String[]{ 
-			"ah_golden_hairs-NEW",	
-			"an_aged_dame-II",
-			"as_caesar_wept-II",
-			"blame_i_confess-II",
-//			"delight_is_dead-II",
-			"in_angels_weed-II",
-			"in_tower_most_high",
-			"o_lord_bow_down-II",
-			"o_that_we_woeful_wretches-NEW",
-			"quis_me_statim-II",
-			"rejoyce_unto_the_lord-NEW",
-			"sith_death-NEW",
-			"the_lord_is_only_my_support-NEW",
-			"the_man_is_blest-NEW",
-			"while_phoebus-II"
+		List<String> pieces = Arrays.asList(new String[]{
+//			"ah_golden_hairs-NEW",	
+//			"an_aged_dame-II",
+//			"as_caesar_wept-II",
+//			"blame_i_confess-II",
+////			"delight_is_dead-II",
+//			"in_angels_weed-II",
+//			"in_tower_most_high",
+//			"o_lord_bow_down-II",
+//			"o_that_we_woeful_wretches-NEW",
+//			"quis_me_statim-II",
+//			"rejoyce_unto_the_lord-NEW",
+//			"sith_death-NEW",
+//			"the_lord_is_only_my_support-NEW",
+//			"the_man_is_blest-NEW",
+//			"while_phoebus-II"
 
+			"1132_13_o_sio_potessi_donna_berchem_solo"	
+				
 //			"3610_033_inter_natos_mulierum_morales_T-rev"
 //			"3618_041_benedictus_from_missa_de_l_homme_arme_morales_T"
 				
@@ -157,20 +159,21 @@ public class TabImport {
 				
 		String tbp;
 //		String path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/tab/";
-		String path = "C:/Users/Reinier/Desktop/Byrd-Scores-notes-Aug19/preproc/tab/";
+//		String path = "C:/Users/Reinier/Desktop/Byrd-Scores-notes-Aug19/preproc/tab/";
+		String path = "C:/Users/Reinier/Desktop/tours/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/tab/";
 		
 		// From ASCII
-		for (String s : pieces) {
-			tbp = ascii2Tbp(new File(path + s + ".tab"));
-			ToolBox.storeTextFile(tbp, new File(path + s + ".tbp"));
-		}
-		
-		// From TabCode
 //		for (String s : pieces) {
-//			tbp = tc2Tbp(new File(path + s + ".tc"));
+//			tbp = ascii2Tbp(new File(path + s + ".tab"));
 //			ToolBox.storeTextFile(tbp, new File(path + s + ".tbp"));
 //		}
+		
+		// From TabCode
+		for (String s : pieces) {
+			tbp = tc2Tbp(new File(path + s + ".tc"));
+			ToolBox.storeTextFile(tbp, new File(path + s + ".tbp"));
+		}
 		
 	}
 
