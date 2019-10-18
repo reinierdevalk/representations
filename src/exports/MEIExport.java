@@ -60,7 +60,7 @@ public class MEIExport {
 	public static void main(String[] args) {
 		
 		String path = "C:/Users/Reinier/Desktop/MEI/";
-		path = "C:/Users/Reinier/Desktop/IMS-tours/";
+		path = "C:/Users/Reinier/Desktop/IMS-tours/example/MIDI/";
 		
 		String tabFile = "tab-int/3vv/newsidler-1544_2-nun_volget";
 		// This must be a created Transcription and the second argument must be null
@@ -71,7 +71,8 @@ public class MEIExport {
 //			new File("F:/research/data/MIDI/" + tabFile + ".mid"),
 //			new File("C:/Users/Reinier/Desktop/MEI/newsidler-1544_2-nun_volget-test.mid"),
 //			new File("C:/Users/Reinier/Desktop/2019-ISMIR/test/mapped/3610_033_inter_natos_mulierum_morales_T-rev-mapped.mid"),
-			new File("C:/Users/Reinier/Desktop/IMS-tours/fold_06-1025_adieu_mes_amours.mid"),
+//			new File("C:/Users/Reinier/Desktop/IMS-tours/fold_06-1025_adieu_mes_amours.mid"),
+			new File("C:/Users/Reinier/Desktop/IMS-tours/example/MIDI/Berchem_-_O_s'io_potessi_donna.mid"),
 			null);
 		
 		Tablature tab = null; //new Tablature(new File("F:/research/data/encodings/" + tabFile + ".tbp"), false);
@@ -95,6 +96,7 @@ public class MEIExport {
 		boolean grandStaff = true;
 		String s = path + "newsidler-1544_2-nun_volget-test";
 		s = path + "fold_06-1025_adieu_mes_amours";
+		s = path + "Berchem_-_O_s'io_potessi_donna";
 		exportMEIFile(trans, tab, mismatchInds, grandStaff, s);
 //		System.out.println(ToolBox.readTextFile(new File(s)));
 
@@ -458,15 +460,14 @@ public class MEIExport {
 				unbeamedBarsPerVoice.get(j).add(barListAsStr);
 			}
 		}
-
-//-**-		System.out.println("zzzz");
+		System.out.println("zzzz");
 		
-//-**-		for (int i = 0; i < unbeamedBarsPerVoice.size(); i++) {
-//-**-			System.out.println("voice=" + i);
-//-**-			for (int j = 0; j < unbeamedBarsPerVoice.get(i).size(); j++) {
-//-**-				System.out.println(unbeamedBarsPerVoice.get(i).get(j));
-//-**-			}
-//-**-		}
+		for (int i = 0; i < unbeamedBarsPerVoice.size(); i++) {
+			System.out.println("voice=" + i);
+			for (int j = 0; j < unbeamedBarsPerVoice.get(i).size(); j++) {
+				System.out.println(unbeamedBarsPerVoice.get(i).get(j));
+			}
+		}
 		
 		
 //		for (int i = 0; i < unbeamedBarsPerVoice.get(0).size(); i++) {
@@ -474,8 +475,8 @@ public class MEIExport {
 //			System.out.println("meter='2/2'");
 //			System.out.println(unbeamedBarsPerVoice.get(0).get(i));
 //		}
-//-**-		System.out.println("zzzz");
-//		System.exit(0);
+		System.out.println("zzzz");
+		System.exit(0);
 		
 		// Give unbeamedBarsPerVoice to Python script and add beaming
 		// TODO
@@ -1198,8 +1199,13 @@ public class MEIExport {
 			// If the note is the voice's last and its offset does not equal the piece end
 			NotationVoice nv = p.getScore().get(voice).get(0);
 			// If last note
-			if ((nv.get(nv.size()-1).getMetricTime().equals(onset))) {
-				// Add rest to fill up current bar (if applicable)
+			if ((nv.get(nv.size()-1).getMetricTime().equals(onset)) && !offset.equals(endOffset)) {
+//				System.out.println("ja!");
+//				System.out.println(onset);
+//				System.out.println(offset);
+//				System.out.println(endOffset);
+//				System.exit(0);
+				// Add rest to fill up current bar (if applicable) 
 				Rational restCurrentBar = barEnd.sub(offset);
 				if (restCurrentBar.isGreater(Rational.ZERO)) {
 					Rational metPosRestCurrentBar = metPos.add(durRounded);
@@ -1223,7 +1229,7 @@ public class MEIExport {
 					restInt[INTS.indexOf("dur")] = -1; // n/a (bar rest)
 					restInt[INTS.indexOf("dots")] = -1; // n/a (bar rest)
 					indBarOnsMpDurDots.add(restInt);
-				}
+				}	
 			}
 			for (int j = 0; j < pitchOctAccTie.size(); j++) {
 				String[] str = pitchOctAccTie.get(j);
