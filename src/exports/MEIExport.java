@@ -482,8 +482,6 @@ public class MEIExport {
 		// TODO
 		String beamed = ToolBox.readTextFile(new File("C:/Users/Reinier/Desktop/res.txt"));
 
-
-
 		// For each bar
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < dataStr.size(); i++) {
