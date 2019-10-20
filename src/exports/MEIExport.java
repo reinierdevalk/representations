@@ -430,14 +430,14 @@ public class MEIExport {
 		}
 		res = res.replace("staffGrp_placeholder", staffGrpStr);
 
-		// Organise the information (i) per voice, (ii) per bar, as the python beaming script 
-		// takes it
+		// Organise the information (i) per voice, (ii) per bar for the python beaming script
 		List<List<String>> unbeamedBarsPerVoice = new ArrayList<>();
 		for (int j = 0; j < numVoices; j++) {
 			unbeamedBarsPerVoice.add(new ArrayList<>());
 		}
 		// For each bar
 		for (int i = 0; i < dataStr.size(); i++) {
+			int bar = i+1;
 //-*-			System.out.println("bar = " + (i+1));
 			List<List<Integer[]>> currBarInt = dataInt.get(i);
 			List<List<String[]>> currBarStr = dataStr.get(i);
@@ -446,11 +446,13 @@ public class MEIExport {
 //-*-				System.out.println("voice = " + j);
 				List<Integer[]> currBarCurrVoiceInt = currBarInt.get(j);
 				List<String[]> currBarCurrVoiceStr = currBarStr.get(j);
-				// Add current bar to list coresponding to current voice
+				// Add current bar to list corresponding to current voice
 				List<String> barList = 
 					getBar(currBarCurrVoiceInt, currBarCurrVoiceStr, mi, mismatchInds, (i+1), j);
 				String barListAsStr = "";
-				barListAsStr += "meter='2/2'" + "\r\n"; // TODO
+				Rational currMeter = Transcription.getMeter(bar, mi); 
+				barListAsStr += 
+					"meter='" + currMeter.getNumer() + "/" + currMeter.getDenom() + "'" + "\r\n";
 				for (int k = 0; k < barList.size(); k++) {
 					barListAsStr += barList.get(k);
 					if (k < barList.size()-1) {
@@ -460,27 +462,41 @@ public class MEIExport {
 				unbeamedBarsPerVoice.get(j).add(barListAsStr);
 			}
 		}
-		System.out.println("zzzz");
-		
-		for (int i = 0; i < unbeamedBarsPerVoice.size(); i++) {
-			System.out.println("voice=" + i);
-			for (int j = 0; j < unbeamedBarsPerVoice.get(i).size(); j++) {
-				System.out.println(unbeamedBarsPerVoice.get(i).get(j));
-			}
-		}
-		
-		
-//		for (int i = 0; i < unbeamedBarsPerVoice.get(0).size(); i++) {
-//			System.out.println("bar = " + (i+1));
-//			System.out.println("meter='2/2'");
-//			System.out.println(unbeamedBarsPerVoice.get(0).get(i));
+//		System.out.println("====> copy to notes.txt");	
+//		for (int i = 0; i < unbeamedBarsPerVoice.size(); i++) {
+//			System.out.println("voice=" + i);
+//			for (int j = 0; j < unbeamedBarsPerVoice.get(i).size(); j++) {
+//				System.out.println(unbeamedBarsPerVoice.get(i).get(j));
+//			}
 //		}
-		System.out.println("zzzz");
-		System.exit(0);
+//		System.out.println("<====");
+//		System.exit(0);
 		
-		// Give unbeamedBarsPerVoice to Python script and add beaming
-		// TODO
+//		int rab = 4;
+//		int eciov = 0;
+//		int eton = 0;	
+//		System.out.println(dataStr.size()); // bars
+//		System.out.println(dataStr.get(rab).size()); // voices
+//		System.out.println(dataStr.get(rab).get(eciov).size()); // notes
+//		for (String[] note : dataStr.get(rab).get(eciov)) {
+//			System.out.println(Arrays.toString(note));			
+//		}
+//		System.out.println("---------");
+//		for (Integer[] note : dataInt.get(rab).get(eciov)) {
+//			System.out.println(Arrays.toString(note));
+//		}
+//		System.exit(0);
+
+		// TODO Give unbeamedBarsPerVoice to Python script and add beaming; save as res.txt
+		// or better: read from console
 		String beamed = ToolBox.readTextFile(new File("C:/Users/Reinier/Desktop/res.txt"));
+		// Organise beamed as a List (per voice, per bar)
+		List<List<String>> beamedOrg = new ArrayList<>();
+		for (String voice : beamed.split("end of voice")) {
+			beamedOrg.add(Arrays.asList(voice.split("end of bar")));
+		}
+//		System.out.println(beamedOrg.get(1).get(6));
+//		System.exit(0);
 
 		// For each bar
 		StringBuilder sb = new StringBuilder();
@@ -538,23 +554,29 @@ public class MEIExport {
 					}
 				}
 				sb.append(INDENT + TAB.repeat(2) + "<layer n='" + layer + "'>" + "\r\n");
-				// For each note
-//-*-				System.out.println("notes in bar " + (i+1) + ", voice " + j);
-				List<String> barList = 
-					getBar(currBarCurrVoiceInt, currBarCurrVoiceStr, mi, mismatchInds, (i+1), j);
-				for (String s : barList) {
-//-**-					System.out.println(s);
+				
+				boolean doUnbeamed = false;
+				if (doUnbeamed) {
+					// For each note
+					List<String> barList = 
+						getBar(currBarCurrVoiceInt, currBarCurrVoiceStr, mi, mismatchInds, (i+1), j);
+					String barListAsStr = "";
+					for (int k = 0; k < barList.size(); k++) {
+						barListAsStr += barList.get(k);
+						if (k < barList.size()-1) {
+							barListAsStr += "\r\n";
+						}
+					}
+					sb.append(barListAsStr + "\r\n");
 				}
-//				System.exit(0);
-				String barListAsStr = "";
-				for (int k = 0; k < barList.size(); k++) {
-					barListAsStr += barList.get(k);
-					if (k < barList.size()-1) {
-						barListAsStr += "\r\n";
+				// Append (beamed) notes in the bar
+				else {
+					String currBar = beamedOrg.get(j).get(i);
+					for (String note : currBar.trim().split("\r\n")) {
+						sb.append(INDENT + TAB.repeat(3) + note + "\r\n");
 					}
 				}
-//				sb.append(getBar(currBarCurrVoiceInt, currBarCurrVoiceStr, mi, mismatchInds, (i+1), j));
-				sb.append(barListAsStr + "\r\n");
+
 				sb.append(INDENT + TAB.repeat(2) + "</layer>" + "\r\n");
 				// Non-grand staff case: add staff
 				if (!grandStaff) {
