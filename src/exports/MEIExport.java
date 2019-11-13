@@ -97,7 +97,10 @@ public class MEIExport {
 		String s = path + "newsidler-1544_2-nun_volget-test";
 		s = path + "fold_06-1025_adieu_mes_amours";
 		s = path + "Berchem_-_O_s'io_potessi_donna";
-		exportMEIFile(trans, tab, mismatchInds, grandStaff, s);
+		List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
+		
+		exportMEIFile(trans, tab.getBasicTabSymbolProperties(), mi, trans.getKeyInfo(), 
+			mismatchInds, grandStaff, s);
 //		System.out.println(ToolBox.readTextFile(new File(s)));
 
 //		String scoreType = grandStaff ? "grand_staff" : "score";
@@ -342,21 +345,26 @@ public class MEIExport {
 	 * 
 	 * @param trans Must be a Transcription created setting the encodingFile argument to null
 	 *              (i.e., one that has basicNoteProperties).
-	 * @param tab
+	 * @param btp
+	 * @param mi
+	 * @param ki
 	 * @param mismatchInds
 	 * @param grandStaff
 	 * @param path
 	 */
-	public static void exportMEIFile(Transcription trans, Tablature tab, 
-		List<List<Integer>> mismatchInds, boolean grandStaff, String path) {
+	public static void exportMEIFile(Transcription trans, /*Tablature tab,*/ Integer[][] btp,
+		List<Integer[]> mi, List<Integer[]> ki, List<List<Integer>> mismatchInds, 
+		boolean grandStaff, String path) {
 //-*-		System.out.println(">>> MEIExport.exportMEIFile() called");
-		List<Object> data = getData(trans, tab);
+		
+//		List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
+//		List<Integer[]> ki = trans.getKeyInfo();
+		List<Object> data = getData(trans, /*tab,*/ btp, mi, ki);
 		List<List<List<Integer[]>>> dataInt = (List<List<List<Integer[]>>>) data.get(0);
 		List<List<List<String[]>>> dataStr = (List<List<List<String[]>>>) data.get(1);
 
 		int numVoices = dataStr.get(0).size();
-		List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
-		List<Integer[]> ki = trans.getKeyInfo();
+
 
 //		Runner.setPathsToCodeAndData(UI.getRootDir(), false); // TODO only necessary for MEITemplatePath
 //		String res = ToolBox.readTextFile(new File(Runner.MEITemplatePath + "template.xml"));
@@ -555,7 +563,7 @@ public class MEIExport {
 				}
 				sb.append(INDENT + TAB.repeat(2) + "<layer n='" + layer + "'>" + "\r\n");
 				
-				boolean doUnbeamed = false;
+				boolean doUnbeamed = true;
 				if (doUnbeamed) {
 					// For each note
 					List<String> barList = 
@@ -763,10 +771,14 @@ public class MEIExport {
 	 * Extracts from the given Transcription the data needed to create an MEI file.
 	 * 
 	 * @param trans
-	 * @param tab
+	 * @param btp
+	 * @param mi
+	 * @param ki
 	 */
 	@SuppressWarnings("unchecked")
-	public static List<Object> getData(Transcription trans, Tablature tab) {
+	public static List<Object> getData(Transcription trans, /*Tablature tab,*/ Integer[][] btp,
+		List<Integer[]> mi, List<Integer[]> ki) {
+		
 //-*-		System.out.println(">>> MEIExport.getData() called");
 		Piece p = trans.getPiece();
 		int numVoices = p.getScore().size();
@@ -774,7 +786,7 @@ public class MEIExport {
 		Integer[][] bnp = trans.getBasicNoteProperties();
 
 		// Get meterInfo and keyInfo TODO assumed is a single key
-		List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
+//		List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
 		int numBars = mi.get(mi.size()-1)[3];
 		Rational endOffset = Rational.ZERO;
 		for (Integer[] l : mi) {
@@ -782,17 +794,18 @@ public class MEIExport {
 			int barsInCurrMeter = (l[3] - l[2]) + 1;
 			endOffset = endOffset.add(currMeter.mul(barsInCurrMeter));
 		}
-		List<Integer[]> ki = trans.getKeyInfo();
+//		List<Integer[]> ki = trans.getKeyInfo();
 		Integer[] key = ki.get(0);
 		int numAlt = key[0];
 
 		List<Integer> transToTabInd = new ArrayList<>();
-		if (tab != null) {
+		if (btp != null) {
+//		if (tab != null) {	
 			// tabToTransInd contains, for each tab index, the corresponding trans index 
 			// (or, in the case of a SNU, indices)
 			List<List<Integer>> tabToTransInd = new ArrayList<>();
 			int bnpInd = 0;
-			Integer[][] btp = tab.getBasicTabSymbolProperties();
+//			Integer[][] btp = tab.getBasicTabSymbolProperties();
 			for (int i = 0; i < btp.length; i++) {
 				List<Integer> currIndInTrans = new ArrayList<>();
 				currIndInTrans.add(bnpInd);
@@ -817,7 +830,7 @@ public class MEIExport {
 					|| 
 					(nextOnset == null && bnpInd+1 == (bnp.length-1))) {
 					// If the next MIDI note has the same pitch and onset: SNU
-//-**-				System.out.println(nextOnset);
+//-**-					System.out.println(nextOnset);
 //-**-					System.out.println(currOnset);
 //-**-					System.out.println(nextPitch);
 //-**-					System.out.println(currPitch);
@@ -886,7 +899,8 @@ public class MEIExport {
 //		}
 		for (int i = 0; i < bnp.length; i++) {
 			int iTab = -1;
-			if (tab != null) {
+			if (btp != null) {
+//			if (tab != null) {
 				iTab = transToTabInd.get(i);
 			}
 //-*-			System.out.println("note at ind = " + i + " (indTab = " + iTab + ")");
