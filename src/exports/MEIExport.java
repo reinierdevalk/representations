@@ -903,7 +903,7 @@ public class MEIExport {
 //			if (tab != null) {
 				iTab = transToTabInd.get(i);
 			}
-//-*-			System.out.println("note at ind = " + i + " (indTab = " + iTab + ")");
+//			System.out.println("note at ind = " + i + " (indTab = " + iTab + ")");
 			String[] curr = new String[STRINGS.size()];
 			int voice = DataConverter.convertIntoListOfVoices(trans.getVoiceLabels().get(i)).get(0);
 			Rational onset = new Rational(bnp[i][Transcription.ONSET_TIME_NUMER], 
@@ -951,14 +951,17 @@ public class MEIExport {
 			List<String[]> currVoiceStrings = noteAttribPerVoiceStrings.get(voice);
 			List<Integer[]> currVoiceInts = noteAttribPerVoiceInts.get(voice);
 			Rational durPrev, metPosPrev, offsetPrev; 
+
 			// First note in voice?
-			if (currVoiceStrings.size() == 0) {
+			if (currVoiceStrings.size() == 0) { // || isUpperInInVoiceChord) {
 				durPrev = Rational.ZERO;
 				metPosPrev = Rational.ZERO;
 				offsetPrev = Rational.ZERO;
 			}
 			else {
-				// prevNote is the last item in currVoiceInts whose onset is less than onset
+				// prevNote is the last item in currVoiceInts 
+				// (1) whose onset is less than onset
+				// (2) whose onset equals onset (if prevNote is a lower note in an in-voice chord)
 				Integer[] prevNote = null;
 				Rational onsetPrev = null;
 //				Integer[] prevNote = currVoiceInts.get(currVoiceInts.size()-1);
@@ -968,8 +971,12 @@ public class MEIExport {
 					prevNote = currVoiceInts.get(j);
 					onsetPrev = new Rational(prevNote[INTS.indexOf("onsetNum")], 
 						prevNote[INTS.indexOf("onsetDen")]);
-					// Skip rests (onset is -1/-1)
+					// If previous onset is less than current (but is not a rest (onset = -1/-1))
 					if (onsetPrev.getNumer() != -1 && onsetPrev.isLess(onset)) {
+						break;
+					}
+					// If previous onset equals current (but is not a rest (onset = -1/-1))
+					if (onsetPrev.getNumer() != -1 && onsetPrev.equals(onset)) {
 						break;
 					}
 				}
@@ -982,6 +989,7 @@ public class MEIExport {
 				metPosPrev = Tablature.getMetricPosition(onsetPrev, mi)[1]; 
 				offsetPrev = onsetPrev.add(durPrev);
 			}
+
 			// Rests
 			Rational durRest = onset.sub(offsetPrev);
 			if (durRest.isGreater(Rational.ZERO)) {

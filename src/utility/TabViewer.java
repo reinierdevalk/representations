@@ -304,7 +304,8 @@ public class TabViewer extends JFrame{
 //			encodingFile = new File("C:/Users/Reinier/Desktop/2019-ISMIR/test/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T.tbp");
 //			encodingFile = 
 //				new File("C:/Users/Reinier/Desktop/ISMIR-2019/josquin/tab/5256_05_inviolata_integra_desprez-2.tbp");
-			
+			encodingFile = 
+				new File("F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/4467_37_adieu_mes_amours.tbp");
 			
 
 			// 5vv

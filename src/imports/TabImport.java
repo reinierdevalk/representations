@@ -77,7 +77,7 @@ public class TabImport {
 //			"the_man_is_blest-NEW",
 //			"while_phoebus-II"
 
-			"1132_13_o_sio_potessi_donna_berchem_solo"	
+//			"1132_13_o_sio_potessi_donna_berchem_solo"	
 				
 //			"3610_033_inter_natos_mulierum_morales_T-rev"
 //			"3618_041_benedictus_from_missa_de_l_homme_arme_morales_T"
@@ -139,7 +139,7 @@ public class TabImport {
 //			"4400_45_ach_unfall_was",
 //			"4481_49_ach_unfal_wes_zeigst_du_mich",
 //			"4406_51_adieu_mes_amours",
-//			"4467_37_adieu_mes_amours",
+			"4467_37_adieu_mes_amours",
 //			"1025_adieu_mes_amours",
 //			"1030_coment_peult_avoir_joye",
 //			"1275_13_faulte_d_argent",
@@ -154,7 +154,7 @@ public class TabImport {
 //			"4469_39_plus_nulz_regrets_P",	
 //			"922_milano_098_que_voulez_vous_dire_de_moi"
 
-//			"3610_033_inter_natos_mulierum_morales_T-rev"
+//			"3610_033_inter_natos_mulierum_morales_T-rev"	
 		});
 				
 		String tbp;
@@ -162,6 +162,7 @@ public class TabImport {
 //		String path = "C:/Users/Reinier/Desktop/Byrd-Scores-notes-Aug19/preproc/tab/";
 		String path = "C:/Users/Reinier/Desktop/tours/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/tab/";
+		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/";
 		
 		// From ASCII
 //		for (String s : pieces) {
