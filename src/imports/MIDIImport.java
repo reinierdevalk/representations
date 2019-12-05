@@ -100,6 +100,7 @@ public class MIDIImport {
 //-*-		System.out.println(url);
 		
 		Piece p = new MidiReader().getPiece(url);
+		
 		p.setName(f.getName());
 //		KeyMarker keyMarker = new KeyMarker(Rational.ZERO, 0); 
 //		if (mode == 0) {

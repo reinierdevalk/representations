@@ -50,8 +50,8 @@ public class Transcription implements Serializable {
 	
 //	private static final long serialVersionUID = -8586909984652950201L;
 	public static int MAXIMUM_NUMBER_OF_VOICES = 5;
-	public static final int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()*1; // 3 for JosquIntab
-//	public static final int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
+	public static int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()*2; // 3 for JosquIntab; 2 for Byrd
+//	public static int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
 	public static final int INCORRECT_IND = 0;
 	public static final int ORNAMENTATION_IND = 1;
 	public static final int REPETITION_IND = 2;
@@ -284,22 +284,22 @@ public class Transcription implements Serializable {
 	public Transcription(String name, File argEncodingFile, Integer[][] argBtp, 
 		Integer[][] argBnp, int argHiNumVoices, List<List<Double>> argVoiceLabels, 
 		List<List<Double>> argDurationLabels, MetricalTimeLine mtl, SortedContainer<Marker> ks) {
-		
+
 		Encoding encoding = null;
 		if (argEncodingFile != null) {
-			new Encoding(argEncodingFile);
+			encoding = new Encoding(argEncodingFile);
 		}
 		// Create and set the predicted Piece
 		Piece predictedPiece = 
-			createPiece(argBtp, argBnp, argVoiceLabels, argDurationLabels, argHiNumVoices, mtl, ks);
+			createPiece(argBtp, argBnp, argVoiceLabels, argDurationLabels, argHiNumVoices, 
+			mtl, ks);
 /////		setPiece(predictedPiece);
 		predictedPiece.setName(name);
 
 		// Create the Transcription based on the predicted Piece
 		boolean normaliseTuning = true; // is only used in the tablature case
 		boolean isGroundTruthTranscription = false;
-		createTranscription(predictedPiece, encoding, normaliseTuning,
-			isGroundTruthTranscription);
+		createTranscription(predictedPiece, encoding, normaliseTuning, isGroundTruthTranscription);
 		
 		// Set the predicted class fields. When creating a ground truth Transcription, this happens inside
 		// handleCoDNotes() and handleCourseCrossings(), but when creating a predicted Transcription this step
@@ -2839,10 +2839,9 @@ public class Transcription implements Serializable {
 
 
 	List<List<Double>> getVoiceEntriesOLDER_EXT(int highestNumVoices, int n, boolean useAverage) {
-		Integer[][] bnp = getBasicNoteProperties();		
-//		FeatureGenerator fg = new FeatureGenerator();
+		Integer[][] bnp = getBasicNoteProperties();
 		List<Integer> noteDensities = getNoteDensity();
-		
+
 		List<List<Double>> res = new ArrayList<List<Double>>();
 
 		int leftDensity = noteDensities.get(0);
@@ -3186,12 +3185,18 @@ public class Transcription implements Serializable {
 //		TranscriptionTest.opt += 
 //			optimalConfigs2.toString().substring(optimalConfigs2.toString().indexOf("[")+1,
 //			optimalConfigs2.toString().indexOf("]")) + "\n";
+
 		System.out.println(optimalConfigs);
-		res.add(Arrays.asList(dict.get(optimalConfigs)));
+		if (dict.get(optimalConfigs) != null) {
+			res.add(Arrays.asList(dict.get(optimalConfigs)));
+		}
+		else {
+			res.add(null);
+		}
 		return res;
 	}
-	
-	
+
+
 	/**
 	 * Determines the sequence of voice entries, using pitch information only. 
 	 * 
@@ -3603,7 +3608,6 @@ public class Transcription implements Serializable {
 		final int isHMN = 3;
 
 		Integer[][] bnp = getBasicNoteProperties();
-//		FeatureGenerator fg = new FeatureGenerator();
 
 		List<Integer> lowestNoteIndicesFirstChords = new ArrayList<Integer>();
 		lowestNoteIndicesFirstChords.add(0);
@@ -4378,10 +4382,10 @@ public class Transcription implements Serializable {
 		// Return null if configs contains only -1s, i.e., if no motif was found, or
 		// if not enough motifs (more than half of the new entries) were found to make a 
 		// clear prediction
-		// 2vv: configs.size() == 1: one -1 returns null (none)
-		// 3vv: configs.size() == 2: two -1s returns null (881)
-		// 4vv: configs.size() == 3: two or three -1s returns null (none)
-		// 5vv: configs.size() == 4: three or four -1s returns null (849_1)
+		// 2vv: configs.size() == 1: one -1 returns null (none) (there is one new entry; half of it = 1/2)
+		// 3vv: configs.size() == 2: two -1s returns null (881) (there are two new entries; half of them = 2/2)
+		// 4vv: configs.size() == 3: two or three -1s returns null (none) (there are three new entries; half of them = 3/2)
+		// 5vv: configs.size() == 4: three or four -1s returns null (849_1) (there are four new entries; half of them = 4/2)
 		int minusOnes = Collections.frequency(configs, -1); 
 		if ((ToolBox.sumListInteger(configs) == -configs.size()) ||
 			((double)minusOnes/configs.size() > 0.5)) {
@@ -6358,10 +6362,11 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Gets the mirrorPoint, i.e., the start time of the fictional bar after the last bar, which is needed for
-	 * reversing the piece. If the piece has an anacrusis, the last bar will be a full bar (i.e., the original,
-	 * shortened bar to which the length of the anacrusis is added).
+	 * Gets the mirrorPoint, i.e., the start time of the fictional bar after the last bar, which is 
+	 * needed for reversing the piece. If the piece has an anacrusis, the last bar will be a full 
+	 * bar (i.e., the original, shortened last bar to which the length of the anacrusis is added).
 	 * 
+	 * @param meterInfo
 	 * @return
 	 */
 	// TESTED
@@ -6418,6 +6423,7 @@ public class Transcription implements Serializable {
 				}
 				// Determine currentMirrorPoint; reset mirrorPoint if necessary
 				currentMirrorPoint = onsetTimeLastNote.add(distanceFromOnsetToNextBar).add(durationSucceedingBars);
+				System.out.println(currentMirrorPoint);
 				if (currentMirrorPoint.isGreater(mirrorPoint)) {
 					mirrorPoint = currentMirrorPoint;
 				}
@@ -7486,41 +7492,89 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Gets information on the voice crossings in the Transcription. Returns a String containing
-	 * (1) information on each voice crossing between notes with the same onset time (Type 1 vc) encountered 
-	 * (2) information on a voice crossing between notes with different onset times (Type 2 vc) encountered
-	 * 
+	 * Gets the ranges (in MIDI pitches) of the individual voices, starting with the highest
+	 * voice (voice 0).
+	 *  
+	 * @return
+	 */
+	// TESTED
+	public List<Integer[]> getVoiceRangeInformation() {
+		List<Integer[]> ranges = new ArrayList<>();
+		
+		NotationSystem nSys = getPiece().getScore();
+		// For each voice i
+		for (int i = 0; i < getPiece().getScore().size(); i ++) {
+			int lowestPitch = Integer.MAX_VALUE;
+			int highestPitch = Integer.MIN_VALUE;
+			NotationVoice nv = nSys.get(i).get(0);
+			for (NotationChord nc : nv) {
+				for (Note n : nc) {
+					if (n.getMidiPitch() < lowestPitch) {
+						lowestPitch = n.getMidiPitch();
+					}
+					if (n.getMidiPitch() > highestPitch) {
+						highestPitch = n.getMidiPitch();
+					}
+				}
+			}
+			ranges.add(new Integer[]{lowestPitch, highestPitch});
+		}
+		return ranges;
+	}
+
+
+	/**
+	 * Gets information on the voice crossings in the Transcription. Returns an Integer[] containing
+	 * <ul>
+	 * <li>as element 0: the number of notes in the piece.</li>
+	 * <li>as element 1: the number of voice crossings where the crossing voice and the crossed 
+	 *                   voice have the same onset time (Type 1 vc)</li>
+	 * <li>as element 2: the number of voice crossings where the crossing voice has a later onset 
+	 *                   time than the crossed voice (Type 2 vc)</li>
+	 * <li>as element 3: the total of Type 1 and 2 vc</li>
+	 * <li>as element 4: for each voice (starting at 0): the number of instances this voice is 
+	 *                   involved in a voice crossing. Instances are counted for each voice that 
+	 *                   is crossed (e.g., the superius going under the altus and tenor are two 
+	 *                	 voice crossings). In the case of Type 2 vc, a voice is involved both if 
+	 *                	 it is the crossing and the crossed voice. </li>
+	 * <li>as element 5: for each voice (starting at 0): the number of notes in that voice.</li>               
+	 * </ul>
 	 * @param tablature Is <code>null</code> in the non-tablature case.
 	 * @return
 	 */
-	public String getVoiceCrossingInformation(Tablature tablature) {
+	public Integer[] getVoiceCrossingInformation(Tablature tablature) {
 		String voiceCrossingInformation = "";
 		int totalTypeOne = 0;
 		int totalTypeTwo = 0;
 
 		// For each note
 		NoteSequence noteSeq = getNoteSequence();
-//		List<List<List<Double>>> chordVoiceLabels = getChordVoiceLabels(tablature);
-		List<List<List<Double>>> chordVoiceLabels = getChordVoiceLabels(); // VANDAAG
+		List<List<List<Double>>> chordVoiceLabels = getChordVoiceLabels();
 		List<List<Double>> voiceLabels = getVoiceLabels();
 
 		Integer[][] basicTabSymbolProperties = null;
 		Integer[][] basicNoteProperties = null;
-		int numberOfChords = 0;
+		int numbChords = 0;
+		int numNotes = 0;
 		// a. In the tablature case
 		if (tablature != null) {
 			basicTabSymbolProperties = tablature.getBasicTabSymbolProperties();
-			numberOfChords = tablature.getTablatureChords().size(); 
+			numbChords = tablature.getTablatureChords().size();
+			numNotes = tablature.getNumberOfNotes();
 		}
 		// b. in the non-tablature case
 		else {
 			basicNoteProperties = getBasicNoteProperties();
-			numberOfChords = getTranscriptionChords().size(); // conditions satisfied; external version OK
+			numbChords = getTranscriptionChords().size(); // conditions satisfied; external version OK
+			numNotes = getNumberOfNotes();
 		}
+
+		Integer[] timesInvolved = new Integer[getNumberOfVoices()];
+		Arrays.fill(timesInvolved, 0);
 
 		// For each chord
 		int lowestNoteIndex = 0;
-		for (int i = 0; i < numberOfChords; i++) { // i is index of current chord  	
+		for (int i = 0; i < numbChords; i++) { // i is index of current chord  	
 			// Get current chord size and meterinfo, and find current onset time
 			int currentChordSize = 0; 
 			List<Integer[]> meterInfo = null;
@@ -7557,7 +7611,7 @@ public class Transcription implements Serializable {
 				"" + Tablature.getMetricPosition(onsetCurrNote, meterInfo)[0].getNumer() + " " +
 				Tablature.getMetricPosition(onsetCurrNote, meterInfo)[1];
 
-			// a. Get the voice crossing information within the chord
+			// a. Get the voice crossing information within the chord (Type 1)
 			List<List<Double>> currentChordVoiceLabels = chordVoiceLabels.get(i);
 			List<List<Integer>> voicesInChord = DataConverter.getVoicesInChord(currentChordVoiceLabels);
 			List<List<Integer>> vcInfo = 
@@ -7565,7 +7619,10 @@ public class Transcription implements Serializable {
 			if (vcInfo.get(0).size() != 0) {
 				voiceCrossingInformation = 
 					voiceCrossingInformation.concat("Type 1 voice crossing at chordindex " +
-					i + " (m. " + currMeasure + "); voices involved are " + vcInfo.get(0) + "\n");
+					i + " (b. " + currMeasure + "); voices involved are " + vcInfo.get(0) + "\n");
+				for (int v : vcInfo.get(0)) {
+					timesInvolved[v]++;
+				}
 //				for (int j = 0; j < vcInfo.get(1).size(); j++) {
 //					if (Math.abs(vcInfo.get(1).get(j) - vcInfo.get(1).get(j + 1)) > 1) {
 //						voiceCrossingInformation = voiceCrossingInformation.concat("  --> HIER1" + "\n");
@@ -7575,7 +7632,8 @@ public class Transcription implements Serializable {
 				totalTypeOne++;
 			}
 
-			// b. For each note in the chord: get the voice crossing information with any previous sustained notes 
+			// b. For each note in the chord: get the voice crossing information with any previous 
+			// sustained notes (Type 2)
 			for (int j = lowestNoteIndex; j < lowestNoteIndex + currentChordSize; j++) { // j is index of current note
 				int pitchCurrNote = 0;
 				// a. In the tablature case
@@ -7622,6 +7680,8 @@ public class Transcription implements Serializable {
 											"  note at index " + j + " (m. " + currMeasure + "; pitch " + pitchCurrNote + "; voice " + currVoice + ")" + "\n" +  
 											"  note at index " + k + " (m. " + prevMeasure + "; pitch " + pitchPrevNote + "; voice " + prevVoice + ")" + "\n");
 										totalTypeTwo++;
+										timesInvolved[currVoice]++;
+										timesInvolved[prevVoice]++;
 //										if (Math.abs(currVoice - prevVoice) > 1) {
 //											voiceCrossingInformation = voiceCrossingInformation.concat("  --> HIER2" + "\n");
 //										}
@@ -7634,11 +7694,41 @@ public class Transcription implements Serializable {
 			}
 			lowestNoteIndex += currentChordSize;
 		}
-		voiceCrossingInformation += getPiece().getName() + "\r\n";
 		voiceCrossingInformation += "total type 1: " + totalTypeOne + "\r\n";
 		voiceCrossingInformation += "total type 2: " + totalTypeTwo + "\r\n";
-		voiceCrossingInformation += "total       : " + (totalTypeOne+totalTypeTwo);
-		return voiceCrossingInformation;
+		voiceCrossingInformation += "total       : " + (totalTypeOne+totalTypeTwo) + "\r\n";
+		voiceCrossingInformation += "times each voice is involved" + "\r\n";
+		voiceCrossingInformation += Arrays.toString(timesInvolved);
+//		System.out.println(voiceCrossingInformation);
+		// res contains numNotes + totalTypeOne + totalTypeTwo + all + involved (per voice) + 
+		// voice size (per voice)
+		Integer[] res = new Integer[4 + timesInvolved.length + getNumberOfVoices()];
+		res[0] = numNotes;
+		res[1] = totalTypeOne;
+		res[2] = totalTypeTwo;
+		res[3] = totalTypeOne + totalTypeTwo;
+		for (int i = 0; i < timesInvolved.length; i++) {
+			res[4+i] = timesInvolved[i];
+		}
+		// Note per voice
+		List<List<Integer>> notesPerVoice = listNotesPerVoice(getVoiceLabels());
+		List<Integer> numNotesPerVoice = new ArrayList<>();
+		for (int i = 0; i < notesPerVoice.size(); i++) {
+			if (notesPerVoice.get(i).size() > 0) {
+				numNotesPerVoice.add(notesPerVoice.get(i).size());
+			}
+			else {
+				// Only voice 4 is allowed to be empty
+				if (i != Transcription.MAXIMUM_NUMBER_OF_VOICES-1) {
+					throw new RuntimeException("Voice " + i + " does not contain any notes.");
+				}
+			}
+		}
+		for (int i = 0; i < numNotesPerVoice.size(); i++) {
+			res[(res.length-numNotesPerVoice.size())+i] = numNotesPerVoice.get(i); 
+		}
+		System.out.println(Arrays.toString(res));
+		return res;
 	}
 
 
