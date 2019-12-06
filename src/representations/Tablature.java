@@ -21,7 +21,7 @@ import tools.ToolBox;
 public class Tablature implements Serializable {
 	
 	public static final int MAXIMUM_NUMBER_OF_NOTES = 5;
-	public static final Rational SMALLEST_RHYTHMIC_VALUE = new Rational(RhythmSymbol.semifusa.getDuration(), 32);
+	public static final Rational SMALLEST_RHYTHMIC_VALUE = new Rational(RhythmSymbol.semifusa.getDuration()/3, 3*32);
 
 	private Encoding encoding;
 	private Integer[][] basicTabSymbolProperties;
@@ -43,8 +43,7 @@ public class Tablature implements Serializable {
 	public static final int NOTE_SEQ_NUM = 8;
 	private static final int TABLATURE_EVENT_SEQ_NUM = 9;
 
-	public Tablature() { 	
-
+	public Tablature() {
 	}
 
 
@@ -324,12 +323,15 @@ public class Tablature implements Serializable {
 			else {
 				beatZeroAdapted = prevMeter.mul(prevNumBars).div(Math.abs(prevDim));
 			}
-			// Represent Rational r as integer using cross multiplication
+			// Represent Rational r as integer using cross-multiplication
 			// num(r)/den(r) = x/32 --> x * den(r) = num(r) * 32 --> x = (num(r) * 32) / den(r) 
-			int beatZeroAsInt = 
-				(beatZero.getNumer() * SMALLEST_RHYTHMIC_VALUE.getDenom()) / beatZero.getDenom();
-			int beatZeroAdaptedAsInt = 
-				(beatZeroAdapted.getNumer() * SMALLEST_RHYTHMIC_VALUE.getDenom()) / beatZeroAdapted.getDenom();
+//			int beatZeroAsInt = 
+//				(beatZero.getNumer() * SMALLEST_RHYTHMIC_VALUE.getDenom()) / beatZero.getDenom();
+//			int beatZeroAdaptedAsInt = 
+//				(beatZeroAdapted.getNumer() * SMALLEST_RHYTHMIC_VALUE.getDenom()) / beatZeroAdapted.getDenom();
+			int beatZeroAsInt = rationalToIntDur(beatZero);
+			int beatZeroAdaptedAsInt = rationalToIntDur(beatZeroAdapted);
+
 			metricTimesBeatZero.add(metricTimesBeatZero.get(i-1) + beatZeroAsInt);
 			metricTimesBeatZeroAdapted.add(metricTimesBeatZeroAdapted.get(i-1) + beatZeroAdaptedAsInt);
 		}
@@ -820,7 +822,7 @@ public class Tablature implements Serializable {
 
 
 	/**
-	 * Returns als metric positions.
+	 * Returns all metric positions.
 	 * 
 	 * @return
 	 */
@@ -1446,6 +1448,7 @@ public class Tablature implements Serializable {
 	}
 
 
+	TEST
 	public static int rationalToIntDur(Rational dur) {
 		return dur.mul(SMALLEST_RHYTHMIC_VALUE.getDenom()).getNumer();
 	}

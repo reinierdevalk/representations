@@ -75,26 +75,26 @@ public class TablatureTest extends TestCase {
 		//           0    2           5    7    8           10        11
 		List<Integer> diminutions1 = Arrays.asList(new Integer[]{2, 1, 2});
 		List<Integer> durationOfTabSymbols1 = Arrays.asList(new Integer[]{
-			16, 16, 8, 8, 8, 
-			16, 16, 16, 16, 16,
-			16, 8, 8, 8	
+			48, 48, 24, 24, 24, 
+			48, 48, 48, 48, 48,
+			48, 24, 24, 24
 		});
 		List<Integer> gridXOfTabSymbols1 = Arrays.asList(new Integer[]{
-			8, 8, 24, 24, 24, 
-			32, 32, 48, 64, 64,
-			80, 104, 104, 104	
+			24, 24, 72, 72, 72, 
+			96, 96, 144, 192, 192,
+			240, 312, 312, 312
 		});
 		List<Integer> newDurationOfTabSymbols1 = Arrays.asList(new Integer[]{
-			32, 32, 16, 16, 16, 
-			16, 16, 16, 16, 16,
-			32, 16, 16, 16	
+			96, 96, 48, 48, 48,
+			48, 48, 48, 48, 48,
+			96, 48, 48, 48 
 		});
 		List<Integer> newGridXOfTabSymbols1 = Arrays.asList(new Integer[]{
-			16, 16, 48, 48, 48, 
-			64, 64, 80, 96, 96,
-			112, 160, 160, 160	
+			48, 48, 144, 144, 144,
+			192, 192, 240, 288, 288,
+			336, 480, 480, 480 
 		});
-				
+
 		// Testpiece2 (no anacrusis; diminutions = [1, -2, 1])
 		// 2/2: Q    H    Q    | 3/2: H    H    H    | 2/2: H    Q(r) Q    ||	
 		//                5                                           14
@@ -102,26 +102,26 @@ public class TablatureTest extends TestCase {
 		//      0    1    3           6    8    9           11        12
 		List<Integer> diminutions2 = Arrays.asList(new Integer[]{1, -2, 1});
 		List<Integer> durationOfTabSymbols2 = Arrays.asList(new Integer[]{
-			8, 16, 16, 8, 8, 8, 
-			16, 16, 16, 16, 16,
-			16, 8, 8, 8	
+			24, 48, 48, 24, 24, 24,
+			48, 48, 48, 48, 48,
+			48, 24, 24, 24
 		});
 		List<Integer> gridXOfTabSymbols2 = Arrays.asList(new Integer[]{
-			0, 8, 8, 24, 24, 24, 
-			32, 32, 48, 64, 64,
-			80, 104, 104, 104	
+			0, 24, 24, 72, 72, 72,
+			96, 96, 144, 192, 192,
+			240, 312, 312, 312
 		});
 		List<Integer> newDurationOfTabSymbols2 = Arrays.asList(new Integer[]{
-			8, 16, 16, 8, 8, 8, 
-			8, 8, 8, 8, 8,
-			16, 8, 8, 8	
+			24, 48, 48, 24, 24, 24,
+			24, 24, 24, 24, 24,
+			48, 24, 24, 24	
 		});
 		List<Integer> newGridXOfTabSymbols2 = Arrays.asList(new Integer[]{
-			0, 8, 8, 24, 24, 24, 
-			32, 32, 40, 48, 48,
-			56, 80, 80, 80	
+			0, 24, 24, 72, 72, 72,	
+			96, 96, 120, 144, 144,
+			168, 240, 240, 240
 		});
-				
+
 		List<List<Integer>> expected = new ArrayList<>();
 		expected.add(newDurationOfTabSymbols1);
 		expected.add(newGridXOfTabSymbols1);
@@ -369,7 +369,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testGetAllMetricPosition() {
+	public void testGetAllMetricPositions() {
 		// a. For a piece with meter changes
 		Tablature tablature = new Tablature(encodingTestGetMeterInfo, false);
 
@@ -496,8 +496,9 @@ public class TablatureTest extends TestCase {
 		basicTabsymbolProperties = tablature.getBasicTabSymbolProperties(); 
 		meterInfo = tablature.getMeterInfo();
 		for (int i = 0; i < basicTabsymbolProperties.length; i++) {
-			Rational currentMetricTime = new Rational(basicTabsymbolProperties[i][Tablature.ONSET_TIME],
-			Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+			Rational currentMetricTime = 
+				new Rational(basicTabsymbolProperties[i][Tablature.ONSET_TIME],
+				Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
 			actual.add(Tablature.getMetricPosition(currentMetricTime, meterInfo));
 		}
 		actual.addAll(tablature.getAllMetricPositions());

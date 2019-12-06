@@ -54,7 +54,8 @@ public class TabImport {
 		RHYTHM_SYMBOLS.put("Q.", RhythmSymbol.minimDotted.getEncoding());
 		RHYTHM_SYMBOLS.put("E.", RhythmSymbol.semiminimDotted.getEncoding());
 		RHYTHM_SYMBOLS.put("S.", RhythmSymbol.fusaDotted.getEncoding());
-		RHYTHM_SYMBOLS.put("3", RhythmSymbol.triplet.getEncoding());
+//		RHYTHM_SYMBOLS.put("3", RhythmSymbol.triplet.getEncoding());
+		RHYTHM_SYMBOLS.put("3", RhythmSymbol.tripletIndicator);
 	}
 
 
@@ -309,13 +310,13 @@ public class TabImport {
 //				int durFirst = durCurrRhythmGroup += RhythmSymbol.getRhythmSymbol(
 //					converted.substring(0, converted.indexOf(SymbolDictionary.SYMBOL_SEPARATOR))).getDuration();
 				String rs = converted.substring(0, converted.indexOf(SymbolDictionary.SYMBOL_SEPARATOR)); 
-				if (rs.startsWith(RhythmSymbol.triplet.getEncoding())) {
-					rs = rs.substring(RhythmSymbol.triplet.getEncoding().length(), rs.length());
+				if (rs.startsWith(RhythmSymbol.tripletIndicator)) {
+					rs = rs.substring(RhythmSymbol.tripletIndicator.length(), rs.length());
 				}
 				int durFirst = durCurrRhythmGroup + // TODO why add to durCurrRhythmGroup?
 					RhythmSymbol.getRhythmSymbol(rs).getDuration();
 				// TODO adapt durFirst in triplet case
-				if (rs.startsWith(RhythmSymbol.triplet.getEncoding())) {
+				if (rs.startsWith(RhythmSymbol.tripletIndicator)) {
 					
 				}
 				durCurrRhythmGroup += durFirst;

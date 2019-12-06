@@ -149,7 +149,8 @@ public class Staff {
 		String symbol = aRhythmSymbol.getSymbol();
 		staffData[RHYTHM_LINE][segment] = symbol; 
 		// Dotted RS? Add dot in next segment
-		if (!aRhythmSymbol.getEncoding().startsWith(RhythmSymbol.triplet.getEncoding()) && aRhythmSymbol.getDuration() % 3 == 0) {
+		if (!aRhythmSymbol.getEncoding().startsWith(RhythmSymbol.tripletIndicator) && 
+			aRhythmSymbol.getDuration() % 3 == 0) {
 //		if (aRhythmSymbol.getDuration() % 3 == 0) {
 			staffData[RHYTHM_LINE][segment + 1] = rhythmDot; 
 		}
