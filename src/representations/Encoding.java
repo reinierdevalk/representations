@@ -55,9 +55,7 @@ public class Encoding implements Serializable {
 	public static final int GRID_Y_INDEX = 11;
 	public static final int HORIZONTAL_POSITION_TAB_SYMBOLS_ONLY_INDEX = 12;
 	public static final String METADATA_ERROR = "METADATA ERROR -- Check for missing curly brackets.";
-	
-	private static final int FULL_BAR = 3*32; // trp
-	
+
 	private Tuning[] tunings = new Tuning[2];
 	public static final int ENCODED_TUNING_INDEX = 0;
 	public static final int NEW_TUNING_INDEX = 1;
@@ -223,8 +221,10 @@ public class Encoding implements Serializable {
 		int currBar = 1;
 		int prevDur = 0;
 		int posInBar = 0;
-		// fullBar is the length (in semifusa) of a full bar under the current meter
-		int fullBar = (int) (mensSigns.get(0)[0] / (double) mensSigns.get(0)[1]) * FULL_BAR;
+		// fullBar is the length (in MIN_GRID_VAL) of a full bar under the current meter
+		int fullBar = 
+			(int) (mensSigns.get(0)[0] / (double) mensSigns.get(0)[1]) * 
+			Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom(); // trp
 		boolean semibreveBarring = false;
 		for (int i = 0; i < symbols.length; i++) {
 			String s = symbols[i];
@@ -263,7 +263,9 @@ public class Encoding implements Serializable {
 					meterStartBar = currBar;
 				}
 				// Set fullBar under new meter
-				fullBar = (int) ((meter[0] / (double) meter[1]) * FULL_BAR);
+				fullBar = 
+					(int) ((meter[0] / (double) meter[1]) * 
+					Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()); // trp
 			}
 
 			// RS

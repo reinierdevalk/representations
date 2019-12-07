@@ -21,7 +21,8 @@ import tools.ToolBox;
 public class Tablature implements Serializable {
 	
 	public static final int MAXIMUM_NUMBER_OF_NOTES = 5;
-	public static final Rational SMALLEST_RHYTHMIC_VALUE = new Rational(RhythmSymbol.semifusa.getDuration()/3, 3*32);
+	public static final Rational SMALLEST_RHYTHMIC_VALUE = 
+		new Rational(RhythmSymbol.semifusa.getDuration()/3, RhythmSymbol.brevis.getDuration());
 
 	private Encoding encoding;
 	private Integer[][] basicTabSymbolProperties;
@@ -377,11 +378,11 @@ public class Tablature implements Serializable {
 	 *   in column 0: the pitch of the TS (as a MIDInumber)
 	 *   in column 1: the course of the TS
 	 *   in column 2: the fret of the TS
-	 *   in column 3: the onset time of the TS (in semifusae/32 notes)
+	 *   in column 3: the onset time of the TS (as multiples of SMALLEST_RHYTHMIC_VALUE.getDenom())
 	 *   in column 4: the minimum duration of the TS, which is also the duration of the chord it is in 
-	 *                (in semifusae/32 notes)
+	 *                (as multiples of SMALLEST_RHYTHMIC_VALUE.getDenom())
 	 *   in column 5: the maximum duration of the TS, i.e., its duration until it is cut off by another TS on the
-	 *                same course (in semifusae/32 notes)               
+	 *                same course (as multiples of SMALLEST_RHYTHMIC_VALUE.getDenom())               
 	 *   in column 6: the sequence number of the chord the TS is in
 	 *   in column 7: the size of the chord the TS is in
 	 *   in column 8: the sequence number within the chord of the TS
@@ -803,7 +804,7 @@ public class Tablature implements Serializable {
 				if (metricTimeInLargestDenom.isGreaterOrEqual(currentPrevious) && metricTimeInLargestDenom.isLess(currentNext)) {
 					// Determine the bar number
 					int currentDistance = metricTimeInLargestDenom.getNumer() - currentPrevious.getNumer();
-					int numberOfBarsToAdd =	(currentDistance - (currentDistance %	currentBarSize)) / currentBarSize;   			
+					int numberOfBarsToAdd =	(currentDistance - (currentDistance % currentBarSize)) / currentBarSize;   			
 					int currentBarNumber = argMeterInfo.get(i + startIndex)[2] + numberOfBarsToAdd;
 					// Determine the position in the bar
 					Rational currentPositionInBar = new Rational(currentDistance % currentBarSize, commonDenom);
@@ -818,6 +819,18 @@ public class Tablature implements Serializable {
 			}
 		}
 		return metricPosition;
+	}
+
+
+	/**
+	 * Returns the int value of the given duration Rational.
+	 *  
+	 * @param dur
+	 * @return
+	 */
+	// TESTED
+	public static int rationalToIntDur(Rational dur) {
+		return dur.mul(SMALLEST_RHYTHMIC_VALUE.getDenom()).getNumer();
 	}
 
 
@@ -1448,12 +1461,6 @@ public class Tablature implements Serializable {
 	}
 
 
-	TEST
-	public static int rationalToIntDur(Rational dur) {
-		return dur.mul(SMALLEST_RHYTHMIC_VALUE.getDenom()).getNumer();
-	}
-
-
 	/**
 	 * Reverses the encoding.
 	 * 
@@ -1513,7 +1520,7 @@ public class Tablature implements Serializable {
 	 * length of the removed sequence.
 	 * 
 	 * @param tab
-	 * @param dur
+	 * @param dur In multiples of 
 	 * @return
 	 */
 	// TESTED
@@ -1585,8 +1592,8 @@ public class Tablature implements Serializable {
 		return new Encoding(header + "\r\n\r\n" + recombineTabwords(tabwords) + 
 			SymbolDictionary.END_BREAK_INDICATOR, true);
 	}
-	
-	
+
+
 	public static Encoding stretchEncoding(Tablature tab, double factor) {
 		String[] hAndE = tab.splitHeaderAndEncoding();
 		String header = hAndE[0];

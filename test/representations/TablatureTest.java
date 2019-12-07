@@ -146,76 +146,72 @@ public class TablatureTest extends TestCase {
 	
 	public void testSetAndGetNumberOfNotesPerChord() {
 		Tablature tablature = new Tablature(encodingTestpiece1, false);
-		
-		// Determine expected
+
 		List<Integer> expected = Arrays.asList(new Integer[]{4, 4, 1, 4, 1, 5, 4, 2, 4, 1, 1, 1, 1, 1, 1, 4});
-    
-		// Calculate actual
 		List<Integer> actual = tablature.getNumberOfNotesPerChord();
-		
-		// Assert equality
+
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));
 		} 
 		assertEquals(expected, actual);
 	}
-	
-	
+
+
 	public void testSetAndGetBasicTabSymbolProperties() {
 		Tablature tablature = new Tablature(encodingTestpiece1, false);
 
 		Integer[][] expected = new Integer[39][10];
 		// Chord 0
-		expected[0] = new Integer[]{50, 5, 0, 24, 8, 16, 0, 4, 0, 3};
-		expected[1] = new Integer[]{57, 4, 2, 24, 8, 8, 0, 4, 1, 3};
-		expected[2] = new Integer[]{65, 2, 1, 24, 8, 8, 0, 4, 2, 3};
-		expected[3] = new Integer[]{69, 1, 0, 24, 8, 8, 0, 4, 3, 3};
+		expected[0] = new Integer[]{50, 5, 0, 72, 24, 48, 0, 4, 0, 3};
+		expected[1] = new Integer[]{57, 4, 2, 72, 24, 24, 0, 4, 1, 3};
+		expected[2] = new Integer[]{65, 2, 1, 72, 24, 24, 0, 4, 2, 3};
+		expected[3] = new Integer[]{69, 1, 0, 72, 24, 24, 0, 4, 3, 3};
 		// Chord 1
-		expected[4] = new Integer[]{45, 6, 0, 32, 6, 6, 1, 4, 0, 5};
-		expected[5] = new Integer[]{57, 4, 2, 32, 6, 8, 1, 4, 1, 5};
-		expected[6] = new Integer[]{72, 2, 8, 32, 6, 8, 1, 4, 2, 5};
-		expected[7] = new Integer[]{69, 1, 0, 32, 6, 24, 1, 4, 3, 5};
+		expected[4] = new Integer[]{45, 6, 0, 96, 18, 18, 1, 4, 0, 5};
+		expected[5] = new Integer[]{57, 4, 2, 96, 18, 24, 1, 4, 1, 5};
+		expected[6] = new Integer[]{72, 2, 8, 96, 18, 24, 1, 4, 2, 5};
+		expected[7] = new Integer[]{69, 1, 0, 96, 18, 72, 1, 4, 3, 5};
 		// Chord 2
-		expected[8] = new Integer[]{48, 6, 3, 38, 2, 2, 2, 1, 0, 6};
+		expected[8] = new Integer[]{48, 6, 3, 114, 6, 6, 2, 1, 0, 6};
 		// Chord 3
-		expected[9] = new Integer[]{47, 6, 2, 40, 4, 4, 3, 4, 0, 7};
-		expected[10] = new Integer[]{50, 5, 0, 40, 4, 8, 3, 4, 1, 7};
-		expected[11] = new Integer[]{59, 4, 4, 40, 4, 8, 3, 4, 2, 7};
-		expected[12] = new Integer[]{65, 2, 1, 40, 4, 8, 3, 4, 3, 7};
+		expected[9] = new Integer[]{47, 6, 2, 120, 12, 12, 3, 4, 0, 7};
+		expected[10] = new Integer[]{50, 5, 0, 120, 12, 24, 3, 4, 1, 7};
+		expected[11] = new Integer[]{59, 4, 4, 120, 12, 24, 3, 4, 2, 7};
+		expected[12] = new Integer[]{65, 2, 1, 120, 12, 24, 3, 4, 3, 7};
 		// Chord 4
-		expected[13] = new Integer[]{45, 6, 0, 44, 4, 4, 4, 1, 0, 8};
+		expected[13] = new Integer[]{45, 6, 0, 132, 12, 12, 4, 1, 0, 8};
 		// Chord 5
-		expected[14] = new Integer[]{45, 6, 0, 48, 8, 8, 5, 5, 0, 9};
-		expected[15] = new Integer[]{57, 5, 7, 48, 8, 48, 5, 5, 1, 9};
-		expected[16] = new Integer[]{57, 4, 2, 48, 8, 16, 5, 5, 2, 9};
-		expected[17] = new Integer[]{60, 3, 1, 48, 8, 8, 5, 5, 3, 9};
-		expected[18] = new Integer[]{69, 2, 5, 48, 8, 8, 5, 5, 4, 9};
+		expected[14] = new Integer[]{45, 6, 0, 144, 24, 24, 5, 5, 0, 9};
+		expected[15] = new Integer[]{57, 5, 7, 144, 24, 144, 5, 5, 1, 9};
+		expected[16] = new Integer[]{57, 4, 2, 144, 24, 48, 5, 5, 2, 9};
+		expected[17] = new Integer[]{60, 3, 1, 144, 24, 24, 5, 5, 3, 9};
+		expected[18] = new Integer[]{69, 2, 5, 144, 24, 24, 5, 5, 4, 9};
 		// Chord 6
-		expected[19] = new Integer[]{45, 6, 0, 56, 4, 8, 6, 4, 0, 10};
-		expected[20] = new Integer[]{60, 3, 1, 56, 4, 4, 6, 4, 1, 10};
-		expected[21] = new Integer[]{64, 2, 0, 56, 4, 4, 6, 4, 2, 10};
-		expected[22] = new Integer[]{69, 1, 0, 56, 4, 8, 6, 4, 3, 10};
+		expected[19] = new Integer[]{45, 6, 0, 168, 12, 24, 6, 4, 0, 10};
+		expected[20] = new Integer[]{60, 3, 1, 168, 12, 12, 6, 4, 1, 10};
+		expected[21] = new Integer[]{64, 2, 0, 168, 12, 12, 6, 4, 2, 10};
+		expected[22] = new Integer[]{69, 1, 0, 168, 12, 24, 6, 4, 3, 10};
 		// Chord 7
-		expected[23] = new Integer[]{59, 3, 0, 60, 4, 36, 7, 2, 0, 11};
-		expected[24] = new Integer[]{68, 2, 4, 60, 4, 4, 7, 2, 1, 11};
+		expected[23] = new Integer[]{59, 3, 0, 180, 12, 108, 7, 2, 0, 11};
+		expected[24] = new Integer[]{68, 2, 4, 180, 12, 12, 7, 2, 1, 11};
 		// Chord 8
-		expected[25] = new Integer[]{45, 6, 0, 64, 2, 24, 8, 4, 0, 13};
-		expected[26] = new Integer[]{57, 4, 2, 64, 2, 24, 8, 4, 1, 13};
-		expected[27] = new Integer[]{64, 2, 0, 64, 2, 2, 8, 4, 2, 13};
-		expected[28] = new Integer[]{69, 1, 0, 64, 2, 4, 8, 4, 3, 13};
+		expected[25] = new Integer[]{45, 6, 0, 192, 6, 72, 8, 4, 0, 13};
+		expected[26] = new Integer[]{57, 4, 2, 192, 6, 72, 8, 4, 1, 13};
+		expected[27] = new Integer[]{64, 2, 0, 192, 6, 6, 8, 4, 2, 13};
+		expected[28] = new Integer[]{69, 1, 0, 192, 6, 12, 8, 4, 3, 13};
 		// Chord 9-14
-		expected[29] = new Integer[]{68, 2, 4, 66, 2, 3, 9, 1, 0, 14};
-		expected[30] = new Integer[]{69, 1, 0, 68, 1, 4, 10, 1, 0, 15};
-		expected[31] = new Integer[]{68, 2, 4, 69, 1, 1, 11, 1, 0, 16};
-		expected[32] = new Integer[]{66, 2, 2, 70, 1, 1, 12, 1, 0, 18};
-		expected[33] = new Integer[]{68, 2, 4, 71, 1, 17, 13, 1, 0, 19};
-		expected[34] = new Integer[]{69, 1, 0, 72, 8, 16, 14, 1, 0, 20};
+		expected[29] = new Integer[]{68, 2, 4, 198, 6, 9, 9, 1, 0, 14};
+		expected[30] = new Integer[]{69, 1, 0, 204, 3, 12, 10, 1, 0, 15};
+		expected[31] = new Integer[]{68, 2, 4, 207, 3, 3, 11, 1, 0, 16};
+		expected[32] = new Integer[]{66, 2, 2, 210, 3, 3, 12, 1, 0, 18};
+		expected[33] = new Integer[]{68, 2, 4, 213, 3, 51, 13, 1, 0, 19};
+		expected[34] = new Integer[]{69, 1, 0, 216, 24, 48, 14, 1, 0, 20};
 		// Chord 15
-		expected[35] = new Integer[]{45, 6, 0, 88, 8, 8, 15, 4, 0, 22};
-		expected[36] = new Integer[]{57, 4, 2, 88, 8, 8, 15, 4, 1, 22};
-		expected[37] = new Integer[]{64, 2, 0, 88, 8, 8, 15, 4, 2, 22};
-		expected[38] = new Integer[]{69, 1, 0, 88, 8, 8, 15, 4, 3, 22};
+		expected[35] = new Integer[]{45, 6, 0, 264, 24, 24, 15, 4, 0, 22};
+		expected[36] = new Integer[]{57, 4, 2, 264, 24, 24, 15, 4, 1, 22};
+		expected[37] = new Integer[]{64, 2, 0, 264, 24, 24, 15, 4, 2, 22};
+		expected[38] = new Integer[]{69, 1, 0, 264, 24, 24, 15, 4, 3, 22};
 		
 		Integer[][] actual = tablature.getBasicTabSymbolProperties();
 		
@@ -236,70 +232,70 @@ public class TablatureTest extends TestCase {
 		List<Integer[][]> expected = new ArrayList<Integer[][]>();
 		// Chord 0
 		Integer[][] expected0 = new Integer[4][10];
-		expected0[0] = new Integer[]{50, 5, 0, 24, 8, 16, 0, 4, 0, 3};
-		expected0[1] = new Integer[]{57, 4, 2, 24, 8, 8, 0, 4, 1, 3};
-		expected0[2] = new Integer[]{65, 2, 1, 24, 8, 8, 0, 4, 2, 3};
-		expected0[3] = new Integer[]{69, 1, 0, 24, 8, 8, 0, 4, 3, 3};
+		expected0[0] = new Integer[]{50, 5, 0, 72, 24, 48, 0, 4, 0, 3};
+		expected0[1] = new Integer[]{57, 4, 2, 72, 24, 24, 0, 4, 1, 3};
+		expected0[2] = new Integer[]{65, 2, 1, 72, 24, 24, 0, 4, 2, 3};
+		expected0[3] = new Integer[]{69, 1, 0, 72, 24, 24, 0, 4, 3, 3};
 		// Chord 1
 		Integer[][] expected1 = new Integer[4][10];
-		expected1[0] = new Integer[]{45, 6, 0, 32, 6, 6, 1, 4, 0, 5};
-		expected1[1] = new Integer[]{57, 4, 2, 32, 6, 8, 1, 4, 1, 5};
-		expected1[2] = new Integer[]{72, 2, 8, 32, 6, 8, 1, 4, 2, 5};
-		expected1[3] = new Integer[]{69, 1, 0, 32, 6, 24, 1, 4, 3, 5};
+		expected1[0] = new Integer[]{45, 6, 0, 96, 18, 18, 1, 4, 0, 5};
+		expected1[1] = new Integer[]{57, 4, 2, 96, 18, 24, 1, 4, 1, 5};
+		expected1[2] = new Integer[]{72, 2, 8, 96, 18, 24, 1, 4, 2, 5};
+		expected1[3] = new Integer[]{69, 1, 0, 96, 18, 72, 1, 4, 3, 5};
 		// Chord 2
 		Integer[][] expected2 = new Integer[1][10];
-		expected2[0] = new Integer[]{48, 6, 3, 38, 2, 2, 2, 1, 0, 6};
+		expected2[0] = new Integer[]{48, 6, 3, 114, 6, 6, 2, 1, 0, 6};
 		// Chord 3
 		Integer[][] expected3 = new Integer[4][10];
-		expected3[0] = new Integer[]{47, 6, 2, 40, 4, 4, 3, 4, 0, 7 };
-		expected3[1] = new Integer[]{50, 5, 0, 40, 4, 8, 3, 4, 1, 7};
-		expected3[2] = new Integer[]{59, 4, 4, 40, 4, 8, 3, 4, 2, 7};
-		expected3[3] = new Integer[]{65, 2, 1, 40, 4, 8, 3, 4, 3, 7};
+		expected3[0] = new Integer[]{47, 6, 2, 120, 12, 12, 3, 4, 0, 7 };
+		expected3[1] = new Integer[]{50, 5, 0, 120, 12, 24, 3, 4, 1, 7};
+		expected3[2] = new Integer[]{59, 4, 4, 120, 12, 24, 3, 4, 2, 7};
+		expected3[3] = new Integer[]{65, 2, 1, 120, 12, 24, 3, 4, 3, 7};
 		// Chord 4
 		Integer[][] expected4 = new Integer[1][10];
-		expected4[0] = new Integer[]{45, 6, 0, 44, 4, 4, 4, 1, 0, 8};
+		expected4[0] = new Integer[]{45, 6, 0, 132, 12, 12, 4, 1, 0, 8};
 		// Chord 5
 		Integer[][] expected5 = new Integer[5][10];
-		expected5[0] = new Integer[]{45, 6, 0, 48, 8, 8, 5, 5, 0, 9};
-		expected5[1] = new Integer[]{57, 5, 7, 48, 8, 48, 5, 5, 1, 9};
-		expected5[2] = new Integer[]{57, 4, 2, 48, 8, 16, 5, 5, 2, 9};
-		expected5[3] = new Integer[]{60, 3, 1, 48, 8, 8, 5, 5, 3, 9};
-		expected5[4] = new Integer[]{69, 2, 5, 48, 8, 8, 5, 5, 4, 9};
+		expected5[0] = new Integer[]{45, 6, 0, 144, 24, 24, 5, 5, 0, 9};
+		expected5[1] = new Integer[]{57, 5, 7, 144, 24, 144, 5, 5, 1, 9};
+		expected5[2] = new Integer[]{57, 4, 2, 144, 24, 48, 5, 5, 2, 9};
+		expected5[3] = new Integer[]{60, 3, 1, 144, 24, 24, 5, 5, 3, 9};
+		expected5[4] = new Integer[]{69, 2, 5, 144, 24, 24, 5, 5, 4, 9};
 		// Chord 6
 		Integer[][] expected6 = new Integer[4][10];
-		expected6[0] = new Integer[]{45, 6, 0, 56, 4, 8, 6, 4, 0, 10};
-		expected6[1] = new Integer[]{60, 3, 1, 56, 4, 4, 6, 4, 1, 10};
-		expected6[2] = new Integer[]{64, 2, 0, 56, 4, 4, 6, 4, 2, 10};
-		expected6[3] = new Integer[]{69, 1, 0, 56, 4, 8, 6, 4, 3, 10};
+		expected6[0] = new Integer[]{45, 6, 0, 168, 12, 24, 6, 4, 0, 10};
+		expected6[1] = new Integer[]{60, 3, 1, 168, 12, 12, 6, 4, 1, 10};
+		expected6[2] = new Integer[]{64, 2, 0, 168, 12, 12, 6, 4, 2, 10};
+		expected6[3] = new Integer[]{69, 1, 0, 168, 12, 24, 6, 4, 3, 10};
 		// Chord 7
 		Integer[][] expected7 = new Integer[2][10];
-		expected7[0] = new Integer[]{59, 3, 0, 60, 4, 36, 7, 2, 0, 11};
-		expected7[1] = new Integer[]{68, 2, 4, 60, 4, 4, 7, 2, 1, 11};
+		expected7[0] = new Integer[]{59, 3, 0, 180, 12, 108, 7, 2, 0, 11};
+		expected7[1] = new Integer[]{68, 2, 4, 180, 12, 12, 7, 2, 1, 11};
 		// Chord 8
 		Integer[][] expected8 = new Integer[4][10];
-		expected8[0] = new Integer[]{45, 6, 0, 64, 2, 24, 8, 4, 0, 13};
-		expected8[1] = new Integer[]{57, 4, 2, 64, 2, 24, 8, 4, 1, 13};
-		expected8[2] = new Integer[]{64, 2, 0, 64, 2, 2, 8, 4, 2, 13};
-		expected8[3] = new Integer[]{69, 1, 0, 64, 2, 4, 8, 4, 3, 13};
+		expected8[0] = new Integer[]{45, 6, 0, 192, 6, 72, 8, 4, 0, 13};
+		expected8[1] = new Integer[]{57, 4, 2, 192, 6, 72, 8, 4, 1, 13};
+		expected8[2] = new Integer[]{64, 2, 0, 192, 6, 6, 8, 4, 2, 13};
+		expected8[3] = new Integer[]{69, 1, 0, 192, 6, 12, 8, 4, 3, 13};
 		// Chord 9-14
 		Integer[][] expected9 = new Integer[1][10];
-		expected9[0] = new Integer[]{68, 2, 4, 66, 2, 3, 9, 1, 0, 14};
+		expected9[0] = new Integer[]{68, 2, 4, 198, 6, 9, 9, 1, 0, 14};
 		Integer[][] expected10 = new Integer[1][10];
-		expected10[0] = new Integer[]{69, 1, 0, 68, 1, 4, 10, 1, 0, 15};
+		expected10[0] = new Integer[]{69, 1, 0, 204, 3, 12, 10, 1, 0, 15};
 		Integer[][] expected11 = new Integer[1][10];
-		expected11[0] = new Integer[]{68, 2, 4, 69, 1, 1, 11, 1, 0, 16};
+		expected11[0] = new Integer[]{68, 2, 4, 207, 3, 3, 11, 1, 0, 16};
 		Integer[][] expected12 = new Integer[1][10];
-		expected12[0] = new Integer[]{66, 2, 2, 70, 1, 1, 12, 1, 0, 18};
+		expected12[0] = new Integer[]{66, 2, 2, 210, 3, 3, 12, 1, 0, 18};
 		Integer[][] expected13 = new Integer[1][10];
-		expected13[0] = new Integer[]{68, 2, 4, 71, 1, 17, 13, 1, 0, 19};
+		expected13[0] = new Integer[]{68, 2, 4, 213, 3, 51, 13, 1, 0, 19};
 		Integer[][] expected14 = new Integer[1][10];
-		expected14[0] = new Integer[]{69, 1, 0, 72, 8, 16, 14, 1, 0, 20};
+		expected14[0] = new Integer[]{69, 1, 0, 216, 24, 48, 14, 1, 0, 20};
 		// Chord 15
 		Integer[][] expected15 = new Integer[4][10];
-		expected15[0] = new Integer[]{45, 6, 0, 88, 8, 8, 15, 4, 0, 22};
-		expected15[1] = new Integer[]{57, 4, 2, 88, 8, 8, 15, 4, 1, 22};
-		expected15[2] = new Integer[]{64, 2, 0, 88, 8, 8, 15, 4, 2, 22};
-		expected15[3] = new Integer[]{69, 1, 0, 88, 8, 8, 15, 4, 3, 22};
+		expected15[0] = new Integer[]{45, 6, 0, 264, 24, 24, 15, 4, 0, 22};
+		expected15[1] = new Integer[]{57, 4, 2, 264, 24, 24, 15, 4, 1, 22};
+		expected15[2] = new Integer[]{64, 2, 0, 264, 24, 24, 15, 4, 2, 22};
+		expected15[3] = new Integer[]{69, 1, 0, 264, 24, 24, 15, 4, 3, 22};
 	
 		expected.add(expected0); expected.add(expected1); expected.add(expected2); expected.add(expected3);
 		expected.add(expected4); expected.add(expected5); expected.add(expected6); expected.add(expected7); 
@@ -366,6 +362,28 @@ public class TablatureTest extends TestCase {
 				assertEquals(expectedBasicTabSymbolProperties[i][j], actualBasicTabSymbolProperties[i][j]);
 			}
 		}
+	}
+
+
+	public void testRationalToIntDur() {
+		List<Rational> rs = Arrays.asList(new Rational[]{				
+			new Rational(1, 2),
+			new Rational(3, 4),
+			new Rational(15, 16),
+			new Rational(5, 4)
+		});
+		List<Integer> expected = Arrays.asList(new Integer[]{48, 72, 90, 120});
+		
+		List<Integer> actual = new ArrayList<>();
+		for (Rational r : rs) {
+			actual.add(Tablature.rationalToIntDur(r));
+		}
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		} 
+		assertEquals(expected, actual);
 	}
 
 
@@ -1317,7 +1335,7 @@ public class TablatureTest extends TestCase {
 			"//";
 
 		String actual = 
-			Tablature.deornamentEncoding(tab, 4).getRawEncoding();
+			Tablature.deornamentEncoding(tab, 12).getRawEncoding();
 
 		assertEquals(expected, actual);		
 	}

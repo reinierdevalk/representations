@@ -50,7 +50,7 @@ public class Transcription implements Serializable {
 	
 //	private static final long serialVersionUID = -8586909984652950201L;
 	public static int MAXIMUM_NUMBER_OF_VOICES = 5;
-	public static int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()*2; // 3 for JosquIntab; 2 for Byrd
+	public static int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3; // trp; *3 for JosquIntab; *2 for Byrd
 //	public static int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
 	public static final int INCORRECT_IND = 0;
 	public static final int ORNAMENTATION_IND = 1;
@@ -1043,8 +1043,9 @@ public class Transcription implements Serializable {
 			int denom = durationCurrentNote.getDenom();
 			// Determine the duration in 32nd notes
 			// NB: Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom will always be divisible by denom because denom will
-			// always be a fraction of Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom(): 32, 16, 8, 4, 2, or 1
-			int duration = numer * (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom);
+			// always be a fraction of Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3: 32, 16, 8, 4, 2, or 1
+//			int duration = numer * (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom);
+			int duration = numer * ((Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3) / denom); // trp
 //			System.out.println(duration);
 //			System.out.println(n.getMidiPitch());
 //			System.out.println(n.getMetricTime());
@@ -7169,7 +7170,7 @@ public class Transcription implements Serializable {
 		if (btp != null) {
 			onsetTimeCurrentNote = new Rational(btp[noteIndex][Tablature.ONSET_TIME],
 				Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-			lowestNoteIndex =	noteIndex - btp[noteIndex][Tablature.NOTE_SEQ_NUM];
+			lowestNoteIndex = noteIndex - btp[noteIndex][Tablature.NOTE_SEQ_NUM];
 		}
 		// b. In the non-tablature case
 		else if (bnp != null) {
@@ -7195,6 +7196,7 @@ public class Transcription implements Serializable {
 				List<Double> durationLabelCurrentPreviousNote = durationLabels.get(i);
 				durationCurrentPreviousNote = 
 					DataConverter.convertIntoDuration(durationLabelCurrentPreviousNote)[0];
+				durationCurrentPreviousNote = durationCurrentPreviousNote.mul(3); // trp
 			}
 			// b. In the non-tablature case
 			else if (bnp != null) {
