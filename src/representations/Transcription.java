@@ -51,7 +51,6 @@ public class Transcription implements Serializable {
 //	private static final long serialVersionUID = -8586909984652950201L;
 	public static int MAXIMUM_NUMBER_OF_VOICES = 5;
 	public static int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3; // trp; *3 for JosquIntab; *2 for Byrd
-//	public static int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
 	public static final int INCORRECT_IND = 0;
 	public static final int ORNAMENTATION_IND = 1;
 	public static final int REPETITION_IND = 2;
@@ -7157,8 +7156,8 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED (for both tablature- and non-tablature case) 
-	public static List<Integer> getIndicesOfSustainedPreviousNotes(Integer[][] btp, List<List<Double>> durationLabels,
-		Integer[][] bnp, int noteIndex) {
+	public static List<Integer> getIndicesOfSustainedPreviousNotes(Integer[][] btp, 
+		List<List<Double>> durationLabels, Integer[][] bnp, int noteIndex) {
 
 		verifyCase(btp, bnp);
 		List<Integer> indicesOfSustainedPreviousNotes = new ArrayList<Integer>();
@@ -7196,7 +7195,6 @@ public class Transcription implements Serializable {
 				List<Double> durationLabelCurrentPreviousNote = durationLabels.get(i);
 				durationCurrentPreviousNote = 
 					DataConverter.convertIntoDuration(durationLabelCurrentPreviousNote)[0];
-				durationCurrentPreviousNote = durationCurrentPreviousNote.mul(3); // trp
 			}
 			// b. In the non-tablature case
 			else if (bnp != null) {

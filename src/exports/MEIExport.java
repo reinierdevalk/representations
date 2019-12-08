@@ -63,6 +63,8 @@ public class MEIExport {
 		path = "C:/Users/Reinier/Desktop/IMS-tours/example/MIDI/";
 		
 		String tabFile = "tab-int/3vv/newsidler-1544_2-nun_volget";
+		tabFile = "1132_13_o_sio_potessi_donna_berchem_solo";
+		
 		// This must be a created Transcription and the second argument must be null
 		Transcription trans = 
 			new Transcription(
@@ -76,6 +78,7 @@ public class MEIExport {
 			null);
 		
 		Tablature tab = null; //new Tablature(new File("F:/research/data/encodings/" + tabFile + ".tbp"), false);
+		tab = new Tablature(new File("F:/research/data/encodings/" + tabFile + ".tbp"), false);
 //		Tablature tab = 
 //			new Tablature(new File("C:/Users/Reinier/Desktop/2019-ISMIR/test/tab/" + 
 //			"3610_033_inter_natos_mulierum_morales_T-rev" + ".tbp"), false);
@@ -362,9 +365,7 @@ public class MEIExport {
 		List<Object> data = getData(trans, /*tab,*/ btp, mi, ki);
 		List<List<List<Integer[]>>> dataInt = (List<List<List<Integer[]>>>) data.get(0);
 		List<List<List<String[]>>> dataStr = (List<List<List<String[]>>>) data.get(1);
-
 		int numVoices = dataStr.get(0).size();
-
 
 //		Runner.setPathsToCodeAndData(UI.getRootDir(), false); // TODO only necessary for MEITemplatePath
 //		String res = ToolBox.readTextFile(new File(Runner.MEITemplatePath + "template.xml"));
@@ -681,11 +682,11 @@ public class MEIExport {
 				for (int k = 0; k < currBarCurrVoiceStr.size(); k++) {
 					String[] note = currBarCurrVoiceStr.get(k);
 					Integer[] noteInt = currBarCurrVoiceInt.get(k);
-					Rational mp = new Rational(noteInt[INTS.indexOf("metPosNum")], 
-						noteInt[INTS.indexOf("metPosDen")]);
-					Rational durRat = new Rational(Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom(),
-						noteInt[INTS.indexOf("dur")]);
-					int dur = (int) durRat.toDouble();
+//					Rational mp = new Rational(noteInt[INTS.indexOf("metPosNum")], 
+//						noteInt[INTS.indexOf("metPosDen")]);
+//					Rational durRat = new Rational(Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom(),
+//						noteInt[INTS.indexOf("dur")]);
+//					int dur = (int) durRat.toDouble();
 					int currOnsNum = currBarCurrVoiceInt.get(k)[INTS.indexOf("onsetNum")];
 					
 //					// Close previous/open next beaming group if metPos is on the quarter note grid

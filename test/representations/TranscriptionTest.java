@@ -542,9 +542,7 @@ public class TranscriptionTest extends TestCase {
 
 	public void testInitialiseDurationLabels() {
 		Transcription transcription = new Transcription();
-//		transcription.setFile(midiTestpiece1);
 		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
-//		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
 		transcription.initialiseVoiceLabels(); // not strictly necessary
 		transcription.initialiseDurationLabels();
@@ -607,9 +605,7 @@ public class TranscriptionTest extends TestCase {
 	public void testHandleCoDNotes() {
 		Tablature tablature = new Tablature(encodingTestpiece1, true);
 		Transcription transcription = new Transcription();
-//		transcription.setFile(midiTestpiece1);
 		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
-//		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
 		transcription.initialiseVoiceLabels(); 
 		transcription.initialiseDurationLabels();
@@ -674,87 +670,10 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
-//	public void testHandleCoDNotesOLD() {
-//		Tablature tablature = new Tablature(encodingTestpiece1);
-//		Transcription transcription = new Transcription();
-//    transcription.setFile(midiTestpiece1);
-//    transcription.setPiece();
-//    transcription.initialiseNoteSequence();
-//    transcription.initialiseVoiceLabels(); 
-//    transcription.initialiseDurationLabelsOLD();
-//    if (transcription.checkChords(tablature) == false) {
-//     	throw new RuntimeException("ERROR: Chord error (see console).");
-//    }
-//    
-//    // Determine expected
-//    // a. NoteSequence
-//    // NB: expectedNoteSeq cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes
-//    // with the same pitch and onset time randomly
-//    List<Note> expectedNotes = new ArrayList<Note>();
-//    for (Note n : transcription.getNoteSequence()) {
-//    	expectedNotes.add(n);
-//    }
-//    expectedNotes.remove(12); 
-//    // b. Voice labels
-//    List<List<Double>> expectedVoiceLabels = transcription.getVoiceLabels();
-//    expectedVoiceLabels.set(12, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
-//    expectedVoiceLabels.remove(13);
-//    // c. Duration labels
-//    List<List<List<Double>>> expectedDurationLabels = transcription.getDurationLabelsOLD();
-//    List<List<Double>> adaptedDurationLabel = new ArrayList<List<Double>>();
-//    adaptedDurationLabel.add(Transcription.QUARTER); adaptedDurationLabel.add(Transcription.EIGHTH); 
-//    expectedDurationLabels.set(12, adaptedDurationLabel);
-//    expectedDurationLabels.remove(13);
-//    
-//    // Calculate actual
-//    transcription.handleCoDNotesOLD(tablature);
-//    List<Note> actualNotes = new ArrayList<Note>();
-//    for (Note n : transcription.getNoteSequence()) {
-//    	actualNotes.add(n);
-//    }
-//    List<List<Double>> actualVoiceLabels = transcription.getVoiceLabels();
-//    List<List<List<Double>>> actualDurationLabels = transcription.getDurationLabelsOLD();
-//    
-//    // Assert equality
-//    // a. NoteSequence 
-//    assertEquals(expectedNotes.size(), actualNotes.size());
-//    for (int i = 0; i < expectedNotes.size(); i++) {
-//    	// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
-//    	// objects: therefore check that pitch, metricTime, and metricDuration are the same
-//    	assertEquals(expectedNotes.get(i).getMidiPitch(), actualNotes.get(i).getMidiPitch());
-//    	assertEquals(expectedNotes.get(i).getMetricTime(), actualNotes.get(i).getMetricTime());
-//    	assertEquals(expectedNotes.get(i).getMetricDuration(), actualNotes.get(i).getMetricDuration());
-//    }
-//    // b. Voice labels
-//    assertEquals(expectedVoiceLabels.size(), actualVoiceLabels.size());
-//    for (int i = 0; i < expectedVoiceLabels.size(); i++) {
-//    	assertEquals(expectedVoiceLabels.get(i).size(), actualVoiceLabels.get(i).size());
-//    	for (int j = 0; j < expectedVoiceLabels.get(i).size(); j++) {
-//    		assertEquals(expectedVoiceLabels.get(i).get(j), actualVoiceLabels.get(i).get(j));
-//    	}
-//    }
-//    assertEquals(expectedVoiceLabels, actualVoiceLabels);
-//    // c. Duration labels
-//    assertEquals(expectedDurationLabels.size(), actualDurationLabels.size());
-//		for (int i = 0; i < expectedDurationLabels.size(); i++) {
-//			assertEquals(expectedDurationLabels.get(i).size(), actualDurationLabels.get(i).size()); 
-//	  		for (int j = 0; j < expectedDurationLabels.get(i).size(); j++) {
-//   			assertEquals(expectedDurationLabels.get(i).get(j).size(), actualDurationLabels.get(i).get(j).size());
-//  			for (int k = 0; k < expectedDurationLabels.get(i).get(j).size(); k++) {
-//    			assertEquals(expectedDurationLabels.get(i).get(j).get(k), actualDurationLabels.get(i).get(j).get(k));
-//	  		}
-//  		}
-//  	}
-//  	assertEquals(expectedDurationLabels, actualDurationLabels);
-//	}
-
-
 	public void testHandleCourseCrossings() {
 		Tablature tablature = new Tablature(encodingTestpiece1, true);
 		Transcription transcription = new Transcription();
-//		transcription.setFile(midiTestpiece1);
 		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
-//		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
 		transcription.initialiseVoiceLabels(); 
 		transcription.initialiseDurationLabels();
@@ -4348,7 +4267,6 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testCreateDurationLabel() {
-		Transcription.DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
 		List<List<Double>> expected = new ArrayList<List<Double>>(); 		
 		// 32nd
 		expected.add(Arrays.asList(new Double[]{1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,

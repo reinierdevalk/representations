@@ -221,7 +221,7 @@ public class Encoding implements Serializable {
 		int currBar = 1;
 		int prevDur = 0;
 		int posInBar = 0;
-		// fullBar is the length (in MIN_GRID_VAL) of a full bar under the current meter
+		// fullBar is the length (in SMALLEST_RHYTHMIC_VALUE) of a full bar under the current meter
 		int fullBar = 
 			(int) (mensSigns.get(0)[0] / (double) mensSigns.get(0)[1]) * 
 			Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom(); // trp
