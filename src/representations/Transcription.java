@@ -50,7 +50,7 @@ public class Transcription implements Serializable {
 	
 //	private static final long serialVersionUID = -8586909984652950201L;
 	public static int MAXIMUM_NUMBER_OF_VOICES = 5;
-	public static int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3; // trp; *3 for JosquIntab; *2 for Byrd
+	public static int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3; // trp dur; *3 for JosquIntab; *2 for Byrd
 	public static final int INCORRECT_IND = 0;
 	public static final int ORNAMENTATION_IND = 1;
 	public static final int REPETITION_IND = 2;
@@ -89,24 +89,24 @@ public class Transcription implements Serializable {
 	private String alignmentDetails = "Alignment details:" + "\n"; 
 	private static boolean reversePiece = false;
 
-	public static final List<Double> THIRTYSECOND = createDurationLabel(1);
-	public static final List<Double> SIXTEENTH = createDurationLabel(2);
-	public static final List<Double> DOTTED_SIXTEENTH = createDurationLabel(3);
-	public static final List<Double> EIGHTH = createDurationLabel(4);
-	public static final List<Double> EIGHTH_AND_THIRTYSECOND = createDurationLabel(5);
-	public static final List<Double> DOTTED_EIGHTH = createDurationLabel(6);
-	public static final List<Double> DOUBLE_DOTTED_EIGHTH = createDurationLabel(7);
-	public static final List<Double> QUARTER = createDurationLabel(8);
-	public static final List<Double> QUARTER_AND_THIRTYSECOND = createDurationLabel(9);
-	public static final List<Double> QUARTER_AND_SIXTEENTH = createDurationLabel(10);
-	public static final List<Double> QUARTER_AND_DOTTED_SIXTEENTH = createDurationLabel(11);
-	public static final List<Double> DOTTED_QUARTER = createDurationLabel(12);
-	public static final List<Double> DOTTED_QUARTER_AND_THIRTYSECOND = createDurationLabel(13);
-	public static final List<Double> DOUBLE_DOTTED_QUARTER = createDurationLabel(14);
-	public static final List<Double> TRIPLE_DOTTED_QUARTER = createDurationLabel(15);
-	public static final List<Double> HALF = createDurationLabel(16);
-	public static final List<Double> DOTTED_HALF = createDurationLabel(24);
-	public static final List<Double> WHOLE = createDurationLabel(32);
+	public static final List<Double> THIRTYSECOND = createDurationLabel(1*3);
+	public static final List<Double> SIXTEENTH = createDurationLabel(2*3);
+	public static final List<Double> DOTTED_SIXTEENTH = createDurationLabel(3*3);
+	public static final List<Double> EIGHTH = createDurationLabel(4*3);
+	public static final List<Double> EIGHTH_AND_THIRTYSECOND = createDurationLabel(5*3);
+	public static final List<Double> DOTTED_EIGHTH = createDurationLabel(6*3);
+	public static final List<Double> DOUBLE_DOTTED_EIGHTH = createDurationLabel(7*3);
+	public static final List<Double> QUARTER = createDurationLabel(8*3);
+	public static final List<Double> QUARTER_AND_THIRTYSECOND = createDurationLabel(9*3);
+	public static final List<Double> QUARTER_AND_SIXTEENTH = createDurationLabel(10*3);
+	public static final List<Double> QUARTER_AND_DOTTED_SIXTEENTH = createDurationLabel(11*3);
+	public static final List<Double> DOTTED_QUARTER = createDurationLabel(12*3);
+	public static final List<Double> DOTTED_QUARTER_AND_THIRTYSECOND = createDurationLabel(13*3);
+	public static final List<Double> DOUBLE_DOTTED_QUARTER = createDurationLabel(14*3);
+	public static final List<Double> TRIPLE_DOTTED_QUARTER = createDurationLabel(15*3);
+	public static final List<Double> HALF = createDurationLabel(16*3);
+	public static final List<Double> DOTTED_HALF = createDurationLabel(24*3);
+	public static final List<Double> WHOLE = createDurationLabel(32*3);
 
 	private static final List<Double> VOICE_EMPTY = Arrays.asList(new Double[]{0.0, 0.0, 0.0, 0.0, 0.0});
 	private static final List<Double> VOICE_EMPTY_SIX = Arrays.asList(new Double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
@@ -1024,7 +1024,7 @@ public class Transcription implements Serializable {
 	/**
 	 * Initialises durationLabels with the initial, unadapted voice labels -- i.e., the ones that go with the notes
 	 * in the initial, unadapted NoteSequence. Each duration label is a List<Double> containing Tablature.SMALLEST_
-	 * RHYTHMIC_VALUE.getDenom() elements, one of which has value 1.0 and indicates the encoded full duration (where
+	 * RHYTHMIC_VALUE.getDenom()/3 elements, one of which has value 1.0 and indicates the encoded full duration (where
 	 * position 0 is a duration of 1/32, position 1 a duration of 2/32, etc.), while the others have value 0.0.  
 	 * 
 	 * NB1: Tablature case only; must be called after initialiseNoteSequence().
@@ -1040,11 +1040,11 @@ public class Transcription implements Serializable {
 			Rational durationCurrentNote = n.getMetricDuration();
 			int numer = durationCurrentNote.getNumer();
 			int denom = durationCurrentNote.getDenom();
-			// Determine the duration in 32nd notes
-			// NB: Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom will always be divisible by denom because denom will
-			// always be a fraction of Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3: 32, 16, 8, 4, 2, or 1
-//			int duration = numer * (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom);
-			int duration = numer * ((Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3) / denom); // trp
+			// Determine the duration in 32nd/3 notes
+			// NB: Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom will always be divisible by denom 
+			// because denom will always be a fraction of Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3: 
+			// 32, 16, 8, 4, 2, or 1
+			int duration = numer * (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom);
 //			System.out.println(duration);
 //			System.out.println(n.getMidiPitch());
 //			System.out.println(n.getMetricTime());
@@ -6504,7 +6504,7 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Creates a duration label encoding the given durational value (in thirtysecond notes).
+	 * Creates a duration label encoding the given durational value (in Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()).
 	 * 
 	 * NB: Tablature case only.
 	 *  
@@ -6517,7 +6517,9 @@ public class Transcription implements Serializable {
 		for (int i = 0; i < DURATION_LABEL_SIZE; i++) {
 			durationLabel.add(0.0);
 		}
-		durationLabel.set((duration - 1), 1.0);
+		int posInLabel = (duration - 1) / 3;
+//		durationLabel.set((duration - 1), 1.0);
+		durationLabel.set(posInLabel, 1.0); // trp dur
 		return durationLabel;
 	}
 

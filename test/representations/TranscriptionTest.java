@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -4295,6 +4296,7 @@ public class TranscriptionTest extends TestCase {
 	
 		List<List<Double>> actual = new ArrayList<List<Double>>();
 		List<Integer> durations = Arrays.asList(new Integer[]{1, 2, 4, 6, 8, 16, 24, 32});
+		durations = durations.stream().map(p -> p * 3).collect(Collectors.toList()); // trp dur
 		for (int i = 0; i < expected.size(); i++) {
 			actual.add(Transcription.createDurationLabel(durations.get(i)));
 		}
@@ -4394,7 +4396,7 @@ public class TranscriptionTest extends TestCase {
 		List<Piece> expected = new ArrayList<Piece>();
 		// a. Not modelling duration
 		Piece expectedNonDur = transcription.getPiece();
-				
+
 		// Where necessary, adapt durations to their minimum duration
 		// Voice 0
 		NotationVoice v0 = expectedNonDur.getScore().get(0).get(0);
@@ -4435,12 +4437,13 @@ public class TranscriptionTest extends TestCase {
 		
 		// b. Modelling duration
 		Piece expectedDur = transcription2.getPiece();
-		// Adapt the CoD at index 12 (the third note in voice 1) so that both notes have the same duration (necessary 
-		// because currently CoDs can only have one duration)
+		// Adapt the CoD at index 12 (the third note in voice 1) so that both notes have the same duration 
+		// (necessary because currently CoDs can only have one duration)
 		ScoreNote adaptedScoreNote = new ScoreNote(new ScorePitch(65), new Rational(5, 4), new Rational(1, 4));
 		expectedDur.getScore().get(1).get(0).get(2).get(0).setScoreNote(adaptedScoreNote);
 		// Also adapt durationLabels
-		durationLabels.set(12, Transcription.createDurationLabel(8));
+//		durationLabels.set(12, Transcription.createDurationLabel(8));
+		durationLabels.set(12, Transcription.createDurationLabel(8*3)); // trp dur
 		expected.add(expectedDur);
 
 		List<Piece> actual = new ArrayList<Piece>();
@@ -4467,7 +4470,7 @@ public class TranscriptionTest extends TestCase {
 						assertEquals(systemExpected.get(i).get(j).get(k).size(), systemActual.get(i).get(j).get(k).size());
 						// For each Note at index l
 						for (int l = 0; l < systemExpected.get(i).get(j).get(k).size(); l++) {
-	//						assertEquals(pieceExpected.getScore().get(i).get(j).get(k).get(l), pieceActual.getScore().get(i).get(j).get(k).get(l));
+//							assertEquals(pieceExpected.getScore().get(i).get(j).get(k).get(l), pieceActual.getScore().get(i).get(j).get(k).get(l));
 							// OR if assertEquals(expected.get(i).get(j), actual.get(i).get(j).get(k) does not work because the Notes 
 							// are not the same objects: check that pitch, metricTime, and metricDuration are the same
 							assertEquals(systemExpected.get(i).get(j).get(k).get(l).getMidiPitch(), 
@@ -4482,8 +4485,8 @@ public class TranscriptionTest extends TestCase {
 			}
 		}
 	}
-	
-	
+
+
 	public void testCreatePieceNonTab() {
 		Transcription transcription = new Transcription(midiTestpiece1, null);
 		Integer[][] btp = null;
