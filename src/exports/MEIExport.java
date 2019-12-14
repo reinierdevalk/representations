@@ -790,9 +790,9 @@ public class MEIExport {
 //		List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
 		int numBars = mi.get(mi.size()-1)[3];
 		Rational endOffset = Rational.ZERO;
-		for (Integer[] l : mi) {
-			Rational currMeter = new Rational(l[0], l[1]);
-			int barsInCurrMeter = (l[3] - l[2]) + 1;
+		for (Integer[] m : mi) {
+			Rational currMeter = new Rational(m[0], m[1]);
+			int barsInCurrMeter = (m[3] - m[2]) + 1;
 			endOffset = endOffset.add(currMeter.mul(barsInCurrMeter));
 		}
 //		List<Integer[]> ki = trans.getKeyInfo();
@@ -1192,6 +1192,15 @@ public class MEIExport {
 				List<Rational> subNoteDurs = new ArrayList<>();
 				subNoteDurs.add(remainingInBar);
 				Rational remainder = durRounded.sub(remainingInBar);
+				System.out.println(offset);
+				System.out.println(endOffset);
+				// In the case of a tablature with predicted durations, those of the final chord
+				// can be incorrectly predicted too long, thus extending beyond endOffset 
+				if (offset.isGreater(endOffset)) {
+					offset = endOffset;
+				}
+				System.out.println(Tablature.getMetricPosition(offset, mi)[0]);
+				System.out.println(Tablature.getMetricPosition(offset, mi)[1]);
 				int endBar = (offset.equals(endOffset)) ? mi.get(mi.size()-1)[3] : 
 					Tablature.getMetricPosition(offset, mi)[0].getNumer();
 				
