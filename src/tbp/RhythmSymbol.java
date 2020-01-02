@@ -35,10 +35,18 @@ public class RhythmSymbol {
 	
 	public static String tripletIndicator = "tr"; 
 	public static RhythmSymbol semibrevisTriplet = new RhythmSymbol("trsb", "H", 32);
-	public static RhythmSymbol minimTriplet = new RhythmSymbol("mi", "Q", 16);
-	public static RhythmSymbol semiminimTriplet = new RhythmSymbol("sm", "E", 8);
-	public static RhythmSymbol fusaTriplet = new RhythmSymbol("fu", "S", 4);
-	public static RhythmSymbol semifusaTriplet = new RhythmSymbol("sf", "T", 2);
+	public static RhythmSymbol minimTriplet = new RhythmSymbol("trmi", "Q", 16);
+	public static RhythmSymbol minimDottedTriplet = new RhythmSymbol("trmi*", "Q", 24);
+	public static RhythmSymbol semiminimTriplet = new RhythmSymbol("trsm", "E", 8);
+	public static RhythmSymbol semiminimDottedTriplet = new RhythmSymbol("trsm*", "E", 12);
+	public static RhythmSymbol fusaTriplet = new RhythmSymbol("trfu", "S", 4);
+	public static RhythmSymbol fusaDottedTriplet = new RhythmSymbol("trfu*", "S", 6);
+	public static RhythmSymbol semifusaTriplet = new RhythmSymbol("trsf", "T", 2);
+	
+	public static RhythmSymbol beamedSemiminimDottedTriplet = new RhythmSymbol("trsm*-", "E", 12); // 6
+	public static RhythmSymbol beamedSemiminimTriplet = new RhythmSymbol("trsm-", "E", 8); // 4
+	public static RhythmSymbol beamedFusaDottedTriplet = new RhythmSymbol("trfu*-", "S", 6); // 2
+	public static RhythmSymbol beamedFusaTriplet = new RhythmSymbol("trfu-", "S", 4); // 2
 	
 //	public static RhythmSymbol triplet = new RhythmSymbol("tr", "3", -1);
 //	public static RhythmSymbol tripletMinim = new RhythmSymbol("trmi", "3", 6); // 6-5-5 instead of 8-8
@@ -74,9 +82,18 @@ public class RhythmSymbol {
 //		tripletMinim,
 		semibrevisTriplet,
 		minimTriplet,
+		minimDottedTriplet,
 		semiminimTriplet,
+		semiminimDottedTriplet,
 		fusaTriplet,
-		semifusaTriplet});
+		fusaDottedTriplet,
+		semifusaTriplet,
+		//
+		beamedSemiminimDottedTriplet,
+		beamedSemiminimTriplet,
+		beamedFusaDottedTriplet,
+		beamedFusaTriplet
+	});
 	}
 
 
@@ -172,6 +189,16 @@ public class RhythmSymbol {
 	public static RhythmSymbol getRhythmSymbol(String anEncoding) {
 		for (RhythmSymbol r: rhythmSymbols) {
 			if (r.encoding.equals(anEncoding)) {
+				return r;
+			}
+		}
+		return null;
+	}
+
+
+	public static RhythmSymbol getTripletVariant(String anEncoding) {
+		for (RhythmSymbol r: rhythmSymbols) {
+			if (r.encoding.endsWith(anEncoding) && r.encoding.startsWith(tripletIndicator)) {
 				return r;
 			}
 		}

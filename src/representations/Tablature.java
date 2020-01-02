@@ -1464,7 +1464,7 @@ public class Tablature implements Serializable {
 	/**
 	 * Reverses the encoding.
 	 * 
-	 * @ param tab
+	 * @param tab
 	 * @return
 	 */
 	// TESTED

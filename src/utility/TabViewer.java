@@ -275,7 +275,7 @@ public class TabViewer extends JFrame{
 			// 3vv
 //			encodingFile = new File(prefix1 + "3vv/" + "newsidler_1536-disant_adiu.tbp");
 //			encodingFile = new File(prefix1 + "3vv/" + "newsidler_1536-mess_pensees.tbp");
-			encodingFile = new File(prefix1 + "3vv/" + "pisador-1552_7-pleni_de.tbp");
+//			encodingFile = new File(prefix1 + "3vv/" + "pisador-1552_7-pleni_de.tbp");
 //			encodingFile = new File(prefix1 + "3vv/" + "judenkuenig-1523_2-elslein_liebes.tbp");
 //			encodingFile = new File(prefix1 + "3vv/" + "newsidler-1544_2-nun_volget.tbp");
 //			encodingFile = new File(prefix1 + "3vv/" + "phalese-1547-tant_que-a3.tbp"); 
@@ -304,8 +304,8 @@ public class TabViewer extends JFrame{
 //			encodingFile = new File("C:/Users/Reinier/Desktop/2019-ISMIR/test/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T.tbp");
 //			encodingFile = 
 //				new File("C:/Users/Reinier/Desktop/ISMIR-2019/josquin/tab/5256_05_inviolata_integra_desprez-2.tbp");
-//			encodingFile = 
-//				new File("F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/4467_37_adieu_mes_amours.tbp");
+			encodingFile = 
+				new File("F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/5263_12_in_exitu_israel_de_egipto_desprez-3.tbp");
 			
 
 			// 5vv

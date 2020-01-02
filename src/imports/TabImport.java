@@ -134,13 +134,13 @@ public class TabImport {
 //			"5264_13_qui_habitat_in_adjutorio_desprez-2",
 //			"933_milano_109_stabat_mater_dolorosa_josquin",
 //			"5255_04_stabat_mater_dolorosa_desprez-1",
-//			"5255_04_stabat_mater_dolorosa_desprez-2",
+			"5255_04_stabat_mater_dolorosa_desprez-2",
 		
 			// Chansons
 //			"4400_45_ach_unfall_was",
 //			"4481_49_ach_unfal_wes_zeigst_du_mich",
 //			"4406_51_adieu_mes_amours",
-			"4467_37_adieu_mes_amours",
+//			"4467_37_adieu_mes_amours",
 //			"1025_adieu_mes_amours",
 //			"1030_coment_peult_avoir_joye",
 //			"1275_13_faulte_d_argent",
@@ -173,7 +173,7 @@ public class TabImport {
 		
 		// From TabCode
 		for (String s : pieces) {
-			tbp = tc2Tbp(new File(path + s + ".tc"));
+			tbp = tc2tbp(new File(path + s + ".tc"));
 			ToolBox.storeTextFile(tbp, new File(path + s + ".tbp"));
 		}
 		
@@ -188,7 +188,7 @@ public class TabImport {
 	 * @param courses
 	 * @return
 	 */
-	public static String tc2Tbp(File tabcode) {
+	public static String tc2tbp(File tabcode) {
 		String tc = ToolBox.readTextFile(tabcode).trim();
 
 		Map<Integer, String> tunings = new LinkedHashMap<Integer, String>();
@@ -257,6 +257,7 @@ public class TabImport {
 		
 		String tcSysBreak = "{^}";
 		String tcPageBreak = "{>}{^}";
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		
 		// Remove all comments from the TabCode
 		tc = tc.replace(tcSysBreak, "SysBr").replace(tcPageBreak, "PgBr");
@@ -275,26 +276,35 @@ public class TabImport {
 		List<String> meters = new ArrayList<>();
 		List<Integer> onsets = new ArrayList<>();
 		String[] tabwords = tc.split("\r\n");
+		// tripletActive is set to true when the first tabword of a triplet group is encountered,
+		// and set to false again when the first barline following the triplet group is encountered
+		// NB: triplets are assumed to be always followed by a barline TODO
+		boolean tripletActive = false;
 		for (int i = 0; i < tabwords.length; i++) {
 			String tabword = tabwords[i];
-			System.out.println(tabword);
+			System.out.println("tabword = " + tabword);
 
 			String asTbp = "";
 			// A rhythmGroup is either a single RS or a group of beamed RS
 			int durCurrRhythmGroup = 0; // TODO only used to add to totalDur, which is not used
 			// Mensuration sign
 			if (tabword.startsWith("M")) {
-				asTbp += mensurationSigns.get(
-					tabword.substring(tabword.indexOf("(") + 1, tabword.indexOf(")"))) + 
-					SymbolDictionary.SYMBOL_SEPARATOR + ConstantMusicalSymbol.SPACE.getEncoding() +
-					SymbolDictionary.SYMBOL_SEPARATOR;
+				asTbp += 
+					mensurationSigns.get(tabword.substring(tabword.indexOf("(") + 1, 
+					tabword.indexOf(")"))) + ss + ConstantMusicalSymbol.SPACE.getEncoding() + ss;
 				meters.add(tabword);
 //				onsets.add(totalDur);
 				totalDur = 0;
 			}
 			// Constant musical symbol (barline etc.)
 			else if (ConstantMusicalSymbol.getConstantMusicalSymbol(tabword) != null) {
-				asTbp += tabword + SymbolDictionary.SYMBOL_SEPARATOR + "\r\n";
+				asTbp += tabword + ss + "\r\n";
+				// In case of a barline following a triplet group
+				if (ConstantMusicalSymbol.getConstantMusicalSymbol(tabword) != 
+					ConstantMusicalSymbol.SPACE && tripletActive) {
+					tripletActive = false;
+					System.out.println("UIT");
+				}
 			}
 			// System break
 			else if (tabword.equals(tcSysBreak)) {
@@ -305,63 +315,108 @@ public class TabImport {
 			}
 			// Tabword starting with RS
 			else if (RHYTHM_SYMBOLS.containsKey(tabword.substring(0, 1))) {
+//				System.out.println("starts with RS");
 				String converted = convertTabword(tabword, false);
-				asTbp += converted;
+//				asTbp += converted;
 //				int durFirst = durCurrRhythmGroup += RhythmSymbol.getRhythmSymbol(
 //					converted.substring(0, converted.indexOf(SymbolDictionary.SYMBOL_SEPARATOR))).getDuration();
-				String rs = converted.substring(0, converted.indexOf(SymbolDictionary.SYMBOL_SEPARATOR)); 
+				String rs = converted.substring(0, converted.indexOf(ss));
+				// In TabCode, only the first note of a triplet group is preceded by a 3, so in 
+				// convertTabword() only that first note will be converted to a tbp triplet variant 
 				if (rs.startsWith(RhythmSymbol.tripletIndicator)) {
-					rs = rs.substring(RhythmSymbol.tripletIndicator.length(), rs.length());
+					tripletActive = true;
+					System.out.println("AAN");
+//					rs = rs.substring(RhythmSymbol.tripletIndicator.length(), rs.length());
 				}
-				int durFirst = durCurrRhythmGroup + // TODO why add to durCurrRhythmGroup?
-					RhythmSymbol.getRhythmSymbol(rs).getDuration();
-				// TODO adapt durFirst in triplet case
-				if (rs.startsWith(RhythmSymbol.tripletIndicator)) {
-					
+				// Use the triplet variant if the tabword is the second or higher tabword in a 
+				// triplet group (in which case the rs will not start with the tripletIndicator)
+				if (!rs.startsWith(RhythmSymbol.tripletIndicator) && tripletActive) {
+					rs = RhythmSymbol.getTripletVariant(rs).getEncoding();
+					converted = rs + ss + converted.substring(converted.indexOf(ss) + 1);
 				}
+				System.out.println("converted = " + converted);
+				asTbp += converted;
+				int durFirst = // TODO why add to durCurrRhythmGroup?
+					durCurrRhythmGroup + RhythmSymbol.getRhythmSymbol(rs).getDuration();
 				durCurrRhythmGroup += durFirst;
 				prevDur = durFirst;
 			}
 			// Beamed tabword
 			else if (tabword.startsWith("[")) {
+//				System.out.println("is beamed");
 				String converted = convertTabword(tabword, false);
+//				asTbp += converted;
+				
+				String rs = converted.substring(0, converted.indexOf(ss));
+				if (rs.startsWith(RhythmSymbol.tripletIndicator)) {
+					tripletActive = true;
+					System.out.println("AAN");
+				}
+				if (!rs.startsWith(RhythmSymbol.tripletIndicator) && tripletActive) {
+					rs = RhythmSymbol.getTripletVariant(rs).getEncoding();
+					converted = rs + ss + converted.substring(converted.indexOf(ss) + 1);
+				}
+				System.out.println("converted = " + converted);
 				asTbp += converted;
-				int durFirst = RhythmSymbol.getRhythmSymbol(
-					converted.substring(0, converted.indexOf(SymbolDictionary.SYMBOL_SEPARATOR))).getDuration();
+				int durFirst = RhythmSymbol.getRhythmSymbol(rs).getDuration();
 				durCurrRhythmGroup += durFirst;
 				prevDur = durFirst;
 
-				int indAfterRS = tabword.lastIndexOf("[")+1;
-				String beamedRS = tabword.substring(0, indAfterRS);
-
+//				int indAfterRS = tabword.lastIndexOf("[")+1;
+				String beamedRS = tabword.substring(0, (tabword.lastIndexOf("[") + 1));
 				// List all tabwords up until (and including) closing beams
 				for (int j = i+1; j < tabwords.length; j++) {
 					String nextTabword = tabwords[j];
+
 					// If system break in between
 					if (nextTabword.startsWith(tcSysBreak)) {
 						asTbp += "\r\n" + SymbolDictionary.SYSTEM_BREAK_INDICATOR + "\r\n";
 					}
-					// If last beamed tabword
+					// If last tabword in beaming group
 					if (nextTabword.startsWith("]")) {
-						asTbp += convertTabword(nextTabword, false);
+						String convertedNext = convertTabword(nextTabword, false);
+						String rsNext = convertedNext.substring(0, convertedNext.indexOf(ss));
+						// rsNext never starts with a tripletIndicator, but can be part of a 
+						// triplet group
+						if (tripletActive) {
+							rsNext = RhythmSymbol.getTripletVariant(rsNext).getEncoding();
+//							System.out.println("rsNext = " + rsNext);
+							convertedNext = 
+								rsNext + ss + convertedNext.substring(convertedNext.indexOf(ss) + 1);
+//							System.out.println("nextTabword = " + nextTabword);
+//							System.out.println("convertedNext = " + convertedNext);
+						}
+						System.out.println("convertedNext = " + convertedNext);
+						asTbp += convertedNext;
 						durCurrRhythmGroup += durFirst;
 						i = j; 
 						break;
 					}
-					// If tabword in between
-					else {
-						asTbp += convertTabword(beamedRS + nextTabword, true);
+					// If tabword in middle of beaming group (which, in TabCode, has no RS)
+					else {		
+						String convertedNext = convertTabword(beamedRS + nextTabword, true);
+						String rsNext = convertedNext.substring(0, convertedNext.indexOf(ss));
+						// rsNext never starts with a tripletIndicator, but can be part of a
+						// triplet group
+						if (tripletActive) {
+							rsNext = RhythmSymbol.getTripletVariant(rsNext).getEncoding();
+//							System.out.println("rsNext = " + rsNext);
+							convertedNext = 
+								rsNext + ss + convertedNext.substring(convertedNext.indexOf(ss) + 1);
+//							System.out.println("nextTabword = " + nextTabword);
+//							System.out.println("convertedNext = " + convertedNext);
+//							System.exit(0);
+						}
+						System.out.println("convertedNext = " + convertedNext);
+						asTbp += convertedNext; 
 						durCurrRhythmGroup += durFirst;
 					}
 				}
 			}
 			// Tabword without RS
 			else {
-				System.out.println("######################################################");
 				asTbp += convertTabword(tabword, false);
 				durCurrRhythmGroup += prevDur;
-				System.out.println(asTbp);
-//				System.exit(0);
 			}
 			tbpEncoding.append(asTbp);
 			totalDur += durCurrRhythmGroup;
@@ -495,7 +550,7 @@ public class TabImport {
 	 * @param ascii
 	 * @return
 	 */
-	public static String ascii2Tbp(File ascii) {
+	public static String ascii2tbp(File ascii) {
 		// Make encoding
 		List<List<String>> systemContents = getSystemContents(getSystems(ascii));
 		StringBuffer enc = getEncoding(systemContents);
