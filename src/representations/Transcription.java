@@ -4784,6 +4784,10 @@ public class Transcription implements Serializable {
 
 			List<List<List<Integer>>> configs = 
 				determineConfigs(leftDensity, rightDensity, lastNLeft);
+			System.out.println(configs.size());
+			for (List<List<Integer>> l : configs) {
+				System.out.println(l);
+			}
 //			for (List<List<Integer>> l : configs) {
 //				System.out.println(l);
 //			}
@@ -4828,25 +4832,37 @@ public class Transcription implements Serializable {
 			allConfigs.add(bestConfig);
 
 			// Determine the newly entering voice(s), i.e., the voice(s) that are in the 
-			// right chords but not in the left, and remove them from rightVoices for the
+			// right chord but not in the left, and remove them from rightVoices for the
 			// next iteration of the outer for-loop
+			// Config possibilities:
+			// 1-2  1-3  1-4  1-5  1-6
+			//      2-3  2-4  2-5  2-6
+			//           3-4  3-5  3-6
+			//                4-5  4-6
+			//                     5-6
 //			List<Integer> newVoices = new ArrayList<Integer>();
-			// If the left chord contains one note or one placeholder (1-2, 1-3, 1-4, 1-5, 
-//			// 2-3, 3-4, 4-5)
+			// If the left chord contains one note or one placeholder
 			if (leftDensity == 1 || leftDensity == (rightDensity - 1)) {
 //			if (numConfigs == rightDensity) {
 				System.out.println("BLUUARRRRGGHHH");
 				System.out.println("rightVoices = " + rightVoices);
 				System.out.println("bestConfig = " + bestConfig);
+				// If the left chord contains one note (1-2, 1-3, 1-4, 1-5, 1-6)
 				if (leftDensity == 1) {
 					// The voice at index bestConfig in rightVoices is the already active 
-					// voice, so the voices at all other indices are newly entering voices
+					// voice, so the voices at all other indices are newly entering voices (NEV)
+					// Example 1-4:
+					//     (0)         (1)         (2)         (3)     
+					//     x x           x           x           x
+					//       x         x x           x           x
+					//       x           x         x x           x
+					//       x           x           x         x x
+					// NEV 1, 2, 3     0, 2, 3     0, 1, 3     0, 1, 2
 					List<Integer> toRemove = new ArrayList<Integer>(); 
 					for (int j = 0; j < rightVoices.size(); j++) {
 						System.out.println(j);
 						if (j != bestConfig) {
 							toRemove.add(rightVoices.get(j));
-//							rightVoices.remove(j);
 						}
 					}
 					System.out.println("toRemove = " + toRemove);
@@ -4854,19 +4870,41 @@ public class Transcription implements Serializable {
 						rightVoices.remove((Integer) p);
 					}	
 				}
+				// If the left chord contains one placeholder (2-3, 3-4, 4-5, 5-6)
 				else if (leftDensity == (rightDensity - 1)) {
 //				else if (numNull == 1) {
 					// The voice at index (rightDensity-1)-bestConfig in rightVoices is the
-					// newly entering voice
+					// newly entering voice (NEV)
+					// Example 3-4:
+					//     (0)         (1)         (2)         (3)
+					//     x x         x x         x x           x
+					//     x x         x x           x         x x
+					//     x x           x         x x         x x
+					//       x         x x         x x         x x
+					// NEV (4-1)-0=3   (4-1)-1=2   (4-1)-2=1   (4-1)-3=0
 					rightVoices.remove((rightDensity-1)-bestConfig);
 				}
 			}
 			// If the left chord contains more than one note and the right chord contains
-			// at least two more notes than the left chord (2-4, 2-5, 3-5)
-			// TODO Fix! (does not happen currently)
+			// at least two more notes than the left chord (2-4, 2-5, 2-6, 3-5, 3-6, 4-6)
 			else {
-				System.out.println("AAAAAAAAAaaaaaaaaaahhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
-				System.exit(0);
+				// 2-4:
+				//     (0)      (1)      (2)      (3)      (4)      (5)
+				//     x x      x x      x x        x        x        x
+				//     x x        x        x      x x      x x        x
+				//       x      x x        x      x x        x      x x
+				//       x        x      x x        x      x x      x x
+				if (leftDensity == 2 && rightDensity == 4) {
+					
+				}
+				else if (leftDensity == 2 && rightDensity == 5) { // TODO Fix! (does not happen currently)
+					System.out.println("AAAAAAAAAaaaaaaaaaahhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
+					System.exit(0);
+				}
+				else if (leftDensity == 3 && rightDensity == 5) { // TODO Fix! (does not happen currently)
+					System.out.println("AAAAAAAAAaaaaaaaaaahhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
+					System.exit(0);
+				}
 			}
 			System.out.println("rightVoices = " + rightVoices);
 		}	
@@ -5363,7 +5401,7 @@ public class Transcription implements Serializable {
 	public List<List<Integer>> determineVoiceEntriesHIGHLEVEL(Integer[][] bnp, int numVoices, int n) {
 		List<Integer> noteDensities = getNoteDensity();
 		int leftDensity = noteDensities.get(0);
-		
+
 		// Find density increases
 		List<Integer> densities = new ArrayList<Integer>();
 		densities.add(leftDensity);
@@ -5382,8 +5420,7 @@ public class Transcription implements Serializable {
 
 			// If the voices enter successively: determine if the piece is imitative
 			if (densities.size() == numVoices) {
-				// Check whether there are enough notes of density 1 to contain a motif of 
-				// n notes
+				// Check whether there are enough notes of density 1 to contain a motif of n notes
 				boolean enoughNotes = true;
 				for (int i = 0; i < n; i++) {
 					if (getNoteDensity().get(i) > 1) {
@@ -5442,7 +5479,7 @@ public class Transcription implements Serializable {
 	 * Quantises the duration to the next multiple of the given granularity fraction.
 	 * 
 	 * @param curr
-	 * @param multiplier
+	 * @param granularity
 	 * 
 	 * @return  
 	 */
