@@ -820,8 +820,133 @@ public class TranscriptionTest extends TestCase {
 
 	
 	public void testGetTimePitchMatrix() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Tablature tablature = new Tablature(encodingTestpiece1, false);
+		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+
+		Rational[][] expected = new Rational[39][3];
+//		expected[0] = new Rational[]{new Rational(3,4), new Rational(4,4), new Rational(50,1)};
+//		expected[1] = new Rational[]{new Rational(3,4), new Rational(4,4), new Rational(57,1)};
+//		expected[2] = new Rational[]{new Rational(3,4), new Rational(4,4), new Rational(65,1)};
+//		expected[3] = new Rational[]{new Rational(3,4), new Rational(4,4), new Rational(69,1)};
+//		//
+//		expected[4] = new Rational[]{new Rational(4,4), new Rational(19,16), new Rational(45,1)};
+//		expected[5] = new Rational[]{new Rational(4,4), new Rational(19,16), new Rational(57,1)};
+//		expected[6] = new Rational[]{new Rational(4,4), new Rational(19,16), new Rational(72,1)};
+//		expected[7] = new Rational[]{new Rational(4,4), new Rational(19,16), new Rational(69,1)};
+//		//
+//		expected[8] = new Rational[]{new Rational(19,16), new Rational(5,4), new Rational(48,1)};
+//		
+//		expected[9] = new Rational[]{new Rational(5,4), new Rational(11,8), new Rational(47,1)};
+//		expected[10] = new Rational[]{new Rational(5,4), new Rational(11,8), new Rational(50,1)};
+//		expected[11] = new Rational[]{new Rational(5,4), new Rational(11,8), new Rational(59,1)};
+//		expected[12] = new Rational[]{new Rational(5,4), new Rational(11,8), new Rational(65,1)};
+//		//
+//		expected[13] = new Rational[]{new Rational(11,8), new Rational(6,4), new Rational(45,1)};
+//		//
+//		expected[14] = new Rational[]{new Rational(6,4), new Rational(7,4), new Rational(45,1)};
+//		expected[15] = new Rational[]{new Rational(6,4), new Rational(7,4), new Rational(57,1)};
+//		expected[16] = new Rational[]{new Rational(6,4), new Rational(7,4), new Rational(57,1)};
+//		expected[17] = new Rational[]{new Rational(6,4), new Rational(7,4), new Rational(60,1)};
+//		expected[18] = new Rational[]{new Rational(6,4), new Rational(7,4), new Rational(69,1)};
+//		//
+//		expected[19] = new Rational[]{new Rational(7,4), new Rational(15,8), new Rational(45,1)};
+//		expected[20] = new Rational[]{new Rational(7,4), new Rational(15,8), new Rational(60,1)};
+//		expected[21] = new Rational[]{new Rational(7,4), new Rational(15,8), new Rational(64,1)};
+//		expected[22] = new Rational[]{new Rational(7,4), new Rational(15,8), new Rational(69,1)};
+//		//
+//		expected[23] = new Rational[]{new Rational(15,8), new Rational(8,4), new Rational(59,1)};
+//		expected[24] = new Rational[]{new Rational(15,8), new Rational(8,4), new Rational(68,1)};
+//		//
+//		expected[25] = new Rational[]{new Rational(8,4), new Rational(33,16), new Rational(45,1)};
+//		expected[26] = new Rational[]{new Rational(8,4), new Rational(33,16), new Rational(57,1)};
+//		expected[27] = new Rational[]{new Rational(8,4), new Rational(33,16), new Rational(64,1)};
+//		expected[28] = new Rational[]{new Rational(8,4), new Rational(33,16), new Rational(69,1)};
+//		//
+//		expected[29] = new Rational[]{new Rational(33,16), new Rational(34,16), new Rational(68,1)};
+//		expected[30] = new Rational[]{new Rational(34,16), new Rational(69,32), new Rational(69,1)};
+//		expected[31] = new Rational[]{new Rational(69,32), new Rational(70,32), new Rational(68,1)};
+//		expected[32] = new Rational[]{new Rational(70,32), new Rational(71,32), new Rational(66,1)};
+//		expected[33] = new Rational[]{new Rational(71,32), new Rational(9,4), new Rational(68,1)};
+//		expected[34] = new Rational[]{new Rational(9,4), new Rational(10,4), new Rational(69,1)};
+//		//
+//		expected[35] = new Rational[]{new Rational(11,4), new Rational(12,4), new Rational(45,1)};
+//		expected[36] = new Rational[]{new Rational(11,4), new Rational(12,4), new Rational(57,1)};
+//		expected[37] = new Rational[]{new Rational(11,4), new Rational(12,4), new Rational(64,1)};
+//		expected[38] = new Rational[]{new Rational(11,4), new Rational(12,4), new Rational(69,1)};
 		
+		expected[0] = new Rational[]{new Rational(3,4), new Rational(4,4), new Rational(50,1)};
+		expected[1] = new Rational[]{new Rational(3,4), new Rational(4,4), new Rational(57,1)};
+		expected[2] = new Rational[]{new Rational(3,4), new Rational(4,4), new Rational(65,1)};
+		expected[3] = new Rational[]{new Rational(3,4), new Rational(4,4), new Rational(69,1)};
+		//
+		expected[4] = new Rational[]{new Rational(4,4), new Rational(19,16), new Rational(45,1)};
+		expected[5] = new Rational[]{new Rational(4,4), new Rational(5,4), new Rational(57,1)};
+		expected[6] = new Rational[]{new Rational(4,4), new Rational(5,4), new Rational(72,1)};
+		expected[7] = new Rational[]{new Rational(4,4), new Rational(9,8), new Rational(69,1)};
+		//
+		expected[8] = new Rational[]{new Rational(19,16), new Rational(5,4), new Rational(48,1)};
+		
+		expected[9] = new Rational[]{new Rational(5,4), new Rational(11,8), new Rational(47,1)};
+		expected[10] = new Rational[]{new Rational(5,4), new Rational(6,4), new Rational(50,1)};
+		expected[11] = new Rational[]{new Rational(5,4), new Rational(6,4), new Rational(59,1)};
+		expected[12] = new Rational[]{new Rational(5,4), new Rational(6,4), new Rational(65,1)};
+		//
+		expected[13] = new Rational[]{new Rational(11,8), new Rational(6,4), new Rational(45,1)};
+		//
+		expected[14] = new Rational[]{new Rational(6,4), new Rational(7,4), new Rational(45,1)};
+		expected[15] = new Rational[]{new Rational(6,4), new Rational(8,4), new Rational(57,1)};
+		expected[16] = new Rational[]{new Rational(6,4), new Rational(7,4), new Rational(57,1)};
+		expected[17] = new Rational[]{new Rational(6,4), new Rational(7,4), new Rational(60,1)};
+		expected[18] = new Rational[]{new Rational(6,4), new Rational(7,4), new Rational(69,1)};
+		//
+		expected[19] = new Rational[]{new Rational(7,4), new Rational(8,4), new Rational(45,1)};
+		expected[20] = new Rational[]{new Rational(7,4), new Rational(15,8), new Rational(60,1)};
+		expected[21] = new Rational[]{new Rational(7,4), new Rational(15,8), new Rational(64,1)};
+		expected[22] = new Rational[]{new Rational(7,4), new Rational(8,4), new Rational(69,1)};
+		//
+		expected[23] = new Rational[]{new Rational(15,8), new Rational(8,4), new Rational(59,1)};
+		expected[24] = new Rational[]{new Rational(15,8), new Rational(8,4), new Rational(68,1)};
+		//
+		expected[25] = new Rational[]{new Rational(8,4), new Rational(10,4), new Rational(45,1)};
+		expected[26] = new Rational[]{new Rational(8,4), new Rational(10,4), new Rational(57,1)};
+		expected[27] = new Rational[]{new Rational(8,4), new Rational(10,4), new Rational(64,1)};
+		expected[28] = new Rational[]{new Rational(8,4), new Rational(33,16), new Rational(69,1)};
+		//
+		expected[29] = new Rational[]{new Rational(33,16), new Rational(34,16), new Rational(68,1)};
+		expected[30] = new Rational[]{new Rational(34,16), new Rational(69,32), new Rational(69,1)};
+		expected[31] = new Rational[]{new Rational(69,32), new Rational(70,32), new Rational(68,1)};
+		expected[32] = new Rational[]{new Rational(70,32), new Rational(71,32), new Rational(66,1)};
+		expected[33] = new Rational[]{new Rational(71,32), new Rational(9,4), new Rational(68,1)};
+		expected[34] = new Rational[]{new Rational(9,4), new Rational(10,4), new Rational(69,1)};
+		//
+		expected[35] = new Rational[]{new Rational(11,4), new Rational(12,4), new Rational(45,1)};
+		expected[36] = new Rational[]{new Rational(11,4), new Rational(12,4), new Rational(57,1)};
+		expected[37] = new Rational[]{new Rational(11,4), new Rational(12,4), new Rational(64,1)};
+		expected[38] = new Rational[]{new Rational(11,4), new Rational(12,4), new Rational(69,1)};
+
+		Rational[][] actual = Transcription.getTimePitchMatrix(
+			tablature.getBasicTabSymbolProperties(), transcription.getDurationLabels(), null);
+//		for (int i = 0; i < tpmTab.length; i++) {
+//			actual[i] = tpmTab[i];
+//		}
+//		Rational[][] tpmTrans = transcription.getTimePitchMatrix(null, transcription.getBasicNoteProperties()); 
+//		for (int i = 0; i < tpmTrans.length; i++) {
+//			actual[tpmTab.length + i] = tpmTrans[i];
+//		}
+
+		assertEquals(expected.length, actual.length);
+	    for (int i = 0; i < expected.length; i++) {
+	    	assertEquals(expected[i].length, actual[i].length);
+	    	for (int j = 0; j < expected[i].length; j++) {
+	    		assertEquals(expected[i][j], actual[i][j]);
+	    	}
+	    }
+	}
+	
+	
+	public void testGetTimePitchMatrixNonTab() {
+		Transcription transcription = new Transcription(midiTestpiece1, null);
+
 		Rational[][] expected = new Rational[40][3];
 		expected[0] = new Rational[]{new Rational(3,4), new Rational(4,4), new Rational(50,1)};
 		expected[1] = new Rational[]{new Rational(3,4), new Rational(4,4), new Rational(57,1)};
@@ -833,8 +958,7 @@ public class TranscriptionTest extends TestCase {
 		expected[6] = new Rational[]{new Rational(4,4), new Rational(9,8), new Rational(69,1)};
 		expected[7] = new Rational[]{new Rational(4,4), new Rational(5,4), new Rational(72,1)};
 		//
-		expected[8] = new Rational[]{new Rational(19,16), new Rational(5,4), new Rational(48,1)};
-		
+		expected[8] = new Rational[]{new Rational(19,16), new Rational(5,4), new Rational(48,1)};		
 		expected[9] = new Rational[]{new Rational(5,4), new Rational(11,8), new Rational(47,1)};
 		expected[10] = new Rational[]{new Rational(5,4), new Rational(6,4), new Rational(50,1)};
 		expected[11] = new Rational[]{new Rational(5,4), new Rational(6,4), new Rational(59,1)};
@@ -874,8 +998,9 @@ public class TranscriptionTest extends TestCase {
 		expected[38] = new Rational[]{new Rational(11,4), new Rational(12,4), new Rational(64,1)};
 		expected[39] = new Rational[]{new Rational(11,4), new Rational(12,4), new Rational(69,1)};
 
-		Rational[][] actual = transcription.getTimePitchMatrix();
-		
+		Rational[][] actual = 
+			Transcription.getTimePitchMatrix(null, null, transcription.getBasicNoteProperties()); 
+
 		assertEquals(expected.length, actual.length);
 	    for (int i = 0; i < expected.length; i++) {
 	    	assertEquals(expected[i].length, actual[i].length);
@@ -884,11 +1009,41 @@ public class TranscriptionTest extends TestCase {
 	    	}
 	    }
 	}
-	
-	
+
+
 	public void testGetNoteDensity() {
+		Tablature tablature = new Tablature(encodingTestpiece1, false);
+		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+
+		List<Integer> expected = Arrays.asList(new Integer[]{
+			4, 4, 4, 4, 
+			4, 4, 4, 4, 
+			3, 
+			4, 4, 4, 4, 
+			4, 
+			5, 5, 5, 5, 5, 
+			5, 5, 5, 5,
+			5, 5, 
+			4, 4, 4, 4, 
+			4, 4, 4, 4, 4, 4, 
+			4, 4, 4, 4
+		});
+
+		List<Integer> actual = 
+			transcription.getNoteDensity(tablature.getBasicTabSymbolProperties(), 
+			transcription.getDurationLabels(), null);
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));		
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testGetNoteDensityNonTab() {
 		Transcription transcription = new Transcription(midiTestpiece1, null);
-		
+
 		List<Integer> expected = Arrays.asList(new Integer[]{
 			4, 4, 4, 4, 
 			4, 4, 4, 4, 
@@ -902,17 +1057,18 @@ public class TranscriptionTest extends TestCase {
 			4, 4, 4, 4, 4, 4, 
 			4, 4, 4, 4
 		});
-		
-		List<Integer> actual = transcription.getNoteDensity();
-		
+
+		List<Integer> actual = 
+			transcription.getNoteDensity(null, null, transcription.getBasicNoteProperties());
+
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));		
 		}
 		assertEquals(expected, actual);
 	}
-	
-	
+
+
 //	public static String opt = "O P T\n"; 
 //	public static String optCost = "C O S T\n"; 
 	public void testGetVoiceEntriesOLDEST() {		
@@ -1979,6 +2135,68 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetNonUnisonNeighbourChord() {
+		Tablature tablature = new Tablature(encodingTestpiece1, false);
+		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		
+		// a. Previous
+		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
+		// Chord 0: preceded by nothing
+		expected.add(null);
+//		// Chord 6: preceded by unison chord, previous is chord 4
+		List<List<Integer>> chord4 = new ArrayList<List<Integer>>();
+		chord4.add(Arrays.asList(new Integer[]{45, 1, 8}));
+		chord4.add(Arrays.asList(new Integer[]{50, null, null}));
+		chord4.add(Arrays.asList(new Integer[]{59, null, null}));
+		chord4.add(Arrays.asList(new Integer[]{65, null, null}));
+		expected.add(chord4);
+		// Chord 5: not preceded by unison chord, previous is also chord 4 
+		expected.add(chord4);
+		
+		// b. Next
+		// Chord 4: followed by unison chord, next is chord 6
+		List<List<Integer>> chord6 = new ArrayList<List<Integer>>();
+		chord6.add(Arrays.asList(new Integer[]{45, 1, 4}));
+		chord6.add(Arrays.asList(new Integer[]{57, null, null}));
+		chord6.add(Arrays.asList(new Integer[]{60, 1, 8}));
+		chord6.add(Arrays.asList(new Integer[]{64, 1, 8}));
+		chord6.add(Arrays.asList(new Integer[]{69, 1, 4}));
+		expected.add(chord6);
+		// Chord 5: not followed by unison chord, next is also chord 6 
+		expected.add(chord6);
+		// Chord 15: followed by nothing
+		expected.add(null);
+		
+		List<List<List<Integer>>> actual = new ArrayList<List<List<Integer>>>();
+		List<Integer> lowestNoteInd = Arrays.asList(new Integer[]{0, 19, 14});
+		Integer[][] btp = tablature.getBasicTabSymbolProperties();
+		List<List<Double>> durationLabels = transcription.getDurationLabels();
+		for (int i : lowestNoteInd) {
+			actual.add(transcription.getNonUnisonNeighbourChord(btp, durationLabels, null, -1, i));
+		}
+		lowestNoteInd = Arrays.asList(new Integer[]{13, 14, 35});
+		for (int i : lowestNoteInd) {
+			actual.add(transcription.getNonUnisonNeighbourChord(btp, durationLabels, null, 1, i));
+		}
+			
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			if (expected.get(i) != null && actual.get(i) != null) {
+				assertEquals(expected.get(i).size(), actual.get(i).size());
+				for (int j = 0; j < expected.get(i).size(); j++) {
+					if (expected.get(i).get(j) != null && actual.get(i).get(j) != null) {
+						assertEquals(expected.get(i).get(j).size(), actual.get(i).get(j).size());
+						for (int k = 0; k < expected.get(i).get(j).size(); k++) {
+							assertEquals(expected.get(i).get(j).get(k), actual.get(i).get(j).get(k));
+						}
+					}
+				}
+			}
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testGetNonUnisonNeighbourChordNonTab() {
 		Transcription transcription = new Transcription(midiTestpiece1, null);
 		
 		// a. Previous
@@ -2012,11 +2230,11 @@ public class TranscriptionTest extends TestCase {
 		List<Integer> lowestNoteInd = Arrays.asList(new Integer[]{0, 14, 9});
 		Integer[][] bnp = transcription.getBasicNoteProperties();
 		for (int i : lowestNoteInd) {
-			actual.add(transcription.getNonUnisonNeighbourChord(i, null, bnp, -1));
+			actual.add(transcription.getNonUnisonNeighbourChord(null, null, bnp, -1, i));
 		}
 		lowestNoteInd = Arrays.asList(new Integer[]{14, 15, 36});
 		for (int i : lowestNoteInd) {
-			actual.add(transcription.getNonUnisonNeighbourChord(i, null, bnp, 1));
+			actual.add(transcription.getNonUnisonNeighbourChord(null, null, bnp, 1, i));
 		}
 			
 		assertEquals(expected.size(), actual.size());
@@ -2035,11 +2253,148 @@ public class TranscriptionTest extends TestCase {
 		}
 		assertEquals(expected, actual);
 	}
-	
-	
-	public void testGetChordInfo() {	
+
+
+	public void testGetChordInfo() {
+		Tablature tablature = new Tablature(encodingTestpiece1, false);
+		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+
+		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
+
+		List<List<Integer>> chord0 = new ArrayList<List<Integer>>();
+		chord0.add(Arrays.asList(new Integer[]{50, 1, 4}));
+		chord0.add(Arrays.asList(new Integer[]{57, 1, 4}));
+		chord0.add(Arrays.asList(new Integer[]{65, 1, 4}));
+		chord0.add(Arrays.asList(new Integer[]{69, 1, 4}));
+		expected.add(chord0);
+		//
+		List<List<Integer>> chord1 = new ArrayList<List<Integer>>();
+		chord1.add(Arrays.asList(new Integer[]{45, 3, 16}));
+		chord1.add(Arrays.asList(new Integer[]{57, 1, 4}));
+		chord1.add(Arrays.asList(new Integer[]{69, 1, 8}));
+		chord1.add(Arrays.asList(new Integer[]{72, 1, 4}));
+		expected.add(chord1);
+		//
+		List<List<Integer>> chord2 = new ArrayList<List<Integer>>();
+		chord2.add(Arrays.asList(new Integer[]{48, 1, 16}));
+		chord2.add(Arrays.asList(new Integer[]{57, null, null}));
+		chord2.add(Arrays.asList(new Integer[]{72, null, null}));
+		expected.add(chord2);
+		// 
+		List<List<Integer>> chord3 = new ArrayList<List<Integer>>();
+		chord3.add(Arrays.asList(new Integer[]{47, 1, 8}));
+		chord3.add(Arrays.asList(new Integer[]{50, 1, 4}));
+		chord3.add(Arrays.asList(new Integer[]{59, 1, 4}));
+		chord3.add(Arrays.asList(new Integer[]{65, 1, 4}));
+		expected.add(chord3);
+		//
+		List<List<Integer>> chord4 = new ArrayList<List<Integer>>();
+		chord4.add(Arrays.asList(new Integer[]{45, 1, 8}));
+		chord4.add(Arrays.asList(new Integer[]{50, null, null}));
+		chord4.add(Arrays.asList(new Integer[]{59, null, null}));
+		chord4.add(Arrays.asList(new Integer[]{65, null, null}));
+		expected.add(chord4);
+		//
+		List<List<Integer>> chord5 = new ArrayList<List<Integer>>();
+		chord5.add(Arrays.asList(new Integer[]{45, 1, 4}));
+		chord5.add(Arrays.asList(new Integer[]{57, 1, 2}));
+		chord5.add(Arrays.asList(new Integer[]{57, 1, 4}));
+		chord5.add(Arrays.asList(new Integer[]{60, 1, 4}));
+		chord5.add(Arrays.asList(new Integer[]{69, 1, 4}));
+		expected.add(chord5);
+		// 
+		List<List<Integer>> chord6 = new ArrayList<List<Integer>>();
+		chord6.add(Arrays.asList(new Integer[]{45, 1, 4}));
+		chord6.add(Arrays.asList(new Integer[]{57, null, null}));
+		chord6.add(Arrays.asList(new Integer[]{60, 1, 8}));
+		chord6.add(Arrays.asList(new Integer[]{64, 1, 8}));
+		chord6.add(Arrays.asList(new Integer[]{69, 1, 4}));
+		expected.add(chord6);
+		//
+		List<List<Integer>> chord7 = new ArrayList<List<Integer>>();
+		chord7.add(Arrays.asList(new Integer[]{45, null, null}));
+		chord7.add(Arrays.asList(new Integer[]{57, null, null}));
+		chord7.add(Arrays.asList(new Integer[]{59, 1, 8}));
+		chord7.add(Arrays.asList(new Integer[]{68, 1, 8}));
+		chord7.add(Arrays.asList(new Integer[]{69, null, null}));
+		expected.add(chord7);
+		//
+		List<List<Integer>> chord8 = new ArrayList<List<Integer>>();
+		chord8.add(Arrays.asList(new Integer[]{45, 1, 2}));
+		chord8.add(Arrays.asList(new Integer[]{57, 1, 2}));
+		chord8.add(Arrays.asList(new Integer[]{64, 1, 2}));
+		chord8.add(Arrays.asList(new Integer[]{69, 1, 16}));
+		expected.add(chord8);
+		//
+		List<List<Integer>> chord9 = new ArrayList<List<Integer>>();
+		chord9.add(Arrays.asList(new Integer[]{45, null, null}));
+		chord9.add(Arrays.asList(new Integer[]{57, null, null}));
+		chord9.add(Arrays.asList(new Integer[]{64, null, null}));
+		chord9.add(Arrays.asList(new Integer[]{68, 1, 16}));
+		expected.add(chord9);
+		List<List<Integer>> chord10 = new ArrayList<List<Integer>>();
+		chord10.add(Arrays.asList(new Integer[]{45, null, null}));
+		chord10.add(Arrays.asList(new Integer[]{57, null, null}));
+		chord10.add(Arrays.asList(new Integer[]{64, null, null}));
+		chord10.add(Arrays.asList(new Integer[]{69, 1, 32}));
+		expected.add(chord10);
+		List<List<Integer>> chord11 = new ArrayList<List<Integer>>();
+		chord11.add(Arrays.asList(new Integer[]{45, null, null}));
+		chord11.add(Arrays.asList(new Integer[]{57, null, null}));
+		chord11.add(Arrays.asList(new Integer[]{64, null, null}));
+		chord11.add(Arrays.asList(new Integer[]{68, 1, 32}));
+		expected.add(chord11);
+		List<List<Integer>> chord12 = new ArrayList<List<Integer>>();
+		chord12.add(Arrays.asList(new Integer[]{45, null, null}));
+		chord12.add(Arrays.asList(new Integer[]{57, null, null}));
+		chord12.add(Arrays.asList(new Integer[]{64, null, null}));
+		chord12.add(Arrays.asList(new Integer[]{66, 1, 32}));
+		expected.add(chord12);
+		List<List<Integer>> chord13 = new ArrayList<List<Integer>>();
+		chord13.add(Arrays.asList(new Integer[]{45, null, null}));
+		chord13.add(Arrays.asList(new Integer[]{57, null, null}));
+		chord13.add(Arrays.asList(new Integer[]{64, null, null}));
+		chord13.add(Arrays.asList(new Integer[]{68, 1, 32}));
+		expected.add(chord13);
+		List<List<Integer>> chord14 = new ArrayList<List<Integer>>();
+		chord14.add(Arrays.asList(new Integer[]{45, null, null}));
+		chord14.add(Arrays.asList(new Integer[]{57, null, null}));
+		chord14.add(Arrays.asList(new Integer[]{64, null, null}));
+		chord14.add(Arrays.asList(new Integer[]{69, 1, 4}));
+		expected.add(chord14);
+		//
+		List<List<Integer>> chord15 = new ArrayList<List<Integer>>();
+		chord15.add(Arrays.asList(new Integer[]{45, 1, 4}));
+		chord15.add(Arrays.asList(new Integer[]{57, 1, 4}));
+		chord15.add(Arrays.asList(new Integer[]{64, 1, 4}));
+		chord15.add(Arrays.asList(new Integer[]{69, 1, 4}));
+		expected.add(chord15);
+
+		List<List<List<Integer>>> actual = new ArrayList<List<List<Integer>>>();
+		List<Integer> lowestNoteInd = Arrays.asList(new Integer[]{0, 4, 8, 9, 13, 14, 19, 23, 
+			25, 29, 30, 31, 32, 33, 34, 35});
+		for (int i : lowestNoteInd) {
+			actual.add(transcription.getChordInfo(tablature.getBasicTabSymbolProperties(), 
+				transcription.getDurationLabels(), null, i));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).size(), actual.get(i).size());
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j).size(), actual.get(i).get(j).size());
+				for (int k = 0; k < expected.get(i).get(j).size(); k++) {
+					assertEquals(expected.get(i).get(j).get(k), actual.get(i).get(j).get(k));
+				}
+			}
+		}
+		assertEquals(expected, actual);	
+	}
+
+
+	public void testGetChordInfoNonTab() {	
 		Transcription transcription = new Transcription(midiTestpiece1, null);
-		
+
 		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
 
 		List<List<Integer>> chord0 = new ArrayList<List<Integer>>();
@@ -2151,15 +2506,14 @@ public class TranscriptionTest extends TestCase {
 		chord15.add(Arrays.asList(new Integer[]{64, 1, 4}));
 		chord15.add(Arrays.asList(new Integer[]{69, 1, 4}));
 		expected.add(chord15);
-		
+
 		List<List<List<Integer>>> actual = new ArrayList<List<List<Integer>>>();
 		List<Integer> lowestNoteInd = Arrays.asList(new Integer[]{0, 4, 8, 9, 14, 15, 20, 24, 
 			26, 30, 31, 32, 33, 34, 35, 36});
-		Integer[][] bnp = transcription.getBasicNoteProperties();
 		for (int i : lowestNoteInd) {
-			actual.add(transcription.getChordInfo(i, null, bnp));
+			actual.add(transcription.getChordInfo(null, null, transcription.getBasicNoteProperties(), i));
 		}
-		
+
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i).size(), actual.get(i).size());
@@ -2170,9 +2524,7 @@ public class TranscriptionTest extends TestCase {
 				}
 			}
 		}
-		assertEquals(expected, actual);
-		
-		
+		assertEquals(expected, actual);	
 	}
 	
 	
@@ -5060,6 +5412,10 @@ public class TranscriptionTest extends TestCase {
 		List<List<Integer>> actual = new ArrayList<List<Integer>>();
 		Integer[][] btp = tablature.getBasicTabSymbolProperties();
 		List<List<Double>> durationLabels = transcription.getDurationLabels();
+		System.out.println(durationLabels.get(0).size());
+		for (List<Double> l : durationLabels) {
+			System.out.println(l);
+		}
 		for (int i = 0; i < btp.length; i++) {
 			actual.add(Transcription.getIndicesOfSustainedPreviousNotes(
 				btp, durationLabels, null, i));
