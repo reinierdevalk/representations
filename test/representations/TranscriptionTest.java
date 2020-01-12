@@ -1408,14 +1408,12 @@ public class TranscriptionTest extends TestCase {
 		for (String s : fileNames2) {
 			Transcription t = new Transcription(new File(prefix2 + s + ".mid"), null);
 			System.out.println(s);
-			t.getImitativeVoiceEntries(2, 3);
-			System.out.println(t.getImitativeVoiceEntries(2, 3));
-			
+			t.getImitativeVoiceEntries(null, null, t.getBasicNoteProperties(), 2, 3);
 //			t.determineVoiceEntriesHIGHLEVEL(t.getBasicNoteProperties(), 3, 3);
 		}
 	}
-	
-	
+
+
 	public void testCalculateConfigCost() {
 		// Example taken from Inventio 13 a3 (BWV 799) 
 		// Config 0
@@ -1966,6 +1964,88 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetImitativeVoiceEntries() {
+		String prefixTab = "F:/research/data/encodings/tab-int/";
+		String prefix = "F:/research/data/MIDI/tab-int/";
+		List<String> fileNames = Arrays.asList(new String[]{
+			// 3vv (using full durations)
+			"3vv/newsidler-1536_7-mess_pensees", // correct
+			"3vv/newsidler-1544_2-nun_volget", // correct
+			"3vv/pisador-1552_7-pleni_de",	// incorrect: voice crossing at density 2
+			// 4vv
+			"4vv/ochsenkun-1558_5-absolon_fili", // correct after correcting -1 to 0 at density 4
+//			"4vv/ochsenkun-1558_5-in_exitu", // TODO
+			"4vv/ochsenkun-1558_5-qui_habitat", // correct after re-establishing HMN at density 4
+//			"4vv/abondante-1548_1-mais_mamignone" // TODO
+		});
+
+		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
+		// 3vv
+		List<List<Integer>> messPensees = new ArrayList<List<Integer>>();
+		messPensees.add(Arrays.asList(new Integer[]{1, 1}));
+		messPensees.add(Arrays.asList(new Integer[]{0, 10, 11, 26, 27, 28}));
+		messPensees.add(Arrays.asList(new Integer[]{2, 2, 0, 2, 1, 0}));
+		expected.add(messPensees);
+		//
+		List<List<Integer>> nunVolget = new ArrayList<List<Integer>>();
+		nunVolget.add(Arrays.asList(new Integer[]{0, 0}));
+		nunVolget.add(Arrays.asList(new Integer[]{0, 3, 4, 33, 34, 35}));
+		nunVolget.add(Arrays.asList(new Integer[]{0, 1, 0, 2, 1, 0}));
+		expected.add(nunVolget);
+		//
+		List<List<Integer>> pleniDe = new ArrayList<List<Integer>>();
+		pleniDe.add(Arrays.asList(new Integer[]{-1, 2})); // voice crossing at density 2 
+		pleniDe.add(Arrays.asList(new Integer[]{0, 5, 15, 16}));
+		pleniDe.add(Arrays.asList(new Integer[]{1, 2, 2, 0}));
+		expected.add(pleniDe);
+
+		// 4vv
+		List<List<Integer>> absolon = new ArrayList<List<Integer>>();
+		absolon.add(Arrays.asList(new Integer[]{0, 0, -1})); // motif at density 4 not repeated literally
+		absolon.add(Arrays.asList(new Integer[]{0, 16, 17, 29, 30, 31, 56, 57, 58, 59}));
+		absolon.add(Arrays.asList(new Integer[]{0, 1, 0, 2, 1, 0, 3, 2, 1, 0}));
+		expected.add(absolon);
+		List<List<Integer>> quiHabitat = new ArrayList<List<Integer>>();
+		quiHabitat.add(Arrays.asList(new Integer[]{0, 0, 0}));
+		quiHabitat.add(Arrays.asList(new Integer[]{0, 11, 12, 30, 31, 32, 66, 67, 68}));
+		quiHabitat.add(Arrays.asList(new Integer[]{0, 1, 0, 2, 1, 0, 3, 2, 1, 0})); // TODO fix CoD in last chord (4 voices, 3 notes)
+		expected.add(quiHabitat);
+
+		List<List<List<Integer>>> actual = new ArrayList<List<List<Integer>>>();
+		List<Integer> voices = Arrays.asList(new Integer[]{3, 3, 3, 4, 4});
+		List<Integer> ns = Arrays.asList(new Integer[]{3, 3, 3, 2, 3});
+		for (int i = 0; i < fileNames.size(); i++) {
+			String piece = fileNames.get(i);
+			File enc = new File(prefixTab + piece + ".tbp");
+			Tablature tab = new Tablature(enc, false);
+			Transcription t = new Transcription(new File(prefix + piece + ".mid"), enc);
+			actual.add(t.getImitativeVoiceEntries(
+				tab.getBasicTabSymbolProperties(), t.getDurationLabels(), null, voices.get(i), 
+				ns.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			if (expected.get(i) == null) {
+				assertEquals(expected.get(i), actual.get(i));
+			}
+			else {
+//			if (expected.get(i) != null && actual.get(i) != null) {
+				assertEquals(expected.get(i).size(), actual.get(i).size());
+				for (int j = 0; j < expected.get(i).size(); j++) {
+					if (expected.get(i).get(j) != null && actual.get(i).get(j) != null) {
+						assertEquals(expected.get(i).get(j).size(), actual.get(i).get(j).size());
+						for (int k = 0; k < expected.get(i).get(j).size(); k++) {
+							assertEquals(expected.get(i).get(j).get(k), actual.get(i).get(j).get(k));
+						}
+					}
+				}
+			}
+		}
+		assertEquals(expected, actual);		
+	}
+
+
+	public void testGetImitativeVoiceEntriesNonTab() {
 		String prefix = "F:/research/data/MIDI/bach-WTC/thesis/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			// 3vv
@@ -2058,12 +2138,14 @@ public class TranscriptionTest extends TestCase {
 		bwv886.add(Arrays.asList(new Integer[]{0, 21, 22, 76, 77, 516, 517}));
 		bwv886.add(Arrays.asList(new Integer[]{2, 2, 1, 3, 2, 2, 0}));
 		expected.add(bwv886);
-		
+
 		List<List<List<Integer>>> actual = new ArrayList<List<List<Integer>>>();
 		List<Integer> voices = Arrays.asList(new Integer[]{3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4});
-		for (int i = 0; i < fileNames.size(); i++) { 
-			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + ".mid"), null);
-			actual.add(t.getImitativeVoiceEntries(voices.get(i), 3));
+		for (int i = 0; i < fileNames.size(); i++) {
+			Transcription t = 
+				new Transcription(new File(prefix + fileNames.get(i) + ".mid"), null);
+			actual.add(t.getImitativeVoiceEntries(null, null, t.getBasicNoteProperties(), 
+				voices.get(i), 3));
 		}
 
 		assertEquals(expected.size(), actual.size());
