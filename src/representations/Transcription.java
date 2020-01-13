@@ -3631,9 +3631,9 @@ public class Transcription implements Serializable {
 	 *         Returns <code>null</code> if no motif was found.
 	 */
 	// TESTED
-	public List<List<Integer>> getImitativeVoiceEntries(Integer[][] btp, 
-		List<List<Double>> durationLabels, Integer[][] bnp, int highestNumVoices, int n) { // in 2020
-		
+	List<List<Integer>> getImitativeVoiceEntries(Integer[][] btp, List<List<Double>> durationLabels, 
+		Integer[][] bnp, int highestNumVoices, int n) { // in 2020
+
 		verifyCase(btp, bnp);
 		
 		List<List<Integer>> res = new ArrayList<List<Integer>>();
@@ -4614,7 +4614,16 @@ public class Transcription implements Serializable {
 //		return res;
 	}
 
-
+	/**
+	 * Determines the sequence of voice entries based on the cost of connecting two configurations.
+	 * 
+	 * @param btp
+	 * @param durationLabels
+	 * @param bnp
+	 * @param numVoices
+	 * @param n
+	 * @return
+	 */
 	// Return <code>null</code> if one or more voices are missing from the returned list of voices. 
 	List<List<Integer>> getNonImitativeVoiceEntries(Integer[][] btp, List<List<Double>> durationLabels,
 		Integer[][] bnp, int numVoices, int n) { // in 2020
@@ -4641,7 +4650,10 @@ public class Transcription implements Serializable {
 				densities.add(d);
 				indices.add(i);
 				List<Integer> currFirstChordInd = new ArrayList<Integer>();
-				for (int j = i; j < i + bnp[i][CHORD_SIZE_AS_NUM_ONSETS]; j++) {
+				int chordSize = 
+					(btp != null) ? btp[i][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+					bnp[i][CHORD_SIZE_AS_NUM_ONSETS];	
+				for (int j = i; j < i + chordSize; j++) {
 					currFirstChordInd.add(j);
 				}
 //				firstChordIndices.add(currFirstChordInd);
@@ -4678,7 +4690,9 @@ public class Transcription implements Serializable {
 			int currDensIncrInd = indices.get(i);
 			int rightDensIncrInd;
 			if (i == densities.size()-1) {
-				rightDensIncrInd = bnp.length - bnp[bnp.length-1][CHORD_SIZE_AS_NUM_ONSETS];
+				rightDensIncrInd = 
+					(btp != null) ? btp.length - btp[btp.length-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+					bnp.length - bnp[bnp.length-1][CHORD_SIZE_AS_NUM_ONSETS];
 			}
 			else {
 				rightDensIncrInd = indices.get(i+1);
@@ -4704,18 +4718,24 @@ public class Transcription implements Serializable {
 				}
 				for (int j = start; j < end; j++) {
 					// j is the index of the lowest note in the chord
-					int chordSize = bnp[j][CHORD_SIZE_AS_NUM_ONSETS];
+					int chordSize = 
+						(btp != null) ? btp[j][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+						bnp[j][CHORD_SIZE_AS_NUM_ONSETS];
 //					List<List<Integer>> pitchesAndSpnInChord = new ArrayList<List<Integer>>();
 					List<Integer> pitchesInChord = new ArrayList<Integer>();
 					// Add pitches and sustained previous note-ness of all notes in the chord
 					for (int k = j; k < j + chordSize; k++) {
 //						pitchesAndSpnInChord.add(Arrays.asList(new Integer[]{bnp[k][PITCH], 0}));
-						pitchesInChord.add(bnp[k][PITCH]);
+						pitchesInChord.add(
+							(btp != null) ? btp[k][Tablature.PITCH]	:
+							bnp[k][PITCH]);
 					}
 					// Add pitches and sustained previous note-ness of any sustained previous notes
-					for (int ind : getIndicesOfSustainedPreviousNotes(null, null, bnp, j)) {
+					for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, j)) {
 //						pitchesAndSpnInChord.add(Arrays.asList(new Integer[]{bnp[ind][PITCH], 1}));
-						pitchesInChord.add(bnp[ind][PITCH]);
+						pitchesInChord.add(
+							(btp != null) ? btp[ind][Tablature.PITCH] :	
+							bnp[ind][PITCH]);
 					}
 //					pitchesAndSpnInChord = ToolBox.bubbleSort(pitchesAndSpnInChord);
 //					Collections.reverse(pitchesAndSpnInChord);
@@ -4772,14 +4792,18 @@ public class Transcription implements Serializable {
 //			int sizeFirstRightCh = bnp[currDensIncrInd][CHORD_SIZE_AS_NUM_ONSETS];
 			List<List<Integer>> spn = new ArrayList<List<Integer>>();
 			// Add pitches and sustained previous note-ness of all notes in the chord
-
-			for (int j = currDensIncrInd; j < (currDensIncrInd + bnp[currDensIncrInd][CHORD_SIZE_AS_NUM_ONSETS]); j++) {
+			int chrdSize = 
+				(btp != null) ? btp[currDensIncrInd][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+				bnp[currDensIncrInd][CHORD_SIZE_AS_NUM_ONSETS];	
+			for (int j = currDensIncrInd; j < (currDensIncrInd + chrdSize); j++) {
 				System.out.println("j ==== " + j);
-				spn.add(Arrays.asList(new Integer[]{bnp[j][PITCH], 0}));
+				int toAdd = (btp != null) ? btp[j][Tablature.PITCH] : bnp[j][PITCH];
+				spn.add(Arrays.asList(new Integer[]{toAdd, 0}));
 			}
 			// Add pitches and sustained previous note-ness of any sustained previous notes
-			for (int ind : getIndicesOfSustainedPreviousNotes(null, null, bnp, currDensIncrInd)) {
-				spn.add(Arrays.asList(new Integer[]{bnp[ind][PITCH], 1}));
+			for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, currDensIncrInd)) {
+				int toAdd = (btp != null) ? btp[ind][Tablature.PITCH] : bnp[ind][PITCH]; 
+				spn.add(Arrays.asList(new Integer[]{toAdd, 1}));
 			}
 			// Sort on pitch
 			spn = ToolBox.bubbleSort(spn, 0);

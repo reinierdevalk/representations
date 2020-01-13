@@ -2166,7 +2166,107 @@ public class TranscriptionTest extends TestCase {
 				}
 			}
 		}
-		assertEquals(expected, actual);		
+		assertEquals(expected, actual);
+	}
+
+
+	public void testGetNonImitativeVoiceEntriesNonTab() {
+		String prefix = "F:/research/data/MIDI/bach-inv/thesis/";
+		List<String> fileNames = Arrays.asList(new String[]{
+			// 3vv
+//			"3vv/bach-INV-inventio_1-BWV_787", // correct
+//			"3vv/bach-INV-inventio_2-BWV_788", // incorrect: voice crossing at density 3 (PROBLEM IN DATA: unison not correctly encoded in MIDI --> wrong first rightChord --> vc assumption does not hold (vc at 2-3 gives wrong addition to allVoices 2-3) (would not occur if unison would be correct)
+//			"3vv/bach-INV-inventio_3-BWV_789", // correct
+//			"3vv/bach-INV-inventio_4-BWV_790", // correct
+//			"3vv/bach-INV-inventio_5-BWV_791", // correct
+//			"3vv/bach-INV-inventio_6-BWV_792", // correct
+//			"3vv/bach-INV-inventio_7-BWV_793", // correct
+			"3vv/bach-INV-inventio_8-BWV_794", //
+//			"3vv/bach-INV-inventio_9-BWV_795",
+//			"3vv/bach-INV-inventio_10-BWV_796",
+//			"3vv/bach-INV-inventio_11-BWV_797",
+//			"3vv/bach-INV-inventio_12-BWV_798",
+//			"3vv/bach-INV-inventio_13-BWV_799", // PROBLEM IN ALG/DATA: config calc gives incorrect result, also with correct unison (but only just: 74 vs 72)
+//			"3vv/bach-INV-inventio_14-BWV_800",
+//			"3vv/bach-INV-inventio_15-BWV_801" // PROBLEM IN ALG: config calc gives incorrect result	
+		});
+
+		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
+		List<List<Integer>> bwv787 = new ArrayList<List<Integer>>();
+		bwv787.add(Arrays.asList(new Integer[]{1, 1}));
+		bwv787.add(Arrays.asList(new Integer[]{0, 1, 24}));
+		bwv787.add(Arrays.asList(new Integer[]{2, 0, 1}));
+//		expected.add(bwv787);
+
+		List<List<Integer>> bwv788 = new ArrayList<List<Integer>>();
+		bwv788.add(Arrays.asList(new Integer[]{1}));
+		bwv788.add(Arrays.asList(new Integer[]{0, 1, 38}));
+		bwv788.add(Arrays.asList(new Integer[]{2, 0, 2}));
+//		expected.add(bwv788);
+		
+		List<List<Integer>> bwv789 = new ArrayList<List<Integer>>();
+		bwv789.add(Arrays.asList(new Integer[]{1, 1}));
+		bwv789.add(Arrays.asList(new Integer[]{0, 1, 47, 48}));
+		bwv789.add(Arrays.asList(new Integer[]{2, 0, 2, 1}));
+//		expected.add(bwv789);
+		
+		List<List<Integer>> bwv790 = new ArrayList<List<Integer>>();
+		bwv790.add(Arrays.asList(new Integer[]{1, 1}));
+		bwv790.add(Arrays.asList(new Integer[]{0, 1, 19, 20}));
+		bwv790.add(Arrays.asList(new Integer[]{2, 0, 1, 0}));
+//		expected.add(bwv790);
+		
+		List<List<Integer>> bwv791 = new ArrayList<List<Integer>>();
+		bwv791.add(Arrays.asList(new Integer[]{1, 1}));
+		bwv791.add(Arrays.asList(new Integer[]{0, 4, 20, 21}));
+		bwv791.add(Arrays.asList(new Integer[]{2, 0, 1, 0}));
+//		expected.add(bwv791);
+		
+		List<List<Integer>> bwv792 = new ArrayList<List<Integer>>();
+		bwv792.add(Arrays.asList(new Integer[]{1, 1}));
+		bwv792.add(Arrays.asList(new Integer[]{0, 1, 10, 11, 12}));
+		bwv792.add(Arrays.asList(new Integer[]{2, 0, 2, 1, 0}));
+//		expected.add(bwv792);
+
+		List<List<Integer>> bwv793 = new ArrayList<List<Integer>>();
+		bwv793.add(Arrays.asList(new Integer[]{1, 1}));
+		bwv793.add(Arrays.asList(new Integer[]{0, 1, 2, 21, 22}));
+		bwv793.add(Arrays.asList(new Integer[]{2, 2, 0, 1, 0}));
+//		expected.add(bwv793);
+	
+		List<List<Integer>> bwv794 = new ArrayList<List<Integer>>();
+		bwv794.add(Arrays.asList(new Integer[]{1, 2}));
+		bwv794.add(Arrays.asList(new Integer[]{0, 1, 20, 21, 22}));
+		bwv794.add(Arrays.asList(new Integer[]{2, 1, 2, 1, 0}));
+		expected.add(bwv794);
+		
+		List<List<List<Integer>>> actual = new ArrayList<List<List<Integer>>>();
+		List<Integer> voices = Arrays.asList(new Integer[]{3});
+		for (int i = 0; i < fileNames.size(); i++) {
+			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + ".mid"), null);
+			actual.add(t.getNonImitativeVoiceEntries(null, null, t.getBasicNoteProperties(), 
+				voices.get(i), 3));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			if (expected.get(i) == null) {
+				assertEquals(expected.get(i), actual.get(i));
+			}
+			else {
+//			if (expected.get(i) != null && actual.get(i) != null) {
+				assertEquals(expected.get(i).size(), actual.get(i).size());
+				for (int j = 0; j < expected.get(i).size(); j++) {
+					if (expected.get(i).get(j) != null && actual.get(i).get(j) != null) {
+						assertEquals(expected.get(i).get(j).size(), actual.get(i).get(j).size());
+						for (int k = 0; k < expected.get(i).get(j).size(); k++) {
+							assertEquals(expected.get(i).get(j).get(k), actual.get(i).get(j).get(k));
+						}
+					}
+				}
+			}
+		}
+		assertEquals(expected, actual);
 	}
 
 
