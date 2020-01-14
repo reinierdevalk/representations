@@ -5074,6 +5074,8 @@ public class Transcription implements Serializable {
 		// Add remaining rightVoices and reverse allVoices
 		allVoices.addAll(rightVoices);
 		Collections.reverse(allVoices);
+		// Reverse allConfigs
+		Collections.reverse(allConfigs);
 		System.out.println("HIERRRRR");
 		List<List<Integer>> res = new ArrayList<List<Integer>>();
 		System.out.println("allVoices = " + allVoices);
