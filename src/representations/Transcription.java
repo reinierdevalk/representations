@@ -51,7 +51,7 @@ public class Transcription implements Serializable {
 	
 //	private static final long serialVersionUID = -8586909984652950201L;
 	public static int MAXIMUM_NUMBER_OF_VOICES = 5;
-	public static int DURATION_LABEL_SIZE = (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3)*2; // trp dur; *3 for JosquIntab; *2 for Byrd
+	public static int DURATION_LABEL_SIZE = (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3)*1; // trp dur; *3 for JosquIntab; *2 for Byrd
 	public static final int INCORRECT_IND = 0;
 	public static final int ORNAMENTATION_IND = 1;
 	public static final int REPETITION_IND = 2;
@@ -5586,7 +5586,12 @@ public class Transcription implements Serializable {
 					}
 				}	
 			}
+//			System.out.println(noteDensities.subList(0, 50));
+//			for (List<Double> l : durationLabels) {
+//				System.out.println(l.size() + " - " + l);
+//			}
 
+			System.out.println("densities = " + densities);
 			// If the voices enter successively: determine if the piece is imitative
 			if (densities.size() == numVoices) {
 				// Check whether there are enough notes of density 1 to contain a motif of n notes
@@ -5595,6 +5600,7 @@ public class Transcription implements Serializable {
 					if (noteDensities.get(i) > 1) { // in 2020
 //					if (getNoteDensity().get(i) > 1) { // in 2020	
 						enoughNotes = false;
+						System.out.println("not enough notes of density 1 for motif");
 						break;
 					}
 				}
@@ -5608,11 +5614,13 @@ public class Transcription implements Serializable {
 //						return ve;
 //					}
 					if (ve != null) {
+						System.out.println("motif found");
 						System.out.println("IMITATIVE MANNE.");
 						return ve;
 					}
 					else {
 //						System.out.println("IMITATIVE FAILED AT " + pieceName);
+						System.out.println("no motif found");
 						System.out.println("NON-IMITATIVE MANNE.");
 						return getNonImitativeVoiceEntries(btp, durationLabels, bnp, numVoices, n); // in  2020
 					}
