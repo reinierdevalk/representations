@@ -2133,211 +2133,84 @@ public class TranscriptionTest extends TestCase {
 		String prefixTab = "F:/research/data/encodings/tab-int/";
 		String prefix = "F:/research/data/MIDI/tab-int/";
 		List<String> fileNames = Arrays.asList(new String[]{
-			// int 3vv
-			"3vv/newsidler-1536_7-disant_adiu", //
+			// 3vv
+			"3vv/newsidler-1536_7-disant_adiu", // correct
 			"3vv/judenkuenig-1523_2-elslein_liebes", //
 			"3vv/phalese-1547_7-tant_que-3vv", //
-			// int 4vv
+			// 4vv
 			"4vv/rotta-1546_15-bramo_morir", // 
 			"4vv/phalese-1547_7-tant_que-4vv", // 
 			"4vv/ochsenkun-1558_5-herr_gott", // 
-			"4vv/abondante-1548_1-mais_mamignone", // 
+//			"4vv/abondante-1548_1-mais_mamignone", // 
 			"4vv/phalese-1563_12-las_on", // 
 			"4vv/barbetta-1582-il_nest", // 
-			
-			"2vv/bach-INV-inventio_5-BWV_776", // correct
-			"2vv/bach-INV-inventio_6-BWV_777", // correct
-			"2vv/bach-INV-inventio_7-BWV_778", // correct
-			"2vv/bach-INV-inventio_9-BWV_780", // correct
-			"2vv/bach-INV-inventio_11-BWV_782", // correct
-			"2vv/bach-INV-inventio_12-BWV_783", // correct
-			"2vv/bach-INV-inventio_13-BWV_784", // correct
-			"2vv/bach-INV-inventio_14-BWV_785", // correct 
-			"2vv/bach-INV-inventio_15-BWV_786",	// incorrect: rest at density 2 (PROBLEM IN ALG: no rest assumption does not hold --> wrong first rightChord --> config calc gives incorrect result)
-			// inv 3vv
-			"3vv/bach-INV-inventio_1-BWV_787", // correct
-			"3vv/bach-INV-inventio_2-BWV_788", // incorrect: voice crossing at density 3 (PROBLEM IN DATA: unison not correctly encoded in MIDI --> wrong first rightChord --> vc assumption does not hold --> config calc gives incorrect result) (would not occur if unison would be correct)
-			"3vv/bach-INV-inventio_3-BWV_789", // correct
-			"3vv/bach-INV-inventio_4-BWV_790", // correct
-			"3vv/bach-INV-inventio_5-BWV_791", // correct
-			"3vv/bach-INV-inventio_6-BWV_792", // correct
-			"3vv/bach-INV-inventio_7-BWV_793", // correct
-			"3vv/bach-INV-inventio_8-BWV_794", // correct
-			"3vv/bach-INV-inventio_9-BWV_795", // correct
-			"3vv/bach-INV-inventio_10-BWV_796", // correct
-			"3vv/bach-INV-inventio_11-BWV_797", // correct
-			"3vv/bach-INV-inventio_12-BWV_798", // correct
-			"3vv/bach-INV-inventio_13-BWV_799", // incorrect (PROBLEM IN DATA and ALG: unison not correctly encoded in MIDI --> wrong first rightChord --> config calc gives incorrect result) (would also occur if unison would be correct (but only just: 74 vs 72))
-			"3vv/bach-INV-inventio_14-BWV_800", // correct
-			"3vv/bach-INV-inventio_15-BWV_801", // incorrect (PROBLEM IN ALG: config calc gives incorrect result)	
-			// WTC 3vv
-			"3vv/bach-WTC2-fuga_12-BWV_881" // incorrect: at density 2 (PROBLEM IN ALG: config calc gives incorrect result) 
 		});
 
 		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
-		// inv 2vv
-		List<List<Integer>> bwv776 = new ArrayList<List<Integer>>();
-		bwv776.add(Arrays.asList(new Integer[]{1})); 
-		bwv776.add(Arrays.asList(new Integer[]{0, 3}));
-		bwv776.add(Arrays.asList(new Integer[]{1, 0}));
-		expected.add(bwv776);
+		// int 3vv
+		List<List<Integer>> disantAdiu = new ArrayList<List<Integer>>();
+		disantAdiu.add(Arrays.asList(new Integer[]{1})); 
+		disantAdiu.add(Arrays.asList(new Integer[]{0, 2, 3, 4}));
+		disantAdiu.add(Arrays.asList(new Integer[]{1, 2, 1, 0}));
+		expected.add(disantAdiu);
 		//
-		List<List<Integer>> bwv777 = new ArrayList<List<Integer>>();
-		bwv777.add(Arrays.asList(new Integer[]{1})); 
-		bwv777.add(Arrays.asList(new Integer[]{0, 1}));
-		bwv777.add(Arrays.asList(new Integer[]{1, 0}));
-		expected.add(bwv777);
+		List<List<Integer>> elsleinLiebes = new ArrayList<List<Integer>>();
+		elsleinLiebes.add(Arrays.asList(new Integer[]{1})); 
+		elsleinLiebes.add(Arrays.asList(new Integer[]{0, 1, 2, 3, 4}));
+		elsleinLiebes.add(Arrays.asList(new Integer[]{2, 0, 2, 1, 0}));
+		expected.add(elsleinLiebes);
 		//
-		List<List<Integer>> bwv778 = new ArrayList<List<Integer>>();
-		bwv778.add(Arrays.asList(new Integer[]{1})); 
-		bwv778.add(Arrays.asList(new Integer[]{0, 3, 4}));
-		bwv778.add(Arrays.asList(new Integer[]{1, 1, 0}));
-		expected.add(bwv778);
+		List<List<Integer>> tantQue3vv = new ArrayList<List<Integer>>();
+		tantQue3vv.add(Arrays.asList(new Integer[]{})); 
+		tantQue3vv.add(Arrays.asList(new Integer[]{0, 1, 2}));
+		tantQue3vv.add(Arrays.asList(new Integer[]{2, 1, 0}));
+		expected.add(tantQue3vv);
 		//
-		List<List<Integer>> bwv780 = new ArrayList<List<Integer>>();
-		bwv780.add(Arrays.asList(new Integer[]{})); 
-		bwv780.add(Arrays.asList(new Integer[]{0, 1}));
-		bwv780.add(Arrays.asList(new Integer[]{1, 0}));
-		expected.add(bwv780);
+		List<List<Integer>> bramoMorir = new ArrayList<List<Integer>>();
+		bramoMorir.add(Arrays.asList(new Integer[]{})); 
+		bramoMorir.add(Arrays.asList(new Integer[]{0, 1, 2, 3}));
+		bramoMorir.add(Arrays.asList(new Integer[]{3, 2, 1, 0}));
+		expected.add(bramoMorir);
 		//
-		List<List<Integer>> bwv782 = new ArrayList<List<Integer>>();
-		bwv782.add(Arrays.asList(new Integer[]{1})); 
-		bwv782.add(Arrays.asList(new Integer[]{0, 1}));
-		bwv782.add(Arrays.asList(new Integer[]{1, 0}));
-		expected.add(bwv782);
+		List<List<Integer>> tantQue4vv = new ArrayList<List<Integer>>();
+		tantQue4vv.add(Arrays.asList(new Integer[]{})); 
+		tantQue4vv.add(Arrays.asList(new Integer[]{0, 1, 2, 3}));
+		tantQue4vv.add(Arrays.asList(new Integer[]{3, 2, 1, 0}));
+		expected.add(tantQue4vv);
 		//
-		List<List<Integer>> bwv783 = new ArrayList<List<Integer>>();
-		bwv783.add(Arrays.asList(new Integer[]{})); 
-		bwv783.add(Arrays.asList(new Integer[]{0, 1}));
-		bwv783.add(Arrays.asList(new Integer[]{1, 0}));
-		expected.add(bwv783);
+		List<List<Integer>> herrGott = new ArrayList<List<Integer>>();
+		herrGott.add(Arrays.asList(new Integer[]{})); 
+		herrGott.add(Arrays.asList(new Integer[]{0, 1, 2, 3}));
+		herrGott.add(Arrays.asList(new Integer[]{3, 2, 1, 0}));
+		expected.add(herrGott);
 		//
-		List<List<Integer>> bwv784 = new ArrayList<List<Integer>>();
-		bwv784.add(Arrays.asList(new Integer[]{1})); 
-		bwv784.add(Arrays.asList(new Integer[]{0, 2, 3}));
-		bwv784.add(Arrays.asList(new Integer[]{1, 1, 0}));
-		expected.add(bwv784);	
+		List<List<Integer>> maisMamignone = new ArrayList<List<Integer>>();
+		maisMamignone.add(Arrays.asList(new Integer[]{1})); 
+		maisMamignone.add(Arrays.asList(new Integer[]{0, 2, 6, 26}));
+		maisMamignone.add(Arrays.asList(new Integer[]{1, 1, 0}));
+//		expected.add(maisMamignone);	
 		//
-		List<List<Integer>> bwv785 = new ArrayList<List<Integer>>();
-		bwv785.add(Arrays.asList(new Integer[]{1})); 
-		bwv785.add(Arrays.asList(new Integer[]{0, 1}));
-		bwv785.add(Arrays.asList(new Integer[]{1, 0}));
-		expected.add(bwv785);
+		List<List<Integer>> lasOn = new ArrayList<List<Integer>>();
+		lasOn.add(Arrays.asList(new Integer[]{})); 
+		lasOn.add(Arrays.asList(new Integer[]{0, 1, 2, 3}));
+		lasOn.add(Arrays.asList(new Integer[]{3, 2, 1, 0}));
+		expected.add(lasOn);
 		//
-		List<List<Integer>> bwv786 = new ArrayList<List<Integer>>();
-		bwv786.add(Arrays.asList(new Integer[]{0})); 
-		bwv786.add(Arrays.asList(new Integer[]{0, 3, 4}));
-		bwv786.add(Arrays.asList(new Integer[]{0, 1, 0}));
-		expected.add(bwv786);	
-		
-		// inv 3vv
-		List<List<Integer>> bwv787 = new ArrayList<List<Integer>>();
-		bwv787.add(Arrays.asList(new Integer[]{1, 1}));
-		bwv787.add(Arrays.asList(new Integer[]{0, 1, 24}));
-		bwv787.add(Arrays.asList(new Integer[]{2, 0, 1}));
-		expected.add(bwv787);
-		//
-		List<List<Integer>> bwv788 = new ArrayList<List<Integer>>();
-		bwv788.add(Arrays.asList(new Integer[]{1}));
-		bwv788.add(Arrays.asList(new Integer[]{0, 1, 38}));
-		bwv788.add(Arrays.asList(new Integer[]{2, 0, 2}));
-		expected.add(bwv788);
-		//
-		List<List<Integer>> bwv789 = new ArrayList<List<Integer>>();
-		bwv789.add(Arrays.asList(new Integer[]{1, 1}));
-		bwv789.add(Arrays.asList(new Integer[]{0, 1, 47, 48}));
-		bwv789.add(Arrays.asList(new Integer[]{2, 0, 2, 1}));
-		expected.add(bwv789);
-		//
-		List<List<Integer>> bwv790 = new ArrayList<List<Integer>>();
-		bwv790.add(Arrays.asList(new Integer[]{1, 1}));
-		bwv790.add(Arrays.asList(new Integer[]{0, 1, 19, 20}));
-		bwv790.add(Arrays.asList(new Integer[]{2, 0, 1, 0}));
-		expected.add(bwv790);
-		//
-		List<List<Integer>> bwv791 = new ArrayList<List<Integer>>();
-		bwv791.add(Arrays.asList(new Integer[]{1, 1}));
-		bwv791.add(Arrays.asList(new Integer[]{0, 4, 20, 21}));
-		bwv791.add(Arrays.asList(new Integer[]{2, 0, 1, 0}));
-		expected.add(bwv791);
-		//
-		List<List<Integer>> bwv792 = new ArrayList<List<Integer>>();
-		bwv792.add(Arrays.asList(new Integer[]{1, 1}));
-		bwv792.add(Arrays.asList(new Integer[]{0, 1, 10, 11, 12}));
-		bwv792.add(Arrays.asList(new Integer[]{2, 0, 2, 1, 0}));
-		expected.add(bwv792);
-		//
-		List<List<Integer>> bwv793 = new ArrayList<List<Integer>>();
-		bwv793.add(Arrays.asList(new Integer[]{1, 1}));
-		bwv793.add(Arrays.asList(new Integer[]{0, 1, 2, 21, 22}));
-		bwv793.add(Arrays.asList(new Integer[]{2, 2, 0, 1, 0}));
-		expected.add(bwv793);
-		//
-		List<List<Integer>> bwv794 = new ArrayList<List<Integer>>();
-		bwv794.add(Arrays.asList(new Integer[]{1, 2}));
-		bwv794.add(Arrays.asList(new Integer[]{0, 1, 20, 21, 22}));
-		bwv794.add(Arrays.asList(new Integer[]{2, 1, 2, 1, 0}));
-		expected.add(bwv794);
-		//
-		List<List<Integer>> bwv795 = new ArrayList<List<Integer>>();
-		bwv795.add(Arrays.asList(new Integer[]{1, 2}));
-		bwv795.add(Arrays.asList(new Integer[]{0, 1, 25}));
-		bwv795.add(Arrays.asList(new Integer[]{2, 1, 0}));
-		expected.add(bwv795);
-		//
-		List<List<Integer>> bwv796 = new ArrayList<List<Integer>>();
-		bwv796.add(Arrays.asList(new Integer[]{1, 1})); 
-		bwv796.add(Arrays.asList(new Integer[]{0, 1, 28}));
-		bwv796.add(Arrays.asList(new Integer[]{2, 0, 1}));
-		expected.add(bwv796);
-		//
-		List<List<Integer>> bwv797 = new ArrayList<List<Integer>>();
-		bwv797.add(Arrays.asList(new Integer[]{1, 1})); 
-		bwv797.add(Arrays.asList(new Integer[]{0, 1, 8}));
-		bwv797.add(Arrays.asList(new Integer[]{2, 0, 1}));
-		expected.add(bwv797);
-		//
-		List<List<Integer>> bwv798 = new ArrayList<List<Integer>>();
-		bwv798.add(Arrays.asList(new Integer[]{1})); 
-		bwv798.add(Arrays.asList(new Integer[]{0, 1, 37, 38, 39}));
-		bwv798.add(Arrays.asList(new Integer[]{2, 0, 2, 1, 0}));
-		expected.add(bwv798);
-		//
-		List<List<Integer>> bwv799 = new ArrayList<List<Integer>>();
-		bwv799.add(Arrays.asList(new Integer[]{0})); 
-		bwv799.add(Arrays.asList(new Integer[]{0, 1, 39, 40}));
-		bwv799.add(Arrays.asList(new Integer[]{1, 0, 2, 0}));
-		expected.add(bwv799);
-		//
-		List<List<Integer>> bwv800 = new ArrayList<List<Integer>>();
-		bwv800.add(Arrays.asList(new Integer[]{2})); 
-		bwv800.add(Arrays.asList(new Integer[]{0, 1, 20, 21}));
-		bwv800.add(Arrays.asList(new Integer[]{2, 1, 1, 0}));
-		expected.add(bwv800);
-		//
-		List<List<Integer>> bwv801 = new ArrayList<List<Integer>>();
-		bwv801.add(Arrays.asList(new Integer[]{2})); 
-		bwv801.add(Arrays.asList(new Integer[]{0, 1, 117, 118, 119}));
-		bwv801.add(Arrays.asList(new Integer[]{2, 1, 2, 1, 0}));
-		expected.add(bwv801);
-		
-		// WTC 3vv
-		List<List<Integer>> bwv881 = new ArrayList<List<Integer>>();
-		bwv881.add(Arrays.asList(new Integer[]{1, 0})); 
-		bwv881.add(Arrays.asList(new Integer[]{0, 28, 29, 115, 116, 117}));
-		bwv881.add(Arrays.asList(new Integer[]{1, 1, 0, 2, 1, 0}));
-		expected.add(bwv881);
+		List<List<Integer>> ilNest = new ArrayList<List<Integer>>();
+		ilNest.add(Arrays.asList(new Integer[]{})); 
+		ilNest.add(Arrays.asList(new Integer[]{0, 1, 2, 3}));
+		ilNest.add(Arrays.asList(new Integer[]{3, 2, 1, 0}));
+		expected.add(ilNest);	
 		
 		List<List<List<Integer>>> actual = new ArrayList<List<List<Integer>>>();
-		List<Integer> voices = Arrays.asList(new Integer[]{
-			2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3});
+		List<Integer> voices = Arrays.asList(new Integer[]{3, 3, 3, 4, 4, 4, 4, 4, 4});
 		for (int i = 0; i < fileNames.size(); i++) {
-			if (fileNames.get(i).contains("WTC")) {
-				prefix = "F:/research/data/MIDI/bach-WTC/thesis/";
-			}
-			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + ".mid"), null);
-			actual.add(t.getNonImitativeVoiceEntries(null, null, t.getBasicNoteProperties(), 
-				voices.get(i), 3));
+			String piece = fileNames.get(i);
+			File enc = new File(prefixTab + piece + ".tbp");
+			Tablature tab = new Tablature(enc, false);
+			Transcription t = new Transcription(new File(prefix + piece + ".mid"), enc);
+			actual.add(t.getNonImitativeVoiceEntries(tab.getBasicTabSymbolProperties(), 
+				t.getDurationLabels(), null, voices.get(i), 3));
 		}
 
 		assertEquals(expected.size(), actual.size());
