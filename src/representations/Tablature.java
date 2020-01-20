@@ -17,6 +17,7 @@ import tbp.SymbolDictionary;
 import tbp.TabSymbol;
 import tbp.TabSymbolSet;
 import tools.ToolBox;
+import utility.DataConverter;
 
 public class Tablature implements Serializable {
 	
@@ -896,8 +897,21 @@ public class Tablature implements Serializable {
 		ToolBox.sortByRational(allOnsetTimesAndMinDurs, 0);
 		return allOnsetTimesAndMinDurs;
 	}
-	
-	
+
+
+	/**
+	 * Returns the minimum duration as a duration label for each TabSymbol in the tablature.
+	 *   
+	 * @return
+	 */
+	// TESTED
+	List<List<Double>> getMinimumDurationLabels() {
+		List<List<Double>> minDurLabels = new ArrayList<>();
+		for (Integer[] in : getBasicTabSymbolProperties()) {
+			minDurLabels.add(Transcription.createDurationLabel(in[MIN_DURATION]));
+		}
+		return minDurLabels;
+	}
 
 
 	/**

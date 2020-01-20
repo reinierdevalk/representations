@@ -1046,9 +1046,6 @@ public class Transcription implements Serializable {
 			// because denom will always be a fraction of Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3: 
 			// 32, 16, 8, 4, 2, or 1
 			int duration = numer * (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom);
-//			System.out.println(duration);
-//			System.out.println(n.getMidiPitch());
-//			System.out.println(n.getMetricTime());
 			// Create the durationLabel for n and add it to initialDurationLabels
 			initialDurationLabels.add(createDurationLabel(duration));
 		}

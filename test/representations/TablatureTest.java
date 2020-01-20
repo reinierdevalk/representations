@@ -882,26 +882,92 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testGetNumberOfUnisonsInChord() {
+	public void testGetMinimumDurationLabels() {
 		Tablature tablature = new Tablature(encodingTestpiece1, false);
 		
-		// Determine expected
-		List<Integer> expected = Arrays.asList(new Integer[]{0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+		List<List<Double>> expected = new ArrayList<>();
+		//
+		expected.add(Transcription.QUARTER);
+		expected.add(Transcription.QUARTER);
+		expected.add(Transcription.QUARTER);
+		expected.add(Transcription.QUARTER);
+		//
+		expected.add(Transcription.DOTTED_EIGHTH);
+		expected.add(Transcription.DOTTED_EIGHTH);
+		expected.add(Transcription.DOTTED_EIGHTH);
+		expected.add(Transcription.DOTTED_EIGHTH);
+		//
+		expected.add(Transcription.SIXTEENTH);
+		//
+		expected.add(Transcription.EIGHTH);
+		expected.add(Transcription.EIGHTH);
+		expected.add(Transcription.EIGHTH);
+		expected.add(Transcription.EIGHTH);
+		//
+		expected.add(Transcription.EIGHTH);
+		//
+		expected.add(Transcription.QUARTER);
+		expected.add(Transcription.QUARTER);
+		expected.add(Transcription.QUARTER);
+		expected.add(Transcription.QUARTER);
+		expected.add(Transcription.QUARTER);
+		//
+		expected.add(Transcription.EIGHTH);
+		expected.add(Transcription.EIGHTH);
+		expected.add(Transcription.EIGHTH);
+		expected.add(Transcription.EIGHTH);
+		//
+		expected.add(Transcription.EIGHTH);
+		expected.add(Transcription.EIGHTH);
+		//
+		expected.add(Transcription.SIXTEENTH);
+		expected.add(Transcription.SIXTEENTH);
+		expected.add(Transcription.SIXTEENTH);
+		expected.add(Transcription.SIXTEENTH);
+		//
+		expected.add(Transcription.SIXTEENTH);
+		expected.add(Transcription.THIRTYSECOND);
+		expected.add(Transcription.THIRTYSECOND);
+		expected.add(Transcription.THIRTYSECOND);
+		expected.add(Transcription.THIRTYSECOND);
+		//
+		expected.add(Transcription.QUARTER);
+		//
+		expected.add(Transcription.QUARTER);
+		expected.add(Transcription.QUARTER);
+		expected.add(Transcription.QUARTER);
+		expected.add(Transcription.QUARTER);
 		
-		// Calculate actual
+		List<List<Double>> actual = tablature.getMinimumDurationLabels();
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).size(), actual.get(i).size()); 
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+			}
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testGetNumberOfUnisonsInChord() {
+		Tablature tablature = new Tablature(encodingTestpiece1, false);
+
+		List<Integer> expected = Arrays.asList(new Integer[]{0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+
 		List<Integer> actual = new ArrayList<Integer>();
 		for (int i = 0; i < tablature.getTablatureChords().size(); i++) {
 			actual.add(tablature.getNumberOfUnisonsInChord(i));
 		}
-		
-		// Assert equality
+
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));
 		}
 	}
-	
-	
+
+
 	public void testGetUnisonInfo() {
 		Tablature tablature = new Tablature(encodingTestpiece1, false);
 	  

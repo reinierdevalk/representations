@@ -1331,7 +1331,7 @@ public class TranscriptionTest extends TestCase {
 //			"3vv/newsidler-1544_2-nun_volget", // imi
 //			"3vv/phalese-1547_7-tant_que-3vv" // non
 				
-//			"4vv/ochsenkun-1558_5-absolon_fili", // n=2: imi
+			"4vv/ochsenkun-1558_5-absolon_fili", // n=2: imi
 //			"4vv/ochsenkun-1558_5-in_exitu", // n=2: imi
 //			"4vv/ochsenkun-1558_5-qui_habitat", // imi 
 //			"4vv/rotta-1546_15-bramo_morir", // non
@@ -1339,7 +1339,7 @@ public class TranscriptionTest extends TestCase {
 //			"4vv/ochsenkun-1558_5-herr_gott", // non
 //			"4vv/abondante-1548_1-mais_mamignone", // non
 //			"4vv/phalese-1563_12-las_on", // non
-			"4vv/barbetta-1582-il_nest", // non
+//			"4vv/barbetta-1582-il_nest", // non
 		});
 		
 		for (String s : fileNames) {
@@ -1349,7 +1349,8 @@ public class TranscriptionTest extends TestCase {
 			System.out.println("@-@-@-@-@" + s);
 //			System.out.println(t.getImitativeVoiceEntries(null, null, t.getBasicNoteProperties(), 3, 3));
 //			System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-			tr.determineVoiceEntriesHIGHLEVEL(t.getBasicTabSymbolProperties(), tr.getDurationLabels(), null, 4, 3);
+			tr.determineVoiceEntriesHIGHLEVEL(t.getBasicTabSymbolProperties(), 
+				t.getMinimumDurationLabels(), null, 4, 3);
 		}
 	}
 
@@ -2134,19 +2135,21 @@ public class TranscriptionTest extends TestCase {
 		String prefix = "F:/research/data/MIDI/tab-int/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			// 3vv
-			"3vv/newsidler-1536_7-disant_adiu", // correct
-			"3vv/judenkuenig-1523_2-elslein_liebes", //
-			"3vv/phalese-1547_7-tant_que-3vv", //
+			"3vv/newsidler-1536_7-disant_adiu", // correct TODO fix SNU
+			"3vv/judenkuenig-1523_2-elslein_liebes", // correct TODO fix SNU
+			"3vv/phalese-1547_7-tant_que-3vv", // correct
 			// 4vv
-			"4vv/rotta-1546_15-bramo_morir", // 
-			"4vv/phalese-1547_7-tant_que-4vv", // 
-			"4vv/ochsenkun-1558_5-herr_gott", // 
-//			"4vv/abondante-1548_1-mais_mamignone", // 
-			"4vv/phalese-1563_12-las_on", // 
-			"4vv/barbetta-1582-il_nest", // 
+			"4vv/rotta-1546_15-bramo_morir", // correct
+			"4vv/phalese-1547_7-tant_que-4vv", // correct
+			"4vv/ochsenkun-1558_5-herr_gott", // correct
+			"4vv/abondante-1548_1-mais_mamignone", // incorrect: voice crossing at density 4 TODO fix SNU  
+			"4vv/phalese-1563_12-las_on", // correct
+			"4vv/barbetta-1582-il_nest", // correct
 		});
 
+		
 		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
+		// Full durations
 		// int 3vv
 		List<List<Integer>> disantAdiu = new ArrayList<List<Integer>>();
 		disantAdiu.add(Arrays.asList(new Integer[]{1})); 
@@ -2185,10 +2188,10 @@ public class TranscriptionTest extends TestCase {
 		expected.add(herrGott);
 		//
 		List<List<Integer>> maisMamignone = new ArrayList<List<Integer>>();
-		maisMamignone.add(Arrays.asList(new Integer[]{1})); 
+		maisMamignone.add(Arrays.asList(new Integer[]{1, 1, 2})); 
 		maisMamignone.add(Arrays.asList(new Integer[]{0, 2, 6, 26}));
-		maisMamignone.add(Arrays.asList(new Integer[]{1, 1, 0}));
-//		expected.add(maisMamignone);	
+		maisMamignone.add(Arrays.asList(new Integer[]{3, 0, 2, 1}));
+		expected.add(maisMamignone);	
 		//
 		List<List<Integer>> lasOn = new ArrayList<List<Integer>>();
 		lasOn.add(Arrays.asList(new Integer[]{})); 
