@@ -15,7 +15,6 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
-import javax.swing.plaf.synth.SynthSeparatorUI;
 
 import de.uos.fmt.musitech.data.performance.PerformanceNote;
 import de.uos.fmt.musitech.data.score.NotationChord;
@@ -51,7 +50,7 @@ public class Transcription implements Serializable {
 	
 //	private static final long serialVersionUID = -8586909984652950201L;
 	public static int MAXIMUM_NUMBER_OF_VOICES = 5;
-	public static int DURATION_LABEL_SIZE = (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3)*1; // trp dur; *3 for JosquIntab; *2 for Byrd
+	public static int DURATION_LABEL_SIZE = (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3)*2; // trp dur; *3 for JosquIntab; *2 for Byrd
 	public static final int INCORRECT_IND = 0;
 	public static final int ORNAMENTATION_IND = 1;
 	public static final int REPETITION_IND = 2;
@@ -2381,6 +2380,9 @@ public class Transcription implements Serializable {
 			NotationVoice nv = ns.get(i).get(0);
 			for (int j = 0; j < nv.size(); j++) {
 				Note n = nv.get(j).get(0);
+				if (nv.get(j).size() > 1) {
+					System.out.println("two simultaneous notes in voice!");
+				}
 				Rational onset = n.getMetricTime();
 				if (j+1 < nv.size()) {
 					Note nextN = nv.get(j+1).get(0);
@@ -2390,6 +2392,10 @@ public class Transcription implements Serializable {
 						newDur = maxDur;
 					}
 					n.setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), onset, newDur));
+					// TODO Quick fix for two simultaneous notes in a voice 26.01.2020
+					if (nv.get(j).size() > 1) {
+						nv.get(j).get(1).setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), onset, newDur));
+					}
 				}
 			}
 		}

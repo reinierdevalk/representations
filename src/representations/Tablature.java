@@ -905,7 +905,7 @@ public class Tablature implements Serializable {
 	 * @return
 	 */
 	// TESTED
-	List<List<Double>> getMinimumDurationLabels() {
+	public List<List<Double>> getMinimumDurationLabels() {
 		List<List<Double>> minDurLabels = new ArrayList<>();
 		for (Integer[] in : getBasicTabSymbolProperties()) {
 			minDurLabels.add(Transcription.createDurationLabel(in[MIN_DURATION]));
