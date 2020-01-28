@@ -1008,10 +1008,10 @@ public class MEIExport {
 //						(currVoiceStrings.size() == 0) ? Rational.ZERO : onset.sub(offsetPrev);
 						(currVoiceStrings.size() == 0) ? Rational.ZERO : metPosPrev.add(durPrev);
 					}
-					System.out.println("iTab = " + iTab + "; durRest = " + durRest + 
-						"; bar = " + bar + "; metPosRest = " + metPosRest);
+//					System.out.println("iTab = " + iTab + "; durRest = " + durRest + 
+//						"; bar = " + bar + "; metPosRest = " + metPosRest);
 					if (iTab == 724) {
-						System.out.println(Arrays.toString(btp[724]));
+//						System.out.println(Arrays.toString(btp[724]));
 					}
 					
 					List<Object> noteData = 
