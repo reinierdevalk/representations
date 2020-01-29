@@ -47,8 +47,8 @@ public class Analyser {
 			"while_phoebus-II"
 		});
 
-		String path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/MIDI/";
-		path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/mapped/";
+		String path = "F:/research/projects/byrd/MIDI/"; // for models
+		path = "F:/research/projects/byrd/mapped/"; // for mapped ground truth
 //		path = "F:/research/data/MIDI/bach-WTC/thesis/4vv/";
 
 		boolean asMIDIPitches = true;
@@ -56,8 +56,8 @@ public class Analyser {
 		List<String> voicePairNames = Arrays.asList(new String[]{"M/C", "C/T", "T/B"});
 		List<String> res;
 //		res = analyseVoiceRanges(path, pieces, voiceNames, asMIDIPitches);
-		res = analyseVoiceRangeOverlap(path, pieces, voicePairNames);
-//		res = analyseVoiceCrossings(path, pieces, voiceNames);
+//		res = analyseVoiceRangeOverlap(path, pieces, voicePairNames);
+		res = analyseVoiceCrossings(path, pieces, voiceNames);
 		System.out.println(res.get(0));
 		System.out.println();
 		System.out.println(res.get(1));
