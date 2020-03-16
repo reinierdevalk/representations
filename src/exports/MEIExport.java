@@ -164,7 +164,6 @@ public class MEIExport {
 	// TESTED
 	static public List<Rational> getUnitFractions(Rational r, Rational mul) {
 		List<Rational> uf = new ArrayList<Rational>();
-		
 		r.reduce();
 		// r must be a multiple of 1/128
 		if (r.mul(mul.getDenom()).getDenom() != 1) {
@@ -783,9 +782,22 @@ public class MEIExport {
 //-*-		System.out.println(">>> MEIExport.getData() called");
 		Piece p = trans.getPiece();
 		int numVoices = p.getScore().size();
-		Rational gridVal = new Rational(1, 64);
+		Rational gridVal = new Rational(1, 96); // 14.03.2020 was 64
 		Integer[][] bnp = trans.getBasicNoteProperties();
 
+//		// Round any onsets that do not fall on the grid due to triplet roundings
+//		System.out.println("TERING!!");
+//		for (Integer[] in : bnp) {
+//			Rational onset = new Rational(in[Transcription.ONSET_TIME_NUMER], 
+//				in[Transcription.ONSET_TIME_DENOM]);
+//			onset.reduce();
+//			if (onset.mul(Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()).getDenom() != 1) {
+//				System.out.println(onset);
+//				
+//			}
+//		}
+//		System.exit(0);
+		
 		// Get meterInfo and keyInfo TODO assumed is a single key
 //		List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
 		int numBars = mi.get(mi.size()-1)[3];
@@ -898,8 +910,13 @@ public class MEIExport {
 //		for (int i = 0; i < bnp.length; i++) {
 //			System.out.println("i = " + i + "; " + Arrays.toString(bnp[i]));
 //		}
+		
+		System.out.println(Arrays.toString(bnp[727]));
+		System.out.println(Arrays.toString(bnp[728]));
+		System.out.println(Arrays.toString(bnp[729]));
 		for (int i = 0; i < bnp.length; i++) {
 			int iTab = -1;
+			System.out.println("============ begin loop, i = " + i);
 			if (btp != null) {
 //			if (tab != null) {
 				iTab = transToTabInd.get(i);
@@ -912,6 +929,8 @@ public class MEIExport {
 			Rational[] barMetPos = Tablature.getMetricPosition(onset, mi);
 			int bar = barMetPos[0].getNumer();
 			Rational metPos = barMetPos[1];
+
+			System.out.println("onset = " + onset);
 			
 			// Increment barEnd and clear lists when new bar is reached
 			if (onset.isGreaterOrEqual(barEnd)) {
@@ -928,6 +947,9 @@ public class MEIExport {
 			int midiPitchClass = pitch % 12;
 			Rational durRounded = round(new Rational(bnp[i][Transcription.DUR_NUMER], 
 				bnp[i][Transcription.DUR_DENOM]), gridVal);
+			System.out.println("before = " + new Rational(bnp[i][Transcription.DUR_NUMER], 
+				bnp[i][Transcription.DUR_DENOM]));
+			System.out.println("durRounded = " + durRounded);
 			Rational offset = onset.add(durRounded);
 			int keyInd = numAlt + 7;
 			Integer[] currMpcg = mpcg[keyInd];
@@ -981,8 +1003,10 @@ public class MEIExport {
 						break;
 					}
 				}
+				System.out.println("onsetPrev = " + onsetPrev + " = " + onsetPrev.toDouble());
 				int dotsPrev = prevNote[INTS.indexOf("dots")];
 				durPrev = new Rational(1, prevNote[INTS.indexOf("dur")]);
+				System.out.println(prevNote[INTS.indexOf("dur")]);
 				// The number of dots n lengthens a note by l its value, where l = ((2^n)-1)/2^n
 				// (see https://en.wikipedia.org/wiki/Note_value)
 				Rational l = new Rational((int)Math.pow(2, dotsPrev) - 1, (int)Math.pow(2, dotsPrev));
@@ -993,6 +1017,13 @@ public class MEIExport {
 
 			// Rests
 			Rational durRest = onset.sub(offsetPrev);
+			System.out.println("joe!!");
+			System.out.println("i = " + i);
+			System.out.println("metPosPrev = " + metPosPrev + " = " + metPosPrev.toDouble());
+			System.out.println("onset = " + onset + " = " + onset.toDouble());
+			System.out.println("offsetPrev = " + offsetPrev + " = " + offsetPrev.toDouble());
+			System.out.println("durPrev = " + durPrev + " = " + durPrev.toDouble());
+			System.out.println("durRest = " + durRest + " = " + durRest.toDouble());
 			if (durRest.isGreater(Rational.ZERO)) {
 				Rational precedingInBar = metPos;
 				// Single-bar rest in the same bar
@@ -1011,9 +1042,19 @@ public class MEIExport {
 //					System.out.println("iTab = " + iTab + "; durRest = " + durRest + 
 //						"; bar = " + bar + "; metPosRest = " + metPosRest);
 					if (iTab == 724) {
-//						System.out.println(Arrays.toString(btp[724]));
+						System.out.println(Arrays.toString(btp[724]));
 					}
 					
+					System.out.println("i = " + i);
+					System.out.println("iTab = " + iTab);
+					if (iTab == 724) {
+//						System.out.println("TRUE");
+//						System.out.println("voice");
+//						System.out.println(indBarOnsMpDurDots.size());
+//						for (Integer[] in : noteAttribPerVoiceInts.get(voice)) {
+//							System.out.println(Arrays.toString(in));
+//						}
+					}
 					List<Object> noteData = 
 						getNoteData(i, iTab, curr, getUnitFractions(durRest, gridVal), bar,
 						null, metPosRest, mi);
@@ -1182,6 +1223,8 @@ public class MEIExport {
 
 			// 2. Set tie, dur, dots
 			Rational remainingInBar = barEnd.sub(onset);
+			System.out.println("remainingInBar = " + remainingInBar);
+			System.out.println("durRounded = " + durRounded);
 			// Single-bar note
 			if (durRounded.isLessOrEqual(remainingInBar)) {
 //				System.out.println("GEVAL: single-bar note");
@@ -1225,6 +1268,7 @@ public class MEIExport {
 				Rational currMetPos = metPos;
 				for (int j = 0; j < subNoteDurs.size(); j++) {
 					Rational currSubNoteDur = subNoteDurs.get(j);
+					System.out.println("currSubNoteDur = " + currSubNoteDur);
 					List<Object> noteData = 
 						getNoteData(i, iTab, curr, getUnitFractions(currSubNoteDur, gridVal), 
 						bars.get(j), currOnset, currMetPos, mi);

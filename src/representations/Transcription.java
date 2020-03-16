@@ -6130,6 +6130,28 @@ public class Transcription implements Serializable {
 	}
 
 
+	// TODO test
+	public List<List<Rational[]>> listNotesPerVoice() {
+		List<List<Rational[]>> notesPerVoice = new ArrayList<>();
+		NotationSystem nSys = getPiece().getScore();
+		// For each voice i
+		for (int i = 0; i < nSys.size(); i ++) {
+			NotationVoice nv = nSys.get(i).get(0);
+			List<Rational[]> notes = new ArrayList<>();
+			for (NotationChord nc : nv) {
+				for (Note n : nc) {
+					notes.add(new Rational[]{
+					new Rational(n.getMidiPitch(), 1),
+					n.getMetricDuration(), 
+					Tablature.getMetricPosition(n.getMetricTime(), getMeterInfo())[1]});
+				}
+			}
+			notesPerVoice.add(notes);
+		}
+		return notesPerVoice;
+	}
+
+
 	/**
 	 * Gets the pitches in the chord at the given index. Element 0 of the List represents the lowest note's pitch,
 	 * element 1 the second-lowest note's, etc. Sustained notes are not included. 

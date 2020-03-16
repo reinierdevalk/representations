@@ -17,7 +17,6 @@ import tbp.SymbolDictionary;
 import tbp.TabSymbol;
 import tbp.TabSymbolSet;
 import tools.ToolBox;
-import utility.DataConverter;
 
 public class Tablature implements Serializable {
 	
