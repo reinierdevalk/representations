@@ -6129,8 +6129,19 @@ public class Transcription implements Serializable {
 		return notesPerVoice;
 	}
 
-
-	// TODO test
+	/**
+	 * Returns, for each voice, a list containing a Rational[], each element of which represents
+	 * a note and contains
+	 * <ul>
+	 * <li>as element 0: its pitch (with the MIDI number as the numerator and 1 as the denominator)</li>
+	 * <li>as element 1: its onset</li>
+	 * <li>as element 2: its duration</li>
+	 * <li>as element 3: its metric position</li>
+	 * </ul>
+	 * 
+	 * @return
+	 */
+	// TESTED (non-tab only, for one voice)
 	public List<List<Rational[]>> listNotesPerVoice() {
 		List<List<Rational[]>> notesPerVoice = new ArrayList<>();
 		NotationSystem nSys = getPiece().getScore();
@@ -6141,14 +6152,131 @@ public class Transcription implements Serializable {
 			for (NotationChord nc : nv) {
 				for (Note n : nc) {
 					notes.add(new Rational[]{
-					new Rational(n.getMidiPitch(), 1),
-					n.getMetricDuration(), 
-					Tablature.getMetricPosition(n.getMetricTime(), getMeterInfo())[1]});
+						new Rational(n.getMidiPitch(), 1), 
+						n.getMetricTime(),
+						n.getMetricDuration(), 
+						Tablature.getMetricPosition(n.getMetricTime(), getMeterInfo())[1]});
 				}
 			}
 			notesPerVoice.add(notes);
 		}
 		return notesPerVoice;
+	}
+
+
+	/**
+	 * Gets, for each note at onset time t in the Transcription, a list containing v elements,
+	 * each of which corresponds to a voice and contains the last n notes (pitch, onset, 
+	 * duration, metric position) up to t with an onset time < t in that voice. If 
+	 * the final note in the list has an offset time > t, the element is set to <code>null</code>.
+	 * 
+	 * @param n
+	 * @return
+	 */
+	// TESTED (for non-tablature case only) TODO
+	public List<List<List<Rational[]>>> getLastNotesInVoices(int n) {
+		List<List<List<Rational[]>>> res = new ArrayList<>();
+		List<Rational> allOnsetTimes = getAllOnsetTimes();
+		// Remove duplicates
+		List<Rational> dedup = new ArrayList<>();
+		for (Rational r : allOnsetTimes) {
+			if (!dedup.contains(r)) {
+				dedup.add(r);
+			}
+		}
+		allOnsetTimes = dedup;
+		
+		// For each onset time: get the last n notes in each voice
+		List<List<Rational[]>> notesPerVoice = listNotesPerVoice();
+		for (int i = 0; i < allOnsetTimes.size(); i++) {
+			Rational r = allOnsetTimes.get(i);
+			int numNotesChord = getNumberOfNewNotesPerChord().get(i); 
+			List<List<Rational[]>> lastNotesPerVoiceCurrOnset = new ArrayList<>();
+			for (int v = 0; v < getNumberOfVoices(); v++) {
+				List<Rational[]> notesCurrVoice = notesPerVoice.get(v);
+				List<Rational[]> lastNotesCurrVoice = new ArrayList<>();
+				for (int j = 0; j < notesCurrVoice.size(); j++) {
+					Rational[] note = notesCurrVoice.get(j);
+					Rational onset = note[1];
+					if (onset.isLess(r)) {
+						lastNotesCurrVoice.add(note);
+					}
+					else {
+						break;
+					}
+				}
+				// Get last n notes (skip first onset, where lastNotesCurrVoice is empty)
+				if (i != 0) {
+					int size = lastNotesCurrVoice.size();
+					// Only if there are notes (else lastNotesCurrVoice remains empty) 
+					if (size != 0) {
+						// See https://stackoverflow.com/questions/14605999/getting-the-last-three-elements-from-a-list-arraylist
+						List<Rational[]> lastNNotes = lastNotesCurrVoice.subList(Math.max(size - n, 0), size);
+						// If last note in currVoice is sustained: set to null
+						Rational[] lastNote = lastNNotes.get(lastNNotes.size()-1);
+						Rational offsetLastNote = lastNote[1].add(lastNote[2]);
+						if (offsetLastNote.isGreater(r)) {
+							lastNNotes = null;
+						}
+						lastNotesCurrVoice = lastNNotes;
+					}
+				}
+				lastNotesPerVoiceCurrOnset.add(v, lastNotesCurrVoice);
+			}
+			for (int j = 0; j < numNotesChord; j++) { 
+				res.add(lastNotesPerVoiceCurrOnset);
+			}
+		}
+		return res;
+	}
+
+
+	/**
+	 * Convert input into a csv String, where each row is a 3D list representing a note (a list),
+	 * which consists of voices (each a list or null), which consist of notes (each a list).
+	 * 
+	 * @param lastNNotesPerVoicePerNote
+	 * @return
+	 */
+	public static String getLastNotesInVoicesString(List<List<List<Rational[]>>> 
+		lastNNotesPerVoicePerNote, String meter) {
+		StringBuffer testData = new StringBuffer();
+		// For each note
+		for (int i = 0; i < lastNNotesPerVoicePerNote.size(); i++) {
+			testData.append("[");
+			List<List<Rational[]>> allSeqsCurrNote = lastNNotesPerVoicePerNote.get(i);
+			// For each voice
+			for (int j = 0; j < allSeqsCurrNote.size(); j++) {
+				if (allSeqsCurrNote.get(j) == null) {
+					testData.append("None");
+				}
+				else {
+					testData.append("[");
+					List<Rational[]> seqCurrNote = allSeqsCurrNote.get(j);
+					// For each note in the voice
+					for (int k = 0; k < seqCurrNote.size(); k++) {
+						Rational[] note = seqCurrNote.get(k);
+						testData.append("[" + 
+							note[0].getNumer() + "," + // pitch
+							note[1] + "," + // onset
+							note[2] + "," + // dur
+							note[3] + "," + // metpos
+							meter // meter
+							);
+						testData.append("]");
+						if (k < seqCurrNote.size()-1) {
+							testData.append(",");
+						}
+					}
+					testData.append("]");
+				}
+				if (j < allSeqsCurrNote.size()-1) {
+					testData.append(",");
+				}
+			}
+			testData.append("]" + "\r\n");
+		}
+		return testData.toString();
 	}
 
 
@@ -7816,7 +7944,7 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	public Integer[] getVoiceCrossingInformation(Tablature tablature) {
-		String voiceCrossingInformation = "";
+		String voiceCrossingInformation = "voice crossing information for " + getPieceName() + "\r\n";
 		int totalTypeOne = 0;
 		int totalTypeTwo = 0;
 
@@ -7972,7 +8100,7 @@ public class Transcription implements Serializable {
 		voiceCrossingInformation += "total       : " + (totalTypeOne+totalTypeTwo) + "\r\n";
 		voiceCrossingInformation += "times each voice is involved" + "\r\n";
 		voiceCrossingInformation += Arrays.toString(timesInvolved);
-//		System.out.println(voiceCrossingInformation);
+		System.out.println(voiceCrossingInformation);
 		// res contains numNotes + totalTypeOne + totalTypeTwo + all + involved (per voice) + 
 		// voice size (per voice)
 		Integer[] res = new Integer[4 + timesInvolved.length + getNumberOfVoices()];
@@ -7991,9 +8119,27 @@ public class Transcription implements Serializable {
 				numNotesPerVoice.add(notesPerVoice.get(i).size());
 			}
 			else {
-				// Only voice 4 is allowed to be empty
-				if (i != Transcription.MAXIMUM_NUMBER_OF_VOICES-1) {
-					throw new RuntimeException("Voice " + i + " does not contain any notes.");
+				int numVoices = getNumberOfVoices();
+				if (numVoices == 4) {
+					// Only voice 4 is allowed to be empty
+					if (i != Transcription.MAXIMUM_NUMBER_OF_VOICES-1) {
+						throw new RuntimeException("Voice " + i + " does not contain any notes.");
+					}
+				}
+				if (numVoices == 3) {
+					// Only voice 3 and 4 are allowed to be empty
+					if (i != Transcription.MAXIMUM_NUMBER_OF_VOICES-1 &&
+						i != Transcription.MAXIMUM_NUMBER_OF_VOICES-2) {
+						throw new RuntimeException("Voice " + i + " does not contain any notes.");
+					}
+				}
+				if (numVoices == 2) {
+					// Only voice 2, 3 and 4 are allowed to be empty
+					if (i != Transcription.MAXIMUM_NUMBER_OF_VOICES-1 &&
+						i != Transcription.MAXIMUM_NUMBER_OF_VOICES-2 &&
+						i != Transcription.MAXIMUM_NUMBER_OF_VOICES-3) {
+						throw new RuntimeException("Voice " + i + " does not contain any notes.");
+					}
 				}
 			}
 		}

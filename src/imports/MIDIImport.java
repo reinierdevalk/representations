@@ -136,7 +136,7 @@ public class MIDIImport {
 //-*-		System.out.println(url);
 		
 		Piece p = new MidiReader().getPiece(url);
-		boolean quantiseTriplets = true;
+		boolean quantiseTriplets = false;
 		if (quantiseTriplets) {
 			int srv = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
 			NotationSystem ns = p.getScore(); 

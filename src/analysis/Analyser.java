@@ -47,12 +47,118 @@ public class Analyser {
 			"while_phoebus-II"
 		});
 
+		// 3vv
+//		pieces = Arrays.asList(new String[]{
+//			"bach-WTC1-fuga_2-BWV_847",
+//			"bach-WTC1-fuga_3-BWV_848",
+//			"bach-WTC1-fuga_6-BWV_851",
+//			"bach-WTC1-fuga_7-BWV_852",
+//			"bach-WTC1-fuga_8-BWV_853",
+//			"bach-WTC1-fuga_9-BWV_854",
+//			"bach-WTC1-fuga_11-BWV_856",
+//			"bach-WTC1-fuga_13-BWV_858",
+//			"bach-WTC1-fuga_15-BWV_860",
+//			"bach-WTC1-fuga_19-BWV_864",
+//			"bach-WTC1-fuga_21-BWV_866",
+//			"bach-WTC2-fuga_1-BWV_870",
+//			"bach-WTC2-fuga_3-BWV_872",
+//			"bach-WTC2-fuga_4-BWV_873",
+//			"bach-WTC2-fuga_6-BWV_875",
+//			"bach-WTC2-fuga_10-BWV_879",
+//			"bach-WTC2-fuga_11-BWV_880",
+//			"bach-WTC2-fuga_12-BWV_881",
+//			"bach-WTC2-fuga_13-BWV_882",
+//			"bach-WTC2-fuga_14-BWV_883",
+//			"bach-WTC2-fuga_15-BWV_884",
+//			"bach-WTC2-fuga_18-BWV_887",
+//			"bach-WTC2-fuga_19-BWV_888",
+//			"bach-WTC2-fuga_20-BWV_889",
+//			"bach-WTC2-fuga_21-BWV_890",
+//			"bach-WTC2-fuga_24-BWV_893"
+//		});
+		
+		// 4vv
+//		pieces = Arrays.asList(new String[]{
+//			"bach-WTC1-fuga_1-BWV_846",
+//			"bach-WTC1-fuga_5-BWV_850",
+//			"bach-WTC1-fuga_12-BWV_857",
+//			"bach-WTC1-fuga_14-BWV_859",
+//			"bach-WTC1-fuga_16-BWV_861",
+//			"bach-WTC1-fuga_17-BWV_862",
+//			"bach-WTC1-fuga_18-BWV_863",
+//			"bach-WTC1-fuga_20-BWV_865",
+//			"bach-WTC1-fuga_23-BWV_868",
+//			"bach-WTC1-fuga_24-BWV_869",
+//			"bach-WTC2-fuga_2-BWV_871",
+//			"bach-WTC2-fuga_5-BWV_874",
+//			"bach-WTC2-fuga_7-BWV_876",
+//			"bach-WTC2-fuga_8-BWV_877",
+//			"bach-WTC2-fuga_9-BWV_878",
+//			"bach-WTC2-fuga_16-BWV_885",
+//			"bach-WTC2-fuga_17-BWV_886",
+//			"bach-WTC2-fuga_22-BWV_891",
+//			"bach-WTC2-fuga_23-BWV_892"
+//		});
+
+		// 5vv
+//		pieces = Arrays.asList(new String[]{
+//			"bach-WTC1-fuga_4-BWV_849-split_at_44-65-86_1", 
+//			"bach-WTC1-fuga_4-BWV_849-split_at_44-65-86_2",
+//			"bach-WTC1-fuga_4-BWV_849-split_at_44-65-86_3",
+//			"bach-WTC1-fuga_4-BWV_849-split_at_44-65-86_4",
+//			"bach-WTC1-fuga_22-BWV_867-split_at_37_1",
+//			"bach-WTC1-fuga_22-BWV_867-split_at_37_2",
+//		});
+		
+		// inv 2vv
+//		pieces = Arrays.asList(new String[]{
+//			"bach-inv-inventio_1-BWV_772",
+//			"bach-inv-inventio_2-BWV_773",
+//			"bach-inv-inventio_3-BWV_774",
+//			"bach-inv-inventio_4-BWV_775",
+//			"bach-inv-inventio_5-BWV_776",
+//			"bach-inv-inventio_6-BWV_777",
+//			"bach-inv-inventio_7-BWV_778",
+//			"bach-inv-inventio_8-BWV_779",
+//			"bach-inv-inventio_9-BWV_780",
+//			"bach-inv-inventio_10-BWV_781",
+//			"bach-inv-inventio_11-BWV_782",
+//			"bach-inv-inventio_12-BWV_783",
+//			"bach-inv-inventio_13-BWV_784",
+//			"bach-inv-inventio_14-BWV_785",
+//			"bach-inv-inventio_15-BWV_786"
+//		});
+		
+		// int 3vv
+		pieces = Arrays.asList(new String[]{
+			"bach-inv-inventio_1-BWV_787",
+			"bach-inv-inventio_2-BWV_788",
+			"bach-inv-inventio_3-BWV_789",
+			"bach-inv-inventio_4-BWV_790",
+			"bach-inv-inventio_5-BWV_791",
+			"bach-inv-inventio_6-BWV_792",
+			"bach-inv-inventio_7-BWV_793",
+			"bach-inv-inventio_8-BWV_794",
+			"bach-inv-inventio_9-BWV_795",
+			"bach-inv-inventio_10-BWV_796",
+			"bach-inv-inventio_11-BWV_797",
+			"bach-inv-inventio_12-BWV_798",
+			"bach-inv-inventio_13-BWV_799",
+			"bach-inv-inventio_14-BWV_800",
+			"bach-inv-inventio_15-BWV_801"	
+		});
+
 		String path = "F:/research/projects/byrd/MIDI/"; // for models
 		path = "F:/research/projects/byrd/mapped/"; // for mapped ground truth
+//		path = "F:/research/data/MIDI/bach-WTC/thesis/3vv/";
 //		path = "F:/research/data/MIDI/bach-WTC/thesis/4vv/";
-
+//		path = "F:/research/data/MIDI/bach-WTC/thesis/5vv/";
+//		path = "F:/research/data/MIDI/bach-inv/thesis/2vv/";
+		path = "F:/research/data/MIDI/bach-inv/thesis/3vv/";
+		
 		boolean asMIDIPitches = true;
-		List<String> voiceNames = Arrays.asList(new String[]{"medius", "contra", "tenor", "bassus"});
+//		List<String> voiceNames = Arrays.asList(new String[]{"medius", "contra", "tenor", "bassus"});
+		List<String> voiceNames = Arrays.asList(new String[]{"0", "1", "2"});
 		List<String> voicePairNames = Arrays.asList(new String[]{"M/C", "C/T", "T/B"});
 		List<String> res;
 //		res = analyseVoiceRanges(path, pieces, voiceNames, asMIDIPitches);
@@ -563,6 +669,9 @@ public class Analyser {
 		List<Object> listsToAvg = getListsToAvg(numCols, doubleInds, colsToSkip);
 		Integer[] intsToAvg = (Integer[]) listsToAvg.get(0);
 		Double[] doublesToAvg = (Double[]) listsToAvg.get(1);
+		
+		System.out.println(Arrays.toString(intsToAvg));
+		System.out.println(Arrays.toString(doublesToAvg));
 
 		// Create output
 		for (int i = 0; i < pieces.size(); i++) {
@@ -591,8 +700,8 @@ public class Analyser {
 					outputSpreadsheet += formatted + "\t";
 					dataArrLaTeX[i][j+1] = formatted;
 					int voice = j - 2*numVoices;
-					outputPythonPerVoice.set(
-						voice, outputPythonPerVoice.get(voice) + formatted + ", ");
+//					outputPythonPerVoice.set(
+//						voice, outputPythonPerVoice.get(voice) + formatted + ", ");
 				}
 				// double (avg percentage)
 				else {
@@ -607,11 +716,18 @@ public class Analyser {
 				}
 			}
 		}
+		for (String s : outputPythonPerVoice) {
+			System.out.println(s);
+		}
 		String[] avgs = ToolBox.getAveragesForMixedList(intsToAvg, doublesToAvg, pieces.size(), 2, 5);
 		// Add values for average over all pieces to Python output
+		System.out.println(Arrays.toString(avgs));
+		System.out.println(avgs.length);
 		for (int i = avgs.length - (numVoices+1); i < avgs.length; i++) {
+			System.out.println(i);
 			int voice = i - ((2*numVoices)+1);
-			outputPythonPerVoice.set(voice, outputPythonPerVoice.get(voice) + avgs[i] + "]");
+			System.out.println(voice);
+//			outputPythonPerVoice.set(voice, outputPythonPerVoice.get(voice) + avgs[i] + "]");
 		}
 
 		// Finalise LaTeX output

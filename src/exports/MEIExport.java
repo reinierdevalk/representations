@@ -782,7 +782,10 @@ public class MEIExport {
 //-*-		System.out.println(">>> MEIExport.getData() called");
 		Piece p = trans.getPiece();
 		int numVoices = p.getScore().size();
-		Rational gridVal = new Rational(1, 96); // 14.03.2020 was 64
+		Rational gridVal = 
+			(btp != null) ? Tablature.SMALLEST_RHYTHMIC_VALUE : // new Rational(1, 96);
+			new Rational(1, 128); // // 14.03.2020 was 1/64
+
 		Integer[][] bnp = trans.getBasicNoteProperties();
 
 //		// Round any onsets that do not fall on the grid due to triplet roundings
