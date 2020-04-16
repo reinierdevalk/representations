@@ -511,15 +511,13 @@ public class Tablature implements Serializable {
 
 
 	/** 
-	 * Sets tablatureChords, a a List in which all TabSymbols in the Tablature are arranged in chords. The 
+	 * Sets tablatureChords, a List in which all TabSymbols in the Tablature are arranged in chords. The 
 	 * Tablature is traversed from left to right, and the chords themselves are arranged starting with the 
 	 * lowest-string TabSymbol. 
-	 * NB: Rest events are not included in the returned list.
-	 * 
+	 * NB: Rest events are not included in the returned list. 
 	 */
 	// TESTED (together with getTablatureChord())
 	void setTablatureChords() {
-//  public List<List<TabSymbol>> getTablatureChords() {
 		tablatureChords = new ArrayList<List<TabSymbol>>();
 		TabSymbolSet tss = encoding.getTabSymbolSet();
 
