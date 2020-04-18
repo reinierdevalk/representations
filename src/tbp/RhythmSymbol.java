@@ -1,6 +1,7 @@
 package tbp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class RhythmSymbol {
@@ -131,7 +132,7 @@ public class RhythmSymbol {
 	public String getEncoding() {
 		return encoding;
 	}
-	
+
 	
 	/**
 	 * Returns the values of a triplet of this RhythmSymbol.
@@ -174,6 +175,33 @@ public class RhythmSymbol {
 	 */
 	public int getDuration() {
 		return duration;
+	}
+
+
+	public int getNumDots() {
+		int dots = 0;
+		String encoding = getEncoding();
+		if (encoding.contains(rhythmDot.getEncoding())) {
+			for (int i = 0; i < encoding.length(); i++) {
+				if (Character.toString(encoding.charAt(i)).equals(rhythmDot.getEncoding())) {
+					dots++;
+				}
+			}
+		}
+		return dots;
+	}
+
+
+	/**
+	 * Returns the undotted version of a dotted RS. If the RS is undotted, returns itself.  
+	 * @return
+	 */
+	public RhythmSymbol getUndotted() {
+		String encoding = getEncoding();
+		String encodingUndotted = 
+			getNumDots() == 0 ? encoding : 	
+			encoding.substring(0, encoding.indexOf(rhythmDot.getEncoding()));
+		return getRhythmSymbol(encodingUndotted);
 	}
 
 
