@@ -54,7 +54,6 @@ public class TabImport {
 		RHYTHM_SYMBOLS.put("Q.", RhythmSymbol.minimDotted.getEncoding());
 		RHYTHM_SYMBOLS.put("E.", RhythmSymbol.semiminimDotted.getEncoding());
 		RHYTHM_SYMBOLS.put("S.", RhythmSymbol.fusaDotted.getEncoding());
-//		RHYTHM_SYMBOLS.put("3", RhythmSymbol.triplet.getEncoding());
 		RHYTHM_SYMBOLS.put("3", RhythmSymbol.tripletIndicator);
 	}
 
@@ -104,7 +103,7 @@ public class TabImport {
 //			"4964_01a_benedictum_es_coelorum_josquin"
 //			"4965_01b_per_illud_ave_josquin",
 //			"4966_01c_nunc_mater_josquin",
-//			"5254_03_benedicta_es_coelorum_desprez-1",
+//trrr			"5254_03_benedicta_es_coelorum_desprez-1",
 //			"5254_03_benedicta_es_coelorum_desprez-2",
 //			"5254_03_benedicta_es_coelorum_desprez-3",
 //			"5702_benedicta-1",
@@ -113,12 +112,12 @@ public class TabImport {
 //			"3591_008_fecit_potentiam_josquin",	
 //			"5263_12_in_exitu_israel_de_egipto_desprez-1",
 //			"5263_12_in_exitu_israel_de_egipto_desprez-2",
-//			"5263_12_in_exitu_israel_de_egipto_desprez-3",
+//trrr			"5263_12_in_exitu_israel_de_egipto_desprez-3",
 //			"5256_05_inviolata_integra_desprez-1",
-//			"5256_05_inviolata_integra_desprez-2",
-//			"5256_05_inviolata_integra_desprez-3",
+//trrrr			"5256_05_inviolata_integra_desprez-2",
+//trrrr			"5256_05_inviolata_integra_desprez-3",
 //			"4465_33-34_memor_esto-1", 
-//			"4465_33-34_memor_esto-2",
+//trrr			"4465_33-34_memor_esto-2",
 //			"932_milano_108_pater_noster_josquin-1",
 //			"932_milano_108_pater_noster_josquin-2"
 //			"5252_01_pater_noster_desprez-1",
@@ -439,6 +438,8 @@ public class TabImport {
 	 */
 	private static String convertTabword(String tabword, boolean rsAdded) {
 		String convertedTabWord = "";
+		
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 
 		Map<String, String> beams = new LinkedHashMap<String, String>();
 		beams.put("[[", RhythmSymbol.beamedSemiminim.getEncoding());
@@ -454,26 +455,44 @@ public class TabImport {
 		String tabwordNoRS = "";
 		// Regular RS
 		if (RHYTHM_SYMBOLS.containsKey(tabword.substring(0, 1))) {
-			// Take into account dotted RS and triplet
-			// NB It is assumed that dotted triplets do not occur
+			// Take into account dotted RS and (dotted) triplet
 			int indAfterRS = 1;
-			if (tabword.length() > 1 && 
-				(tabword.substring(1, 2).equals(".") || tabword.substring(0, 1).equals("3"))) {
+			boolean isTriplet = tabword.substring(0, 1).equals("3");
+//			if (tabword.length() > 1 && 
+//				(tabword.substring(1, 2).equals(".") || tabword.substring(0, 1).equals("3"))) {
+//				indAfterRS = 2;
+//			}
+			// Dotted, non-triplet
+			if (tabword.length() > 1 && !isTriplet && tabword.contains(".")) {
 				indAfterRS = 2;
 			}
+			// Non-dotted, triplet
+			if (tabword.length() > 1 && isTriplet && !tabword.contains(".")) {
+				indAfterRS = 2;
+			}
+			// Dotted, triplet
+			if (tabword.length() > 1 && isTriplet && tabword.contains(".")) {
+				indAfterRS = 3;
+			}
+			System.out.println("indAfterRS = " + indAfterRS);
 //			if (tabword.length() <= 2) {
 //				tabwordNoRS = tabword.substring(indAfterRS); 
 //			}
 			rs = tabword.substring(0, indAfterRS);
-			// A triplet always consists of two RS
+			// Triplet
 			if (rs.startsWith("3")) {
+				// Non-dotted
 				convertedRS = 
-					RHYTHM_SYMBOLS.get(rs.substring(0, 1)) +
-					RHYTHM_SYMBOLS.get(rs.substring(1, 2)) +
-					SymbolDictionary.SYMBOL_SEPARATOR;
+					RHYTHM_SYMBOLS.get(rs.substring(0, 1)) + 
+					RHYTHM_SYMBOLS.get(rs.substring(1, 2));
+				// If dotted: add rhythmDot
+				if (indAfterRS == 3) {
+					convertedRS += RhythmSymbol.rhythmDot.getEncoding();
+				}
+				convertedRS += ss;
 			}
 			else {
-				convertedRS = RHYTHM_SYMBOLS.get(rs) + SymbolDictionary.SYMBOL_SEPARATOR;
+				convertedRS = RHYTHM_SYMBOLS.get(rs) + ss;
 			}
 			tabwordNoRS = tabword.substring(indAfterRS);
 		}
@@ -484,7 +503,7 @@ public class TabImport {
 				indAfterRS = tabword.lastIndexOf("]") + 1;
 			}
 			rs = tabword.substring(0, indAfterRS);
-			convertedRS = beams.get(rs) + SymbolDictionary.SYMBOL_SEPARATOR;
+			convertedRS = beams.get(rs) + ss;
 			tabwordNoRS = tabword.substring(indAfterRS);
 		}
 		// No RS
@@ -526,7 +545,7 @@ public class TabImport {
 				convertedTabWord += 
 					TAB_LETTERS.substring(l.get(0), l.get(0) + 1) + // letter
 					String.valueOf(l.get(1)) + // course
-					SymbolDictionary.SYMBOL_SEPARATOR;
+					ss;
 			}
 			// Insert comment before last symbol separator in convertedTabword
 			if (!tabwordNoRS.equals(originalTabwordNoRS)) {
@@ -535,12 +554,11 @@ public class TabImport {
 					originalTabwordNoRS = rs + originalTabwordNoRS;
 				}
 				convertedTabWord = convertedTabWord.substring(0, convertedTabWord.length()-1) + 
-					"{@" + originalTabwordNoRS  + " in TabCode}" + SymbolDictionary.SYMBOL_SEPARATOR;
+					"{@" + originalTabwordNoRS  + " in TabCode}" + ss;
 			}
 		}
 		
-		return convertedRS + convertedTabWord + ConstantMusicalSymbol.SPACE.getEncoding() + 
-			SymbolDictionary.SYMBOL_SEPARATOR;
+		return convertedRS + convertedTabWord + ConstantMusicalSymbol.SPACE.getEncoding() + ss;
 	}
 
 
