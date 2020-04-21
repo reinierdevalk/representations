@@ -66,6 +66,7 @@ public class MEIExport {
 	public static void main(String[] args) {
 		
 		String testTabFile = "4471_40_cum_sancto_spiritu";
+		testTabFile = "5256_05_inviolata_integra_desprez-3";
 		Tablature testTab = new Tablature(new File(
 			"F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/" +
 			testTabFile + ".tbp"), false);
@@ -450,7 +451,6 @@ public class MEIExport {
 			System.out.println(Arrays.toString(s));
 		}
 
-		
 		// 2. Make music
 		// a. Make scoreDef. The scoreDef contains the initial meter (if any); any additional 
 		// ones are stored in nonInitMeters
@@ -539,6 +539,12 @@ public class MEIExport {
 							}
 							Rational durAsRat = Tablature.SMALLEST_RHYTHMIC_VALUE.mul(rs.getDuration());
 							dur = durAsRat.getDenom();
+							System.out.println(rs.getDuration());
+							System.out.println(durAsRat);
+							System.out.println(dur);
+							if (dur == 6) {
+								System.exit(0);
+							}
 							prevDur = dur;
 							
 						}
@@ -596,7 +602,14 @@ public class MEIExport {
 					firstEventNext.split("\\" + ss);
 				// Meter change found? Add scoreDef after bar
 				if (MensurationSign.getMensurationSign(firstEventNextSplit[0]) != null) {
-					sb.append(INDENT + "<scoreDef" + " " + meters.get(meterIndex) + "/>" + "\r\n");
+					String meterStr = "";
+					for (String s : meters.get(meterIndex)) {
+						if (!s.equals("")) {
+							meterStr += s + " ";
+						}
+					}
+					meterStr = meterStr.trim();
+					sb.append(INDENT + "<scoreDef" + " " + meterStr + "/>" + "\r\n");
 					meterIndex++;
 				}
 			}
