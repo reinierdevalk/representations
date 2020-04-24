@@ -114,7 +114,7 @@ public class TabImport {
 //			"5263_12_in_exitu_israel_de_egipto_desprez-2",
 //trrr			"5263_12_in_exitu_israel_de_egipto_desprez-3",
 //			"5256_05_inviolata_integra_desprez-1",
-//trrrr			"5256_05_inviolata_integra_desprez-2",
+			"5256_05_inviolata_integra_desprez-2",
 //trrrr			"5256_05_inviolata_integra_desprez-3",
 //			"4465_33-34_memor_esto-1", 
 //trrr			"4465_33-34_memor_esto-2",
@@ -133,7 +133,7 @@ public class TabImport {
 //			"5264_13_qui_habitat_in_adjutorio_desprez-2",
 //			"933_milano_109_stabat_mater_dolorosa_josquin",
 //			"5255_04_stabat_mater_dolorosa_desprez-1",
-			"5255_04_stabat_mater_dolorosa_desprez-2",
+//			"5255_04_stabat_mater_dolorosa_desprez-2",
 		
 			// Chansons
 //			"4400_45_ach_unfall_was",
@@ -279,6 +279,7 @@ public class TabImport {
 		// and set to false again when the first barline following the triplet group is encountered
 		// NB: triplets are assumed to be always followed by a barline TODO
 		boolean tripletActive = false;
+		int tripletLength = 0;
 		for (int i = 0; i < tabwords.length; i++) {
 			String tabword = tabwords[i];
 			System.out.println("tabword = " + tabword);
@@ -298,12 +299,12 @@ public class TabImport {
 			// Constant musical symbol (barline etc.)
 			else if (ConstantMusicalSymbol.getConstantMusicalSymbol(tabword) != null) {
 				asTbp += tabword + ss + "\r\n";
-				// In case of a barline following a triplet group
-				if (ConstantMusicalSymbol.getConstantMusicalSymbol(tabword) != 
-					ConstantMusicalSymbol.SPACE && tripletActive) {
-					tripletActive = false;
-					System.out.println("UIT");
-				}
+//				// In case of a barline following a triplet group
+//				if (ConstantMusicalSymbol.getConstantMusicalSymbol(tabword) != 
+//					ConstantMusicalSymbol.SPACE && tripletActive) {
+//					tripletActive = false;
+//					System.out.println("UIT");
+//				}
 			}
 			// System break
 			else if (tabword.equals(tcSysBreak)) {
@@ -324,13 +325,26 @@ public class TabImport {
 				// convertTabword() only that first note will be converted to a tbp triplet variant 
 				if (rs.startsWith(RhythmSymbol.tripletIndicator)) {
 					tripletActive = true;
+					System.out.println(rs);
+					int dur = RhythmSymbol.getRhythmSymbol(rs).getDuration();
+					tripletLength = (3 * dur) - dur ;
+					System.out.println(tripletLength);
 					System.out.println("AAN");
+//					System.exit(0);
 //					rs = rs.substring(RhythmSymbol.tripletIndicator.length(), rs.length());
 				}
 				// Use the triplet variant if the tabword is the second or higher tabword in a 
 				// triplet group (in which case the rs will not start with the tripletIndicator)
 				if (!rs.startsWith(RhythmSymbol.tripletIndicator) && tripletActive) {
 					rs = RhythmSymbol.getTripletVariant(rs).getEncoding();
+					tripletLength -= RhythmSymbol.getRhythmSymbol(rs).getDuration();
+					// If last note of the triplet
+					if (tripletLength == 0) {
+						tripletActive = false;
+						System.out.println(rs);
+						System.out.println("UIT");
+						System.exit(0);
+					}
 					converted = rs + ss + converted.substring(converted.indexOf(ss) + 1);
 				}
 				System.out.println("converted = " + converted);
@@ -349,10 +363,17 @@ public class TabImport {
 				String rs = converted.substring(0, converted.indexOf(ss));
 				if (rs.startsWith(RhythmSymbol.tripletIndicator)) {
 					tripletActive = true;
+					int dur = RhythmSymbol.getRhythmSymbol(rs).getDuration();
+					tripletLength = (3 * dur) - dur ;
 					System.out.println("AAN");
 				}
 				if (!rs.startsWith(RhythmSymbol.tripletIndicator) && tripletActive) {
 					rs = RhythmSymbol.getTripletVariant(rs).getEncoding();
+					tripletLength -= RhythmSymbol.getRhythmSymbol(rs).getDuration();
+					// If last note of the triplet
+					if (tripletLength == 0) {
+						tripletActive = false;
+					}
 					converted = rs + ss + converted.substring(converted.indexOf(ss) + 1);
 				}
 				System.out.println("converted = " + converted);
@@ -440,6 +461,7 @@ public class TabImport {
 		String convertedTabWord = "";
 		
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		int lenTripletUnit = "(Q)".length();
 
 		Map<String, String> beams = new LinkedHashMap<String, String>();
 		beams.put("[[", RhythmSymbol.beamedSemiminim.getEncoding());
@@ -468,11 +490,11 @@ public class TabImport {
 			}
 			// Non-dotted, triplet
 			if (tabword.length() > 1 && isTriplet && !tabword.contains(".")) {
-				indAfterRS = 2;
+				indAfterRS = 2 + lenTripletUnit;
 			}
 			// Dotted, triplet
 			if (tabword.length() > 1 && isTriplet && tabword.contains(".")) {
-				indAfterRS = 3;
+				indAfterRS = 3 + lenTripletUnit;
 			}
 			System.out.println("indAfterRS = " + indAfterRS);
 //			if (tabword.length() <= 2) {
@@ -484,7 +506,7 @@ public class TabImport {
 				// Non-dotted
 				convertedRS = 
 					RHYTHM_SYMBOLS.get(rs.substring(0, 1)) + 
-					RHYTHM_SYMBOLS.get(rs.substring(1, 2));
+					RHYTHM_SYMBOLS.get(rs.substring(1+lenTripletUnit, 2+lenTripletUnit));
 				// If dotted: add rhythmDot
 				if (indAfterRS == 3) {
 					convertedRS += RhythmSymbol.rhythmDot.getEncoding();

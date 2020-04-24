@@ -430,9 +430,9 @@ public class MEIExport {
 //		int numVoices = dataStr.get(0).size();
 			
 		String res = ToolBox.readTextFile(new File(MEITemplatePath + "template.xml"));
-		String notationtypeStr = "tab.lute.italian"; // TODO give as param to method 	
-		String tuningStr = "lute.renaissance.6";
-		TabSymbolSet tss = TabSymbolSet.FRENCH_TAB;
+		String notationtypeStr = "tab.lute.italian"; // TODO give as param to method
+		String tuningStr = "lute.renaissance.6"; // TODO give as param to method
+		TabSymbolSet tss = TabSymbolSet.FRENCH_TAB; // TODO give as param to method
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 
 		// 1. Make meiHead
@@ -462,7 +462,7 @@ public class MEIExport {
 //			(miInit[0] == 4 && miInit[1] == 4 || miInit[0] == 2 && miInit[1] == 2 ? 
 //			" " + "meter.sym='common'" : "");
 		res = res.replace("scoreDef_placeholder", scoreDefStr.trim());
-		int meterIndex = 1;
+		int meterIndex = 0;
 		
 //		// List any successive meters
 //		List<String[]> nonInitMeters = new ArrayList<>();
@@ -527,26 +527,34 @@ public class MEIExport {
 						currEventSplit = Arrays.copyOfRange(currEventSplit, 1, currEventSplit.length);
 					}
 					if (currEventSplit.length != 0) {
+						boolean isTriplet = false;
 						// Determine dur
 						int dur = prevDur;
 						int dots = 0;
 						RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(currEventSplit[0]);
 						if (rs != null) {
-							dots = rs.getNumDots();
-							// Get undotted version if applicable 
-							if (dots != 0) {
-								rs = rs.getUndotted();
-							}
-							Rational durAsRat = Tablature.SMALLEST_RHYTHMIC_VALUE.mul(rs.getDuration());
-							dur = durAsRat.getDenom();
-							System.out.println(rs.getDuration());
-							System.out.println(durAsRat);
-							System.out.println(dur);
-							if (dur == 6) {
+							if (rs.getEncoding().startsWith(RhythmSymbol.tripletIndicator)) {
+								isTriplet = true;
+								System.out.println(Arrays.toString(meters.get(meterIndex)));
 								System.exit(0);
 							}
-							prevDur = dur;
-							
+							else {
+								dots = rs.getNumDots();
+								// Get undotted version if applicable 
+								if (dots != 0) {
+									rs = rs.getUndotted();
+								}
+								Rational durAsRat = Tablature.SMALLEST_RHYTHMIC_VALUE.mul(rs.getDuration());
+								dur = durAsRat.getDenom();
+								System.out.println(rs.getDuration());
+								System.out.println(durAsRat);
+								System.out.println(dur);
+								if (dur == 6) {
+									System.out.println(rs.getEncoding());
+									System.exit(0);
+								}
+								prevDur = dur;
+							}
 						}
 						// tabGrp
 						String tabGrpID = "";
@@ -603,7 +611,7 @@ public class MEIExport {
 				// Meter change found? Add scoreDef after bar
 				if (MensurationSign.getMensurationSign(firstEventNextSplit[0]) != null) {
 					String meterStr = "";
-					for (String s : meters.get(meterIndex)) {
+					for (String s : meters.get(meterIndex+1)) {
 						if (!s.equals("")) {
 							meterStr += s + " ";
 						}

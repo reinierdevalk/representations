@@ -35,19 +35,43 @@ public class RhythmSymbol {
 	public static RhythmSymbol beamedSemifusa = new RhythmSymbol("sf-", "T", 3); // 1
 	
 	public static String tripletIndicator = "tr"; 
-	public static RhythmSymbol semibrevisTriplet = new RhythmSymbol("trsb", "H", 32);
-	public static RhythmSymbol minimTriplet = new RhythmSymbol("trmi", "Q", 16);
-	public static RhythmSymbol minimDottedTriplet = new RhythmSymbol("trmi*", "Q", 24);
-	public static RhythmSymbol semiminimTriplet = new RhythmSymbol("trsm", "E", 8);
-	public static RhythmSymbol semiminimDottedTriplet = new RhythmSymbol("trsm*", "E", 12);
-	public static RhythmSymbol fusaTriplet = new RhythmSymbol("trfu", "S", 4);
-	public static RhythmSymbol fusaDottedTriplet = new RhythmSymbol("trfu*", "S", 6);
-	public static RhythmSymbol semifusaTriplet = new RhythmSymbol("trsf", "T", 2);
+	public static RhythmSymbol semibrevisTriplet           = new RhythmSymbol("trsb",   "H", 32);
+	public static RhythmSymbol semibrevisTripletOpen       = new RhythmSymbol("tr[sb",  "H", 32);
+	public static RhythmSymbol semibrevisTripletClose      = new RhythmSymbol("tr]sb",  "H", 32);
+	public static RhythmSymbol minimTriplet                = new RhythmSymbol("trmi",   "Q", 16);
+	public static RhythmSymbol minimTripletOpen            = new RhythmSymbol("tr[mi",  "Q", 16);
+	public static RhythmSymbol minimTripletClose           = new RhythmSymbol("tr]mi",  "Q", 16);
+	public static RhythmSymbol minimDottedTriplet          = new RhythmSymbol("trmi*",  "Q", 24);
+	public static RhythmSymbol minimDottedTripletOpen      = new RhythmSymbol("tr[mi*", "Q", 24);
+	public static RhythmSymbol minimDottedTripletClose     = new RhythmSymbol("tr]mi*", "Q", 24);
+	public static RhythmSymbol semiminimTriplet            = new RhythmSymbol("trsm",   "E", 8);
+	public static RhythmSymbol semiminimTripletOpen        = new RhythmSymbol("tr[sm",  "E", 8);
+	public static RhythmSymbol semiminimTripletClose       = new RhythmSymbol("tr]sm",  "E", 8);
+	public static RhythmSymbol semiminimDottedTriplet      = new RhythmSymbol("trsm*",  "E", 12);
+	public static RhythmSymbol semiminimDottedTripletOpen  = new RhythmSymbol("tr[sm*", "E", 12);
+	public static RhythmSymbol semiminimDottedTripletClose = new RhythmSymbol("tr]sm*", "E", 12);
+	public static RhythmSymbol fusaTriplet                 = new RhythmSymbol("trfu",   "S", 4);
+	public static RhythmSymbol fusaTripletOpen             = new RhythmSymbol("tr[fu",  "S", 4);
+	public static RhythmSymbol fusaTripletClose            = new RhythmSymbol("tr]fu",  "S", 4);
+	public static RhythmSymbol fusaDottedTriplet           = new RhythmSymbol("trfu*",  "S", 6);
+	public static RhythmSymbol fusaDottedTripletOpen       = new RhythmSymbol("tr[fu*", "S", 6);
+	public static RhythmSymbol fusaDottedTripletClose      = new RhythmSymbol("tr]fu*", "S", 6);
+	public static RhythmSymbol semifusaTriplet             = new RhythmSymbol("trsf",   "T", 2);
+	public static RhythmSymbol semifusaTripletOpen         = new RhythmSymbol("tr[sf",  "T", 2);
+	public static RhythmSymbol semifusaTripletClose        = new RhythmSymbol("tr]sf",  "T", 2);
 	
-	public static RhythmSymbol beamedSemiminimDottedTriplet = new RhythmSymbol("trsm*-", "E", 12); // 6
-	public static RhythmSymbol beamedSemiminimTriplet = new RhythmSymbol("trsm-", "E", 8); // 4
-	public static RhythmSymbol beamedFusaDottedTriplet = new RhythmSymbol("trfu*-", "S", 6); // 2
-	public static RhythmSymbol beamedFusaTriplet = new RhythmSymbol("trfu-", "S", 4); // 2
+	public static RhythmSymbol beamedSemiminimDottedTriplet      = new RhythmSymbol("trsm*-",  "E", 12); // 6
+	public static RhythmSymbol beamedSemiminimDottedTripletOpen  = new RhythmSymbol("tr[sm*-", "E", 12); // 6
+	public static RhythmSymbol beamedSemiminimDottedTripletClose = new RhythmSymbol("tr]sm*-", "E", 12); // 6
+	public static RhythmSymbol beamedSemiminimTriplet            = new RhythmSymbol("trsm-",   "E", 8); // 4
+	public static RhythmSymbol beamedSemiminimTripletOpen        = new RhythmSymbol("tr[sm-",  "E", 8); // 4
+	public static RhythmSymbol beamedSemiminimTripletClose       = new RhythmSymbol("tr]sm-",  "E", 8); // 4
+	public static RhythmSymbol beamedFusaDottedTriplet           = new RhythmSymbol("trfu*-",  "S", 6); // 2
+	public static RhythmSymbol beamedFusaDottedTripletOpen       = new RhythmSymbol("tr[fu*-", "S", 6); // 2
+	public static RhythmSymbol beamedFusaDottedTripletClose      = new RhythmSymbol("tr]fu*-", "S", 6); // 2
+	public static RhythmSymbol beamedFusaTriplet                 = new RhythmSymbol("trfu-",   "S", 4); // 2
+	public static RhythmSymbol beamedFusaTripletOpen             = new RhythmSymbol("tr[fu-",  "S", 4); // 2
+	public static RhythmSymbol beamedFusaTripletClose            = new RhythmSymbol("tr]fu-",  "S", 4); // 2
 	
 //	public static RhythmSymbol triplet = new RhythmSymbol("tr", "3", -1);
 //	public static RhythmSymbol tripletMinim = new RhythmSymbol("trmi", "3", 6); // 6-5-5 instead of 8-8
@@ -81,19 +105,19 @@ public class RhythmSymbol {
 		//
 //		triplet,
 //		tripletMinim,
-		semibrevisTriplet,
-		minimTriplet,
-		minimDottedTriplet,
-		semiminimTriplet,
-		semiminimDottedTriplet,
-		fusaTriplet,
-		fusaDottedTriplet,
-		semifusaTriplet,
+		semibrevisTriplet, semibrevisTripletOpen, semibrevisTripletClose,
+		minimTriplet, minimTripletOpen, minimTripletClose,
+		minimDottedTriplet, minimDottedTripletOpen, minimDottedTripletClose,
+		semiminimTriplet, semiminimTripletOpen, semiminimTripletClose,
+		semiminimDottedTriplet, semiminimDottedTripletOpen, semiminimDottedTripletClose,
+		fusaTriplet, fusaTripletOpen, fusaTripletClose,
+		fusaDottedTriplet, fusaDottedTripletOpen, fusaDottedTripletClose,
+		semifusaTriplet, semifusaTripletOpen, semifusaTripletClose,
 		//
-		beamedSemiminimDottedTriplet,
-		beamedSemiminimTriplet,
-		beamedFusaDottedTriplet,
-		beamedFusaTriplet
+		beamedSemiminimDottedTriplet, beamedSemiminimDottedTripletOpen, beamedSemiminimDottedTripletClose,
+		beamedSemiminimTriplet, beamedSemiminimTripletOpen, beamedSemiminimTripletClose,
+		beamedFusaDottedTriplet, beamedFusaDottedTripletOpen, beamedFusaDottedTripletClose,
+		beamedFusaTriplet, beamedFusaTripletOpen, beamedFusaTripletClose
 	});
 	}
 
@@ -139,7 +163,7 @@ public class RhythmSymbol {
 	 * 
 	 * @return
 	 */
-	public List<Integer> getTripletValues() {
+	private List<Integer> getTripletValues() {
 		// Three notes in the time of two semibreves (2*16 semifusae)
 		if (this.equals(semibrevis)) {
 			return Arrays.asList(new Integer[]{11, 11, 10});
