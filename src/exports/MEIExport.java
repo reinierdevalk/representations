@@ -66,7 +66,13 @@ public class MEIExport {
 	public static void main(String[] args) {
 		
 		String testTabFile = "4471_40_cum_sancto_spiritu";
-		testTabFile = "5256_05_inviolata_integra_desprez-3";
+		testTabFile = "5263_12_in_exitu_israel_de_egipto_desprez-3";
+//		testTabFile = "4465_33-34_memor_esto-2";
+//		testTabFile = "5255_04_stabat_mater_dolorosa_desprez-2";
+//		testTabFile = "5254_03_benedicta_es_coelorum_desprez-1";
+//		testTabFile = "5256_05_inviolata_integra_desprez-2";
+//		testTabFile = "5256_05_inviolata_integra_desprez-3";
+		
 		Tablature testTab = new Tablature(new File(
 			"F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/" +
 			testTabFile + ".tbp"), false);
@@ -535,6 +541,7 @@ public class MEIExport {
 						if (rs != null) {
 							if (rs.getEncoding().startsWith(RhythmSymbol.tripletIndicator)) {
 								isTriplet = true;
+								// Check for tripletOpen or tripletClose
 								System.out.println(Arrays.toString(meters.get(meterIndex)));
 								System.exit(0);
 							}
