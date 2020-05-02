@@ -2364,6 +2364,196 @@ public class Transcription implements Serializable {
 
 
 	/**
+	 * Aligns the note indices of the Tablature (represented by the argument <code>btp</code>)
+	 * and the Transcription (represented by the argument <code>bnp</code>). Due to the presence
+	 * of SNUs, alignment is not always 1-to-1. Two lists are returned:
+	 * <ul> 
+	 * <li><code>tabToTransInd</code>, containing, for each tab index, the corresponding trans index (or, in 
+	 *     the case of a SNU, indices)</li>
+	 * <li><code>transToTabInd</code>, containing, for each trans index, the corresponding tab index (wrapped
+	 *     in a list)</li>
+	 * </ul> 
+	 * 
+	 * The method takes into account SNUs and course crossings - but it is assumed that a chord 
+	 * with a SNU has no course crossing, and vice versa.
+	 * 
+	 * @param btp
+	 * @param bnp
+	 * @return A list containing<br>
+	 *         <ul> 
+	 *         <li>as element 0: <code>tabToTransInd</code></li>
+	 *         <li>as element 1: <code>transToTabInd</code></li>
+	 *         </ul> 
+	 */
+	// TESTED
+	public static List<List<List<Integer>>> alignTabAndTransIndices(Integer[][] btp, Integer[][] bnp) {
+		List<List<List<Integer>>> res = new ArrayList<>();
+
+		List<List<Integer[]>> pitchesPerChordTab = new ArrayList<>();
+		List<Integer[]> chord = new ArrayList<>();
+		for (int i = 0; i < btp.length; i++) {
+			int pitch = btp[i][Tablature.PITCH];
+			chord.add(new Integer[]{i, pitch});
+			// Any but last note
+			if (i < btp.length-1) {
+				if (btp[i+1][Tablature.CHORD_SEQ_NUM] > btp[i][Tablature.CHORD_SEQ_NUM]) {
+					pitchesPerChordTab.add(chord);
+					chord = new ArrayList<>();
+				}
+			}
+			// Last note
+			else {
+				pitchesPerChordTab.add(chord);
+			}
+		}
+
+		List<List<Integer[]>> pitchesPerChordTrans = new ArrayList<>();
+		chord = new ArrayList<>();
+		for (int i = 0; i < bnp.length; i++) {
+			int pitch = bnp[i][Transcription.PITCH];
+			chord.add(new Integer[]{i, pitch});
+			// Any but last note
+			if (i < bnp.length-1) {
+				if (bnp[i+1][Transcription.CHORD_SEQ_NUM] > bnp[i][Transcription.CHORD_SEQ_NUM]) {
+					pitchesPerChordTrans.add(chord);
+					chord = new ArrayList<>();
+				}
+			}
+			// Last note
+			else {
+				pitchesPerChordTrans.add(chord);
+			}
+		}
+
+		// Make tabToTransInd; add indices to list per chord
+		List<List<Integer>> tabToTransInd = new ArrayList<>();
+		for (int i = 0; i < pitchesPerChordTab.size(); i++) {
+			List<Integer[]> currChordTab = pitchesPerChordTab.get(i);
+//			List<Integer> indicesTab = ToolBox.getItemsAtIndex(currChordTab, 0);
+			List<Integer> pitchesTab = ToolBox.getItemsAtIndex(currChordTab, 1);
+			List<Integer[]> currChordTrans = pitchesPerChordTrans.get(i);
+			List<Integer> indicesTrans = ToolBox.getItemsAtIndex(currChordTrans, 0);
+			List<Integer> pitchesTrans = ToolBox.getItemsAtIndex(currChordTrans, 1);
+			
+			// No SNU (but possibly unison)
+			if (pitchesTab.size() == pitchesTrans.size()) {
+				// Find the trans index for each pitch in pitchesTab and add it to the list
+				List<Integer> pitchesAlreadyAdded = new ArrayList<>();
+				for (int j = 0; j < pitchesTab.size(); j++) {
+					int p = pitchesTab.get(j);
+					int indOfP = pitchesTrans.indexOf(p);
+					// Take into account possible unison; assumes that p occurs only twice
+					if (pitchesAlreadyAdded.contains(p)) {
+						indOfP = pitchesTrans.lastIndexOf(p);
+					}
+					tabToTransInd.add(Arrays.asList(new Integer[]{indicesTrans.get(indOfP)}));
+					pitchesAlreadyAdded.add(p);
+				}
+			}
+			// SNU (unison assumed not to be possible)
+			else {
+				// Find all trans indices for each pitch in pitchesTab and add them to the list
+				for (int j = 0; j < pitchesTab.size(); j++) {
+					int p = pitchesTab.get(j);
+					List<Integer> curr = new ArrayList<>();
+					for (Integer[] in : currChordTrans) {
+						if (in[1] == p) {
+							curr.add(in[0]);
+						}
+					}
+					tabToTransInd.add(curr);
+				}				
+			}
+		}
+
+		// Make transToTabInd
+		List<List<Integer>> transToTabInd = new ArrayList<>();
+		for (int i = 0; i < bnp.length; i++) {
+			transToTabInd.add(null);
+		}
+		for (int i = 0; i < tabToTransInd.size(); i++) {
+			List<Integer> transInd = tabToTransInd.get(i);
+			for (int ind : transInd) {
+				transToTabInd.set(ind, Arrays.asList(new Integer[]{i}));
+			}
+		}
+
+//		System.out.println("tabToTransInd");
+//		for (int j = 0; j < tabToTransInd.size(); j++) {
+//			System.out.println(j + " " + tabToTransInd.get(j));
+//		}
+//		System.out.println("transToTabInd");
+//		for (int j = 0; j < transToTabInd.size(); j++) {
+//			System.out.println(j + " " + transToTabInd.get(j));
+//		}
+
+//		int bnpInd = 0;
+//		for (int i = 0; i < btp.length; i++) {
+//			System.out.println("i = " + i);
+//			List<Integer> currIndInTrans = new ArrayList<>();
+//			currIndInTrans.add(bnpInd);
+//			int currPitch = btp[i][Tablature.PITCH];
+//			Rational currOnset = 
+//				new Rational(btp[i][Tablature.ONSET_TIME], 
+//				Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+//			int nextPitch = -1;
+//			Rational nextOnset = null;
+//			if (i+1 != btp.length) {
+//				nextPitch = btp[i+1][Tablature.PITCH];
+//				nextOnset = new Rational(btp[i+1][Tablature.ONSET_TIME], 
+//					Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+//			}
+//			System.out.println("currPitch = " + currPitch);
+//			System.out.println("currOnset = " + currOnset);
+//			System.out.println("nextPitch = " + nextPitch);
+//			System.out.println("nextOnset = " + nextOnset);
+//			// Check for SNU notes
+//			// a. not last tab note case: if not lower unison note (i.e., next tab note has 
+//			// the same pitch and onset), check for SNU notes
+//			// b. last tab note case: if not last note in bnp (i.e., bnp has one more element 
+//			// at bnpInd+1), tab note is a SNU note
+//			if ((nextOnset != null && 
+//				!(nextOnset.equals(currOnset) && nextPitch == currPitch))
+//				|| 
+//				(nextOnset == null && bnpInd+1 == (bnp.length-1))) {
+//				System.out.println("check for SNU");
+//				// If the next MIDI note has the same pitch and onset: SNU
+//				Rational nextOnsetMIDI = 
+//					new Rational(bnp[bnpInd+1][Transcription.ONSET_TIME_NUMER], 
+//					bnp[bnpInd+1][Transcription.ONSET_TIME_DENOM]);
+//				if (nextOnsetMIDI.equals(currOnset)) { // && btp[i+1][Tablature.PITCH] != currPitch) {
+//					for (int j = bnpInd+1; j < bnp.length; j++) {
+//						// If the next note in bnp has the same pitch and onset: SNU
+//						if (bnp[j][Transcription.PITCH] == currPitch && 
+//							new Rational(bnp[j][Transcription.ONSET_TIME_NUMER],
+//							bnp[j][Transcription.ONSET_TIME_DENOM]).equals(currOnset)) {
+//							currIndInTrans.add(j);
+//							bnpInd++;
+//						}
+//						else {
+//							break;
+//						}
+//					}
+//				}
+//			}
+//			tabToTransInd.add(currIndInTrans);
+//			bnpInd++;
+//		}
+//		List<List<Integer>> transToTabInd = new ArrayList<>();
+//		for (int i = 0; i < tabToTransInd.size(); i++) {
+//			List<Integer> transInd = tabToTransInd.get(i);
+//			for (int ind : transInd) {
+//				transToTabInd.add(ind, i);
+//			}
+//		}
+
+		res.add(tabToTransInd);
+		res.add(transToTabInd);
+		return res;
+	}
+
+
+	/**
 	 * Gives each note its maximum duration. Given a note n_t and an note n_t+1 in a voice, the duration of
 	 * n_t is
 	 * (1) if the inter-onset time between n_t and n_t+1 <= the given maxDur: the inter-onset time

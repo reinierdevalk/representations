@@ -1054,7 +1054,7 @@ public class Tablature implements Serializable {
 	 * NB: This method presumes that
 	 * a) a chord contains only one course crossing, and neither a CoD nor a unison; 
 	 * b) the course crossing will not span more than two pitches, which is theoretically possible (e.g.,
-	 * 6th c., 12th fr. - 5th c., 6th fr. - 4th c., open), but will not occur in practice.
+	 * 6th c., 12th fr. - 5th c., 6th fr. - 4th c., open), but will not likely occur in practice.
 	 *
 	 * @param chordIndex 
 	 * @return 

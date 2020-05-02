@@ -818,7 +818,142 @@ public class TranscriptionTest extends TestCase {
 //  	assertEquals(expectedDurationLabels, actualDurationLabels);
 //	}
 
-	
+
+	public void testAlignTabAndTransIndices() {
+		Tablature tablature = new Tablature(encodingTestpiece1, false);
+		Transcription transcription = new Transcription(midiTestpiece1, null);
+		
+		List<List<List<Integer>>> expected = new ArrayList<>();
+		List<List<Integer>> tabToTrans = new ArrayList<>();
+		// Chord 0
+		tabToTrans.add(Arrays.asList(new Integer[]{0}));
+		tabToTrans.add(Arrays.asList(new Integer[]{1}));
+		tabToTrans.add(Arrays.asList(new Integer[]{2}));
+		tabToTrans.add(Arrays.asList(new Integer[]{3}));
+		// Chord 1
+		tabToTrans.add(Arrays.asList(new Integer[]{4}));
+		tabToTrans.add(Arrays.asList(new Integer[]{5}));
+		tabToTrans.add(Arrays.asList(new Integer[]{7}));
+		tabToTrans.add(Arrays.asList(new Integer[]{6}));
+		// Chord 2
+		tabToTrans.add(Arrays.asList(new Integer[]{8}));
+		// Chord 3
+		tabToTrans.add(Arrays.asList(new Integer[]{9}));
+		tabToTrans.add(Arrays.asList(new Integer[]{10}));
+		tabToTrans.add(Arrays.asList(new Integer[]{11}));
+		tabToTrans.add(Arrays.asList(new Integer[]{12, 13}));
+		// Chord 4
+		tabToTrans.add(Arrays.asList(new Integer[]{14}));
+		// Chord 5
+		tabToTrans.add(Arrays.asList(new Integer[]{15}));
+		tabToTrans.add(Arrays.asList(new Integer[]{16}));
+		tabToTrans.add(Arrays.asList(new Integer[]{17}));
+		tabToTrans.add(Arrays.asList(new Integer[]{18}));
+		tabToTrans.add(Arrays.asList(new Integer[]{19}));
+		// Chord 6
+		tabToTrans.add(Arrays.asList(new Integer[]{20}));
+		tabToTrans.add(Arrays.asList(new Integer[]{21}));
+		tabToTrans.add(Arrays.asList(new Integer[]{22}));
+		tabToTrans.add(Arrays.asList(new Integer[]{23}));
+		// Chord 7
+		tabToTrans.add(Arrays.asList(new Integer[]{24}));
+		tabToTrans.add(Arrays.asList(new Integer[]{25}));
+		// Chord 8
+		tabToTrans.add(Arrays.asList(new Integer[]{26}));
+		tabToTrans.add(Arrays.asList(new Integer[]{27}));
+		tabToTrans.add(Arrays.asList(new Integer[]{28}));
+		tabToTrans.add(Arrays.asList(new Integer[]{29}));
+		// Chord 9-14
+		tabToTrans.add(Arrays.asList(new Integer[]{30}));
+		tabToTrans.add(Arrays.asList(new Integer[]{31}));
+		tabToTrans.add(Arrays.asList(new Integer[]{32}));
+		tabToTrans.add(Arrays.asList(new Integer[]{33}));
+		tabToTrans.add(Arrays.asList(new Integer[]{34}));
+		tabToTrans.add(Arrays.asList(new Integer[]{35}));
+		// Chord 15
+		tabToTrans.add(Arrays.asList(new Integer[]{36}));
+		tabToTrans.add(Arrays.asList(new Integer[]{37}));
+		tabToTrans.add(Arrays.asList(new Integer[]{38}));
+		tabToTrans.add(Arrays.asList(new Integer[]{39}));
+		
+		List<List<Integer>> transToTab = new ArrayList<>();
+		// Chord 0
+		transToTab.add(Arrays.asList(new Integer[]{0}));
+		transToTab.add(Arrays.asList(new Integer[]{1}));
+		transToTab.add(Arrays.asList(new Integer[]{2}));
+		transToTab.add(Arrays.asList(new Integer[]{3}));
+		// Chord 1
+		transToTab.add(Arrays.asList(new Integer[]{4}));
+		transToTab.add(Arrays.asList(new Integer[]{5}));
+		transToTab.add(Arrays.asList(new Integer[]{7}));
+		transToTab.add(Arrays.asList(new Integer[]{6}));
+		// Chord 2
+		transToTab.add(Arrays.asList(new Integer[]{8}));
+		// Chord 3
+		transToTab.add(Arrays.asList(new Integer[]{9}));
+		transToTab.add(Arrays.asList(new Integer[]{10}));
+		transToTab.add(Arrays.asList(new Integer[]{11}));
+		transToTab.add(Arrays.asList(new Integer[]{12}));
+		transToTab.add(Arrays.asList(new Integer[]{12}));
+		// Chord 4
+		transToTab.add(Arrays.asList(new Integer[]{13}));
+		// Chord 5
+		transToTab.add(Arrays.asList(new Integer[]{14}));
+		transToTab.add(Arrays.asList(new Integer[]{15}));
+		transToTab.add(Arrays.asList(new Integer[]{16}));
+		transToTab.add(Arrays.asList(new Integer[]{17}));
+		transToTab.add(Arrays.asList(new Integer[]{18}));
+		// Chord 6
+		transToTab.add(Arrays.asList(new Integer[]{19}));
+		transToTab.add(Arrays.asList(new Integer[]{20}));
+		transToTab.add(Arrays.asList(new Integer[]{21}));
+		transToTab.add(Arrays.asList(new Integer[]{22}));
+		// Chord 7
+		transToTab.add(Arrays.asList(new Integer[]{23}));
+		transToTab.add(Arrays.asList(new Integer[]{24}));
+		// Chord 8
+		transToTab.add(Arrays.asList(new Integer[]{25}));
+		transToTab.add(Arrays.asList(new Integer[]{26}));
+		transToTab.add(Arrays.asList(new Integer[]{27}));
+		transToTab.add(Arrays.asList(new Integer[]{28}));
+		// Chord 9-14
+		transToTab.add(Arrays.asList(new Integer[]{29}));
+		transToTab.add(Arrays.asList(new Integer[]{30}));
+		transToTab.add(Arrays.asList(new Integer[]{31}));
+		transToTab.add(Arrays.asList(new Integer[]{32}));
+		transToTab.add(Arrays.asList(new Integer[]{33}));
+		transToTab.add(Arrays.asList(new Integer[]{34}));
+		// Chord 15
+		transToTab.add(Arrays.asList(new Integer[]{35}));
+		transToTab.add(Arrays.asList(new Integer[]{36}));
+		transToTab.add(Arrays.asList(new Integer[]{37}));
+		transToTab.add(Arrays.asList(new Integer[]{38}));
+
+		expected.add(tabToTrans);
+		expected.add(transToTab);
+
+		List<List<List<Integer>>> actual = 
+			Transcription.alignTabAndTransIndices(tablature.getBasicTabSymbolProperties(), 
+			transcription.getBasicNoteProperties());
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			if (expected.get(i) != null && actual.get(i) != null) {
+				assertEquals(expected.get(i).size(), actual.get(i).size());
+				for (int j = 0; j < expected.get(i).size(); j++) {
+					if (expected.get(i).get(j) != null && actual.get(i).get(j) != null) {
+						assertEquals(expected.get(i).get(j).size(), actual.get(i).get(j).size());
+						for (int k = 0; k < expected.get(i).get(j).size(); k++) {
+							assertEquals(expected.get(i).get(j).get(k), actual.get(i).get(j).get(k));
+						}
+					}
+				}
+			}
+		}
+		assertEquals(expected, actual);
+	}
+
+
 	public void testGetTimePitchMatrix() {
 		Tablature tablature = new Tablature(encodingTestpiece1, false);
 		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
@@ -1665,7 +1800,7 @@ public class TranscriptionTest extends TestCase {
 				}
 			}
 		}
-		assertEquals(expected, actual);	
+		assertEquals(expected, actual);
 	}
 
 
