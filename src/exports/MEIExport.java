@@ -1178,6 +1178,8 @@ public class MEIExport {
 					break;
 				}
 			}
+			List<Boolean> tripletInfo = 
+				Arrays.asList(new Boolean[]{tripletOpen, tripletMid, tripletClose});
 
 			Rational[] barMetPos = Tablature.getMetricPosition(onset, mi);
 			int bar = barMetPos[0].getNumer();
@@ -1252,27 +1254,56 @@ public class MEIExport {
 						break;
 					}
 				}
-				
-				int dotsPrev = prevNote[INTS.indexOf("dots")];
+
 				durPrev = new Rational(1, prevNote[INTS.indexOf("dur")]);
+				int dotsPrev = prevNote[INTS.indexOf("dots")];
 				// The number of dots n lengthens a note by l its value, where l = ((2^n)-1)/2^n
 				// (see https://en.wikipedia.org/wiki/Note_value)
 				Rational l = new Rational((int)Math.pow(2, dotsPrev) - 1, (int)Math.pow(2, dotsPrev));
 				durPrev = durPrev.add(durPrev.mul(l));
 				metPosPrev = Tablature.getMetricPosition(onsetPrev, mi)[1]; 
 				offsetPrev = onsetPrev.add(durPrev);
-				
-				System.out.println("onsetPrev = " + onsetPrev);
-				System.out.println("durPrev = " + durPrev);
-//				if onset previous note in triplet zone: duration * 2/3
-//				(OR: in INTS set actual duration? --> impossible: is fraction of 3)
-//				these may all have to be converted back if previous note in triplet zone 
-//				(* = definitely; x = not)
-//					durPrev*: comes from tripletised uf in getNoteData()  
-//					metPosPrev(x): comes from original metpos in getNoteData()  
-//					onsetPrev(x): comes from original onset in getNoteData()
-//					offsetPrev*: is calculated from onsetPrev and durPrev
-//					dotsPrev*: is calculated from tripletised uf in getNoteData() 	
+
+				// NB: If onsetPrev is within a triplet, some of the *Prev variables (needed to
+				// calculate rests) must be reverted. 
+				// Variables calculated from prevNote (tripletised means nominal and un-tripletised 
+				// means actual, e.g., 2 (a half note) in a 3*2 triplet is 1/2-1/2-1/2 tripletised 
+				// and 1/3-1/3-1/3 un-tripletised):
+				// *onsetPrev : OK:  prevNote contains un-tripletised value (i.e., un-tripletised value is added to currIndBarOnsMpDurDots in getNoteData())
+				// *metPosPrev: OK:  calculated from onsetPrevNote (also: un-tripletised value is added to currIndBarOnsMpDurDots in getNoteData())
+				// *durPrev   : NOK: prevNote contains tripletised value (i.e., tripletised value is added to currIndBarOnsMpDurDots in getNoteData())
+				//                   --> revert by multiplying by 2/3
+				// *offsetPrev: NOK: calculated as onsetPrev + durPrev  
+				//                   -->  recalculate using reverted durPrev
+				// *dotsPrev  : NOK: prevNote contains tripletised value (i.e., tripletised value is added to currIndBarOnsMpDurDots in getNoteData())
+				//					 --> recalculate List<Rational> uf using reverted durPrev;
+				//                       then get numdots as numDots = getNumDots(uf)
+				if (prevNote[INTS.indexOf("tripletOpen")] == 1 ||
+					prevNote[INTS.indexOf("tripletMid")] == 1 ||
+					prevNote[INTS.indexOf("tripletClose")] == 1) {
+					// Recalculate durPrev and offsetPrev
+					durPrev = new Rational(1, prevNote[INTS.indexOf("dur")]);
+					durPrev = durPrev.mul(new Rational(2, 3));
+					dotsPrev = prevNote[INTS.indexOf("dots")];
+					l = new Rational((int)Math.pow(2, dotsPrev) - 1, (int)Math.pow(2, dotsPrev));
+					durPrev = durPrev.add(durPrev.mul(l));
+					offsetPrev = onsetPrev.add(durPrev);
+					System.out.println("onsetPrev = " + onsetPrev);
+					System.out.println("metPosPrev = " + metPosPrev);
+					System.out.println("durPrev = " + durPrev);
+					System.out.println("offsetPrev = " + offsetPrev);
+					System.out.println("dotsPrev = " + dotsPrev);
+					System.exit(0);
+//					int tabIndPrev = prevNote[INTS.indexOf("indTab")];
+//					Rational prevDur = null;
+//					if (btp != null) {
+//						prevDur = new Rational(btp[tabIndPrev][Tablature.MIN_DURATION], 
+//							Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+//					}
+//					else {
+//						// 
+//					}
+				}
 			}
 
 			// Rests
@@ -1306,7 +1337,7 @@ public class MEIExport {
 					}
 					List<Object> noteData = 
 						getNoteData(i, iTab, curr, getUnitFractions(durRestTripletised, gridVal), bar,
-						null/*offsetPrev*/, metPosRest, mi);
+						null/*offsetPrev*/, metPosRest, mi, tripletInfo);
 					pitchOctAccTie.addAll(0, (List<String[]>) noteData.get(0));
 					indBarOnsMpDurDots.addAll(0, (List<Integer[]>) noteData.get(1));
 				}
@@ -1323,7 +1354,7 @@ public class MEIExport {
 					}
 					List<Object> noteData = 
 						getNoteData(i, iTab, curr, getUnitFractions(durRestTripletised, gridVal), bar-1,
-						null/*offsetPrev*/, metPosRest, mi);
+						null/*offsetPrev*/, metPosRest, mi, tripletInfo);
 					pitchOctAccTie.addAll(0, (List<String[]>) noteData.get(0));
 					indBarOnsMpDurDots.addAll(0, (List<Integer[]>) noteData.get(1));
 				}
@@ -1371,7 +1402,7 @@ public class MEIExport {
 						}
 						List<Object> noteData = 
 							getNoteData(i, iTab, curr, getUnitFractions(currSubNoteDurTripletised, gridVal), 
-							bars.get(j), null/*currOnset*/, currMetPosRest, mi);
+							bars.get(j), null/*currOnset*/, currMetPosRest, mi, tripletInfo);
 						List<String[]> subNote = (List<String[]>) noteData.get(0);
 						pitchOctAccTie.addAll(subNote);
 						indBarOnsMpDurDots.addAll((List<Integer[]>) noteData.get(1));
@@ -1490,7 +1521,7 @@ public class MEIExport {
 				}
 				List<Object> noteData = 
 					getNoteData(i, iTab, curr, getUnitFractions(durRoundedTripletised, gridVal), bar,
-					onset, metPos, mi);
+					onset, metPos, mi, tripletInfo);
 				if (bar >= 74 && bar <= 79) {
 					System.out.println("BAR = " + bar);
 					System.out.println("strings in noteData.get(0):");
@@ -1560,7 +1591,7 @@ public class MEIExport {
 					}
 					List<Object> noteData = 
 						getNoteData(i, iTab, curr, getUnitFractions(currSubNoteDurTripletised, gridVal), 
-						bars.get(j), currOnset, currMetPos, mi);
+						bars.get(j), currOnset, currMetPos, mi, tripletInfo);
 					List<String[]> subNote = (List<String[]>) noteData.get(0);
 					int subNoteInd = 0;
 					String tie = "";
@@ -1599,7 +1630,7 @@ public class MEIExport {
 					List<Object> noteData = 
 						getNoteData(-1, -1, new String[STRINGS.size()], 
 						getUnitFractions(restCurrentBarTripletised, gridVal), bar, null/*offset*/,
-						metPosRestCurrentBar, mi);
+						metPosRestCurrentBar, mi, tripletInfo);
 					pitchOctAccTie.addAll((List<String[]>) noteData.get(0));
 					indBarOnsMpDurDots.addAll((List<Integer[]>) noteData.get(1));
 				}
@@ -1808,7 +1839,7 @@ public class MEIExport {
 	 * @return
 	 */
 	static List<Object> getNoteData(int i, int iTab, String[] curr, List<Rational> uf, int bar, 
-		Rational onset, Rational metPos, List<Integer[]> mi) {
+		Rational onset, Rational metPos, List<Integer[]> mi, List<Boolean> tripletInfo) {
 		List<String[]> currPitchOctAccTie = new ArrayList<>();
 		List<Integer[]> currIndBarOnsMpDurDots = new ArrayList<>();
 
@@ -1844,6 +1875,9 @@ public class MEIExport {
 				in[INTS.indexOf("onsetNum")] = onset.getNumer();
 				in[INTS.indexOf("onsetDen")] = onset.getDenom();
 			}
+			in[INTS.indexOf("tripletOpen")] = (tripletInfo.get(0) == true) ? 1 : 0;
+			in[INTS.indexOf("tripletMid")] = (tripletInfo.get(1) == true) ? 1 : 0;
+			in[INTS.indexOf("tripletClose")] = (tripletInfo.get(2) == true) ? 1 : 0;
 			currIndBarOnsMpDurDots.add(in);
 		}
 		// Non-dotted compound: complete curr with dur and tie for each uf; add to lists
@@ -1875,6 +1909,9 @@ public class MEIExport {
 					in[INTS.indexOf("onsetDen")] = currOnset.getDenom();
 					currOnset = currOnset.add(durAsRat);
 				}
+				in[INTS.indexOf("tripletOpen")] = (tripletInfo.get(0) == true) ? 1 : 0;
+				in[INTS.indexOf("tripletMid")] = (tripletInfo.get(1) == true) ? 1 : 0;
+				in[INTS.indexOf("tripletClose")] = (tripletInfo.get(2) == true) ? 1 : 0;
 				currIndBarOnsMpDurDots.add(in);
 				currMetPos = currMetPos.add(durAsRat);
 			}
