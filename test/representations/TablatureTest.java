@@ -626,6 +626,52 @@ public class TablatureTest extends TestCase {
 			assertEquals(expected.get(i), actual.get(i));
 		}
 	}
+	
+	
+	public void testGetAllOnsetTimesRestsInclusive() {		
+		Tablature tablature = new Tablature(encodingTestpiece1, false);
+
+		List<Rational[]> expected = new ArrayList<>();
+		// Chord 0
+		expected.add(new Rational[]{new Rational(3, 4), Rational.ONE});
+		// Chord 1
+		expected.add(new Rational[]{new Rational(1, 1), Rational.ONE});
+		// Chord 2
+		expected.add(new Rational[]{new Rational(19, 16), Rational.ONE});
+		// Chord 3
+		expected.add(new Rational[]{new Rational(5, 4), Rational.ONE});
+		// Chord 4
+		expected.add(new Rational[]{new Rational(11, 8), Rational.ONE});
+		// Chord 5
+		expected.add(new Rational[]{new Rational(3, 2), Rational.ONE});
+		// Chord 6
+		expected.add(new Rational[]{new Rational(7, 4), Rational.ONE});
+		// Chord 7
+		expected.add(new Rational[]{new Rational(15, 8), Rational.ONE});
+		// Chord 8
+		expected.add(new Rational[]{new Rational(2, 1), Rational.ONE});
+		// Chords 9-14
+		expected.add(new Rational[]{new Rational(33, 16), Rational.ONE});
+		expected.add(new Rational[]{new Rational(17, 8), Rational.ONE});
+		expected.add(new Rational[]{new Rational(69, 32), Rational.ONE});
+		expected.add(new Rational[]{new Rational(35, 16), Rational.ONE});
+		expected.add(new Rational[]{new Rational(71, 32), Rational.ONE});
+		expected.add(new Rational[]{new Rational(9, 4), Rational.ONE});
+		// Rest
+		expected.add(new Rational[]{new Rational(10, 4), Rational.ZERO});
+		// Chord 15
+		expected.add(new Rational[]{new Rational(11, 4), Rational.ONE});
+
+		List<Rational[]> actual = tablature.getAllOnsetTimesRestsInclusive();
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).length, actual.get(i).length);
+			for (int j = 0; j < expected.get(i).length; j++) {
+				assertEquals(expected.get(i)[j], actual.get(i)[j]);
+			}
+		}
+	}
 
 
 	public void testGetAllOnsetTimesAndMinDurations() {
@@ -1326,7 +1372,6 @@ public class TablatureTest extends TestCase {
 		});
 
 		List<String> actual = tablature.getTabwords(tablature.splitHeaderAndEncoding()[1]);
-		System.out.println(actual);
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));
@@ -1364,6 +1409,33 @@ public class TablatureTest extends TestCase {
 		String actual = Tablature.reverseEncoding(tab).getRawEncoding();
 
 		assertEquals(expected, actual);		
+	}
+
+
+	public void testCombineSuccessiveRestTabwords() {
+		List<String> tabwords = Arrays.asList(new String[]{
+			"sb.c4.>.", 
+			"mi.>.",	
+			"mi.c4.>.",
+			"mi.>.", "sm.>.", "sm.>.", "mi.>.",
+			"mi.c4.>.",	
+		});
+		
+		List<String> expected = Arrays.asList(new String[]{
+			"sb.c4.>.", 
+			"mi.>.",	
+			"mi.c4.>.",
+			"sb*.>.",
+			"mi.c4.>."
+		});
+		
+		List<String> actual = Tablature.combineSuccessiveRestTabwords(tabwords);
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
 	}
 
 
