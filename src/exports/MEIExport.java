@@ -1083,6 +1083,26 @@ public class MEIExport {
 	}
 
 
+	static private List<Boolean> isTripletOnset(List<Rational[]> tripletOnsetPairs, Rational onset) {
+		boolean tripletOpen = false, tripletMid = false, tripletClose = false;
+		for (Rational[] r : tripletOnsetPairs) {
+			if (onset.equals(r[0])) {
+				tripletOpen = true;
+				break;
+			}
+			if (onset.isGreater(r[0]) && onset.isLess(r[1])) {
+				tripletMid = true;
+				break;
+			}
+			if (onset.equals(r[1])) {
+				tripletClose = true;
+				break;
+			}
+		}
+		return Arrays.asList(new Boolean[]{tripletOpen, tripletMid, tripletClose}); 
+	}
+
+
 	/**
 	 * Extracts from the given Transcription the data needed to create an MEI file.
 	 * 
@@ -1163,21 +1183,26 @@ public class MEIExport {
 			// If the note or rest has a triplet onset time, its duration must be multiplied by
 			// 3/2 to get the value that is given to getNoteData()
 			// (1/3 * 3/2 = 1/2; 1/6 * 32 = 1/4; etc.)
-			boolean tripletOpen = false, tripletMid = false, tripletClose = false;
-			for (Rational[] r : tripletOnsetPairs) {
-				if (onset.equals(r[0])) {
-					tripletOpen = true;
-					break;
-				}
-				if (onset.isGreater(r[0]) && onset.isLess(r[1])) {
-					tripletMid = true;
-					break;
-				}
-				if (onset.equals(r[1])) {
-					tripletClose = true;
-					break;
-				}
-			}
+			List<Boolean> onsetIsTripletOnset = isTripletOnset(tripletOnsetPairs, onset);
+			boolean tripletOpen = onsetIsTripletOnset.get(0);
+			boolean tripletMid = onsetIsTripletOnset.get(1); 
+			boolean	tripletClose = onsetIsTripletOnset.get(2);
+//			for (Rational[] r : tripletOnsetPairs) {
+//				if (onset.equals(r[0])) {
+//					tripletOpen = true;
+//					break;
+//				}
+//				if (onset.isGreater(r[0]) && onset.isLess(r[1])) {
+//					tripletMid = true;
+//					break;
+//				}
+//				if (onset.equals(r[1])) {
+//					tripletClose = true;
+//					break;
+//				}
+//			}
+			System.out.println("triplet: " + (tripletOpen || tripletMid || tripletClose));
+			System.out.println("onset = " + onset.toDouble());
 			List<Boolean> tripletInfo = 
 				Arrays.asList(new Boolean[]{tripletOpen, tripletMid, tripletClose});
 
@@ -1288,12 +1313,12 @@ public class MEIExport {
 					l = new Rational((int)Math.pow(2, dotsPrev) - 1, (int)Math.pow(2, dotsPrev));
 					durPrev = durPrev.add(durPrev.mul(l));
 					offsetPrev = onsetPrev.add(durPrev);
-					System.out.println("onsetPrev = " + onsetPrev);
+					System.out.println("onsetPrev = " + onsetPrev.toDouble());
 					System.out.println("metPosPrev = " + metPosPrev);
 					System.out.println("durPrev = " + durPrev);
-					System.out.println("offsetPrev = " + offsetPrev);
+					System.out.println("offsetPrev = " + offsetPrev.toDouble());
 					System.out.println("dotsPrev = " + dotsPrev);
-					System.exit(0);
+					
 //					int tabIndPrev = prevNote[INTS.indexOf("indTab")];
 //					Rational prevDur = null;
 //					if (btp != null) {
@@ -1308,6 +1333,7 @@ public class MEIExport {
 
 			// Rests
 			Rational durRest = onset.sub(offsetPrev);
+			System.out.println("durRest = " + durRest);
 			if (durRest.isGreater(Rational.ZERO)) {
 				Rational precedingInBar = metPos;
 				// Single-bar rest in the same bar
@@ -1329,11 +1355,11 @@ public class MEIExport {
 						durRestTripletised = durRest.mul(new Rational(3, 2));
 						System.out.println("YES");
 						System.out.println("bar = " + bar);
-						System.out.println("onset = " + onset);
-						System.out.println("offsetPrev = " + offsetPrev);
+						System.out.println("onset = " + onset.toDouble());
+						System.out.println("offsetPrev = " + offsetPrev.toDouble());
 						System.out.println("durRest = " + durRest);
 						System.out.println("durRestTripletised = " + durRestTripletised);
-						System.exit(0);
+//						System.exit(0);
 					}
 					List<Object> noteData = 
 						getNoteData(i, iTab, curr, getUnitFractions(durRestTripletised, gridVal), bar,
@@ -1347,11 +1373,18 @@ public class MEIExport {
 //-*-					System.out.println("CASE: single-bar rest in previous bar");
 					Rational metPosRest = 
 						(currVoiceStrings.size() == 0) ? Rational.ZERO : metPosPrev.add(durPrev);
-					
+					Rational onsetRest = offsetPrev;
+					System.out.println("yesyes");
+					System.out.println(onsetRest);
+					System.out.println();
+					System.out.println(metPosRest);
 					Rational durRestTripletised = durRest;
-					if (tripletOpen || tripletMid || tripletClose) {
+					System.out.println("durRestTripletised = " + durRestTripletised);
+					if (isTripletOnset(tripletOnsetPairs, onsetRest).contains(Boolean.TRUE)) {
+//					if (tripletOpen || tripletMid || tripletClose) {	
 						durRestTripletised = durRest.mul(new Rational(3, 2));
 					}
+					System.out.println("durRestTripletised = " + durRestTripletised);
 					List<Object> noteData = 
 						getNoteData(i, iTab, curr, getUnitFractions(durRestTripletised, gridVal), bar-1,
 						null/*offsetPrev*/, metPosRest, mi, tripletInfo);
@@ -1533,19 +1566,16 @@ public class MEIExport {
 						System.out.println(Arrays.toString(l));
 					}
 //					System.exit(0);
-					System.out.println("durRounded = " + durRounded);
-					System.out.println("onset = " + onset);
-					System.out.println(Arrays.toString(tripletOnsetPairs.get(0)));
+					System.out.println("durRounded = " + durRounded.toDouble());
+					System.out.println("onset = " + onset.toDouble());
+//					System.out.println(Arrays.toString(tripletOnsetPairs.get(0)));
 //					System.exit(0);
 					
-					System.out.println(getUnitFractions(durRounded, gridVal));
-					for (String[] s : (List<String[]>) noteData.get(0)) {
-						System.out.println(Arrays.toString(s));
-					}
-					System.out.println("------------------");
-					if (bar == 79) {
-//						System.exit(0);
-					}
+					System.out.println("uf = " + getUnitFractions(durRounded, gridVal));
+					System.out.println("------------------");	
+				}
+				if (bar == 81) {
+					System.exit(0);
 				}
 				pitchOctAccTie.addAll((List<String[]>) noteData.get(0));
 				indBarOnsMpDurDots.addAll((List<Integer[]>) noteData.get(1));
@@ -1698,10 +1728,10 @@ public class MEIExport {
 				System.out.println(Arrays.toString(currInt));
 //				}
 				if (ons.isGreater(new Rational(198, 1))) {
-					System.exit(0);
+//					System.exit(0);
 				}
 			}
-			System.exit(0);
+//			System.exit(0);
 		}
 		
 
