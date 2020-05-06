@@ -1289,7 +1289,7 @@ public class MEIExport {
 				metPosPrev = Tablature.getMetricPosition(onsetPrev, mi)[1]; 
 				offsetPrev = onsetPrev.add(durPrev);
 
-				// NB: If onsetPrev is within a triplet, some of the *Prev variables (needed to
+				// NB: If onsetPrev is within a triplet, some of the xxxPrev variables (needed to
 				// calculate rests) must be reverted. 
 				// Variables calculated from prevNote (tripletised means nominal and un-tripletised 
 				// means actual, e.g., 2 (a half note) in a 3*2 triplet is 1/2-1/2-1/2 tripletised 
@@ -1336,10 +1336,12 @@ public class MEIExport {
 			System.out.println("durRest = " + durRest);
 			if (durRest.isGreater(Rational.ZERO)) {
 				Rational precedingInBar = metPos;
+				System.out.println("pib = " + precedingInBar);
 				// Single-bar rest in the same bar
 				if (durRest.isLessOrEqual(precedingInBar)) {
 //-*-					System.out.println("CASE: single-bar rest");
 					Rational metPosRest = null;
+					Rational onsetRest = offsetPrev; // herr man
 					// If the bar starts with a rest
 					if (durRest.equals(precedingInBar)) {
 						metPosRest = Rational.ZERO;
@@ -1349,9 +1351,9 @@ public class MEIExport {
 //						(currVoiceStrings.size() == 0) ? Rational.ZERO : onset.sub(offsetPrev);
 						(currVoiceStrings.size() == 0) ? Rational.ZERO : metPosPrev.add(durPrev);
 					}
-
 					Rational durRestTripletised = durRest;
-					if (tripletOpen || tripletMid || tripletClose) {
+					if (isTripletOnset(tripletOnsetPairs, onsetRest).contains(Boolean.TRUE)) { // herr man
+//					if (tripletOpen || tripletMid || tripletClose) {
 						durRestTripletised = durRest.mul(new Rational(3, 2));
 						System.out.println("YES");
 						System.out.println("bar = " + bar);
@@ -1380,7 +1382,7 @@ public class MEIExport {
 					System.out.println(metPosRest);
 					Rational durRestTripletised = durRest;
 					System.out.println("durRestTripletised = " + durRestTripletised);
-					if (isTripletOnset(tripletOnsetPairs, onsetRest).contains(Boolean.TRUE)) {
+					if (isTripletOnset(tripletOnsetPairs, onsetRest).contains(Boolean.TRUE)) { // herr man
 //					if (tripletOpen || tripletMid || tripletClose) {	
 						durRestTripletised = durRest.mul(new Rational(3, 2));
 					}
@@ -1393,11 +1395,14 @@ public class MEIExport {
 				}
 				// Multi-bar rest
 				else {
-//-*-					System.out.println("CASE: multi-bar rest");
+//-*-				System.out.println("CASE: multi-bar rest");
 					// Check how many bars the note spans
 					List<Rational> subNoteDurs = new ArrayList<>();
+					// subNoteDursOnsets contains the onsets of the subnotes
+					List<Rational> subNoteDursOnsets = new ArrayList<>(); // herr man
 					if (!precedingInBar.equals(Rational.ZERO)) {
 						subNoteDurs.add(precedingInBar);
+						subNoteDursOnsets.add(onset.sub(precedingInBar)); // herr man
 					}
 					Rational remainder = durRest.sub(precedingInBar);
 					int beginBar = Tablature.getMetricPosition(offsetPrev, mi)[0].getNumer();
@@ -1407,15 +1412,37 @@ public class MEIExport {
 						Rational currBarLen = Transcription.getMeter(j, mi);
 						if (remainder.isGreaterOrEqual(currBarLen)) {
 							subNoteDurs.add(currBarLen);
+							// The onset of this subnote is onset of the previous subnote (i.e., 
+							// the one added last to the list) minus the bar length
+							if (subNoteDursOnsets.size() == 0) { // herr man
+								// No remainderInBar, so onset is at the beginning of the bar
+								subNoteDursOnsets.add(onset.sub(currBarLen)); // herr man
+							}
+							else { // herr man
+								subNoteDursOnsets.add(
+									subNoteDursOnsets.get(subNoteDursOnsets.size()-1).sub(
+									currBarLen)); // herr man
+							}
 							remainder = remainder.sub(currBarLen);
 						}
 						else {
 							if (!remainder.equals(Rational.ZERO)) {
 								subNoteDurs.add(remainder);
+								// The onset of this subnote is onset of the previous subnote (i.e., 
+								// the one added last to the list) minus the remainder
+								// NB subNoteDursOnsets.size()-1 always exists: in the case of a 
+								// multi-bar rest, either a rest with length remainingInBar or 
+								// one with length barLength has already been added
+								subNoteDursOnsets.add(subNoteDursOnsets.get(
+									subNoteDursOnsets.size()-1).sub(remainder)); // herr man
 							}
 						}
 					}
 					Collections.reverse(subNoteDurs);
+					Collections.reverse(subNoteDursOnsets); // herr man
+					System.out.println("hie denne");
+					System.out.println(subNoteDurs);
+					System.out.println(subNoteDursOnsets);
 					// For each subnote
 					Rational currOnset = offsetPrev;
 					Rational currMetPosRest = 
@@ -1428,11 +1455,14 @@ public class MEIExport {
 					}
 					for (int j = 0; j < subNoteDurs.size(); j++) {
 						Rational currSubNoteDur = subNoteDurs.get(j);
-						
+						Rational currSubNoteDurOnset = subNoteDursOnsets.get(j); // herr man
+						System.out.println("csnd = " + currSubNoteDur);
 						Rational currSubNoteDurTripletised = currSubNoteDur;
-						if (tripletOpen || tripletMid || tripletClose) {
+						if (isTripletOnset(tripletOnsetPairs, currSubNoteDurOnset).contains(Boolean.TRUE)) { // herr man
+//						if (tripletOpen || tripletMid || tripletClose) {
 							currSubNoteDurTripletised = currSubNoteDur.mul(new Rational(3, 2));
 						}
+						System.out.println("csnd = " + currSubNoteDurTripletised);
 						List<Object> noteData = 
 							getNoteData(i, iTab, curr, getUnitFractions(currSubNoteDurTripletised, gridVal), 
 							bars.get(j), null/*currOnset*/, currMetPosRest, mi, tripletInfo);
@@ -1549,7 +1579,8 @@ public class MEIExport {
 			if (durRounded.isLessOrEqual(remainingInBar)) {
 //				System.out.println("CASE: single-bar note");
 				Rational durRoundedTripletised = durRounded;
-				if (tripletOpen || tripletMid || tripletClose) {
+				if (isTripletOnset(tripletOnsetPairs, onset).contains(Boolean.TRUE)) {
+//				if (tripletOpen || tripletMid || tripletClose) {
 					durRoundedTripletised = durRounded.mul(new Rational(3, 2));
 				}
 				List<Object> noteData = 
@@ -1585,7 +1616,10 @@ public class MEIExport {
 //				System.out.println("CASE: multi-bar note");
 				// Check how many bars the note spans
 				List<Rational> subNoteDurs = new ArrayList<>();
+				List<Rational> subNoteDursOnsets = new ArrayList<>(); // herr man
 				subNoteDurs.add(remainingInBar);
+				subNoteDursOnsets.add(onset); // herr man
+				subNoteDursOnsets.add(onset.add(remainingInBar)); // herr man
 				Rational remainder = durRounded.sub(remainingInBar);
 				// In the case of a tablature with predicted durations, those of the final chord
 				// can be incorrectly predicted too long, thus extending beyond endOffset 
@@ -1601,11 +1635,15 @@ public class MEIExport {
 					Rational currBarLen = Transcription.getMeter(j, mi);
 					if (remainder.isGreaterOrEqual(currBarLen)) {
 						subNoteDurs.add(currBarLen);
+						subNoteDursOnsets.add( // herr man
+							subNoteDursOnsets.get(subNoteDursOnsets.size()-1).add(currBarLen)); 
 						remainder = remainder.sub(currBarLen);
 					}
 					else {
 						if (!remainder.equals(Rational.ZERO)) {
 							subNoteDurs.add(remainder);
+//							subNoteDursOnsets.add( // herr man
+//								subNoteDursOnsets.get(subNoteDursOnsets.size()-1).add(remainder));
 						}
 					}
 				}
@@ -1614,9 +1652,10 @@ public class MEIExport {
 				Rational currMetPos = metPos;
 				for (int j = 0; j < subNoteDurs.size(); j++) {
 					Rational currSubNoteDur = subNoteDurs.get(j);
-					
+					Rational currSubNoteDurOnset = subNoteDursOnsets.get(j); // herr man
 					Rational currSubNoteDurTripletised = currSubNoteDur;
-					if (tripletOpen || tripletMid || tripletClose) {
+					if (isTripletOnset(tripletOnsetPairs, currSubNoteDurOnset).contains(Boolean.TRUE)) { // herr man
+//					if (tripletOpen || tripletMid || tripletClose) {
 						currSubNoteDurTripletised = currSubNoteDur.mul(new Rational(3, 2));
 					}
 					List<Object> noteData = 
@@ -1652,9 +1691,9 @@ public class MEIExport {
 				Rational restCurrentBar = barEnd.sub(offset);
 				if (restCurrentBar.isGreater(Rational.ZERO)) {
 					Rational metPosRestCurrentBar = metPos.add(durRounded);
-					
 					Rational restCurrentBarTripletised = restCurrentBar;
-					if (tripletOpen || tripletMid || tripletClose) {
+					if (isTripletOnset(tripletOnsetPairs, offset).contains(Boolean.TRUE)) { // herr man
+//					if (tripletOpen || tripletMid || tripletClose) {
 						restCurrentBarTripletised = restCurrentBar.mul(new Rational(3, 2));
 					}
 					List<Object> noteData = 
