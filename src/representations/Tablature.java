@@ -20,6 +20,10 @@ import tools.ToolBox;
 
 public class Tablature implements Serializable {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	public static final int MAXIMUM_NUMBER_OF_NOTES = 5;
 	public static final Rational SMALLEST_RHYTHMIC_VALUE = 
 		new Rational(RhythmSymbol.semifusa.getDuration()/3, RhythmSymbol.brevis.getDuration());
@@ -48,86 +52,52 @@ public class Tablature implements Serializable {
 	}
 
 
-	public Tablature(File argFile, boolean argNormaliseTuning) { 
-		encoding = new Encoding(argFile);
-//		setPieceName(argFile.getName().substring(0, (argFile.getName().length() - ".tbp".length())));
-		encoding.setName(argFile.getName().substring(0, (argFile.getName().length() - ".tbp".length())));
-//		setFile(argFile);
-
+	public Tablature(File argFile, boolean argNormaliseTuning) { 	
+		Encoding e = new Encoding(argFile);
+		e.setName(argFile.getName().substring(0, (argFile.getName().length() - ".tbp".length())));
+		setEncoding(e);
 		createTablature(argNormaliseTuning);
 	}
 
 
 	public Tablature(Encoding argEncoding, boolean argNormaliseTuning) {
-		encoding = argEncoding;
+		setEncoding(argEncoding);
 		createTablature(argNormaliseTuning);
 	}
 
 
 	private void createTablature(boolean argNormaliseTuning) {
-//		setRawEncoding(ToolBox.readTextFile(argFile));
-//		if (checkForAddedInformationErrors() == false) { // needs rawEncoding
-//			throw new RuntimeException("ERROR: The added information is not encoded correctly.");
-//		}
-//		setCleanEncoding(); // needs rawEncoding 
-//		setInfoAndSettings(); // needs rawEncoding 
-//		setFootnotes(); // needs rawEncoding
-		
-//		setTunings(); // needs infoAndSettings
-		setPieceName(encoding.getName());
+		setPieceName(getEncoding().getName());
 		setMeterInfo(); // needs infoAndSettings
-//		if (checkForEncodingErrors() != null) { // needs rawEncoding, cleanEncoding, and infoAndSettings
-//			throw new RuntimeException("ERROR: The encoding contains encoding errors; run the TabViewer to correct them.");
-//		}
-//		setListsOfSymbols(); // needs cleanEncoding and infoAndSettings
-//		setListsOfStatistics(); // needs infoAndSettings, tunings, and listOfSymbols
-		
 		setBasicTabSymbolProperties(); // needs infoAndSettings, listOfSymbols, and listOfStatistics
-
 		if (argNormaliseTuning) {
 			normaliseTuning(); // needs basicTabSymbolProperties
 		}
 		setNormaliseTuning(argNormaliseTuning);
-		
-		// added 3-9-2015
 		setTablatureChords();
 		setNumberOfNotesPerChord(); // needs tablatureChords
 	}
 
 
 	private Tablature(File argFile, boolean normaliseTuning, boolean bla) { 
-		encoding = new Encoding(argFile);
+		setEncoding(new Encoding(argFile));
 		setPieceName(argFile.getName().substring(0, (argFile.getName().length() - ".tbp".length())));
 		setFile(argFile);
-
-//		setRawEncoding(ToolBox.readTextFile(argFile));
-//		if (checkForAddedInformationErrors() == false) { // needs rawEncoding
-//			throw new RuntimeException("ERROR: The added information is not encoded correctly.");
-//		}
-//		setCleanEncoding(); // needs rawEncoding 
-//		setInfoAndSettings(); // needs rawEncoding 
-//		setFootnotes(); // needs rawEncoding
-		
-//		setTunings(); // needs infoAndSettings
-		setMeterInfo(); // needs infoAndSettings
-//		if (checkForEncodingErrors() != null) { // needs rawEncoding, cleanEncoding, and infoAndSettings
-//			throw new RuntimeException("ERROR: The encoding contains encoding errors; run the TabViewer to correct them.");
-//		}
-//		setListsOfSymbols(); // needs cleanEncoding and infoAndSettings
-//		setListsOfStatistics(); // needs infoAndSettings, tunings, and listOfSymbols
-		
+		setMeterInfo(); // needs infoAndSettings		
 		setBasicTabSymbolProperties(); // needs infoAndSettings, listOfSymbols, and listOfStatistics
-
 		if (normaliseTuning) {
 			normaliseTuning(); // needs basicTabSymbolProperties
 		}
-		
-		// added 3-9-2015
 		setTablatureChords();
 		setNumberOfNotesPerChord(); // needs tablatureChords
 	}
-	
-	
+
+
+	void setEncoding(Encoding e) {
+		encoding = e;
+	}
+
+
 	public Encoding getEncoding() {
 		return encoding;
 	};
@@ -209,43 +179,108 @@ public class Tablature implements Serializable {
 
 
 	/**
-	 * Sets meterInfo, a list whose elements represent the meters in the piece and contain:
+	 * Given the list of original (unreduced) meters and the reductions, calculates the 
+	 * meterInfo: a list whose elements represent the meters in the piece. Each element 
+	 * of this list contains:<br>
 	 * <ul>
-	 * <li> as element 0: the numerator of the meter </li>
-	 * <li> as element 1: the denominator of the meter </li>
+	 * <li> as element 0: the numerator of the meter (adapted according to the diminution)</li>
+	 * <li> as element 1: the denominator of the meter (adapted according to the diminution)</li>
 	 * <li> as element 2: the first bar in the meter </li>
 	 * <li> as element 3: the last bar in the meter </li>
+	 * <li> as element 4: the diminution for the meter </li>
 	 * </ul>
 	 * An anacrusis bar will be denoted with bar numbers 0-0.
+	 * 
+	 * @param originalMeterInfo
+	 * @param diminutions
+	 * @return
 	 */
-	// TESTED (together with getMeterInfo())
-	void setMeterInfo() {
-		meterInfo = new ArrayList<Integer[]>();
-
-//		int dim = 0; Integer.parseInt(encoding.getInfoAndSettings().get(Encoding.DIMINUTION_INDEX));
-		String[] allMeters = encoding.getInfoAndSettings().get(Encoding.METER_INDEX).split(";");
-//		String[] allDiminutions = encoding.getInfoAndSettings().get(Encoding.DIMINUTION_INDEX).split(";");
-		List<Integer> allDiminutions = new ArrayList<>();
-		for (String s : encoding.getInfoAndSettings().get(Encoding.DIMINUTION_INDEX).split(";")) {
-			allDiminutions.add(Integer.parseInt(s.trim()));
-		}
-		
+	// TESTED
+	List<Integer[]> calculateMeterInfo(List<Integer[]> originalMeterInfo, List<Integer> diminutions) {
+		List<Integer[]> mi = new ArrayList<>();
 		// For each meter
-		for (int i = 0; i < allMeters.length; i++) {
-			String currInfo = allMeters[i].trim();
-			// Get the num and denom of the current meter
+		for (int i = 0; i < originalMeterInfo.size(); i++) {
+			Integer[] currMeterInfo = new Integer[5];
+			for (int j = 0; j < originalMeterInfo.get(i).length; j++) {
+				currMeterInfo[j] = originalMeterInfo.get(i)[j];
+			}						
+			// Diminution
+			int dim = diminutions.get(i);
+			if (dim != 1) {
+				Rational newMeter;
+				// times 2:	2/2 --> (2*2)/2 = 2/1
+				// times 4:	2/2 --> (2*4)/2 = 4/1
+				if (dim > 0) {
+					newMeter = new Rational(currMeterInfo[0] * dim, currMeterInfo[1]);
+//					currentMeterInfo[1] = currentMeterInfo[1] / dim;
+				}
+				// divided by 2: 2/2 --> (2/2)/2 = 1/2 
+				// divided by 4: 2/2 --> (2/4)/2 = 1/4
+				else {
+					newMeter = 
+						new Rational(currMeterInfo[0], Math.abs(dim)).div(currMeterInfo[1]);
+//					currentMeterInfo[1] = currentMeterInfo[1] * Math.abs(dim);
+				}
+				newMeter.reduce();
+				currMeterInfo[0] = newMeter.getNumer();
+				currMeterInfo[1] = newMeter.getDenom();
+			}
+			currMeterInfo[4] = dim;
+			mi.add(currMeterInfo);
+		}
+		return mi;
+	}
+
+
+	void setMeterInfo() {
+		meterInfo = calculateMeterInfo(getOriginalMeterInfo(), getDiminutions());
+	}
+
+
+	/**
+	 * Returns a list whose elements represent the meters in the piece. Each element contains:<br>
+	 * <ul>
+	 * <li> as element 0: the numerator of the meter (adapted according to the diminution)</li>
+	 * <li> as element 1: the denominator of the meter (adapted according to the diminution)</li>
+	 * <li> as element 2: the first bar in the meter </li>
+	 * <li> as element 3: the last bar in the meter </li>
+	 * <li> as element 4: the diminution for the meter </li>
+	 * </ul>
+	 * An anacrusis bar will be denoted with bar numbers 0-0.
+	 * 
+	 */
+	public List<Integer[]> getMeterInfo() {
+		return meterInfo;
+	}
+
+
+	/**
+	 * Gets the original (unreduced) meterInfo.
+	 * 
+	 * @return A list, containing, for each meter<break>
+	 *         <ul>
+	 *         <li> as element 0: the numerator of the meter </li>
+	 * 		   <li> as element 1: the denominator of the meter </li>
+	 *         <li> as element 2: the first bar in the meter </li>
+	 *         <li> as element 3: the last bar in the meter </li>
+	 *         </ul>
+	 */
+	// TESTED
+	public List<Integer[]> getOriginalMeterInfo() {
+		List<Integer[]> originalMeterInfo = new ArrayList<>();
+
+		String[] originalMeters = 
+			getEncoding().getInfoAndSettings().get(Encoding.METER_INDEX).split(";");		
+		for (int i = 0; i < originalMeters.length; i++) {
+			Integer[] currentMeterInfo = new Integer[4];
+			String currInfo = originalMeters[i].trim();
+			// Meter
 			String currMeter = currInfo.substring(0, currInfo.indexOf("(")).trim();
-			String currMeterNum = currMeter.split("/")[0].trim();
-			String currMeterDen = currMeter.split("/")[1].trim();			
-			// Get the bar number(s) going with the current meter
+			currentMeterInfo[0] = Integer.parseInt(currMeter.split("/")[0].trim());
+			currentMeterInfo[1] = Integer.parseInt(currMeter.split("/")[1].trim());
+			// Bar number(s)
 			String currBars = 
 				currInfo.substring(currInfo.indexOf("(") + 1, currInfo.indexOf(")")).trim();
-
-			// Add the current meter num and denom
-			Integer[] currentMeterInfo = new Integer[4];
-			currentMeterInfo[0] = Integer.parseInt(currMeterNum);
-			currentMeterInfo[1] = Integer.parseInt(currMeterDen);
-			// Add the current bar numbers
 			// If the meter is only for a single bar
 			if (!currBars.contains("-")) {
 				currentMeterInfo[2] = Integer.parseInt(currBars.trim());
@@ -253,31 +288,21 @@ public class Tablature implements Serializable {
 			}
 			// If the meter is for more than one bar
 			else {
-				String[] individualNumbers = currBars.split("-");
-				currentMeterInfo[2] = Integer.parseInt(individualNumbers[0].trim());
-				currentMeterInfo[3] = Integer.parseInt(individualNumbers[1].trim());
+				currentMeterInfo[2] = Integer.parseInt(currBars.split("-")[0].trim());
+				currentMeterInfo[3] = Integer.parseInt(currBars.split("-")[1].trim());
 			}
-			// Diminution
-			int dim = allDiminutions.get(i);
-			if (dim != 1) {
-				if (dim > 0) {
-					currentMeterInfo[1] = currentMeterInfo[1] / dim; // TODO will this always give an int?
-				}
-				else {
-					currentMeterInfo[1] = currentMeterInfo[1] * Math.abs(dim);
-				}
-			}
-			meterInfo.add(currentMeterInfo);
+			originalMeterInfo.add(currentMeterInfo);
 		}
+		return originalMeterInfo;
 	}
 
 
-	// TESTED (together with setMeterInfo())
-	public List<Integer[]> getMeterInfo() {
-		return meterInfo;
-	}
-
-
+	/**
+	 * Gets the reductions per meter.
+	 * 
+	 * @return
+	 */
+	// TESTED
 	public List<Integer> getDiminutions() {
 		List<Integer> diminutions = new ArrayList<>();
 		String diminutionsStr = getEncoding().getInfoAndSettings().get(Encoding.DIMINUTION_INDEX);
@@ -310,9 +335,9 @@ public class Tablature implements Serializable {
 		metricTimesBeatZeroAdapted.add(0);
 		for (int i = 1 ; i < originalMeterInfo.size(); i++) {
 			Integer[] prevMeterInfo = originalMeterInfo.get(i-1);
-			int prevNumBars = (prevMeterInfo[3] - prevMeterInfo[2]) + 1; 
+			int prevNumBars = (prevMeterInfo[3] - prevMeterInfo[2]) + 1;
 			Rational prevMeter = new Rational(prevMeterInfo[0], prevMeterInfo[1]);
-			// The metric time for beat zero equals 
+			// The metric time (duration of the previous bars) for beat zero equals 
 			// original: previous meter * number of bars in that meter 
 			// adapted: previous meter * number of bars in that meter * (or /) the dim for that meter
 			int prevDim = diminutions.get(i-1);
@@ -336,7 +361,7 @@ public class Tablature implements Serializable {
 			metricTimesBeatZero.add(metricTimesBeatZero.get(i-1) + beatZeroAsInt);
 			metricTimesBeatZeroAdapted.add(metricTimesBeatZeroAdapted.get(i-1) + beatZeroAdaptedAsInt);
 		}
-		
+
 		// Get the adapted durations and onsets. gridXOfTabSymbols and durationOfTabSymbols have
 		// the same size: that of listOfTabSymbols (i.e., the number of TS in the tablature)
 		List<Integer> newDurationOfTabSymbols = new ArrayList<>();
@@ -365,7 +390,6 @@ public class Tablature implements Serializable {
 				newGridXOfTabSymbols.add(beatZeroAdapted + (currOnset-beatZero)/Math.abs(dim));
 			}
 		}
-
 		res.add(newDurationOfTabSymbols);
 		res.add(newGridXOfTabSymbols);
 		return res;
@@ -392,9 +416,9 @@ public class Tablature implements Serializable {
 	 */
 	// TESTED (together with getBasicTabSymbolProperties())
 	void setBasicTabSymbolProperties() {
-		List<List<String>> symbols = encoding.getListsOfSymbols();
-		List<List<Integer>> stats = encoding.getListsOfStatistics();
-		TabSymbolSet tss = encoding.getTabSymbolSet();
+		List<List<String>> symbols = getEncoding().getListsOfSymbols();
+		List<List<Integer>> stats = getEncoding().getListsOfStatistics();
+		TabSymbolSet tss = getEncoding().getTabSymbolSet();
 		List<String> listOfTabSymbols = symbols.get(Encoding.TAB_SYMBOLS_INDEX);
 		List<String> listOfAllEvents = symbols.get(Encoding.ALL_EVENTS_INDEX);
 		List<Integer> isTabSymbolEvent = stats.get(Encoding.IS_TAB_SYMBOL_EVENT_INDEX); 
@@ -407,28 +431,9 @@ public class Tablature implements Serializable {
 		List<Integer> horizontalPositionInTabSymbolEventsOnly = 
 			stats.get(Encoding.HORIZONTAL_POSITION_TAB_SYMBOLS_ONLY_INDEX);
 
-		// Reconstruct the original meterInfo. diminutions and meterInfo have the same size
-		List<Integer[]> unadaptedMeterinfo = new ArrayList<>();
-		List<Integer> diminutions = getDiminutions();
-//		List<Integer> diminutions = new ArrayList<>();
-//		for (String s : encoding.getInfoAndSettings().get(Encoding.DIMINUTION_INDEX).split(";")) {
-//			diminutions.add(Integer.parseInt(s.trim()));
-//		}
-		for (int i = 0; i < meterInfo.size(); i++) {
-			Integer[] in = meterInfo.get(i);
-			int dim = diminutions.get(i);
-			Integer[] unAdapted = Arrays.copyOf(in, in.length);
-			if (dim > 0) {
-				unAdapted[1] = unAdapted[1]*dim;
-			}
-			else {
-				unAdapted[1] = unAdapted[1]/Math.abs(dim);
-			}
-			unadaptedMeterinfo.add(unAdapted);
-		}
-
 		List<List<Integer>> scaled = 
-			adaptToDiminutions(durationOfTabSymbols, gridXOfTabSymbols, diminutions, unadaptedMeterinfo);
+			adaptToDiminutions(durationOfTabSymbols, gridXOfTabSymbols, getDiminutions(), 
+			getOriginalMeterInfo());
 		durationOfTabSymbols = scaled.get(0);
 		gridXOfTabSymbols = scaled.get(1);
 		
@@ -520,10 +525,11 @@ public class Tablature implements Serializable {
 	// TESTED (together with getTablatureChord())
 	void setTablatureChords() {
 		tablatureChords = new ArrayList<List<TabSymbol>>();
-		TabSymbolSet tss = encoding.getTabSymbolSet();
+		TabSymbolSet tss = getEncoding().getTabSymbolSet();
 
 		List<TabSymbol> currentChord = new ArrayList<TabSymbol>();
-		List<String> listOfTabSymbols = encoding.getListsOfSymbols().get(Encoding.TAB_SYMBOLS_INDEX);
+		List<String> listOfTabSymbols = 
+			getEncoding().getListsOfSymbols().get(Encoding.TAB_SYMBOLS_INDEX);
 		TabSymbol firstTabSymbol = TabSymbol.getTabSymbol(listOfTabSymbols.get(0), tss);
 		int onsetTimeOfFirstTabSymbol = basicTabSymbolProperties[0][ONSET_TIME];
 		currentChord.add(firstTabSymbol);
@@ -616,7 +622,7 @@ public class Tablature implements Serializable {
 	public int getTranspositionInterval() {
 		int transpositionInterval = 0;
 
-		Tuning originalTuning = encoding.getTunings()[Encoding.ENCODED_TUNING_INDEX];
+		Tuning originalTuning = getEncoding().getTunings()[Encoding.ENCODED_TUNING_INDEX];
 		
 		for (Tuning t : Tuning.values()) {
 			if (t.equals(originalTuning)) {
@@ -654,7 +660,7 @@ public class Tablature implements Serializable {
 	void normaliseTuning() {
 		int transpositionInterval = getTranspositionInterval();
 
-		Tuning[] tunings = encoding.getTunings();
+		Tuning[] tunings = getEncoding().getTunings();
 
 		Tuning originalTuning = tunings[Encoding.ENCODED_TUNING_INDEX];
 		
@@ -688,7 +694,7 @@ public class Tablature implements Serializable {
 //		}
 
 		// Reset the list of gridY values in listsOfStatistics
-		List<List<Integer>> stats = encoding.getListsOfStatistics();
+		List<List<Integer>> stats = getEncoding().getListsOfStatistics();
 		List<Integer> oldGridYOfTabSymbols = stats.get(Encoding.GRID_Y_INDEX);
 		List<Integer> newGridYOfTabSymbols = new ArrayList<Integer>(); 
 		for (int i : oldGridYOfTabSymbols) {
@@ -776,9 +782,10 @@ public class Tablature implements Serializable {
 			meterChangePointsMetricTimes.add(new Rational(meterChangePointsMetricTimes.get(i - startIndex).getNumer() +
 				toAdd, commonDenom));	 	
 		}
-      	
+
 		// 4. Determine the bar number and the position in the bar, and set metricPosition
-		// a. If metricTime falls within the anacrusis (the if can only be satisfied if there is an anacrusis)
+		// a. If metricTime falls within the anacrusis (the if can only be satisfied if there
+		// is an anacrusis)
 		if (metricTimeInLargestDenom.getNumer() < meterChangePointsMetricTimes.get(0).getNumer()) {
 			// Determine the position in the bar as if it were a full bar 
 			Rational lengthAnacrusis = metersInLargestDenom.get(0);
@@ -1648,7 +1655,7 @@ public class Tablature implements Serializable {
 	public List<Rational[]> getTripletOnsetPairs() {
 		List<Rational[]> pairs = new ArrayList<>(); 
 		String[] hAndE = splitHeaderAndEncoding();
-		String header = hAndE[0], enc = hAndE[1];
+		String enc = hAndE[1];
 		TabSymbolSet tss = getEncoding().getTabSymbolSet();
 		List<String> tabwords = getTabwords(enc);
 		List<Rational[]> onsetTimes = getAllOnsetTimesRestsInclusive();
@@ -1830,8 +1837,8 @@ public class Tablature implements Serializable {
 				}
 			}
 		}
-		System.out.println(header + "\r\n\r\n" + recombineTabwords(tabwords) + 
-				SymbolDictionary.END_BREAK_INDICATOR);
+//		System.out.println(header + "\r\n\r\n" + recombineTabwords(tabwords) + 
+//				SymbolDictionary.END_BREAK_INDICATOR);
 		
 		// 3. Recombine
 		return new Encoding(header + "\r\n\r\n" + recombineTabwords(tabwords) + 

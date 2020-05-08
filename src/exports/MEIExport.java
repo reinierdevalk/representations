@@ -962,6 +962,17 @@ public class MEIExport {
 			"<mRest " + "xml:id='" + argVoice + "."  + bar/*argBar*/ + "." + "0.r.0'" + "/>";
 
 		Rational meter = Transcription.getMeter(bar, mi);
+//		List<Integer> diminutions = ToolBox.getItemsAtIndex(mi, 4);
+		int diminution = 1;
+		if (mi.get(0).length == 5) {
+			for (Integer[] in : mi) {
+				if (bar >= in[2] && bar <= in[3]) {
+					diminution = in[4];
+					break;
+				}
+			}
+		}
+		
 //		sbBar.append("meter='" + meter + "'" + "\r\n");
 //		barList.add("meter='" + meter + "'" + "\r\n");
 		
@@ -1041,6 +1052,8 @@ public class MEIExport {
 
 					// Check for any tripletOpen to be added before noteStr
 					if (noteInt[INTS.indexOf("tripletOpen")] == 1) {
+						System.out.println(diminution);
+						System.exit(0);
 						int tupletDur = -1;
 						Rational onset = new Rational(currOnsNum, 
 							currBarCurrVoiceInt.get(k)[INTS.indexOf("onsetDen")]);

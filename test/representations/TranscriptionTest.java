@@ -4440,58 +4440,55 @@ public class TranscriptionTest extends TestCase {
 //  	}
 //  	assertEquals(expected, actual);
 //	}
-	
-	
+
+
 	public void testGetCoDInfo() {    
-    Tablature tablature = new Tablature(encodingTestpiece1, true);
-		Transcription transcription = new Transcription();
-//    transcription.setFile(midiTestpiece1);
-    transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
-//    transcription.setPiece(null);
-    transcription.initialiseNoteSequence();
-    transcription.initialiseVoiceLabels(); 
-    transcription.initialiseDurationLabels();
-    if (transcription.checkChords(tablature) == false) {
-     	throw new RuntimeException("ERROR: Chord error (see console).");
-    }
-    
-    // Determine expected
-    List<Integer[][]> expected = new ArrayList<Integer[][]>();
-    // Chord 0-2
-    expected.add(null); expected.add(null); expected.add(null);
-    // Chord 3
-    expected.add(new Integer[][]{{65, 3, 4}});
-    // Chord 4-15
-    expected.add(null); expected.add(null); expected.add(null); expected.add(null); expected.add(null);
-    expected.add(null); expected.add(null); expected.add(null); expected.add(null); expected.add(null);
-    expected.add(null); expected.add(null);
-    	
-    // Calculate actual
-    List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
-    List<Integer[][]> actual = new ArrayList<Integer[][]>();
-    for (int i = 0; i < transcription.getTranscriptionChordsInternal().size(); i++) {
-    	actual.add(transcription.getCoDInfo(tablatureChords, i));
-    }
-    	
-    // Assert equality
-  	assertEquals(expected.size(), actual.size());
-  	for (int i = 0; i < expected.size(); i++) {
-  		if (expected.get(i) == null) {
-  			assertEquals(expected.get(i), actual.get(i));
-  		}
-  		else {
- 		    assertEquals(expected.get(i).length, actual.get(i).length);
- 		    for (int j = 0; j < expected.get(i).length; j++) {
- 		    	assertEquals(expected.get(i)[j].length, actual.get(i)[j].length);
- 		    	for (int k = 0; k < expected.get(i)[j].length; k++) {
- 		    		assertEquals(expected.get(i)[j][k], actual.get(i)[j][k]);
- 		    	}
- 		    }
-  		}
-  	}
+		Tablature tablature = new Tablature(encodingTestpiece1, true);
+			Transcription transcription = new Transcription();
+//		transcription.setFile(midiTestpiece1);
+		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
+//		transcription.setPiece(null);
+		transcription.initialiseNoteSequence();
+		transcription.initialiseVoiceLabels(); 
+		transcription.initialiseDurationLabels();
+		if (transcription.checkChords(tablature) == false) {
+			throw new RuntimeException("ERROR: Chord error (see console).");
+		}
+
+		List<Integer[][]> expected = new ArrayList<Integer[][]>();
+		// Chord 0-2
+		expected.add(null); expected.add(null); expected.add(null);
+		// Chord 3
+		expected.add(new Integer[][]{{65, 3, 4}});
+		// Chord 4-15
+		expected.add(null); expected.add(null); expected.add(null); expected.add(null); expected.add(null);
+		expected.add(null); expected.add(null); expected.add(null); expected.add(null); expected.add(null);
+		expected.add(null); expected.add(null);
+
+		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
+		List<Integer[][]> actual = new ArrayList<Integer[][]>();
+		for (int i = 0; i < transcription.getTranscriptionChordsInternal().size(); i++) {
+			actual.add(transcription.getCoDInfo(tablatureChords, i));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			if (expected.get(i) == null) {
+				assertEquals(expected.get(i), actual.get(i));
+			}
+			else {
+				assertEquals(expected.get(i).length, actual.get(i).length);
+				for (int j = 0; j < expected.get(i).length; j++) {
+					assertEquals(expected.get(i)[j].length, actual.get(i)[j].length);
+					for (int k = 0; k < expected.get(i)[j].length; k++) {
+						assertEquals(expected.get(i)[j][k], actual.get(i)[j][k]);
+					}
+				}
+			}
+		}
 	}
-	
-	
+
+
 //	public void testGetEqualDurationUnisonsInfoOLD() {
 //		Transcription transcription = new Transcription(midiTestpiece1, null);
 //		
@@ -5202,6 +5199,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testCreateDurationLabel() {
+		Transcription.DURATION_LABEL_SIZE = (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3);
 		List<List<Double>> expected = new ArrayList<List<Double>>(); 		
 		// 32nd
 		expected.add(Arrays.asList(new Double[]{1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -5925,9 +5923,6 @@ public class TranscriptionTest extends TestCase {
 		expected.add(onset7);
 
 		List<List<List<Rational[]>>> actualFull = transcription.getLastNotesInVoices(3);
-		String s = transcription.getLastNotesInVoicesString(actualFull, "4/4");
-		System.out.println(s);
-		System.exit(0);
 		List<List<List<Rational[]>>> actual = new ArrayList<>();
 		// Onset 0
 		actual.add(actualFull.get(0));
