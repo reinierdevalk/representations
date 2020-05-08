@@ -263,4 +263,21 @@ public class RhythmSymbol {
 		return null;
 	}
 
+
+	public static RhythmSymbol getNonTripletVariant(String anEncoding) {
+		int indRS = tripletIndicator.length(); 
+		if (anEncoding.contains(tripletOpen) || anEncoding.contains(tripletClose)) {
+			indRS += 1;
+		}
+		String onlyRS = anEncoding.substring(indRS);
+		
+		for (RhythmSymbol r: rhythmSymbols) {
+//			if (r.encoding.endsWith(anEncoding) && r.encoding.startsWith(tripletIndicator)) {
+			if (r.encoding.equals(onlyRS)) {	
+				return r;
+			}
+		}
+		return null;
+	}
+
 }

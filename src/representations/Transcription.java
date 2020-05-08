@@ -1768,9 +1768,9 @@ public class Transcription implements Serializable {
 	 */
 	// TESTED
 	public static Rational getMeter(int bar, List<Integer[]> meterInfo) {
-		for (Integer[] i : meterInfo) {
-			if (bar >= i[2] && bar < i[3]+1) {
-				return new Rational(i[0], i[1]);
+		for (Integer[] in : meterInfo) {
+			if (bar >= in[2] && bar < in[3]+1) {
+				return new Rational(in[0], in[1]);
 			}
 		}
 		return null;

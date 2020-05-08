@@ -261,7 +261,7 @@ public class Tablature implements Serializable {
 			int dim = allDiminutions.get(i);
 			if (dim != 1) {
 				if (dim > 0) {
-					currentMeterInfo[1] = currentMeterInfo[1] / dim; // TODO will this always give an int
+					currentMeterInfo[1] = currentMeterInfo[1] / dim; // TODO will this always give an int?
 				}
 				else {
 					currentMeterInfo[1] = currentMeterInfo[1] * Math.abs(dim);
@@ -409,10 +409,11 @@ public class Tablature implements Serializable {
 
 		// Reconstruct the original meterInfo. diminutions and meterInfo have the same size
 		List<Integer[]> unadaptedMeterinfo = new ArrayList<>();
-		List<Integer> diminutions = new ArrayList<>();
-		for (String s : encoding.getInfoAndSettings().get(Encoding.DIMINUTION_INDEX).split(";")) {
-			diminutions.add(Integer.parseInt(s.trim()));
-		}
+		List<Integer> diminutions = getDiminutions();
+//		List<Integer> diminutions = new ArrayList<>();
+//		for (String s : encoding.getInfoAndSettings().get(Encoding.DIMINUTION_INDEX).split(";")) {
+//			diminutions.add(Integer.parseInt(s.trim()));
+//		}
 		for (int i = 0; i < meterInfo.size(); i++) {
 			Integer[] in = meterInfo.get(i);
 			int dim = diminutions.get(i);
@@ -875,7 +876,7 @@ public class Tablature implements Serializable {
 	 * Returns all onset times, including those of rests.
 	 * 
 	 * NB: individual, successive rests are combined into single rests; any rest added after
-	 * the final chord are omitted.
+	 * the final chord are omitted. Rests before the first chord are included.
 	 * 
 	 * @return For each note or rest event, a Rational[] containing<br>
 	 *         <ul>
@@ -888,6 +889,11 @@ public class Tablature implements Serializable {
 		List<Rational[]> allOnsetTimes = new ArrayList<>();
 		
 		List<Rational[]> otmd = getAllOnsetTimesAndMinDurations();
+		// Check for rests before first chord; if there are, add 0 as first onset time
+		// NB This assumes that anacruses do not happen
+		if (otmd.get(0)[0].isGreater(Rational.ZERO)) {
+			allOnsetTimes.add(new Rational[]{Rational.ZERO, Rational.ZERO});
+		}
 		for (int i = 0; i < otmd.size(); i++) {
 			Rational currOns = otmd.get(i)[0];
 			allOnsetTimes.add(new Rational[]{currOns, Rational.ONE});
@@ -1528,7 +1534,8 @@ public class Tablature implements Serializable {
 			copyOfMeterInfo.add(Arrays.copyOf(in, in.length));
 		}
 		Integer[] last = copyOfMeterInfo.get(copyOfMeterInfo.size()-1);
-		int numBars = last[last.length-1];
+//		int numBars = last[last.length-1];
+		int numBars = last[3];
 		for (Integer[] in : copyOfMeterInfo) {
 			in[2] = (numBars - in[2]) + 1;
 			in[3] = (numBars - in[3]) + 1;
@@ -1626,9 +1633,20 @@ public class Tablature implements Serializable {
 	}
 
 
+	/**
+	 * Gets, for each triplet in the Tablature, the onset time of the opening event and the
+	 * offset time of the closing event. 
+	 * @return A list containing, for each triplet, a Rational[] containing <br>
+	 *         <ul>
+	 *         <li>as element 0: the onset time of the triplet opening event</li>
+	 *         <li>as element 1: the onset time of the triplet closing event</li>
+	 *         <li>as element 2: the triplet unit, in multiples of 
+	 *             <code>Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()</code> </li>
+	 *         </ul>
+	 */
+	// TESTED
 	public List<Rational[]> getTripletOnsetPairs() {
 		List<Rational[]> pairs = new ArrayList<>(); 
-		
 		String[] hAndE = splitHeaderAndEncoding();
 		String header = hAndE[0], enc = hAndE[1];
 		TabSymbolSet tss = getEncoding().getTabSymbolSet();
@@ -1655,29 +1673,30 @@ public class Tablature implements Serializable {
 			}
 		}
 		tabwords = tmp;
-		for (String t : tabwords) {
-			System.out.println(t);
-		}
-//		System.out.println(tabwords.size());
-//		System.out.println(onsetTimes.size());
 
 		// 2. Get the start and end onset times of triplet tabwords
-		Rational[] pair = new Rational[]{null, null};
+		Rational[] pair = new Rational[]{null, null, null};
+		int dur = 0;
 		for (int i = 0; i < tabwords.size(); i++) {
 			String curr = tabwords.get(i);
 			Rational ons = onsetTimes.get(i)[0];
 			ons.reduce();
-			// Triplet open chord: add to pair
-			if (curr.startsWith(RhythmSymbol.tripletIndicator) && 
-				curr.contains(RhythmSymbol.tripletOpen)) {
-				pair[0] = ons;
-			}
-			// Triplet close chord: complete pair, add it to list, and reset it
-			if (curr.startsWith(RhythmSymbol.tripletIndicator) && 
-				curr.contains(RhythmSymbol.tripletClose)) {
-				pair[1] = ons;
-				pairs.add(pair);
-				pair = new Rational[]{null, null};
+			if (curr.startsWith(RhythmSymbol.tripletIndicator)) {
+				String rs = curr.substring(0, curr.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+				RhythmSymbol nonTripletVar = RhythmSymbol.getNonTripletVariant(rs);
+				dur += nonTripletVar.getDuration();
+				// Triplet open chord: add to pair
+				if (curr.contains(RhythmSymbol.tripletOpen)) {
+					pair[0] = ons;	
+				}
+				// Triplet close chord: complete pair, add it to list, and reset it
+				else if (curr.contains(RhythmSymbol.tripletClose)) {
+					pair[1] = ons;
+					pair[2] = new Rational(dur/3, 1);
+					pairs.add(pair);
+					pair = new Rational[]{null, null, null};
+					dur = 0;
+				}
 			}
 		}		
 		return pairs;

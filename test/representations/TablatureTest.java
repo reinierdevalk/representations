@@ -12,6 +12,7 @@ import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import junit.framework.TestCase;
 import representations.Encoding.Tuning;
+import tbp.RhythmSymbol;
 import tbp.TabSymbol;
 import tbp.TabSymbolSet;
 
@@ -632,6 +633,8 @@ public class TablatureTest extends TestCase {
 		Tablature tablature = new Tablature(encodingTestpiece1, false);
 
 		List<Rational[]> expected = new ArrayList<>();
+		// Rest
+		expected.add(new Rational[]{new Rational(0, 4), Rational.ZERO});
 		// Chord 0
 		expected.add(new Rational[]{new Rational(3, 4), Rational.ONE});
 		// Chord 1
@@ -1436,6 +1439,38 @@ public class TablatureTest extends TestCase {
 			assertEquals(expected.get(i), actual.get(i));
 		}
 		assertEquals(expected, actual);
+	}
+
+
+	public void testGetTripletOnsetPairs() {
+		Tablature tablature = new Tablature(encodingTestpiece1, true);
+		// Replace bar 2 (beat 2) and bar 3 (beat 3) with triplets
+		String origEncoding = tablature.getEncoding().getRawEncoding();
+		String bar2Beat2 = "sm.c6.a5.e4.b2.>.a6.>.";
+		String bar2Beat2Triplets = "tr[sm.c6.a5.e4.b2.>.trsm.a6.>.tr]sm.a6.>.";
+		origEncoding = origEncoding.replace(bar2Beat2, bar2Beat2Triplets);
+		String bar3Beat3 = "mi.>.mi.a6.c4.a2.a1.>.";
+		String bar3Beat3Triplets = "tr[mi.>.trmi.a6.c4.a2.a1.>.tr]mi.a6.c4.a2.a1.>.";
+		origEncoding = origEncoding.replace(bar3Beat3, bar3Beat3Triplets);
+		tablature = new Tablature(new Encoding(origEncoding, true), true);
+		
+		List<Rational[]> expected = new ArrayList<>();
+		expected.add(new Rational[]{new Rational(5, 4), new Rational(17, 12), 
+			new Rational(RhythmSymbol.semiminim.getDuration(), 1)});
+		expected.add(new Rational[]{new Rational(10, 4), new Rational(17, 6), 
+			new Rational(RhythmSymbol.minim.getDuration(), 1)});
+
+		List<Rational[]> actual = tablature.getTripletOnsetPairs();
+		System.out.println(Arrays.toString(actual.get(0)));
+		System.out.println(Arrays.toString(actual.get(1)));
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).length, actual.get(i).length);
+			for (int j = 0; j < expected.get(i).length; j++) {
+				assertEquals(expected.get(i)[j], actual.get(i)[j]);
+			}
+		}
 	}
 
 
