@@ -1647,8 +1647,8 @@ public class Tablature implements Serializable {
 	 *         <ul>
 	 *         <li>as element 0: the onset time of the triplet opening event</li>
 	 *         <li>as element 1: the onset time of the triplet closing event</li>
-	 *         <li>as element 2: the triplet unit, in multiples of 
-	 *             <code>Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()</code> </li>
+	 *         <li>as element 2: the triplet unit, as RhythmSymbol duration divided by 1 
+	 *             (i.e., semibrevis = 48/1; minim = 24/1; semiminim = 12/1; etc.)</li>
 	 *         </ul>
 	 */
 	// TESTED
