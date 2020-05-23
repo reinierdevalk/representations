@@ -232,6 +232,18 @@ public class Tablature implements Serializable {
 	}
 
 
+	public static int getDiminution(int bar, List<Integer[]> mi) {
+		int diminution = 1; 
+		for (Integer[] in : mi) {
+			if (bar >= in[2] && bar <= in[3]) {
+				diminution = in[4];
+				break;
+			}
+		}
+		return diminution;
+	}
+
+
 	void setMeterInfo() {
 		meterInfo = calculateMeterInfo(getOriginalMeterInfo(), getDiminutions());
 	}
