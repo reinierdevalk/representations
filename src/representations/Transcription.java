@@ -3823,7 +3823,7 @@ public class Transcription implements Serializable {
 	 *         as element 2: the voices that go with these indices </br>
 	 *         Returns <code>null</code> if no motif was found.
 	 */
-	// TESTED
+	// TESTED TODO: implement full note duration case in tablature case
 	List<List<Integer>> getImitativeVoiceEntries(Integer[][] btp, List<List<Double>> durationLabels, 
 		Integer[][] bnp, int highestNumVoices, int n) { // in 2020
 
@@ -4817,6 +4817,7 @@ public class Transcription implements Serializable {
 	 * @param n
 	 * @return
 	 */
+	// TESTED TODO: implement full note duration case in tablature case
 	// Return <code>null</code> if one or more voices are missing from the returned list of voices. 
 	List<List<Integer>> getNonImitativeVoiceEntries(Integer[][] btp, List<List<Double>> durationLabels,
 		Integer[][] bnp, int numVoices, int n) { // in 2020
