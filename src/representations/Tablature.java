@@ -723,13 +723,14 @@ public class Tablature implements Serializable {
 
 	/**
 	 * Gets the metric position of the note at the onset time. Returns a Rational[] with 
-	 *   as element 0: the bar number (whose denominator will always be 1);
-	 *   as element 1: the position within the bar, reduced and starting at 0/x (where x is the common denominator,
-	 *                 i.e., the product of the denominator of metricTime and the largest meter denominator).
-	 * 
+	 *   <ul>
+	 *   <li>as element 0: the bar number (whose denominator will always be 1);</li>
+	 *   <li>as element 1: the position within the bar, reduced and starting at 0/x (where x is the common denominator,
+	 *                 i.e., the product of the denominator of metricTime and the largest meter denominator).</li>
+	 *   </ul>
 	 * If there is an anacrusis: if metricTime falls within the anacrusis, the bar number returned will be 0,
 	 * and the position within the bar will be the position as if the anacrusis were a full bar.
-	 *                 
+	 * <br><br>
 	 * Example: a metric time of 9/8 in meter 6/8 returns 2/1 and 3/8 (i.e., the fourth 8th note in bar 2).
 	 * 
 	 * @param metricTime

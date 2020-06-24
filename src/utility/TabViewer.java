@@ -280,6 +280,7 @@ public class TabViewer extends JFrame{
 //			encodingFile = new File(prefix1 + "3vv/" + "newsidler-1544_2-nun_volget.tbp");
 //			encodingFile = new File(prefix1 + "3vv/" + "phalese-1547-tant_que-a3.tbp"); 
 			encodingFile = new File(prefix2 + "testpiece.tbp");
+			encodingFile = new File("F:/research/data/encodings/" + "newsidler-1536_6-mein_einigs_a.tbp");
 
 			// 4vv
 //			encodingFile = new File(prefix1 + "4vv/" + "ochsenkun_1558_-_absolon_fili.tbp");
