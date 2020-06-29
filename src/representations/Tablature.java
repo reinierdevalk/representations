@@ -1654,9 +1654,25 @@ public class Tablature implements Serializable {
 
 
 	/**
+	 * Checkes whether the Tablature contains triplets.
+	 * 
+	 * Returns <code>true</code> if the Tablature contain triplets, anf <code>false </code> it not.
+	 */
+	boolean containsTriplets() {
+		if (getEncoding().getCleanEncoding().contains(RhythmSymbol.tripletIndicator)) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+
+	/**
 	 * Gets, for each triplet in the Tablature, the onset time of the opening event and the
 	 * offset time of the closing event. 
-	 * @return A list containing, for each triplet, a Rational[] containing <br>
+	 * @return <code>null</code> if there are no triplets; otherwise a list containing, for 
+	 *         each triplet, a Rational[] containing <br>
 	 *         <ul>
 	 *         <li>as element 0: the onset time of the triplet opening event</li>
 	 *         <li>as element 1: the onset time of the triplet closing event</li>
@@ -1666,56 +1682,63 @@ public class Tablature implements Serializable {
 	 */
 	// TESTED
 	public List<Rational[]> getTripletOnsetPairs() {
-		List<Rational[]> pairs = new ArrayList<>(); 
-		String[] hAndE = splitHeaderAndEncoding();
-		String enc = hAndE[1];
-		TabSymbolSet tss = getEncoding().getTabSymbolSet();
-		List<String> tabwords = getTabwords(enc);
-		List<Rational[]> onsetTimes = getAllOnsetTimesRestsInclusive();
-
-		// 1. Align tabwords and onsetTimes
-		// Remove all SBI
-		tabwords.removeIf(t -> t.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR));
-		// Combine all successive rest tabwords
-		tabwords = combineSuccessiveRestTabwords(tabwords);
-		// Remove all tabwords that are neither a chord nor a rest
-		List<String> tmp = new ArrayList<>();
-		for (String t : tabwords) {
-			String[] split = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
-			// Remove space from split
-			if (split[split.length-1].equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
-				split = Arrays.copyOf(split, split.length-1);
-			}
-			// Add tabword if first element is a RS or last element is a TS
-			if (RhythmSymbol.getRhythmSymbol(split[0]) != null ||
-				TabSymbol.getTabSymbol(split[(split.length)-1], tss) != null) {
-				tmp.add(t);
-			}
+		
+		List<Rational[]> pairs; 
+		if (!containsTriplets()) {
+			pairs = null;
 		}
-		tabwords = tmp;
+		else {
+			pairs = new ArrayList<>();
+			String[] hAndE = splitHeaderAndEncoding();
+			String enc = hAndE[1];
+			TabSymbolSet tss = getEncoding().getTabSymbolSet();
+			List<String> tabwords = getTabwords(enc);
+			List<Rational[]> onsetTimes = getAllOnsetTimesRestsInclusive();
 
-		// 2. Get the start and end onset times of triplet tabwords
-		Rational[] pair = new Rational[]{null, null, null};
-		int dur = 0;
-		for (int i = 0; i < tabwords.size(); i++) {
-			String curr = tabwords.get(i);
-			Rational ons = onsetTimes.get(i)[0];
-			ons.reduce();
-			if (curr.startsWith(RhythmSymbol.tripletIndicator)) {
-				String rs = curr.substring(0, curr.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
-				RhythmSymbol nonTripletVar = RhythmSymbol.getNonTripletVariant(rs);
-				dur += nonTripletVar.getDuration();
-				// Triplet open chord: add to pair
-				if (curr.contains(RhythmSymbol.tripletOpen)) {
-					pair[0] = ons;	
+			// 1. Align tabwords and onsetTimes
+			// Remove all SBI
+			tabwords.removeIf(t -> t.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR));
+			// Combine all successive rest tabwords
+			tabwords = combineSuccessiveRestTabwords(tabwords);
+			// Remove all tabwords that are neither a chord nor a rest
+			List<String> tmp = new ArrayList<>();
+			for (String t : tabwords) {
+				String[] split = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
+				// Remove space from split
+				if (split[split.length-1].equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
+					split = Arrays.copyOf(split, split.length-1);
 				}
-				// Triplet close chord: complete pair, add it to list, and reset it
-				else if (curr.contains(RhythmSymbol.tripletClose)) {
-					pair[1] = ons;
-					pair[2] = new Rational(dur/3, 1);
-					pairs.add(pair);
-					pair = new Rational[]{null, null, null};
-					dur = 0;
+				// Add tabword if first element is a RS or last element is a TS
+				if (RhythmSymbol.getRhythmSymbol(split[0]) != null ||
+						TabSymbol.getTabSymbol(split[(split.length)-1], tss) != null) {
+					tmp.add(t);
+				}
+			}
+			tabwords = tmp;
+
+			// 2. Get the start and end onset times of triplet tabwords
+			Rational[] pair = new Rational[]{null, null, null};
+			int dur = 0;
+			for (int i = 0; i < tabwords.size(); i++) {
+				String curr = tabwords.get(i);
+				Rational ons = onsetTimes.get(i)[0];
+				ons.reduce();
+				if (curr.startsWith(RhythmSymbol.tripletIndicator)) {
+					String rs = curr.substring(0, curr.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+					RhythmSymbol nonTripletVar = RhythmSymbol.getNonTripletVariant(rs);
+					dur += nonTripletVar.getDuration();
+					// Triplet open chord: add to pair
+					if (curr.contains(RhythmSymbol.tripletOpen)) {
+						pair[0] = ons;	
+					}
+					// Triplet close chord: complete pair, add it to list, and reset it
+					else if (curr.contains(RhythmSymbol.tripletClose)) {
+						pair[1] = ons;
+						pair[2] = new Rational(dur/3, 1);
+						pairs.add(pair);
+						pair = new Rational[]{null, null, null};
+						dur = 0;
+					}
 				}
 			}
 		}		

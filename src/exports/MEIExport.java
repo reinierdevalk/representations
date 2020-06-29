@@ -36,6 +36,8 @@ public class MEIExport {
 	
 	private static final Rational TRIPLETISER = new Rational(3, 2);
 	private static final Rational DETRIPLETISER = new Rational(2, 3);
+	private static final int BREVE = -1;
+	private static final int LONG = -2;
 	
 	// Keys contains, for each key, the number of sharps (positive) or flats (negative) and 
 	// the MIDI pitch class of the tonic
@@ -1484,7 +1486,11 @@ public class MEIExport {
 					}
 				}
 
-				durPrev = new Rational(1, prevNote[INTS.indexOf("dur")]);
+//				durPrev = new Rational(1, prevNote[INTS.indexOf("dur")]);
+				int durPrevInt = prevNote[INTS.indexOf("dur")]; 
+				durPrev = 
+					(durPrevInt > 0) ? new Rational(1, durPrevInt) :
+					((durPrevInt == BREVE ? new Rational(2, 1) : new Rational(4, 1)));
 				int dotsPrev = prevNote[INTS.indexOf("dots")];
 				// The number of dots n lengthens a note by l its value, where l = ((2^n)-1)/2^n
 				// (see https://en.wikipedia.org/wiki/Note_value)
@@ -1512,7 +1518,12 @@ public class MEIExport {
 					prevNote[INTS.indexOf("tripletClose")] == 1) {
 					System.out.println("prevNote is within a triplet");
 					// Recalculate durPrev and offsetPrev
-					durPrev = new Rational(1, prevNote[INTS.indexOf("dur")]);
+					durPrevInt = prevNote[INTS.indexOf("dur")];
+//					durPrev = new Rational(1, prevNote[INTS.indexOf("dur")]);
+					durPrev = 
+						(durPrevInt > 0) ? new Rational(1, durPrevInt) :
+						((durPrevInt == BREVE ? new Rational(2, 1) : new Rational(4, 1)));
+
 					durPrev = durPrev.mul(DETRIPLETISER);
 					dotsPrev = prevNote[INTS.indexOf("dots")];
 					l = new Rational((int)Math.pow(2, dotsPrev) - 1, (int)Math.pow(2, dotsPrev));
@@ -1557,7 +1568,9 @@ public class MEIExport {
 						(currVoiceStrings.size() == 0) ? Rational.ZERO : metPosPrev.add(durPrev);
 					}
 					Rational durRestTripletised = durRest;
-					List<Boolean> tripletInfo = isTripletOnset(tripletOnsetPairs, onsetRest);
+//					List<Boolean> tripletInfo = isTripletOnset(tripletOnsetPairs, onsetRest);
+					List<Boolean> tripletInfo = (tripletOnsetPairs == null) ? null :
+						isTripletOnset(tripletOnsetPairs, onsetRest);
 //					if (tripletInfo.contains(Boolean.TRUE)) { // herr man
 ////					if (tripletOpen || tripletMid || tripletClose) {
 //						// If the note or rest has a triplet onset time, its duration must be multiplied by
@@ -1597,7 +1610,9 @@ public class MEIExport {
 					System.out.println(onsetRest);
 					System.out.println(metPosRest);
 					Rational durRestTripletised = durRest;
-					List<Boolean> tripletInfo = isTripletOnset(tripletOnsetPairs, onsetRest);
+//					List<Boolean> tripletInfo = isTripletOnset(tripletOnsetPairs, onsetRest);
+					List<Boolean> tripletInfo = (tripletOnsetPairs == null) ? null :
+						isTripletOnset(tripletOnsetPairs, onsetRest);
 //					if (tripletInfo.contains(Boolean.TRUE)) { // herr man
 ////					if (tripletOpen || tripletMid || tripletClose) {	
 //						durRestTripletised = durRest.mul(TRIPLETISER);
@@ -1676,7 +1691,9 @@ public class MEIExport {
 						Rational currSubNoteDur = subNoteDurs.get(j);
 						Rational currSubNoteDurOnset = subNoteDursOnsets.get(j); // herr man
 						Rational currSubNoteDurTripletised = currSubNoteDur;
-						List<Boolean> tripletInfo = 
+//						List<Boolean> tripletInfo = 
+//							isTripletOnset(tripletOnsetPairs, currSubNoteDurOnset);
+						List<Boolean> tripletInfo = (tripletOnsetPairs == null) ? null :
 							isTripletOnset(tripletOnsetPairs, currSubNoteDurOnset);
 //						if (tripletInfo.contains(Boolean.TRUE)) { // herr man
 ////						if (tripletOpen || tripletMid || tripletClose) {
@@ -1802,7 +1819,9 @@ public class MEIExport {
 			if (durRounded.isLessOrEqual(remainingInBar)) {
 				System.out.println("CASE: single-bar note");
 				Rational durRoundedTripletised = durRounded;
-				List<Boolean> tripletInfo = isTripletOnset(tripletOnsetPairs, onset);
+//				List<Boolean> tripletInfo = isTripletOnset(tripletOnsetPairs, onset);
+				List<Boolean> tripletInfo = (tripletOnsetPairs == null) ? null : 
+					isTripletOnset(tripletOnsetPairs, onset);
 //				if (tripletInfo.contains(Boolean.TRUE)) {
 ////				if (tripletOpen || tripletMid || tripletClose) {
 //					durRoundedTripletised = durRounded.mul(TRIPLETISER);
@@ -1882,7 +1901,9 @@ public class MEIExport {
 					Rational currSubNoteDur = subNoteDurs.get(j);
 					Rational currSubNoteDurOnset = subNoteDursOnsets.get(j); // herr man
 					Rational currSubNoteDurTripletised = currSubNoteDur;
-					List<Boolean> tripletInfo = 
+//					List<Boolean> tripletInfo = 
+//						isTripletOnset(tripletOnsetPairs, currSubNoteDurOnset);
+					List<Boolean> tripletInfo = (tripletOnsetPairs == null) ? null : 
 						isTripletOnset(tripletOnsetPairs, currSubNoteDurOnset);
 //					if (tripletInfo.contains(Boolean.TRUE)) { // herr man
 ////					if (tripletOpen || tripletMid || tripletClose) {
@@ -1925,7 +1946,9 @@ public class MEIExport {
 				if (restCurrentBar.isGreater(Rational.ZERO)) {
 					Rational metPosRestCurrentBar = metPos.add(durRounded);
 					Rational restCurrentBarTripletised = restCurrentBar;
-					List<Boolean> tripletInfo = isTripletOnset(tripletOnsetPairs, offset);
+//					List<Boolean> tripletInfo = isTripletOnset(tripletOnsetPairs, offset);
+					List<Boolean> tripletInfo = (tripletOnsetPairs == null) ? null : 
+						isTripletOnset(tripletOnsetPairs, offset);
 //					if (tripletInfo.contains(Boolean.TRUE)) { // herr man
 ////					if (tripletOpen || tripletMid || tripletClose) {
 //						restCurrentBarTripletised = restCurrentBar.mul(TRIPLETISER);
@@ -2214,8 +2237,9 @@ public class MEIExport {
 		
 		// Determine the unit fractions (which, if the note or rest has a triplet onset
 		// time, are tripletised 
-		if (tripletInfo.contains(Boolean.TRUE)) {
+		if (tripletInfo != null && tripletInfo.contains(Boolean.TRUE)) {
 			System.out.println("keteens");
+			System.out.println(argDur);
 			argDur = argDur.mul(TRIPLETISER);
 		}
 		List<Rational> uf = getUnitFractions(argDur, gridVal);
@@ -2256,8 +2280,35 @@ public class MEIExport {
 			if (isDotted) {
 				durAsRat = durAsRat.add(uf.get(1));
 			}
-			int dur = (isSimple || isDotted) ? uf.get(k).getDenom() : durAsRat.getDenom();
-			copyOfCurr[STRINGS.indexOf("dur")] = "dur='" + dur + "'";
+			// Allow for breve (2/1) and long (4/1)
+			int dur = -1; // (isSimple || isDotted) ? uf.get(k).getDenom() : durAsRat.getDenom();
+			if (isSimple || isDotted) {
+				if (uf.get(k).isLessOrEqual(Rational.ONE)) {
+					dur = uf.get(k).getDenom();
+				}
+				else if (uf.get(k).equals(new Rational(2, 1))) {
+					dur = BREVE;
+				}
+				else if (uf.get(k).equals(new Rational(4, 1))) {
+					dur = LONG;
+				}
+			}
+			else {
+				if (durAsRat.isLessOrEqual(Rational.ONE)) {
+					dur = durAsRat.getDenom();
+				}
+				else if (durAsRat.equals(new Rational(2, 1))) {
+					dur = BREVE;
+				}
+				else if (durAsRat.equals(new Rational(4, 1))) {
+					dur = LONG;
+				}
+			}
+			String durStr = 
+				(dur > 0) ? Integer.toString(dur) : ((dur == BREVE ? "breve" : "long"));
+
+			copyOfCurr[STRINGS.indexOf("dur")] = "dur='" + durStr + "'";
+			System.out.println("duuuuuur = " + dur);
 			if (isSimple || isDotted) {  // in nonDottedCompound case, numDots is always 0 
 				if (numDots != 0) {
 					copyOfCurr[STRINGS.indexOf("dots")] = "dots='" + numDots + "'";
@@ -2291,23 +2342,26 @@ public class MEIExport {
 			in[INTS.indexOf("tripletMid")] = 0;
 			in[INTS.indexOf("tripletClose")] = 0;
 			
-			List<Boolean> openMidClose = isTripletOnset(tripletOnsetPairs, currOnset);			
-			// Get any triplet information
-			String[] last = currPitchOctAccTie.get(currPitchOctAccTie.size()-1);
-			Rational[] top = getExtendedTripletOnsetPair(currOnset, tripletOnsetPairs, mi);
-//			Rational[] top = getTripletOnsetPair(tripletOnsetPairs, currOnset);
-			Rational currTripletLen = null; //top[3];
-//			Rational currTripletLen = determineTripletLen(currOnset, tripletOnsetPairs, mi)[3];
-			Rational currTripletOpenOnset = null;
-			Rational metPosTripletOpen = null;
+			List<Boolean> openMidClose = (tripletOnsetPairs == null) ? null : 
+				isTripletOnset(tripletOnsetPairs, currOnset);
+			if (tripletOnsetPairs != null) {
+//				List<Boolean> openMidClose = isTripletOnset(tripletOnsetPairs, currOnset);
+				// Get any triplet information
+				String[] last = currPitchOctAccTie.get(currPitchOctAccTie.size()-1);
+				Rational[] top = getExtendedTripletOnsetPair(currOnset, tripletOnsetPairs, mi);
+//				Rational[] top = getTripletOnsetPair(tripletOnsetPairs, currOnset);
+				Rational currTripletLen = null; //top[3];
+//				Rational currTripletLen = determineTripletLen(currOnset, tripletOnsetPairs, mi)[3];
+				Rational currTripletOpenOnset = null;
+				Rational metPosTripletOpen = null;
 ////			Rational currLocalMetPos = null;
-			Rational tripletBorder = null;
-			Rational onsetTripletBorder = null;
-			Rational offset = null;
-			if (top != null) {
-//				currTripletOpenOnset = getTripletOnsetPair(tripletOnsetPairs, currOnset)[0];
-				currTripletOpenOnset = getExtendedTripletOnsetPair(currOnset, tripletOnsetPairs, mi)[0];
-				metPosTripletOpen = Tablature.getMetricPosition(currTripletOpenOnset, mi)[1];
+				Rational tripletBorder = null;
+				Rational onsetTripletBorder = null;
+				Rational offset = null;
+				if (top != null) {
+//					currTripletOpenOnset = getTripletOnsetPair(tripletOnsetPairs, currOnset)[0];
+					currTripletOpenOnset = getExtendedTripletOnsetPair(currOnset, tripletOnsetPairs, mi)[0];
+					metPosTripletOpen = Tablature.getMetricPosition(currTripletOpenOnset, mi)[1];
 //				currLocalMetPos = currMetPos;
 //				System.out.println("metPosTripletOpen = " + metPosTripletOpen);
 //				System.out.println("currLocalMetPos = " + currLocalMetPos);
@@ -2323,167 +2377,167 @@ public class MEIExport {
 //				System.out.println("currMetPos = " + currMetPos);
 				
 //				currTripletLen = determineTripletLen(currOnset, tripletOnsetPairs, mi);
-				currTripletLen = top[3];
-				if (i == 1139) {
-					System.out.println("currTripletLen = " + currTripletLen);
-//					System.exit(0);
-				}			
+					currTripletLen = top[3];
+					if (i == 1139) {
+						System.out.println("currTripletLen = " + currTripletLen);
+//						System.exit(0);
+					}			
 //				tripletBorder = metPosTripletOpen.add(tripletLen);
 //				onsetTripletBorder = currTripletOpenOnset.add(tripletLen);
-				tripletBorder = metPosTripletOpen.add(currTripletLen);
-				onsetTripletBorder = currTripletOpenOnset.add(currTripletLen);
+					tripletBorder = metPosTripletOpen.add(currTripletLen);
+					onsetTripletBorder = currTripletOpenOnset.add(currTripletLen);
 				
-				
-				// Calculate duration so far (or total in isSimple/isDotted case) and offset
-//				ufSoFar = 
-//					(isSimple || isDotted) ? ToolBox.sumListRational(uf).mul(DETRIPLETISER) :
-//					ufSoFar.add(durAsRat.mul(DETRIPLETISER));
-//				offset = metPosTripletOpen.add(metPos).add(ufSoFar);	
+					// Calculate duration so far (or total in isSimple/isDotted case) and offset
+//					ufSoFar = 
+//						(isSimple || isDotted) ? ToolBox.sumListRational(uf).mul(DETRIPLETISER) :
+//						ufSoFar.add(durAsRat.mul(DETRIPLETISER));
+//					offset = metPosTripletOpen.add(metPos).add(ufSoFar);	
 
-//				offset = metPos.add(ufSoFar);
-				offset = currMetPos.add(durAsRat.mul(DETRIPLETISER)); 
+//					offset = metPos.add(ufSoFar);
+					offset = currMetPos.add(durAsRat.mul(DETRIPLETISER)); 
 
-//				System.out.println("ufSoFar = " + ufSoFar);
-//				System.out.println("tripletLen = " + tripletLen);
-				System.out.println("metPos = " + metPos);
-				System.out.println("currMetPos = " + currMetPos);
-				System.out.println("durAsRat = " + durAsRat);
-				System.out.println("metPosTripletOpen = " + metPosTripletOpen);
-				System.out.println("offset = " + offset);
-				System.out.println("tripletBorder = " + tripletBorder);
-			}
-			// If currOnset is the second part of a non-dotted compound note or rest that falls
-			// after tripletCloseOnset: set tripletCloseOnset to true 
-			// NB: This does not apply to isSimple or isDotted, where there is no second part
-			// E.g.: last H in voice 0 = tripletCloseOnset; last Q in voice 1, which
-			// is tied to the W before, falls after it 
-			// voice 0: W       H   H   H   H     |
-			// voice 1: W       H.    W       (Q) |
-			// (This happens in 5263_12_in_exitu_israel_de_egipto_desprez-3, bar 77, voice 2)
-			if (isNonDottedCompound) {
-				Rational[] topOnset = getExtendedTripletOnsetPair(onset, tripletOnsetPairs, mi);
-//				Rational[] topOnset = getTripletOnsetPair(tripletOnsetPairs, onset);
-				Rational tripletOpenOnset = (topOnset != null) ? topOnset[0] : null;			
-				Rational tripletCloseOnset = (topOnset != null) ? topOnset[1] : null;
-				if (currBar == 77) {
-					System.out.println("open = " + tripletOpenOnset);
-					System.out.println("close = " + tripletCloseOnset);
-					System.out.println("currOnset = " + currOnset);
-					System.out.println("currTripletLen = " + currTripletLen);
+//					System.out.println("ufSoFar = " + ufSoFar);
+//					System.out.println("tripletLen = " + tripletLen);
+					System.out.println("metPos = " + metPos);
+					System.out.println("currMetPos = " + currMetPos);
+					System.out.println("durAsRat = " + durAsRat);
+					System.out.println("metPosTripletOpen = " + metPosTripletOpen);
+					System.out.println("offset = " + offset);
+					System.out.println("tripletBorder = " + tripletBorder);
 				}
-				if (topOnset != null && currOnset.isGreater(tripletCloseOnset) && 
-					currOnset.isLess(tripletOpenOnset.add(currTripletLen))) {
-//					currOnset.isLess(tripletOpenOnset.add(tripletLen))) {
-					openMidClose.set(2, true);
-					System.out.println("GOTCHA!");
-					System.out.println("bar = " + currBar);
+				// If currOnset is the second part of a non-dotted compound note or rest that falls
+				// after tripletCloseOnset: set tripletCloseOnset to true 
+				// NB: This does not apply to isSimple or isDotted, where there is no second part
+				// E.g.: last H in voice 0 = tripletCloseOnset; last Q in voice 1, which
+				// is tied to the W before, falls after it 
+				// voice 0: W       H   H   H   H     |
+				// voice 1: W       H.    W       (Q) |
+				// (This happens in 5263_12_in_exitu_israel_de_egipto_desprez-3, bar 77, voice 2)
+				if (isNonDottedCompound) {
+					Rational[] topOnset = getExtendedTripletOnsetPair(onset, tripletOnsetPairs, mi);
+//					Rational[] topOnset = getTripletOnsetPair(tripletOnsetPairs, onset);
+					Rational tripletOpenOnset = (topOnset != null) ? topOnset[0] : null;			
+					Rational tripletCloseOnset = (topOnset != null) ? topOnset[1] : null;
+					if (currBar == 77) {
+						System.out.println("open = " + tripletOpenOnset);
+						System.out.println("close = " + tripletCloseOnset);
+						System.out.println("currOnset = " + currOnset);
+						System.out.println("currTripletLen = " + currTripletLen);
+					}
+					if (topOnset != null && currOnset.isGreater(tripletCloseOnset) && 
+						currOnset.isLess(tripletOpenOnset.add(currTripletLen))) {
+//						currOnset.isLess(tripletOpenOnset.add(tripletLen))) {
+						openMidClose.set(2, true);
+						System.out.println("GOTCHA!");
+						System.out.println("bar = " + currBar);
+					}
 				}
-			}
 			
-			// If the note is tripletOpen
-			if (openMidClose.get(0) == true) {
-				System.out.println("is tripletOpen");
-				in[INTS.indexOf("tripletOpen")] = 1;
-//				Rational durRemainder = Rational.ZERO;
-//				for (int l = k; l < uf.size(); l++) {
-//					durRemainder = durRemainder.add(uf.get(l).mul(DETRIPLETISER));
-//				}	
-//				// If the remainder of the note takes up the whole triplet space or
-//				// the whole bar, no triplet is necessary
+				// If the note is tripletOpen
+				if (openMidClose.get(0) == true) {
+					System.out.println("is tripletOpen");
+					in[INTS.indexOf("tripletOpen")] = 1;
+//					Rational durRemainder = Rational.ZERO;
+//					for (int l = k; l < uf.size(); l++) {
+//						durRemainder = durRemainder.add(uf.get(l).mul(DETRIPLETISER));
+//					}	
+//					// If the remainder of the note takes up the whole triplet space or
+//					// the whole bar, no triplet is necessary
 				
-				// Determine tripletOffsets
-				Rational currBarLen = Rational.ZERO;
-				for (Integer[] m : mi) {
-					if (currBar >= m[2] && currBar <= m[3]) {
-						currBarLen = new Rational(m[0], m[1]);
-						break;
+					// Determine tripletOffsets
+					Rational currBarLen = Rational.ZERO;
+					for (Integer[] m : mi) {
+						if (currBar >= m[2] && currBar <= m[3]) {
+							currBarLen = new Rational(m[0], m[1]);
+							break;
+						}
 					}
-				}
-				List<Rational> tripletOffsets = new ArrayList<>();
-//				if (tripletInfo.contains(Boolean.TRUE)) {
-				int times = (int) currBarLen.div(currTripletLen).toDouble();
-				for (int j = 1; j <= times; j++) {
-					tripletOffsets.add(currTripletLen.mul(j));
-				}
-//				}
+					List<Rational> tripletOffsets = new ArrayList<>();
+//					if (tripletInfo.contains(Boolean.TRUE)) {
+					int times = (int) currBarLen.div(currTripletLen).toDouble();
+					for (int j = 1; j <= times; j++) {
+						tripletOffsets.add(currTripletLen.mul(j));
+					}
+//					}
 
-				// Check offset of remainder to check if it is in tripletOffsets.
-				// Example from 5256_05_inviolata_integra_desprez-2, bar 19, voice 0 (n = note; r = rest)
-				// --3-- --3--   
-				// H W   W   H | H
-				// n r   r   r   n
-				// uf for the rest will be [1/1, 1/1, 1/2]; but at k = 1, the remainder of
-				// uf does not need to be a triplet as it equals tripletLen, but can be a W
-				Rational offsetRemainder = null;
-				if (k != uf.size() - 1) {
-					Rational remainder = ToolBox.sumListRational(uf.subList(k+1, uf.size()));
-					offsetRemainder = offset.add(remainder.mul(DETRIPLETISER));
-					if (currBar == 19) {
-						System.out.println("remainder = " + remainder);
-						System.out.println("offsetRemainder = " + offsetRemainder);
-						System.out.println(tripletOffsets);
-					}
-				}
-				
-				// If the note ends on or after the triplet border 
-				if (tripletOffsets.contains(offset) || 
-					tripletOffsets.contains(offsetRemainder) ||	
-					offset.isGreater(tripletBorder)) {
-//				if (tripletOffsets.contains(offset) || offset.isGreaterOrEqual(tripletBorder)) {	
-					// a. If note ends on (one of the) triplet border(s): no triplet necessary
-					if (tripletOffsets.contains(offset) || tripletOffsets.contains(offsetRemainder)) {
-						in[INTS.indexOf("tripletOpen")] = 0;
-						System.out.println("JAZEKER!");
-						System.out.println("currBar = " + currBar);
-						System.out.println("offset = " + offset);
-						System.out.println("tripletOffsets = " + tripletOffsets);
-//						System.exit(0);
-//						String[] last = currPitchOctAccTie.get(currPitchOctAccTie.size()-1);
-						if (isDotted || isSimple) {
-							// Reset dot (which tripletises the note) in last element of 
-							// currPitchOctAccTie and in
-							last[STRINGS.indexOf("dots")] = null;
-							in[INTS.indexOf("dots")] = -1;
+					// Check offset of remainder to check if it is in tripletOffsets.
+					// Example from 5256_05_inviolata_integra_desprez-2, bar 19, voice 0 (n = note; r = rest)
+					// --3-- --3--   
+					// H W   W   H | H
+					// n r   r   r   n
+					// uf for the rest will be [1/1, 1/1, 1/2]; but at k = 1, the remainder of
+					// uf does not need to be a triplet as it equals tripletLen, but can be a W
+					Rational offsetRemainder = null;
+					if (k != uf.size() - 1) {
+						Rational remainder = ToolBox.sumListRational(uf.subList(k+1, uf.size()));
+						offsetRemainder = offset.add(remainder.mul(DETRIPLETISER));
+						if (currBar == 19) {
+							System.out.println("remainder = " + remainder);
+							System.out.println("offsetRemainder = " + offsetRemainder);
+							System.out.println(tripletOffsets);
 						}
-						if (isNonDottedCompound) {
-							// Reset dur and tie in last element of currPitchOctAccTie and in
-							// NB: there will be no dots, as the elements of uf are all non-dotted
-							last[STRINGS.indexOf("dur")] = "dur='" + currTripletLen.getDenom() + "'";
-//							last[STRINGS.indexOf("dur")] = "dur='" + tripletLen.getDenom() + "'";
-							if (!isRest) {
-								// Adapt if there is a tie that is not 't'
-								if (last[STRINGS.indexOf("tie")].equals("tie='i'")) {
-									last[STRINGS.indexOf("tie")] = null;
-								}
-								if (last[STRINGS.indexOf("tie")].equals("tie='m'")) {
-									last[STRINGS.indexOf("tie")] = "tie='t'";
-								}
+					}
+					System.out.println("tofs = " + tripletOffsets);
+					System.out.println("or = " + offsetRemainder);
+					// If the note ends on or after the triplet border 
+					if (tripletOffsets.contains(offset) || 
+						tripletOffsets.contains(offsetRemainder) ||	
+						offset.isGreater(tripletBorder)) {
+//					if (tripletOffsets.contains(offset) || offset.isGreaterOrEqual(tripletBorder)) {	
+						// a. If note ends on (one of the) triplet border(s): no triplet necessary
+						if (tripletOffsets.contains(offset) || tripletOffsets.contains(offsetRemainder)) {
+							in[INTS.indexOf("tripletOpen")] = 0;
+							System.out.println("JAZEKER!");
+							System.out.println("currBar = " + currBar);
+							System.out.println("offset = " + offset);
+							System.out.println("tripletOffsets = " + tripletOffsets);
+//							System.exit(0);
+//							String[] last = currPitchOctAccTie.get(currPitchOctAccTie.size()-1);
+							if (isDotted || isSimple) {
+								// Reset dot (which tripletises the note) in last element of 
+								// currPitchOctAccTie and in
+								last[STRINGS.indexOf("dots")] = null;
+								in[INTS.indexOf("dots")] = -1;
 							}
-							in[INTS.indexOf("dur")] = currTripletLen.getDenom();
-//							in[INTS.indexOf("dur")] = tripletLen.getDenom();
+							if (isNonDottedCompound) {
+								// Reset dur and tie in last element of currPitchOctAccTie and in
+								// NB: there will be no dots, as the elements of uf are all non-dotted
+								last[STRINGS.indexOf("dur")] = "dur='" + currTripletLen.getDenom() + "'";
+//								last[STRINGS.indexOf("dur")] = "dur='" + tripletLen.getDenom() + "'";
+								if (!isRest) {
+									// Adapt if there is a tie that is not 't'
+									if (last[STRINGS.indexOf("tie")].equals("tie='i'")) {
+										last[STRINGS.indexOf("tie")] = null;
+									}
+									if (last[STRINGS.indexOf("tie")].equals("tie='m'")) {
+										last[STRINGS.indexOf("tie")] = "tie='t'";
+									}
+								}
+								in[INTS.indexOf("dur")] = currTripletLen.getDenom();
+//								in[INTS.indexOf("dur")] = tripletLen.getDenom();
+							}
+//							// Add in to currIndBarOnsMpDurDots and break from for loop
+							currIndBarOnsMpDurDots.add(in);
+							break;
 						}
-//						// Add in to currIndBarOnsMpDurDots and break from for loop
-						currIndBarOnsMpDurDots.add(in);
-						break;
+						// b. If note ends after triplet border: split at border and set the first
+						// part to tripletClose and the second to tripletOpen
+						else {
+//							Rational firstPart = tripletLen.sub(currLocalMetPos);
+							Rational firstPart = tripletBorder.sub(currMetPos); // TODO tripletLen?
+							Rational remainder = offset.sub(tripletBorder); // TODO tripletLen?
+//							String[] last = currPitchOctAccTie.get(currPitchOctAccTie.size()-1);
+							List<Object> res = 
+								handleNoteAcrossTripletBorder(firstPart, remainder, currTripletLen, 
+								tripletBorder, onsetTripletBorder, last, curr, in, gridVal, isRest);
+							List<String[]> lastTwoStr = (List<String[]>) res.get(0);
+							List<Integer[]> lastTwoInt = (List<Integer[]>) res.get(1);
+							currPitchOctAccTie.set(currPitchOctAccTie.size()-1, lastTwoStr.get(0));
+							currPitchOctAccTie.add(lastTwoStr.get(1));
+							in = lastTwoInt.get(0);
+							secondIn = lastTwoInt.get(1);
+						}
 					}
-					// b. If note ends after triplet border: split at border and set the first
-					// part to tripletClose and the second to tripletOpen
-					else {
-//						Rational firstPart = tripletLen.sub(currLocalMetPos);
-						Rational firstPart = tripletBorder.sub(currMetPos); // TODO tripletLen?
-						Rational remainder = offset.sub(tripletBorder); // TODO tripletLen?
-//						String[] last = currPitchOctAccTie.get(currPitchOctAccTie.size()-1);
-						List<Object> res = 
-							handleNoteAcrossTripletBorder(firstPart, remainder, currTripletLen, 
-							tripletBorder, onsetTripletBorder, last, curr, in, gridVal, isRest);
-						List<String[]> lastTwoStr = (List<String[]>) res.get(0);
-						List<Integer[]> lastTwoInt = (List<Integer[]>) res.get(1);
-						currPitchOctAccTie.set(currPitchOctAccTie.size()-1, lastTwoStr.get(0));
-						currPitchOctAccTie.add(lastTwoStr.get(1));
-						in = lastTwoInt.get(0);
-						secondIn = lastTwoInt.get(1);
-					}
-				}
 				
 //				if (durRemainder.equals(tripletLen) || durRemainder.equals(barLen)) {
 //					in[INTS.indexOf("tripletOpen")] = 0;
@@ -2517,21 +2571,22 @@ public class MEIExport {
 //					currIndBarOnsMpDurDots.add(in);
 //					break;
 //				}
-			}
-			// If the note is tripletMid
-			if (openMidClose.get(1) == true) {
-				System.out.println("is tripletMid");
-				// If the note ends on the triplet boundary or crosses it, it must become a
-				// tripletClose, and, in the second case, a tripletOpen note must be added
-				// Examples (2/2 meter; r = rest; o = open, m = mid, c = close) 
-				// tripletMid note ending on the triplet boundary
-				// type   : o m m m m m c | 
-				// voice 0: H Q Q E E E E | (H triplet)
-				// voice 1: H r r r r r r | (first r is m; should be c with value W)
-				// tripletMid note crossing the triplet boundary 
-				// type   : o m c o m c
-				// voice 0: Q Q Q Q Q Q  | (2 Q triplets)
-				// voice 1: Q r r r r Q  | (first r is m; should be c with value H + o with value H)
+					
+				}
+				// If the note is tripletMid
+				if (openMidClose.get(1) == true) {
+					System.out.println("is tripletMid");
+					// If the note ends on the triplet boundary or crosses it, it must become a
+					// tripletClose, and, in the second case, a tripletOpen note must be added
+					// Examples (2/2 meter; r = rest; o = open, m = mid, c = close) 
+					// tripletMid note ending on the triplet boundary
+					// type   : o m m m m m c | 
+					// voice 0: H Q Q E E E E | (H triplet)
+					// voice 1: H r r r r r r | (first r is m; should be c with value W)
+					// tripletMid note crossing the triplet boundary 
+					// type   : o m c o m c
+					// voice 0: Q Q Q Q Q Q  | (2 Q triplets)
+					// voice 1: Q r r r r Q  | (first r is m; should be c with value H + o with value H)
 //				Rational currTripletOpenOnset = getTripletOnsetPair(tripletOnsetPairs, currOnset)[0];
 //				Rational metPosTripletOpen = Tablature.getMetricPosition(currTripletOpenOnset, mi)[1];
 //				Rational currLocalMetPos = currMetPos;
@@ -2553,39 +2608,39 @@ public class MEIExport {
 //					(isSimple || isDotted) ? ToolBox.sumListRational(uf).mul(DETRIPLETISER) :
 //					ufSoFar.add(durAsRat.mul(DETRIPLETISER));
 //				Rational offset = metPosTripletOpen.add(metPos).add(ufSoFar);
-				if (offset.isGreaterOrEqual(tripletBorder)) {
-//				if (offset.isGreaterOrEqual(tripletLen)) {
-					// a. If note ends on triplet border: set to tripletClose
-					if (offset.equals(tripletBorder)) {
-//					if (offset.equals(tripletLen)) {
-						System.out.println("dit NU");
-						System.out.println("naar close");
-						in[INTS.indexOf("tripletClose")] = 1;
-					}
-					// b. If note ends after triplet border: split at border and set the first
-					// part to tripletClose and the second to tripletOpen
-					else {
-						System.out.println("YES");
-						System.out.println("dat NU");
-//						System.out.println("tripletLen = " + tripletLen);
-//						System.exit(0);
-						System.out.println("naar close");
+					if (offset.isGreaterOrEqual(tripletBorder)) {
+//					if (offset.isGreaterOrEqual(tripletLen)) {
+						// a. If note ends on triplet border: set to tripletClose
+						if (offset.equals(tripletBorder)) {
+//						if (offset.equals(tripletLen)) {
+							System.out.println("dit NU");
+							System.out.println("naar close");
+							in[INTS.indexOf("tripletClose")] = 1;
+						}
+						// b. If note ends after triplet border: split at border and set the first
+						// part to tripletClose and the second to tripletOpen
+						else {
+							System.out.println("YES");
+							System.out.println("dat NU");
+//							System.out.println("tripletLen = " + tripletLen);
+//							System.exit(0);
+							System.out.println("naar close");
 						
-						// JAAAAA -->
-//						Rational firstPart = tripletLen.sub(currLocalMetPos);
-						Rational firstPart = tripletBorder.sub(currMetPos); // TODO tripletLen?
-						Rational remainder = offset.sub(tripletBorder); // TODO tripletLen?
-//						String[] last = currPitchOctAccTie.get(currPitchOctAccTie.size()-1);
-						List<Object> res = 
-							handleNoteAcrossTripletBorder(firstPart, remainder, currTripletLen,
-							tripletBorder, onsetTripletBorder, last, curr, in, gridVal, isRest);
-						List<String[]> lastTwoStr = (List<String[]>) res.get(0);
-						List<Integer[]> lastTwoInt = (List<Integer[]>) res.get(1);
-						currPitchOctAccTie.set(currPitchOctAccTie.size()-1, lastTwoStr.get(0));
-						currPitchOctAccTie.add(lastTwoStr.get(1));
-						in = lastTwoInt.get(0);
-						secondIn = lastTwoInt.get(1);
-						
+							// JAAAAA -->
+//							Rational firstPart = tripletLen.sub(currLocalMetPos);
+							Rational firstPart = tripletBorder.sub(currMetPos); // TODO tripletLen?
+							Rational remainder = offset.sub(tripletBorder); // TODO tripletLen?
+//							String[] last = currPitchOctAccTie.get(currPitchOctAccTie.size()-1);
+							List<Object> res = 
+								handleNoteAcrossTripletBorder(firstPart, remainder, currTripletLen,
+								tripletBorder, onsetTripletBorder, last, curr, in, gridVal, isRest);
+							List<String[]> lastTwoStr = (List<String[]>) res.get(0);
+							List<Integer[]> lastTwoInt = (List<Integer[]>) res.get(1);
+							currPitchOctAccTie.set(currPitchOctAccTie.size()-1, lastTwoStr.get(0));
+							currPitchOctAccTie.add(lastTwoStr.get(1));
+							in = lastTwoInt.get(0);
+							secondIn = lastTwoInt.get(1);
+
 //						System.out.println("firstPart = " + firstPart);
 //						System.out.println("remainder = " + remainder);
 //						// 1. Handle firstPart
@@ -2661,49 +2716,50 @@ public class MEIExport {
 //						secondIn[INTS.indexOf("metPosNum")] = m.getNumer();
 //						secondIn[INTS.indexOf("metPosDen")] = m.getDenom();
 						// <-- JAAAAAA
+						}
+					}
+					else {
+						in[INTS.indexOf("tripletMid")] = 1;
+						System.out.println("niet naar close");
 					}
 				}
-				else {
-					in[INTS.indexOf("tripletMid")] = 1;
-					System.out.println("niet naar close");
-				}
-			}
-			// If the note is tripletClose
-			if (openMidClose.get(2) == true) {
-				System.out.println("is tripletClose");
-				if (currBar == 71) {
-					System.out.println("poep");
-					System.out.println(Arrays.toString(curr));
-				}
-				in[INTS.indexOf("tripletClose")] = 1;
-				System.out.println("tripletBorder = " + tripletBorder);
-				// a. If note ends on triplet border: no action required
-				// b. If note ends after triplet border: split at border and set the first
-				// part to tripletClose and the second to tripletOpen
-				if(offset.isGreater(tripletBorder)) {
-					System.out.println("das ist hier losssss");
-					Rational firstPart = tripletBorder.sub(currMetPos); // TODO tripletLen?
-					Rational remainder = offset.sub(tripletBorder); // TODO tripletLen?
-//					String[] last = currPitchOctAccTie.get(currPitchOctAccTie.size()-1);
-					System.out.println("firstPart = " + firstPart);
-					System.out.println("remainder = " + remainder);
-					System.out.println("currTripletLen = " + currTripletLen);
-					List<Object> res = 
-						handleNoteAcrossTripletBorder(firstPart, remainder, currTripletLen,
-						tripletBorder, onsetTripletBorder, last, curr, in, gridVal, isRest);
-					List<String[]> lastTwoStr = (List<String[]>) res.get(0);
-					List<Integer[]> lastTwoInt = (List<Integer[]>) res.get(1);
-					System.out.println("lastTwoStr.get(0) = " + Arrays.toString(lastTwoStr.get(0)));
-					System.out.println("lastTwoStr.get(1) = " + Arrays.toString(lastTwoStr.get(1)));
-					System.out.println("lastTwoInt.get(0) = " + Arrays.toString(lastTwoInt.get(0)));
-					System.out.println("lastTwoInt.get(1) = " + Arrays.toString(lastTwoInt.get(1)));
+				// If the note is tripletClose
+				if (openMidClose.get(2) == true) {
+					System.out.println("is tripletClose");
+					if (currBar == 71) {
+						System.out.println("poep");
+						System.out.println(Arrays.toString(curr));
+					}
+					in[INTS.indexOf("tripletClose")] = 1;
+					System.out.println("tripletBorder = " + tripletBorder);
+					// a. If note ends on triplet border: no action required
+					// b. If note ends after triplet border: split at border and set the first
+					// part to tripletClose and the second to tripletOpen
+					if(offset.isGreater(tripletBorder)) {
+						System.out.println("das ist hier losssss");
+						Rational firstPart = tripletBorder.sub(currMetPos); // TODO tripletLen?
+						Rational remainder = offset.sub(tripletBorder); // TODO tripletLen?
+//						String[] last = currPitchOctAccTie.get(currPitchOctAccTie.size()-1);
+						System.out.println("firstPart = " + firstPart);
+						System.out.println("remainder = " + remainder);
+						System.out.println("currTripletLen = " + currTripletLen);
+						List<Object> res = 
+							handleNoteAcrossTripletBorder(firstPart, remainder, currTripletLen,
+							tripletBorder, onsetTripletBorder, last, curr, in, gridVal, isRest);
+						List<String[]> lastTwoStr = (List<String[]>) res.get(0);
+						List<Integer[]> lastTwoInt = (List<Integer[]>) res.get(1);
+						System.out.println("lastTwoStr.get(0) = " + Arrays.toString(lastTwoStr.get(0)));
+						System.out.println("lastTwoStr.get(1) = " + Arrays.toString(lastTwoStr.get(1)));
+						System.out.println("lastTwoInt.get(0) = " + Arrays.toString(lastTwoInt.get(0)));
+						System.out.println("lastTwoInt.get(1) = " + Arrays.toString(lastTwoInt.get(1)));
 					
-					currPitchOctAccTie.set(currPitchOctAccTie.size()-1, lastTwoStr.get(0));
-					currPitchOctAccTie.add(lastTwoStr.get(1));
-					in = lastTwoInt.get(0);
-					secondIn = lastTwoInt.get(1);
+						currPitchOctAccTie.set(currPitchOctAccTie.size()-1, lastTwoStr.get(0));
+						currPitchOctAccTie.add(lastTwoStr.get(1));
+						in = lastTwoInt.get(0);
+						secondIn = lastTwoInt.get(1);
+					}
 				}
-			}
+			} // LAATSTE AL GOED
 			currIndBarOnsMpDurDots.add(in);
 			if (secondIn != null) {
 				currIndBarOnsMpDurDots.add(secondIn);
@@ -2713,7 +2769,7 @@ public class MEIExport {
 				break;
 			}
 			else {
-				if (openMidClose.contains(true)) {
+				if (openMidClose != null && openMidClose.contains(true)) {
 					durAsRat = durAsRat.mul(DETRIPLETISER);
 				}
 				System.out.println("---currOnset = " + currOnset);
@@ -2721,6 +2777,7 @@ public class MEIExport {
 				System.out.println("---currOnset = " + currOnset);
 				currMetPos = currMetPos.add(durAsRat);
 			}
+//			} // LAATSTE AL GOED
 		}
 
 //// Simple or dotted: complete curr with dur and any dots; add to lists

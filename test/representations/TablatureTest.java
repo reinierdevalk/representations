@@ -1732,6 +1732,17 @@ public class TablatureTest extends TestCase {
 
 	public void testGetTripletOnsetPairs() {
 		Tablature tablature = new Tablature(encodingTestpiece, true);
+		// No triplets
+		List<Rational[]> expected = new ArrayList<>();
+		expected.add(null);
+		List<Rational[]> actual = new ArrayList<>();
+		if (tablature.getTripletOnsetPairs() == null) {
+			actual.add(null);
+		}
+		else {
+			actual.addAll(tablature.getTripletOnsetPairs());
+		}
+
 		// Replace bar 2 (beat 2) and bar 3 (beat 3) with triplets
 		String origEncoding = tablature.getEncoding().getRawEncoding();
 		String bar2Beat2 = "sm.c6.a5.e4.b2.>.a6.>.";
@@ -1742,19 +1753,24 @@ public class TablatureTest extends TestCase {
 		origEncoding = origEncoding.replace(bar3Beat3, bar3Beat3Triplets);
 		tablature = new Tablature(new Encoding(origEncoding, true), true);
 		
-		List<Rational[]> expected = new ArrayList<>();
 		expected.add(new Rational[]{new Rational(5, 4), new Rational(17, 12), 
 			new Rational(RhythmSymbol.semiminim.getDuration(), 1)});
 		expected.add(new Rational[]{new Rational(10, 4), new Rational(17, 6), 
 			new Rational(RhythmSymbol.minim.getDuration(), 1)});
 
-		List<Rational[]> actual = tablature.getTripletOnsetPairs();
+//		List<Rational[]> actual = tablature.getTripletOnsetPairs();
+		actual.addAll(tablature.getTripletOnsetPairs());
 		
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).length, actual.get(i).length);
-			for (int j = 0; j < expected.get(i).length; j++) {
-				assertEquals(expected.get(i)[j], actual.get(i)[j]);
+			if (expected.get(i) == null) {
+				assertEquals(expected.get(i), actual.get(i));
+			}
+			else {
+				assertEquals(expected.get(i).length, actual.get(i).length);
+				for (int j = 0; j < expected.get(i).length; j++) {
+					assertEquals(expected.get(i)[j], actual.get(i)[j]);
+				}
 			}
 		}
 	}
