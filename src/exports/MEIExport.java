@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.w3c.dom.svg.GetSVGDocument;
-
 import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.data.structure.Piece;
 import de.uos.fmt.musitech.utility.math.Rational;
@@ -38,6 +36,8 @@ public class MEIExport {
 	private static final Rational DETRIPLETISER = new Rational(2, 3);
 	private static final int BREVE = -1;
 	private static final int LONG = -2;
+	
+	private static boolean verbose = false;
 	
 	// Keys contains, for each key, the number of sharps (positive) or flats (negative) and 
 	// the MIDI pitch class of the tonic
@@ -434,6 +434,12 @@ public class MEIExport {
 	}
 
 
+	/**
+	 * Exports the given tablature as a TabMEI file, saved at the given path.
+	 * 
+	 * @param tab
+	 * @param path
+	 */
 	public static void exportTabMEIFile(Tablature tab, String path) {
 
 		List<Integer[]> mi = tab.getMeterInfo();
@@ -608,8 +614,8 @@ public class MEIExport {
 	}
 
 
-	private static boolean verbose = false;
 	/**
+	 * Exports the given Transcription as an MEI file, saved at the given path.
 	 * 
 	 * @param trans Must be a Transcription created setting the encodingFile argument to null
 	 *              (i.e., one that has basicNoteProperties).
@@ -866,8 +872,8 @@ public class MEIExport {
 	 * @param currBarCurrVoiceInt
 	 * @param currBarCurrVoiceStr
 	 * @param mi
-	 * @param mismatchInds
 	 * @param tripletOnsetPairs
+	 * @param mismatchInds
 	 * @param argVoice
 	 * @return
 	 */
@@ -1827,6 +1833,7 @@ public class MEIExport {
 	 *               
 	 * @param i
 	 * @param iTab
+	 * @param curr
 	 * @param argDur Is tripletised (has nominal value).
 	 * @param gridVal
 	 * @param onset Is untripletised (has actual value).
@@ -2570,6 +2577,7 @@ public class MEIExport {
 	 *   
 	 * @param firstPart
 	 * @param remainder
+	 * @param tripletLen
 	 * @param tripletBorder
 	 * @param onsetTripletBorder
 	 * @param last
@@ -2592,9 +2600,6 @@ public class MEIExport {
 		// 1. Handle firstPart
 		// a. In copyOfCurr (already added to currPitchOctAccTie)
 		int durMEIFirstPart, numDotsFirstPart;
-//		List<Rational> ufFirstPart = getUnitFractions(firstPart.mul(TRIPLETISER), gridVal);
-//		int durMEIFirstPart = ufFirstPart.get(0).getDenom();
-//		int numDotsFirstPart = getNumDots(ufFirstPart);
 		if (!firstPart.equals(tripletLen)) {
 			List<Rational> ufFirstPart = getUnitFractions(firstPart.mul(TRIPLETISER), gridVal);
 			durMEIFirstPart = ufFirstPart.get(0).getDenom();
@@ -2606,7 +2611,6 @@ public class MEIExport {
 			numDotsFirstPart = 0;
 		}
 		// Adapt dur, dots, tie in last element of currPitchOctAccTie
-//		String[] last = currPitchOctAccTie.get(currPitchOctAccTie.size()-1);
 		last[STRINGS.indexOf("dur")] = "dur='" + durMEIFirstPart + "'";
 		if (numDotsFirstPart > 0 ) {
 			last[STRINGS.indexOf("dots")] = "dots='" + numDotsFirstPart + "'";
@@ -2641,9 +2645,6 @@ public class MEIExport {
 		// a. In secondCopyOfCurr (still to add to currPitchOctAccTie)
 		String[] secondCopyOfCurr = Arrays.copyOf(curr, curr.length);
 		int durMEIRemainder, numDotsRemainder;
-//		List<Rational> ufRemainder = getUnitFractions(remainder.mul(TRIPLETISER), gridVal);
-//		int durMEIRemainder = ufRemainder.get(0).getDenom();
-//		int numDotsRemainder = getNumDots(ufRemainder);
 		if (!remainder.equals(tripletLen)) {
 			List<Rational> ufRemainder = getUnitFractions(remainder.mul(TRIPLETISER), gridVal);
 			durMEIRemainder = ufRemainder.get(0).getDenom();
@@ -2667,9 +2668,7 @@ public class MEIExport {
 				secondCopyOfCurr[STRINGS.indexOf("tie")] = "tie='m'";
 			}
 		}
-		
-//		secondCopyOfCurr[STRINGS.indexOf("metPos")] = 
-//			"metPos='" + metPosTripletOpen.add(tripletLen) + "'";
+
 		if (!isRest) {
 			secondCopyOfCurr[STRINGS.indexOf("metPos")] = "metPos='" + tripletBorder + "'";
 		}
@@ -2691,11 +2690,8 @@ public class MEIExport {
 			secondIn[INTS.indexOf("tripletMid")] = 0;
 			secondIn[INTS.indexOf("tripletClose")] = 0;
 		}
-//		Rational o = currTripletOpenOnset.add(tripletLen);
 		Rational o = onsetTripletBorder;
-//		Rational o = tripletOpenOnset.add(tripletLen);
 		o.reduce();
-//		Rational m = metPosTripletOpen.add(tripletLen);
 		Rational m = tripletBorder;
 		m.reduce();
 		secondIn[INTS.indexOf("onsetNum")] = o.getNumer();
@@ -2730,10 +2726,8 @@ public class MEIExport {
 	 * Returns, for the given key, the MIDI pitch classes of the key signature for that key. 
 	 * A MIDI pitch class is a note's MIDI pitch % 12, and has one of the values [0-11]. 
 	 * 
-	 * 
 	 * Example Ab major: [10, 3, 8, 1] (= Bb, Eb, Ab, Dd)
 	 * Example A major: [6, 1 8] (= F#, C#, G#)
-	 * 
 	 * 
 	 * @param key
 	 * @return
@@ -2760,7 +2754,6 @@ public class MEIExport {
 	 * Returns, for each key (starting at 7 flats and ending at 7 sharps), the MIDI pitch classes
 	 * for that key. 
 	 * A MIDI pitch class is a note's MIDI pitch % 12, and has one of the values [0-11]. 
-	 * 
 	 * 
 	 * Example C major: [0, 2, 4, 5, 7, 9, 11]
 	 * Example A major: [9, 11, 1, 2, 4, 6, 8]
