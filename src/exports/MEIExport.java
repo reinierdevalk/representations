@@ -25,7 +25,7 @@ import utility.DataConverter;
 public class MEIExport {
 	
 	public static String rootDir = "F:/research/"; // TODO also defined in UI; should be in one place only
-	public static String MEITemplatePath = rootDir + "data/" + "templates/MEI/"; // TODO suffix "data/" is defined inside Runner.setPathsToCodeAndData() 
+	public static String MEITemplatePath = rootDir + "data/data/" + "templates/"; // TODO suffix "data/data/" is defined inside Runner.setPathsToCodeAndData() 
 	
 	private static List<Integer> mpcFlats = 
 		Arrays.asList(new Integer[]{10, 3, 8, 1, 6, 11, 4}); // Bb, Eb, Ab, Db, Gb, Cb, Fb,
@@ -444,7 +444,7 @@ public class MEIExport {
 
 		List<Integer[]> mi = tab.getMeterInfo();
 
-		String res = ToolBox.readTextFile(new File(MEITemplatePath + "template.xml"));
+		String res = ToolBox.readTextFile(new File(MEITemplatePath + "template-MEI.xml"));
 		String notationtypeStr = "tab.lute.italian"; // TODO give as param to method
 		String tuningStr = "lute.renaissance.6"; // TODO give as param to method
 		TabSymbolSet tss = TabSymbolSet.FRENCH_TAB; // TODO give as param to method
@@ -642,8 +642,8 @@ public class MEIExport {
 		int numVoices = dataStr.get(0).size();
 
 //		Runner.setPathsToCodeAndData(UI.getRootDir(), false); // TODO only necessary for MEITemplatePath
-//		String res = ToolBox.readTextFile(new File(Runner.MEITemplatePath + "template.xml"));
-		String res = ToolBox.readTextFile(new File(MEITemplatePath + "template.xml"));
+//		String res = ToolBox.readTextFile(new File(Runner.MEITemplatePath + "template-MEI.xml"));
+		String res = ToolBox.readTextFile(new File(MEITemplatePath + "template-MEI.xml"));
 
 		// 1. Make meiHead
 		String[] meiHead = new String[MEI_HEAD.size()];
