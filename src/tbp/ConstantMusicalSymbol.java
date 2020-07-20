@@ -67,6 +67,19 @@ public class ConstantMusicalSymbol {
 
 
 	/**
+	 * Determines whether or not the given encoding encodes a barline.
+	 *
+	 * @param encoding
+	 * @return
+	 */
+	public static boolean isBarline(String encoding) {
+		ConstantMusicalSymbol cms = getConstantMusicalSymbol(encoding);
+		return (cms != null && constantMusicalSymbols.contains(cms) && 
+			cms != ConstantMusicalSymbol.SPACE);
+	}
+
+
+	/**
 	 * Searches the specified list for the ConstantMusicalSymbol whose attribute
 	 * encoding equals the specified encoding. Returns null if the list
 	 * does not contain such a ConstantMusicalSymbol.

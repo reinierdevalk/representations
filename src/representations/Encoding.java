@@ -55,9 +55,7 @@ public class Encoding implements Serializable {
 	public static final int GRID_Y_INDEX = 11;
 	public static final int HORIZONTAL_POSITION_TAB_SYMBOLS_ONLY_INDEX = 12;
 	public static final String METADATA_ERROR = "METADATA ERROR -- Check for missing curly brackets.";
-	
-	private static final int FULL_BAR = 32;
-	
+
 	private Tuning[] tunings = new Tuning[2];
 	public static final int ENCODED_TUNING_INDEX = 0;
 	public static final int NEW_TUNING_INDEX = 1;
@@ -223,8 +221,10 @@ public class Encoding implements Serializable {
 		int currBar = 1;
 		int prevDur = 0;
 		int posInBar = 0;
-		// fullBar is the length (in semifusa) of a full bar under the current meter
-		int fullBar = (int) (mensSigns.get(0)[0] / (double) mensSigns.get(0)[1]) * FULL_BAR;
+		// fullBar is the length (in SMALLEST_RHYTHMIC_VALUE) of a full bar under the current meter
+		int fullBar = 
+			(int) (mensSigns.get(0)[0] / (double) mensSigns.get(0)[1]) * 
+			Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom(); // trp
 		boolean semibreveBarring = false;
 		for (int i = 0; i < symbols.length; i++) {
 			String s = symbols[i];
@@ -263,7 +263,9 @@ public class Encoding implements Serializable {
 					meterStartBar = currBar;
 				}
 				// Set fullBar under new meter
-				fullBar = (int) ((meter[0] / (double) meter[1]) * FULL_BAR);
+				fullBar = 
+					(int) ((meter[0] / (double) meter[1]) * 
+					Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()); // trp
 			}
 
 			// RS
@@ -1132,7 +1134,7 @@ public class Encoding implements Serializable {
 		TabSymbolSet tss = getTabSymbolSet();
 		List<String> listOfAllEvents = los.get(Encoding.ALL_EVENTS_INDEX);
 //		boolean tripletActive = false;
-		List<Integer> triplet = new ArrayList<>();
+//		List<Integer> triplet = new ArrayList<>();
 		for (int i = 0; i < listOfAllEvents.size(); i++) {
 			String currentEvent = listOfAllEvents.get(i);    		
 			// 0-4. isTabSymbolEvent, isRhythmSymbolEvent, isRestEvent, isMensurationSignEvent, and isBarlineEvent
@@ -1182,26 +1184,26 @@ public class Encoding implements Serializable {
 					RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(firstSymbol);
 					newDuration = rs.getDuration();
 					// First RS of a triplet? Add to triplet 
-					if (firstSymbol.startsWith(RhythmSymbol.triplet.getEncoding())) {
-						triplet.add(newDuration);
-					}
-					// Second or third RS of a triplet?
-					// NB Triplets always appear in successive events (i values)
-					else {
-						if (triplet.size() != 0) {
-							// Second RS: add element at index 1; third RS: add element at index 2
-							// --> general: add element at index triplet.size()
-							newDuration = rs.getTripletValues().get(triplet.size());
-							// Add to triplet if i is second triplet event; reset triplet if i is
-							// third triplet event
-							if (triplet.size() == 1) {
-								triplet.add(newDuration);
-							}
-							else if (triplet.size() == 2) {
-								triplet = new ArrayList<>();
-							}
-						}
-					}
+//					if (firstSymbol.startsWith(RhythmSymbol.triplet.getEncoding())) {
+//						triplet.add(newDuration);
+//					}
+//					// Second or third RS of a triplet?
+//					// NB Triplets always appear in successive events (i values)
+//					else {
+//						if (triplet.size() != 0) {
+//							// Second RS: add element at index 1; third RS: add element at index 2
+//							// --> general: add element at index triplet.size()
+//							newDuration = rs.getTripletValues().get(triplet.size());
+//							// Add to triplet if i is second triplet event; reset triplet if i is
+//							// third triplet event
+//							if (triplet.size() == 1) {
+//								triplet.add(newDuration);
+//							}
+//							else if (triplet.size() == 2) {
+//								triplet = new ArrayList<>();
+//							}
+//						}
+//					}
 				}
 				// b. If firstSymbol is a rhythmDot
 				else {

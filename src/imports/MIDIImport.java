@@ -16,6 +16,7 @@ import javax.sound.midi.Track;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 
+import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationStaff;
 import de.uos.fmt.musitech.data.score.NotationSystem;
 import de.uos.fmt.musitech.data.score.NotationVoice;
@@ -29,6 +30,8 @@ import de.uos.fmt.musitech.data.time.TimeSignatureMarker;
 import de.uos.fmt.musitech.performance.midi.MidiReader;
 import de.uos.fmt.musitech.score.ScoreEditor;
 import de.uos.fmt.musitech.utility.math.Rational;
+import representations.Tablature;
+import representations.Transcription;
 import tools.ToolBox;
 
 public class MIDIImport {
@@ -43,6 +46,39 @@ public class MIDIImport {
 		fullScoreFrame.setSize(800, 600);
 		fullScoreFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		fullScoreFrame.setVisible(true);    
+	}
+
+
+	/**
+	 * Rounds the given fraction by incrementally decreasing and increasing its numerator
+	 * (-1, +1, -2, +2, -3, +3, ...) until the denominator of the resulting reduced fraction 
+	 * equals 1.
+	 * 
+	 * @param r
+	 * @return
+	 */
+	// TESTED
+	static Rational roundFraction(Rational r) {
+		int numer = r.getNumer();
+		int denom = r.getDenom(); 
+		int diff = 1;
+		while (r.getDenom() != 1) {
+			// Try subtraction 
+			r = new Rational((numer-diff), denom);
+			r.reduce();
+			if (r.getDenom() == 1) {
+				break;
+			}
+			// Reset and try addition
+			r = new Rational(numer, denom);
+			r = new Rational((numer+diff), denom);
+			r.reduce();
+			if (r.getDenom() == 1) {
+				break;
+			}
+			diff++;
+		}
+		return r; 
 	}
 
 
@@ -100,6 +136,51 @@ public class MIDIImport {
 //-*-		System.out.println(url);
 		
 		Piece p = new MidiReader().getPiece(url);
+		boolean quantiseTriplets = false;
+		if (quantiseTriplets) {
+			int srv = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
+			NotationSystem ns = p.getScore(); 
+			for (int i = 0; i < ns.size(); i++) {
+				NotationVoice voice = ns.get(i).get(0);  
+				for (int j = 0; j < voice.size(); j++) {
+					NotationChord notationChord = voice.get(j);
+					for (int k = 0; k < notationChord.size(); k++) {
+						Note originalNote = notationChord.get(k);
+						// Onset
+						Rational onset = originalNote.getMetricTime();
+						Rational onsetQuantised = new Rational(onset.getNumer(), onset.getDenom());
+						if (onset.mul(srv).getDenom() != 1) {
+							onset = onset.mul(srv);
+							onsetQuantised = roundFraction(onset);
+							// onsetQuantised is now a Rational with denom 1
+							onsetQuantised = onsetQuantised.mul(new Rational(1, srv));
+//							// If onset was moved back, increase duration with difference 
+//							// (diff > 0 --> add diff to dur);
+//							// If onset was moved forward, decrease duration with difference
+//							// (diff < 0 --> add diff to dur)
+//							Rational dur = originalNote.getMetricDuration().mul(srv);
+//							Rational diff = onset.sub(onsetQuantised);
+//							Rational durQuantised = dur.add(diff);
+						}
+						// Duration
+						Rational dur = originalNote.getMetricDuration();
+						Rational durQuantised = new Rational(dur.getNumer(), dur.getDenom());
+						if (dur.mul(srv).getDenom() != 1) {
+							dur = dur.mul(srv);
+							durQuantised = roundFraction(dur);
+							// durQuantised is now a Rational with denom 1
+							durQuantised = durQuantised.mul(new Rational(1, srv));
+						}
+						if (!onsetQuantised.equals(onset) || !durQuantised.equals(dur)) {
+							Note quantisedNote = Transcription.createNote(
+								originalNote.getMidiPitch(), onsetQuantised, durQuantised);
+							notationChord.remove(originalNote);
+							notationChord.add(quantisedNote);
+						}
+					}
+				}
+			}
+		}
 		
 		p.setName(f.getName());
 //		KeyMarker keyMarker = new KeyMarker(Rational.ZERO, 0); 

@@ -237,8 +237,8 @@ public class DataConverter {
 	 */
 	// TESTED
 	public static Rational[] convertIntoDuration(List<Double> durationLabel) {
-		int shorterDuration = durationLabel.indexOf(1.0) + 1;
-		int longerDuration = durationLabel.lastIndexOf(1.0) + 1;
+		int shorterDuration = (durationLabel.indexOf(1.0) + 1)*3; // *3 trp dur
+		int longerDuration = (durationLabel.lastIndexOf(1.0) + 1)*3; // *3 trp dur
 		if (shorterDuration == longerDuration) {
 			Rational dur = new Rational(shorterDuration, Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
 			dur.reduce();

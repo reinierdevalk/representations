@@ -9,7 +9,6 @@ import junit.framework.TestCase;
 import representations.Tablature;
 import representations.Transcription;
 import tbp.TabSymbol;
-//import ui.Runner;
 import utility.DataConverter;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;

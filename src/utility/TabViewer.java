@@ -279,7 +279,8 @@ public class TabViewer extends JFrame{
 //			encodingFile = new File(prefix1 + "3vv/" + "judenkuenig-1523_2-elslein_liebes.tbp");
 //			encodingFile = new File(prefix1 + "3vv/" + "newsidler-1544_2-nun_volget.tbp");
 //			encodingFile = new File(prefix1 + "3vv/" + "phalese-1547-tant_que-a3.tbp"); 
-//			encodingFile = new File(prefix2 + "testpiece.tbp");
+			encodingFile = new File(prefix2 + "testpiece.tbp");
+			encodingFile = new File("F:/research/data/encodings/" + "newsidler-1536_6-mein_einigs_a.tbp");
 
 			// 4vv
 //			encodingFile = new File(prefix1 + "4vv/" + "ochsenkun_1558_-_absolon_fili.tbp");
@@ -295,7 +296,7 @@ public class TabViewer extends JFrame{
 //			encodingFile = new File("F:/research/data/encodings/BSB-mus.ms._272-mille_regres.tbp");
 //			encodingFile = new File("C:/Users/Reinier/Desktop/tab_reconstr-hector/Reinier-Scores/as_caesar.tbp");
 //			encodingFile = new File("C:/Users/Reinier/Desktop/tab_reconstr-hector/test/il_me_souffit-short.tbp");
-			encodingFile = new File("C:/Users/Reinier/Desktop/tab_reconstr-hector/tab/as_caesar_wept-II.tbp");
+//			encodingFile = new File("C:/Users/Reinier/Desktop/tab_reconstr-hector/tab/as_caesar_wept-II.tbp");
 //			encodingFile = new File("C:/Users/Reinier/Desktop/bm.tbp");
 //			encodingFile = new File("C:/Users/Reinier/Desktop/test-hector/as_caesar.tbp");
 //			encodingFile = new File("C:/Users/Reinier/Desktop/pleni.tbp");
@@ -304,8 +305,8 @@ public class TabViewer extends JFrame{
 //			encodingFile = new File("C:/Users/Reinier/Desktop/2019-ISMIR/test/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T.tbp");
 //			encodingFile = 
 //				new File("C:/Users/Reinier/Desktop/ISMIR-2019/josquin/tab/5256_05_inviolata_integra_desprez-2.tbp");
-			encodingFile = 
-				new File("F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/4467_37_adieu_mes_amours.tbp");
+//			encodingFile = 
+//				new File("F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/5263_12_in_exitu_israel_de_egipto_desprez-3.tbp");
 			
 
 			// 5vv

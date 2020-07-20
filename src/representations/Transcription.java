@@ -50,8 +50,7 @@ public class Transcription implements Serializable {
 	
 //	private static final long serialVersionUID = -8586909984652950201L;
 	public static int MAXIMUM_NUMBER_OF_VOICES = 5;
-	public static int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()*2; // 3 for JosquIntab; 2 for Byrd
-//	public static int DURATION_LABEL_SIZE = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
+	public static int DURATION_LABEL_SIZE = (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3)*2; // trp dur; *3 for JosquIntab; *2 for Byrd
 	public static final int INCORRECT_IND = 0;
 	public static final int ORNAMENTATION_IND = 1;
 	public static final int REPETITION_IND = 2;
@@ -90,24 +89,24 @@ public class Transcription implements Serializable {
 	private String alignmentDetails = "Alignment details:" + "\n"; 
 	private static boolean reversePiece = false;
 
-	public static final List<Double> THIRTYSECOND = createDurationLabel(1);
-	public static final List<Double> SIXTEENTH = createDurationLabel(2);
-	public static final List<Double> DOTTED_SIXTEENTH = createDurationLabel(3);
-	public static final List<Double> EIGHTH = createDurationLabel(4);
-	public static final List<Double> EIGHTH_AND_THIRTYSECOND = createDurationLabel(5);
-	public static final List<Double> DOTTED_EIGHTH = createDurationLabel(6);
-	public static final List<Double> DOUBLE_DOTTED_EIGHTH = createDurationLabel(7);
-	public static final List<Double> QUARTER = createDurationLabel(8);
-	public static final List<Double> QUARTER_AND_THIRTYSECOND = createDurationLabel(9);
-	public static final List<Double> QUARTER_AND_SIXTEENTH = createDurationLabel(10);
-	public static final List<Double> QUARTER_AND_DOTTED_SIXTEENTH = createDurationLabel(11);
-	public static final List<Double> DOTTED_QUARTER = createDurationLabel(12);
-	public static final List<Double> DOTTED_QUARTER_AND_THIRTYSECOND = createDurationLabel(13);
-	public static final List<Double> DOUBLE_DOTTED_QUARTER = createDurationLabel(14);
-	public static final List<Double> TRIPLE_DOTTED_QUARTER = createDurationLabel(15);
-	public static final List<Double> HALF = createDurationLabel(16);
-	public static final List<Double> DOTTED_HALF = createDurationLabel(24);
-	public static final List<Double> WHOLE = createDurationLabel(32);
+	public static final List<Double> THIRTYSECOND = createDurationLabel(1*3);
+	public static final List<Double> SIXTEENTH = createDurationLabel(2*3);
+	public static final List<Double> DOTTED_SIXTEENTH = createDurationLabel(3*3);
+	public static final List<Double> EIGHTH = createDurationLabel(4*3);
+	public static final List<Double> EIGHTH_AND_THIRTYSECOND = createDurationLabel(5*3);
+	public static final List<Double> DOTTED_EIGHTH = createDurationLabel(6*3);
+	public static final List<Double> DOUBLE_DOTTED_EIGHTH = createDurationLabel(7*3);
+	public static final List<Double> QUARTER = createDurationLabel(8*3);
+	public static final List<Double> QUARTER_AND_THIRTYSECOND = createDurationLabel(9*3);
+	public static final List<Double> QUARTER_AND_SIXTEENTH = createDurationLabel(10*3);
+	public static final List<Double> QUARTER_AND_DOTTED_SIXTEENTH = createDurationLabel(11*3);
+	public static final List<Double> DOTTED_QUARTER = createDurationLabel(12*3);
+	public static final List<Double> DOTTED_QUARTER_AND_THIRTYSECOND = createDurationLabel(13*3);
+	public static final List<Double> DOUBLE_DOTTED_QUARTER = createDurationLabel(14*3);
+	public static final List<Double> TRIPLE_DOTTED_QUARTER = createDurationLabel(15*3);
+	public static final List<Double> HALF = createDurationLabel(16*3);
+	public static final List<Double> DOTTED_HALF = createDurationLabel(24*3);
+	public static final List<Double> WHOLE = createDurationLabel(32*3);
 
 	private static final List<Double> VOICE_EMPTY = Arrays.asList(new Double[]{0.0, 0.0, 0.0, 0.0, 0.0});
 	private static final List<Double> VOICE_EMPTY_SIX = Arrays.asList(new Double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
@@ -284,7 +283,7 @@ public class Transcription implements Serializable {
 	public Transcription(String name, File argEncodingFile, Integer[][] argBtp, 
 		Integer[][] argBnp, int argHiNumVoices, List<List<Double>> argVoiceLabels, 
 		List<List<Double>> argDurationLabels, MetricalTimeLine mtl, SortedContainer<Marker> ks) {
-
+		
 		Encoding encoding = null;
 		if (argEncodingFile != null) {
 			encoding = new Encoding(argEncodingFile);
@@ -1025,7 +1024,7 @@ public class Transcription implements Serializable {
 	/**
 	 * Initialises durationLabels with the initial, unadapted voice labels -- i.e., the ones that go with the notes
 	 * in the initial, unadapted NoteSequence. Each duration label is a List<Double> containing Tablature.SMALLEST_
-	 * RHYTHMIC_VALUE.getDenom() elements, one of which has value 1.0 and indicates the encoded full duration (where
+	 * RHYTHMIC_VALUE.getDenom()/3 elements, one of which has value 1.0 and indicates the encoded full duration (where
 	 * position 0 is a duration of 1/32, position 1 a duration of 2/32, etc.), while the others have value 0.0.  
 	 * 
 	 * NB1: Tablature case only; must be called after initialiseNoteSequence().
@@ -1041,13 +1040,11 @@ public class Transcription implements Serializable {
 			Rational durationCurrentNote = n.getMetricDuration();
 			int numer = durationCurrentNote.getNumer();
 			int denom = durationCurrentNote.getDenom();
-			// Determine the duration in 32nd notes
-			// NB: Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom will always be divisible by denom because denom will
-			// always be a fraction of Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom(): 32, 16, 8, 4, 2, or 1
+			// Determine the duration in 32nd/3 notes
+			// NB: Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom will always be divisible by denom 
+			// because denom will always be a fraction of Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3: 
+			// 32, 16, 8, 4, 2, or 1
 			int duration = numer * (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom);
-//			System.out.println(duration);
-//			System.out.println(n.getMidiPitch());
-//			System.out.println(n.getMetricTime());
 			// Create the durationLabel for n and add it to initialDurationLabels
 			initialDurationLabels.add(createDurationLabel(duration));
 		}
@@ -1771,9 +1768,9 @@ public class Transcription implements Serializable {
 	 */
 	// TESTED
 	public static Rational getMeter(int bar, List<Integer[]> meterInfo) {
-		for (Integer[] i : meterInfo) {
-			if (bar >= i[2] && bar < i[3]+1) {
-				return new Rational(i[0], i[1]);
+		for (Integer[] in : meterInfo) {
+			if (bar >= in[2] && bar < in[3]+1) {
+				return new Rational(in[0], in[1]);
 			}
 		}
 		return null;
@@ -2367,6 +2364,196 @@ public class Transcription implements Serializable {
 
 
 	/**
+	 * Aligns the note indices of the Tablature (represented by the argument <code>btp</code>)
+	 * and the Transcription (represented by the argument <code>bnp</code>). Due to the presence
+	 * of SNUs, alignment is not always 1-to-1. Two lists are returned:
+	 * <ul> 
+	 * <li><code>tabToTransInd</code>, containing, for each tab index, the corresponding trans index (or, in 
+	 *     the case of a SNU, indices)</li>
+	 * <li><code>transToTabInd</code>, containing, for each trans index, the corresponding tab index (wrapped
+	 *     in a list)</li>
+	 * </ul> 
+	 * 
+	 * The method takes into account SNUs and course crossings - but it is assumed that a chord 
+	 * with a SNU has no course crossing, and vice versa.
+	 * 
+	 * @param btp
+	 * @param bnp
+	 * @return A list containing<br>
+	 *         <ul> 
+	 *         <li>as element 0: <code>tabToTransInd</code></li>
+	 *         <li>as element 1: <code>transToTabInd</code></li>
+	 *         </ul> 
+	 */
+	// TESTED
+	public static List<List<List<Integer>>> alignTabAndTransIndices(Integer[][] btp, Integer[][] bnp) {
+		List<List<List<Integer>>> res = new ArrayList<>();
+
+		List<List<Integer[]>> pitchesPerChordTab = new ArrayList<>();
+		List<Integer[]> chord = new ArrayList<>();
+		for (int i = 0; i < btp.length; i++) {
+			int pitch = btp[i][Tablature.PITCH];
+			chord.add(new Integer[]{i, pitch});
+			// Any but last note
+			if (i < btp.length-1) {
+				if (btp[i+1][Tablature.CHORD_SEQ_NUM] > btp[i][Tablature.CHORD_SEQ_NUM]) {
+					pitchesPerChordTab.add(chord);
+					chord = new ArrayList<>();
+				}
+			}
+			// Last note
+			else {
+				pitchesPerChordTab.add(chord);
+			}
+		}
+
+		List<List<Integer[]>> pitchesPerChordTrans = new ArrayList<>();
+		chord = new ArrayList<>();
+		for (int i = 0; i < bnp.length; i++) {
+			int pitch = bnp[i][Transcription.PITCH];
+			chord.add(new Integer[]{i, pitch});
+			// Any but last note
+			if (i < bnp.length-1) {
+				if (bnp[i+1][Transcription.CHORD_SEQ_NUM] > bnp[i][Transcription.CHORD_SEQ_NUM]) {
+					pitchesPerChordTrans.add(chord);
+					chord = new ArrayList<>();
+				}
+			}
+			// Last note
+			else {
+				pitchesPerChordTrans.add(chord);
+			}
+		}
+
+		// Make tabToTransInd; add indices to list per chord
+		List<List<Integer>> tabToTransInd = new ArrayList<>();
+		for (int i = 0; i < pitchesPerChordTab.size(); i++) {
+			List<Integer[]> currChordTab = pitchesPerChordTab.get(i);
+//			List<Integer> indicesTab = ToolBox.getItemsAtIndex(currChordTab, 0);
+			List<Integer> pitchesTab = ToolBox.getItemsAtIndex(currChordTab, 1);
+			List<Integer[]> currChordTrans = pitchesPerChordTrans.get(i);
+			List<Integer> indicesTrans = ToolBox.getItemsAtIndex(currChordTrans, 0);
+			List<Integer> pitchesTrans = ToolBox.getItemsAtIndex(currChordTrans, 1);
+			
+			// No SNU (but possibly unison)
+			if (pitchesTab.size() == pitchesTrans.size()) {
+				// Find the trans index for each pitch in pitchesTab and add it to the list
+				List<Integer> pitchesAlreadyAdded = new ArrayList<>();
+				for (int j = 0; j < pitchesTab.size(); j++) {
+					int p = pitchesTab.get(j);
+					int indOfP = pitchesTrans.indexOf(p);
+					// Take into account possible unison; assumes that p occurs only twice
+					if (pitchesAlreadyAdded.contains(p)) {
+						indOfP = pitchesTrans.lastIndexOf(p);
+					}
+					tabToTransInd.add(Arrays.asList(new Integer[]{indicesTrans.get(indOfP)}));
+					pitchesAlreadyAdded.add(p);
+				}
+			}
+			// SNU (unison assumed not to be possible)
+			else {
+				// Find all trans indices for each pitch in pitchesTab and add them to the list
+				for (int j = 0; j < pitchesTab.size(); j++) {
+					int p = pitchesTab.get(j);
+					List<Integer> curr = new ArrayList<>();
+					for (Integer[] in : currChordTrans) {
+						if (in[1] == p) {
+							curr.add(in[0]);
+						}
+					}
+					tabToTransInd.add(curr);
+				}				
+			}
+		}
+
+		// Make transToTabInd
+		List<List<Integer>> transToTabInd = new ArrayList<>();
+		for (int i = 0; i < bnp.length; i++) {
+			transToTabInd.add(null);
+		}
+		for (int i = 0; i < tabToTransInd.size(); i++) {
+			List<Integer> transInd = tabToTransInd.get(i);
+			for (int ind : transInd) {
+				transToTabInd.set(ind, Arrays.asList(new Integer[]{i}));
+			}
+		}
+
+//		System.out.println("tabToTransInd");
+//		for (int j = 0; j < tabToTransInd.size(); j++) {
+//			System.out.println(j + " " + tabToTransInd.get(j));
+//		}
+//		System.out.println("transToTabInd");
+//		for (int j = 0; j < transToTabInd.size(); j++) {
+//			System.out.println(j + " " + transToTabInd.get(j));
+//		}
+
+//		int bnpInd = 0;
+//		for (int i = 0; i < btp.length; i++) {
+//			System.out.println("i = " + i);
+//			List<Integer> currIndInTrans = new ArrayList<>();
+//			currIndInTrans.add(bnpInd);
+//			int currPitch = btp[i][Tablature.PITCH];
+//			Rational currOnset = 
+//				new Rational(btp[i][Tablature.ONSET_TIME], 
+//				Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+//			int nextPitch = -1;
+//			Rational nextOnset = null;
+//			if (i+1 != btp.length) {
+//				nextPitch = btp[i+1][Tablature.PITCH];
+//				nextOnset = new Rational(btp[i+1][Tablature.ONSET_TIME], 
+//					Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+//			}
+//			System.out.println("currPitch = " + currPitch);
+//			System.out.println("currOnset = " + currOnset);
+//			System.out.println("nextPitch = " + nextPitch);
+//			System.out.println("nextOnset = " + nextOnset);
+//			// Check for SNU notes
+//			// a. not last tab note case: if not lower unison note (i.e., next tab note has 
+//			// the same pitch and onset), check for SNU notes
+//			// b. last tab note case: if not last note in bnp (i.e., bnp has one more element 
+//			// at bnpInd+1), tab note is a SNU note
+//			if ((nextOnset != null && 
+//				!(nextOnset.equals(currOnset) && nextPitch == currPitch))
+//				|| 
+//				(nextOnset == null && bnpInd+1 == (bnp.length-1))) {
+//				System.out.println("check for SNU");
+//				// If the next MIDI note has the same pitch and onset: SNU
+//				Rational nextOnsetMIDI = 
+//					new Rational(bnp[bnpInd+1][Transcription.ONSET_TIME_NUMER], 
+//					bnp[bnpInd+1][Transcription.ONSET_TIME_DENOM]);
+//				if (nextOnsetMIDI.equals(currOnset)) { // && btp[i+1][Tablature.PITCH] != currPitch) {
+//					for (int j = bnpInd+1; j < bnp.length; j++) {
+//						// If the next note in bnp has the same pitch and onset: SNU
+//						if (bnp[j][Transcription.PITCH] == currPitch && 
+//							new Rational(bnp[j][Transcription.ONSET_TIME_NUMER],
+//							bnp[j][Transcription.ONSET_TIME_DENOM]).equals(currOnset)) {
+//							currIndInTrans.add(j);
+//							bnpInd++;
+//						}
+//						else {
+//							break;
+//						}
+//					}
+//				}
+//			}
+//			tabToTransInd.add(currIndInTrans);
+//			bnpInd++;
+//		}
+//		List<List<Integer>> transToTabInd = new ArrayList<>();
+//		for (int i = 0; i < tabToTransInd.size(); i++) {
+//			List<Integer> transInd = tabToTransInd.get(i);
+//			for (int ind : transInd) {
+//				transToTabInd.add(ind, i);
+//			}
+//		}
+
+		res.add(tabToTransInd);
+		res.add(transToTabInd);
+		return res;
+	}
+
+
+	/**
 	 * Gives each note its maximum duration. Given a note n_t and an note n_t+1 in a voice, the duration of
 	 * n_t is
 	 * (1) if the inter-onset time between n_t and n_t+1 <= the given maxDur: the inter-onset time
@@ -2383,6 +2570,9 @@ public class Transcription implements Serializable {
 			NotationVoice nv = ns.get(i).get(0);
 			for (int j = 0; j < nv.size(); j++) {
 				Note n = nv.get(j).get(0);
+				if (nv.get(j).size() > 1) {
+					System.out.println("two simultaneous notes in voice!");
+				}
 				Rational onset = n.getMetricTime();
 				if (j+1 < nv.size()) {
 					Note nextN = nv.get(j+1).get(0);
@@ -2392,6 +2582,10 @@ public class Transcription implements Serializable {
 						newDur = maxDur;
 					}
 					n.setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), onset, newDur));
+					// TODO Quick fix for two simultaneous notes in a voice 26.01.2020
+					if (nv.get(j).size() > 1) {
+						nv.get(j).get(1).setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), onset, newDur));
+					}
 				}
 			}
 		}
@@ -2399,37 +2593,68 @@ public class Transcription implements Serializable {
 	}
 
 
-	// TESTED
-	public Rational[][] getTimePitchMatrix() {
-		Integer[][] bnp = getBasicNoteProperties();
-		Rational[][] tpm = new Rational[bnp.length][3];
-		for (int i = 0; i < bnp.length; i++) {
-			int pitchCurr = bnp[i][0];
-			Rational onsetCurr = new Rational(bnp[i][1], bnp[i][2]);
-			Rational offsetCurr = onsetCurr.add(new Rational(bnp[i][3], bnp[i][4]));
-			tpm[i] = new Rational[]{onsetCurr, offsetCurr, new Rational(pitchCurr, 1)};
+	/**
+	 * Returns a matrix containing onset, offset, and pitch for each note in btp or bnp, 
+	 * 
+	 * @param btp
+	 * @param durationLabels
+	 * @param bnp
+	 * @return
+	 */
+	// TESTED (for both tablature and non-tablature case)
+	public static Rational[][] getTimePitchMatrix(Integer[][] btp, List<List<Double>> durationLabels,
+		Integer[][] bnp) { // in 2020
+//		Integer[][] bnp = getBasicNoteProperties(); // in 2020
+		verifyCase(btp, bnp);
+
+		Rational[][] tpm = new Rational[btp != null ? btp.length : bnp.length][3];
+		if (btp != null) {
+			for (int i = 0; i < btp.length; i++) {
+				int pitchCurr = btp[i][0];
+				Rational onsetCurr = 
+					new Rational(btp[i][3], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+//				Rational offsetCurr = onsetCurr.add(
+//					new Rational(btp[i][4], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()));
+				Rational offsetCurr = 
+					onsetCurr.add(DataConverter.convertIntoDuration(durationLabels.get(i))[0]);
+				tpm[i] = new Rational[]{onsetCurr, offsetCurr, new Rational(pitchCurr, 1)};
+			}
+		}
+		if (bnp != null) {		
+			for (int i = 0; i < bnp.length; i++) {
+				int pitchCurr = bnp[i][0];
+				Rational onsetCurr = new Rational(bnp[i][1], bnp[i][2]);
+				Rational offsetCurr = onsetCurr.add(new Rational(bnp[i][3], bnp[i][4]));
+				tpm[i] = new Rational[]{onsetCurr, offsetCurr, new Rational(pitchCurr, 1)};
+			}
 		}
 		return tpm;
 	}
-	
+
+
 	/**
 	 * Gets, for each note, the number of notes that are sounding at that time (including 
-	 * sustained notes).
+	 * sustained notes, if applicable).
+	 * 
+	 * @btp
+	 * @param durationLabels 
+	 * @bnp	
 	 * @return
 	 */
-	// TESTED
-	public List<Integer> getNoteDensity() {
+	// TESTED (for both tablature- and non-tablature case)
+	public List<Integer> getNoteDensity(Integer[][] btp, List<List<Double>> durationLabels, 
+		Integer[][] bnp) { // in 2020
+		verifyCase(btp, bnp);
+		
 		List<Integer> activeNotes = new ArrayList<Integer>();
 		
-		Integer bnp[][] = getBasicNoteProperties(); 
-//		FeatureGenerator fg = new FeatureGenerator();
-		Rational[][] tpm = getTimePitchMatrix();
+//		Integer bnp[][] = getBasicNoteProperties(); // in 2020
+		Rational[][] tpm = getTimePitchMatrix(btp, durationLabels, bnp); // in 2020
 		for (int i = 0; i < tpm.length; i++) {
-//			System.out.println(i);
 			Rational onsetCurr = tpm[i][0];
 			int active = 1;
 			// Previous notes
-			int numSusNotes = getIndicesOfSustainedPreviousNotes(null, null, bnp, i).size();
+			int numSusNotes = getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, i).size();
 			for (int j = i-1; j >= 0; j--) {
 				Rational onsetPrev = (tpm[j][0]);
 				Rational offsetPrev = (tpm[j][1]);
@@ -2457,7 +2682,7 @@ public class Transcription implements Serializable {
 				}
 			}
 			// Next notes
-			for (int j = i+1; j < bnp.length; j++) {
+			for (int j = i+1; j < ((btp != null) ? btp.length : bnp.length); j++) {
 				Rational onsetNext = (tpm[j][0]);
 				// Because of the incrementing j, onsetNext can only be equal to onsetCurr
 				// (higher chord note) or greater than onsetCurr (next note)
@@ -2546,7 +2771,7 @@ public class Transcription implements Serializable {
 	List<List<Double>> getVoiceEntriesOLDEST(int highestNumVoices, int n, boolean useAverage) {
 		Integer[][] bnp = getBasicNoteProperties();		
 //		FeatureGenerator fg = new FeatureGenerator();
-		List<Integer> noteDensities = getNoteDensity();
+		List<Integer> noteDensities = getNoteDensity(null, null, bnp); // in 2020
 		
 		List<List<Double>> res = new ArrayList<List<Double>>();
 
@@ -2840,7 +3065,7 @@ public class Transcription implements Serializable {
 
 	List<List<Double>> getVoiceEntriesOLDER_EXT(int highestNumVoices, int n, boolean useAverage) {
 		Integer[][] bnp = getBasicNoteProperties();
-		List<Integer> noteDensities = getNoteDensity();
+		List<Integer> noteDensities = getNoteDensity(null, null, bnp); // in 2020
 
 		List<List<Double>> res = new ArrayList<List<Double>>();
 
@@ -3263,7 +3488,7 @@ public class Transcription implements Serializable {
 	List<List<Double>> getVoiceEntriesOLD(int highestNumVoices, int n, boolean useAverage) {
 		Integer[][] bnp = getBasicNoteProperties();		
 //		FeatureGenerator fg = new FeatureGenerator();
-		List<Integer> noteDensities = getNoteDensity();
+		List<Integer> noteDensities = getNoteDensity(null, null, bnp); // in 2020
 		
 		List<List<Double>> res = new ArrayList<List<Double>>();
 
@@ -3598,29 +3823,39 @@ public class Transcription implements Serializable {
 	 *         as element 2: the voices that go with these indices </br>
 	 *         Returns <code>null</code> if no motif was found.
 	 */
-	// TESTED
-	public List<List<Integer>> getImitativeVoiceEntries(int highestNumVoices, int n) {
+	// TESTED TODO: implement full note duration case in tablature case
+	List<List<Integer>> getImitativeVoiceEntries(Integer[][] btp, List<List<Double>> durationLabels, 
+		Integer[][] bnp, int highestNumVoices, int n) { // in 2020
+
+		verifyCase(btp, bnp);
+		
 		List<List<Integer>> res = new ArrayList<List<Integer>>();
 		List<Integer> configs = new ArrayList<Integer>();
 		final int pitch = 0;
 		final int durNum = 1;
 		final int durDen = 2;
 		final int isHMN = 3;
+		
+		int srv = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
 
-		Integer[][] bnp = getBasicNoteProperties();
+//		Integer[][] bnp = getBasicNoteProperties(); // in 2020
 
 		List<Integer> lowestNoteIndicesFirstChords = new ArrayList<Integer>();
 		lowestNoteIndicesFirstChords.add(0);
 		List<List<Integer[]>> pitchesFirstChords = new ArrayList<List<Integer[]>>();
 		List<Integer[]> firstPitch = new ArrayList<Integer[]>();
-		firstPitch.add(new Integer[]{bnp[0][PITCH], 0});
+		firstPitch.add(new Integer[]{
+			(btp != null) ? btp[0][Tablature.PITCH] : 
+			bnp[0][PITCH], 0});
 		pitchesFirstChords.add(firstPitch);
 
 		// Determine the rhythmic head motif (first n notes of fugue theme)
 		List<Rational> headMotif = new ArrayList<Rational>();
 		Rational granularity = new Rational(1, 32);
 		for (int i = 0; i < n; i++) {
-			Rational curr = new Rational(bnp[i][DUR_NUMER], bnp[i][DUR_DENOM]);
+			Rational curr = 
+				(btp != null) ?	DataConverter.convertIntoDuration(durationLabels.get(i))[0] :
+				new Rational(bnp[i][DUR_NUMER], bnp[i][DUR_DENOM]);
 			headMotif.add(quantiseDuration(curr, granularity));
 		}
 
@@ -3630,31 +3865,45 @@ public class Transcription implements Serializable {
 		List<Integer> pitchMvmtHeadMotif = new ArrayList<Integer>();
 		List<Double> mvmtHeadMotif = new ArrayList<Double>();
 		for (int i = 0; i < n-1; i++) {
-			ioiHeadMotif.add(
-				new Rational(bnp[i+1][ONSET_TIME_NUMER], bnp[i+1][ONSET_TIME_DENOM]).sub(
-				new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM])));
-			int pitchMvmt = bnp[i+1][PITCH] - bnp[i][PITCH];
+			int pitchMvmt;
+			if (btp != null) {
+				ioiHeadMotif.add(
+					new Rational(btp[i+1][Tablature.ONSET_TIME], srv).sub(
+					new Rational(btp[i][Tablature.ONSET_TIME], srv)));
+				pitchMvmt = btp[i+1][Tablature.PITCH] - btp[i][Tablature.PITCH];
+			}
+			else {
+				ioiHeadMotif.add(
+					new Rational(bnp[i+1][ONSET_TIME_NUMER], bnp[i+1][ONSET_TIME_DENOM]).sub(
+					new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM])));
+				pitchMvmt = bnp[i+1][PITCH] - bnp[i][PITCH];
+			}
 			pitchMvmtHeadMotif.add(pitchMvmt);
 			mvmtHeadMotif.add(Math.signum((double)pitchMvmt));
 		}
 
 		// Find the next density increase and determine the position of the newly
 		// entering voice
-		List<Integer> noteDensities = getNoteDensity();
+		List<Integer> noteDensities = getNoteDensity(btp, durationLabels, bnp); // in 2020
 		int density = noteDensities.get(0);
 		for (int i = 0; i < noteDensities.size(); i++) {
 			if (noteDensities.get(i) > density) {
 				System.out.println("density increase");
-				System.out.println("bar = " + ToolBox.getMetricPositionAsString(
-					getAllMetricPositions().get(i)));
+				System.out.println( 
+					((btp != null) ? "onset time " + new Rational(btp[i][Tablature.ONSET_TIME], srv) :
+					"bar " + ToolBox.getMetricPositionAsString(getAllMetricPositions().get(i))));
 				System.out.println("new density = " + noteDensities.get(i));
 				density = noteDensities.get(i);
 				int config = -1;
 
 				// Check whether the chord at i contains the first HMN
 				boolean firstHMNInFirstChord = false;
-				for (int j = i; j < i + bnp[i][CHORD_SIZE_AS_NUM_ONSETS]; j++) {
-					Rational curr = 
+				int chordSz = 
+					((btp != null) ? btp[i][Tablature.CHORD_SIZE_AS_NUM_ONSETS] : 
+					bnp[i][CHORD_SIZE_AS_NUM_ONSETS]);
+				for (int j = i; j < i + chordSz ; j++) {
+					Rational curr =
+						(btp != null) ? DataConverter.convertIntoDuration(durationLabels.get(j))[0] :	
 						new Rational(bnp[j][DUR_NUMER], bnp[j][DUR_DENOM]);
 					curr = quantiseDuration(curr, granularity);
 					if (curr.equals(headMotif.get(0))) {
@@ -3662,12 +3911,14 @@ public class Transcription implements Serializable {
 						break;
 					}
 				}
+				System.out.println("firstHMNInFirstChord = " + firstHMNInFirstChord);
 				
 				// If not: find the i that goes with the first sequence of chords to the left 
 				// that contain the HMNs. Stop if no motif candidate has been found after the 
 				// maximum time window has been covered, or when there are no more notes left
 				if (!firstHMNInFirstChord) {
 					Rational onsetOfInitialI = 
+						(btp != null) ? new Rational(btp[i][Tablature.ONSET_TIME], srv) :	
 						new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM]);
 					Rational timeWindowCovered = Rational.ZERO;
 					Rational maxTimeWindow = new Rational(1, 4);
@@ -3678,15 +3929,23 @@ public class Transcription implements Serializable {
 						// Find the new i, i.e., the lowest note index of the next left chord 
 						// with the first HMN 
 						for (int j = i-1; j >= 0; j--) {
-							Rational curr = new Rational(bnp[j][DUR_NUMER], bnp[j][DUR_DENOM]);
+							Rational curr = 
+								(btp != null) ? DataConverter.convertIntoDuration(durationLabels.get(j))[0] : 
+								new Rational(bnp[j][DUR_NUMER], bnp[j][DUR_DENOM]);
 							curr = quantiseDuration(curr, granularity);
 							if (curr.equals(headMotif.get(0))) {
-								int chordInd = bnp[j][CHORD_SEQ_NUM];
-								onsetOfNewI = new Rational(bnp[j][ONSET_TIME_NUMER],
-									bnp[j][ONSET_TIME_DENOM]);
+								int chordInd = 
+									(btp != null) ? btp[j][Tablature.CHORD_SEQ_NUM] :
+									bnp[j][CHORD_SEQ_NUM];
+								onsetOfNewI = 
+									(btp != null) ? new Rational(btp[j][Tablature.ONSET_TIME], srv) :
+									new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);
 								// Find the index of the lowest note in the chord at chordInd
 								for (int k = j; k >=0; k--) {
-									if (bnp[k][CHORD_SEQ_NUM] == chordInd-1) {
+									int chordSeqNr = 
+										(btp != null) ? btp[k][Tablature.CHORD_SEQ_NUM] : 
+										bnp[k][CHORD_SEQ_NUM]; 
+									if (chordSeqNr == chordInd-1) {
 										newI = k+1;
 										break;
 									}
@@ -3708,16 +3967,19 @@ public class Transcription implements Serializable {
 						boolean nextFound = true;				
 						int ind = 1;
 						List<Boolean> hits = new ArrayList<Boolean>();
-						Rational onsetOfChordAtNewI = new Rational(bnp[newI][ONSET_TIME_NUMER], 
-							bnp[newI][ONSET_TIME_DENOM]);
+						Rational onsetOfChordAtNewI = 
+							(btp != null) ? new Rational(btp[newI][Tablature.ONSET_TIME], srv) : 
+							new Rational(bnp[newI][ONSET_TIME_NUMER], bnp[newI][ONSET_TIME_DENOM]);
 						Rational nextOns = onsetOfChordAtNewI.add(ioiHeadMotif.get(ind - 1));
 						System.out.println("nextOns = " + nextOns);
-						for (int j = newI; j < bnp.length; j++) {
-							Rational currOns = new Rational(bnp[j][ONSET_TIME_NUMER], 
-								bnp[j][ONSET_TIME_DENOM]);
+						for (int j = newI; j < ((btp != null) ? btp.length : bnp.length); j++) {
+							Rational currOns = 
+								(btp != null) ? new Rational(btp[j][Tablature.ONSET_TIME], srv) :
+								new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);
 							if (currOns.equals(nextOns)) {
-								Rational currDur = new Rational(bnp[j][DUR_NUMER], 
-									bnp[j][DUR_DENOM]);
+								Rational currDur = 
+									(btp != null) ? DataConverter.convertIntoDuration(durationLabels.get(j))[0] :
+									new Rational(bnp[j][DUR_NUMER], bnp[j][DUR_DENOM]);
 								currDur = quantiseDuration(currDur, granularity);
 								if (currDur.equals(headMotif.get(ind))) {
 									hits.add(true);
@@ -3756,8 +4018,9 @@ public class Transcription implements Serializable {
 				// 1. HMN: onsets and lowest note indices
 				// a. Determine the onsets of the HMNs
 				List<Rational> onsetsOfHMNChords = new ArrayList<Rational>();	
-				onsetsOfHMNChords.add(new Rational(bnp[i][ONSET_TIME_NUMER], 
-					bnp[i][ONSET_TIME_DENOM]));
+				onsetsOfHMNChords.add(
+					(btp != null) ? new Rational(btp[i][Tablature.ONSET_TIME], srv) :	
+					new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM]));
 				for (int j = 0; j < ioiHeadMotif.size(); j++) { 
 					Rational lastAdded = onsetsOfHMNChords.get(j);
 					Rational toAdd = lastAdded.add(ioiHeadMotif.get(j));
@@ -3766,12 +4029,16 @@ public class Transcription implements Serializable {
 
 				// b. Determine the indices of the lowest chord note at those onsets
 				List<Integer> indOfMotifNotesChords = new ArrayList<Integer>();
-				for (int j = i; j < bnp.length; j++) {
+				for (int j = i; j < ((btp != null) ? btp.length : bnp.length); j++) {
 					Rational currOnset = 
+						(btp != null) ?	new Rational(btp[j][Tablature.ONSET_TIME], srv) :
 						new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);	
 					if (onsetsOfHMNChords.contains(currOnset)) {
 						indOfMotifNotesChords.add(j);
-						j += bnp[j][CHORD_SIZE_AS_NUM_ONSETS] - 1;
+						int toAdd = 
+							(btp != null) ? btp[j][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+							bnp[j][CHORD_SIZE_AS_NUM_ONSETS];	
+						j += toAdd - 1;
 					}
 					// Break if currOnset is after the last HMN onset
 					if (currOnset.isGreater(onsetsOfHMNChords.get(n-1))) {
@@ -3784,7 +4051,7 @@ public class Transcription implements Serializable {
 				List<List<List<Integer>>> skeleton = new ArrayList<List<List<Integer>>>();
 				for (int j = 0; j < indOfMotifNotesChords.size(); j++) {					
 					int ind = indOfMotifNotesChords.get(j);
-					List<List<Integer>> noteInfo = getChordInfo(ind, null, bnp);
+					List<List<Integer>> noteInfo = getChordInfo(btp, durationLabels, bnp, ind);
 					// For each note: add 1 if it has the same duration as the current HMN
 					Rational currHMNDur = headMotif.get(j);
 					for (List<Integer> l : noteInfo) {
@@ -3802,12 +4069,12 @@ public class Transcription implements Serializable {
 					}					
 					skeleton.add(noteInfo);
 				}
-//				System.out.println("onsetsOfHMNChords = " + onsetsOfHMNChords);
-//				System.out.println("indOfMotifNotesChords = " + indOfMotifNotesChords);
-//				System.out.println("SKELETON");
-//				for (List<List<Integer>> l : skeleton) {
-//					System.out.println(l);
-//				}
+				System.out.println("onsetsOfHMNChords = " + onsetsOfHMNChords);
+				System.out.println("indOfMotifNotesChords = " + indOfMotifNotesChords);
+				System.out.println("SKELETON");
+				for (List<List<Integer>> l : skeleton) {
+					System.out.println(l);
+				}
 
 				// b. Ensure that all chords in the skeleton have a size that is equal 
 				// to the current density by patching smaller chords with null values
@@ -3839,15 +4106,21 @@ public class Transcription implements Serializable {
 							currIncompleteInd = 0;
 							// Get pitches in previous chord
 							List<Integer> pitchesInPrev = new ArrayList<Integer>();
-							int sizePrev = bnp[i-1][CHORD_SIZE_AS_NUM_ONSETS];
+							int sizePrev = 
+								(btp != null) ? btp[i-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :	
+								bnp[i-1][CHORD_SIZE_AS_NUM_ONSETS];
 							int lowestIndPrev = i - sizePrev;
 							// Add pitches of all chord notes
 							for (int k = lowestIndPrev; k < lowestIndPrev + sizePrev; k++) {
-								pitchesInPrev.add(bnp[k][PITCH]);
+								pitchesInPrev.add(
+									(btp != null) ? btp[k][Tablature.PITCH] :	
+									bnp[k][PITCH]);
 							}
 							// Add pitches of any sustained previous notes
-							for (int ind : getIndicesOfSustainedPreviousNotes(null, null, bnp, lowestIndPrev)) {
-								pitchesInPrev.add(bnp[ind][PITCH]);
+							for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, lowestIndPrev)) {
+								pitchesInPrev.add(
+									(btp != null) ? btp[ind][Tablature.PITCH] :	
+									bnp[ind][PITCH]);
 							}
 							Collections.sort(pitchesInPrev);
 
@@ -3944,10 +4217,10 @@ public class Transcription implements Serializable {
 						// Replace incomplete element in skeleton
 						skeleton.set(currIncompleteInd, completed);					
 					}
-//					System.out.println("SKELETON PATCHED");
-//					for (List<List<Integer>> l : skeleton) {
-//						System.out.println(l);
-//					}
+					System.out.println("SKELETON PATCHED");
+					for (List<List<Integer>> l : skeleton) {
+						System.out.println(l);
+					}
 				}
 
 				// c. Handle correct vertical placement of unison notes in the skeleton
@@ -4000,9 +4273,9 @@ public class Transcription implements Serializable {
 
 					// Find the previous and next non-unison neighbour chord 
 					List<List<Integer>> prevChord = 
-						getNonUnisonNeighbourChord(lowestIndCurr, null, bnp, -1);
+						getNonUnisonNeighbourChord(btp, durationLabels, bnp, -1, lowestIndCurr);
 					List<List<Integer>> nextChord = 
-						getNonUnisonNeighbourChord(lowestIndCurr, null, bnp, 1);
+						getNonUnisonNeighbourChord(btp, durationLabels, bnp, 1, lowestIndCurr);
 
 					// For each unison note pair satisfying criteria (i) and (ii) above 
 					// (the pairs are always at consecutive indices) 
@@ -4110,10 +4383,10 @@ public class Transcription implements Serializable {
 						k++;
 					}
 				}
-//				System.out.println("SKELETON PATCHED AND UNISONS FIXED");
-//				for (List<List<Integer>> l : skeleton) {
-//					System.out.println(l);
-//				}
+				System.out.println("SKELETON PATCHED AND UNISONS FIXED");
+				for (List<List<Integer>> l : skeleton) {
+					System.out.println(l);
+				}
 
 				// 3. Determine the vertical position of the head motif in the skeleton
 				// Determine all head motif candidates
@@ -4135,6 +4408,7 @@ public class Transcription implements Serializable {
 						motifCandidates.add(null);
 					}
 				}
+				System.out.println("motifCandidates = " + motifCandidates);
 
 				// Filter out any false head motif candidates, i.e., candidates that
 				// have the same rhythmic profile but are in contrary or oblique motion
@@ -4183,9 +4457,13 @@ public class Transcription implements Serializable {
 					}
 				}
 				motifCandidates = filtered;
+				
+				System.out.println("motiveCandidates filtered = " + motifCandidates);
 
 				int numMotifCand = motifCandidates.size() - 
 					Collections.frequency(motifCandidates, null);
+				
+				System.out.println("numMotifCand = " + numMotifCand);
 
 				// 4. Determine the configuration 
 				// The configuration equals the index (including sustained notes) of the 
@@ -4225,27 +4503,40 @@ public class Transcription implements Serializable {
 					}
 					// Given the number of left chords to consider, find the lowest note
 					// index of the leftmost chord
-					int chordInd = bnp[i][CHORD_SEQ_NUM];
+					int chordInd = 
+						(btp != null) ? btp[i][Tablature.CHORD_SEQ_NUM] : 
+						bnp[i][CHORD_SEQ_NUM];
 					int m = 1; // TODO make method argument?
 					int leftChordIndex = chordInd - m;
 					int leftInd = i;
 					int rightInd = i;
 					while (chordInd > leftChordIndex) {
-						leftInd = rightInd - bnp[rightInd-1][CHORD_SIZE_AS_NUM_ONSETS];
+						int toSub = 
+							(btp != null) ? btp[rightInd-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :	
+							bnp[rightInd-1][CHORD_SIZE_AS_NUM_ONSETS];
+						leftInd = rightInd - toSub;
 						rightInd = leftInd;
-						chordInd = bnp[leftInd][CHORD_SEQ_NUM];
+						chordInd = 
+							(btp != null) ? btp[leftInd][Tablature.CHORD_SEQ_NUM] :
+							bnp[leftInd][CHORD_SEQ_NUM];
 					}
 					// List the left chords and prepare avgLeftChord
 					for (int j = leftInd; j < i; j++) {
-						int chordSize = bnp[j][CHORD_SIZE_AS_NUM_ONSETS];
+						int chordSize = 
+							(btp != null) ? btp[j][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+							bnp[j][CHORD_SIZE_AS_NUM_ONSETS];
 						List<Integer> pitchesInChord = new ArrayList<Integer>();
 						// Add pitches of all chord notes
 						for (int k = j; k < j + chordSize; k++) {
-							pitchesInChord.add(bnp[k][PITCH]);
+							pitchesInChord.add(
+								(btp != null) ? btp[k][Tablature.PITCH] :
+								bnp[k][PITCH]);
 						}
 						// Add pitches of any sustained previous notes
-						for (int ind : getIndicesOfSustainedPreviousNotes(null, null, bnp, j)) {
-							pitchesInChord.add(bnp[ind][PITCH]);
+						for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, j)) {
+							pitchesInChord.add(
+								(btp != null) ? btp[ind][Tablature.PITCH] :
+								bnp[ind][PITCH]);
 						}
 						Collections.sort(pitchesInChord);
 						Collections.reverse(pitchesInChord);
@@ -4275,6 +4566,8 @@ public class Transcription implements Serializable {
 							avgLeftChord.set(j, (avgLeftChord.get(j) / leftChords.size()));
 						}
 					}
+					System.out.println("leftChords.size() = " + leftChords.size());
+					System.out.println("avgLeftChord = " + avgLeftChord);
 
 					// List the right chord
 					List<Integer> rightChord = new ArrayList<Integer>();
@@ -4282,6 +4575,7 @@ public class Transcription implements Serializable {
 						rightChord.add(l.get(pitch));
 					}
 					Collections.reverse(rightChord);
+					System.out.println("rightChord = " + rightChord);
 
 					// Determine the optimal configuration
 					// For each configuration: sum the movement over all voices that are 
@@ -4310,6 +4604,7 @@ public class Transcription implements Serializable {
 					double min = Collections.min(costPerConfigCurrTransition);
 					config = costPerConfigCurrTransition.indexOf(min);
 				}
+				System.out.println("config = " + config);
 
 				// NB: If no config was set, the value of config remains -1
 				configs.add(config);
@@ -4329,6 +4624,7 @@ public class Transcription implements Serializable {
 				}
 			}
 		}
+		System.out.println("lowestNoteIndicesFirstChords = " + lowestNoteIndicesFirstChords);
 
 		// Determine the sequence of voice entries
 		// Map all possible combinations of configurations to voicings
@@ -4408,6 +4704,7 @@ public class Transcription implements Serializable {
 		System.out.println("configs = " + configs);
 		System.out.println("corrConfigs = " + corrConfigs);
 		List<Double> voiceEntries = dict.get(corrConfigs);
+		System.out.println("voiceEntries = " + voiceEntries);
 		if (voiceEntries == null) {
 			System.out.println("null: config does not exist.");
 			System.exit(0);
@@ -4421,7 +4718,9 @@ public class Transcription implements Serializable {
 				int currInd = lowestNoteIndicesFirstChords.get(i);
 				// List indices
 				List<Integer> currIndices = new ArrayList<Integer>();
-				int chordSize = bnp[currInd][CHORD_SIZE_AS_NUM_ONSETS];
+				int chordSize = 
+					(btp != null) ? btp[currInd][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :	
+					bnp[currInd][CHORD_SIZE_AS_NUM_ONSETS];
 				for (int j = currInd; j < currInd + chordSize; j++) {
 					currIndices.add(j);
 				}
@@ -4430,6 +4729,7 @@ public class Transcription implements Serializable {
 				// List voices
 				List<Integer> currVoices = new ArrayList<Integer>();
 				int currVoice = voiceEntries.get(i).intValue();
+				System.out.println("currVoice = " + currVoice);
 				Collections.sort(voicesAlreadyAdded);
 				Collections.reverse(voicesAlreadyAdded);
 				if (currInd == 0) {
@@ -4437,19 +4737,31 @@ public class Transcription implements Serializable {
 				}
 				else {
 					// Determine the previous chord
-					int prevLowestInd = currInd-(bnp[currInd-1][CHORD_SIZE_AS_NUM_ONSETS]);
+					int toSub = 
+						(btp != null) ? btp[currInd-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+						bnp[currInd-1][CHORD_SIZE_AS_NUM_ONSETS];
+					int prevLowestInd = currInd - toSub;
 					List<Integer> prevChord = new ArrayList<Integer>();
 					for (int k = prevLowestInd; k < currInd; k++) {
-						prevChord.add(bnp[k][PITCH]);
+						prevChord.add(
+							(btp != null) ? btp[k][Tablature.PITCH] : 
+							bnp[k][PITCH]);
 					}
-					for (int ind : getIndicesOfSustainedPreviousNotes(null, null, bnp, prevLowestInd)) {
-						prevChord.add(bnp[ind][PITCH]);
+					for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, prevLowestInd)) {
+						prevChord.add(
+							(btp != null) ? btp[ind][Tablature.PITCH] :
+							bnp[ind][PITCH]);
 					}
 					Collections.sort(prevChord);
+					System.out.println("prevChord = " + prevChord);
 
 					// Find any sustained notes in the first chord of the current 
 					// density change 
 					List<Integer[]> currFirst = pitchesFirstChords.get(i);
+					System.out.println("currFirst = ");
+					for (Integer[] in : currFirst) {
+						System.out.println(Arrays.toString(in));
+					}
 					List<Integer> voicesSustained = new ArrayList<Integer>();
 					for (int j = 0; j < currFirst.size(); j++) {
 						Integer[] in = currFirst.get(j);
@@ -4464,7 +4776,9 @@ public class Transcription implements Serializable {
 							voicesSustained.add(voice);
 						}
 					}
-
+					System.out.println("voicesSustained = " + voicesSustained);
+					System.out.println("voicesAlreadyAdded = " + voicesAlreadyAdded);
+					
 					// Determine the available voices for the notes in the current chord,
 					// which are the active voices without any sustained voices and the 
 					// current voice
@@ -4477,8 +4791,10 @@ public class Transcription implements Serializable {
 					}
 					Collections.sort(availableVoices);
 					Collections.reverse(availableVoices);
+					System.out.println("availableVoices = " + availableVoices);
 					currVoices.addAll(availableVoices);
 				}
+				System.out.println("currVoices = " + currVoices);
 				voices.addAll(currVoices);
 				// Update voicesAlreadyAdded
 				voicesAlreadyAdded.add(currVoice);
@@ -4491,21 +4807,35 @@ public class Transcription implements Serializable {
 //		return res;
 	}
 
-
+	/**
+	 * Determines the sequence of voice entries based on the cost of connecting two configurations.
+	 * 
+	 * @param btp
+	 * @param durationLabels
+	 * @param bnp
+	 * @param numVoices
+	 * @param n
+	 * @return
+	 */
+	// TESTED TODO: implement full note duration case in tablature case
 	// Return <code>null</code> if one or more voices are missing from the returned list of voices. 
-	List<List<Integer>> getNonImitativeVoiceEntries(int numVoices, int n) {
+	List<List<Integer>> getNonImitativeVoiceEntries(Integer[][] btp, List<List<Double>> durationLabels,
+		Integer[][] bnp, int numVoices, int n) { // in 2020
+		
+		verifyCase(btp, bnp);
+		
 		List<Integer> allConfigs = new ArrayList<Integer>();
 		List<Integer> allIndices = new ArrayList<Integer>();
 		List<Integer> allVoices = new ArrayList<Integer>();
 		
-		Integer[][] bnp = getBasicNoteProperties();
+//		Integer[][] bnp = getBasicNoteProperties(); // in 2020
 		
 		// Determine the densities and the indices of the lowest note of the first
 		// chord with the new density
 		List<Integer> densities = new ArrayList<Integer>();
 		List<Integer> indices = new ArrayList<Integer>();
 //		List<List<Integer>> firstChordIndices = new ArrayList<List<Integer>>();
-		List<Integer> noteDensities = getNoteDensity();
+		List<Integer> noteDensities = getNoteDensity(btp, durationLabels, bnp); // in 2020
 		int prevDensity = 0;
 		for (int i = 0; i < noteDensities.size(); i++) {
 			int d = noteDensities.get(i);
@@ -4514,7 +4844,10 @@ public class Transcription implements Serializable {
 				densities.add(d);
 				indices.add(i);
 				List<Integer> currFirstChordInd = new ArrayList<Integer>();
-				for (int j = i; j < i + bnp[i][CHORD_SIZE_AS_NUM_ONSETS]; j++) {
+				int chordSize = 
+					(btp != null) ? btp[i][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+					bnp[i][CHORD_SIZE_AS_NUM_ONSETS];	
+				for (int j = i; j < i + chordSize; j++) {
 					currFirstChordInd.add(j);
 				}
 //				firstChordIndices.add(currFirstChordInd);
@@ -4551,7 +4884,9 @@ public class Transcription implements Serializable {
 			int currDensIncrInd = indices.get(i);
 			int rightDensIncrInd;
 			if (i == densities.size()-1) {
-				rightDensIncrInd = bnp.length - bnp[bnp.length-1][CHORD_SIZE_AS_NUM_ONSETS];
+				rightDensIncrInd = 
+					(btp != null) ? btp.length - btp[btp.length-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+					bnp.length - bnp[bnp.length-1][CHORD_SIZE_AS_NUM_ONSETS];
 			}
 			else {
 				rightDensIncrInd = indices.get(i+1);
@@ -4577,18 +4912,24 @@ public class Transcription implements Serializable {
 				}
 				for (int j = start; j < end; j++) {
 					// j is the index of the lowest note in the chord
-					int chordSize = bnp[j][CHORD_SIZE_AS_NUM_ONSETS];
+					int chordSize = 
+						(btp != null) ? btp[j][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+						bnp[j][CHORD_SIZE_AS_NUM_ONSETS];
 //					List<List<Integer>> pitchesAndSpnInChord = new ArrayList<List<Integer>>();
 					List<Integer> pitchesInChord = new ArrayList<Integer>();
 					// Add pitches and sustained previous note-ness of all notes in the chord
 					for (int k = j; k < j + chordSize; k++) {
 //						pitchesAndSpnInChord.add(Arrays.asList(new Integer[]{bnp[k][PITCH], 0}));
-						pitchesInChord.add(bnp[k][PITCH]);
+						pitchesInChord.add(
+							(btp != null) ? btp[k][Tablature.PITCH]	:
+							bnp[k][PITCH]);
 					}
 					// Add pitches and sustained previous note-ness of any sustained previous notes
-					for (int ind : getIndicesOfSustainedPreviousNotes(null, null, bnp, j)) {
+					for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, j)) {
 //						pitchesAndSpnInChord.add(Arrays.asList(new Integer[]{bnp[ind][PITCH], 1}));
-						pitchesInChord.add(bnp[ind][PITCH]);
+						pitchesInChord.add(
+							(btp != null) ? btp[ind][Tablature.PITCH] :	
+							bnp[ind][PITCH]);
 					}
 //					pitchesAndSpnInChord = ToolBox.bubbleSort(pitchesAndSpnInChord);
 //					Collections.reverse(pitchesAndSpnInChord);
@@ -4645,14 +4986,18 @@ public class Transcription implements Serializable {
 //			int sizeFirstRightCh = bnp[currDensIncrInd][CHORD_SIZE_AS_NUM_ONSETS];
 			List<List<Integer>> spn = new ArrayList<List<Integer>>();
 			// Add pitches and sustained previous note-ness of all notes in the chord
-
-			for (int j = currDensIncrInd; j < (currDensIncrInd + bnp[currDensIncrInd][CHORD_SIZE_AS_NUM_ONSETS]); j++) {
+			int chrdSize = 
+				(btp != null) ? btp[currDensIncrInd][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+				bnp[currDensIncrInd][CHORD_SIZE_AS_NUM_ONSETS];	
+			for (int j = currDensIncrInd; j < (currDensIncrInd + chrdSize); j++) {
 				System.out.println("j ==== " + j);
-				spn.add(Arrays.asList(new Integer[]{bnp[j][PITCH], 0}));
+				int toAdd = (btp != null) ? btp[j][Tablature.PITCH] : bnp[j][PITCH];
+				spn.add(Arrays.asList(new Integer[]{toAdd, 0}));
 			}
 			// Add pitches and sustained previous note-ness of any sustained previous notes
-			for (int ind : getIndicesOfSustainedPreviousNotes(null, null, bnp, currDensIncrInd)) {
-				spn.add(Arrays.asList(new Integer[]{bnp[ind][PITCH], 1}));
+			for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, currDensIncrInd)) {
+				int toAdd = (btp != null) ? btp[ind][Tablature.PITCH] : bnp[ind][PITCH]; 
+				spn.add(Arrays.asList(new Integer[]{toAdd, 1}));
 			}
 			// Sort on pitch
 			spn = ToolBox.bubbleSort(spn, 0);
@@ -4784,6 +5129,10 @@ public class Transcription implements Serializable {
 
 			List<List<List<Integer>>> configs = 
 				determineConfigs(leftDensity, rightDensity, lastNLeft);
+//			System.out.println(configs.size());
+//			for (List<List<Integer>> l : configs) {
+//				System.out.println(l);
+//			}
 //			for (List<List<Integer>> l : configs) {
 //				System.out.println(l);
 //			}
@@ -4828,25 +5177,37 @@ public class Transcription implements Serializable {
 			allConfigs.add(bestConfig);
 
 			// Determine the newly entering voice(s), i.e., the voice(s) that are in the 
-			// right chords but not in the left, and remove them from rightVoices for the
+			// right chord but not in the left, and remove them from rightVoices for the
 			// next iteration of the outer for-loop
+			// Config possibilities:
+			// 1-2  1-3  1-4  1-5  1-6
+			//      2-3  2-4  2-5  2-6
+			//           3-4  3-5  3-6
+			//                4-5  4-6
+			//                     5-6
 //			List<Integer> newVoices = new ArrayList<Integer>();
-			// If the left chord contains one note or one placeholder (1-2, 1-3, 1-4, 1-5, 
-//			// 2-3, 3-4, 4-5)
+			// If the left chord contains one note or one placeholder
 			if (leftDensity == 1 || leftDensity == (rightDensity - 1)) {
 //			if (numConfigs == rightDensity) {
-				System.out.println("BLUUARRRRGGHHH");
 				System.out.println("rightVoices = " + rightVoices);
 				System.out.println("bestConfig = " + bestConfig);
+				// If the left chord contains one note (1-2, 1-3, 1-4, 1-5, 1-6)
 				if (leftDensity == 1) {
+					System.out.println("leftDensity contains one note");
 					// The voice at index bestConfig in rightVoices is the already active 
-					// voice, so the voices at all other indices are newly entering voices
+					// voice, so the voices at all other indices are newly entering voices (NEV)
+					// Example 1-4:
+					//     (0)         (1)         (2)         (3)     
+					//     x x           x           x           x
+					//       x         x x           x           x
+					//       x           x         x x           x
+					//       x           x           x         x x
+					// NEV 1,2,3       0,2,3       0,1,3       0,1,2
 					List<Integer> toRemove = new ArrayList<Integer>(); 
 					for (int j = 0; j < rightVoices.size(); j++) {
-						System.out.println(j);
+//						System.out.println(j);
 						if (j != bestConfig) {
 							toRemove.add(rightVoices.get(j));
-//							rightVoices.remove(j);
 						}
 					}
 					System.out.println("toRemove = " + toRemove);
@@ -4854,25 +5215,61 @@ public class Transcription implements Serializable {
 						rightVoices.remove((Integer) p);
 					}	
 				}
+				// If the left chord contains one placeholder (2-3, 3-4, 4-5, 5-6)
 				else if (leftDensity == (rightDensity - 1)) {
+					System.out.println("leftDensity is one smaller than rightDensity");
 //				else if (numNull == 1) {
 					// The voice at index (rightDensity-1)-bestConfig in rightVoices is the
-					// newly entering voice
+					// newly entering voice (NEV)
+					// Example 3-4:
+					//     (0)         (1)         (2)         (3)
+					//     x x         x x         x x           x
+					//     x x         x x           x         x x
+					//     x x           x         x x         x x
+					//       x         x x         x x         x x
+					// NEV (4-1)-0=3   (4-1)-1=2   (4-1)-2=1   (4-1)-3=0
 					rightVoices.remove((rightDensity-1)-bestConfig);
 				}
 			}
 			// If the left chord contains more than one note and the right chord contains
-			// at least two more notes than the left chord (2-4, 2-5, 3-5)
-			// TODO Fix! (does not happen currently)
+			// at least two more notes than the left chord (2-4, 2-5, 2-6, 3-5, 3-6, 4-6)
 			else {
-				System.out.println("AAAAAAAAAaaaaaaaaaahhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
-				System.exit(0);
+				// 2-4:
+				//     (0)      (1)      (2)      (3)      (4)      (5)
+				//     x x      x x      x x        x        x        x
+				//     x x        x        x      x x      x x        x
+				//       x      x x        x      x x        x      x x
+				//       x        x      x x        x      x x      x x
+				// NEV 2,3      1,3      1,2      0,3      0,2      0,1
+				if (leftDensity == 2 && rightDensity == 4) {
+					List<Integer[]> toRemove = Arrays.asList(new Integer[][]{
+						new Integer[]{2, 3},
+						new Integer[]{1, 3},
+						new Integer[]{1, 2},
+						new Integer[]{0, 3},
+						new Integer[]{0, 2},
+						new Integer[]{0, 1}}
+					);
+					for (int p : toRemove.get(bestConfig)) {
+						rightVoices.remove((Integer) p);
+					}
+				}
+				else if (leftDensity == 2 && rightDensity == 5) { // TODO Fix! (does not happen currently)
+					System.out.println("AAAAAAAAAaaaaaaaaaahhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
+					System.exit(0);
+				}
+				else if (leftDensity == 3 && rightDensity == 5) { // TODO Fix! (does not happen currently)
+					System.out.println("AAAAAAAAAaaaaaaaaaahhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
+					System.exit(0);
+				}
 			}
 			System.out.println("rightVoices = " + rightVoices);
 		}	
 		// Add remaining rightVoices and reverse allVoices
 		allVoices.addAll(rightVoices);
 		Collections.reverse(allVoices);
+		// Reverse allConfigs
+		Collections.reverse(allConfigs);
 		System.out.println("HIERRRRR");
 		List<List<Integer>> res = new ArrayList<List<Integer>>();
 		System.out.println("allVoices = " + allVoices);
@@ -4926,7 +5323,7 @@ public class Transcription implements Serializable {
 	static int calculateConfigCost(List<List<Integer>> leftChords, List<List<Integer>> rightChords,
 		boolean useLinear) {
 		int costNonLinear = 0;
-		
+
 		for (List<Integer> lc : leftChords) {
 			for (List<Integer> rc : rightChords) {
 				for (int j = 0; j < lc.size(); j++) {
@@ -4936,7 +5333,7 @@ public class Transcription implements Serializable {
 				}
 			}
 		}
-		
+
 		List<List<Integer>> lAndR = new ArrayList<List<Integer>>();
 		lAndR.addAll(leftChords);
 		lAndR.addAll(rightChords);
@@ -4953,7 +5350,7 @@ public class Transcription implements Serializable {
 				}
 			}
 		}
-		
+
 		if (!useLinear) {
 			return costNonLinear;
 		}
@@ -4962,7 +5359,7 @@ public class Transcription implements Serializable {
 		}
 	}
 
-	
+
 //	static List<List<List<Integer>>> determineConfigsDEZE(int leftDensity, 
 //		int rightDensity, List<List<Integer>> partialLeft) {
 //			
@@ -5360,10 +5757,14 @@ public class Transcription implements Serializable {
 	}
 
 
-	public List<List<Integer>> determineVoiceEntriesHIGHLEVEL(Integer[][] bnp, int numVoices, int n) {
-		List<Integer> noteDensities = getNoteDensity();
-		int leftDensity = noteDensities.get(0);
+	public List<List<Integer>> determineVoiceEntriesHIGHLEVEL(Integer[][] btp, 
+		List<List<Double>> durationLabels, Integer[][] bnp, int numVoices, int n) {
 		
+		verifyCase(btp, bnp);
+		
+		List<Integer> noteDensities = getNoteDensity(btp, durationLabels, bnp); // in 2020
+		int leftDensity = noteDensities.get(0);
+
 		// Find density increases
 		List<Integer> densities = new ArrayList<Integer>();
 		densities.add(leftDensity);
@@ -5379,45 +5780,54 @@ public class Transcription implements Serializable {
 					}
 				}	
 			}
+//			System.out.println(noteDensities.subList(0, 50));
+//			for (List<Double> l : durationLabels) {
+//				System.out.println(l.size() + " - " + l);
+//			}
 
+			System.out.println("densities = " + densities);
 			// If the voices enter successively: determine if the piece is imitative
 			if (densities.size() == numVoices) {
-				// Check whether there are enough notes of density 1 to contain a motif of 
-				// n notes
+				// Check whether there are enough notes of density 1 to contain a motif of n notes
 				boolean enoughNotes = true;
 				for (int i = 0; i < n; i++) {
-					if (getNoteDensity().get(i) > 1) {
+					if (noteDensities.get(i) > 1) { // in 2020
+//					if (getNoteDensity().get(i) > 1) { // in 2020	
 						enoughNotes = false;
+						System.out.println("not enough notes of density 1 for motif");
 						break;
 					}
 				}
 				// If so: check whether a motif is found (i.e., whether configurations does
 				// not contain only -1s)
 				if (enoughNotes) {
-					List<List<Integer>> ve = getImitativeVoiceEntries(numVoices, n); 
+					List<List<Integer>> ve = 
+						getImitativeVoiceEntries(btp, durationLabels, bnp, numVoices, n); // in 2020
 //					List<Integer> configurations = ve.get(0);
 //					if ((ToolBox.sumListInteger(configurations) != -configurations.size())) {
 //						return ve;
 //					}
 					if (ve != null) {
+						System.out.println("motif found");
 						System.out.println("IMITATIVE MANNE.");
 						return ve;
 					}
 					else {
 //						System.out.println("IMITATIVE FAILED AT " + pieceName);
+						System.out.println("no motif found");
 						System.out.println("NON-IMITATIVE MANNE.");
-						return getNonImitativeVoiceEntries(numVoices, n);
+						return getNonImitativeVoiceEntries(btp, durationLabels, bnp, numVoices, n); // in  2020
 					}
 				}
 				else {
 					System.out.println("NON-IMITATIVE MANNE.");
-					return getNonImitativeVoiceEntries(numVoices, n);
+					return getNonImitativeVoiceEntries(btp, durationLabels, bnp, numVoices, n); // in 2020
 				}
 			}
 			// If the voices do not enter successively: the piece is non-imitative
 			else {
 				System.out.println("NON-IMITATIVE MANNE.");
-				return getNonImitativeVoiceEntries(numVoices, n);
+				return getNonImitativeVoiceEntries(btp, durationLabels, bnp, numVoices, n); // in 2020
 			}
 		}
 		// If the piece starts with a fully-textured chord // TODO account for unisons
@@ -5442,7 +5852,7 @@ public class Transcription implements Serializable {
 	 * Quantises the duration to the next multiple of the given granularity fraction.
 	 * 
 	 * @param curr
-	 * @param multiplier
+	 * @param granularity
 	 * 
 	 * @return  
 	 */
@@ -5463,29 +5873,35 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Finds the first neighbour chord that does not contain a unison. 
+	 * Finds the first neighbour chord (as returned by getChordInfo()) that does not contain a 
+	 * unison. 
 	 * 
-	 * @param lowestNoteIndex The index of the lowest note of the current chord
 	 * @param btp
+	 * @param durationLabels
 	 * @param bnp
 	 * @param direction +1 if looking for the right (next) neighbour chord; -1 
 	 *        if looking for the left (previous) one
-	 *  
+	 * @param lowestNoteIndex The index of the lowest note of the current chord
 	 * @return
 	 */
-	// TESTED
-	List<List<Integer>> getNonUnisonNeighbourChord(int lowestIndCurr, Integer[][] btp,
-		Integer[][] bnp, int direction) {
+	// TESTED (for both tablature- and non-tablature case)
+	List<List<Integer>> getNonUnisonNeighbourChord(Integer[][] btp, List<List<Double>> 
+		durationLabels, Integer[][] bnp, int direction, int lowestIndCurr) {
+		
+		verifyCase(btp, bnp);
 
 		if (direction == -1) {
 			// Find the first previous chord without a unison
 			List<List<Integer>> prevChord = null;
 			// Only if the chord at lowestIndCurr is not the first chord  
 			if (lowestIndCurr != 0) {
-				int lowestIndPrev = 
-					lowestIndCurr - bnp[lowestIndCurr-1][CHORD_SIZE_AS_NUM_ONSETS];
+				int sizePrev = (btp != null) ? btp[lowestIndCurr-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+					bnp[lowestIndCurr-1][CHORD_SIZE_AS_NUM_ONSETS];
+//				int lowestIndPrev = 
+//					lowestIndCurr - bnp[lowestIndCurr-1][CHORD_SIZE_AS_NUM_ONSETS];
+				int lowestIndPrev = lowestIndCurr - sizePrev;
 				for (int i = lowestIndPrev; i >= 0 ; i--) {
-					prevChord = getChordInfo(lowestIndPrev, null, bnp);
+					prevChord = getChordInfo(btp, durationLabels, bnp, lowestIndPrev);
 					boolean unisonFound = false;
 					// Compare pitches
 					outer: for (int j = 0; j < prevChord.size(); j++) {
@@ -5494,8 +5910,12 @@ public class Transcription implements Serializable {
 								// Unison found? Determine chord before previous and break 
 								if (prevChord.get(k).get(0) == prevChord.get(j).get(0)) {
 									unisonFound = true;
-									lowestIndPrev = lowestIndPrev - 
+									int sizeBeforePrev = 
+										(btp != null) ? btp[lowestIndPrev-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
 										bnp[lowestIndPrev-1][CHORD_SIZE_AS_NUM_ONSETS];
+//									lowestIndPrev = lowestIndPrev - 
+//										bnp[lowestIndPrev-1][CHORD_SIZE_AS_NUM_ONSETS];
+									lowestIndPrev = lowestIndPrev - sizeBeforePrev;
 									i = lowestIndPrev + 1;
 									break outer;
 								}
@@ -5514,12 +5934,17 @@ public class Transcription implements Serializable {
 		// Find the first next chord without a unison
 		else {
 			List<List<Integer>> nextChord = null;
-			// Only if the chord at lowestIndCurr is not the last chord  
-			if (lowestIndCurr + bnp[lowestIndCurr][CHORD_SIZE_AS_NUM_ONSETS] != bnp.length) {
-				int lowestIndNext = 
-					lowestIndCurr + bnp[lowestIndCurr][CHORD_SIZE_AS_NUM_ONSETS];
-				for (int i = lowestIndNext; i < bnp.length; i++) {
-					nextChord = getChordInfo(lowestIndNext, null, bnp);
+			// Only if the chord at lowestIndCurr is not the last chord
+			int sizeCurr = (btp != null) ? btp[lowestIndCurr][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+				bnp[lowestIndCurr][CHORD_SIZE_AS_NUM_ONSETS];
+			if ((lowestIndCurr + sizeCurr) != ((btp != null) ? btp.length : bnp.length)) {
+//			if (lowestIndCurr + bnp[lowestIndCurr][CHORD_SIZE_AS_NUM_ONSETS] != bnp.length) {
+				int lowestIndNext = lowestIndCurr + sizeCurr;
+//				int lowestIndNext = 
+//					lowestIndCurr + bnp[lowestIndCurr][CHORD_SIZE_AS_NUM_ONSETS];
+				for (int i = lowestIndNext; i < ((btp != null) ? btp.length : bnp.length); i++) {
+//				for (int i = lowestIndNext; i < bnp.length; i++) {
+					nextChord = getChordInfo(btp, durationLabels, bnp, lowestIndNext);
 					boolean unisonFound = false;
 					// Compare pitches
 					outer: for (int j = 0; j < nextChord.size(); j++) {
@@ -5528,8 +5953,11 @@ public class Transcription implements Serializable {
 								// Unison found? Determine chord after next and break 
 								if (nextChord.get(k).get(0) == nextChord.get(j).get(0)) {
 									unisonFound = true;
-									lowestIndNext = 
-										lowestIndNext + bnp[lowestIndNext][CHORD_SIZE_AS_NUM_ONSETS];
+									int sizeNext = (btp != null) ? btp[lowestIndNext][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+										bnp[lowestIndNext][CHORD_SIZE_AS_NUM_ONSETS];
+									lowestIndNext = lowestIndNext + sizeNext;
+//									lowestIndNext = 
+//										lowestIndNext + bnp[lowestIndNext][CHORD_SIZE_AS_NUM_ONSETS];
 									i = lowestIndNext - 1;
 									break outer;
 								}
@@ -5545,8 +5973,8 @@ public class Transcription implements Serializable {
 			return nextChord;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Returns a list of lists, where each list represents a note in the chord and contains </br>
 	 * as element 0: the note's pitch </br>
@@ -5562,15 +5990,21 @@ public class Transcription implements Serializable {
 	 * @param bnp
 	 * @return
 	 */
-	// TESTED
-	List<List<Integer>> getChordInfo(int lowestNoteIndex, Integer[][] btp, Integer[][] bnp) {
-//		int lowestNoteIndex = indOfMotifNotesChords.get(j);
-		List<List<Integer>> noteInfo = new ArrayList<List<Integer>>(); 
+	// TESTED (for both tablature- and non-tablature case)
+	List<List<Integer>> getChordInfo(Integer[][] btp, List<List<Double>> durationLabels, 
+		Integer[][] bnp, int lowestNoteIndex) {
 		
-//		FeatureGenerator fg = new FeatureGenerator();
+		verifyCase(btp, bnp);
+
+		List<List<Integer>> noteInfo = new ArrayList<List<Integer>>(); 
+
 //		Rational currMotifNoteDur = headMotif.get(j);
-		int chordSize = bnp[lowestNoteIndex][CHORD_SIZE_AS_NUM_ONSETS];
-		// Add pitches of all notes in the chord
+		int chordSize = 
+			(btp != null) ? btp[lowestNoteIndex][Tablature.CHORD_SIZE_AS_NUM_ONSETS] : 
+			bnp[lowestNoteIndex][CHORD_SIZE_AS_NUM_ONSETS];
+		// Add pitches of all notes in the chord. NB: one-line initialisation of curr (using 
+		// Arrays.asList()) is not possible, as this gives an UnsupportedOperationException 
+		// downstream when adding to noteInfo
 		for (int i = lowestNoteIndex; i < lowestNoteIndex + chordSize; i++) {
 //			int pitch = bnp[i][PITCH];
 //			int isDur = 0;
@@ -5578,19 +6012,26 @@ public class Transcription implements Serializable {
 //			if (currNoteDur.equals(currMotifNoteDur)) {
 //				isDur = 1;
 //			}
-//			noteInfo.add(Arrays.asList(new Integer[]{bnp[i][PITCH],	bnp[i][DURATION_NUMER], 
-//				bnp[i][DURATION_DENOM]}));
-			List<Integer> curr = new ArrayList<Integer>();
-			curr.add(bnp[i][PITCH]); 
-			curr.add(bnp[i][DUR_NUMER]);
-			curr.add(bnp[i][DUR_DENOM]);
-			noteInfo.add(curr);
+			if (btp != null) {
+				Rational dur = DataConverter.convertIntoDuration(durationLabels.get(i))[0];
+				List<Integer> curr = new ArrayList<Integer>();
+				curr.add(btp[i][Tablature.PITCH]);
+				curr.add(dur.getNumer());
+				curr.add(dur.getDenom());
+				noteInfo.add(curr);
+			}
+			if (bnp != null) {
+				List<Integer> curr = new ArrayList<Integer>();
+				curr.add(bnp[i][PITCH]);
+				curr.add(bnp[i][DUR_NUMER]);
+				curr.add(bnp[i][DUR_DENOM]);
+				noteInfo.add(curr);			
+			}
 		}
 		// Add pitches of any sustained previous notes
-		for (int indSus : getIndicesOfSustainedPreviousNotes(null, null, bnp, lowestNoteIndex)) {
-//			noteInfo.add(Arrays.asList(new Integer[]{bnp[indSus][PITCH], null, null}));
+		for (int indSus : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, lowestNoteIndex)) {
 			List<Integer> curr = new ArrayList<Integer>();
-			curr.add(bnp[indSus][PITCH]); 
+			curr.add((btp != null) ? btp[indSus][Tablature.PITCH] : bnp[indSus][PITCH]);
 			curr.add(null);
 			curr.add(null);
 			noteInfo.add(curr);
@@ -5721,7 +6162,7 @@ public class Transcription implements Serializable {
 	 * 
 	 * @return
 	 */
-	// TESTED (for both the tablature and the non-tablature case)
+	// TESTED (for both tablature and non-tablature case)
 	public List<Rational> getAllOnsetTimes() {
 		List<Rational> onsetTimes = new ArrayList<Rational>();
 
@@ -5879,6 +6320,156 @@ public class Transcription implements Serializable {
 		return notesPerVoice;
 	}
 
+	/**
+	 * Returns, for each voice, a list containing a Rational[], each element of which represents
+	 * a note and contains
+	 * <ul>
+	 * <li>as element 0: its pitch (with the MIDI number as the numerator and 1 as the denominator)</li>
+	 * <li>as element 1: its onset</li>
+	 * <li>as element 2: its duration</li>
+	 * <li>as element 3: its metric position</li>
+	 * </ul>
+	 * 
+	 * @return
+	 */
+	// TESTED (non-tab only, for one voice)
+	public List<List<Rational[]>> listNotesPerVoice() {
+		List<List<Rational[]>> notesPerVoice = new ArrayList<>();
+		NotationSystem nSys = getPiece().getScore();
+		// For each voice i
+		for (int i = 0; i < nSys.size(); i ++) {
+			NotationVoice nv = nSys.get(i).get(0);
+			List<Rational[]> notes = new ArrayList<>();
+			for (NotationChord nc : nv) {
+				for (Note n : nc) {
+					notes.add(new Rational[]{
+						new Rational(n.getMidiPitch(), 1), 
+						n.getMetricTime(),
+						n.getMetricDuration(), 
+						Tablature.getMetricPosition(n.getMetricTime(), getMeterInfo())[1]});
+				}
+			}
+			notesPerVoice.add(notes);
+		}
+		return notesPerVoice;
+	}
+
+
+	/**
+	 * Gets, for each note at onset time t in the Transcription, a list containing v elements,
+	 * each of which corresponds to a voice and contains the last n notes (pitch, onset, 
+	 * duration, metric position) up to t with an onset time < t in that voice. If 
+	 * the final note in the list has an offset time > t, the element is set to <code>null</code>.
+	 * 
+	 * @param n
+	 * @return
+	 */
+	// TESTED (for non-tablature case only) TODO
+	public List<List<List<Rational[]>>> getLastNotesInVoices(int n) {
+		List<List<List<Rational[]>>> res = new ArrayList<>();
+		List<Rational> allOnsetTimes = getAllOnsetTimes();
+		// Remove duplicates
+		List<Rational> dedup = new ArrayList<>();
+		for (Rational r : allOnsetTimes) {
+			if (!dedup.contains(r)) {
+				dedup.add(r);
+			}
+		}
+		allOnsetTimes = dedup;
+		
+		// For each onset time: get the last n notes in each voice
+		List<List<Rational[]>> notesPerVoice = listNotesPerVoice();
+		for (int i = 0; i < allOnsetTimes.size(); i++) {
+			Rational r = allOnsetTimes.get(i);
+			int numNotesChord = getNumberOfNewNotesPerChord().get(i); 
+			List<List<Rational[]>> lastNotesPerVoiceCurrOnset = new ArrayList<>();
+			for (int v = 0; v < getNumberOfVoices(); v++) {
+				List<Rational[]> notesCurrVoice = notesPerVoice.get(v);
+				List<Rational[]> lastNotesCurrVoice = new ArrayList<>();
+				for (int j = 0; j < notesCurrVoice.size(); j++) {
+					Rational[] note = notesCurrVoice.get(j);
+					Rational onset = note[1];
+					if (onset.isLess(r)) {
+						lastNotesCurrVoice.add(note);
+					}
+					else {
+						break;
+					}
+				}
+				// Get last n notes (skip first onset, where lastNotesCurrVoice is empty)
+				if (i != 0) {
+					int size = lastNotesCurrVoice.size();
+					// Only if there are notes (else lastNotesCurrVoice remains empty) 
+					if (size != 0) {
+						// See https://stackoverflow.com/questions/14605999/getting-the-last-three-elements-from-a-list-arraylist
+						List<Rational[]> lastNNotes = lastNotesCurrVoice.subList(Math.max(size - n, 0), size);
+						// If last note in currVoice is sustained: set to null
+						Rational[] lastNote = lastNNotes.get(lastNNotes.size()-1);
+						Rational offsetLastNote = lastNote[1].add(lastNote[2]);
+						if (offsetLastNote.isGreater(r)) {
+							lastNNotes = null;
+						}
+						lastNotesCurrVoice = lastNNotes;
+					}
+				}
+				lastNotesPerVoiceCurrOnset.add(v, lastNotesCurrVoice);
+			}
+			for (int j = 0; j < numNotesChord; j++) { 
+				res.add(lastNotesPerVoiceCurrOnset);
+			}
+		}
+		return res;
+	}
+
+
+	/**
+	 * Convert input into a csv String, where each row is a 3D list representing a note (a list),
+	 * which consists of voices (each a list or null), which consist of notes (each a list).
+	 * 
+	 * @param lastNNotesPerVoicePerNote
+	 * @return
+	 */
+	public static String getLastNotesInVoicesString(List<List<List<Rational[]>>> 
+		lastNNotesPerVoicePerNote, String meter) {
+		StringBuffer testData = new StringBuffer();
+		// For each note
+		for (int i = 0; i < lastNNotesPerVoicePerNote.size(); i++) {
+			testData.append("[");
+			List<List<Rational[]>> allSeqsCurrNote = lastNNotesPerVoicePerNote.get(i);
+			// For each voice
+			for (int j = 0; j < allSeqsCurrNote.size(); j++) {
+				if (allSeqsCurrNote.get(j) == null) {
+					testData.append("None");
+				}
+				else {
+					testData.append("[");
+					List<Rational[]> seqCurrNote = allSeqsCurrNote.get(j);
+					// For each note in the voice
+					for (int k = 0; k < seqCurrNote.size(); k++) {
+						Rational[] note = seqCurrNote.get(k);
+						testData.append("[" + 
+							note[0].getNumer() + "," + // pitch
+							note[1] + "," + // onset
+							note[2] + "," + // dur
+							note[3] + "," + // metpos
+							meter // meter
+							);
+						testData.append("]");
+						if (k < seqCurrNote.size()-1) {
+							testData.append(",");
+						}
+					}
+					testData.append("]");
+				}
+				if (j < allSeqsCurrNote.size()-1) {
+					testData.append(",");
+				}
+			}
+			testData.append("]" + "\r\n");
+		}
+		return testData.toString();
+	}
+
 
 	/**
 	 * Gets the pitches in the chord at the given index. Element 0 of the List represents the lowest note's pitch,
@@ -5924,10 +6515,10 @@ public class Transcription implements Serializable {
 	// TESTED
 	public static List<Integer> getPitchesInChord(Integer[][] bnp, int lowestNoteIndex) {
 		List<Integer> pitchesInChord = new ArrayList<Integer>();	
-		int chordSize = bnp[lowestNoteIndex][Transcription.CHORD_SIZE_AS_NUM_ONSETS];
+		int chordSize = bnp[lowestNoteIndex][CHORD_SIZE_AS_NUM_ONSETS];
 		for (int i = lowestNoteIndex; i < lowestNoteIndex + chordSize; i++) {
 			Integer[] currentBasicNoteProperties = bnp[i];
-			int currentPitch = currentBasicNoteProperties[Transcription.PITCH];
+			int currentPitch = currentBasicNoteProperties[PITCH];
 			pitchesInChord.add(currentPitch);
 		}
 		return pitchesInChord;
@@ -6269,7 +6860,7 @@ public class Transcription implements Serializable {
 	 *  
 	 * @return
 	 */
-	// TESTED (for both tablature and non-tablature case) 
+	// TESTED (for both tablature- and non-tablature case) 
 	Integer[][] getLowestAndHighestPitchPerVoice() {
 		Integer[][] lowestAndHighest = new Integer[MAXIMUM_NUMBER_OF_VOICES][2];
 
@@ -6423,7 +7014,6 @@ public class Transcription implements Serializable {
 				}
 				// Determine currentMirrorPoint; reset mirrorPoint if necessary
 				currentMirrorPoint = onsetTimeLastNote.add(distanceFromOnsetToNextBar).add(durationSucceedingBars);
-				System.out.println(currentMirrorPoint);
 				if (currentMirrorPoint.isGreater(mirrorPoint)) {
 					mirrorPoint = currentMirrorPoint;
 				}
@@ -6436,7 +7026,7 @@ public class Transcription implements Serializable {
 	/**
 	 * Gets the number of active voices in the Transcription.
 	 */
-	// TESTED (for both tablature and non-tablature case)
+	// TESTED (for both tablature- and non-tablature case)
 	public int getNumberOfVoices() {
 		NotationSystem system = piece.getScore();
 		int numberOfVoices = system.size();
@@ -6504,7 +7094,7 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Creates a duration label encoding the given durational value (in thirtysecond notes).
+	 * Creates a duration label encoding the given durational value (in Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()).
 	 * 
 	 * NB: Tablature case only.
 	 *  
@@ -6517,7 +7107,9 @@ public class Transcription implements Serializable {
 		for (int i = 0; i < DURATION_LABEL_SIZE; i++) {
 			durationLabel.add(0.0);
 		}
-		durationLabel.set((duration - 1), 1.0);
+		int posInLabel = (duration - 1) / 3;
+//		durationLabel.set((duration - 1), 1.0);
+		durationLabel.set(posInLabel, 1.0); // trp dur
 		return durationLabel;
 	}
 
@@ -6590,7 +7182,7 @@ public class Transcription implements Serializable {
 	 * @param durationLabels
 	 * @param numberOfVoices
 	 */
-	// TESTED for both tablature and non-tablature case
+	// TESTED (for both tablature- and non-tablature case)
 	public static Piece createPiece(Integer[][] btp, Integer[][] bnp, List<List<Double>> voiceLabels, 
 		List<List<Double>> durationLabels, int numberOfVoices, MetricalTimeLine mtl,
 		SortedContainer<Marker> keySigs) {
@@ -6694,7 +7286,7 @@ public class Transcription implements Serializable {
 	 * @param voiceNumber 
 	 * @param metricTime
 	 */
-  // TESTED (for both the tablature and the non-tablature case)
+  // TESTED (for both tablature- and non-tablature case)
 	public void addNote(Note note, int voiceNumber, Rational metricTime) {
 	  NotationSystem system = piece.getScore();
 	  NotationStaff staff = system.get(voiceNumber);
@@ -7072,7 +7664,7 @@ public class Transcription implements Serializable {
 	 * @param directionIsLeft
 	 * @return
 	 */
-	// TESTED for both fwd and bwd model
+	// TESTED (for both fwd and bwd model)
 	public static Note getAdjacentNoteInVoice(NotationVoice voice, Note note, 
 		/*Direction direction*/ boolean directionIsLeft) {
 		Note adjacentNote = null;
@@ -7156,8 +7748,8 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED (for both tablature- and non-tablature case) 
-	public static List<Integer> getIndicesOfSustainedPreviousNotes(Integer[][] btp, List<List<Double>> durationLabels,
-		Integer[][] bnp, int noteIndex) {
+	public static List<Integer> getIndicesOfSustainedPreviousNotes(Integer[][] btp, 
+		List<List<Double>> durationLabels, Integer[][] bnp, int noteIndex) {
 
 		verifyCase(btp, bnp);
 		List<Integer> indicesOfSustainedPreviousNotes = new ArrayList<Integer>();
@@ -7169,7 +7761,7 @@ public class Transcription implements Serializable {
 		if (btp != null) {
 			onsetTimeCurrentNote = new Rational(btp[noteIndex][Tablature.ONSET_TIME],
 				Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-			lowestNoteIndex =	noteIndex - btp[noteIndex][Tablature.NOTE_SEQ_NUM];
+			lowestNoteIndex = noteIndex - btp[noteIndex][Tablature.NOTE_SEQ_NUM];
 		}
 		// b. In the non-tablature case
 		else if (bnp != null) {
@@ -7269,7 +7861,7 @@ public class Transcription implements Serializable {
 	 * @param lowestNoteIndex
 	 * @return
 	 */
-	// TESTED for both tablature- and non-tablature case
+	// TESTED (for both tablature- and non-tablature case)
 	public static List<Integer> getVoicesOfSustainedPreviousNotesInChord(Integer[][] btp, List<List<Double>> durationLabels,
 		List<Integer[]> voicesCoDNotes, Integer[][] bnp, List<List<Double>> allVoiceLabels, int lowestNoteIndex) {
 		List<Integer> voicesOfSustainedPreviousNotes = new ArrayList<Integer>();
@@ -7543,7 +8135,7 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	public Integer[] getVoiceCrossingInformation(Tablature tablature) {
-		String voiceCrossingInformation = "";
+		String voiceCrossingInformation = "voice crossing information for " + getPieceName() + "\r\n";
 		int totalTypeOne = 0;
 		int totalTypeTwo = 0;
 
@@ -7699,7 +8291,7 @@ public class Transcription implements Serializable {
 		voiceCrossingInformation += "total       : " + (totalTypeOne+totalTypeTwo) + "\r\n";
 		voiceCrossingInformation += "times each voice is involved" + "\r\n";
 		voiceCrossingInformation += Arrays.toString(timesInvolved);
-//		System.out.println(voiceCrossingInformation);
+		System.out.println(voiceCrossingInformation);
 		// res contains numNotes + totalTypeOne + totalTypeTwo + all + involved (per voice) + 
 		// voice size (per voice)
 		Integer[] res = new Integer[4 + timesInvolved.length + getNumberOfVoices()];
@@ -7718,9 +8310,27 @@ public class Transcription implements Serializable {
 				numNotesPerVoice.add(notesPerVoice.get(i).size());
 			}
 			else {
-				// Only voice 4 is allowed to be empty
-				if (i != Transcription.MAXIMUM_NUMBER_OF_VOICES-1) {
-					throw new RuntimeException("Voice " + i + " does not contain any notes.");
+				int numVoices = getNumberOfVoices();
+				if (numVoices == 4) {
+					// Only voice 4 is allowed to be empty
+					if (i != Transcription.MAXIMUM_NUMBER_OF_VOICES-1) {
+						throw new RuntimeException("Voice " + i + " does not contain any notes.");
+					}
+				}
+				if (numVoices == 3) {
+					// Only voice 3 and 4 are allowed to be empty
+					if (i != Transcription.MAXIMUM_NUMBER_OF_VOICES-1 &&
+						i != Transcription.MAXIMUM_NUMBER_OF_VOICES-2) {
+						throw new RuntimeException("Voice " + i + " does not contain any notes.");
+					}
+				}
+				if (numVoices == 2) {
+					// Only voice 2, 3 and 4 are allowed to be empty
+					if (i != Transcription.MAXIMUM_NUMBER_OF_VOICES-1 &&
+						i != Transcription.MAXIMUM_NUMBER_OF_VOICES-2 &&
+						i != Transcription.MAXIMUM_NUMBER_OF_VOICES-3) {
+						throw new RuntimeException("Voice " + i + " does not contain any notes.");
+					}
 				}
 			}
 		}

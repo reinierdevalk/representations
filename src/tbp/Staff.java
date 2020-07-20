@@ -144,14 +144,16 @@ public class Staff {
 	 */ 
 	public void addRhythmSymbol(RhythmSymbol aRhythmSymbol, int segment, boolean showBeam) { 
 		
-		final String rhythmDot = ".";
+//		final String rhythmDot = ".";
 		final String beam = "-";
 		String symbol = aRhythmSymbol.getSymbol();
 		staffData[RHYTHM_LINE][segment] = symbol; 
 		// Dotted RS? Add dot in next segment
-		if (!aRhythmSymbol.getEncoding().startsWith(RhythmSymbol.triplet.getEncoding()) && aRhythmSymbol.getDuration() % 3 == 0) {
+		if (aRhythmSymbol.getEncoding().contains(RhythmSymbol.rhythmDot.getEncoding())) {
+//		if (!aRhythmSymbol.getEncoding().startsWith(RhythmSymbol.tripletIndicator) && 
+//			aRhythmSymbol.getDuration() % 3 == 0) {
 //		if (aRhythmSymbol.getDuration() % 3 == 0) {
-			staffData[RHYTHM_LINE][segment + 1] = rhythmDot; 
+			staffData[RHYTHM_LINE][segment + 1] = RhythmSymbol.rhythmDot.getSymbol(); //rhythmDot; 
 		}
 		// Beamed RS? Add beam in next segment
 		if (aRhythmSymbol.getEncoding().endsWith(beam) && showBeam == true) {
