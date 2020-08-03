@@ -66,7 +66,7 @@ public class MEIExport {
 		Arrays.asList(new String[]{"pname", "oct", "accid", "tie", "dur", "dots", "ID", "metPos"});
 	private static final List<String> INTS = Arrays.asList(new String[]{
 		"ind", "indTab", "bar", "onsetNum", "onsetDen", "metPosNum", "metPosDen", "dur", "dots", 
-		"tripletOpen", "tripletMid", "tripletClose"});
+		"tripletOpen", "tripletMid", "tripletClose", "beamOpen", "beamClose"});
 	private static final String TAB = "    ";
 	private static final String INDENT = TAB.repeat(6);
 	
@@ -721,7 +721,6 @@ public class MEIExport {
 		for (int j = 0; j < numVoices; j++) {
 			List<String> empty = new ArrayList<>();
 			empty.add("voice=" + j + "\r\n");
-//			unbeamedBarsPerVoice.add(new ArrayList<>());
 			unbeamedBarsPerVoice.add(empty);
 		}
 		// For each bar
@@ -744,13 +743,12 @@ public class MEIExport {
 				barListAsStr += 
 					"meter='" + currMeter.getNumer() + "/" + currMeter.getDenom() + "'" + "\r\n";
 				for (int k = 0; k < barList.size(); k++) {
-					barListAsStr += barList.get(k);
-					// Add line break after all but final note
-					if (!(i == dataStr.size()-1 && j == currBarInt.size()-1 && 
-						k == barList.size()-1)) {
-//					if (k < barList.size()-1) {
-						barListAsStr += "\r\n";
-					}
+					barListAsStr += barList.get(k) + "\r\n";
+//					// Add line break after all but final note
+//					if (!(i == dataStr.size()-1 && j == currBarInt.size()-1 && 
+//						k == barList.size()-1)) {
+//						barListAsStr += "\r\n";
+//					}
 				}
 				unbeamedBarsPerVoice.get(j).add(barListAsStr);
 			}
@@ -762,116 +760,68 @@ public class MEIExport {
 				strb.append(s);
 			}
 		}
+		// NB: notes.txt ends with a line break
 		ToolBox.storeTextFile(strb.toString(), new File("C:/Users/Reinier/Desktop/beaming/notes.txt"));
-		
-		// TODO Give unbeamedBarsPerVoice to Python script and add beaming; save as beamed.txt
-		// or better: read from console
-		// beamed is the exact String in notes-beamed.txt
-		String beamed = ToolBox.readTextFile(new File("C:/Users/Reinier/Desktop/beaming/notes-beamed.txt"));
-		
-//		// Organise beamed as a List (per voice, per bar)
-		List<List<String>> beamedOrg = new ArrayList<>();
-//		for (String voice : beamed.split("end of voice")) {
-//			
-//			if (voice.endsWith("\r\n")) {
-//				voice = voice.substring(0, voice.lastIndexOf("\r\n"));
-//			}
-//			beamedOrg.add(Arrays.asList(voice.split("end of bar")));
-//		}
-		
+
+		// TODO Give notes.txt to Python script and add beaming; save as notes-beamed.txt
+		// or read from console
+
 		// Re-organise the information (i) per bar, (ii) per voice so that it is the same
 		// again as datastr and dataInt
+		// NB: notes-beamed.txt does not end with a line break, but ToolBox.readTextFile() adds
+		// one to the end of it
+		String beamed = ToolBox.readTextFile(new File("C:/Users/Reinier/Desktop/beaming/notes-beamed.txt"));
+		List<List<List<String>>> beamedReorganised = new ArrayList<>();
 		// Get each voice as a single string (a list)
-		beamed = beamed.substring(0, beamed.lastIndexOf("\r\n"));
 		List<String> voices = Arrays.asList(beamed.split("end of voice" + "\r\n"));
 		// Get, for each voice, each bar as a single string (a list)
 		List<List<String>> barsPerVoice = new ArrayList<>();
 		for (String currVoice : voices) {
-			currVoice = currVoice.substring(0, currVoice.lastIndexOf("\r\n"));
 			barsPerVoice.add(Arrays.asList(currVoice.split("end of bar" + "\r\n")));
 		}
-
-		List<List<List<String>>> beamedOrg2 = new ArrayList<>();
 		// Make, per bar, the empty voices
 		int numBars = barsPerVoice.get(0).size();
 		for (int i = 0; i < numBars; i++) {
-//			List<List<String>> empty = new ArrayList<>();
-			beamedOrg2.add(new ArrayList<>());
+			beamedReorganised.add(new ArrayList<>());
 		}
-		// Fill the voices
+		// Fill, per bar, the voices
 		for (int bar = 0; bar < numBars; bar++) {
-			System.out.println("bar=" + bar);
 			for (int voice = 0; voice < numVoices; voice++) {
-				System.out.println("voice=" + voice);
-				// Split notes for the current bar and add
 				String notesCurrBarCurrVoice = barsPerVoice.get(voice).get(bar);
-				System.out.println("-->"+notesCurrBarCurrVoice+"<--");
-				System.out.println(notesCurrBarCurrVoice.startsWith("" + "\r\n"));
-				System.out.println("...");
-				notesCurrBarCurrVoice = 
-					notesCurrBarCurrVoice.substring(0, notesCurrBarCurrVoice.lastIndexOf("\r\n"));
+//				// Remove final line break
+//				notesCurrBarCurrVoice = 
+//					notesCurrBarCurrVoice.substring(0, notesCurrBarCurrVoice.lastIndexOf("\r\n"));
 				List<String> notesAsOneString = 
 					Arrays.asList(notesCurrBarCurrVoice.split("\r\n"));
-				System.out.println("notesAsOneString.size()=" + notesAsOneString.size());
-				for (String s : notesAsOneString) {
-					System.out.println("-->"+s+"<--");
-//					System.out.println(s.isEmpty());
+				beamedReorganised.get(bar).add(notesAsOneString);
+			}
+		}
+		
+		// Align beamedReorganised and dataInt and set beamOpen and beamClose
+		for (int bar = 0; bar < beamedReorganised.size(); bar++) {
+			List<List<String>> voicesCurrBar = beamedReorganised.get(bar);
+			for (int voice = 0; voice < voicesCurrBar.size(); voice++) {
+				List<String> notesCurrBarCurrVoice = voicesCurrBar.get(voice);
+				for (int note = 0; note < notesCurrBarCurrVoice.size(); note++) {
+					String noteCurrBarCurrVoice = notesCurrBarCurrVoice.get(note);
+		
+					if (noteCurrBarCurrVoice.startsWith("<beam>")) {
+						dataInt.get(bar).get(voice).get(note)[INTS.indexOf("beamOpen")] = 1;
+					}
+					if (noteCurrBarCurrVoice.startsWith("</beam>")) {
+						dataInt.get(bar).get(voice).get(note)[INTS.indexOf("beamClose")] = 1;
+					}
 				}
-				beamedOrg2.get(bar).add(notesAsOneString);
 			}
 		}
-		
-		System.out.println(beamedOrg2.get(61).get(3));
-		
-		System.out.println(beamedOrg2.size()); // bars
-		System.out.println(beamedOrg2.get(0).size()); // voices
-		System.out.println(beamedOrg2.get(1).size()); // voices
-		System.out.println(beamedOrg2.get(2).size()); // voices
-		System.out.println(beamedOrg2.get(3).size()); // voices
-		System.exit(0);
-
-		
-		beamed = beamed.substring(0, beamed.lastIndexOf("\r\n"));
-//		List<String> voicesAsOneString = Arrays.asList(beamed.split("end of voice"));
-//		int numBars = voicesAsOneString.get(0)
-		for (String currVoice : voices) {
-			currVoice = currVoice.substring(0, currVoice.lastIndexOf("\r\n"));
-			List<String> barsAsOneString = Arrays.asList(currVoice.split("end of bar"));
-			List<List<String>> barsCurrVoice = new ArrayList<>();
-			for (String currBar : barsAsOneString) {
-				currBar = currBar.substring(0, currBar.lastIndexOf("\r\n"));
-				List<String> notesAsOneString = Arrays.asList(currBar.split("\r\n"));
-				// Add list of notes representing bar
-				barsCurrVoice.add(notesAsOneString);
-//				for (String s : notesBarsVoice) {
-//					System.out.println("-->" + s + "<--");
-//				}
-			}
-			beamedOrg2.add(barsCurrVoice);
-			
-//			if (voice.endsWith("\r\n")) {
-//				voice = voice.substring(0, voice.lastIndexOf("\r\n"));
-//			}
-//			beamedOrg.add(Arrays.asList(voice.split("end of bar")));
-		}
-		System.out.println(beamedOrg2.size());
-		System.out.println(beamedOrg2.get(0).size());
-		System.out.println(beamedOrg2.get(1).size());
-		System.out.println(beamedOrg2.get(2).size());
-		System.out.println(beamedOrg2.get(3).size());		
-//		System.out.println("beamedOrg");
-//		for (List<String> l : beamedOrg) {
-//			System.out.println("----------------------" + l.size());
-//			System.out.println(l);
-////			for (String s : l) {
-////				System.out.println("s =" + s);
-////			}
-//		}
-		System.out.println(dataStr.size());
-		System.out.println(dataStr.get(0).size());
-		System.out.println(dataStr.get(1).size());
-		System.out.println(dataStr.get(2).size());
-		System.out.println(dataStr.get(3).size());
+		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(0)));
+		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(1)));
+		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(2)));
+		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(3)));
+		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(4)));
+		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(5)));
+		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(6)));
+		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(7)));
 		System.exit(0);
 		
 		// For each bar
@@ -951,12 +901,12 @@ public class MEIExport {
 					sb.append(barListAsStr + "\r\n");
 				}
 				// Append (beamed) notes in the bar
-				else {
-					String currBar = beamedOrg.get(j).get(i);
-					for (String note : currBar.trim().split("\r\n")) {
-						sb.append(INDENT + TAB.repeat(3) + note + "\r\n");
-					}
-				}
+//				else {
+//					String currBar = beamedOrg.get(j).get(i);
+//					for (String note : currBar.trim().split("\r\n")) {
+//						sb.append(INDENT + TAB.repeat(3) + note + "\r\n");
+//					}
+//				}
 
 				sb.append(INDENT + TAB.repeat(2) + "</layer>" + "\r\n");
 				// Non-grand staff case: add staff
