@@ -1,6 +1,7 @@
 package exports;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +27,7 @@ public class MEIExport {
 	
 	public static String rootDir = "F:/research/"; // TODO also defined in UI; should be in one place only
 	public static String MEITemplatePath = rootDir + "data/data/" + "templates/"; // TODO suffix "data/data/" is defined inside Runner.setPathsToCodeAndData() 
+	public static String scriptPathPythonMEI = rootDir + "software/code/" + "eclipse/formats-representations/py/";
 	
 	private static List<Integer> mpcFlats = 
 		Arrays.asList(new Integer[]{10, 3, 8, 1, 6, 11, 4}); // Bb, Eb, Ab, Db, Gb, Cb, Fb,
@@ -753,24 +755,32 @@ public class MEIExport {
 				unbeamedBarsPerVoice.get(j).add(barListAsStr);
 			}
 		}
-
+		// Store unbeamedBarsPerVoice
+		// NB: the stored file ends with a line break
 		StringBuilder strb = new StringBuilder();
 		for (List<String> l : unbeamedBarsPerVoice) {
 			for (String s : l) {
 				strb.append(s);
 			}
 		}
-		// NB: notes.txt ends with a line break
-		ToolBox.storeTextFile(strb.toString(), new File("C:/Users/Reinier/Desktop/beaming/notes.txt"));
-
-		// TODO Give notes.txt to Python script and add beaming; save as notes-beamed.txt
-		// or read from console
+		String filePath = scriptPathPythonMEI;
+		File notesFile = new File(filePath + "notes.txt");
+		ToolBox.storeTextFile(strb.toString(), notesFile);
+		
+		// Call the beaming script and get output; delete
+		// NB: the output of the beaming script does not end with a line break, but 
+		// PythonInterface.getScriptOutput() adds one to the end of it
+		String beamed = "";
+		try {
+			beamed = PythonInterface.getScriptOutput(new String[]{
+				"python", filePath + "beam.py", filePath + "notes.txt"});
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		notesFile.delete();
 
 		// Re-organise the information (i) per bar, (ii) per voice so that it is the same
 		// again as datastr and dataInt
-		// NB: notes-beamed.txt does not end with a line break, but ToolBox.readTextFile() adds
-		// one to the end of it
-		String beamed = ToolBox.readTextFile(new File("C:/Users/Reinier/Desktop/beaming/notes-beamed.txt"));
 		List<List<List<String>>> beamedReorganised = new ArrayList<>();
 		// Get each voice as a single string (a list)
 		List<String> voices = Arrays.asList(beamed.split("end of voice" + "\r\n"));
@@ -806,6 +816,7 @@ public class MEIExport {
 					String noteCurrBarCurrVoice = notesCurrBarCurrVoice.get(note);
 		
 					if (noteCurrBarCurrVoice.startsWith("<beam>")) {
+						System.out.println(bar + " " + voice + " " + note);
 						dataInt.get(bar).get(voice).get(note)[INTS.indexOf("beamOpen")] = 1;
 					}
 					if (noteCurrBarCurrVoice.startsWith("</beam>")) {
@@ -814,15 +825,15 @@ public class MEIExport {
 				}
 			}
 		}
-		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(0)));
-		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(1)));
-		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(2)));
-		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(3)));
-		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(4)));
-		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(5)));
-		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(6)));
-		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(7)));
-		System.exit(0);
+//		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(0)));
+//		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(1)));
+//		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(2)));
+//		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(3)));
+//		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(4)));
+//		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(5)));
+//		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(6)));
+//		System.out.println(Arrays.toString(dataInt.get(0).get(0).get(7)));
+		
 		
 		// For each bar
 		StringBuilder sb = new StringBuilder();
@@ -1013,6 +1024,7 @@ public class MEIExport {
 //				List<List<String>> perBeat = new ArrayList<>();
 				boolean chordActive = false;
 				boolean tupletActive = false;
+				boolean beamActive = false; 
 				// For each note
 				for (int k = 0; k < currBarCurrVoiceStr.size(); k++) {
 					String[] note = currBarCurrVoiceStr.get(k);
@@ -1068,6 +1080,11 @@ public class MEIExport {
 							chordActive = true;
 						}
 					}
+					// Check for any beams to be added before noteStr
+					if (noteInt[INTS.indexOf("beamOpen")] == 1) {
+						barList.add("<beam>");
+						beamActive = true;
+					}
 					
 					String noteStr = "";
 					// Add indent for any tuplet and/or chord
@@ -1075,6 +1092,9 @@ public class MEIExport {
 						noteStr += TAB;
 					}
 					if (chordActive) {
+						noteStr += TAB;
+					}
+					if (beamActive) {
 						noteStr += TAB;
 					}
 					noteStr = (note[STRINGS.indexOf("pname")] == null) ? noteStr + "<rest " :
@@ -1157,6 +1177,11 @@ public class MEIExport {
 					if (noteInt[INTS.indexOf("tripletClose")] == 1) {
 						barList.add("</tuplet>");
 						tupletActive = false;
+					}
+					// Check for any beamClose to be placed after noteStr
+					if (noteInt[INTS.indexOf("beamClose")] == 1) {
+						barList.add("</beam>");
+						beamActive = false;
 					}
 				}
 			}
