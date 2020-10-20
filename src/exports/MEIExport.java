@@ -75,17 +75,19 @@ public class MEIExport {
 	public static void main(String[] args) {
 		
 		String testTabFile = "4471_40_cum_sancto_spiritu";
-		testTabFile = "5263_12_in_exitu_israel_de_egipto_desprez-3";
+//		testTabFile = "5263_12_in_exitu_israel_de_egipto_desprez-3";
 //		testTabFile = "4465_33-34_memor_esto-2";
 //		testTabFile = "5255_04_stabat_mater_dolorosa_desprez-2";
 //		testTabFile = "5254_03_benedicta_es_coelorum_desprez-1";
 //		testTabFile = "5256_05_inviolata_integra_desprez-2";
 //		testTabFile = "5256_05_inviolata_integra_desprez-3";
+		testTabFile = "BSB-mus.ms._272-mille_regres";
 		
 		Tablature testTab = new Tablature(new File(
-			"F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/" +
-			testTabFile + ".tbp"), false);
-		exportTabMEIFile(testTab, "C:/Users/Reinier/Desktop/" + testTab.getPieceName() + "-tab");
+//			"F:/research/data/data/josquintab/tab/" + testTabFile + ".tbp"), false);
+			"F:/research/data/data/encodings/tab-int/4vv/" + testTabFile + ".tbp"), false);	
+		exportTabMEIFile(testTab, "C:/Users/Reinier/Desktop/" + testTab.getPieceName() + "-tab",
+			testTab.getEncoding().getTabSymbolSet());
 		System.exit(0);
 		
 		String path = "C:/Users/Reinier/Desktop/MEI/";
@@ -442,14 +444,14 @@ public class MEIExport {
 	 * @param tab
 	 * @param path
 	 */
-	public static void exportTabMEIFile(Tablature tab, String path) {
+	public static void exportTabMEIFile(Tablature tab, String path, TabSymbolSet tss) {
 
 		List<Integer[]> mi = tab.getMeterInfo();
 
 		String res = ToolBox.readTextFile(new File(MEITemplatePath + "template-MEI.xml"));
 		String notationtypeStr = "tab.lute.italian"; // TODO give as param to method
 		String tuningStr = "lute.renaissance.6"; // TODO give as param to method
-		TabSymbolSet tss = TabSymbolSet.FRENCH_TAB; // TODO give as param to method
+//		TabSymbolSet tss = TabSymbolSet.FRENCH_TAB; // TODO give as param to method
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 
 		// 1. Make meiHead

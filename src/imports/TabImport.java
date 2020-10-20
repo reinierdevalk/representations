@@ -136,7 +136,7 @@ public class TabImport {
 //trrr			"5255_04_stabat_mater_dolorosa_desprez-2",
 		
 			// Chansons
-//			"4400_45_ach_unfall_was",
+			"4400_45_ach_unfall_was",
 //			"4481_49_ach_unfal_wes_zeigst_du_mich",
 //			"4406_51_adieu_mes_amours",
 //			"4467_37_adieu_mes_amours",
@@ -163,6 +163,7 @@ public class TabImport {
 		String path = "C:/Users/Reinier/Desktop/tours/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/tab/";
 		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/";
+		path = "F:/research/data/data/josquintab/tab/";
 		
 		// From ASCII
 //		for (String s : pieces) {

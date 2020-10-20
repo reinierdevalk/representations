@@ -34,11 +34,10 @@ public class PythonInterface {
 			// Create runtime to execute external command
 			Runtime rt = Runtime.getRuntime();
 			Process pr = rt.exec(cmd);
-			
+
 			// Retrieve output from Python script
 			BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));
 			String line = "";
-			
 			while((line = bfr.readLine()) != null) {
 				outp += line + "\r\n";
 			}
