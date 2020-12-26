@@ -84,7 +84,6 @@ public class MEIExport {
 		testTabFile = "BSB-mus.ms._272-mille_regres";
 		
 		Tablature testTab = new Tablature(new File(
-//			"F:/research/data/data/josquintab/tab/" + testTabFile + ".tbp"), false);
 			"F:/research/data/data/encodings/tab-int/4vv/" + testTabFile + ".tbp"), false);	
 		exportTabMEIFile(testTab, "C:/Users/Reinier/Desktop/" + testTab.getPieceName() + "-tab",
 			testTab.getEncoding().getTabSymbolSet());

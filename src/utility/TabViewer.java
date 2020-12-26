@@ -268,7 +268,7 @@ public class TabViewer extends JFrame{
 		// TODO encodingFile is now hardcoded; make possible to select file from menu
 		if (encodingFile == null) {
 //			String prefix1 = Runner.encodingsPath;		
-			String prefix1 = "F:/research/data/encodings/tab-int/"; // TODO to line above
+			String prefix1 = "F:/research/data/data/encodings/tab-int/"; // TODO to line above
 			String prefix2 = "F:/research/data/encodings/test/";
 //			"F:/research/data/encodings/tab-int/4vv/abondante-1548_1-mais_mamignone.tbp";
 			
@@ -281,6 +281,8 @@ public class TabViewer extends JFrame{
 //			encodingFile = new File(prefix1 + "3vv/" + "phalese-1547-tant_que-a3.tbp"); 
 			encodingFile = new File(prefix2 + "testpiece.tbp");
 			encodingFile = new File("F:/research/data/encodings/" + "newsidler-1536_6-mein_einigs_a.tbp");
+			encodingFile = new File(prefix1 + "4vv/" + "BSB-mus.ms._272-mille_regres.tbp");
+			
 
 			// 4vv
 //			encodingFile = new File(prefix1 + "4vv/" + "ochsenkun_1558_-_absolon_fili.tbp");
