@@ -41,7 +41,7 @@ public class TabSymbolSet extends ArrayList<TabSymbol>{
 
 
 	/**
-	 * Constructor. Creates a new TabSymbolSet and poulates it with the given list of
+	 * Constructor. Creates a new TabSymbolSet and populates it with the given list of
 	 * TabSymbols.
 	 * 
 	 * @param name

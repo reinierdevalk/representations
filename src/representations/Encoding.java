@@ -171,6 +171,7 @@ public class Encoding implements Serializable {
 		if (checkForMetadataErrors() == false) { // needs rawEncoding
 			throw new RuntimeException(METADATA_ERROR);
 		}
+		setEventsLists();
 		setCleanEncoding(); // needs rawEncoding 
 		setInfoAndSettings(); // needs rawEncoding 
 		setFootnotes(); // needs rawEncoding
@@ -451,18 +452,96 @@ public class Encoding implements Serializable {
 		}
 		return true;
 	}
+	
+	
+	void setEventsLists() {
+		String rawEnc = getRawEncoding();
+		// 1. Remove all carriage returns and line breaks; remove leading and trailing whitespace
+		rawEnc = rawEnc.replaceAll("\r", "");
+		rawEnc = rawEnc.replaceAll("\n", "");
+		rawEnc = rawEnc.trim();
+		System.out.println(rawEnc);
+		System.out.println("joe!");
+
+		// 2. Remove all comments that are not editorial corrections
+		List<String> comments = new ArrayList<>();
+		for (int i = 0; i < rawEnc.length(); i++) {
+			int commOpenInd = rawEnc.indexOf(SymbolDictionary.OPEN_INFO_BRACKET, i);
+			int commCloseInd = rawEnc.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, commOpenInd+1);
+			String comment = rawEnc.substring(commOpenInd, commCloseInd+1); 
+//			System.out.println("-->"+comment+"<--");
+			
+			comments.add(comment);
+			if (commCloseInd == rawEnc.lastIndexOf(SymbolDictionary.CLOSE_INFO_BRACKET)) {
+				break;
+			}
+			else {
+				i = commCloseInd;
+			}
+
+		}
+		// Remove all non-editorial comments
+		for (String comment : comments) {
+			if (!comment.startsWith(SymbolDictionary.OPEN_INFO_BRACKET + FOOTNOTE_INDICATOR)) {
+				rawEnc = rawEnc.replace(comment, "");
+			}
+		}
+		System.out.println(rawEnc);
+		
+		// Remove all barlines (and the following symbol separator)
+		for (ConstantMusicalSymbol cms : ConstantMusicalSymbol.constantMusicalSymbols) {
+			if (cms != ConstantMusicalSymbol.SPACE) {
+				String s = cms.getEncoding();
+				// Remove barline + following symbol separator
+				if (rawEnc.contains(s)) {
+					rawEnc = rawEnc.replace(s + SymbolDictionary.SYMBOL_SEPARATOR, "");
+				}
+			}
+		}
+		System.out.println(rawEnc);
+		
+		// Split per event
+		
+		
+		System.exit(0);
+		
+//		StringBuilder sb = new StringBuilder();
+//		for (int i = 0; i < rawEnc.length(); i++) {
+//			String ch = rawEnc.substring(i, i+1);
+//			// Character outside comment
+//			if (!ch.equals(SymbolDictionary.OPEN_INFO_BRACKET)) {
+//				sb.append(ch);
+//			}
+//			// Open info bracket
+//			else {
+//				// Check next char; if this is FOOTNOTE_INDICATOR, the comment must be 
+//				// included; if not, it must not be included 
+//				String nextCh = rawEnc.substring(i+1, i+2);
+//				if (!nextCh.equals(FOOTNOTE_INDICATOR)) {
+//					i = rawEnc.indexOf(SymbolDictionary.OPEN_INFO_BRACKET, i);
+//				}
+//			}
+//		}
+		
+		
+
+	}
 
 
 	/**
-	 * Removes all line breaks, whitespace, comments, and added information from rawEncoding and sets cleanEncoding
-	 * to the result.    
+	 * Removes all line breaks, whitespace, comments, and added information from rawEncoding and 
+	 * sets cleanEncoding to the result.    
 	 */  
 	// TESTED (together with getCleanEncoding())
-	void setCleanEncoding() {         
+	void setCleanEncoding() {
 		// 1. Remove all carriage returns and line breaks; remove leading and trailing whitespace
 		cleanEncoding = rawEncoding.replaceAll("\r", "");
 		cleanEncoding = cleanEncoding.replaceAll("\n", "");
 		cleanEncoding = cleanEncoding.trim();
+		
+		System.out.println(cleanEncoding);
+		System.exit(0);
+				
 		// 2. Remove all comments
 		// NB: while-loop more convenient than for-loop in order not to overlook comments 
 		// immediately succeeding one another
@@ -795,7 +874,7 @@ public class Encoding implements Serializable {
 					nextSymbol = system.substring(nextSymbolSeparatorIndex + 1, nextNextSymbolSeparatorIndex);
 				}
 				// LAYOUT RULE 1: A system can start with any event but a space
-				// Is the first encoded symbol a space?
+				// Is th)e first encoded symbol a space?
 				if (symbolSeparatorIndex == -1 && symbol.equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
 					int indexOfFirstErrorChar = indicesTraversed + symbolSeparatorIndex + 1;
 					indicesAndMessages[0] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar)); 

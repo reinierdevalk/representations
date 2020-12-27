@@ -85,9 +85,11 @@ public class MEIExport {
 		
 		Tablature testTab = new Tablature(new File(
 			"F:/research/data/data/encodings/tab-int/4vv/" + testTabFile + ".tbp"), false);	
-		exportTabMEIFile(testTab, "C:/Users/Reinier/Desktop/" + testTab.getPieceName() + "-tab",
-			testTab.getEncoding().getTabSymbolSet());
+		exportTabMEIFile(testTab, "C:/Users/Reinier/Desktop/" + testTab.getPieceName() + "-tab");
 		System.exit(0);
+		
+		String notationtypeStr = "tab.lute.italian"; // TODO give as param to method
+		String tuningStr = "lute.renaissance.6"; // TODO give as param to method
 		
 		String path = "C:/Users/Reinier/Desktop/MEI/";
 		path = "C:/Users/Reinier/Desktop/IMS-tours/example/MIDI/";
@@ -381,7 +383,7 @@ public class MEIExport {
 
 
 	/**
-	 * Represent the given tablature as a list of bars, each of whih itself is a list of events
+	 * Represent the given tablature as a list of bars, each of which itself is a list of events
 	 * in that bar.
 	 *  
 	 * @param tab
@@ -443,14 +445,28 @@ public class MEIExport {
 	 * @param tab
 	 * @param path
 	 */
-	public static void exportTabMEIFile(Tablature tab, String path, TabSymbolSet tss) {
+	public static void exportTabMEIFile(Tablature tab, String path) {
 
 		List<Integer[]> mi = tab.getMeterInfo();
 
-		String res = ToolBox.readTextFile(new File(MEITemplatePath + "template-MEI.xml"));
-		String notationtypeStr = "tab.lute.italian"; // TODO give as param to method
-		String tuningStr = "lute.renaissance.6"; // TODO give as param to method
-//		TabSymbolSet tss = TabSymbolSet.FRENCH_TAB; // TODO give as param to method
+		String res = ToolBox.readTextFile(new File(MEITemplatePath + "template-MEI.xml"));		
+		String tuningStr = "lute.renaissance.6";
+		String notationtypeStr = "";
+		TabSymbolSet tss = tab.getEncoding().getTabSymbolSet();
+		if (tss == TabSymbolSet.FRENCH_TAB) {
+			notationtypeStr = "tab.lute.french";
+		}
+		else if (tss == TabSymbolSet.ITALIAN_TAB) {
+			notationtypeStr = "tab.lute.italian";
+		}
+		else if (tss == TabSymbolSet.SPANISH_TAB) {
+			notationtypeStr = "tab.lute.spanish";
+		} 
+		else {
+			notationtypeStr = "tab.lute.german";
+		}
+		notationtypeStr = "tab.lute.italian"; // TODO overwrites because currently only Italian tab in TabMEI		
+		
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 
 		// 1. Make meiHead
@@ -489,6 +505,10 @@ public class MEIExport {
 		res = res.replace("staffGrp_content_placeholder", staffGrpStr);
 
 		List<List<String>> tabDataStr = getTabData(tab);
+		for (List<String> l : tabDataStr) {
+			System.out.println(l);
+		}
+		System.exit(0);
 
 		// 3. Make bars
 		// Organise the information per bar
