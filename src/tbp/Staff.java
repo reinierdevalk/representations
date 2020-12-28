@@ -53,6 +53,15 @@ public class Staff {
 	}
 
 
+	public void addFootnoteIndicators() {
+		// Make a string of spaces as long as the staff (getNumberOfSegments)
+		// Get the segment indices where the staff has an event (chord or rest)
+		// Replace the space by a star there
+		// Barline comment should be placed under the barline; count those as well
+		// Make clear in listEvents if a comment is a varline comment (extra field in String[])
+	}
+
+
 	/** 
 	 * Returns the Staff.
 	 * 

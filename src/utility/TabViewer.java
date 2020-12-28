@@ -561,6 +561,9 @@ public class TabViewer extends JFrame{
 					symbolSeparatorIndex + 1); 
 			}
 			// System traversed? Add to tablature; prepare indices for next iteration outer while
+			System.out.println(staff.getStaff());
+			System.exit(0);
+			
 			tab += staff.getStaff() + SPACE_BETWEEN_STAFFS;
 			systemBreakIndicatorIndex = nextSystemBreakIndicatorIndex;
 			nextSystemBreakIndicatorIndex = 
