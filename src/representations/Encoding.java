@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import tbp.*;
@@ -452,59 +453,267 @@ public class Encoding implements Serializable {
 		}
 		return true;
 	}
-	
-	
+
+
 	void setEventsLists() {
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String oib = SymbolDictionary.OPEN_INFO_BRACKET;
+		String cib = SymbolDictionary.CLOSE_INFO_BRACKET;
+		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
+		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+		String invertedSp = "<";
+		
 		String rawEnc = getRawEncoding();
-		// 1. Remove all carriage returns and line breaks; remove leading and trailing whitespace
+		// Remove all carriage returns and line breaks; remove leading and trailing whitespace
 		rawEnc = rawEnc.replaceAll("\r", "");
 		rawEnc = rawEnc.replaceAll("\n", "");
 		rawEnc = rawEnc.trim();
+		// Remove end break indicator
+		rawEnc = rawEnc.replaceAll(SymbolDictionary.END_BREAK_INDICATOR, "");
+		System.out.println("starting point:");
 		System.out.println(rawEnc);
-		System.out.println("joe!");
-
-		// 2. Remove all comments that are not editorial corrections
-		List<String> comments = new ArrayList<>();
+		
+		// List all comments. This must be done here, as a comment may contain any character 
+		// (so also ones that are used for barlines, system breaks, etc.)
+		List<String> allComments = new ArrayList<>();
+		List<String> allNonEditorialComments = new ArrayList<>();
+		List<String[]> allEditorialComments = new ArrayList<>();
+		List<Integer[]> commentInds = new ArrayList<>();
+		int sys = 1;
 		for (int i = 0; i < rawEnc.length(); i++) {
-			int commOpenInd = rawEnc.indexOf(SymbolDictionary.OPEN_INFO_BRACKET, i);
-			int commCloseInd = rawEnc.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, commOpenInd+1);
-			String comment = rawEnc.substring(commOpenInd, commCloseInd+1); 
-//			System.out.println("-->"+comment+"<--");
-			
-			comments.add(comment);
-			if (commCloseInd == rawEnc.lastIndexOf(SymbolDictionary.CLOSE_INFO_BRACKET)) {
+			int commOpenInd = rawEnc.indexOf(oib, i);
+			int commCloseInd = rawEnc.indexOf(cib, commOpenInd + 1);
+			String comment = rawEnc.substring(commOpenInd, commCloseInd+1);
+//			allComments.add(comment);
+			// Non-editorial comment
+			if (!comment.startsWith(oib + FOOTNOTE_INDICATOR)) {
+				allNonEditorialComments.add(comment);
+			}
+			// Editorial comment
+			else {
+				allEditorialComments.add(new String[]{
+				comment.substring(comment.indexOf(oib)+1, comment.indexOf(cib)), 
+				"system = " + sys});
+				// In rawEnc, temporarily replace any spaces within comments, so that 
+				// splitting on them (see below) remains possible
+				if (comment.contains(sp)) {
+					String adaptedComment = comment.replace(sp, invertedSp);
+					rawEnc = rawEnc.replace(comment, adaptedComment);
+				}
+//				if (comment.contains(sbi)) {
+//					String adaptedComment = comment.replace(sbi, invertedSbi);
+//					rawEnc = rawEnc.replace(comment, adaptedComment);
+//				}
+			}
+//			commentInds.add(new Integer[]{commOpenInd, commCloseInd});
+			if (commCloseInd == rawEnc.lastIndexOf(cib)) {
 				break;
 			}
 			else {
 				i = commCloseInd;
-			}
-
-		}
-		// Remove all non-editorial comments
-		for (String comment : comments) {
-			if (!comment.startsWith(SymbolDictionary.OPEN_INFO_BRACKET + FOOTNOTE_INDICATOR)) {
-				rawEnc = rawEnc.replace(comment, "");
-			}
-		}
-		System.out.println(rawEnc);
-		
-		// Remove all barlines (and the following symbol separator)
-		for (ConstantMusicalSymbol cms : ConstantMusicalSymbol.constantMusicalSymbols) {
-			if (cms != ConstantMusicalSymbol.SPACE) {
-				String s = cms.getEncoding();
-				// Remove barline + following symbol separator
-				if (rawEnc.contains(s)) {
-					rawEnc = rawEnc.replace(s + SymbolDictionary.SYMBOL_SEPARATOR, "");
+				// If there is a SBI before the next comment: increase system
+				// NB: Does not apply for the last system, where sbiInd will be -1   
+				int sbiInd = rawEnc.indexOf(sbi, i);
+				commOpenInd = rawEnc.indexOf(oib, i);
+				if (sbiInd != -1 && sbiInd < commOpenInd) {
+					sys++; 
 				}
 			}
 		}
+		for (String s : allNonEditorialComments) {
+//			System.out.println(s);
+		}
+//		System.out.println("-----------------");
+		for (String[] s : allEditorialComments) {
+//			System.out.println(Arrays.asList(s));
+		}
+		
+//		// Get indices of systems
+//		List<Integer[]> systemIndices = new ArrayList<>();
+//		for (int i = 0; i < rawEnc.length(); i++) {
+//			int sbInd = rawEnc.indexOf(SymbolDictionary.SYSTEM_BREAK_INDICATOR, i);
+//			boolean inComment = false;
+//			for (Integer[] in : commentInds) {
+//				if (sbInd > in[0] && sbInd < in[1]) {
+//					System.out.println(Arrays.asList(in));
+//					System.out.println("blabal");
+//					System.exit(0);
+//					inComment = true;
+//					break;
+//				}
+//			}
+//			if (!inComment) {
+//				systemIndices.add(new Integer[]{i, sbInd-1});
+//			}
+//			if (sbInd == rawEnc.lastIndexOf(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
+//				systemIndices.add(new Integer[]{sbInd + 1, rawEnc.length() - 1});
+//				break;
+//			}
+//			else {
+//				i = sbInd;
+//			}
+//		}
+//		for (Integer[] in : systemIndices) {
+//			System.out.println(Arrays.asList(in));
+//		}
+//		System.exit(0);
+		
+		// Remove all non-editorial comments from rawEnc
+		for (String comment : allNonEditorialComments) {
+			rawEnc = rawEnc.replace(comment, "");
+		}
+		
+		// Split into systems and list all editorial comments together with their system
+//		String[] allSystems = rawEnc.split(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
+//		List<String[]> allEditorialComments = new ArrayList<>();
+//		for (int i = 0; i < allSystems.length; i++) {
+//			String syys = allSystems[i];
+////			System.out.println("system = " + i);			
+//			// Only if the system contains at least one comment
+//			if (sys.contains(oib + FOOTNOTE_INDICATOR)) {
+//				for (int j = 0; j < sys.length(); j++) {
+//					int commOpenInd = sys.indexOf(oib, j);
+//					int commCloseInd = sys.indexOf(cib, commOpenInd + 1);
+//					String comment = sys.substring(commOpenInd+1, commCloseInd);
+////					System.out.println(comment);
+//					allEditorialComments.add(new String[]{comment, "system " + (i+1)});
+//					if (commCloseInd == sys.lastIndexOf(cib)) {
+//						break;
+//					}
+//					else {
+//						j = commCloseInd;
+//					}
+//				}
+//			}
+//		}
+		
+//		for (String[] s : allEditorialComments) {
+//			System.out.println(Arrays.asList(s));
+//		}
+		
+		
+//		// In rawEnc, temporarily replace any spaces within comments, so that 
+//		// splitting on spaces (see below) is possible
+//		for (String[] comment : allEditorialComments) {
+//			if (comment[0].contains(sp)) {
+//				String adaptedComment = comment[0].replace(sp, invertedSp);
+//				rawEnc = rawEnc.replace(comment[0], adaptedComment);
+//			}					
+//		}
+		
+		System.out.println("non-ed comments removed and in-comment spaces reversed");
 		System.out.println(rawEnc);
 		
-		// Split per event
+//		// List, per system, the indices (in allComments) of the comments in that system. I.e.,
+//		// if the first element in commentsIndsPerSystem is [0, 1, 2], the system contains the 
+//		// comments at those indices in allComments
+//		
+//		// Add system to non-editorial comments
+//		List<List<Integer>> commentsIndsPerSystem = new ArrayList<>();
+//		int start = 0;
+////		String[] allSystems = rawEnc.split(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
+//		for (int i = 0; i < allSystems.length; i++) {
+//			String s = allSystems[i];
+//			List<Integer> currComm = new ArrayList<>();
+//			int numComments = s.length() - s.replaceAll(FOOTNOTE_INDICATOR, "").length();
+//			for (int j = start; j < start + numComments; j++) {
+////				currComm.add(j);
+////				editorialComments.get(j)[1] = "system " + i;
+//			}
+//			start += numComments;
+//			commentsIndsPerSystem.add(currComm);
+//		}
+//		System.out.println(commentsIndsPerSystem);
+						
+		// Remove all barlines. NB: This will also remove any barlines in comments (but
+		// only if they are followed by a symbol separator!) - which is not a problem as 
+		// the unadapted comments are stored in allNonEditorialComments
 		
+		List<String> barlinesAsString = new ArrayList<>();
+		for (ConstantMusicalSymbol cms : ConstantMusicalSymbol.constantMusicalSymbols) {
+			if (cms != ConstantMusicalSymbol.SPACE) {
+				barlinesAsString.add(cms.getEncoding());
+			}
+		}
+		// Sort the barlines by length (longest first), so that they are removed correctly
+		// (a shorter barline, e.g., :|, can be part of a longer one, e.g., :|:, leading to 
+		// partial removal of the longer one) 
+		// See https://stackoverflow.com/questions/29280257/how-to-sort-an-arraylist-by-its-elements-size-in-java
+		barlinesAsString.sort(Comparator.comparing(String::length).reversed());
+		for (String s : barlinesAsString) {
+//		for (ConstantMusicalSymbol cms : ConstantMusicalSymbol.constantMusicalSymbols) {
+			if (ConstantMusicalSymbol.isBarline(s)) {
+//			if (ConstantMusicalSymbol.isBarline(cms.getEncoding())) {
+//				String s = cms.getEncoding();
+				if (rawEnc.contains(s)) {
+					rawEnc = rawEnc.replace(s + ss, "");
+				}
+//				for (int i = 0; i < rawEnc.length(); i++) {
+//					int ssInd = rawEnc.indexOf(ss, i);
+//					String event = rawEnc.substring(i, ssInd);
+////					System.out.println("event = " + event);
+//					// If barline event
+//					if (event.equals(s)) {
+//						// Check if the barline event falls inside a comment
+//						boolean inComment = false;
+//						for (Integer[] in : commentInds) {
+//							if (i > in[0] && i < in[1]) {
+//								inComment = true;
+//								break;
+//							}
+//						}
+//						// Replace the barline event if it is not in a comment
+//						if (!inComment) {
+//							String replacement = "";
+//							for (int j = 0 ; j < event.length(); j++) {
+//								replacement += "£";
+//							}
+////							System.out.println(replacement);
+////							System.exit(0);
+//							rawEnc = rawEnc.substring(0, i) + replacement + rawEnc.substring(ssInd);
+//						}
+//					}
+//					if (ssInd == rawEnc.lastIndexOf(ss)) {
+//						break;
+//					}
+//					else {
+//						i = ssInd;
+//					}
+//				}				
+			}
+		}
+		System.out.println("all barlines removed");
+		System.out.println(rawEnc);
+		
+		// Remove all SBIs. NB: This will also remove any SBI in comments - which is not a 
+		// problem as the unadapted comments are stored in allNonEditorialComments
+		rawEnc = rawEnc.replace(sbi, "");
+		System.out.println("all SBIs removed");
+		System.out.println(rawEnc);
 		
 		System.exit(0);
 		
+		// Split per event
+		String[] events = rawEnc.split(sp + ss);
+		System.out.println(events.length);
+		List<String[]> eventsList = new ArrayList<>();
+		for (String event : events) {
+			// If the event contains a comment
+			String comment = null;
+			if (event.contains(oib + FOOTNOTE_INDICATOR)) {
+				comment = 
+					event.substring(event.indexOf(FOOTNOTE_INDICATOR) + 1, event.indexOf(cib));
+				event = 
+					event.substring(0, event.indexOf(oib)) + event.substring(event.indexOf(cib) + 1);
+
+			}
+			eventsList.add(new String[]{event, comment});
+		}
+		
+		for (String[] s : eventsList) {
+			System.out.println(Arrays.asList(s));
+		}
+		System.exit(0);
 //		StringBuilder sb = new StringBuilder();
 //		for (int i = 0; i < rawEnc.length(); i++) {
 //			String ch = rawEnc.substring(i, i+1);
