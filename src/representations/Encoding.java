@@ -29,7 +29,6 @@ public class Encoding implements Serializable {
 	private boolean hasMetadataErrors;
 	private List<String> infoAndSettings;
 	private List<String> footnotes;
-	private List<String[]> eventsList; 
 	public static final int AUTHOR_INDEX = 0;
 	public static final int TITLE_INDEX = 1;
 	public static final int SOURCE_INDEX = 2;
@@ -146,7 +145,7 @@ public class Encoding implements Serializable {
 			if (getHasMetadataErrors() == true) {
 				return;
 			}
-			setEventsLists(); // needs rawEncoding 
+//			getEventsWithComments(); // needs rawEncoding 
 			setCleanEncoding(); // needs rawEncoding 
 			setInfoAndSettings(); // needs rawEncoding 
 			setFootnotes(); // needs rawEncoding
@@ -180,7 +179,7 @@ public class Encoding implements Serializable {
 		if (getHasMetadataErrors() == true) {
 			throw new RuntimeException(METADATA_ERROR);
 		}
-		setEventsLists(); // needs rawEncoding
+//		getEventsWithComments(); // needs rawEncoding
 		setCleanEncoding(); // needs rawEncoding 
 		setInfoAndSettings(); // needs rawEncoding 
 		setFootnotes(); // needs rawEncoding
@@ -473,6 +472,153 @@ public class Encoding implements Serializable {
 
 
 	/**
+	 * Gets all events in the piece, organised per system. Each event is one of five types 
+	 * (TS event, RS event, rest event, MS event, or barline event). 
+	 *
+	 * @return A <code>List</code>, each element of which represents a system as a 
+	 * <code>List</code> of <code>String[]</code>s, each of which represents an event. Each
+	 * event contains 
+	 * <ul>
+	 * <li>at element 0: the event as encoded</li>
+	 * <li>at element 1: if the event has a footnote, that footnote; otherwise 
+	 * <code>null</code></li>
+	 * <li>at element 2: if the event has a footnote, the sequence number of that
+	 * footnote; otherwise <code>null</code></li>
+	 * </ul>
+	 */
+	// TESTED (together with getEventsLists())
+	public List<List<String[]>> getEventsWithFootnotes() {
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String oib = SymbolDictionary.OPEN_INFO_BRACKET;
+		String cib = SymbolDictionary.CLOSE_INFO_BRACKET;
+		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
+		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+		String invertedSp = "<";
+		String invertedSbi = "<";
+
+		String rawEnc = getRawEncoding();
+		// Remove all carriage returns and line breaks; remove leading and trailing whitespace
+		rawEnc = rawEnc.replaceAll("\r", "");
+		rawEnc = rawEnc.replaceAll("\n", "");
+		rawEnc = rawEnc.trim();
+		// Remove end break indicator
+		rawEnc = rawEnc.replaceAll(SymbolDictionary.END_BREAK_INDICATOR, "");
+		
+		// List all comments
+		List<String> allNonEditorialComments = new ArrayList<>();
+		List<String> allEditorialComments = new ArrayList<>();
+		for (int i = 0; i < rawEnc.length(); i++) {
+			int commOpenInd = rawEnc.indexOf(oib, i);
+			int commCloseInd = rawEnc.indexOf(cib, commOpenInd + 1);
+			String comment = rawEnc.substring(commOpenInd, commCloseInd+1);
+			// Non-editorial comment
+			if (!comment.startsWith(oib + FOOTNOTE_INDICATOR)) {
+				allNonEditorialComments.add(comment);
+			}
+			// Editorial comment
+			else {
+				allEditorialComments.add(comment.substring(comment.indexOf(oib)+1, 
+					comment.indexOf(cib)));
+				// In rawEnc, temporarily replace any spaces and SBIs within comments, so 
+				// that splitting on them (see below) remains possible
+				if (comment.contains(sp)) {
+					rawEnc = rawEnc.replace(comment, comment.replace(sp, invertedSp));
+				}
+				if (comment.contains(sbi)) {
+					rawEnc = rawEnc.replace(comment, comment.replace(sbi, invertedSbi));
+				}
+			}
+			if (commCloseInd == rawEnc.lastIndexOf(cib)) {
+				break;
+			}
+			else {
+				i = commCloseInd;
+			}
+		}
+
+		// Remove all non-editorial comments from rawEnc
+		for (String comment : allNonEditorialComments) {
+			rawEnc = rawEnc.replace(comment, "");
+		}
+		
+		// To enable splitting, add a space after all barlines. NB: This will also affect any
+		// barlines in comments (but only if they are followed by a symbol separator!) - which
+		// is not a problem as the unadapted comments are stored in allNonEditorialComments		
+		List<String> barlinesAsString = new ArrayList<>();
+		for (ConstantMusicalSymbol cms : ConstantMusicalSymbol.constantMusicalSymbols) {
+			if (cms != ConstantMusicalSymbol.SPACE) {
+				barlinesAsString.add(cms.getEncoding());
+			}
+		}
+		// Sort the barlines by length (longest first), so that they are replaced correctly
+		// (a shorter barline, e.g., :|, can be part of a longer one, e.g., :|:, leading to 
+		// partial replacement of the longer one)
+		// See https://stackoverflow.com/questions/29280257/how-to-sort-an-arraylist-by-its-elements-size-in-java
+		barlinesAsString.sort(Comparator.comparing(String::length).reversed());
+		for (String s : barlinesAsString) {
+			if (ConstantMusicalSymbol.isBarline(s)) {
+				if (rawEnc.contains(s)) {
+					rawEnc = rawEnc.replace(s + ss, s + ss + sp + ss);
+				}
+			}
+		}
+
+		// List events per system
+		List<List<String[]>> eventsPerSystem = new ArrayList<>();
+		int commentCounter = 0;
+		String[] systems = rawEnc.split(sbi);
+		for (int i = 0; i < systems.length; i++) {
+			List<String[]> eventsCurrSystem = new ArrayList<>();
+			String[] events = systems[i].split(sp + ss);
+			for (int j = 0; j < events.length; j++) {
+				String event = events[j];
+				boolean containsComment = event.contains(oib + FOOTNOTE_INDICATOR);
+				// If the event does not contain a comment: add
+				if (!containsComment) {
+					eventsCurrSystem.add(new String[]{event, null, null});
+				}
+				// If the event contains a comment: separate event and comment, and add
+				if (containsComment) {
+					boolean startsWithComment = event.startsWith(oib + FOOTNOTE_INDICATOR);
+					String adaptedEvent = event.substring(0, event.indexOf(oib)) + 
+						event.substring(event.indexOf(cib) + 1);
+					// Get unadapted comment (the one in event may have been altered if it 
+					// contains symbols split on, such as a space or a SBI)
+					String comment = allEditorialComments.get(commentCounter);
+					String commentNum = "footnote #" + (commentCounter + 1);
+					commentCounter++;
+					// If the comment is at the end of the event: add
+					if (!startsWithComment) {
+						eventsCurrSystem.add(new String[]{adaptedEvent, comment, commentNum});
+					}
+					// If the comment is at the beginning of the event: reset last added and add
+					// NB: If there is a barline that is followed by a comment before the current
+					// event, that comment will end up preceding the current event. Example:
+					// original encoding:         sm.a2.a1.>.|.{@a footnote}sm.a2.a1.>. 
+					// space added after barline: sm.a2.a1.>.|.>.{@a footnote}sm.a2.a1.>.
+					// after split on space:      [sm.a2.a1., |., {@a footnote}sm.a2.a1.]
+					// In such a case, the comment must be moved to the last added element in
+					// eventsPerSystem
+					else {						
+						// systemToAdapt is the previous system if event is the first in the 
+						// current system, and the current system if not 
+						List<String[]> systemToAdapt = 
+							(j == 0) ? eventsPerSystem.get(i-1) : eventsCurrSystem;  
+						// Adapt comment and commentNum in element last added to systemToAdapt
+						systemToAdapt.set(systemToAdapt.size()-1, new String[]{
+							systemToAdapt.get(systemToAdapt.size()-1)[0], comment, commentNum});
+						// Add
+						eventsCurrSystem.add(new String[]{adaptedEvent, null, null});
+					}
+				}
+			}
+			eventsPerSystem.add(eventsCurrSystem);
+		}
+		return eventsPerSystem;
+	}
+
+
+	/**
 	 * Sets <code>eventsList</code>, which contains all events in the piece. Each event is a 
 	 * String[] consisting of three elements:
 	 * <ul>
@@ -484,13 +630,14 @@ public class Encoding implements Serializable {
 	 * </ul>
 	 */
 	// TESTED (together with getEventsLists())
-	void setEventsLists() {
+	void setEventsListsOLD() {
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String oib = SymbolDictionary.OPEN_INFO_BRACKET;
 		String cib = SymbolDictionary.CLOSE_INFO_BRACKET;
 		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
 		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
 		String invertedSp = "<";
+		String invertedSbi = "<";
 
 		String rawEnc = getRawEncoding();
 		// Remove all carriage returns and line breaks; remove leading and trailing whitespace
@@ -517,10 +664,13 @@ public class Encoding implements Serializable {
 				allEditorialComments.add(new String[]{
 				comment.substring(comment.indexOf(oib)+1, comment.indexOf(cib)), 
 				"system " + sys});
-				// In rawEnc, temporarily replace any spaces within comments, so that 
-				// splitting on them (see below) remains possible
+				// In rawEnc, temporarily replace any spaces and SBIs within comments, so 
+				// that splitting on them (see below) remains possible
 				if (comment.contains(sp)) {
 					rawEnc = rawEnc.replace(comment, comment.replace(sp, invertedSp));
+				}
+				if (comment.contains(sbi)) {
+					rawEnc = rawEnc.replace(comment, comment.replace(sbi, invertedSbi));
 				}
 			}
 			if (commCloseInd == rawEnc.lastIndexOf(cib)) {
@@ -542,35 +692,75 @@ public class Encoding implements Serializable {
 			rawEnc = rawEnc.replace(comment, "");
 		}
 
-		// Remove all barlines. NB: This will also remove any barlines in comments (but
-		// only if they are followed by a symbol separator!) - which is not a problem as 
-		// the unadapted comments are stored in allNonEditorialComments		
+
+//		// Remove all barlines. NB: This will also remove any barlines in comments (but
+//		// only if they are followed by a symbol separator!) - which is not a problem as 
+//		// the unadapted comments are stored in allNonEditorialComments		
+		
+		// To enable splitting, add a space after all barlines. NB: This will also affect any
+		// barlines in comments (but only if they are followed by a symbol separator!) - which
+		// is not a problem as the unadapted comments are stored in allNonEditorialComments		
 		List<String> barlinesAsString = new ArrayList<>();
 		for (ConstantMusicalSymbol cms : ConstantMusicalSymbol.constantMusicalSymbols) {
 			if (cms != ConstantMusicalSymbol.SPACE) {
 				barlinesAsString.add(cms.getEncoding());
 			}
 		}
-		// Sort the barlines by length (longest first), so that they are removed correctly
+//		// Sort the barlines by length (longest first), so that they are removed correctly
+//		// (a shorter barline, e.g., :|, can be part of a longer one, e.g., :|:, leading to 
+//		// partial removal of the longer one)
+		// Sort the barlines by length (longest first), so that they are replaced correctly
 		// (a shorter barline, e.g., :|, can be part of a longer one, e.g., :|:, leading to 
-		// partial removal of the longer one) 
+		// partial replacement of the longer one)
 		// See https://stackoverflow.com/questions/29280257/how-to-sort-an-arraylist-by-its-elements-size-in-java
 		barlinesAsString.sort(Comparator.comparing(String::length).reversed());
+		System.out.println(rawEnc);
 		for (String s : barlinesAsString) {
 			if (ConstantMusicalSymbol.isBarline(s)) {
 				if (rawEnc.contains(s)) {
-					rawEnc = rawEnc.replace(s + ss, "");
+//					rawEnc = rawEnc.replace(s + ss, "");
+					rawEnc = rawEnc.replace(s + ss, s + ss + sp + ss);
 				}
 			}
 		}
+		System.out.println(rawEnc);
 
-		// Remove all SBIs. NB: This will also remove any SBI in comments - which is not a 
-		// problem as the unadapted comments are stored in allNonEditorialComments
-		rawEnc = rawEnc.replace(sbi, "");
+//		// Remove all SBIs. NB: This will also remove any SBI in comments - which is not a 
+//		// problem as the unadapted comments are stored in allNonEditorialComments
+//		rawEnc = rawEnc.replace(sbi, "");
+		
+		// Split per system
+		String[] systems = rawEnc.split(sbi);
+		System.out.println(systems.length);
+		
+		// List events per system. Each event will be one of the following five types: 
+		// TS event, RS event, rest event, MS event, or barline event
+		List<List<String[]>> eventsPerSystem = new ArrayList<>();
+		int commentCounter = 0;
+		for (String system : systems) {
+			List<String[]> eventsCurrSystem = new ArrayList<>();
+			for (String event : system.split(sp + ss)) {
+				String comment = null;
+				if (event.contains(oib + FOOTNOTE_INDICATOR)) {
+					event = event.substring(0, event.indexOf(oib)) + 
+						event.substring(event.indexOf(cib) + 1);
+					// The comment in event may have been altered; get unadapted comment instead 
+					comment = allEditorialComments.get(commentCounter)[0];
+					commentCounter++;
+				}
+				eventsCurrSystem.add(new String[]{event, comment});
+			}
+			eventsPerSystem.add(eventsCurrSystem);
+			for (String[] e : eventsCurrSystem) {
+				System.out.println(Arrays.asList(e));
+			}
+			System.exit(0);
+		}
+
 
 		// Split per event and make argEventsList
 		List<String[]> argEventsList = new ArrayList<>();
-		int commentCounter = 0;
+		int commentCounterr = 0;
 		for (String event : rawEnc.split(sp + ss)) {
 			// If the event contains a comment
 //			String comment = null;
@@ -583,17 +773,12 @@ public class Encoding implements Serializable {
 				event = 
 					event.substring(0, event.indexOf(oib)) + event.substring(event.indexOf(cib) + 1);
 				// Find the (unadapted) comment, including system information, in allEditorialComments
-				editedComment = allEditorialComments.get(commentCounter);
-				commentCounter++;
+				editedComment = allEditorialComments.get(commentCounterr);
+				commentCounterr++;
 			}
 			argEventsList.add(new String[]{event, editedComment[0], editedComment[1]});
 		}
-		eventsList = argEventsList;
-	}
-
-
-	public List<String[]> getEventsList() {
-		return eventsList;
+//		eventsList = argEventsList;
 	}
 
 

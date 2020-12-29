@@ -562,6 +562,7 @@ public class TabViewer extends JFrame{
 			}
 			// System traversed? Add to tablature; prepare indices for next iteration outer while
 			System.out.println(staff.getStaff());
+			System.out.println(staff.getNumberOfSegments());
 			System.exit(0);
 			
 			tab += staff.getStaff() + SPACE_BETWEEN_STAFFS;

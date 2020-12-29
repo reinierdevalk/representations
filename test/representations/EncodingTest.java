@@ -104,47 +104,52 @@ public class EncodingTest {
 
 
 	@Test
-	public void testSetAndGetEventsLists() {
-		Encoding encoding = new Encoding();
-		String rawEncoding = "";
-		try {
-			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece1.getAbsolutePath())));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		encoding.setRawEncoding(rawEncoding);
-		encoding.setEventsLists();
+	public void testGetEventsWithFootnotes() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+
+		List<List<String[]>> expected = new ArrayList<>();
+		List<String[]> system1 = new ArrayList<>();
+		system1.add(new String[]{"McC3.", null, null});
+		system1.add(new String[]{"sb.", null, null});
+		system1.add(new String[]{"mi.", null, null});
+		system1.add(new String[]{"mi.a5.c4.b2.a1.", null, null});
+		system1.add(new String[]{"|.", "@Footnote 1", "footnote #1"});
+//		system1.add(new String[]{"|.", null, null});
+		system1.add(new String[]{"sm*.a6.c4.i2.a1.", null, null});
+//		system1.add(new String[]{"sm*.a6.c4.i2.a1.", "@Footnote 1", "footnote #1"});
+		system1.add(new String[]{"fu.d6.", null, null});
+		system1.add(new String[]{"sm.c6.a5.e4.b2.", null, null});
+		system1.add(new String[]{"a6.", null, null});
+		system1.add(new String[]{"mi.a6.h5.c4.b3.f2.", "@Footnote 2", "footnote #2"});
+		system1.add(new String[]{"sm.a6.b3.a2.a1.", null, null});
+		system1.add(new String[]{"a3.e2.", null, null});
+		system1.add(new String[]{"|.", null, null});
+		expected.add(system1);
+		List<String[]> system2 = new ArrayList<>();
+		system2.add(new String[]{"fu.a6.c4.a2.a1.", null, null});
+		system2.add(new String[]{"e2.", null, null});
+		system2.add(new String[]{"sf.a1.", null, null});
+		system2.add(new String[]{"e2.", null, null});
+		system2.add(new String[]{"|.", null, null});
+		system2.add(new String[]{"c2.", null, null});
+		system2.add(new String[]{"e2.", null, null});
+		system2.add(new String[]{"mi.a1.", null, null});
+		system2.add(new String[]{"mi.", null, null});
+		system2.add(new String[]{"mi.a6.c4.a2.a1.", null, null});
+		system2.add(new String[]{"||.", null, null});
+		expected.add(system2);
 		
-		List<String[]> expected = new ArrayList<>();
-		expected.add(new String[]{"McC3.", null, null});
-		expected.add(new String[]{"sb.", null, null});
-		expected.add(new String[]{"mi.", null, null});
-		expected.add(new String[]{"mi.a5.c4.b2.a1.", null, null});
-		expected.add(new String[]{"sm*.a6.c4.i2.a1.", "@Footnote 1", "system 1"});
-		expected.add(new String[]{"fu.d6.", null, null});
-		expected.add(new String[]{"sm.c6.a5.e4.b2.", null, null});
-		expected.add(new String[]{"a6.", null, null});
-		expected.add(new String[]{"mi.a6.h5.c4.b3.f2.", "@Footnote 2", "system 1"});
-		expected.add(new String[]{"sm.a6.b3.a2.a1.", null, null});
-		expected.add(new String[]{"a3.e2.", null, null});
-		expected.add(new String[]{"fu.a6.c4.a2.a1.", null, null});
-		expected.add(new String[]{"e2.", null, null});
-		expected.add(new String[]{"sf.a1.", null, null});
-		expected.add(new String[]{"e2.", null, null});
-		expected.add(new String[]{"c2.", null, null});
-		expected.add(new String[]{"e2.", null, null});
-		expected.add(new String[]{"mi.a1.", null, null});
-		expected.add(new String[]{"mi.", null, null});
-		expected.add(new String[]{"mi.a6.c4.a2.a1.", null, null});
-		
-		List<String[]> actual = encoding.getEventsList();
+		List<List<String[]>> actual = encoding.getEventsWithFootnotes();
 		
 		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-	  		assertEquals(expected.get(i).length, actual.get(i).length);
-	  		for (int j = 0; j < expected.get(i).length; j++) {
-	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
-	  		}
+		for (int i = 0; i < expected.size(); i++) {			
+			assertEquals(expected.get(i).size(), actual.get(i).size());
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j).length, actual.get(i).get(j).length);
+				for (int k = 0; k < expected.get(i).get(j).length; k++) {
+					assertEquals(expected.get(i).get(j)[k], actual.get(i).get(j)[k]);
+				}
+			}
 		}
 	}
 

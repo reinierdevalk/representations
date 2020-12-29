@@ -151,8 +151,7 @@ public class Staff {
 	 * @param segment
 	 * @param showBeam
 	 */ 
-	public void addRhythmSymbol(RhythmSymbol aRhythmSymbol, int segment, boolean showBeam) { 
-		
+	public void addRhythmSymbol(RhythmSymbol aRhythmSymbol, int segment, boolean showBeam) {
 //		final String rhythmDot = ".";
 		final String beam = "-";
 		String symbol = aRhythmSymbol.getSymbol();
