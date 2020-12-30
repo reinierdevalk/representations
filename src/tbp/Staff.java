@@ -1,10 +1,11 @@
 package tbp;
 
+import java.util.List;
 
 public class Staff { 
   
 	private int numberOfSegments;
-	private String[][] staffData; 
+	private String[][] staffData;
 	private static final String STAFF_SEGMENT = "-";
 	private static final int STAFF_LINES = 9;  
 	private static final int RHYTHM_LINE = 0;
@@ -15,7 +16,8 @@ public class Staff {
 	private static final int BOTTOM_TABLATURE_LINE = 7;
 	private static final int DIAPASONS_LINE_OTHER = 8;
 	private static final int NECESSARY_LINE_SHIFT = 1;
-
+	public static final String SPACE_BETWEEN_STAFFS = "\n\n";
+	
 
 	/**
 	 * Constructor. Creates an empty Staff of the specified length.
@@ -53,8 +55,15 @@ public class Staff {
 	}
 
 
-	public void addFootnoteIndicators() {
+	/** 
+	 * Adds the footnote indicators below the staff at the appropriate positions  
+	 * 
+	 * @param indices The indices of the events that have a footnote.
+	 */
+	public void addFootnoteIndicators(List<Integer> indices) {
 		// Make a string of spaces as long as the staff (getNumberOfSegments)
+		int numSegments = getNumberOfSegments();
+		
 		// Get the segment indices where the staff has an event (chord or rest)
 		// Replace the space by a star there
 		// Barline comment should be placed under the barline; count those as well

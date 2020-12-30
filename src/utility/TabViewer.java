@@ -37,8 +37,6 @@ public class TabViewer extends JFrame{
 
 	private static final long serialVersionUID = 1L;
 
-	private static final String SPACE_BETWEEN_STAFFS = "\n\n";  
-	private Encoding encoding; 
 	private static File encodingFile;
 	private Highlighter hilit = new DefaultHighlighter();  
 
@@ -269,7 +267,7 @@ public class TabViewer extends JFrame{
 		if (encodingFile == null) {
 //			String prefix1 = Runner.encodingsPath;		
 			String prefix1 = "F:/research/data/data/encodings/tab-int/"; // TODO to line above
-			String prefix2 = "F:/research/data/encodings/test/";
+			String prefix2 = "F:/research/data/data/encodings/test/";
 //			"F:/research/data/encodings/tab-int/4vv/abondante-1548_1-mais_mamignone.tbp";
 			
 			// 3vv
@@ -280,8 +278,8 @@ public class TabViewer extends JFrame{
 //			encodingFile = new File(prefix1 + "3vv/" + "newsidler-1544_2-nun_volget.tbp");
 //			encodingFile = new File(prefix1 + "3vv/" + "phalese-1547-tant_que-a3.tbp"); 
 			encodingFile = new File(prefix2 + "testpiece.tbp");
-			encodingFile = new File("F:/research/data/encodings/" + "newsidler-1536_6-mein_einigs_a.tbp");
-			encodingFile = new File(prefix1 + "4vv/" + "BSB-mus.ms._272-mille_regres.tbp");
+//			encodingFile = new File("F:/research/data/encodings/" + "newsidler-1536_6-mein_einigs_a.tbp");
+//			encodingFile = new File(prefix1 + "4vv/" + "BSB-mus.ms._272-mille_regres.tbp");
 			
 
 			// 4vv
@@ -398,9 +396,9 @@ public class TabViewer extends JFrame{
 		// Any next time, it will be exactly what is in the encodingArea (which now may have 
 		// corrections compared to what is in the loaded file)
 		String rawEncoding = encodingArea.getText();
-		encoding = new Encoding(rawEncoding, false);
+		Encoding enc = new Encoding(rawEncoding, false);
 		// a. If the encoding contains metadata errors: place error message
-		if (encoding.getHasMetadataErrors()) {
+		if (enc.getHasMetadataErrors()) {
 			upperErrorMessageLabel.setText(Encoding.METADATA_ERROR);
 			lowerErrorMessageLabel.setText("");
 		}
@@ -412,11 +410,11 @@ public class TabViewer extends JFrame{
 			upperErrorMessageLabel.setText("(none)");
 			lowerErrorMessageLabel.setText(null);
 			// a. If the encoding contains encoding errors: place error messages and highlight
-			if (encoding.checkForEncodingErrors() != null) { // needs rawEncoding, cleanEncoding, and infoAndSettings
-				upperErrorMessageLabel.setText(encoding.checkForEncodingErrors()[errorStringIndex]);
-				lowerErrorMessageLabel.setText(encoding.checkForEncodingErrors()[ruleStringIndex]);
-				int hilitStartIndex = Integer.parseInt(encoding.checkForEncodingErrors()[firstErrorCharIndex]);
-				int hilitEndIndex = Integer.parseInt(encoding.checkForEncodingErrors()[lastErrorCharIndex]);
+			if (enc.checkForEncodingErrors() != null) { // needs rawEncoding, cleanEncoding, and infoAndSettings
+				upperErrorMessageLabel.setText(enc.checkForEncodingErrors()[errorStringIndex]);
+				lowerErrorMessageLabel.setText(enc.checkForEncodingErrors()[ruleStringIndex]);
+				int hilitStartIndex = Integer.parseInt(enc.checkForEncodingErrors()[firstErrorCharIndex]);
+				int hilitEndIndex = Integer.parseInt(enc.checkForEncodingErrors()[lastErrorCharIndex]);
 				Highlighter.HighlightPainter painter = new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
 				try { 
 					hilit.addHighlight(hilitStartIndex, hilitEndIndex, painter);
@@ -427,15 +425,36 @@ public class TabViewer extends JFrame{
 			// b. If the encoding contains no encoding errors: show the tablature in a new window 
 			else {
 				String allFootnotes = "";
-				for (String footnote : encoding.getFootnotes()) {
+				for (String footnote : enc.getFootnotes()) {
 					allFootnotes = allFootnotes.concat(footnote + "\n");
 				}
-				List<String> infoAndSettings = encoding.getInfoAndSettings();
+//				List<String> infoAndSettings = enc.getInfoAndSettings();
+				
+				TabSymbolSet tss = null;
+				if (frenchTabRadioButton.isSelected()) {   
+					tss = TabSymbolSet.FRENCH_TAB; 
+				}
+				else if (italianTabRadioButton.isSelected()) {
+					tss = TabSymbolSet.ITALIAN_TAB;
+				}
+				else if (spanishTabRadioButton.isSelected()) {
+					tss = TabSymbolSet.SPANISH_TAB;
+				}
+				else if (germanTabRadioButton.isSelected()) {
+					// TODO 
+				}
+
 				tabArea = getTabArea();
-				tabArea.setText(infoAndSettings.get(Encoding.AUTHOR_INDEX) + "\n" + 
-					infoAndSettings.get(Encoding.TITLE_INDEX) + "\n" + 
-					infoAndSettings.get(Encoding.SOURCE_INDEX) + "\n" + "\n" + 
-					SPACE_BETWEEN_STAFFS + visualise() + allFootnotes);
+				tabArea.setText(
+					enc.getMetaDataFormatted() + 
+//					infoAndSettings.get(Encoding.AUTHOR_INDEX) + "\n" + 
+//					infoAndSettings.get(Encoding.TITLE_INDEX) + "\n" + 
+//					infoAndSettings.get(Encoding.SOURCE_INDEX) + "\n" + "\n" + 
+					Staff.SPACE_BETWEEN_STAFFS + 
+						enc.visualise(tss, rhythmSymbolsCheckBox.isSelected()) + 
+//					SPACE_BETWEEN_STAFFS + visualise(enc)
+					allFootnotes
+				);
 				openTablatureWindow();
 			} 
 		}
@@ -447,47 +466,49 @@ public class TabViewer extends JFrame{
 	 * 
 	 * @return 
 	 */
-	private String visualise() {
+	@Deprecated // moved to Encoding
+	private String visualise(Encoding enc) {
 		String tab = "";
+		
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
+		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+
+		String cleanEnc = enc.getCleanEncoding();
+//		String cleanEnc = encoding.getCleanEncoding();
+		TabSymbolSet tss = enc.getTabSymbolSet();
+//		TabSymbolSet tss = encoding.getTabSymbolSet();
 
 		// Search all systems one by one
-		int systemBreakIndicatorIndex = -1;
-		int nextSystemBreakIndicatorIndex = 
-			encoding.getCleanEncoding().indexOf(SymbolDictionary.SYSTEM_BREAK_INDICATOR, systemBreakIndicatorIndex + 1);
-		while (systemBreakIndicatorIndex + 1 != nextSystemBreakIndicatorIndex) { 
-			RhythmSymbol previousRhythmSymbol = null;
-			Staff staff = new Staff(encoding.getStaffLength());
+		int sbiIndex = -1;
+		int nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
+		while (sbiIndex + 1 != nextSbiIndex) { 
+			RhythmSymbol prevRhythmSymbol = null;
+			Staff staff = new Staff(enc.getStaffLength());
 			int segment = 0;
-			String currentSystemEncoding = 
-				encoding.getCleanEncoding().substring(systemBreakIndicatorIndex + 1, 
-				nextSystemBreakIndicatorIndex);
+			String currSysEncoding = cleanEnc.substring(sbiIndex + 1, nextSbiIndex);
 			// Check for each system the encoded symbols one by one and for each encoded symbol 
-			// add its tablture representation to staff 
-			int symbolSeparatorIndex = -1;
-			int nextSymbolSeparatorIndex = currentSystemEncoding.indexOf(SymbolDictionary.SYMBOL_SEPARATOR,
-				symbolSeparatorIndex);
-			while (nextSymbolSeparatorIndex != -1) {
-				String encodedSymbol = currentSystemEncoding.substring(symbolSeparatorIndex + 1, 
-					nextSymbolSeparatorIndex);
-				int nextNextSymbolSeparatorIndex = currentSystemEncoding.indexOf(SymbolDictionary.SYMBOL_SEPARATOR,
-					nextSymbolSeparatorIndex + 1);
+			// add its tablature representation to staff 
+			int ssIndex = -1;
+			int nextSsIndex = currSysEncoding.indexOf(ss, ssIndex);
+			while (nextSsIndex != -1) {
+				String encodedSymbol = currSysEncoding.substring(ssIndex + 1, nextSsIndex);
+				int nextNextSsIndex = currSysEncoding.indexOf(ss, nextSsIndex + 1);
 				// nextEncodedSymbol is needed for b, c, and d below and can exist for all encoded 
-				// symbols except for the last--i.e., as long as nextNextSymbolSeparatorIndex is not -1
+				// symbols except for the last--i.e., as long as nextNextSsIndex is not -1
 				String nextEncodedSymbol = null;
-				if (nextNextSymbolSeparatorIndex != -1) {
-					nextEncodedSymbol = currentSystemEncoding.substring(nextSymbolSeparatorIndex + 1,
-						nextNextSymbolSeparatorIndex);
+				if (nextNextSsIndex != -1) {
+					nextEncodedSymbol = currSysEncoding.substring(nextSsIndex + 1, nextNextSsIndex);
 				}
 				// a. Add ConstantMusicalSymbol?
 				if (ConstantMusicalSymbol.getConstantMusicalSymbol(encodedSymbol) != null) {
 					ConstantMusicalSymbol c = ConstantMusicalSymbol.getConstantMusicalSymbol(encodedSymbol);
 					staff.addConstantMusicalSymbol(encodedSymbol, segment);
-					// Segment met de juiste waarde ophogen
 					segment = segment + c.getSymbol().length();
 				}
 				// b. Add TabSymbol?
-				else if (TabSymbol.getTabSymbol(encodedSymbol, encoding.getTabSymbolSet()) != null) { 
-					TabSymbol t = TabSymbol.getTabSymbol(encodedSymbol, encoding.getTabSymbolSet());
+				else if (TabSymbol.getTabSymbol(encodedSymbol, tss) != null) { 
+					TabSymbol t = TabSymbol.getTabSymbol(encodedSymbol, tss);
 					if (frenchTabRadioButton.isSelected()) {   
 						staff.addTabSymbolFrench(t, segment); 
 					}
@@ -504,7 +525,7 @@ public class TabViewer extends JFrame{
 					// last TS of a vertical sonority? Increment segment
 					// NB: LAYOUT RULE 4 guarantees that a vertical sonority is always followed by a
 					// space, meaning that nextEncodedSymbol always exists if encodedSymbol is a TS
-					if (nextEncodedSymbol.equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
+					if (nextEncodedSymbol.equals(sp)) {
 						segment++;
 					}
 				}
@@ -519,17 +540,17 @@ public class TabViewer extends JFrame{
 					// rhythmSymbolsCheckBox selected? Add RS only if r is not equal to 
 					// previousRhythmSymbol; never add any beam
 					else {
-						// Compare r with previousRhythmSymbol; if previousRhythmSymbol is null or if they
+						// Compare r with prevRhythmSymbol; if prevRhythmSymbol is null or if they
 						// do not have the same duration: add r to staff
 						// NB: because of possibly present beams, direct comparison does not work: an RS and 
 						// its beamed variant are considered inequal because they are defined as two different 
 						// objects
 						showBeam = false;
-						if (previousRhythmSymbol == null) {
+						if (prevRhythmSymbol == null) {
 							staff.addRhythmSymbol(r, segment, showBeam);
 						}
 						else {
-							if (r.getDuration() != previousRhythmSymbol.getDuration()) {
+							if (r.getDuration() != prevRhythmSymbol.getDuration()) {
 								staff.addRhythmSymbol(r, segment, showBeam);
 							}
 						}
@@ -538,10 +559,10 @@ public class TabViewer extends JFrame{
 					// represent a rest? Increment segment
 					// NB: LAYOUT RULE 5 guarantees that a rest is always followed by a space, 
 					// meaning that nextEncodedSymbol always exists if encodedSymbol is a RS
-					if (nextEncodedSymbol.equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
+					if (nextEncodedSymbol.equals(sp)) {
 						segment ++;
 					}
-					previousRhythmSymbol = r;
+					prevRhythmSymbol = r;
 				}     
 				// d. Add MensurationSign?
 				else if (MensurationSign.getMensurationSign(encodedSymbol) != null) {
@@ -551,31 +572,29 @@ public class TabViewer extends JFrame{
 					// encodedSymbol the only or the last symbol of a (compound) MS? Increment segment
 					// NB: LAYOUT RULE 6 guarantees that the last MS is always followed by a space,
 					// meaning that nextEncodedSymbol always exists if encodedSymbol is a MS 
-					if (nextEncodedSymbol.equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
+					if (nextEncodedSymbol.equals(sp)) {
 						segment ++;
 					}
 				}
 				// Prepare indices for next iteration inner while
-				symbolSeparatorIndex = nextSymbolSeparatorIndex;
-				nextSymbolSeparatorIndex = currentSystemEncoding.indexOf(SymbolDictionary.SYMBOL_SEPARATOR, 
-					symbolSeparatorIndex + 1); 
+				ssIndex = nextSsIndex;
+				nextSsIndex = currSysEncoding.indexOf(ss, ssIndex + 1); 
 			}
 			// System traversed? Add to tablature; prepare indices for next iteration outer while
 			System.out.println(staff.getStaff());
 			System.out.println(staff.getNumberOfSegments());
-			System.exit(0);
+//			System.exit(0);
 			
-			tab += staff.getStaff() + SPACE_BETWEEN_STAFFS;
-			systemBreakIndicatorIndex = nextSystemBreakIndicatorIndex;
-			nextSystemBreakIndicatorIndex = 
-				encoding.getCleanEncoding().indexOf(SymbolDictionary.SYSTEM_BREAK_INDICATOR, systemBreakIndicatorIndex + 1);
+			tab += staff.getStaff() + Staff.SPACE_BETWEEN_STAFFS;
+			sbiIndex = nextSbiIndex;
+			nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
 		}
 		return tab;
 	}
 
 
 	/**
-	 * Saves the encoding in the encodingArea in the fil it was loaded from.
+	 * Saves the encoding in the encodingArea in the file it was loaded from.
 	 * 
 	 * This is the action performed when clicking File > Save from the EncodingViewer and 
 	 * TabViewer menu.
@@ -807,78 +826,4 @@ public class TabViewer extends JFrame{
 		return viewButton;
 	}
 
-
-	/** 
-	 *  Determines the staff length by calculating the number of segments needed for the longest system. 
-	 *  
-	 *  The number of segments of a system is equal to the sum of
-	 *    (i) the total number of segments needed for single-segment events, which equals the total number of
-	 *        single-segment events.
-	 *    (ii) the total number of segments needed for multiple-segment events.
-	 *  To (i) belong all vertical sonorities, rests, separate rhythm dots, and MensurationSigns (all of which,
-	 *  following LAYOUT RULES 4-6, must be succeeded by a space--which means that their total number equals the
-	 *  total number of spaces), all spaces, and all barlines.
-	 *  To (ii) belong all double and repeat barlines. 
-	 *  
-	 *  Each system's staff length can thus be calculated by looking at the constant musical symbols only: it equals
-	 *  (i) twice the number of spaces + the number of barlines + (ii) the total length of the double and repeat 
-	 *  barlines. 
-	 **/ 
-	private int getStaffLength() {
-		int largestStaffLength = 0;
-		
-		// Doorzoek één voor één alle systemen
-		int systemBreakIndicatorIndex = -1;
-		int nextSystemBreakIndicatorIndex = 
-			encoding.getCleanEncoding().indexOf(SymbolDictionary.SYSTEM_BREAK_INDICATOR, 
-			systemBreakIndicatorIndex + 1);
-		while (systemBreakIndicatorIndex + 1 != nextSystemBreakIndicatorIndex) { 
-			String currentSystemEncoding = 
-				encoding.getCleanEncoding().substring(systemBreakIndicatorIndex + 1, 
-				nextSystemBreakIndicatorIndex);
-			int currentStaffLength = 0;
-			// Doorzoek per systeem één voor één alle symbolen
-			int symbolSeparatorIndex = -1;
-			int nextSymbolSeparatorIndex = currentSystemEncoding.indexOf(SymbolDictionary.SYMBOL_SEPARATOR,
-				symbolSeparatorIndex);
-			while (nextSymbolSeparatorIndex != -1) {
-				String encodedSymbol = currentSystemEncoding.substring(symbolSeparatorIndex + 1,
-					nextSymbolSeparatorIndex);
-				// Is encodedSymbol een ConstantMusicalSymbol? currentStaffLength verhogen
-				if (ConstantMusicalSymbol.getConstantMusicalSymbol(encodedSymbol) != null) { 
-					ConstantMusicalSymbol c = ConstantMusicalSymbol.getConstantMusicalSymbol(encodedSymbol); 
-					// Is encodedSymbol een space of barline?
-					if (c.getEncoding().length() == 1) {
-						currentStaffLength++;
-						// In het geval van een space: currentStaffLength nogmaals verhogen voor het event dat aan de
-						// space voorafgaat 
-						if (c == ConstantMusicalSymbol.SPACE) {
-							currentStaffLength++;
-						}
-					}
-					// Is encodedSymbol een double of repeat barline? currentStaffLength verhogen met$
-					// benodigde aantal segmenten 
-					else {
-						currentStaffLength += c.getEncoding().length();
-					}
-				} 
-				// Indices klaarzetten voor volgende doorgang binnenste while
-				symbolSeparatorIndex = nextSymbolSeparatorIndex;
-				nextSymbolSeparatorIndex = currentSystemEncoding.indexOf(SymbolDictionary.SYMBOL_SEPARATOR,
-					symbolSeparatorIndex + 1);
-			} 
-			// Systeem doorlopen? Kijk of het aantal benodigde segmenten groter is
-			// dan dat van het vorige systeem 
-			if (currentStaffLength > largestStaffLength) {
-				largestStaffLength = currentStaffLength;
-			}
-			// Indices klaarzetten voor volgende doorgang buitenste while; 
-			systemBreakIndicatorIndex = nextSystemBreakIndicatorIndex;
-			nextSystemBreakIndicatorIndex = 
-				encoding.getCleanEncoding().indexOf(SymbolDictionary.SYSTEM_BREAK_INDICATOR, 
-				systemBreakIndicatorIndex + 1);
-		}  
-		return largestStaffLength;
-	}
-  
 }

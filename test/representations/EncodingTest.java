@@ -228,6 +228,15 @@ public class EncodingTest {
 
 
 	@Test
+	public void testGetMetaDataFormatted() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+		String expected = "Author" + "\n" + "Title" + "\n" + "Source (year)" + "\n" + "\n";
+		String actual = encoding.getMetaDataFormatted();
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
 	public void testSetAndGetFootnotes() {
 		Encoding encoding = new Encoding();
 		String rawEncoding = "";
@@ -837,6 +846,28 @@ public class EncodingTest {
 		int expected = 24;
 		int actual = encoding.getStaffLength();
 		assertEquals(expected, actual);
+	}
+	
+	
+	@Test
+	public void testGetFootnoteStaffSegmentIndices() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+		
+		List<List<Integer>> expected = new ArrayList<>();
+		// System 1
+		expected.add(Arrays.asList(new Integer[]{8, 17}));
+		// System 2
+		expected.add(new ArrayList<>());
+		
+		List<List<Integer>> actual = encoding.getFootnoteStaffSegmentIndices();
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j), actual.get(i).get(j) );
+			}
+		}
 	}
 
 }

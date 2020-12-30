@@ -14,6 +14,7 @@ import java.util.List;
 import tbp.ConstantMusicalSymbol;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
+import tbp.Staff;
 import tbp.SymbolDictionary;
 import tbp.TabSymbol;
 import tbp.TabSymbolSet;
@@ -872,6 +873,17 @@ public class Encoding implements Serializable {
 			}
 		}    
 		return metaData;
+	}
+
+
+	public String getMetaDataFormatted() {
+		List<String> ias = getInfoAndSettings();
+		System.out.println("-->" + ias.get(AUTHOR_INDEX) + "<--");
+		System.out.println("-->" + ias.get(TITLE_INDEX) + "<--");
+		System.out.println("-->" + ias.get(SOURCE_INDEX) + "<--");
+		return ias.get(Encoding.AUTHOR_INDEX) + "\n" + 
+		ias.get(Encoding.TITLE_INDEX) + "\n" + 
+		ias.get(Encoding.SOURCE_INDEX) + "\n" + "\n";
 	}
 
 
@@ -1736,51 +1748,228 @@ public class Encoding implements Serializable {
 	/** 
 	 *  Determines the staff length by calculating the number of segments needed for the longest
 	 *  system. The number of segments needed for a system can be calculated by looking at the 
-	 *  CMS only, as it equals the sum of
-	 *    (i)  twice the system's number of spaces (each space is preceded by an event, and both
-	 *         the event and the space need one segment);  
-	 *    (ii) the total length of all the system's barlines. 
+	 *  CMS only, as it equals the sum of (i) twice the system's number of spaces (each space 
+	 *  is preceded by an event, and both the event and the space need one segment); and (ii) 
+	 *  the total length of all the system's barlines.
+	 *  
+	 *  @return The lenght of the staff, measured in staff segments.
 	 **/
 	// TESTED
 	public int getStaffLength() {
 		int largestStaffLength = 0;
 
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
+		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		
 		String cleanEncoding = getCleanEncoding();
-		String[] allSystems = cleanEncoding.substring(0, 
-			cleanEncoding.indexOf(SymbolDictionary.END_BREAK_INDICATOR)).split(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
+		String[] allSystems = cleanEncoding.substring(0, cleanEncoding.indexOf(ebi)).split(sbi);
 
 		// For each system
 		for (String system : allSystems) {
-			int lengthCurrentSystem = 0;
-			int symbolSeparatorIndex = -1;
-			int nextSymbolSeparatorIndex = 
-				system.indexOf(SymbolDictionary.SYMBOL_SEPARATOR, symbolSeparatorIndex + 1);
+			int lengthCurrSystem = 0;
+			int ssIndex = -1;
+			int nextSsIndex = system.indexOf(ss, ssIndex + 1);
 			// For each symbol
-			while (nextSymbolSeparatorIndex != -1) {
-				String symbol = 
-					system.substring(symbolSeparatorIndex + 1, nextSymbolSeparatorIndex);
+			while (nextSsIndex != -1) {
+				String symbol = system.substring(ssIndex + 1, nextSsIndex);
 				// If symbol is a CMS       
 				if (ConstantMusicalSymbol.getConstantMusicalSymbol(symbol) != null) { 
-					// a. If symbol is a space, lengthOfCurrentSystem must be incremented by 2: 
+					// a. If symbol is a space, lengthCurrSystem must be incremented by 2: 
 					// one for the space and one for the event before it
-					if (symbol.equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
-						lengthCurrentSystem += 2;
+					if (symbol.equals(sp)) {
+						lengthCurrSystem += 2;
 					}
-					// b. If symbol is any CMS but a space, lengthOfCurrentSystem must be 
+					// b. If symbol is any CMS but a space, lengthCurrSystem must be 
 					// incremented by the length of the symbol 
 					else {
-						lengthCurrentSystem += symbol.length();
+						lengthCurrSystem += symbol.length();
 					}
 				}
-				symbolSeparatorIndex = nextSymbolSeparatorIndex;
-				nextSymbolSeparatorIndex = system.indexOf(SymbolDictionary.SYMBOL_SEPARATOR, symbolSeparatorIndex + 1);
+				ssIndex = nextSsIndex;
+				nextSsIndex = system.indexOf(ss, ssIndex + 1);
 			}
 			// Reset largestStaffLength if necessary
-			if (lengthCurrentSystem > largestStaffLength) {
-				largestStaffLength = lengthCurrentSystem;
+			if (lengthCurrSystem > largestStaffLength) {
+				largestStaffLength = lengthCurrSystem;
 			}
 		}
 		return largestStaffLength;
+	}
+
+
+	/**
+	 * Gets, per system, the segment indices in the tbp Staff of the events that have a 
+	 * footnote.
+	 * 
+	 * @return A <code>List<code> of <code>List<code>s, each of which represents a system, and
+	 * contains the segment indices in the tbp Staff of the footnote events.
+	 */
+	// TESTED
+	public List<List<Integer>> getFootnoteStaffSegmentIndices() {
+		List<List<Integer>> segmentIndices = new ArrayList<>();
+
+		// For each system
+		for (List<String[]> system : getEventsWithFootnotes()) {
+			int currSegmentInd = 0;
+			List<Integer> currSegmentIndices = new ArrayList<>();
+			// For each event in the system
+			for (String[] event : system) {
+				String currEvent = event[0].substring(0, event[0].lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+				boolean isBarlineEvent = 
+					ConstantMusicalSymbol.isBarline(currEvent) ? true : false;
+				// If the event contains a footnote: add currSegmentInd
+				if (event[1] != null) {
+					// In case of a barline, add the footnote indicator below the first pipe
+					// char (and not under any repeat dots)
+					if (isBarlineEvent) {
+						currSegmentInd += currEvent.indexOf(ConstantMusicalSymbol.BARLINE.getEncoding());
+					}
+					currSegmentIndices.add(currSegmentInd);
+				}
+				// Increment currSegmentInd. If barline event: increment with the number of 
+				// chars in the barline; if not (so if TS, RS, rest, or MS event): increment
+				// with 2 - one segment for the event itself, and one for the space following it
+				currSegmentInd = 
+					isBarlineEvent ? currSegmentInd + currEvent.length() : currSegmentInd + 2;
+			}
+			segmentIndices.add(currSegmentIndices);
+		}
+		return segmentIndices;
+	}
+
+
+	/**
+	 * Renders the encoding as String.
+	 * 
+	 * @param TabSymbolSet Determines the tablature style.
+	 * @param ignoreRepeatedRhythmSymbols If set to <code>true</code>, RS will only be 
+	 * displayed when they change - regardless of whether this is specified in the encoding.
+	 * 
+	 * @return A String representation of the encoding.
+	 */
+	public String visualise(TabSymbolSet argTss, boolean ignoreRepeatedRhythmSymbols) {
+		String tab = "";
+		
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
+		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+
+		String cleanEnc = getCleanEncoding();
+		TabSymbolSet tss = getTabSymbolSet();
+
+		// Search all systems one by one
+		int sbiIndex = -1;
+		int nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
+		while (sbiIndex + 1 != nextSbiIndex) { 
+			RhythmSymbol prevRhythmSymbol = null;
+			Staff staff = new Staff(getStaffLength());
+			int segment = 0;
+			String currSysEncoding = cleanEnc.substring(sbiIndex + 1, nextSbiIndex);
+			// Check for each system the encoded symbols one by one and for each encoded symbol 
+			// add its tablature representation to staff 
+			int ssIndex = -1;
+			int nextSsIndex = currSysEncoding.indexOf(ss, ssIndex);
+			while (nextSsIndex != -1) {
+				String encodedSymbol = currSysEncoding.substring(ssIndex + 1, nextSsIndex);
+				int nextNextSsIndex = currSysEncoding.indexOf(ss, nextSsIndex + 1);
+				// nextEncodedSymbol is needed for b, c, and d below and can exist for all encoded 
+				// symbols except for the last--i.e., as long as nextNextSsIndex is not -1
+				String nextEncodedSymbol = null;
+				if (nextNextSsIndex != -1) {
+					nextEncodedSymbol = currSysEncoding.substring(nextSsIndex + 1, nextNextSsIndex);
+				}
+				// a. Add ConstantMusicalSymbol?
+				if (ConstantMusicalSymbol.getConstantMusicalSymbol(encodedSymbol) != null) {
+					ConstantMusicalSymbol c = ConstantMusicalSymbol.getConstantMusicalSymbol(encodedSymbol);
+					staff.addConstantMusicalSymbol(encodedSymbol, segment);
+					segment = segment + c.getSymbol().length();
+				}
+				// b. Add TabSymbol?
+				else if (TabSymbol.getTabSymbol(encodedSymbol, tss) != null) { 
+					TabSymbol t = TabSymbol.getTabSymbol(encodedSymbol, tss);
+					if (argTss == TabSymbolSet.FRENCH_TAB) {   
+						staff.addTabSymbolFrench(t, segment); 
+					}
+					else if (argTss == TabSymbolSet.ITALIAN_TAB) {
+						staff.addTabSymbolItalian(t, segment);
+					}
+					else if (argTss == TabSymbolSet.SPANISH_TAB) {
+						staff.addTabSymbolSpanish(t, segment);
+					}
+					else if (argTss == TabSymbolSet.NEWSIDLER_1536 ) {
+						// TODO 
+					} 
+					// Is encodedSymbol followed by a space and not by another TS--i.e., is it the 
+					// last TS of a vertical sonority? Increment segment
+					// NB: LAYOUT RULE 4 guarantees that a vertical sonority is always followed by a
+					// space, meaning that nextEncodedSymbol always exists if encodedSymbol is a TS
+					if (nextEncodedSymbol.equals(sp)) {
+						segment++;
+					}
+				}
+				// c. Add RhythmSymbol?
+				else if (RhythmSymbol.getRhythmSymbol(encodedSymbol) != null) {
+					RhythmSymbol r = RhythmSymbol.getRhythmSymbol(encodedSymbol);
+					boolean showBeam = true;
+					// Always RS? Add RS; always add any beam
+					if (!ignoreRepeatedRhythmSymbols) {
+						staff.addRhythmSymbol(r, segment, showBeam);    
+					}
+					// Only differing RS? Add RS only if r is not equal to previousRhythmSymbol; 
+					// never add any beam
+					else {
+						// Compare r with prevRhythmSymbol; if prevRhythmSymbol is null or if they
+						// do not have the same duration: add r to staff
+						// NB: because of possibly present beams, direct comparison does not work: an RS and 
+						// its beamed variant are considered inequal because they are defined as two different 
+						// objects
+						showBeam = false;
+						if (prevRhythmSymbol == null) {
+							staff.addRhythmSymbol(r, segment, showBeam);
+						}
+						else {
+							if (r.getDuration() != prevRhythmSymbol.getDuration()) {
+								staff.addRhythmSymbol(r, segment, showBeam);
+							}
+						}
+					}
+					// Is encodedSymbol followed by a space and not by a TS -- i.e., does 
+					// encodedSymbol represent a rest? Increment segment
+					// NB: LAYOUT RULE 5 guarantees that a rest is always followed by a space, 
+					// meaning that nextEncodedSymbol always exists if encodedSymbol is a RS
+					if (nextEncodedSymbol.equals(sp)) {
+						segment ++;
+					}
+					prevRhythmSymbol = r;
+				}     
+				// d. Add MensurationSign?
+				else if (MensurationSign.getMensurationSign(encodedSymbol) != null) {
+					MensurationSign m = MensurationSign.getMensurationSign(encodedSymbol);
+					staff.addMensurationSign(m, segment);
+					// Is encodedSymbol followed by a space and not by another MS--i.e., is
+					// encodedSymbol the only or the last symbol of a (compound) MS? Increment segment
+					// NB: LAYOUT RULE 6 guarantees that the last MS is always followed by a space,
+					// meaning that nextEncodedSymbol always exists if encodedSymbol is a MS 
+					if (nextEncodedSymbol.equals(sp)) {
+						segment ++;
+					}
+				}
+				// Prepare indices for next iteration inner while
+				ssIndex = nextSsIndex;
+				nextSsIndex = currSysEncoding.indexOf(ss, ssIndex + 1); 
+			}
+			// System traversed? Add to tablature; prepare indices for next iteration outer while
+			System.out.println(staff.getStaff());
+			System.out.println(staff.getNumberOfSegments());
+//			System.exit(0);
+			
+			tab += staff.getStaff() + Staff.SPACE_BETWEEN_STAFFS;
+			sbiIndex = nextSbiIndex;
+			nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
+		}
+		return tab;
 	}
 
 }
