@@ -39,6 +39,9 @@ public class Encoding implements Serializable {
 	public static final int METER_INDEX = 6;
 	public static final int DIMINUTION_INDEX = 7;
 //	private static final String DUR_SCALE = "DUR_SCALE";
+	private static final int EVENT_IND = 0;
+	private static final int FOOTNOTE_IND = 1;
+	private static final int FOOTNOTE_NUM_IND = 2;
 		
 	private List<List<String>> listsOfSymbols;
 	private static final int ALL_SYMBOLS_INDEX = 0;
@@ -495,7 +498,7 @@ public class Encoding implements Serializable {
 		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
 		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
 		String invertedSp = "<";
-		String invertedSbi = "<";
+		String invertedSbi = "\\";
 
 		String rawEnc = getRawEncoding();
 		// Remove all carriage returns and line breaks; remove leading and trailing whitespace
@@ -607,7 +610,7 @@ public class Encoding implements Serializable {
 							(j == 0) ? eventsPerSystem.get(i-1) : eventsCurrSystem;  
 						// Adapt comment and commentNum in element last added to systemToAdapt
 						systemToAdapt.set(systemToAdapt.size()-1, new String[]{
-							systemToAdapt.get(systemToAdapt.size()-1)[0], comment, commentNum});
+							systemToAdapt.get(systemToAdapt.size()-1)[EVENT_IND], comment, commentNum});
 						// Add
 						eventsCurrSystem.add(new String[]{adaptedEvent, null, null});
 					}
@@ -859,7 +862,7 @@ public class Encoding implements Serializable {
 	 *   (2) a mix of footnotes and other indications such as bar numbers.
 	 */
 	// TESTED
-	List<String> getMetaData() {
+	public List<String> getMetaData() {
 		String rawEnc = getRawEncoding();
 		List<String> metaData = new ArrayList<String>();
 		for (int i = 0; i < rawEnc.length(); i++) {
@@ -876,6 +879,11 @@ public class Encoding implements Serializable {
 	}
 
 
+	/**
+	 * 
+	 * @return
+	 */
+	// TESTED
 	public String getMetaDataFormatted() {
 		List<String> ias = getInfoAndSettings();
 		System.out.println("-->" + ias.get(AUTHOR_INDEX) + "<--");
@@ -906,6 +914,31 @@ public class Encoding implements Serializable {
 
 	// TESTED (together with setFootnotes())
 	public List<String> getFootnotes() {
+		return footnotes;
+	}
+
+
+	public List<String> getFootnotesNEW() {
+		List<String> footnotes = new ArrayList<>();
+		List<List<String[]>> ewf = getEventsWithFootnotes();
+		// For each system
+		for (int i = 0; i < ewf.size(); i++) {
+			List<String> footnotesCurrSys = new ArrayList<>();
+			// For each event
+			for (String[] currEvent : ewf.get(i)) {
+				if (currEvent[FOOTNOTE_IND] != null) {
+					String footnoteNumStr = currEvent[FOOTNOTE_NUM_IND];
+					int footnoteNum = 
+						Integer.parseInt(footnoteNumStr.substring(footnoteNumStr.indexOf("#") + 1)); 
+					footnotesCurrSys.add("(" + footnoteNum + ") " + currEvent[FOOTNOTE_IND]);
+				}
+			}
+			// If there are footnotes in the system, prepend system number and add list
+			if (footnotesCurrSys.size() != 0) {
+				footnotesCurrSys.add(0, "system " + (i+1));
+				footnotes.addAll(footnotesCurrSys);
+			}			
+		}
 		return footnotes;
 	}
 

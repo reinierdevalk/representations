@@ -33,79 +33,60 @@ import representations.Encoding;
 import tbp.*;
 
 
-public class TabViewer extends JFrame{  
+public class TabViewer extends JFrame{
 
 	private static final long serialVersionUID = 1L;
-
-	private static File encodingFile;
-	private Highlighter hilit = new DefaultHighlighter();  
-
-//	private JPanel encodingWindowPanel = null;
-//	private JScrollPane encodingAreaScrollPane = null;
-//	private JScrollPane tablatureAreaScrollPane = null;
-//	private JMenuBar encodingWindowMenubar = null;
-//	private JMenuBar tablatureWindowMenubar = null;
-	private JTextArea encodingArea = null;
-	private JTextArea tabArea = null;
-//	private JButton viewButton = null;
-//	private JLabel pieceLabel = null;
-	private JLabel pieceInfoLabel = null;
-//	private JLabel viewAsLabel = null;
-//	private JLabel errorLabel = null;
-	private JLabel upperErrorMessageLabel = null;
-	private JLabel lowerErrorMessageLabel = null;
-	private JRadioButton frenchTabRadioButton = null; 
-	private JRadioButton italianTabRadioButton = null;
-	private JRadioButton spanishTabRadioButton = null;
-	private JRadioButton germanTabRadioButton = null;
-	private JRadioButton tabCodeRadioButton = null;
-	private JCheckBox rhythmSymbolsCheckBox = null;
+	private Highlighter hilit = new DefaultHighlighter(); // 2 methods
+	private JTextArea encodingArea; // 5 methods
+	private JTextArea tabArea; // 3 methods
+	private JLabel pieceInfoLabel; // 2 methods
+	private JLabel upperErrorMessageLabel; // 2 methods
+	private JLabel lowerErrorMessageLabel; // 2 methods
+	private JRadioButton frenchTabRadioButton; // 2 methods
+	private JRadioButton italianTabRadioButton; // 2 methods
+	private JRadioButton spanishTabRadioButton; // 2 methods
+	private JRadioButton germanTabRadioButton; // 2 methods
+	private JRadioButton tabCodeRadioButton; // 1 method
+	private JCheckBox rhythmSymbolsCheckBox; // 2 methods 
 
 
 	public static void main(String[] args) {
-		TabViewer gui = new TabViewer();
-		gui.setVisible(true);
+		String encPath = null;
 		if (args.length != 0) {
-			encodingFile = new File(args[0]);
+			encPath = args[0];
 		}
+		TabViewer gui = new TabViewer(encPath);
+		gui.setVisible(true);
 	}
 
 
-	public TabViewer() {
+	public TabViewer(String encPath) {
 		super();
-		initialize();
-//		prepareTabViewer();    
+		initialize(encPath);
 	}
 
 
-	private void initialize() {
+	/**
+	 * Initialises the GUI.
+	 * 
+	 * @param encFile
+	 */
+	private void initialize(String encPath) {
 		this.setSize(717, 672);
-		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		this.setJMenuBar(getEncodingViewerMenubar());
-		this.setContentPane(getEncodingViewerPanel());
+		this.setJMenuBar(getEncodingViewerMenubar(encPath));
+		this.setContentPane(getEncodingViewerPanel(encPath));
 		this.setTitle("EncodingViewer");
-	}
-	
-	
-	private void openTablatureWindow() {
-		JFrame tablatureFrame = new JFrame("TabViewer");
-		tablatureFrame.setSize(800, 500);
-		tablatureFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-		
-		tablatureFrame.setJMenuBar(getTabViewerMenubar());
-		tablatureFrame.setContentPane(getTabAreaScrollPane());
-		tablatureFrame.setVisible(true);
+		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
 
 
 	/**
 	 * Creates the JMenuBar for the EncodingViewer.
 	 * 
+	 * @param encPath
 	 * @return
 	 */
-	private JMenuBar getEncodingViewerMenubar() {
-//		if (encodingWindowMenubar == null) {
-//			encodingWindowMenubar = new JMenuBar();	
+	private JMenuBar getEncodingViewerMenubar(String encPath) {
 		JMenuBar encodingViewerMenubar = new JMenuBar();
 		
 		// File
@@ -117,7 +98,7 @@ public class TabViewer extends JFrame{
 		fileMenu.add(openFile); 
 		openFile.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				openFileAction();
+				openFileAction(encPath);
 			}
 		});
 
@@ -126,40 +107,25 @@ public class TabViewer extends JFrame{
 		fileMenu.add(saveFile);
 		saveFile.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				saveFileAction();
+				saveFileAction(encPath);
 			}
 		});
-//		}
 		return encodingViewerMenubar;
-	}
-	
-	
-	private void prepareTabViewer() {    
-		encodingArea.setHighlighter(hilit);
-		ButtonGroup tabButtons = new ButtonGroup();
-		tabButtons.add(frenchTabRadioButton);
-		tabButtons.add(italianTabRadioButton);
-		tabButtons.add(spanishTabRadioButton);
-		tabButtons.add(germanTabRadioButton);
-		tabButtons.add(tabCodeRadioButton);
-		frenchTabRadioButton.setSelected(true);
 	}
 
 
 	/**
 	 * Creates the JPanel for the EncodingViewer and all its content.
 	 * 
+	 * @param encPath
 	 * @return
 	 */
-	private JPanel getEncodingViewerPanel() {
-//		if (encodingWindowPanel == null) {
-//			encodingWindowPanel = new JPanel();
+	private JPanel getEncodingViewerPanel(String encPath) {
 		JPanel encodingViewerPanel = new JPanel();
 		encodingViewerPanel.setLayout(null);
 		encodingViewerPanel.setSize(new Dimension(586, 413));
 
 		// Encoding labels
-//		pieceLabel = new JLabel("Encoding:");
 		JLabel pieceLabel = new JLabel("Encoding:");
 		pieceLabel.setBounds(new Rectangle(15, 15, 81, 16));
 		encodingViewerPanel.add(pieceLabel, null);
@@ -168,7 +134,6 @@ public class TabViewer extends JFrame{
 		encodingViewerPanel.add(pieceInfoLabel);    
 
 		// View-as label and tablature radio buttons
-//		viewAsLabel = new JLabel("View as:");
 		JLabel viewAsLabel = new JLabel("View as:");
 		viewAsLabel.setBounds(new Rectangle(15, 42, 81, 16));
 		encodingViewerPanel.add(viewAsLabel, null);
@@ -196,7 +161,6 @@ public class TabViewer extends JFrame{
 		frenchTabRadioButton.setSelected(true);
 		
 		// Error labels
-//		errorLabel = new JLabel("Error:");
 		JLabel errorLabel = new JLabel("Error:");
 		errorLabel.setBounds(15, 69, 81, 16);
 		encodingViewerPanel.add(errorLabel, null);   
@@ -216,15 +180,10 @@ public class TabViewer extends JFrame{
 		encodingArea.setEditable(true);
 		encodingArea.setFont(new Font("Courier New", Font.PLAIN, 12));
 		encodingArea.setHighlighter(hilit);
-//		if (encodingAreaScrollPane == null) {
-//		encodingAreaScrollPane = 
-		JScrollPane encodingAreaScrollPane = 		
-//			new JScrollPane(getEncodingArea(), JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+		JScrollPane encodingAreaScrollPane =
 			new JScrollPane(encodingArea, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
 			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		encodingAreaScrollPane.setBounds(new Rectangle(15, 115, 676, 430));
-//		}
-//		encodingViewerPanel.add(getEncodingAreaScrollPane(), null);
 		encodingViewerPanel.add(encodingAreaScrollPane, null);
 		
 		// Repeated rhythm symbols checkbox
@@ -232,7 +191,6 @@ public class TabViewer extends JFrame{
 		rhythmSymbolsCheckBox.setBounds(new Rectangle(15, 559, 211, 16));
 		rhythmSymbolsCheckBox.setActionCommand("Show all rhythm symbols");
 		rhythmSymbolsCheckBox.setText("Ignore repeated rhythm symbols");
-//		encodingViewerPanel.add(getRhythmSymbolsCheckBox(), null);
 		encodingViewerPanel.add(rhythmSymbolsCheckBox, null);
 		
 		// View button
@@ -241,18 +199,11 @@ public class TabViewer extends JFrame{
 		viewButton.setText("View");
 		viewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				viewButtonAction();
+				viewButtonAction(encPath);
 			}
 		});
-//		encodingViewerPanel.add(getViewButton(), null);
 		encodingViewerPanel.add(viewButton, null);
 
-//		encodingViewerPanel.add(getFrenchTabRadioButton(), null);
-//		encodingViewerPanel.add(getItalianTabRadioButton(), null);
-//		encodingViewerPanel.add(getSpanishTabRadioButton(), null);
-//		encodingViewerPanel.add(getGermanTabRadioButton(), null);
-//		encodingViewerPanel.add(getTabCodeRadioButton(), null);         
-//		}
 		return encodingViewerPanel;
 	}
 
@@ -261,119 +212,130 @@ public class TabViewer extends JFrame{
 	 * Loads the content of a file into encodingArea. 
 	 * 
 	 * This is the action performed when clicking File > Open from the EncodingViewer menu.
+	 * 
+	 * @param encPath The path from which to open the file.
 	 */
-	private void openFileAction() {
+	private void openFileAction(String encPath) {
 		// TODO encodingFile is now hardcoded; make possible to select file from menu
-		if (encodingFile == null) {
-//			String prefix1 = Runner.encodingsPath;		
-			String prefix1 = "F:/research/data/data/encodings/tab-int/"; // TODO to line above
-			String prefix2 = "F:/research/data/data/encodings/test/";
-//			"F:/research/data/encodings/tab-int/4vv/abondante-1548_1-mais_mamignone.tbp";
+		if (encPath == null) {
+			String prefix = "F:/research/data/data/encodings/"; // TODO to line above
+			encPath = prefix;
 			
+			// Test
+			encPath += "test/testpiece.tbp";
+//			path += "test/test_get_meter_info.tbp";
+//			path =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/test/tab/3610_033_inter_natos_mulierum_morales_T-rev.tbp";
+//			path =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/test/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T.tbp";
+//			path =  "F:/research/projects/byrd/test/il_me_souffit-short.tbp";
+//			path =  "F:/research/projects/byrd/test/pleni.tbp";
+			
+			// Need to be double-checked
+//			path += "newsidler-1536_6-mein_einigs_a.tbp";
+//			path += "Newsidler 1536 - Mein hertz alzeyt hat gross verlangen.tbp";
+//			path += "Ochsenkun 1558 - Cum Sancto spiritu.tbp";  	
+//			path += "Barbetta 1582 - Martin menoit.tbp";
+//			path += "Da Crema 1546 - Il nest plaisir.tbp";
+//			path += "De Narbaez 1538 - MIlle regres.tbp";
+//			path += "Heckel 1562 - Il est vne Fillete. [Tenor].tbp";
+//			path += "Heckel 1562 - Il estoit vne fillete. Discant.tbp";
+//			path += "Morlaye 1552 - LAs on peut iuger.tbp";
+//			path += "Newsidler 1544 - Der hupff auf.tbp";
+//			path += "Newsidler 1544 - Hie volget die Schlacht vor Bafia. Der Erst Teyl.tbp";
+//			path += "Newsidler 1544 - Hie volget die Schlacht vor Bafia. Der ander Teyl der schlacht.tbp";
+//			path += "Newsidler 1544 - Sula Bataglia.tbp";
+//			path += "Ochsenkun 1558 - Benedicta es coelorum, Prima pars.tbp";
+//			path += "Ochsenkun 1558 - Gott alls in allem wesentlich.tbp";
+//			path += "Ochsenkun 1558 - Pater Noster, Prima pars.tbp"; 
+//			path += "Ochsenkun 1558 - Praeter rerum seriem, Prima pars.tbp";
+//			path += "Ochsenkun 1558 - Stabat mater dolorosa, Prima pars.tbp";
+//			path += "Phalese 1546 - Martin menuyt de Iennequin.tbp";
+//			path += "Spinacino 1507 - LA Bernardina de Iosquin.tbp";
+			
+			// Checked and ready for processing
 			// 3vv
-//			encodingFile = new File(prefix1 + "3vv/" + "newsidler_1536-disant_adiu.tbp");
-//			encodingFile = new File(prefix1 + "3vv/" + "newsidler_1536-mess_pensees.tbp");
-//			encodingFile = new File(prefix1 + "3vv/" + "pisador-1552_7-pleni_de.tbp");
-//			encodingFile = new File(prefix1 + "3vv/" + "judenkuenig-1523_2-elslein_liebes.tbp");
-//			encodingFile = new File(prefix1 + "3vv/" + "newsidler-1544_2-nun_volget.tbp");
-//			encodingFile = new File(prefix1 + "3vv/" + "phalese-1547-tant_que-a3.tbp"); 
-			encodingFile = new File(prefix2 + "testpiece.tbp");
-//			encodingFile = new File("F:/research/data/encodings/" + "newsidler-1536_6-mein_einigs_a.tbp");
-//			encodingFile = new File(prefix1 + "4vv/" + "BSB-mus.ms._272-mille_regres.tbp");
-			
+//			path += "tab-int/3vv/" + "newsidler_1536-disant_adiu.tbp";
+//			path += "tab-int/3vv/" + "newsidler_1536-mess_pensees.tbp";
+//			path += "tab-int/3vv/" + "pisador-1552_7-pleni_de.tbp";
+//			path += "tab-int/3vv/" + "judenkuenig-1523_2-elslein_liebes.tbp";
+//			path += "tab-int/3vv/" + "newsidler-1544_2-nun_volget.tbp";
+//			path += "tab-int/3vv/" + "phalese-1547-tant_que-a3.tbp"; 
 
 			// 4vv
-//			encodingFile = new File(prefix1 + "4vv/" + "ochsenkun_1558_-_absolon_fili.tbp");
-//			encodingFile = new File(prefix1 + "4vv/" + "ochsenkun_1558_-_in_exitu.tbp");
-//			encodingFile = new File(prefix1 + "4vv/" + "ochsenkun_1558_-_qui_habitat.tbp");
-//			encodingFile = new File(prefix1 + "4vv/" + "rotta-1546_15-bramo_morir.tbp");
-//			encodingFile = new File(prefix1 + "4vv/" + "phalese_1547_-_tant_que_a4.tbp");
-//			encodingFile = new File(prefix1 + "4vv/" + "ochsenkun_1558_-_herr_gott.tbp");
-//			encodingFile = new File(prefix1 + "4vv/" + "abondante-1548_1-mais_mamignone.tbp");
-//			encodingFile = new File(prefix1 + "4vv/" + "phalese_1563_-_las_on.tbp");
-//			encodingFile = new File(prefix1 + "4vv/" + "barbetta_1582_-_il_nest.tbp");
-//			encodingFile = new File(prefix1 + "4vv/" + "phalese_1563_-_il_estoit.tbp");
-//			encodingFile = new File("F:/research/data/encodings/BSB-mus.ms._272-mille_regres.tbp");
-//			encodingFile = new File("C:/Users/Reinier/Desktop/tab_reconstr-hector/Reinier-Scores/as_caesar.tbp");
-//			encodingFile = new File("C:/Users/Reinier/Desktop/tab_reconstr-hector/test/il_me_souffit-short.tbp");
-//			encodingFile = new File("C:/Users/Reinier/Desktop/tab_reconstr-hector/tab/as_caesar_wept-II.tbp");
-//			encodingFile = new File("C:/Users/Reinier/Desktop/bm.tbp");
-//			encodingFile = new File("C:/Users/Reinier/Desktop/test-hector/as_caesar.tbp");
-//			encodingFile = new File("C:/Users/Reinier/Desktop/pleni.tbp");
-//			encodingFile = new File("C:/Users/Reinier/Desktop/test/3584_001_pleni_missa_hercules_josquin.tbp");
-//			encodingFile = new File("C:/Users/Reinier/Desktop/2019-ISMIR/test/tab/3610_033_inter_natos_mulierum_morales_T-rev.tbp");
-//			encodingFile = new File("C:/Users/Reinier/Desktop/2019-ISMIR/test/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T.tbp");
-//			encodingFile = 
-//				new File("C:/Users/Reinier/Desktop/ISMIR-2019/josquin/tab/5256_05_inviolata_integra_desprez-2.tbp");
-//			encodingFile = 
-//				new File("F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/5263_12_in_exitu_israel_de_egipto_desprez-3.tbp");
-			
+//			path += "tab-int/4vv/" + "ochsenkun_1558_-_absolon_fili.tbp";
+//			path += "tab-int/4vv/" + "ochsenkun_1558_-_in_exitu.tbp";
+//			path += "tab-int/4vv/" + "ochsenkun_1558_-_qui_habitat.tbp";
+//			path += "tab-int/4vv/" + "rotta-1546_15-bramo_morir.tbp";
+//			path += "tab-int/4vv/" + "phalese_1547_-_tant_que_a4.tbp";
+//			path += "tab-int/4vv/" + "ochsenkun_1558_-_herr_gott.tbp";
+//			path += "tab-int/4vv/" + "abondante-1548_1-mais_mamignone.tbp";
+//			path += "tab-int/4vv/" + "phalese_1563_-_las_on.tbp";
+//			path += "tab-int/4vv/" + "barbetta_1582_-_il_nest.tbp";
+//			path += "tab-int/4vv/" + "phalese_1563_-_il_estoit.tbp";
+//			path += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
 
 			// 5vv
-//			encodingFile = new File(prefix1 + "5vv/" + "adriansen_1584_-_dvn_si.tbp");
-//			encodingFile = new File(prefix1 + "5vv/" + "ochsenkun_1558_-_inuiolata_integra.tbp");
+//			path += "tab-int/5vv/" + "adriansen_1584_-_dvn_si.tbp";
+//			path += "tab-int/5vv/" + "ochsenkun_1558_-_inuiolata_integra.tbp";
+			
+			// Byrd
+//			path += "byrd-int/4vv/as_caesar_wept-II.tbp";
 
-			// Test
-//			encodingFile = new File(ExperimentRunner.pathPrefix + "encodings/tests/testpiece.tbp");
-//			encodingFile = new File(prefix2 + "Template.tbp");
-//			encodingFile = new File(prefix2 + "test_get_meter_info.tbp");
-
-			// Rest
-//			encodingFile = new File(prefix2 + "Newsidler 1536 - Mein hertz alzeyt hat gross verlangen.tbp");
-//			encodingFile = new File(prefix2 + "Ochsenkun 1558 - Cum Sancto spiritu.tbp");  	
-//			encodingFile = new File(prefix2 + "Barbetta 1582 - Martin menoit.tbp");
-//			encodingFile = new File(prefix2 + "Da Crema 1546 - Il nest plaisir.tbp");
-//			encodingFile = new File(prefix2 + "De Narbaez 1538 - MIlle regres.tbp");
-//			encodingFile = new File(prefix2 + "Heckel 1562 - Il est vne Fillete. [Tenor].tbp");
-//			encodingFile = new File(prefix2 + "Heckel 1562 - Il estoit vne fillete. Discant.tbp");
-//			encodingFile = new File(prefix2 + "Morlaye 1552 - LAs on peut iuger.tbp");
-//			encodingFile = new File(prefix2 + "Newsidler 1544 - Der hupff auf.tbp");
-//			encodingFile = new File(prefix2 + "Newsidler 1544 - Hie volget die Schlacht vor Bafia. Der Erst Teyl.tbp");
-//			encodingFile = new File(prefix2 + "Newsidler 1544 - Hie volget die Schlacht vor Bafia. Der ander Teyl der schlacht.tbp");
-//			encodingFile = new File(prefix2 + "Newsidler 1544 - Sula Bataglia.tbp");
-//			encodingFile = new File(prefix2 + "Ochsenkun 1558 - Benedicta es coelorum, Prima pars.tbp");
-//			encodingFile = new File(prefix2 + "Ochsenkun 1558 - Gott alls in allem wesentlich.tbp");
-//			encodingFile = new File(prefix2 + "Ochsenkun 1558 - Pater Noster, Prima pars.tbp"); 
-//			encodingFile = new File(prefix2 + "Ochsenkun 1558 - Praeter rerum seriem, Prima pars.tbp");
-//			encodingFile = new File(prefix2 + "Ochsenkun 1558 - Stabat mater dolorosa, Prima pars.tbp");
-//			encodingFile = new File(prefix2 + "Phalese 1546 - Martin menuyt de Iennequin.tbp");
-//			encodingFile = new File(prefix2 + "Spinacino 1507 - LA Bernardina de Iosquin.tbp");
+			// JosquIntab
+//			path = "F:/research/data/data/josquintab/tab/" + "5256_05_inviolata_integra_desprez-2.tbp";
+//			path = "F:/research/data/data/josquintab/tab/" + "5263_12_in_exitu_israel_de_egipto_desprez-3.tbp";
 		}
+		File encFile = new File(encPath);
 		
-		pieceInfoLabel.setText(encodingFile.getName());
+		pieceInfoLabel.setText(encFile.getName());
 		String rawEncoding = "";
 		try {
-			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingFile.getAbsolutePath())));
+			rawEncoding = new String(Files.readAllBytes(Paths.get(encFile.getAbsolutePath())));
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
 		encodingArea.setText(rawEncoding);
+	}
 
-//		char[] ca = rawEncoding.toCharArray();
-//		List<Integer> indicesR = new ArrayList<Integer>();
-//		List<Integer> indicesN = new ArrayList<Integer>();
-//		List<Integer> indicesRN = new ArrayList<Integer>();
-//		for (int i = 0; i < ca.length; i++) {
-//			char currChar = ca[i];
-//			if (Character.toString(currChar).equals("\r")) {
-//				indicesR.add(i);
-//				if (i != ca.length - 1) {
-//					char nextChar = ca[i + 1];
-//					if (Character.toString(nextChar).equals("\n")) {
-//						indicesRN.add(i);
-//					}
-//				}
-//			}
-//			if (Character.toString(currChar).equals("\n")) {
-//				indicesN.add(i);
-//			} 
-//		}
-//		System.out.println("countR  = " + indicesR.size());
-//		System.out.println("  at indices " + indicesR);
-//		System.out.println("countN  = "+ indicesN.size());
-//		System.out.println("  at indices " + indicesN);
-//		System.out.println("countRN = " + indicesRN.size());
-//		System.out.println("  at indices " + indicesRN);
+
+	/**
+	 * Saves the encoding in the encodingArea in the file it was loaded from.
+	 * 
+	 * This is the action performed when clicking File > Save from the EncodingViewer and 
+	 * TabViewer menu.
+	 * 
+	 * @param encPath The path to save the file to. 
+	 * 
+	 */
+	private void saveFileAction(String encPath) {  	
+		String encodingStr = encodingArea.getText();
+
+		// Handle any returns added to encoding (which will be "\n" and not "\r\n") by replacing
+		// them with "\r\n"
+		// a. List all indices of the \ns not preceded by \rs
+		List<Integer> indicesOfLineBreaks = new ArrayList<Integer>(); 
+		for (int i = 0; i < encodingStr.length(); i++) {
+			String currentChar = encodingStr.substring(i, i + 1);
+			if (currentChar.equals("\n")) {
+				// NB: previousChar always exists as the char at index 0 in encoding will never be a \n
+				String previousChar = encodingStr.substring(i - 1, i);	
+				if (!previousChar.equals("\r")) {
+					indicesOfLineBreaks.add(i);
+				}
+			}
+		}  	
+		// b. Replace all \ns not preceded by \rs in the encoding by \n\rs and store the file
+		for (int i = indicesOfLineBreaks.size() - 1; i >= 0; i--) {
+			int currentIndex = indicesOfLineBreaks.get(i);
+			encodingStr = encodingStr.substring(0, currentIndex) + "\r" + encodingStr.substring(currentIndex);
+		}
+//		ToolBox.storeTextFile(encodingStr, encodingFile); 
+		try {
+			Files.write(Paths.get(encPath), encodingStr.getBytes());
+//			Files.write(Paths.get(encodingFile.getAbsolutePath()), encodingStr.getBytes());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 
@@ -383,8 +345,10 @@ public class TabViewer extends JFrame{
 	 * is given and the TabViewer is not opened. 
 	 * 
 	 * This is the action performed when clicking the View button in the EncodingViewer.
+	 * 
+	 * @param encPath
 	 */ 
-	private void viewButtonAction() { 
+	private void viewButtonAction(String encPath) { 
 		final int firstErrorCharIndex = 0;
 		final int lastErrorCharIndex = 1;
 		final int errorStringIndex = 2;
@@ -455,9 +419,85 @@ public class TabViewer extends JFrame{
 //					SPACE_BETWEEN_STAFFS + visualise(enc)
 					allFootnotes
 				);
-				openTablatureWindow();
+				openTablatureWindow(encPath);
 			} 
 		}
+	}
+
+
+	/**
+	 * 
+	 * @param encPath
+	 */
+	private void openTablatureWindow(String encPath) {
+		JFrame tablatureFrame = new JFrame("TabViewer");
+		tablatureFrame.setSize(800, 500);
+		tablatureFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		
+		tablatureFrame.setJMenuBar(getTabViewerMenubar(encPath));
+		tablatureFrame.setContentPane(getTabAreaScrollPane());
+		tablatureFrame.setVisible(true);
+	}
+
+
+	/**
+	 * 
+	 * @param encPath
+	 * @return
+	 */
+	private JMenuBar getTabViewerMenubar(String encPath) {
+		JMenuBar tablatureWindowMenubar = new JMenuBar();
+		JMenu fileMenu = new JMenu("File");
+		tablatureWindowMenubar.add(fileMenu);   
+
+		JMenuItem saveFile = new JMenuItem("Save");
+		fileMenu.add(saveFile);
+		saveFile.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				saveFileAction(encPath);
+			}
+		});
+
+		JMenu editMenu = new JMenu("Edit");
+		tablatureWindowMenubar.add(editMenu);
+
+		JMenuItem selectAll = new JMenuItem("Select all");
+		editMenu.add(selectAll);
+		selectAll.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				selectAllEditAction();
+			}
+		});
+
+		return tablatureWindowMenubar;
+	}
+
+
+	/**
+	 * Saves the encoding in the encodingArea in the file it was loaded from.
+	 * 
+	 * This is the action performed when clicking Edit > Select all from TabViewer menu.
+	 * 
+	 */
+	private void selectAllEditAction() {
+		tabArea.selectAll();
+	}
+
+
+	private JTextArea getTabArea() {
+		if (tabArea == null) {
+			tabArea = new JTextArea();
+			tabArea.setBounds(new Rectangle(15, 240, 571, 136));
+			tabArea.setEditable(false);
+			tabArea.setFont(new Font("Courier New", Font.PLAIN, 12));    
+		}
+		return tabArea;
+	}
+
+
+	private JScrollPane getTabAreaScrollPane() {			
+		return new JScrollPane(getTabArea(), JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
+			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 	}
 
 
@@ -593,87 +633,6 @@ public class TabViewer extends JFrame{
 	}
 
 
-	/**
-	 * Saves the encoding in the encodingArea in the file it was loaded from.
-	 * 
-	 * This is the action performed when clicking File > Save from the EncodingViewer and 
-	 * TabViewer menu.
-	 * 
-	 */
-	private void saveFileAction() {  	
-		String encodingStr = encodingArea.getText();
-
-		// Handle any returns added to encoding (which will be "\n" and not "\r\n") by replacing
-		// them with "\r\n"
-		// a. List all indices of the \ns not preceded by \rs
-		List<Integer> indicesOfLineBreaks = new ArrayList<Integer>(); 
-		for (int i = 0; i < encodingStr.length(); i++) {
-			String currentChar = encodingStr.substring(i, i + 1);
-			if (currentChar.equals("\n")) {
-				// NB: previousChar always exists as the char at index 0 in encoding will never be a \n
-				String previousChar = encodingStr.substring(i - 1, i);	
-				if (!previousChar.equals("\r")) {
-					indicesOfLineBreaks.add(i);
-				}
-			}
-		}  	
-		// b. Replace all \ns not preceded by \rs in the encoding by \n\rs and store the file
-		for (int i = indicesOfLineBreaks.size() - 1; i >= 0; i--) {
-			int currentIndex = indicesOfLineBreaks.get(i);
-			encodingStr = encodingStr.substring(0, currentIndex) + "\r" + encodingStr.substring(currentIndex);
-		}
-//		ToolBox.storeTextFile(encodingStr, encodingFile); 
-		try {
-			Files.write(Paths.get(encodingFile.getAbsolutePath()), encodingStr.getBytes());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-
-	/**
-	 * Saves the encoding in the encodingArea in the file it was loaded from.
-	 * 
-	 * This is the action performed when clicking Edit > Select all from TabViewer menu.
-	 * 
-	 */
-	private void selectAllEditAction() {
-		tabArea.selectAll();
-	}
-
-
-	private JMenuBar getTabViewerMenubar() {
-//		if (tablatureWindowMenubar == null) {
-//			tablatureWindowMenubar = new JMenuBar();
-		JMenuBar tablatureWindowMenubar = new JMenuBar();
-		JMenu fileMenu = new JMenu("File");
-		tablatureWindowMenubar.add(fileMenu);   
-
-		JMenuItem saveFile = new JMenuItem("Save");
-		fileMenu.add(saveFile);
-		saveFile.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				saveFileAction();
-			}
-		});
-
-		JMenu editMenu = new JMenu("Edit");
-		tablatureWindowMenubar.add(editMenu);
-
-		JMenuItem selectAll = new JMenuItem("Select all");
-		editMenu.add(selectAll);
-		selectAll.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				selectAllEditAction();
-			}
-		});
-
-//		}
-		return tablatureWindowMenubar;
-	}
-
-
 	private JScrollPane getEncodingAreaScrollPane() {
 //		if (encodingAreaScrollPane == null) {
 //			encodingAreaScrollPane = 
@@ -692,36 +651,24 @@ public class TabViewer extends JFrame{
 	 * @return javax.swing.JTextArea      
 	 */
 	private JTextArea getEncodingArea() {
-//		if (encodingArea == null) {
 		encodingArea = new JTextArea();
 		encodingArea.setLineWrap(true); //necessary because of scroll bar
 		encodingArea.setBounds(new Rectangle(15, 105, 571, 76));
 		encodingArea.setEditable(true);
 		encodingArea.setFont(new Font("Courier New", Font.PLAIN, 12)); 
-//		}
 		return encodingArea;
 	}
 
 
-	private JTextArea getTabArea() {
-		if (tabArea == null) {
-			tabArea = new JTextArea();
-			tabArea.setBounds(new Rectangle(15, 240, 571, 136));
-			tabArea.setEditable(false);
-			tabArea.setFont(new Font("Courier New", Font.PLAIN, 12));    
-		}
-		return tabArea;
-	}
-
-  
-	private JScrollPane getTabAreaScrollPane() {
-//		if (tablatureAreaScrollPane == null) {
-//			tablatureAreaScrollPane = 
-		JScrollPane tablatureAreaScrollPane =		
-			new JScrollPane(getTabArea(), JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
-			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-//		}
-		return tablatureAreaScrollPane;
+	private void prepareTabViewer() {    
+		encodingArea.setHighlighter(hilit);
+		ButtonGroup tabButtons = new ButtonGroup();
+		tabButtons.add(frenchTabRadioButton);
+		tabButtons.add(italianTabRadioButton);
+		tabButtons.add(spanishTabRadioButton);
+		tabButtons.add(germanTabRadioButton);
+		tabButtons.add(tabCodeRadioButton);
+		frenchTabRadioButton.setSelected(true);
 	}
 
 
@@ -811,18 +758,15 @@ public class TabViewer extends JFrame{
 	}
 
 
-	private JButton getViewButton() {
-//		if (viewButton == null) {
-//			viewButton = new JButton();
+	private JButton getViewButton(String encPath) {
 		JButton viewButton = new JButton();
 		viewButton.setBounds(new Rectangle(600, 559, 91, 31));
 		viewButton.setText("View");
 		viewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				viewButtonAction();
+				viewButtonAction(encPath);
 			}
 		});
-//		}
 		return viewButton;
 	}
 
