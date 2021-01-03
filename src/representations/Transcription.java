@@ -1102,7 +1102,7 @@ public class Transcription implements Serializable {
 
 		// 1. Create noteAndChordNumbers
 		List<Integer> isRestEvent = 
-			tablature.getEncoding().getListsOfStatistics().get(Encoding.IS_REST_EVENT_INDEX);
+			tablature.getEncoding().getListsOfStatistics().get(Encoding.IS_REST_EVENT_IND);
 		int numberOfRestEvents = Collections.frequency(isRestEvent, 1);
 		String noteAndChordNumbers = "Note and chord numbers:" + "\n";
 		noteAndChordNumbers = noteAndChordNumbers.concat("  Number of notes: " + tablature.getNumberOfNotes() + "\n" +

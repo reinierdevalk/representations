@@ -28,7 +28,7 @@ public class TabSymbolSet extends ArrayList<TabSymbol>{
 	public static final TabSymbolSet ITALIAN_TAB = new TabSymbolSet("ItalianTab", SymbolDictionary.italianTabContent);  
 	public static final TabSymbolSet SPANISH_TAB = new TabSymbolSet("SpanishTab", SymbolDictionary.spanishTabContent); 
 	
-	public static List<TabSymbolSet> tabSymbolSets;
+	private static List<TabSymbolSet> tabSymbolSets;
 	static { tabSymbolSets = Arrays.asList(new TabSymbolSet[]{
 		OCHSENKUN_1558, 
 		NEWSIDLER_1536, 
@@ -51,13 +51,22 @@ public class TabSymbolSet extends ArrayList<TabSymbol>{
 	public TabSymbolSet(String name, List<TabSymbol> aList) {
 		super();
 		this.name = name;
-//		aList.add(this);
 		for (TabSymbol t : aList) {
 			this.add(t);
 		}
 	}
-	
-	
+
+
+	public static List<TabSymbolSet> getTabSymbolSets() {
+		return tabSymbolSets;
+	}
+
+
+	public String getName() {
+		return name;
+	}
+
+
 	/**
 	 * Populates the TabSymbolSet with the given TabSymbols.
 	 * @param argList
@@ -75,7 +84,7 @@ public class TabSymbolSet extends ArrayList<TabSymbol>{
 	 * @return
 	 */
 	public String toString() {
-		return name;
+		return getName();
 	}
 
 
@@ -88,8 +97,8 @@ public class TabSymbolSet extends ArrayList<TabSymbol>{
 	 * @return
 	 */
 	public static TabSymbolSet getTabSymbolSet(String aName) {
-		for (TabSymbolSet tss : tabSymbolSets) {
-			if (tss.name.equals(aName)) {
+		for (TabSymbolSet tss : getTabSymbolSets()) {
+			if (tss.getName().equals(aName)) {
 				return tss;
 			}
 		}

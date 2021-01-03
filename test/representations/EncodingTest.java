@@ -30,10 +30,6 @@ public class EncodingTest {
 	public void tearDown() throws Exception {
 	}
 
-	@Test
-	public void test() {
-//		fail("Not yet implemented");
-	}
 
 	@Test
 	public void testSetAndGetRawEncoding() {
@@ -104,52 +100,25 @@ public class EncodingTest {
 
 
 	@Test
-	public void testGetEventsWithFootnotes() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
+	public void testSetAndGetFootnotes() {
+		Encoding encoding = new Encoding();
+		String rawEncoding = "";
+		try {
+			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece1.getAbsolutePath())));
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		encoding.setRawEncoding(rawEncoding);
+		encoding.setFootnotes();
 
-		List<List<String[]>> expected = new ArrayList<>();
-		List<String[]> system1 = new ArrayList<>();
-		system1.add(new String[]{"McC3.", null, null});
-		system1.add(new String[]{"sb.", null, null});
-		system1.add(new String[]{"mi.", null, null});
-		system1.add(new String[]{"mi.a5.c4.b2.a1.", null, null});
-		system1.add(new String[]{"|.", "@Footnote 1", "footnote #1"});
-//		system1.add(new String[]{"|.", null, null});
-		system1.add(new String[]{"sm*.a6.c4.i2.a1.", null, null});
-//		system1.add(new String[]{"sm*.a6.c4.i2.a1.", "@Footnote 1", "footnote #1"});
-		system1.add(new String[]{"fu.d6.", null, null});
-		system1.add(new String[]{"sm.c6.a5.e4.b2.", null, null});
-		system1.add(new String[]{"a6.", null, null});
-		system1.add(new String[]{"mi.a6.h5.c4.b3.f2.", "@Footnote 2", "footnote #2"});
-		system1.add(new String[]{"sm.a6.b3.a2.a1.", null, null});
-		system1.add(new String[]{"a3.e2.", null, null});
-		system1.add(new String[]{"|.", null, null});
-		expected.add(system1);
-		List<String[]> system2 = new ArrayList<>();
-		system2.add(new String[]{"fu.a6.c4.a2.a1.", null, null});
-		system2.add(new String[]{"e2.", null, null});
-		system2.add(new String[]{"sf.a1.", null, null});
-		system2.add(new String[]{"e2.", null, null});
-		system2.add(new String[]{"|.", null, null});
-		system2.add(new String[]{"c2.", null, null});
-		system2.add(new String[]{"e2.", null, null});
-		system2.add(new String[]{"mi.a1.", null, null});
-		system2.add(new String[]{"mi.", null, null});
-		system2.add(new String[]{"mi.a6.c4.a2.a1.", null, null});
-		system2.add(new String[]{"||.", null, null});
-		expected.add(system2);
-		
-		List<List<String[]>> actual = encoding.getEventsWithFootnotes();
-		
+		List<String> expected = 
+			Arrays.asList(new String[]{"system 1", "(1) Footnote 1", "(2) Footnote 2"});
+
+		List<String> actual = encoding.getFootnotes();
+
 		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {			
-			assertEquals(expected.get(i).size(), actual.get(i).size());
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j).length, actual.get(i).get(j).length);
-				for (int k = 0; k < expected.get(i).get(j).length; k++) {
-					assertEquals(expected.get(i).get(j)[k], actual.get(i).get(j)[k]);
-				}
-			}
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
 		}
 	}
 
@@ -202,7 +171,7 @@ public class EncodingTest {
 
 
 	@Test
-	public void testGetMetaData() {
+	public void testGetAllMetaData() {
 		Encoding encoding = new Encoding();
 		String rawEncoding = "";
 		try {
@@ -218,7 +187,7 @@ public class EncodingTest {
 			"METER_INFO:2/2 (1-3)", "DIMINUTION:1",
 			"bar 1", "@Footnote 1", "bar 2", "@Footnote 2", "bar 3"});
 
-		List<String> actual = encoding.getMetaData();
+		List<String> actual = encoding.getAllMetaData();
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -228,16 +197,7 @@ public class EncodingTest {
 
 
 	@Test
-	public void testGetMetaDataFormatted() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
-		String expected = "Author" + "\n" + "Title" + "\n" + "Source (year)" + "\n" + "\n";
-		String actual = encoding.getMetaDataFormatted();
-		assertEquals(expected, actual);
-	}
-
-
-	@Test
-	public void testSetAndGetFootnotes() {
+	public void testSetAndGetMetaData() {
 		Encoding encoding = new Encoding();
 		String rawEncoding = "";
 		try {
@@ -246,11 +206,12 @@ public class EncodingTest {
 			e1.printStackTrace();
 		}
 		encoding.setRawEncoding(rawEncoding);
-		encoding.setFootnotes();
+		encoding.setInfoAndSettings();
+		encoding.setMetaData();
 
-		List<String> expected = Arrays.asList(new String[]{"(1) Footnote 1", "(2) Footnote 2"});
-
-		List<String> actual = encoding.getFootnotes();
+		List<String> expected = 
+			Arrays.asList(new String[]{"Author", "Title", "Source (year)"});
+		List<String> actual = encoding.getMetaData();
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -661,67 +622,6 @@ public class EncodingTest {
 
 
 	@Test
-	public void testCreateMeterInfoString() {
-		List<String> testPieces = Arrays.asList(new String[]{
-			"test/testpiece.tbp",
-			//
-			"tab-int/3vv/judenkuenig-1523_2-elslein_liebes.tbp",
-			"tab-int/3vv/newsidler-1536_7-disant_adiu.tbp",
-			"tab-int/3vv/newsidler-1536_7-mess_pensees.tbp",
-			"tab-int/3vv/newsidler-1544_2-nun_volget.tbp",
-			"tab-int/3vv/phalese-1547_7-tant_que-3vv.tbp",
-			"tab-int/3vv/pisador-1552_7-pleni_de.tbp",
-			//
-			"tab-int/4vv/abondante-1548_1-mais_mamignone.tbp",
-			"tab-int/4vv/barbetta-1582-il_nest.tbp",
-			"tab-int/4vv/ochsenkun-1558_5-absolon_fili.tbp",
-			"tab-int/4vv/ochsenkun-1558_5-herr_gott.tbp",
-			"tab-int/4vv/ochsenkun-1558_5-in_exitu.tbp",
-			"tab-int/4vv/ochsenkun-1558_5-qui_habitat.tbp",
-			"tab-int/4vv/phalese-1547_7-tant_que-4vv.tbp",
-			"tab-int/4vv/phalese-1563_12-il_estoit.tbp",
-			"tab-int/4vv/phalese-1563_12-las_on.tbp",
-			"tab-int/4vv/rotta-1546_15-bramo_morir.tbp"
-		});
-
-		List<String> expected = Arrays.asList(new String[]{
-			"2/2 (1-3)", // testpiece
-			//
-			"3/4 (1-24)", // elslein
-			"2/2 (1-33)", // disant
-			"2/2 (1-86)", // mess
-			"2/2 (1-41); 3/4 (42-49); 2/2 (50-96)", // nun NB: not as in file! 
-			"2/2 (1-22)", // tant
-			"2/2 (1-43)", // pleni
-			//
-			"2/2 (1-50)", // mais
-			"2/2 (1-30)", // il nest
-			"2/2 (1-85)", // absolon
-			"2/2 (1-23)", // herr 
-			"2/2 (1-143)", // in
-			"2/2 (1-155)", // qui
-			"2/2 (1-26)", // tant
-			"2/2 (1-20)", // il
-			"2/2 (1-45)", // las
-			"2/2 (1-59)" // bramo
-		});
-
-		List<String> actual = new ArrayList<>();
-		for (String s : testPieces) {
-			Encoding enc = new Encoding(new File("F:/research/data/data/encodings/" + s));
-			String clean = enc.getCleanEncoding();
-			String tss = enc.getInfoAndSettings().get(Encoding.TABSYMBOLSET_INDEX);
-			actual.add(Encoding.createMeterInfoString(clean, tss));
-		}
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		}
-	}
-
-
-	@Test
 	public void testSetAndGetListsOfSymbols() {
 		Encoding encoding = new Encoding(encodingTestpiece1);
 
@@ -841,14 +741,54 @@ public class EncodingTest {
 
 
 	@Test
-	public void testGetStaffLength() {
+	public void testGetEventsWithFootnotes() {
 		Encoding encoding = new Encoding(encodingTestpiece1);
-		int expected = 24;
-		int actual = encoding.getStaffLength();
-		assertEquals(expected, actual);
+
+		List<List<String[]>> expected = new ArrayList<>();
+		List<String[]> system1 = new ArrayList<>();
+		system1.add(new String[]{"McC3.", null, null});
+		system1.add(new String[]{"sb.", null, null});
+		system1.add(new String[]{"mi.", null, null});
+		system1.add(new String[]{"mi.a5.c4.b2.a1.", null, null});
+		system1.add(new String[]{"|.", "@Footnote 1", "footnote #1"});
+		system1.add(new String[]{"sm*.a6.c4.i2.a1.", null, null});
+		system1.add(new String[]{"fu.d6.", null, null});
+		system1.add(new String[]{"sm.c6.a5.e4.b2.", null, null});
+		system1.add(new String[]{"a6.", null, null});
+		system1.add(new String[]{"mi.a6.h5.c4.b3.f2.", "@Footnote 2", "footnote #2"});
+		system1.add(new String[]{"sm.a6.b3.a2.a1.", null, null});
+		system1.add(new String[]{"a3.e2.", null, null});
+		system1.add(new String[]{"|.", null, null});
+		expected.add(system1);
+		List<String[]> system2 = new ArrayList<>();
+		system2.add(new String[]{"fu.a6.c4.a2.a1.", null, null});
+		system2.add(new String[]{"e2.", null, null});
+		system2.add(new String[]{"sf.a1.", null, null});
+		system2.add(new String[]{"e2.", null, null});
+		system2.add(new String[]{"|.", null, null});
+		system2.add(new String[]{"c2.", null, null});
+		system2.add(new String[]{"e2.", null, null});
+		system2.add(new String[]{"mi.a1.", null, null});
+		system2.add(new String[]{"mi.", null, null});
+		system2.add(new String[]{"mi.a6.c4.a2.a1.", null, null});
+		system2.add(new String[]{"||.", null, null});
+		expected.add(system2);
+		
+		List<List<String[]>> actual = encoding.getEventsWithFootnotes();
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {			
+			assertEquals(expected.get(i).size(), actual.get(i).size());
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j).length, actual.get(i).get(j).length);
+				for (int k = 0; k < expected.get(i).get(j).length; k++) {
+					assertEquals(expected.get(i).get(j)[k], actual.get(i).get(j)[k]);
+				}
+			}
+		}
 	}
-	
-	
+
+
 	@Test
 	public void testGetFootnoteStaffSegmentIndices() {
 		Encoding encoding = new Encoding(encodingTestpiece1);
@@ -868,6 +808,15 @@ public class EncodingTest {
 				assertEquals(expected.get(i).get(j), actual.get(i).get(j) );
 			}
 		}
+	}
+
+
+	@Test
+	public void testGetStaffLength() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+		int expected = 24;
+		int actual = encoding.getStaffLength();
+		assertEquals(expected, actual);
 	}
 
 }
