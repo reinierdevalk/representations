@@ -11,6 +11,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import javax.swing.plaf.synth.SynthSeparatorUI;
+
 import tbp.ConstantMusicalSymbol;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
@@ -1474,8 +1476,9 @@ public class Encoding implements Serializable {
 	 * Gets, per system, the segment indices in the tbp Staff of the events that have a 
 	 * footnote.
 	 * 
-	 * @return A <code>List<code> of <code>List<code>s, each of which represents a system, and
-	 * contains the segment indices in the tbp Staff of the footnote events.
+	 * @return A <code>List</code> of <code>List</code>s, each of which represents a system, 
+	 * and contains the segment indices in the tbp Staff of the footnote events. In case of
+	 * a system without footnote events, the <code>List</code> remains empty.
 	 */
 	// TESTED
 	public List<List<Integer>> getFootnoteStaffSegmentIndices() {
@@ -1585,6 +1588,7 @@ public class Encoding implements Serializable {
 		TabSymbolSet tss = getTabSymbolSet();
 
 		// Search all systems one by one
+		int staffIndex = 0;
 		int sbiIndex = -1;
 		int nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
 		while (sbiIndex + 1 != nextSbiIndex) { 
@@ -1681,15 +1685,14 @@ public class Encoding implements Serializable {
 						segment ++;
 					}
 				}
+				// e. Add footnote
+				staff.addFootnoteIndicators(getFootnoteStaffSegmentIndices().get(staffIndex));
 				// Prepare indices for next iteration inner while
 				ssIndex = nextSsIndex;
 				nextSsIndex = currSysEncoding.indexOf(ss, ssIndex + 1); 
 			}
 			// System traversed? Add to tablature; prepare indices for next iteration outer while
-			System.out.println(staff.getStaff());
-			System.out.println(staff.getNumberOfSegments());
-//			System.exit(0);
-			
+			staffIndex++;
 			tab += staff.getStaff() + Staff.SPACE_BETWEEN_STAFFS;
 			sbiIndex = nextSbiIndex;
 			nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);

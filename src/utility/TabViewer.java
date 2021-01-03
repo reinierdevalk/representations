@@ -56,6 +56,8 @@ public class TabViewer extends JFrame{
 	private JCheckBox rhythmSymbolsCheckBox;
 	private static List<String> tabTypes = 
 		Arrays.asList(new String[]{"french", "italian", "spanish", "german", "tabCode"});
+	private final Integer[] FRAME_DIMS = new Integer[]{717, 672};
+	private final Integer[] PANEL_DIMS = new Integer[]{586, 413};
 
 
 	public static void main(String[] args) {
@@ -215,7 +217,7 @@ public class TabViewer extends JFrame{
 
 
 	private void initializeEncodingViewer(String encPath) {
-		this.setSize(717, 672);
+		this.setSize(FRAME_DIMS[0], FRAME_DIMS[1]);
 		this.setJMenuBar(getEncodingViewerMenubar(encPath));
 		this.setContentPane(getEncodingViewerPanel(encPath));
 		this.setTitle("EncodingViewer");
@@ -265,7 +267,7 @@ public class TabViewer extends JFrame{
 	private JPanel getEncodingViewerPanel(String encPath) {
 		JPanel encodingViewerPanel = new JPanel();
 		encodingViewerPanel.setLayout(null);
-		encodingViewerPanel.setSize(new Dimension(586, 413));
+		encodingViewerPanel.setSize(new Dimension(PANEL_DIMS[0], PANEL_DIMS[1]));
 
 		// Encoding labels
 		JLabel pieceLabel = new JLabel("Encoding:");
@@ -519,7 +521,7 @@ public class TabViewer extends JFrame{
 				getTabArea().setText(
 					metaData.toString() + "\n" + Staff.SPACE_BETWEEN_STAFFS + 
 					enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected()) + 
-					footnotes.toString()
+					footnotes.toString().substring(0, footnotes.lastIndexOf("\n"))
 				);
 				initializeTabViewer(encPath);
 			} 
@@ -534,7 +536,7 @@ public class TabViewer extends JFrame{
 	 */
 	private void initializeTabViewer(String encPath) {
 		JFrame tablatureFrame = new JFrame();
-		tablatureFrame.setSize(800, 500);
+		tablatureFrame.setSize(FRAME_DIMS[0], FRAME_DIMS[1]);
 		tablatureFrame.setJMenuBar(getTabViewerMenubar(encPath));
 		tablatureFrame.setContentPane(getTabViewerPanel());
 		tablatureFrame.setTitle("TabViewer");
@@ -579,24 +581,25 @@ public class TabViewer extends JFrame{
 	}
 
 
-	private JScrollPane getTabViewerPane() {
-		return new JScrollPane(getTabArea(), JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
-			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-	}
-
-
 	private JPanel getTabViewerPanel() {			
 		JPanel tabViewerPanel = new JPanel();
 		tabViewerPanel.setLayout(null);
-		tabViewerPanel.setSize(new Dimension(800, 500));
+		tabViewerPanel.setSize(new Dimension(PANEL_DIMS[0], PANEL_DIMS[1]));
 
 		// Tab area with scroll pane
 		JScrollPane tabAreaScrollPane = 
 			new JScrollPane(getTabArea(), JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
 			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		tabAreaScrollPane.setBounds(new Rectangle(15, 115, 676, 430));
+		// See encodingAreaScrollPane.setBounds() for coordinates
+		tabAreaScrollPane.setBounds(new Rectangle(15, 115-100, 676, 430+100));
 		tabViewerPanel.add(tabAreaScrollPane, null);
 		return tabViewerPanel;
+	}
+
+
+	private JScrollPane getTabViewerPane() { // alternative for getTabViewerPanel()
+		return new JScrollPane(getTabArea(), JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
+			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 	}
 
 
