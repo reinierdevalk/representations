@@ -8,57 +8,71 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
-import tbp.*;
+import javax.swing.plaf.synth.SynthSeparatorUI;
+
+import tbp.ConstantMusicalSymbol;
+import tbp.MensurationSign;
+import tbp.RhythmSymbol;
+import tbp.Staff;
+import tbp.SymbolDictionary;
+import tbp.TabSymbol;
+import tbp.TabSymbolSet;
 
 public class Encoding implements Serializable {
 
+	private static final long serialVersionUID = 1L;
 	private static final String FOOTNOTE_INDICATOR = "@";
 	private static final String WHITESPACE = " ";
 	private String name; 
 	private String rawEncoding;
-	private boolean hasMetaDataErrors;
 	private String cleanEncoding;
-	private List<String> infoAndSettings = new ArrayList<String>();
-	private List<String> footnotes = new ArrayList<String>();
-	public static final int AUTHOR_INDEX = 0;
-	public static final int TITLE_INDEX = 1;
-	public static final int SOURCE_INDEX = 2;
-	static final int TABSYMBOLSET_INDEX = 3;
-	private static final int TUNING_INDEX = 4;
-	private static final int TUNING_BASS_COURSES_INDEX = 5;
-	public static final int METER_INDEX = 6;
-	public static final int DIMINUTION_INDEX = 7;
-	private static final String DUR_SCALE = "DUR_SCALE";
+	private boolean hasMetadataErrors;
+	private List<String> infoAndSettings;
+	private List<String> footnotes;
+	private List<String> metaData;
+	private static final int AUTHOR_IND = 0;
+	private static final int TITLE_IND = 1;
+	private static final int SOURCE_IND = 2;
+	public static final int TABSYMBOLSET_IND = 3;
+	private static final int TUNING_IND = 4;
+	private static final int TUNING_BASS_COURSES_IND = 5;
+	public static final int METER_IND = 6;
+	public static final int DIMINUTION_IND = 7;
+//	private static final String DUR_SCALE = "DUR_SCALE";
+	private static final int EVENT_IND = 0;
+	private static final int FOOTNOTE_IND = 1;
+	private static final int FOOTNOTE_NUM_IND = 2;
 		
-	private List<List<String>> listsOfSymbols = new ArrayList<List<String>>();
-	private static final int ALL_SYMBOLS_INDEX = 0;
-	public static final int TAB_SYMBOLS_INDEX = 1;
-	private static final int RHYTHM_SYMBOLS_INDEX = 2;
-	private static final int MENSURATION_SIGNS_INDEX = 3;
-	private static final int BARLINES_INDEX = 4;
-	public static final int ALL_EVENTS_INDEX = 5;
+	private List<List<String>> listsOfSymbols;
+	private static final int ALL_SYMBOLS_IND = 0;
+	public static final int TAB_SYMBOLS_IND = 1;
+	private static final int RHYTHM_SYMBOLS_IND = 2;
+	private static final int MENSURATION_SIGNS_IND = 3;
+	private static final int BARLINES_IND = 4;
+	public static final int ALL_EVENTS_IND = 5;
 	
-	private List<List<Integer>> listsOfStatistics = new ArrayList<List<Integer>>();
-	public static final int IS_TAB_SYMBOL_EVENT_INDEX = 0;
-	private static final int IS_RHYTHM_SYMBOL_EVENT_INDEX = 1;
-	public static final int IS_REST_EVENT_INDEX = 2;
-	private static final int IS_MENSURATION_SIGN_EVENT_INDEX = 3;
-	private static final int IS_BARLINE_EVENT_INDEX = 4;
-	public static final int SIZE_OF_EVENTS_INDEX = 5;
-	private static final int DURATION_OF_EVENTS_INDEX = 6;  
-	public static final int HORIZONTAL_POSITION_INDEX = 7;
-	public static final int VERTICAL_POSITION_INDEX = 8;
-	public static final int DURATION_INDEX = 9;
-	public static final int GRID_X_INDEX = 10;
-	public static final int GRID_Y_INDEX = 11;
-	public static final int HORIZONTAL_POSITION_TAB_SYMBOLS_ONLY_INDEX = 12;
+	private List<List<Integer>> listsOfStatistics;
+	public static final int IS_TAB_SYMBOL_EVENT_IND = 0;
+	private static final int IS_RHYTHM_SYMBOL_EVENT_IND = 1;
+	public static final int IS_REST_EVENT_IND = 2;
+	private static final int IS_MENSURATION_SIGN_EVENT_IND = 3;
+	private static final int IS_BARLINE_EVENT_IND = 4;
+	public static final int SIZE_OF_EVENTS_IND = 5;
+	private static final int DURATION_OF_EVENTS_IND = 6;  
+	public static final int HORIZONTAL_POSITION_IND = 7;
+	public static final int VERTICAL_POSITION_IND = 8;
+	public static final int DURATION_IND = 9;
+	public static final int GRID_X_IND = 10;
+	public static final int GRID_Y_IND = 11;
+	public static final int HORIZONTAL_POS_TAB_SYMBOLS_ONLY_IND = 12;
 	public static final String METADATA_ERROR = "METADATA ERROR -- Check for missing curly brackets.";
 
-	private Tuning[] tunings = new Tuning[2];
-	public static final int ENCODED_TUNING_INDEX = 0;
-	public static final int NEW_TUNING_INDEX = 1;
+	private Tuning[] tunings;
+	public static final int ENCODED_TUNING_IND = 0;
+	public static final int NEW_TUNING_IND = 1;
 	public static enum Tuning  {
 		
 		C_AVALLEE("C_AVALLEE", -7, true, Arrays.asList(new String[]{"Bb", "F", "Bb", "D", "G", "C"})),
@@ -108,7 +122,7 @@ public class Encoding implements Serializable {
 		P5P4M3M2, // 10-course with perfect 5th, perfect 4th, major 3rd, major 2nd: G tuning (10) C, (9) D, (8) Eb, (7) F  	
 	};
 	
-	public static String[] metadataTags = new String[]{
+	private static String[] metaDataTags = new String[]{
 		"AUTHOR:", 
 		"TITLE:", 
 		"SOURCE:", 
@@ -134,14 +148,14 @@ public class Encoding implements Serializable {
 		// Unchecked encoding
 		if (!isChecked) {
 			setRawEncoding(rawEncoding);
-			if (checkForMetadataErrors() == false) { // needs rawEncoding
-				hasMetaDataErrors = true;
+			setHasMetadataErrors(); // needs rawEncoding
+			if (getHasMetadataErrors() == true) {
 				return;
 			}
-			hasMetaDataErrors = false;
-			setCleanEncoding(); // needs rawEncoding 
-			setInfoAndSettings(); // needs rawEncoding 
 			setFootnotes(); // needs rawEncoding
+			setCleanEncoding(); // needs rawEncoding 
+			setInfoAndSettings(); // needs rawEncoding
+			setMetaData(); // needs infoAndSettings
 		}
 		// Checked encoding (retrieved from an existing Encoding)
 		else {
@@ -168,178 +182,20 @@ public class Encoding implements Serializable {
 
 	private void createEncoding(String rawEncoding) {
 		setRawEncoding(rawEncoding);
-		if (checkForMetadataErrors() == false) { // needs rawEncoding
+		setHasMetadataErrors(); // needs rawEncoding
+		if (getHasMetadataErrors() == true) {
 			throw new RuntimeException(METADATA_ERROR);
 		}
+		setFootnotes(); // needs rawEncoding
 		setCleanEncoding(); // needs rawEncoding 
 		setInfoAndSettings(); // needs rawEncoding 
-		setFootnotes(); // needs rawEncoding
-
-//		System.out.println(rawEncoding);
+		setMetaData(); // needs infoAndSettings
 		if (checkForEncodingErrors() != null) { // needs rawEncoding, cleanEncoding, and infoAndSettings
 			throw new RuntimeException("ERROR: The encoding contains encoding errors; run the TabViewer to correct them.");
 		}
 		setTunings();
 		setListsOfSymbols();
 		setListsOfStatistics();
-	}
-
-
-	public boolean getHasMetadataErrors() {
-		return hasMetaDataErrors;
-	}
-	
-	
-	public static String[] getMetadataTags() {
-		return metadataTags;
-	}
-
-
-	/**
-	 * Given the clean encoding, calculates the meter info string. Barring is ignored, and bar each
-	 * bar end is instead determined by the bar duration under the current mensuration sign. It is 
-	 * assumed that the piece contains no errors. 
-	 * 
-	 * @param argCleanEncoding
-	 * @param tss
-	 * @return
-	 */
-	// TESTED
-	public static String createMeterInfoString(String argCleanEncoding, String tss) {
-
-		// Remove line breaks and system separators; then split into symbols
-		String[] symbols = argCleanEncoding.replace("\r\n", "").replace("/", "").split("\\"+SymbolDictionary.SYMBOL_SEPARATOR);
-		// Remove any initial barline
-		if (ConstantMusicalSymbol.getConstantMusicalSymbol(symbols[0]) != null) {
-			symbols = Arrays.copyOfRange(symbols, 1, symbols.length);
-		}
-
-		List<Integer[]> mensSigns = new ArrayList<>();
-		mensSigns.add(new Integer[]{2, 2}); // assume 2/2 in case there is no MS
-		List<String> barsPerMeter = new ArrayList<>();
-		int meterStartBar = 1;
-		int currBar = 1;
-		int prevDur = 0;
-		int posInBar = 0;
-		// fullBar is the length (in SMALLEST_RHYTHMIC_VALUE) of a full bar under the current meter
-		int fullBar = 
-			(int) (mensSigns.get(0)[0] / (double) mensSigns.get(0)[1]) * 
-			Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom(); // trp
-		boolean semibreveBarring = false;
-		for (int i = 0; i < symbols.length; i++) {
-			String s = symbols[i];
-//			System.out.println("symbol = " + s);
-			MensurationSign ms = MensurationSign.getMensurationSign(s);
-			RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(s);
-			TabSymbol ts = TabSymbol.getTabSymbol(s, TabSymbolSet.getTabSymbolSet(tss));
-			ConstantMusicalSymbol cms = ConstantMusicalSymbol.getConstantMusicalSymbol(s);
-			ConstantMusicalSymbol prevCms = null;
-			if (i > 0) {
-				prevCms = ConstantMusicalSymbol.getConstantMusicalSymbol(symbols[i-1]);
-			}
-
-			// MS
-			if (ms != null) {
-				Integer[] meter = ms.getMeter();
-				// In case of double (ternary) MS: get the meter from the second MS
-				MensurationSign nextMS = MensurationSign.getMensurationSign(symbols[i+1]);
-				if (nextMS != null) {
-					meter = nextMS.getMeter();
-					i++; // skip next symbol
-				}
-				// If still bar 1: replace default MS; else add MS
-				if (currBar == 1) {
-					mensSigns.set(0, meter);
-				}
-				else {
-					mensSigns.add(meter);
-					// Add bars under previous MS
-					if (meterStartBar == currBar-1) {
-						barsPerMeter.add(String.valueOf(meterStartBar));
-					}
-					else {
-						barsPerMeter.add(meterStartBar + "-" + (currBar-1));
-					}
-					meterStartBar = currBar;
-				}
-				// Set fullBar under new meter
-				fullBar = 
-					(int) ((meter[0] / (double) meter[1]) * 
-					Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()); // trp
-			}
-
-			// RS
-			if (rs != null) {
-				// Only if previous symbol was no barline and the RS event is not preceded by a MS 
-				// (in both cases posInBar was already updated)
-				if (!(prevCms != null && prevCms != ConstantMusicalSymbol.SPACE) && 
-					(i >= 2 && MensurationSign.getMensurationSign(symbols[i-2]) == null)) {
-					posInBar += prevDur;
-//					System.out.println("RS");
-//					System.out.println("posInBar = " + posInBar);
-				}
-				prevDur = rs.getDuration();
-			}
-
-			// TS event without RS (always preceded by space or barline)
-			if (ts != null && prevCms != null) {
-				// Only if previous symbol was no barline (in which case posInBar was already updated)
-				if (!(prevCms != ConstantMusicalSymbol.SPACE)) {
-					posInBar += prevDur;
-//					System.out.println("TS event w/o RS");
-//					System.out.println("posInBar = " + posInBar);
-				}
-			}
-			
-			// Barline
-			if (cms != null && cms != ConstantMusicalSymbol.SPACE) {
-				// Only if previous symbol was no barline (in which case posInBar was already updated)
-				if (!(prevCms != null && prevCms != ConstantMusicalSymbol.SPACE)) {
-					posInBar += prevDur;
-//					System.out.println("barline");
-//					System.out.println("posInBar = " + posInBar);
-				}
-				// Check for semibreve barring (assumed to be regular)
-				if (currBar == 1 && posInBar >= RhythmSymbol.semibrevis.getDuration()) {
-					semibreveBarring = true;
-				}
-			}
-
-//			// Increment bar and reset posInBar
-//			// Semibreve barring: bar end reached only if bar is full
-//			// No semibreve barring: bar end reached if bar is full or barline is encountered
-//			if ( (semibreveBarring && posInBar >= fullBar) || (!semibreveBarring && 
-//				(posInBar >= fullBar || (cms != null && cms != ConstantMusicalSymbol.SPACE)))) {
-//				currBar++;
-//				// Account for ties over bar
-//				posInBar -= fullBar;
-//			}
-			
-			// Increment bar and reset posInBar
-			if (posInBar >= fullBar) {
-				currBar++;
-//				System.out.println("currBar = " + currBar);
-				// Account for ties over bar
-				posInBar -= fullBar;
-			}
-		}
-		if (meterStartBar == currBar-1) {
-			barsPerMeter.add(String.valueOf(meterStartBar));
-		}
-		else {
-			barsPerMeter.add(meterStartBar + "-" + (currBar-1));
-		}
-		
-		String meterInfoString = "";
-		for (int i = 0; i < mensSigns.size(); i++) {
-			meterInfoString += mensSigns.get(i)[0] + "/" + mensSigns.get(i)[1] + " (" +
-			barsPerMeter.get(i) + ")";
-			if (i < mensSigns.size() - 1) {
-				meterInfoString += "; ";
-			}
-		}
-		
-		return meterInfoString;
 	}
 
 
@@ -355,33 +211,50 @@ public class Encoding implements Serializable {
 	}
 
 
+	private void setHasMetadataErrors() {
+		hasMetadataErrors = (checkForMetadataErrors() == true) ? true : false;
+	}
+
+
+	public boolean getHasMetadataErrors() {
+		return hasMetadataErrors;
+	}
+
+
 	/**
-	 * Verifies the correct encoding of all metadata in rawEncoding, i.e.:
-	 *   whether rawEncoding contains all info and settings tags in the correct sequence, 
-	 *     and whether each tag is preceded by an OPEN_INFO_BRACKET and succeeded by a 
-	 *     CLOSE_INFO_BRACKET;
-	 *   whether any additional information items after the info and settings items (pages, 
-	 *     footnotes) are preceded by an OPEN_INFO_BRACKET and succeeded by a CLOSE_INFO_BRACKET. 
-	 * Returns <code>true</code> if this is the case, and <code>false</code> if not.  
-	 *   
-	 * @return
+	 * Verifies the correct encoding of all metadata in rawEncoding, i.e., checks whether:
+	 * <ul>
+	 * <li><code>rawEncoding</code> contains all info and settings tags in the correct sequence</li> 
+	 * <li>whether each tag is preceded by an <code>OPEN_INFO_BRACKET</code> and succeeded by a 
+	 *     <code>CLOSE_INFO_BRACKET</code></li>
+	 * <li>whether any additional information items after the info and settings items (pages,
+	 *     footnotes) are preceded by an <code>OPEN_INFO_BRACKET</code> and succeeded by a 
+	 *     <code>CLOSE_INFO_BRACKET</code></li>
+	 * </ul>
+	 * 
+	 * @return <code>true</code> if the encoding has metadata errors, and <code>false</code> if
+	 *  it is correct.  
 	 */
 	// TESTED
-	boolean checkForMetadataErrors() {
+	boolean checkForMetadataErrors() {		
+		String oib = SymbolDictionary.OPEN_INFO_BRACKET;
+		String cib = SymbolDictionary.CLOSE_INFO_BRACKET;
+		
 		// 1. Info and settings tags
 		// Check whether rawEncoding contains all info and settings tags, in the correct order
 		List<Integer> indicesOfTags = new ArrayList<Integer>();
-		for (String tag : getMetadataTags()) {
-			if (!rawEncoding.contains(tag)) {
-				return false;
+		String rawEnc = getRawEncoding();
+		for (String tag : getMetaDataTags()) {
+			if (!rawEnc.contains(tag)) {
+				return true;
 			}
 			// The tags are encoded in the correct order if none of the indices in indicesOfTags 
 			// are greater than the index of the tag last added
-			int indexOfTag = rawEncoding.indexOf(tag);
+			int indexOfTag = rawEnc.indexOf(tag);
 			indicesOfTags.add(indexOfTag);
 			for (int i : indicesOfTags) {
 				if (i > indexOfTag) {
-					return false;
+					return true;
 				}
 			}
 		}
@@ -390,8 +263,8 @@ public class Encoding implements Serializable {
 		for (int i = 0; i < indicesOfTags.size(); i++) {
 			int startIndex = indicesOfTags.get(i);
 			// Check whether the tag is preceded by an OPEN_INFO_BRACKET 
-			if (!rawEncoding.substring(startIndex - 1, startIndex).equals(SymbolDictionary.OPEN_INFO_BRACKET)) {
-				return false;
+			if (!rawEnc.substring(startIndex - 1, startIndex).equals(oib)) {
+				return true;
 			}
 			// Check whether the tag is succeeded by only one CLOSE_INFO_BRACKET
 			// a. For any but the last tag
@@ -399,29 +272,29 @@ public class Encoding implements Serializable {
 				int endIndex = indicesOfTags.get(i + 1) - 1;
 				List<String> inbetween = new ArrayList<String>();
 				for (int j = startIndex; j < endIndex; j++) {
-					inbetween.add(Character.toString(rawEncoding.charAt(j)));
+					inbetween.add(Character.toString(rawEnc.charAt(j)));
 				}
-				if (Collections.frequency(inbetween, SymbolDictionary.CLOSE_INFO_BRACKET) != 1 || 
-					Collections.frequency(inbetween, SymbolDictionary.OPEN_INFO_BRACKET) != 0) {
-					return false;
+				if (Collections.frequency(inbetween, cib) != 1 || 
+					Collections.frequency(inbetween, oib) != 0) {
+					return true;
 				}
 			}
 			// b. For the last tag
 			else {
 				String firstFound = null;
-				for (int j = startIndex; j < rawEncoding.length(); j++) {
-					if (Character.toString(rawEncoding.charAt(j)).equals(SymbolDictionary.OPEN_INFO_BRACKET)) {
-						firstFound = SymbolDictionary.OPEN_INFO_BRACKET;
+				for (int j = startIndex; j < rawEnc.length(); j++) {
+					if (Character.toString(rawEnc.charAt(j)).equals(oib)) {
+						firstFound = oib;
 						break;
 					}
-					else if (Character.toString(rawEncoding.charAt(j)).equals(SymbolDictionary.CLOSE_INFO_BRACKET)) {
-						firstFound = SymbolDictionary.CLOSE_INFO_BRACKET;
+					else if (Character.toString(rawEnc.charAt(j)).equals(cib)) {
+						firstFound = cib;
 						indexOfLastCloseInfoBracket = j;
 						break;
 					}
 				}
-				if (firstFound == SymbolDictionary.OPEN_INFO_BRACKET || firstFound == null) {
-					return false;
+				if (firstFound == oib || firstFound == null) {
+					return true;
 				}
 			}
 		}
@@ -429,10 +302,9 @@ public class Encoding implements Serializable {
 		// 2. Additional information items
 		// List the remaining OPEN_ and CLOSE_INFO_BRACKETS
 		List<String> remainingBrackets = new ArrayList<String>();
-		for (int i = indexOfLastCloseInfoBracket + 1; i < rawEncoding.length(); i++) {
-			String currentChar = Character.toString(rawEncoding.charAt(i));
-			if (currentChar.equals(SymbolDictionary.OPEN_INFO_BRACKET) || 
-				currentChar.equals(SymbolDictionary.CLOSE_INFO_BRACKET)) {
+		for (int i = indexOfLastCloseInfoBracket + 1; i < rawEnc.length(); i++) {
+			String currentChar = Character.toString(rawEnc.charAt(i));
+			if (currentChar.equals(oib) || currentChar.equals(cib)) {
 				remainingBrackets.add(currentChar);
 			}
 		}
@@ -440,39 +312,86 @@ public class Encoding implements Serializable {
 		// odd index is a CLOSE_INFO_BRACKET, and whether the last element is a CLOSE_INFO_BRACKET
 		for (int i = 0; i < remainingBrackets.size(); i++) {
 			String currentBracket = remainingBrackets.get(i);
-			if (i % 2 == 0 && !currentBracket.equals(SymbolDictionary.OPEN_INFO_BRACKET) || 
-				i % 2 == 1 && !currentBracket.equals(SymbolDictionary.CLOSE_INFO_BRACKET)) {
-				return false;
+			if (i % 2 == 0 && !currentBracket.equals(oib) || 
+				i % 2 == 1 && !currentBracket.equals(cib)) {
+				return true;
 			}
 			if (i == remainingBrackets.size() - 1 && 
-				!currentBracket.equals(SymbolDictionary.CLOSE_INFO_BRACKET)) {
-				return false;
+				!currentBracket.equals(cib)) {
+				return true;
 			}
 		}
-		return true;
+		return false;
 	}
 
 
 	/**
-	 * Removes all line breaks, whitespace, comments, and added information from rawEncoding and sets cleanEncoding
-	 * to the result.    
+	 * Sets <code>footnotes</code>, a list containing of all footnotes, numbered and 
+	 * separated per system as follows: ["system 1", "(1) Footnote text", "system 3", 
+	 * "(2) Footnote text", "(3) Footnote text"]
+	 */
+	// TESTED (together with getFootnotes())
+	void setFootnotes() {
+		List<String> fn = new ArrayList<>();
+		List<List<String[]>> ewf = getEventsWithFootnotes(); // needs rawEncoding
+		// For each system
+		for (int i = 0; i < ewf.size(); i++) {
+			List<String> footnotesCurrSys = new ArrayList<>();
+			// For each event
+			for (String[] currEvent : ewf.get(i)) {
+				String footnote = currEvent[FOOTNOTE_IND];
+				if (footnote != null) {
+					String footnoteNumStr = currEvent[FOOTNOTE_NUM_IND];
+					int footnoteNum = 
+						Integer.parseInt(footnoteNumStr.substring(footnoteNumStr.indexOf("#") + 1)); 
+					footnotesCurrSys.add("(" + footnoteNum + ") " + 
+						footnote.substring(footnote.indexOf(FOOTNOTE_INDICATOR) + 1));
+				}
+			}
+			// If there are footnotes in the system, prepend system number and add list
+			if (footnotesCurrSys.size() != 0) {
+				footnotesCurrSys.add(0, "system " + (i+1));
+				fn.addAll(footnotesCurrSys);
+			}			
+		}
+		footnotes = fn;
+	}
+
+
+	// TESTED (together with setFootnotes())
+	public List<String> getFootnotes() {
+		return footnotes;
+	}
+
+
+	/**
+	 * Removes all line breaks, whitespace, comments, and added information from rawEncoding and 
+	 * sets cleanEncoding to the result.    
 	 */  
 	// TESTED (together with getCleanEncoding())
-	void setCleanEncoding() {         
+	void setCleanEncoding() {
+		String cleanEnc = "";
+		
+		String rawEnc = getRawEncoding();
+		
+		String oib = SymbolDictionary.OPEN_INFO_BRACKET;
+		String cib = SymbolDictionary.CLOSE_INFO_BRACKET;
+		
 		// 1. Remove all carriage returns and line breaks; remove leading and trailing whitespace
-		cleanEncoding = rawEncoding.replaceAll("\r", "");
-		cleanEncoding = cleanEncoding.replaceAll("\n", "");
-		cleanEncoding = cleanEncoding.trim();
+		cleanEnc = rawEnc.replaceAll("\r", "");
+		cleanEnc = cleanEnc.replaceAll("\n", "");
+		cleanEnc = cleanEnc.trim();
+
 		// 2. Remove all comments
 		// NB: while-loop more convenient than for-loop in order not to overlook comments 
 		// immediately succeeding one another
-		while (cleanEncoding.contains(SymbolDictionary.OPEN_INFO_BRACKET)) {
-			int openCommentIndex = cleanEncoding.indexOf(SymbolDictionary.OPEN_INFO_BRACKET);
-			int closeCommentIndex = 
-				cleanEncoding.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, openCommentIndex);
-			String comment = cleanEncoding.substring(openCommentIndex, closeCommentIndex + 1);
-			cleanEncoding = cleanEncoding.replace(comment, "");
+		while (cleanEnc.contains(oib)) {
+			int openCommentIndex = cleanEnc.indexOf(oib);
+			int closeCommentIndex = cleanEnc.indexOf(cib, openCommentIndex);
+			String comment = cleanEnc.substring(openCommentIndex, closeCommentIndex + 1);
+			cleanEnc = cleanEnc.replace(comment, "");
 		}
+		cleanEncoding = cleanEnc;
 	}
 
 
@@ -491,18 +410,21 @@ public class Encoding implements Serializable {
 	 *   at element 4: the tuning
 	 *   at element 5: the TuningSeventhCourse (if any)
 	 *   at element 6: the meter information
+	 *   at element 7: the diminution
 	 */
 	// TESTED (together with getInfoAndSettings())
 	void setInfoAndSettings() {
-		List<String> metaData = getMetaData();
-		infoAndSettings.add(AUTHOR_INDEX, metaData.get(0).substring(metaData.get(0).indexOf(":") + 1).trim());
-		infoAndSettings.add(TITLE_INDEX, metaData.get(1).substring(metaData.get(1).indexOf(":" ) + 1).trim());
-		infoAndSettings.add(SOURCE_INDEX, metaData.get(2).substring(metaData.get(2).indexOf(":") + 1).trim());
-		infoAndSettings.add(TABSYMBOLSET_INDEX, metaData.get(3).substring(metaData.get(3).indexOf(":") + 1).trim());
-		infoAndSettings.add(TUNING_INDEX, metaData.get(4).substring(metaData.get(4).indexOf(":") + 1).trim());
-		infoAndSettings.add(TUNING_BASS_COURSES_INDEX, metaData.get(5).substring(metaData.get(5).indexOf(":") + 1).trim());
-		infoAndSettings.add(METER_INDEX, metaData.get(6).substring(metaData.get(6).indexOf(":") + 1).trim());
-		infoAndSettings.add(DIMINUTION_INDEX, metaData.get(7).substring(metaData.get(7).indexOf(":") + 1).trim());
+		List<String> ias = new ArrayList<>(); 
+		List<String> metaData = getAllMetaData(); // needs rawEncoding
+		ias.add(AUTHOR_IND, metaData.get(0).substring(metaData.get(0).indexOf(":") + 1).trim());
+		ias.add(TITLE_IND, metaData.get(1).substring(metaData.get(1).indexOf(":" ) + 1).trim());
+		ias.add(SOURCE_IND, metaData.get(2).substring(metaData.get(2).indexOf(":") + 1).trim());
+		ias.add(TABSYMBOLSET_IND, metaData.get(3).substring(metaData.get(3).indexOf(":") + 1).trim());
+		ias.add(TUNING_IND, metaData.get(4).substring(metaData.get(4).indexOf(":") + 1).trim());
+		ias.add(TUNING_BASS_COURSES_IND, metaData.get(5).substring(metaData.get(5).indexOf(":") + 1).trim());
+		ias.add(METER_IND, metaData.get(6).substring(metaData.get(6).indexOf(":") + 1).trim());
+		ias.add(DIMINUTION_IND, metaData.get(7).substring(metaData.get(7).indexOf(":") + 1).trim());
+		infoAndSettings = ias;
 	}
 
 
@@ -518,14 +440,15 @@ public class Encoding implements Serializable {
 	 *   (2) a mix of footnotes and other indications such as bar numbers.
 	 */
 	// TESTED
-	List<String> getMetaData() {        
+	List<String> getAllMetaData() {
+		String rawEnc = getRawEncoding();
 		List<String> metaData = new ArrayList<String>();
-		for (int i = 0; i < rawEncoding.length(); i++) {
-			char c = rawEncoding.charAt(i);
+		for (int i = 0; i < rawEnc.length(); i++) {
+			char c = rawEnc.charAt(i);
 			String currentChar = Character.toString(c); 
 			if (currentChar.equals(SymbolDictionary.OPEN_INFO_BRACKET)) {
-				int closeInfoIndex = rawEncoding.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, i);
-				String info = rawEncoding.substring(i + 1, closeInfoIndex);
+				int closeInfoIndex = rawEnc.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, i);
+				String info = rawEnc.substring(i + 1, closeInfoIndex);
 				metaData.add(info);
 				i = closeInfoIndex;
 			}
@@ -535,34 +458,64 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Sets footnotes, a List<String> containing all the footnotes added to the encoding.
+	 * Sets <code>metaData</code>, which contains author, title, and source information.
+	 * @return
 	 */
-	// TESTED (together with getFootnotes())
-	void setFootnotes() {
-		int footNoteCounter = 1;
-		for (String item : getMetaData()) {
-			if (item.startsWith(FOOTNOTE_INDICATOR)) {
-				footnotes.add("(" + footNoteCounter + ") " + item.substring(1));
-				footNoteCounter++;
-			}
-		}   
+	// TESTED (together with getMetaData())
+	void setMetaData() {
+		List<String> ias = getInfoAndSettings();
+		List<String> md = new ArrayList<>(); 
+		for (int ind : Arrays.asList(new Integer[]{AUTHOR_IND, TITLE_IND, SOURCE_IND})) {
+			md.add(ias.get(ind));
+		}
+		metaData = md;
 	}
 
 
-	// TESTED (together with setFootnotes())
-	public List<String> getFootnotes() {
-		return footnotes;
+	// TESTED (together with setMetaData())
+	public List<String> getMetaData() {
+		return metaData;
 	}
+
+
+//	/**
+//	 * Sets footnotes, a List<String> containing all the footnotes added to the encoding.
+//	 */
+//	// TESTED (together with getFootnotes())
+//	void setFootnotes() {
+//		List<String> fn = new ArrayList<>();
+//		int footNoteCounter = 1;
+//		for (String item : getMetaData()) {
+//			if (item.startsWith(FOOTNOTE_INDICATOR)) {
+//				fn.add("(" + footNoteCounter + ") " + item.substring(1));
+//				footNoteCounter++;
+//			}
+//		}
+//		footnotes = fn;
+//	}
+
+
+//	// TESTED (together with setFootnotes())
+//	public List<String> getFootnotes() {
+//		return footnotes;
+//	}
 
 
 	/**
-	 * Checks the encoding to see whether all VALIDITY RULES are met, whether there are no unknown
-	 * or missing symbols, and whether all LAYOUT RULES are met. Returns <code>null</code> if and
-	 * only if all three are true, and a String[] containing the relevant error information if not.
+	 * Checks the encoding to see whether 
+	 * <ul>
+	 * <li>all VALIDITY RULES are met</li> 
+	 * <li>there are no unknown or missing symbols</li> 
+	 * <li>all LAYOUT RULES are met</li> 
+	 * </ul>
 	 * NB: The encoding must always be checked in the sequence checkValidityRules() - checkSymbols() - 
-	 *     checkLayoutRules()
-	 * 
+	 *     checkLayoutRules()<br><br>
+	 *      
 	 * @return
+	 * <ul>
+	 * <li><code>null</code> if and only if all three conditions are true</li> 
+     * <li>a String[] containing the relevant error information if not</li>
+     * </ul>
 	 */
 	// TESTED
 	public String[] checkForEncodingErrors() {
@@ -587,20 +540,22 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED 
 	Integer[] alignRawAndCleanEncoding() {
+		String rawEnc = getRawEncoding();
+		String cleanEnc = getCleanEncoding();
 		// Initialise with default values of -1
-		Integer[] indicesRawAndCleanAligned = new Integer[rawEncoding.length()];
-		indicesRawAndCleanAligned = new Integer[rawEncoding.length()];
+		Integer[] indicesRawAndCleanAligned = new Integer[rawEnc.length()];
+		indicesRawAndCleanAligned = new Integer[rawEnc.length()];
 		Arrays.fill(indicesRawAndCleanAligned, -1);
 
 		int startIndex = 0;
-		for (int i = 0; i < cleanEncoding.length(); i++) {
-			String currentChar = cleanEncoding.substring(i, i + 1);
-			for (int j = startIndex; j < rawEncoding.length(); j++) {
+		for (int i = 0; i < cleanEnc.length(); i++) {
+			String currentChar = cleanEnc.substring(i, i + 1);
+			for (int j = startIndex; j < rawEnc.length(); j++) {
 				// Skip comments
-				if (rawEncoding.substring(j, j + 1).equals(SymbolDictionary.OPEN_INFO_BRACKET)) {
-					j = rawEncoding.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, j);
+				if (rawEnc.substring(j, j + 1).equals(SymbolDictionary.OPEN_INFO_BRACKET)) {
+					j = rawEnc.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, j);
 				}
-				else if (rawEncoding.substring(j, j + 1).equals(currentChar)) {
+				else if (rawEnc.substring(j, j + 1).equals(currentChar)) {
 					indicesRawAndCleanAligned[j] = i;
 					startIndex = j + 1;
 					break;
@@ -612,22 +567,33 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Checks all VALIDITY RULES. Returns <code>null</code> if all the rules are met, and if not a String[] containing 
-	 *     at element 0: the index in rawEncoding of the first error char to be highlighted;
-	 *     at element 1: the index in rawEncoding of the last error char to be highlighted;
-	 *     at element 2: the appropriate error message;
-	 *     at element 3: a reference to the rule that was broken.
+	 * Checks all VALIDITY RULES.
 	 *     
 	 * @param indicesRawAndCleanAligned
 	 * @return  
+	 * <ul>
+	 * <li><code>null</code> if all the rules are met</li>
+	 * <li>if not, a String[] containing</li>
+	 * <ul>
+	 * <li>at element 0: the index in rawEncoding of the first error char to be highlighted</li>
+	 * <li>at element 1: the index in rawEncoding of the last error char to be highlighted</li>
+	 * <li>at element 2: the appropriate error message</li>
+	 * <li>at element 3: a reference to the rule that was broken</li>
+	 * </ul>
+	 * </ul>
 	 */
 	// TESTED
 	String[] checkValidityRules(Integer[] indicesRawAndCleanAligned) {
 		String[] indicesAndMessages = new String[4]; 
 
+		String cleanEnc = getCleanEncoding();
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		
 		// Check VALIDITY RULE 1: The encoding cannot contain whitespace 
-		if (cleanEncoding.contains(WHITESPACE)) {
-			int indexOfFirstErrorChar = cleanEncoding.indexOf(WHITESPACE);
+		if (cleanEnc.contains(WHITESPACE)) {
+			int indexOfFirstErrorChar = cleanEnc.indexOf(WHITESPACE);
 			indicesAndMessages[0] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar));
 			indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar) + WHITESPACE.length());
 			indicesAndMessages[2] = "INVALID ENCODING ERROR -- Remove this whitespace.";
@@ -635,7 +601,7 @@ public class Encoding implements Serializable {
 			return indicesAndMessages;
 		}
 		// Check VALIDITY RULE 2: The encoding must end with an end break indicator
-		if (!cleanEncoding.endsWith(SymbolDictionary.END_BREAK_INDICATOR)) {
+		if (!cleanEnc.endsWith(ebi)) {
 			indicesAndMessages[0] = String.valueOf(-1);
 			indicesAndMessages[1] = String.valueOf(-1);
 			indicesAndMessages[2] = String.valueOf("INVALID ENCODING ERROR -- The encoding does not end with an end break indicator.");
@@ -644,21 +610,21 @@ public class Encoding implements Serializable {
 		}
 		// Check VALIDITY RULE 3: A system cannot start with a punctuation symbol
 		String VR3 = "See VALIDITY RULE 3: A system cannot start with a punctuation symbol.";
-		String noEBI = cleanEncoding.substring(0, cleanEncoding.length() - SymbolDictionary.END_BREAK_INDICATOR.length());
-		String[] allSystems = noEBI.split(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
+		String noEBI = cleanEnc.substring(0, cleanEnc.length() - ebi.length());
+		String[] allSystems = noEBI.split(sbi);
 		// a. Check whether there is a system starting with a SBI
-		if (noEBI.startsWith(SymbolDictionary.SYSTEM_BREAK_INDICATOR) || noEBI.contains(SymbolDictionary.END_BREAK_INDICATOR)) {
+		if (noEBI.startsWith(sbi) || noEBI.contains(ebi)) {
 			int indexOfFirstErrorChar = -1;
 			// a. If the first system starts with a SBI
-			if (noEBI.startsWith(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
-				indexOfFirstErrorChar = noEBI.indexOf(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
+			if (noEBI.startsWith(sbi)) {
+				indexOfFirstErrorChar = noEBI.indexOf(sbi);
 			}
 			// b. If a later system starts with a SBI
 			else {
-				indexOfFirstErrorChar = noEBI.indexOf(SymbolDictionary.END_BREAK_INDICATOR) + 1;
+				indexOfFirstErrorChar = noEBI.indexOf(ebi) + 1;
 			}
 			indicesAndMessages[0] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar));
-			indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar) + SymbolDictionary.SYSTEM_BREAK_INDICATOR.length());
+			indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar) + sbi.length());
 			indicesAndMessages[2] = "INVALID ENCODING ERROR -- Remove this system break indicator.";
 			indicesAndMessages[3] = VR3;
 			return indicesAndMessages;
@@ -667,15 +633,15 @@ public class Encoding implements Serializable {
 		else {
 			int indicesTraversed = 0;
 			for (String system : allSystems) {
-				if (system.startsWith(SymbolDictionary.SYMBOL_SEPARATOR)) {
+				if (system.startsWith(ss)) {
 					int indexOfFirstErrorChar = indicesTraversed;
 					indicesAndMessages[0] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar));
-					indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar) + SymbolDictionary.SYMBOL_SEPARATOR.length());		
+					indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar) + ss.length());		
 					indicesAndMessages[2] = "INVALID ENCODING ERROR -- Remove this symbol separator.";
 					indicesAndMessages[3] = VR3;
 					return indicesAndMessages;
 				}
-				indicesTraversed += system.length() + SymbolDictionary.SYSTEM_BREAK_INDICATOR.length();
+				indicesTraversed += system.length() + sbi.length();
 			}
 		}
 		// Check VALIDITY RULE 4: Each system must end with a symbol separator
@@ -683,19 +649,19 @@ public class Encoding implements Serializable {
 		int indicesTraversed = 0;
 		for (String system : allSystems) {
 			numSystemsTraversed++;
-			indicesTraversed += system.length() + SymbolDictionary.SYSTEM_BREAK_INDICATOR.length();   	
-			if (!system.endsWith(SymbolDictionary.SYMBOL_SEPARATOR)) {
+			indicesTraversed += system.length() + sbi.length();   	
+			if (!system.endsWith(ss)) {
 				int indexOfFirstErrorChar = indicesTraversed - 1;
 				indicesAndMessages[0] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar));
 				// Is the error in the last system?
 				if (numSystemsTraversed == allSystems.length) {
 					indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, 
-						indexOfFirstErrorChar) + SymbolDictionary.END_BREAK_INDICATOR.length());
+						indexOfFirstErrorChar) + ebi.length());
 					indicesAndMessages[2] = "INVALID ENCODING ERROR -- Insert a symbol separator before this end break indicator.";
 				}
 				else {
 					indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned,
-						indexOfFirstErrorChar) + SymbolDictionary.SYSTEM_BREAK_INDICATOR.length());
+						indexOfFirstErrorChar) + sbi.length());
 					indicesAndMessages[2] = "INVALID ENCODING ERROR -- Insert a symbol separator before this system break indicator.";
 				}
 				indicesAndMessages[3] = "See VALIDITY RULE 4: Each system must end with a symbol separator.";
@@ -707,27 +673,38 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Checks whether there are any missing or unknown symbols. Returns <code>null</code> if not, and if so a 
-	 * String[] containing 
-	 *   at element 0: the index in rawEncoding of the first error char to be highlighted;
-	 *   at element 1: the index in rawEncoding of the last error char to be highlighted;
-	 *   at element 2: the appropriate error message;
-	 *   at element 3: a reference to the rule that was broken.
-	 *   
+	 * Checks whether there are any missing or unknown symbols.
+	 *
 	 * @param indicesRawAndCleanAligned
-	 * @return  
+	 * @return
+	 * <ul>
+	 * <li><code>null</code> if there are no missing or unknown symbols</li>
+	 * <li>if so, a String[] containing</li>
+	 * <ul>
+	 * <li>at element 0: the index in rawEncoding of the first error char to be highlighted</li>
+	 * <li>at element 1: the index in rawEncoding of the last error char to be highlighted</li>
+	 * <li>at element 2: the appropriate error message</li>
+	 * <li>at element 3: a reference to the rule that was broken</li>
+	 * </ul>
+	 * </ul>
 	 */
 	// TESTED
 	String[] checkSymbols(Integer[] indicesRawAndCleanAligned) {
 		String[] indicesAndMessages = new String[4];
+		
+		String cleanEnc = getCleanEncoding();
+		
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
 
 		String VR5 = "See VALIDITY RULE 5: Each musical symbol must be succeeded directly by a symbol separator.";
-		String noEBI = cleanEncoding.substring(0, cleanEncoding.length() - SymbolDictionary.END_BREAK_INDICATOR.length());
-		String[] allSystems = noEBI.split(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
+		String noEBI = cleanEnc.substring(0, cleanEnc.length() - ebi.length());
+		String[] allSystems = noEBI.split(sbi);
 		int indicesTraversed = 0;
 		for (String system : allSystems) {
 			int symbolSeparatorIndex = -1;
-			int nextSymbolSeparatorIndex = system.indexOf(SymbolDictionary.SYMBOL_SEPARATOR, symbolSeparatorIndex + 1);
+			int nextSymbolSeparatorIndex = system.indexOf(ss, symbolSeparatorIndex + 1);
 			while (nextSymbolSeparatorIndex != -1) {
 				String symbol = system.substring(symbolSeparatorIndex + 1, nextSymbolSeparatorIndex);
 				// a. Does nextSymbolSeparatorIndex succeed symbolSeparatorIndex immediately? Missing symbol found
@@ -752,51 +729,64 @@ public class Encoding implements Serializable {
 					return indicesAndMessages;
 				}
 				symbolSeparatorIndex = nextSymbolSeparatorIndex;
-				nextSymbolSeparatorIndex = system.indexOf(SymbolDictionary.SYMBOL_SEPARATOR, symbolSeparatorIndex + 1);
+				nextSymbolSeparatorIndex = system.indexOf(ss, symbolSeparatorIndex + 1);
 			}
-			indicesTraversed += system.length() + SymbolDictionary.SYSTEM_BREAK_INDICATOR.length();
+			indicesTraversed += system.length() + sbi.length();
 		}
 		return null;
 	}
 
 
 	/**
-	 * Checks all LAYOUT RULES. Returns <code>null</code> if all the rules are met, and if not a String[] containing 
-	 *   at element 0: the index in rawEncoding of the first error char to be highlighted;
-	 *   at element 1: the index in rawEncoding of the last error char to be highlighted;
-	 *   at element 2: the appropriate error message;
-	 *   at element 3: a reference to the rule that was broken.
+	 * Checks all LAYOUT RULES.
 	 * 
 	 * @param indicesRawAndCleanAligned
-	 * @return  
+	 * @return
+	 * <ul>
+	 * <li><code>null</code> if all the rules are met</li>
+	 * <li>if not, a String[] containing</li>
+	 * <ul>
+	 * <li>at element 0: the index in rawEncoding of the first error char to be highlighted</li>
+	 * <li>at element 1: the index in rawEncoding of the last error char to be highlighted</li>
+	 * <li>at element 2: the appropriate error message</li>
+	 * <li>at element 3: a reference to the rule that was broken</li>
+	 * </ul>
+	 * </ul>
 	 */
 	// TESTED
 	String[] checkLayoutRules(Integer[] indicesRawAndCleanAligned) {
 		String[] indicesAndMessages = new String[4];
 
-		String noEBI = cleanEncoding.substring(0, cleanEncoding.length() - SymbolDictionary.END_BREAK_INDICATOR.length());
-		String[] allSystems = noEBI.split(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
+		String cleanEnc = getCleanEncoding();
+		
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
+		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		
+		String noEBI = cleanEnc.substring(0, cleanEnc.length() - ebi.length());
+		String[] allSystems = noEBI.split(sbi);
 		int indicesTraversed = 0;
 		for (String system : allSystems) {
 			// a. Rules 1-6 pertain to individual symbols within the system 
 			// Get the indices of the first and last two SSindices 
 			int symbolSeparatorIndex = -1;
-			int nextSymbolSeparatorIndex = system.indexOf(SymbolDictionary.SYMBOL_SEPARATOR, symbolSeparatorIndex + 1);
+			int nextSymbolSeparatorIndex = system.indexOf(ss, symbolSeparatorIndex + 1);
 			// VR 4 garuantees that each system ends with a SS
-			int lastSymbolSeparatorIndex = system.lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR); 
-			int penultimateSymbolSeparatorIndex = system.lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR, lastSymbolSeparatorIndex - 1);
+			int lastSymbolSeparatorIndex = system.lastIndexOf(ss); 
+			int penultimateSymbolSeparatorIndex = system.lastIndexOf(ss, lastSymbolSeparatorIndex - 1);
 			while (nextSymbolSeparatorIndex != -1) {
 				// Determine the current and, if the current is not the last symbol in the system, the next encoded symbol
 				String symbol = system.substring(symbolSeparatorIndex + 1, nextSymbolSeparatorIndex);
 				String nextSymbol = null;
 				int nextNextSymbolSeparatorIndex = -1;
 				if (symbolSeparatorIndex < penultimateSymbolSeparatorIndex) {
-					nextNextSymbolSeparatorIndex = system.indexOf(SymbolDictionary.SYMBOL_SEPARATOR, nextSymbolSeparatorIndex + 1);
+					nextNextSymbolSeparatorIndex = system.indexOf(ss, nextSymbolSeparatorIndex + 1);
 					nextSymbol = system.substring(nextSymbolSeparatorIndex + 1, nextNextSymbolSeparatorIndex);
 				}
 				// LAYOUT RULE 1: A system can start with any event but a space
-				// Is the first encoded symbol a space?
-				if (symbolSeparatorIndex == -1 && symbol.equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
+				// Is th)e first encoded symbol a space?
+				if (symbolSeparatorIndex == -1 && symbol.equals(sp)) {
 					int indexOfFirstErrorChar = indicesTraversed + symbolSeparatorIndex + 1;
 					indicesAndMessages[0] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar)); 
 					indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar) + symbol.length());
@@ -826,7 +816,7 @@ public class Encoding implements Serializable {
 				// Skip the last symbol of the system, which, as guaranteed by LR2 above, is always a CMS         
 				if (symbolSeparatorIndex < penultimateSymbolSeparatorIndex && 
 					ConstantMusicalSymbol.getConstantMusicalSymbol(symbol) != null) {        	
-					if (nextSymbol.equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
+					if (nextSymbol.equals(sp)) {
 						int indexOfFirstErrorChar = indicesTraversed + nextSymbolSeparatorIndex + 1;
 						indicesAndMessages[0] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar)); 
 						indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar) + nextSymbol.length());
@@ -843,7 +833,7 @@ public class Encoding implements Serializable {
 				//     symbol, the inner if, then yielding a nullPointerException (nextSymbol will be null), is never called 
 				if (TabSymbol.getTabSymbol(symbol, getTabSymbolSet()) != null) {
 					if (TabSymbol.getTabSymbol(nextSymbol, getTabSymbolSet()) == null && 
-						!nextSymbol.equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
+						!nextSymbol.equals(sp)) {
 						int indexOfFirstErrorChar = indicesTraversed + symbolSeparatorIndex + 1;   
 						indicesAndMessages[0] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar)); 
 						indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar) + symbol.length());
@@ -860,7 +850,7 @@ public class Encoding implements Serializable {
 				//     symbol, the inner if, then yielding a nullPointerException (nextSymbol will be null), is never called 
 				if (RhythmSymbol.getRhythmSymbol(symbol) != null) {
 					if (TabSymbol.getTabSymbol(nextSymbol, getTabSymbolSet()) == null &&
-						!nextSymbol.equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
+						!nextSymbol.equals(sp)) {
 						int indexOfFirstErrorChar = indicesTraversed + symbolSeparatorIndex + 1;   
 						indicesAndMessages[0] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar)); 
 						indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar) + symbol.length());
@@ -880,7 +870,7 @@ public class Encoding implements Serializable {
 				//     symbol, the inner if, then yielding a nullPointerException (nextSymbol will be null), is never called 
 				if (MensurationSign.getMensurationSign(symbol) != null) {
 					if (MensurationSign.getMensurationSign(nextSymbol) == null && 
-						!nextSymbol.equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
+						!nextSymbol.equals(sp)) {
 						int indexOfFirstErrorChar = indicesTraversed + symbolSeparatorIndex + 1;
 						indicesAndMessages[0] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar)); 
 						indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar) + symbol.length());
@@ -890,22 +880,22 @@ public class Encoding implements Serializable {
 					}
 				}
 				symbolSeparatorIndex = nextSymbolSeparatorIndex;
-				nextSymbolSeparatorIndex = system.indexOf(SymbolDictionary.SYMBOL_SEPARATOR, symbolSeparatorIndex + 1);
+				nextSymbolSeparatorIndex = system.indexOf(ss, symbolSeparatorIndex + 1);
 			}
 
 			// b. Rules 7 and 8 pertain to individual events within the system 
 			String[] allEvents = 
-				system.split(ConstantMusicalSymbol.SPACE.getEncoding() + SymbolDictionary.SYMBOL_SEPARATOR);
+				system.split(sp + ss);
 			for (String event : allEvents) {
 				// Remove any barlines preceding the event as a result of the splitting
-				String firstSymbol = event.substring(0, event.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+				String firstSymbol = event.substring(0, event.indexOf(ss));
 				if (ConstantMusicalSymbol.getConstantMusicalSymbol(firstSymbol) != null) {
-					event = event.substring(event.indexOf(SymbolDictionary.SYMBOL_SEPARATOR) + 1, event.length());	
+					event = event.substring(event.indexOf(ss) + 1, event.length());	
 				}
 				// Split the event into its individual symbols
 				// NB: The SS cannot be used as the regular expression to split around because a dot is an existing
 				// regular expression in Java. Therefore, all SS are replaced with whitespace before the splitting is done
-				String[] allSymbols = event.replace(SymbolDictionary.SYMBOL_SEPARATOR, WHITESPACE).split(WHITESPACE);
+				String[] allSymbols = event.replace(ss, WHITESPACE).split(WHITESPACE);
 				List<Integer> coursesUsed = new ArrayList<Integer>();
 				for (int i = 0; i < allSymbols.length; i++) {
 					String symbol = allSymbols[i];
@@ -941,7 +931,7 @@ public class Encoding implements Serializable {
 					}
 				}
 			}      
-			indicesTraversed += system.length() + SymbolDictionary.SYSTEM_BREAK_INDICATOR.length();
+			indicesTraversed += system.length() + sbi.length();
 		}
 		return null;
 	}
@@ -967,38 +957,20 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Return the TabSymbolSet that was used to encode the Tablature.
-	 * 
-	 * @return
-	 */
-	public TabSymbolSet getTabSymbolSet() {
-		return TabSymbolSet.getTabSymbolSet(infoAndSettings.get(TABSYMBOLSET_INDEX));
-	}
-	
-	
-	public void setName(String s) {
-		name = s;
-	}
-	
-	
-	public String getName() {
-		return name;
-	}
-
-
-	/**
 	 *  Sets tuning and encodedTuning both with the tuning specified in the encoding. tuning may
 	 *  be changed during further processing; encodedTuning retains its initial value.
 	 */
 	// TESTED (together with getTunings());
 	void setTunings() {
+		Tuning[] tun = new Tuning[2];
 		for (Tuning t : Tuning.values()) { 
-			if (t.toString().equals(infoAndSettings.get(TUNING_INDEX))) {
-				tunings[ENCODED_TUNING_INDEX] = t;
-				tunings[NEW_TUNING_INDEX] = t; 
+			if (t.toString().equals(getInfoAndSettings().get(TUNING_IND))) {
+				tun[ENCODED_TUNING_IND] = t;
+				tun[NEW_TUNING_IND] = t; 
 				break;
 			}
 		}
+		tunings = tun;
 	}
 
 
@@ -1019,8 +991,10 @@ public class Encoding implements Serializable {
 	 * 
 	 * NB: This method must always be called along with (before) setListsOfStatistics()
 	 */
-	// TESTED (together with getListsOfSymbols)
+	// TESTED (together with getListsOfSymbols())
 	void setListsOfSymbols() {
+		List<List<String>> los = new ArrayList<>();
+		
 		// Remove EBI and SBI from cleanEncoding    
 		String encodingAsReadNoSBI = 
 			getCleanEncoding().replace(SymbolDictionary.SYSTEM_BREAK_INDICATOR, "");
@@ -1078,16 +1052,18 @@ public class Encoding implements Serializable {
 			i = indexOfNextSymbolSeparator;
 		}
 		// Add the lists to listsOfSymbols
-		listsOfSymbols.add(ALL_SYMBOLS_INDEX, listOfAllSymbols);
-		listsOfSymbols.add(TAB_SYMBOLS_INDEX, listOfTabSymbols);
-		listsOfSymbols.add(RHYTHM_SYMBOLS_INDEX, listOfRhythmSymbols);
-		listsOfSymbols.add(MENSURATION_SIGNS_INDEX, listOfMensurationSigns);
-		listsOfSymbols.add(BARLINES_INDEX, listOfBarlines);
-		listsOfSymbols.add(ALL_EVENTS_INDEX, listOfAllEvents);
+		los.add(ALL_SYMBOLS_IND, listOfAllSymbols);
+		los.add(TAB_SYMBOLS_IND, listOfTabSymbols);
+		los.add(RHYTHM_SYMBOLS_IND, listOfRhythmSymbols);
+		los.add(MENSURATION_SIGNS_IND, listOfMensurationSigns);
+		los.add(BARLINES_IND, listOfBarlines);
+		los.add(ALL_EVENTS_IND, listOfAllEvents);
+		
+		listsOfSymbols = los;
 	}
 
 
-	// TESTED (together with setListsOfSymbols)
+	// TESTED (together with setListsOfSymbols())
 	public List<List<String>> getListsOfSymbols() {
 		return listsOfSymbols;
 	}
@@ -1118,8 +1094,10 @@ public class Encoding implements Serializable {
 	 *
 	 * NB: This method must always be called along with (after) setListsOfSymbols()
 	 */
-	// TESTED (together with getListsOfStatistics)
-	void setListsOfStatistics() {                                    
+	// TESTED (together with getListsOfStatistics())
+	void setListsOfStatistics() { 
+		List<List<Integer>> los = new ArrayList<>();
+		
 		// 0-6. Make the lists that have the same size as listOfAllEvents
 		List<Integer> isTabSymbolEvent = new ArrayList<Integer>();
 		List<Integer> isRhythmSymbolEvent = new ArrayList<Integer>();
@@ -1130,9 +1108,9 @@ public class Encoding implements Serializable {
 		List<Integer> durationOfEvents = new ArrayList<Integer>();
 		int newDuration = 0;
 		int currentDuration = 0;
-		List<List<String>> los = getListsOfSymbols();
+		List<List<String>> loss = getListsOfSymbols();
 		TabSymbolSet tss = getTabSymbolSet();
-		List<String> listOfAllEvents = los.get(Encoding.ALL_EVENTS_INDEX);
+		List<String> listOfAllEvents = loss.get(Encoding.ALL_EVENTS_IND);
 //		boolean tripletActive = false;
 //		List<Integer> triplet = new ArrayList<>();
 		for (int i = 0; i < listOfAllEvents.size(); i++) {
@@ -1244,7 +1222,7 @@ public class Encoding implements Serializable {
 			lowestNoteIndex += sizeCurrentEvent;
 		}
 		// Determine for each TS at index i its horizontal and vertical position
-		List<String> listOfTabSymbols = los.get(Encoding.TAB_SYMBOLS_INDEX);
+		List<String> listOfTabSymbols = loss.get(Encoding.TAB_SYMBOLS_IND);
 		for (int i = 0; i < listOfTabSymbols.size(); i++) {
 			// 7-8. horizontalPositionOfTabSymbols and verticalPositionOfTabSymbols
 			// For each event at index j
@@ -1275,49 +1253,36 @@ public class Encoding implements Serializable {
 			// 11. gridYOfTabSymbols
 			TabSymbol currentTabSymbol = 
 				TabSymbol.getTabSymbol(listOfTabSymbols.get(i), tss);
-			gridYOfTabSymbols.add(currentTabSymbol.getPitch(getTunings()[NEW_TUNING_INDEX], getTuningBassCourses()));
+			gridYOfTabSymbols.add(currentTabSymbol.getPitch(getTunings()[NEW_TUNING_IND], getTuningBassCourses()));
 			// 12. horizontalPositionInTabSymbolEventsOnly
 			int horizontalPosition = eventIndex - numberOfNonTabSymbolEventsPreceding;
 			horizontalPositionInTabSymbolEventsOnly.add(horizontalPosition);
 		}
 		// Add the lists to listsOfStatistics
-		listsOfStatistics.add(IS_TAB_SYMBOL_EVENT_INDEX, isTabSymbolEvent);
-		listsOfStatistics.add(IS_RHYTHM_SYMBOL_EVENT_INDEX, isRhythmSymbolEvent);
-		listsOfStatistics.add(IS_REST_EVENT_INDEX, isRestEvent);
-		listsOfStatistics.add(IS_MENSURATION_SIGN_EVENT_INDEX, isMensurationSignEvent);
-		listsOfStatistics.add(IS_BARLINE_EVENT_INDEX, isBarlineEvent);
-		listsOfStatistics.add(SIZE_OF_EVENTS_INDEX, sizeOfEvents);
-		listsOfStatistics.add(DURATION_OF_EVENTS_INDEX, durationOfEvents);
-		listsOfStatistics.add(HORIZONTAL_POSITION_INDEX, horizontalPositionOfTabSymbols);
-		listsOfStatistics.add(VERTICAL_POSITION_INDEX, verticalPositionOfTabSymbols);
-		listsOfStatistics.add(DURATION_INDEX, durationOfTabSymbols);
-		listsOfStatistics.add(GRID_X_INDEX, gridXOfTabSymbols);
-		listsOfStatistics.add(GRID_Y_INDEX, gridYOfTabSymbols);
-		listsOfStatistics.add(HORIZONTAL_POSITION_TAB_SYMBOLS_ONLY_INDEX, horizontalPositionInTabSymbolEventsOnly);
+		los.add(IS_TAB_SYMBOL_EVENT_IND, isTabSymbolEvent);
+		los.add(IS_RHYTHM_SYMBOL_EVENT_IND, isRhythmSymbolEvent);
+		los.add(IS_REST_EVENT_IND, isRestEvent);
+		los.add(IS_MENSURATION_SIGN_EVENT_IND, isMensurationSignEvent);
+		los.add(IS_BARLINE_EVENT_IND, isBarlineEvent);
+		los.add(SIZE_OF_EVENTS_IND, sizeOfEvents);
+		los.add(DURATION_OF_EVENTS_IND, durationOfEvents);
+		los.add(HORIZONTAL_POSITION_IND, horizontalPositionOfTabSymbols);
+		los.add(VERTICAL_POSITION_IND, verticalPositionOfTabSymbols);
+		los.add(DURATION_IND, durationOfTabSymbols);
+		los.add(GRID_X_IND, gridXOfTabSymbols);
+		los.add(GRID_Y_IND, gridYOfTabSymbols);
+		los.add(HORIZONTAL_POS_TAB_SYMBOLS_ONLY_IND, horizontalPositionInTabSymbolEventsOnly);
+	
+		listsOfStatistics = los;
 	}
 
 
 	/**
 	 * Gets listsOfStatistics.
 	 */
-	// TESTED (together with setListsOfStatistics)
+	// TESTED (together with setListsOfStatistics())
 	public List<List<Integer>> getListsOfStatistics() {
 		return listsOfStatistics;
-	}
-
-
-	public static String createMetadata(String[] metadata) {
-		String metadataStub = "";
-		String [] tags = getMetadataTags();
-		for (int i = 0; i < tags.length; i++) {
-			String currTag = tags[i];
-			metadataStub += SymbolDictionary.OPEN_INFO_BRACKET + currTag + metadata[i] +
-				SymbolDictionary.CLOSE_INFO_BRACKET + "\r\n";
-			if (i == 2 || i == tags.length - 1) {
-				metadataStub += "\r\n";
-			}
-		}
-		return metadataStub;
 	}
 
 
@@ -1327,7 +1292,7 @@ public class Encoding implements Serializable {
 	 */
 	private TuningBassCourses getTuningBassCourses() {
 		for (TuningBassCourses tsc: TuningBassCourses.values()) {
-			if (tsc.toString().equals(infoAndSettings.get(TUNING_BASS_COURSES_INDEX))) {
+			if (tsc.toString().equals(getInfoAndSettings().get(TUNING_BASS_COURSES_IND))) {
 				return tsc;
 			}
 		}
@@ -1335,54 +1300,407 @@ public class Encoding implements Serializable {
 	}
 
 
+	public void setName(String s) {
+		name = s;
+	}
+	
+	
+	public String getName() {
+		return name;
+	}
+
+
+	/**
+	 * Return the TabSymbolSet that was used to encode the Tablature.
+	 * 
+	 * @return
+	 */
+	public TabSymbolSet getTabSymbolSet() {
+		return TabSymbolSet.getTabSymbolSet(getInfoAndSettings().get(TABSYMBOLSET_IND));
+	}
+
+
+	public static String[] getMetaDataTags() {
+		return metaDataTags;
+	}
+
+
+	/**
+	 * Gets all events in the piece, organised per system. Each event is one of five types 
+	 * (TS event, RS event, rest event, MS event, or barline event). 
+	 *
+	 * @return A <code>List</code>, each element of which represents a system as a 
+	 * <code>List</code> of <code>String[]</code>s, each of which represents an event. Each
+	 * event contains 
+	 * <ul>
+	 * <li>at element 0: the event as encoded</li>
+	 * <li>at element 1: if the event has a footnote, that footnote; otherwise 
+	 * <code>null</code></li>
+	 * <li>at element 2: if the event has a footnote, the sequence number of that
+	 * footnote; otherwise <code>null</code></li>
+	 * </ul>
+	 */
+	// TESTED
+	public List<List<String[]>> getEventsWithFootnotes() {
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String oib = SymbolDictionary.OPEN_INFO_BRACKET;
+		String cib = SymbolDictionary.CLOSE_INFO_BRACKET;
+		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
+		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+		String invertedSp = "<";
+		String invertedSbi = "\\";
+
+		String rawEnc = getRawEncoding();
+		// Remove all carriage returns and line breaks; remove leading and trailing whitespace
+		rawEnc = rawEnc.replaceAll("\r", "");
+		rawEnc = rawEnc.replaceAll("\n", "");
+		rawEnc = rawEnc.trim();
+		// Remove end break indicator
+		rawEnc = rawEnc.replaceAll(SymbolDictionary.END_BREAK_INDICATOR, "");
+		
+		// List all comments
+		List<String> allNonEditorialComments = new ArrayList<>();
+		List<String> allEditorialComments = new ArrayList<>();
+		for (int i = 0; i < rawEnc.length(); i++) {
+			int commOpenInd = rawEnc.indexOf(oib, i);
+			int commCloseInd = rawEnc.indexOf(cib, commOpenInd + 1);
+			String comment = rawEnc.substring(commOpenInd, commCloseInd+1);
+			// Non-editorial comment
+			if (!comment.startsWith(oib + FOOTNOTE_INDICATOR)) {
+				allNonEditorialComments.add(comment);
+			}
+			// Editorial comment
+			else {
+				allEditorialComments.add(comment.substring(comment.indexOf(oib)+1, 
+					comment.indexOf(cib)));
+				// In rawEnc, temporarily replace any spaces and SBIs within comments, so 
+				// that splitting on them (see below) remains possible
+				if (comment.contains(sp)) {
+					rawEnc = rawEnc.replace(comment, comment.replace(sp, invertedSp));
+				}
+				if (comment.contains(sbi)) {
+					rawEnc = rawEnc.replace(comment, comment.replace(sbi, invertedSbi));
+				}
+			}
+			if (commCloseInd == rawEnc.lastIndexOf(cib)) {
+				break;
+			}
+			else {
+				i = commCloseInd;
+			}
+		}
+
+		// Remove all non-editorial comments from rawEnc
+		for (String comment : allNonEditorialComments) {
+			rawEnc = rawEnc.replace(comment, "");
+		}
+		
+		// To enable splitting, add a space after all barlines. NB: This will also affect any
+		// barlines in comments (but only if they are followed by a symbol separator!) - which
+		// is not a problem as the unadapted comments are stored in allNonEditorialComments		
+		List<String> barlinesAsString = new ArrayList<>();
+		for (ConstantMusicalSymbol cms : ConstantMusicalSymbol.constantMusicalSymbols) {
+			if (cms != ConstantMusicalSymbol.SPACE) {
+				barlinesAsString.add(cms.getEncoding());
+			}
+		}
+		// Sort the barlines by length (longest first), so that they are replaced correctly
+		// (a shorter barline, e.g., :|, can be part of a longer one, e.g., :|:, leading to 
+		// partial replacement of the longer one)
+		// See https://stackoverflow.com/questions/29280257/how-to-sort-an-arraylist-by-its-elements-size-in-java
+		barlinesAsString.sort(Comparator.comparing(String::length).reversed());
+		for (String s : barlinesAsString) {
+			if (ConstantMusicalSymbol.isBarline(s)) {
+				if (rawEnc.contains(s)) {
+					rawEnc = rawEnc.replace(s + ss, s + ss + sp + ss);
+				}
+			}
+		}
+
+		// List events per system
+		List<List<String[]>> eventsPerSystem = new ArrayList<>();
+		int commentCounter = 0;
+		String[] systems = rawEnc.split(sbi);
+		for (int i = 0; i < systems.length; i++) {
+			List<String[]> eventsCurrSystem = new ArrayList<>();
+			String[] events = systems[i].split(sp + ss);
+			for (int j = 0; j < events.length; j++) {
+				String event = events[j];
+				boolean containsComment = event.contains(oib + FOOTNOTE_INDICATOR);
+				// If the event does not contain a comment: add
+				if (!containsComment) {
+					eventsCurrSystem.add(new String[]{event, null, null});
+				}
+				// If the event contains a comment: separate event and comment, and add
+				if (containsComment) {
+					boolean startsWithComment = event.startsWith(oib + FOOTNOTE_INDICATOR);
+					String adaptedEvent = event.substring(0, event.indexOf(oib)) + 
+						event.substring(event.indexOf(cib) + 1);
+					// Get unadapted comment (the one in event may have been altered if it 
+					// contains symbols split on, such as a space or a SBI)
+					String comment = allEditorialComments.get(commentCounter);
+					String commentNum = "footnote #" + (commentCounter + 1);
+					commentCounter++;
+					// If the comment is at the end of the event: add
+					if (!startsWithComment) {
+						eventsCurrSystem.add(new String[]{adaptedEvent, comment, commentNum});
+					}
+					// If the comment is at the beginning of the event: reset last added and add
+					// NB: If there is a barline that is followed by a comment before the current
+					// event, that comment will end up preceding the current event. Example:
+					// original encoding:         sm.a2.a1.>.|.{@a footnote}sm.a2.a1.>. 
+					// space added after barline: sm.a2.a1.>.|.>.{@a footnote}sm.a2.a1.>.
+					// after split on space:      [sm.a2.a1., |., {@a footnote}sm.a2.a1.]
+					// In such a case, the comment must be moved to the last added element in
+					// eventsPerSystem
+					else {						
+						// systemToAdapt is the previous system if event is the first in the 
+						// current system, and the current system if not 
+						List<String[]> systemToAdapt = 
+							(j == 0) ? eventsPerSystem.get(i-1) : eventsCurrSystem;  
+						// Adapt comment and commentNum in element last added to systemToAdapt
+						systemToAdapt.set(systemToAdapt.size()-1, new String[]{
+							systemToAdapt.get(systemToAdapt.size()-1)[EVENT_IND], comment, commentNum});
+						// Add
+						eventsCurrSystem.add(new String[]{adaptedEvent, null, null});
+					}
+				}
+			}
+			eventsPerSystem.add(eventsCurrSystem);
+		}
+		return eventsPerSystem;
+	}
+
+
+	/**
+	 * Gets, per system, the segment indices in the tbp Staff of the events that have a 
+	 * footnote.
+	 * 
+	 * @return A <code>List</code> of <code>List</code>s, each of which represents a system, 
+	 * and contains the segment indices in the tbp Staff of the footnote events. In case of
+	 * a system without footnote events, the <code>List</code> remains empty.
+	 */
+	// TESTED
+	public List<List<Integer>> getFootnoteStaffSegmentIndices() {
+		List<List<Integer>> segmentIndices = new ArrayList<>();
+
+		// For each system
+		for (List<String[]> system : getEventsWithFootnotes()) {
+			int currSegmentInd = 0;
+			List<Integer> currSegmentIndices = new ArrayList<>();
+			// For each event in the system
+			for (String[] event : system) {
+				String currEvent = event[0].substring(0, event[0].lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+				boolean isBarlineEvent = 
+					ConstantMusicalSymbol.isBarline(currEvent) ? true : false;
+				// If the event contains a footnote: add currSegmentInd
+				if (event[1] != null) {
+					// In case of a barline, add the footnote indicator below the first pipe
+					// char (and not under any repeat dots)
+					if (isBarlineEvent) {
+						currSegmentInd += currEvent.indexOf(ConstantMusicalSymbol.BARLINE.getEncoding());
+					}
+					currSegmentIndices.add(currSegmentInd);
+				}
+				// Increment currSegmentInd. If barline event: increment with the number of 
+				// chars in the barline; if not (so if TS, RS, rest, or MS event): increment
+				// with 2 - one segment for the event itself, and one for the space following it
+				currSegmentInd = 
+					isBarlineEvent ? currSegmentInd + currEvent.length() : currSegmentInd + 2;
+			}
+			segmentIndices.add(currSegmentIndices);
+		}
+		return segmentIndices;
+	}
+
+
 	/** 
 	 *  Determines the staff length by calculating the number of segments needed for the longest
 	 *  system. The number of segments needed for a system can be calculated by looking at the 
-	 *  CMS only, as it equals the sum of
-	 *    (i)  twice the system's number of spaces (each space is preceded by an event, and both
-	 *         the event and the space need one segment);  
-	 *    (ii) the total length of all the system's barlines. 
+	 *  CMS only, as it equals the sum of (i) twice the system's number of spaces (each space 
+	 *  is preceded by an event, and both the event and the space need one segment); and (ii) 
+	 *  the total length of all the system's barlines.
+	 *  
+	 *  @return The lenght of the staff, measured in staff segments.
 	 **/
 	// TESTED
 	public int getStaffLength() {
 		int largestStaffLength = 0;
 
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
+		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		
 		String cleanEncoding = getCleanEncoding();
-		String[] allSystems = cleanEncoding.substring(0, 
-			cleanEncoding.indexOf(SymbolDictionary.END_BREAK_INDICATOR)).split(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
+		String[] allSystems = cleanEncoding.substring(0, cleanEncoding.indexOf(ebi)).split(sbi);
 
 		// For each system
 		for (String system : allSystems) {
-			int lengthCurrentSystem = 0;
-			int symbolSeparatorIndex = -1;
-			int nextSymbolSeparatorIndex = 
-				system.indexOf(SymbolDictionary.SYMBOL_SEPARATOR, symbolSeparatorIndex + 1);
+			int lengthCurrSystem = 0;
+			int ssIndex = -1;
+			int nextSsIndex = system.indexOf(ss, ssIndex + 1);
 			// For each symbol
-			while (nextSymbolSeparatorIndex != -1) {
-				String symbol = 
-					system.substring(symbolSeparatorIndex + 1, nextSymbolSeparatorIndex);
+			while (nextSsIndex != -1) {
+				String symbol = system.substring(ssIndex + 1, nextSsIndex);
 				// If symbol is a CMS       
 				if (ConstantMusicalSymbol.getConstantMusicalSymbol(symbol) != null) { 
-					// a. If symbol is a space, lengthOfCurrentSystem must be incremented by 2: 
+					// a. If symbol is a space, lengthCurrSystem must be incremented by 2: 
 					// one for the space and one for the event before it
-					if (symbol.equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
-						lengthCurrentSystem += 2;
+					if (symbol.equals(sp)) {
+						lengthCurrSystem += 2;
 					}
-					// b. If symbol is any CMS but a space, lengthOfCurrentSystem must be 
+					// b. If symbol is any CMS but a space, lengthCurrSystem must be 
 					// incremented by the length of the symbol 
 					else {
-						lengthCurrentSystem += symbol.length();
+						lengthCurrSystem += symbol.length();
 					}
 				}
-				symbolSeparatorIndex = nextSymbolSeparatorIndex;
-				nextSymbolSeparatorIndex = system.indexOf(SymbolDictionary.SYMBOL_SEPARATOR, symbolSeparatorIndex + 1);
+				ssIndex = nextSsIndex;
+				nextSsIndex = system.indexOf(ss, ssIndex + 1);
 			}
 			// Reset largestStaffLength if necessary
-			if (lengthCurrentSystem > largestStaffLength) {
-				largestStaffLength = lengthCurrentSystem;
+			if (lengthCurrSystem > largestStaffLength) {
+				largestStaffLength = lengthCurrSystem;
 			}
 		}
 		return largestStaffLength;
 	}
+
+
+	/**
+	 * Renders the encoding as String.
+	 * 
+	 * @param TabSymbolSet Determines the tablature style.
+	 * @param ignoreRepeatedRhythmSymbols If set to <code>true</code>, RS will only be 
+	 * displayed when they change - regardless of whether this is specified in the encoding.
+	 * 
+	 * @return A String representation of the encoding.
+	 */
+	public String visualise(TabSymbolSet argTss, boolean ignoreRepeatedRhythmSymbols) {
+		String tab = "";
+		
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
+		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+
+		String cleanEnc = getCleanEncoding();
+		TabSymbolSet tss = getTabSymbolSet();
+
+		// Search all systems one by one
+		int staffIndex = 0;
+		int sbiIndex = -1;
+		int nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
+		while (sbiIndex + 1 != nextSbiIndex) { 
+			RhythmSymbol prevRhythmSymbol = null;
+			Staff staff = new Staff(getStaffLength());
+			int segment = 0;
+			String currSysEncoding = cleanEnc.substring(sbiIndex + 1, nextSbiIndex);
+			// Check for each system the encoded symbols one by one and for each encoded symbol 
+			// add its tablature representation to staff 
+			int ssIndex = -1;
+			int nextSsIndex = currSysEncoding.indexOf(ss, ssIndex);
+			while (nextSsIndex != -1) {
+				String encodedSymbol = currSysEncoding.substring(ssIndex + 1, nextSsIndex);
+				int nextNextSsIndex = currSysEncoding.indexOf(ss, nextSsIndex + 1);
+				// nextEncodedSymbol is needed for b, c, and d below and can exist for all encoded 
+				// symbols except for the last--i.e., as long as nextNextSsIndex is not -1
+				String nextEncodedSymbol = null;
+				if (nextNextSsIndex != -1) {
+					nextEncodedSymbol = currSysEncoding.substring(nextSsIndex + 1, nextNextSsIndex);
+				}
+				// a. Add ConstantMusicalSymbol?
+				if (ConstantMusicalSymbol.getConstantMusicalSymbol(encodedSymbol) != null) {
+					ConstantMusicalSymbol c = ConstantMusicalSymbol.getConstantMusicalSymbol(encodedSymbol);
+					staff.addConstantMusicalSymbol(encodedSymbol, segment);
+					segment = segment + c.getSymbol().length();
+				}
+				// b. Add TabSymbol?
+				else if (TabSymbol.getTabSymbol(encodedSymbol, tss) != null) { 
+					TabSymbol t = TabSymbol.getTabSymbol(encodedSymbol, tss);
+					if (argTss == TabSymbolSet.FRENCH_TAB) {   
+						staff.addTabSymbolFrench(t, segment); 
+					}
+					else if (argTss == TabSymbolSet.ITALIAN_TAB) {
+						staff.addTabSymbolItalian(t, segment);
+					}
+					else if (argTss == TabSymbolSet.SPANISH_TAB) {
+						staff.addTabSymbolSpanish(t, segment);
+					}
+					else if (argTss == TabSymbolSet.NEWSIDLER_1536 ) {
+						// TODO 
+					} 
+					// Is encodedSymbol followed by a space and not by another TS--i.e., is it the 
+					// last TS of a vertical sonority? Increment segment
+					// NB: LAYOUT RULE 4 guarantees that a vertical sonority is always followed by a
+					// space, meaning that nextEncodedSymbol always exists if encodedSymbol is a TS
+					if (nextEncodedSymbol.equals(sp)) {
+						segment++;
+					}
+				}
+				// c. Add RhythmSymbol?
+				else if (RhythmSymbol.getRhythmSymbol(encodedSymbol) != null) {
+					RhythmSymbol r = RhythmSymbol.getRhythmSymbol(encodedSymbol);
+					boolean showBeam = true;
+					// Always RS? Add RS; always add any beam
+					if (!ignoreRepeatedRhythmSymbols) {
+						staff.addRhythmSymbol(r, segment, showBeam);    
+					}
+					// Only differing RS? Add RS only if r is not equal to previousRhythmSymbol; 
+					// never add any beam
+					else {
+						// Compare r with prevRhythmSymbol; if prevRhythmSymbol is null or if they
+						// do not have the same duration: add r to staff
+						// NB: because of possibly present beams, direct comparison does not work: an RS and 
+						// its beamed variant are considered inequal because they are defined as two different 
+						// objects
+						showBeam = false;
+						if (prevRhythmSymbol == null) {
+							staff.addRhythmSymbol(r, segment, showBeam);
+						}
+						else {
+							if (r.getDuration() != prevRhythmSymbol.getDuration()) {
+								staff.addRhythmSymbol(r, segment, showBeam);
+							}
+						}
+					}
+					// Is encodedSymbol followed by a space and not by a TS -- i.e., does 
+					// encodedSymbol represent a rest? Increment segment
+					// NB: LAYOUT RULE 5 guarantees that a rest is always followed by a space, 
+					// meaning that nextEncodedSymbol always exists if encodedSymbol is a RS
+					if (nextEncodedSymbol.equals(sp)) {
+						segment ++;
+					}
+					prevRhythmSymbol = r;
+				}     
+				// d. Add MensurationSign?
+				else if (MensurationSign.getMensurationSign(encodedSymbol) != null) {
+					MensurationSign m = MensurationSign.getMensurationSign(encodedSymbol);
+					staff.addMensurationSign(m, segment);
+					// Is encodedSymbol followed by a space and not by another MS--i.e., is
+					// encodedSymbol the only or the last symbol of a (compound) MS? Increment segment
+					// NB: LAYOUT RULE 6 guarantees that the last MS is always followed by a space,
+					// meaning that nextEncodedSymbol always exists if encodedSymbol is a MS 
+					if (nextEncodedSymbol.equals(sp)) {
+						segment ++;
+					}
+				}
+				// e. Add footnote
+				staff.addFootnoteIndicators(getFootnoteStaffSegmentIndices().get(staffIndex));
+				// Prepare indices for next iteration inner while
+				ssIndex = nextSsIndex;
+				nextSsIndex = currSysEncoding.indexOf(ss, ssIndex + 1); 
+			}
+			// System traversed? Add to tablature; prepare indices for next iteration outer while
+			staffIndex++;
+			tab += staff.getStaff() + Staff.SPACE_BETWEEN_STAFFS;
+			sbiIndex = nextSbiIndex;
+			nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
+		}
+		return tab;
+	}
+	
+	
+	
 
 }

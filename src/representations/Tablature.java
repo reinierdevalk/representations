@@ -282,7 +282,7 @@ public class Tablature implements Serializable {
 		List<Integer[]> originalMeterInfo = new ArrayList<>();
 
 		String[] originalMeters = 
-			getEncoding().getInfoAndSettings().get(Encoding.METER_INDEX).split(";");		
+			getEncoding().getInfoAndSettings().get(Encoding.METER_IND).split(";");		
 		for (int i = 0; i < originalMeters.length; i++) {
 			Integer[] currentMeterInfo = new Integer[4];
 			String currInfo = originalMeters[i].trim();
@@ -317,7 +317,7 @@ public class Tablature implements Serializable {
 	// TESTED
 	public List<Integer> getDiminutions() {
 		List<Integer> diminutions = new ArrayList<>();
-		String diminutionsStr = getEncoding().getInfoAndSettings().get(Encoding.DIMINUTION_INDEX);
+		String diminutionsStr = getEncoding().getInfoAndSettings().get(Encoding.DIMINUTION_IND);
 		for (String s : diminutionsStr.split(";")) {
 			diminutions.add(Integer.parseInt(s.trim()));
 		}
@@ -431,17 +431,17 @@ public class Tablature implements Serializable {
 		List<List<String>> symbols = getEncoding().getListsOfSymbols();
 		List<List<Integer>> stats = getEncoding().getListsOfStatistics();
 		TabSymbolSet tss = getEncoding().getTabSymbolSet();
-		List<String> listOfTabSymbols = symbols.get(Encoding.TAB_SYMBOLS_INDEX);
-		List<String> listOfAllEvents = symbols.get(Encoding.ALL_EVENTS_INDEX);
-		List<Integer> isTabSymbolEvent = stats.get(Encoding.IS_TAB_SYMBOL_EVENT_INDEX); 
-		List<Integer> sizeOfEvents = stats.get(Encoding.SIZE_OF_EVENTS_INDEX);
-		List<Integer> horizontalPositionOfTabSymbols = stats.get(Encoding.HORIZONTAL_POSITION_INDEX);
-		List<Integer> verticalPositionOfTabSymbols = stats.get(Encoding.VERTICAL_POSITION_INDEX);
-		List<Integer> durationOfTabSymbols = stats.get(Encoding.DURATION_INDEX);
-		List<Integer> gridXOfTabSymbols = stats.get(Encoding.GRID_X_INDEX);
-		List<Integer> gridYOfTabSymbols = stats.get(Encoding.GRID_Y_INDEX);  	
+		List<String> listOfTabSymbols = symbols.get(Encoding.TAB_SYMBOLS_IND);
+		List<String> listOfAllEvents = symbols.get(Encoding.ALL_EVENTS_IND);
+		List<Integer> isTabSymbolEvent = stats.get(Encoding.IS_TAB_SYMBOL_EVENT_IND); 
+		List<Integer> sizeOfEvents = stats.get(Encoding.SIZE_OF_EVENTS_IND);
+		List<Integer> horizontalPositionOfTabSymbols = stats.get(Encoding.HORIZONTAL_POSITION_IND);
+		List<Integer> verticalPositionOfTabSymbols = stats.get(Encoding.VERTICAL_POSITION_IND);
+		List<Integer> durationOfTabSymbols = stats.get(Encoding.DURATION_IND);
+		List<Integer> gridXOfTabSymbols = stats.get(Encoding.GRID_X_IND);
+		List<Integer> gridYOfTabSymbols = stats.get(Encoding.GRID_Y_IND);  	
 		List<Integer> horizontalPositionInTabSymbolEventsOnly = 
-			stats.get(Encoding.HORIZONTAL_POSITION_TAB_SYMBOLS_ONLY_INDEX);
+			stats.get(Encoding.HORIZONTAL_POS_TAB_SYMBOLS_ONLY_IND);
 
 		List<List<Integer>> scaled = 
 			adaptToDiminutions(durationOfTabSymbols, gridXOfTabSymbols, getDiminutions(), 
@@ -541,7 +541,7 @@ public class Tablature implements Serializable {
 
 		List<TabSymbol> currentChord = new ArrayList<TabSymbol>();
 		List<String> listOfTabSymbols = 
-			getEncoding().getListsOfSymbols().get(Encoding.TAB_SYMBOLS_INDEX);
+			getEncoding().getListsOfSymbols().get(Encoding.TAB_SYMBOLS_IND);
 		TabSymbol firstTabSymbol = TabSymbol.getTabSymbol(listOfTabSymbols.get(0), tss);
 		int onsetTimeOfFirstTabSymbol = basicTabSymbolProperties[0][ONSET_TIME];
 		currentChord.add(firstTabSymbol);
@@ -634,7 +634,7 @@ public class Tablature implements Serializable {
 	public int getTranspositionInterval() {
 		int transpositionInterval = 0;
 
-		Tuning originalTuning = getEncoding().getTunings()[Encoding.ENCODED_TUNING_INDEX];
+		Tuning originalTuning = getEncoding().getTunings()[Encoding.ENCODED_TUNING_IND];
 		
 		for (Tuning t : Tuning.values()) {
 			if (t.equals(originalTuning)) {
@@ -674,7 +674,7 @@ public class Tablature implements Serializable {
 
 		Tuning[] tunings = getEncoding().getTunings();
 
-		Tuning originalTuning = tunings[Encoding.ENCODED_TUNING_INDEX];
+		Tuning originalTuning = tunings[Encoding.ENCODED_TUNING_IND];
 		
 //		for (Tuning t : Tuning.values()) {
 //			if (t.equals(originalTuning)) {
@@ -684,10 +684,10 @@ public class Tablature implements Serializable {
 //		}
 		
 		if (originalTuning.isAvallee()) {
-			tunings[Encoding.NEW_TUNING_INDEX] = Tuning.G_AVALLEE;
+			tunings[Encoding.NEW_TUNING_IND] = Tuning.G_AVALLEE;
 		}
 		else {
-			tunings[Encoding.NEW_TUNING_INDEX] = Tuning.G;
+			tunings[Encoding.NEW_TUNING_IND] = Tuning.G;
 		}
 		
 //		switch (originalTuning) {
@@ -707,12 +707,12 @@ public class Tablature implements Serializable {
 
 		// Reset the list of gridY values in listsOfStatistics
 		List<List<Integer>> stats = getEncoding().getListsOfStatistics();
-		List<Integer> oldGridYOfTabSymbols = stats.get(Encoding.GRID_Y_INDEX);
+		List<Integer> oldGridYOfTabSymbols = stats.get(Encoding.GRID_Y_IND);
 		List<Integer> newGridYOfTabSymbols = new ArrayList<Integer>(); 
 		for (int i : oldGridYOfTabSymbols) {
 			newGridYOfTabSymbols.add(i + transpositionInterval);
 		}
-		stats.set(Encoding.GRID_Y_INDEX, newGridYOfTabSymbols);
+		stats.set(Encoding.GRID_Y_IND, newGridYOfTabSymbols);
 
 		// Reset the pitches in basicTabSymbolProperties
 		for (Integer[] in : basicTabSymbolProperties) {
@@ -1395,7 +1395,7 @@ public class Tablature implements Serializable {
 	String[] splitHeaderAndEncoding() {
 		// Separate header and encoding
 		String raw = getEncoding().getRawEncoding();
-		String[] metadataTags = Encoding.getMetadataTags();
+		String[] metadataTags = Encoding.getMetaDataTags();
 		int endHeader = raw.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, 
 			raw.indexOf(metadataTags[metadataTags.length-1]));		
 		String header = raw.substring(0, endHeader+1).trim();

@@ -1,12 +1,13 @@
 package tbp;
 
+import java.util.List;
 
 public class Staff { 
   
 	private int numberOfSegments;
-	private String[][] staffData; 
+	private String[][] staffData;
 	private static final String STAFF_SEGMENT = "-";
-	private static final int STAFF_LINES = 9;  
+	private static final int STAFF_LINES = 10;  
 	private static final int RHYTHM_LINE = 0;
 	private static final int DIAPASONS_LINE_ITALIAN = 1;
 	private static final int TOP_TABLATURE_LINE = 2;
@@ -14,8 +15,10 @@ public class Staff {
 	private static final int LOWER_MIDDLE_TABLATURE_LINE = 5;
 	private static final int BOTTOM_TABLATURE_LINE = 7;
 	private static final int DIAPASONS_LINE_OTHER = 8;
+	private static final int FOOTNOTES_LINE = 9;
 	private static final int NECESSARY_LINE_SHIFT = 1;
-
+	public static final String SPACE_BETWEEN_STAFFS = "\n\n";
+	
 
 	/**
 	 * Constructor. Creates an empty Staff of the specified length.
@@ -28,6 +31,7 @@ public class Staff {
 		this.staffData = new String[STAFF_LINES][numberOfSegments];
 		final String rhythmSegment = " ";
 		final String spaceAroundStaffSegment = " ";
+		final String footnoteSegment = " ";
 		// Construct the empty Staff line by line, segment by segment 
 		for (int staffLine = RHYTHM_LINE; staffLine < STAFF_LINES; staffLine++) {  
 			for (int segment = 0; segment < numberOfSegments; segment++) { 
@@ -36,15 +40,19 @@ public class Staff {
 					case RHYTHM_LINE:
 						staffData[staffLine][segment] = rhythmSegment;
 						break;
-						// staffLine 1: for any diaposons in Italian tablature
+					// staffLine 1: for any diaposons in Italian tablature
 					case DIAPASONS_LINE_ITALIAN: 
 						staffData[staffLine][segment] = spaceAroundStaffSegment;
 						break;
-						// staffLine 8: for any diapasons in French and Spanish tablature
+					// staffLine 8: for any diapasons in French and Spanish tablature
 					case DIAPASONS_LINE_OTHER:
 						staffData[staffLine][segment] = spaceAroundStaffSegment;
 						break;
-						// staffLines 2-7: for the tablature staff itself
+					// staffLine 9: for any footnote indicators
+					case FOOTNOTES_LINE:
+						staffData[staffLine][segment] = footnoteSegment;
+						break;
+					// staffLines 2-7: for the tablature staff itself
 					default:
 						staffData[staffLine][segment] = STAFF_SEGMENT;
 				}
@@ -142,8 +150,7 @@ public class Staff {
 	 * @param segment
 	 * @param showBeam
 	 */ 
-	public void addRhythmSymbol(RhythmSymbol aRhythmSymbol, int segment, boolean showBeam) { 
-		
+	public void addRhythmSymbol(RhythmSymbol aRhythmSymbol, int segment, boolean showBeam) {
 //		final String rhythmDot = ".";
 		final String beam = "-";
 		String symbol = aRhythmSymbol.getSymbol();
@@ -159,6 +166,29 @@ public class Staff {
 		if (aRhythmSymbol.getEncoding().endsWith(beam) && showBeam == true) {
 			staffData[RHYTHM_LINE][segment + 1] = beam;
 		}
+	}
+
+
+	/** 
+	 * Adds the footnote indicators at the positions in the list given 
+	 * 
+	 * @param indices The indices of the segments containing footnotes events.
+	 */
+	public void addFootnoteIndicators(List<Integer> indices) {
+//		int numSegments = getNumberOfSegments();	
+		String footnotesIndicator = "*";
+//		int lineNumberFrench = aTabSymbol.getCourse() + NECESSARY_LINE_SHIFT; 
+//		int fret = aTabSymbol.getFret();
+//		String symbolFrench = frenchSymbols[fret];
+		for (int ind : indices) {
+			staffData[FOOTNOTES_LINE][ind] = footnotesIndicator; 
+		}
+		
+		// Make a string of spaces as long as the staff (getNumberOfSegments)
+		// Get the segment indices where the staff has an event (chord or rest)
+		// Replace the space by a star there
+		// Barline comment should be placed under the barline; count those as well
+		// Make clear in listEvents if a comment is a varline comment (extra field in String[])
 	}
 
 

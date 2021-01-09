@@ -9,11 +9,13 @@ import java.util.List;
 import java.util.Map;
 
 import representations.Encoding;
+import representations.Tablature;
 import representations.Encoding.Tuning;
 import tbp.ConstantMusicalSymbol;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
 import tbp.SymbolDictionary;
+import tbp.TabSymbol;
 import tbp.TabSymbolSet;
 import tools.ToolBox;
 
@@ -232,13 +234,15 @@ public class TabImport {
 			rulesMap.get("tuningSeventhCourse") != null ? 
 				rulesMap.get("tuningSeventhCourse") : "", // TuningSeventhCourse TODO
 			rulesMap.get("meterInfo") != null ? 
-				rulesMap.get("meterInfo") : Encoding.createMeterInfoString(tbpEncoding.toString(), tss), // meterinfo
+				rulesMap.get("meterInfo") : createMeterInfoString(tbpEncoding.toString(), tss), // meterinfo
 			rulesMap.get("durScale") != null ? 
 				rulesMap.get("durScale") : "1" // diminution	
-		};		
-		StringBuffer metadataStr = new StringBuffer(Encoding.createMetadata(metadata));
+		};
+		StringBuffer metaDataStr = 
+			new StringBuffer(createMetaData(metadata, Encoding.getMetaDataTags()));
+//		StringBuffer metaDataStr = new StringBuffer(Encoding.createMetadata(metadata));
 
-		return metadataStr.append(tbpEncoding).toString();
+		return metaDataStr.append(tbpEncoding).toString();
 	}
 
 
@@ -665,16 +669,180 @@ public class TabImport {
 			tss, // TabSymbolSet  
 			tuning, // Tuning
 			"", // TuningSeventhCourse TODO
-			Encoding.createMeterInfoString(enc.toString(), tss), // meterinfo 
+			createMeterInfoString(enc.toString(), tss), // meterinfo 
 			"" // diminution
 		};
 
-		StringBuffer metadataStr = new StringBuffer(Encoding.createMetadata(metadata));
+		StringBuffer metaDataStr = 
+			new StringBuffer(createMetaData(metadata, Encoding.getMetaDataTags()));
 
-		return metadataStr.append(enc).toString();
+		return metaDataStr.append(enc).toString();
 	}
-	
-	
+
+
+	/**
+	 * Given the clean encoding, calculates the meter info string. Barring is ignored, and each
+	 * bar end is instead determined by the bar duration under the current mensuration sign. It is 
+	 * assumed that the piece contains no errors. 
+	 * 
+	 * @param argCleanEncoding
+	 * @param tss
+	 * @return
+	 */
+	// TESTED
+	static String createMeterInfoString(String argCleanEncoding, String tss) {
+
+		// Remove line breaks and system separators; then split into symbols
+		String[] symbols = argCleanEncoding.replace("\r\n", "").replace("/", "").split("\\"+SymbolDictionary.SYMBOL_SEPARATOR);
+		// Remove any initial barline
+		if (ConstantMusicalSymbol.getConstantMusicalSymbol(symbols[0]) != null) {
+			symbols = Arrays.copyOfRange(symbols, 1, symbols.length);
+		}
+
+		List<Integer[]> mensSigns = new ArrayList<>();
+		mensSigns.add(new Integer[]{2, 2}); // assume 2/2 in case there is no MS
+		List<String> barsPerMeter = new ArrayList<>();
+		int meterStartBar = 1;
+		int currBar = 1;
+		int prevDur = 0;
+		int posInBar = 0;
+		// fullBar is the length (in SMALLEST_RHYTHMIC_VALUE) of a full bar under the current meter
+		int fullBar = 
+			(int) (mensSigns.get(0)[0] / (double) mensSigns.get(0)[1]) * 
+			Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom(); // trp
+		boolean semibreveBarring = false;
+		for (int i = 0; i < symbols.length; i++) {
+			String s = symbols[i];
+//			System.out.println("symbol = " + s);
+			MensurationSign ms = MensurationSign.getMensurationSign(s);
+			RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(s);
+			TabSymbol ts = TabSymbol.getTabSymbol(s, TabSymbolSet.getTabSymbolSet(tss));
+			ConstantMusicalSymbol cms = ConstantMusicalSymbol.getConstantMusicalSymbol(s);
+			ConstantMusicalSymbol prevCms = null;
+			if (i > 0) {
+				prevCms = ConstantMusicalSymbol.getConstantMusicalSymbol(symbols[i-1]);
+			}
+
+			// MS
+			if (ms != null) {
+				Integer[] meter = ms.getMeter();
+				// In case of double (ternary) MS: get the meter from the second MS
+				MensurationSign nextMS = MensurationSign.getMensurationSign(symbols[i+1]);
+				if (nextMS != null) {
+					meter = nextMS.getMeter();
+					i++; // skip next symbol
+				}
+				// If still bar 1: replace default MS; else add MS
+				if (currBar == 1) {
+					mensSigns.set(0, meter);
+				}
+				else {
+					mensSigns.add(meter);
+					// Add bars under previous MS
+					if (meterStartBar == currBar-1) {
+						barsPerMeter.add(String.valueOf(meterStartBar));
+					}
+					else {
+						barsPerMeter.add(meterStartBar + "-" + (currBar-1));
+					}
+					meterStartBar = currBar;
+				}
+				// Set fullBar under new meter
+				fullBar = 
+					(int) ((meter[0] / (double) meter[1]) * 
+					Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()); // trp
+			}
+
+			// RS
+			if (rs != null) {
+				// Only if previous symbol was no barline and the RS event is not preceded by a MS 
+				// (in both cases posInBar was already updated)
+				if (!(prevCms != null && prevCms != ConstantMusicalSymbol.SPACE) && 
+					(i >= 2 && MensurationSign.getMensurationSign(symbols[i-2]) == null)) {
+					posInBar += prevDur;
+//					System.out.println("RS");
+//					System.out.println("posInBar = " + posInBar);
+				}
+				prevDur = rs.getDuration();
+			}
+
+			// TS event without RS (always preceded by space or barline)
+			if (ts != null && prevCms != null) {
+				// Only if previous symbol was no barline (in which case posInBar was already updated)
+				if (!(prevCms != ConstantMusicalSymbol.SPACE)) {
+					posInBar += prevDur;
+//					System.out.println("TS event w/o RS");
+//					System.out.println("posInBar = " + posInBar);
+				}
+			}
+			
+			// Barline
+			if (cms != null && cms != ConstantMusicalSymbol.SPACE) {
+				// Only if previous symbol was no barline (in which case posInBar was already updated)
+				if (!(prevCms != null && prevCms != ConstantMusicalSymbol.SPACE)) {
+					posInBar += prevDur;
+//					System.out.println("barline");
+//					System.out.println("posInBar = " + posInBar);
+				}
+				// Check for semibreve barring (assumed to be regular)
+				if (currBar == 1 && posInBar >= RhythmSymbol.semibrevis.getDuration()) {
+					semibreveBarring = true;
+				}
+			}
+
+//			// Increment bar and reset posInBar
+//			// Semibreve barring: bar end reached only if bar is full
+//			// No semibreve barring: bar end reached if bar is full or barline is encountered
+//			if ( (semibreveBarring && posInBar >= fullBar) || (!semibreveBarring && 
+//				(posInBar >= fullBar || (cms != null && cms != ConstantMusicalSymbol.SPACE)))) {
+//				currBar++;
+//				// Account for ties over bar
+//				posInBar -= fullBar;
+//			}
+			
+			// Increment bar and reset posInBar
+			if (posInBar >= fullBar) {
+				currBar++;
+//				System.out.println("currBar = " + currBar);
+				// Account for ties over bar
+				posInBar -= fullBar;
+			}
+		}
+		if (meterStartBar == currBar-1) {
+			barsPerMeter.add(String.valueOf(meterStartBar));
+		}
+		else {
+			barsPerMeter.add(meterStartBar + "-" + (currBar-1));
+		}
+		
+		String meterInfoString = "";
+		for (int i = 0; i < mensSigns.size(); i++) {
+			meterInfoString += mensSigns.get(i)[0] + "/" + mensSigns.get(i)[1] + " (" +
+			barsPerMeter.get(i) + ")";
+			if (i < mensSigns.size() - 1) {
+				meterInfoString += "; ";
+			}
+		}
+		
+		return meterInfoString;
+	}
+
+
+	static String createMetaData(String[] metadata, String[] tags) {
+		String metadataStub = "";
+//		String [] tags = getMetaDataTags();
+		for (int i = 0; i < tags.length; i++) {
+			String currTag = tags[i];
+			metadataStub += SymbolDictionary.OPEN_INFO_BRACKET + currTag + metadata[i] +
+				SymbolDictionary.CLOSE_INFO_BRACKET + "\r\n";
+			if (i == 2 || i == tags.length - 1) {
+				metadataStub += "\r\n";
+			}
+		}
+		return metadataStub;
+	}
+
+
 	/**
 	 * Returns the individual systems in the given file as a list of String[][].
 	 * 

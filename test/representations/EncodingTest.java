@@ -20,7 +20,7 @@ import representations.Encoding;
 
 public class EncodingTest {
 
-	private File encodingTestpiece1 = new File("F:/research/data/encodings/test/testpiece.tbp");
+	private File encodingTestpiece1 = new File("F:/research/data/data/encodings/test/testpiece.tbp");
 
 	@Before
 	public void setUp() throws Exception {
@@ -30,10 +30,6 @@ public class EncodingTest {
 	public void tearDown() throws Exception {
 	}
 
-	@Test
-	public void test() {
-//		fail("Not yet implemented");
-	}
 
 	@Test
 	public void testSetAndGetRawEncoding() {
@@ -58,7 +54,7 @@ public class EncodingTest {
 			"{bar 1}" + "\r\n" +
 			"McC3.>.sb.>.mi.>.mi.a5.c4.b2.a1.>.|.{@Footnote 1}" + "\r\n" +
 			"{bar 2}" + "\r\n" +
-			"sm*.a6.c4.i2.a1.>.fu.d6.>.sm.c6.a5.e4.b2.>.a6.>.mi.a6.h5.c4.b3.f2.>{@Footnote 2}.sm.a6.b3.a2.a1.>.a3.e2.>.|./" + "\r\n" + 
+			"sm*.a6.c4.i2.a1.>.fu.d6.>.sm.c6.a5.e4.b2.>.a6.>.mi.a6.h5.c4.b3.f2{@Footnote 2}.>.sm.a6.b3.a2.a1.>.a3.e2.>.|./" + "\r\n" + 
 			"{bar 3}" + "\r\n" +
 			"fu.a6.c4.a2.a1.>.e2.>.sf.a1.>.e2.>.|.c2.>.e2.>.mi.a1.>.mi.>.mi.a6.c4.a2.a1.>.||.//";
 
@@ -87,7 +83,7 @@ public class EncodingTest {
 		// Correct encoding
 		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}{DIMINUTION:d}\ne{n}c{o}d{i}n{g}");
 
-		List<Boolean> expected = Arrays.asList(new Boolean[]{false, false, false, false, false,	false, false, false, false, false, true}); 
+		List<Boolean> expected = Arrays.asList(new Boolean[]{true, true, true, true, true, true, true, true, true, true, false}); 
 
 		List<Boolean> actual = new ArrayList<Boolean>();
 		for (int i = 0; i < rawEncodings.size(); i++) {
@@ -95,6 +91,30 @@ public class EncodingTest {
 			encoding.setRawEncoding(rawEncodings.get(i));
 			actual.add(encoding.checkForMetadataErrors());
 		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+	}
+
+
+	@Test
+	public void testSetAndGetFootnotes() {
+		Encoding encoding = new Encoding();
+		String rawEncoding = "";
+		try {
+			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece1.getAbsolutePath())));
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		encoding.setRawEncoding(rawEncoding);
+		encoding.setFootnotes();
+
+		List<String> expected = 
+			Arrays.asList(new String[]{"system 1", "(1) Footnote 1", "(2) Footnote 2"});
+
+		List<String> actual = encoding.getFootnotes();
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -151,7 +171,7 @@ public class EncodingTest {
 
 
 	@Test
-	public void testGetMetaData() {
+	public void testGetAllMetaData() {
 		Encoding encoding = new Encoding();
 		String rawEncoding = "";
 		try {
@@ -167,7 +187,7 @@ public class EncodingTest {
 			"METER_INFO:2/2 (1-3)", "DIMINUTION:1",
 			"bar 1", "@Footnote 1", "bar 2", "@Footnote 2", "bar 3"});
 
-		List<String> actual = encoding.getMetaData();
+		List<String> actual = encoding.getAllMetaData();
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -177,7 +197,7 @@ public class EncodingTest {
 
 
 	@Test
-	public void testSetAndGetFootnotes() {
+	public void testSetAndGetMetaData() {
 		Encoding encoding = new Encoding();
 		String rawEncoding = "";
 		try {
@@ -186,11 +206,12 @@ public class EncodingTest {
 			e1.printStackTrace();
 		}
 		encoding.setRawEncoding(rawEncoding);
-		encoding.setFootnotes();
+		encoding.setInfoAndSettings();
+		encoding.setMetaData();
 
-		List<String> expected = Arrays.asList(new String[]{"(1) Footnote 1", "(2) Footnote 2"});
-
-		List<String> actual = encoding.getFootnotes();
+		List<String> expected = 
+			Arrays.asList(new String[]{"Author", "Title", "Source (year)"});
+		List<String> actual = encoding.getMetaData();
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -261,28 +282,40 @@ public class EncodingTest {
 		}
 		encoding.setRawEncoding(rawEncoding);
 		encoding.setCleanEncoding();
+		System.out.println(encoding.getRawEncoding().indexOf("McC3.")); // 176
+		System.out.println(encoding.getRawEncoding().indexOf("sm*.a6.c4.i2.a1.")); // 236
+		System.out.println(encoding.getRawEncoding().indexOf("sm.a6.b3.a2.a1")); // 317
+		System.out.println(encoding.getRawEncoding().indexOf("fu.a6.c4.a2.a1.")); // 356
 
 		Integer[] expected = new Integer[encoding.getRawEncoding().length()];
 		Arrays.fill(expected, -1);
-		// Section 1: indices 0-35 in cleanEncoding (= 176-211 in rawEncoding)  
-		for (int i = 0; i <= 35; i++) {
+		// Section 1 ("McC3." up until "{@Footnote 1}"): 36 chars
+		// indices 0-35 in cleanEncoding (= 176-211 in rawEncoding)
+		for (int i = 0; i < 36; i++) {
 			expected[176 + i] = 0 + i;
+		}		
+		// Section 2 ("sm*.a6.c4.i2.a1." up until "sm.a6.b3.a2.a1"): 68 chars (in 
+		// rawEncoding split up  by footnote into 65 + 3)
+		// indices 36-103 in cleanEncoding (= 236-300 and 314-316 in rawEncoding)
+		for (int i = 0; i < 65; i++) {
+			expected[236 + i] = 0 + 36 + i;
 		}
-		// Section 2: indices 36-102 in cleanEncoding (= 236-302 in rawEncoding)
-		for (int i = 0; i <= 66; i++) {
-			expected[236 + i] = 36 + i;
+		for (int i = 0; i < 3; i++) {
+			expected[314 + i] = 0 + 36 + 65 + i;
+		}		
+		// Section 3 ("sm.a6.b3.a2.a1" up until and including SBI): 28 chars
+		// indices 104-131 in cleanEncoding (= 317-344 in rawEncoding)
+		for (int i = 0; i < 28; i++) {
+			expected[317 + i] = 0 + 36 + 65 + 3 + i;
+		}		
+		// Section 4 ("fu.a6.c4.a2.a1." up until and including EBI): 82 chars
+		// indices 132-213 in cleanEncoding (= 356-437 in rawEncoding)
+		for (int i = 0; i < 82; i++) {
+			expected[356 + i] = 0 + 36 + 65 + 3 + 28 + i;
 		}
-		// Section 3: indices 103-131 in cleanEncoding (= 316-344 in rawEncoding) 
-		for (int i = 0; i <= 28; i++) {
-			expected[316 + i] = 103 + i;
-		}
-		// Section 4: indices 132-213 in cleanEncoding (= 356-437 in rawEncoding) 
-		for (int i = 0; i <= 81; i++) {
-			expected[356 + i] = 132 + i;
-		}
-				
+
 		Integer[] actual = encoding.alignRawAndCleanEncoding();
-		
+
 		assertEquals(expected.length, actual.length);
 		for (int i = 0; i < expected.length; i++) {
 			assertEquals(expected[i], actual[i]);
@@ -545,12 +578,15 @@ public class EncodingTest {
 		for (int i = 176; i <= 211; i++) {
 			expected.add(i);
 		}
-		// Section 2: indices 36-102 in cleanEncoding (= 236-302 in rawEncoding)
-		for (int i = 236; i <= 302; i++) {
+		// Section 2: indices 36-103 in cleanEncoding (= 236-300 and 314-316 in rawEncoding)
+		for (int i = 236; i <= 300; i++) {
 			expected.add(i);
 		}
-		// Section 3: indices 103-131 in cleanEncoding (= 316-344 in rawEncoding) 
-		for (int i = 316; i <= 344; i++) {
+		for (int i = 314; i <= 316; i++) {
+			expected.add(i);
+		}
+		// Section 3: indices 104-131 in cleanEncoding (= 317-344 in rawEncoding) 
+		for (int i = 317; i <= 344; i++) {
 			expected.add(i);
 		}
 		// Section 4: indices 132-213 in cleanEncoding (= 356-437 in rawEncoding) 
@@ -581,67 +617,6 @@ public class EncodingTest {
 		assertEquals(expected.length, actual.length);
 		for (int i = 0; i < expected.length; i++) {
 			assertEquals(expected[i], actual[i]);
-		}
-	}
-
-
-	@Test
-	public void testCreateMeterInfoString() {
-		List<String> testPieces = Arrays.asList(new String[]{
-			"test/testpiece.tbp",
-			//
-			"tab-int/3vv/judenkuenig-1523_2-elslein_liebes.tbp",
-			"tab-int/3vv/newsidler-1536_7-disant_adiu.tbp",
-			"tab-int/3vv/newsidler-1536_7-mess_pensees.tbp",
-			"tab-int/3vv/newsidler-1544_2-nun_volget.tbp",
-			"tab-int/3vv/phalese-1547_7-tant_que-3vv.tbp",
-			"tab-int/3vv/pisador-1552_7-pleni_de.tbp",
-			//
-			"tab-int/4vv/abondante-1548_1-mais_mamignone.tbp",
-			"tab-int/4vv/barbetta-1582-il_nest.tbp",
-			"tab-int/4vv/ochsenkun-1558_5-absolon_fili.tbp",
-			"tab-int/4vv/ochsenkun-1558_5-herr_gott.tbp",
-			"tab-int/4vv/ochsenkun-1558_5-in_exitu.tbp",
-			"tab-int/4vv/ochsenkun-1558_5-qui_habitat.tbp",
-			"tab-int/4vv/phalese-1547_7-tant_que-4vv.tbp",
-			"tab-int/4vv/phalese-1563_12-il_estoit.tbp",
-			"tab-int/4vv/phalese-1563_12-las_on.tbp",
-			"tab-int/4vv/rotta-1546_15-bramo_morir.tbp"
-		});
-
-		List<String> expected = Arrays.asList(new String[]{
-			"2/2 (1-3)", // testpiece
-			//
-			"3/4 (1-24)", // elslein
-			"2/2 (1-33)", // disant
-			"2/2 (1-86)", // mess
-			"2/2 (1-41); 3/4 (42-49); 2/2 (50-96)", // nun NB: not as in file! 
-			"2/2 (1-22)", // tant
-			"2/2 (1-43)", // pleni
-			//
-			"2/2 (1-50)", // mais
-			"2/2 (1-30)", // il nest
-			"2/2 (1-85)", // absolon
-			"2/2 (1-23)", // herr 
-			"2/2 (1-143)", // in
-			"2/2 (1-155)", // qui
-			"2/2 (1-26)", // tant
-			"2/2 (1-20)", // il
-			"2/2 (1-45)", // las
-			"2/2 (1-59)" // bramo
-		});
-
-		List<String> actual = new ArrayList<>();
-		for (String s : testPieces) {
-			Encoding enc = new Encoding(new File("F:/research/data/encodings/" + s));
-			String clean = enc.getCleanEncoding();
-			String tss = enc.getInfoAndSettings().get(Encoding.TABSYMBOLSET_INDEX);
-			actual.add(Encoding.createMeterInfoString(clean, tss));
-		}
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
 		}
 	}
 
@@ -755,6 +730,77 @@ public class EncodingTest {
 
 		List<List<Integer>> actual = encoding.getListsOfStatistics();
 
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j), actual.get(i).get(j) );
+			}
+		}
+	}
+
+
+	@Test
+	public void testGetEventsWithFootnotes() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+
+		List<List<String[]>> expected = new ArrayList<>();
+		List<String[]> system1 = new ArrayList<>();
+		system1.add(new String[]{"McC3.", null, null});
+		system1.add(new String[]{"sb.", null, null});
+		system1.add(new String[]{"mi.", null, null});
+		system1.add(new String[]{"mi.a5.c4.b2.a1.", null, null});
+		system1.add(new String[]{"|.", "@Footnote 1", "footnote #1"});
+		system1.add(new String[]{"sm*.a6.c4.i2.a1.", null, null});
+		system1.add(new String[]{"fu.d6.", null, null});
+		system1.add(new String[]{"sm.c6.a5.e4.b2.", null, null});
+		system1.add(new String[]{"a6.", null, null});
+		system1.add(new String[]{"mi.a6.h5.c4.b3.f2.", "@Footnote 2", "footnote #2"});
+		system1.add(new String[]{"sm.a6.b3.a2.a1.", null, null});
+		system1.add(new String[]{"a3.e2.", null, null});
+		system1.add(new String[]{"|.", null, null});
+		expected.add(system1);
+		List<String[]> system2 = new ArrayList<>();
+		system2.add(new String[]{"fu.a6.c4.a2.a1.", null, null});
+		system2.add(new String[]{"e2.", null, null});
+		system2.add(new String[]{"sf.a1.", null, null});
+		system2.add(new String[]{"e2.", null, null});
+		system2.add(new String[]{"|.", null, null});
+		system2.add(new String[]{"c2.", null, null});
+		system2.add(new String[]{"e2.", null, null});
+		system2.add(new String[]{"mi.a1.", null, null});
+		system2.add(new String[]{"mi.", null, null});
+		system2.add(new String[]{"mi.a6.c4.a2.a1.", null, null});
+		system2.add(new String[]{"||.", null, null});
+		expected.add(system2);
+		
+		List<List<String[]>> actual = encoding.getEventsWithFootnotes();
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {			
+			assertEquals(expected.get(i).size(), actual.get(i).size());
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j).length, actual.get(i).get(j).length);
+				for (int k = 0; k < expected.get(i).get(j).length; k++) {
+					assertEquals(expected.get(i).get(j)[k], actual.get(i).get(j)[k]);
+				}
+			}
+		}
+	}
+
+
+	@Test
+	public void testGetFootnoteStaffSegmentIndices() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+		
+		List<List<Integer>> expected = new ArrayList<>();
+		// System 1
+		expected.add(Arrays.asList(new Integer[]{8, 17}));
+		// System 2
+		expected.add(new ArrayList<>());
+		
+		List<List<Integer>> actual = encoding.getFootnoteStaffSegmentIndices();
+		
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));

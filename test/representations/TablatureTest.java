@@ -393,8 +393,8 @@ public class TablatureTest extends TestCase {
 
 		tablature.normaliseTuning();
 		Encoding enc = tablature.getEncoding();
-		Tuning actualTuning = enc.getTunings()[Encoding.NEW_TUNING_INDEX];
-		List<Integer> actualGridYValues = enc.getListsOfStatistics().get(Encoding.GRID_Y_INDEX);
+		Tuning actualTuning = enc.getTunings()[Encoding.NEW_TUNING_IND];
+		List<Integer> actualGridYValues = enc.getListsOfStatistics().get(Encoding.GRID_Y_IND);
 		Integer[][] actualBasicTabSymbolProperties = tablature.getBasicTabSymbolProperties();
 
 		assertEquals(expectedTuning, actualTuning);
