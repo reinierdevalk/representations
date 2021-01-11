@@ -49,10 +49,10 @@ public class TranscriptionTest extends TestCase {
 //		midiTestGetMeterInfoNoAna = new File(Runner.midiPathTest + "test_get_meter_key_info_no_anacrusis.mid");
 		
 		String s = MEIExport.rootDir;
-		encodingTestpiece1 = new File(s + "data/encodings/test/" + "testpiece.tbp");
-		midiTestpiece1 = new File(s + "data/MIDI/test/" + "testpiece.mid");
-		midiTestGetMeterInfo = new File(s + "data/MIDI/test/" + "test_get_meter_key_info.mid");
-		midiTestGetMeterInfoNoAna = new File(s + "data/MIDI/test/" + "test_get_meter_key_info_no_anacrusis.mid");
+		encodingTestpiece1 = new File(s + "data/data/encodings/test/" + "testpiece.tbp");
+		midiTestpiece1 = new File(s + "data/data/MIDI/test/" + "testpiece.mid");
+		midiTestGetMeterInfo = new File(s + "data/data/MIDI/test/" + "test_get_meter_key_info.mid");
+		midiTestGetMeterInfoNoAna = new File(s + "data/data/MIDI/test/" + "test_get_meter_key_info_no_anacrusis.mid");
 	}
 
 

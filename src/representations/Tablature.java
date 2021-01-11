@@ -180,8 +180,12 @@ public class Tablature implements Serializable {
 
 	/**
 	 * Given the list of original (unreduced) meters and the reductions, calculates the 
-	 * meterInfo: a list whose elements represent the meters in the piece. Each element 
-	 * of this list contains:<br>
+	 * meterInfo.
+	 * 
+	 * @param originalMeterInfo
+	 * @param diminutions
+	 * @return A <code>List<String[]></code> whose elements represent the meters in 
+	 * the piece. Each element of this list contains:<br>
 	 * <ul>
 	 * <li> as element 0: the numerator of the meter (adapted according to the diminution)</li>
 	 * <li> as element 1: the denominator of the meter (adapted according to the diminution)</li>
@@ -190,10 +194,6 @@ public class Tablature implements Serializable {
 	 * <li> as element 4: the diminution for the meter </li>
 	 * </ul>
 	 * An anacrusis bar will be denoted with bar numbers 0-0.
-	 * 
-	 * @param originalMeterInfo
-	 * @param diminutions
-	 * @return
 	 */
 	// TESTED
 	List<Integer[]> calculateMeterInfo(List<Integer[]> originalMeterInfo, List<Integer> diminutions) {
@@ -278,7 +278,7 @@ public class Tablature implements Serializable {
 	 *         </ul>
 	 */
 	// TESTED
-	public List<Integer[]> getOriginalMeterInfo() {
+	List<Integer[]> getOriginalMeterInfo() {
 		List<Integer[]> originalMeterInfo = new ArrayList<>();
 
 		String[] originalMeters = 
@@ -1364,7 +1364,9 @@ public class Tablature implements Serializable {
 	 * @return
 	 */
 	public static Tablature reverse(Tablature tab) {
-		return new Tablature(reverseEncoding(tab), tab.getNormaliseTuning());
+		return new Tablature(
+			tab.getEncoding().reverseEncoding(tab.getMeterInfo()), 
+			tab.getNormaliseTuning());
 	}
 
 
@@ -1377,294 +1379,16 @@ public class Tablature implements Serializable {
 	 * @return
 	 */
 	public static Tablature deornament(Tablature tab, Rational dur) {
-		return new Tablature(deornamentEncoding(tab, rationalToIntDur(dur)), tab.getNormaliseTuning());
+		return new Tablature(
+			tab.getEncoding().deornamentEncoding(rationalToIntDur(dur)), 
+			tab.getNormaliseTuning());
 	}
-	
-	
+
+
 	public static Tablature stretch(Tablature tab, int factor) {
-		return new Tablature(stretchEncoding(tab, factor), tab.getNormaliseTuning());
-	}
-
-
-	/**
-	 * Split the header and the encoding. Removes all comments and the EBI from the encoding.
-	 * 
-	 * @return
-	 */
-	// TESTED
-	String[] splitHeaderAndEncoding() {
-		// Separate header and encoding
-		String raw = getEncoding().getRawEncoding();
-		String[] metadataTags = Encoding.getMetaDataTags();
-		int endHeader = raw.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, 
-			raw.indexOf(metadataTags[metadataTags.length-1]));		
-		String header = raw.substring(0, endHeader+1).trim();
-		String enc = raw.substring(endHeader+1, raw.length()).replace("\r\n", "").trim();
-		
-		// Remove comments and EBI from encoding
-		while (enc.contains(SymbolDictionary.OPEN_INFO_BRACKET)) {
-			int openCommentIndex = enc.indexOf(SymbolDictionary.OPEN_INFO_BRACKET);
-			int closeCommentIndex = 
-				enc.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, openCommentIndex);
-			String comment = enc.substring(openCommentIndex, closeCommentIndex + 1);
-				enc = enc.replace(comment, "");
-		}
-		enc = enc.substring(0, enc.indexOf(SymbolDictionary.END_BREAK_INDICATOR));
-		
-		return new String[]{header, enc};
-	}
-
-	
-	/**
-	 * Returns a list of all tabwords in the given encoding; the SBI are kept in place (i.e,
-	 * form separate tabwords). In the list returned, a rhythm symbol (the last active one) is 
-	 * assigned to each tabword that is lacking one. 
-	 * 
-	 * @param enc
-	 * @return
-	 */
-	// TESTED
-	public static List<String> getTabwords(String enc) {
-		String[] systems = enc.split(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
-
-		List<String> allTabwords = new ArrayList<>();
-		for (int i = 0; i < systems.length; i++) {
-			String system = systems[i];
-			// List all tabwords and barlines for the current system
-			String[] symbols = system.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
-			List<String> currTabwords = new ArrayList<>();
-			String currTabword = "";
-			for (int j = 0; j < symbols.length; j++) {
-				String s = symbols[j];
-				currTabword += s + SymbolDictionary.SYMBOL_SEPARATOR;
-				// Add tabword after each space or barline (i.e., CMS)
-				if (ConstantMusicalSymbol.constantMusicalSymbols.contains(
-					ConstantMusicalSymbol.getConstantMusicalSymbol(s))) {
-					// Special case for barline followed by barline (this happens when a 
-					// full-bar note is tied at its left (see end quis_me_statim): these two bars
-					// must be seen as a single tabword, so the second barlines must be added too
-					if (j < symbols.length - 2) { 						
-						String nextS = symbols[j+1];
-						String nextNextS = symbols[j+2];
-						if (ConstantMusicalSymbol.constantMusicalSymbols.contains(
-							ConstantMusicalSymbol.getConstantMusicalSymbol(nextS)) &&
-							ConstantMusicalSymbol.constantMusicalSymbols.contains(
-							ConstantMusicalSymbol.getConstantMusicalSymbol(nextNextS))) {
-							currTabword += nextS + SymbolDictionary.SYMBOL_SEPARATOR;
-							j++;
-						}
-					}
-					currTabwords.add(currTabword);
-					currTabword = "";
-				}
-			}
-			allTabwords.addAll(currTabwords);
-			if (i != systems.length-1) {
-				allTabwords.add(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
-			}
-		}
-
-		// Add a RS to each tabword lacking one
-		String activeRs = "";
-		for (int j = 0; j < allTabwords.size(); j++) {
-			String t = allTabwords.get(j);
-			if (!t.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
-				String first = t.substring(0, t.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
-				// RS: set activeRs
-				if (RhythmSymbol.getRhythmSymbol(first) != null) {
-					activeRs = first;
-				}
-				// No RS: prepend activeRs to tabword if applicable  
-				else {
-					// Only if tabword is not a MS or a CMS (barline)
-					if (MensurationSign.getMensurationSign(first) == null && 
-						ConstantMusicalSymbol.getConstantMusicalSymbol(first) == null) {
-						allTabwords.set(j, activeRs + SymbolDictionary.SYMBOL_SEPARATOR + t);
-					}
-				}
-			}
-		}
-		return allTabwords;
-	}
-
-
-	/**
-	 * Recombines the given list of tabwords into a String, adding a line break after each 
-	 * constant music symbol (space or barline), as well as after each system break indicator.
-	 * @param tabwords
-	 * @return
-	 */
-	private static String recombineTabwords(List<String> tabwords) {
-		String recombined = "";
-		for (String s : tabwords) {
-			recombined += s;
-			if (!s.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
-				String first = s.substring(0, s.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
-				// Add a line break after each CMS (space, barline) 
-				if (ConstantMusicalSymbol.getConstantMusicalSymbol(first) != null) {
-					recombined += "\r\n";
-				}
-			}
-			// Add a line break after each SBI
-			else {
-				recombined += "\r\n";
-			}
-		}		
-		return recombined;
-	}
-
-
-	private static boolean tabwordIsBarlineOrSBI(String tabword) {
-		if (tabword.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
-			return true;
-		}
-		else {
-			String first = tabword.substring(0, 
-				tabword.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
-			if (ConstantMusicalSymbol.constantMusicalSymbols.contains(
-				ConstantMusicalSymbol.getConstantMusicalSymbol(first))) {
-				return true;
-			}
-			else {
-				return false;
-			}
-		}
-	}
-
-
-	/**
-	 * Reverses the encoding.
-	 * 
-	 * @param tab
-	 * @return
-	 */
-	// TESTED
-	public static Encoding reverseEncoding(Tablature tab) {
-		String[] hAndE = tab.splitHeaderAndEncoding();
-		String header = hAndE[0];
-		String enc = hAndE[1];
-
-		// 1. Adapt header
-		// Reverse meterInfo information 
-		int startInd = header.indexOf("METER_INFO:") + "METER_INFO:".length();
-		String origMeterInfo = header.substring(startInd, 
-			header.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, startInd));
-		List<Integer[]> copyOfMeterInfo = new ArrayList<>();
-		for (Integer[] in : tab.getMeterInfo()) {
-			copyOfMeterInfo.add(Arrays.copyOf(in, in.length));
-		}
-		Integer[] last = copyOfMeterInfo.get(copyOfMeterInfo.size()-1);
-//		int numBars = last[last.length-1];
-		int numBars = last[3];
-		for (Integer[] in : copyOfMeterInfo) {
-			in[2] = (numBars - in[2]) + 1;
-			in[3] = (numBars - in[3]) + 1;
-		}
-		Collections.reverse(copyOfMeterInfo);
-		String reversedMeterInfo = "";
-		for (int i = 0; i < copyOfMeterInfo.size(); i++) {
-			Integer[] in = copyOfMeterInfo.get(i);
-			reversedMeterInfo += in[0] + "/" + in[1] + " (";
-			if (in[2] == in[3]) {
-				reversedMeterInfo += in[3];
-			}
-			if (in[2] != in[3]) {
-				reversedMeterInfo += in[3] + "-" + in[2];
-			}
-			reversedMeterInfo += ")";
-			if (i < copyOfMeterInfo.size()-1) {
-				reversedMeterInfo += "; ";
-			}
-		}
-		header = header.replace(origMeterInfo, reversedMeterInfo);
-		
-		// 2. Reverse encoding and recombine
-		List<String> tabwords = getTabwords(enc);
-		Collections.reverse(tabwords);
-		return new Encoding(header + "\r\n\r\n" + recombineTabwords(tabwords) + 
-			SymbolDictionary.END_BREAK_INDICATOR, true);
-	}
-
-
-	/**
-	 * Combines any successive rest tabwords in the given list of tabwords.
-	 * 
-	 * @param tabwords
-	 * @return
-	 */
-	// TESTED
-	static List<String> combineSuccessiveRestTabwords(List<String> tabwords) {
-		List<String> res = new ArrayList<>();
-		
-		List<String> successiveRests = new ArrayList<>();
-		for (String t : tabwords) {
-			String[] split = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
-			// If rest: add to list and continue for loop
-			if (split.length==2 && RhythmSymbol.getRhythmSymbol(split[0]) != null &&
-				split[1].equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
-				successiveRests.add(split[0]);
-			}
-			// If not rest
-			else {
-				// If successive rests still need to be added
-				if (!successiveRests.isEmpty()) {
-					boolean combinedIsOpen = 
-						successiveRests.get(0).contains(RhythmSymbol.tripletOpen);
-					boolean combinedIsClose = 
-						successiveRests.get(successiveRests.size()-1).contains(RhythmSymbol.tripletClose);
-					int totalDur = 0;
-					for (String s : successiveRests) {
-						totalDur += RhythmSymbol.getRhythmSymbol(s).getDuration();
-					}
-					RhythmSymbol combinedRs = null;
-					for (RhythmSymbol rs : RhythmSymbol.getRhythmSymbols()) {
-						// Do not consider coronas
-						if (rs.getDuration() == totalDur && 
-							!rs.getEncoding().startsWith(RhythmSymbol.coronaBrevis.getEncoding().substring(0, 2))) {
-							// In case of triplets beginning/ending: make sure the RS containing 
-							// the open/close indicator is chosen
-							if (combinedIsOpen || combinedIsClose) {
-								String openClose = "";
-								if (combinedIsOpen && !rs.getEncoding().contains(RhythmSymbol.tripletOpen)) {
-									openClose = RhythmSymbol.tripletOpen;
-								}
-								else if (combinedIsClose && !rs.getEncoding().contains(RhythmSymbol.tripletClose)){
-									openClose = RhythmSymbol.tripletClose;
-								}
-								combinedRs = RhythmSymbol.getRhythmSymbol(
-									RhythmSymbol.tripletIndicator + 
-									openClose +
-									rs.getEncoding().substring(RhythmSymbol.tripletIndicator.length()));
-							}
-							else {
-								combinedRs = rs;
-							}
-							break;
-						}
-					}
-					res.add(combinedRs.getEncoding() + SymbolDictionary.SYMBOL_SEPARATOR +
-						ConstantMusicalSymbol.SPACE.getEncoding() + SymbolDictionary.SYMBOL_SEPARATOR);
-					successiveRests.clear();
-				}
-				res.add(t);
-			}
-		}
-		return res;
-	}
-
-
-	/**
-	 * Checkes whether the Tablature contains triplets.
-	 * 
-	 * Returns <code>true</code> if the Tablature contain triplets, anf <code>false </code> it not.
-	 */
-	boolean containsTriplets() {
-		if (getEncoding().getCleanEncoding().contains(RhythmSymbol.tripletIndicator)) {
-			return true;
-		}
-		else {
-			return false;
-		}
+		return new Tablature(
+			tab.getEncoding().stretchEncoding(tab.getMeterInfo(), factor), 
+			tab.getNormaliseTuning());
 	}
 
 
@@ -1684,22 +1408,20 @@ public class Tablature implements Serializable {
 	public List<Rational[]> getTripletOnsetPairs() {
 		
 		List<Rational[]> pairs; 
-		if (!containsTriplets()) {
+		if (!getEncoding().containsTriplets()) {
 			pairs = null;
 		}
 		else {
 			pairs = new ArrayList<>();
-			String[] hAndE = splitHeaderAndEncoding();
-			String enc = hAndE[1];
 			TabSymbolSet tss = getEncoding().getTabSymbolSet();
-			List<String> tabwords = getTabwords(enc);
+			List<String> tabwords = getEncoding().getTabwords();
 			List<Rational[]> onsetTimes = getAllOnsetTimesRestsInclusive();
 
 			// 1. Align tabwords and onsetTimes
 			// Remove all SBI
 			tabwords.removeIf(t -> t.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR));
 			// Combine all successive rest tabwords
-			tabwords = combineSuccessiveRestTabwords(tabwords);
+			tabwords = Encoding.combineSuccessiveRestTabwords(tabwords);
 			// Remove all tabwords that are neither a chord nor a rest
 			List<String> tmp = new ArrayList<>();
 			for (String t : tabwords) {
@@ -1743,142 +1465,6 @@ public class Tablature implements Serializable {
 			}
 		}		
 		return pairs;
-	}
-
-
-	/**
-	 * Removes all sequences of single-note events shorter than the given duration from the
-	 * encoding, and lengthens the duration of the event preceding the sequence by the total 
-	 * length of the removed sequence.
-	 * 
-	 * @param tab
-	 * @param dur In multiples of 
-	 * @return
-	 */
-	// TESTED
-	public static Encoding deornamentEncoding(Tablature tab, int dur) {
-		String[] hAndE = tab.splitHeaderAndEncoding();
-		String header = hAndE[0];
-		String enc = hAndE[1];
-
-		// 1. Adapt tabwords
-		List<String> tabwords = getTabwords(enc);
-		String pre = null;
-		int durPre = -1;
-		int indPre = -1;
-		List<Integer> removed = new ArrayList<>();
-		int i2 = 0;
-		for (int i = 0; i < tabwords.size(); i++) {
-			String t = tabwords.get(i);
-			// If t is not a barline or a SBI
-			if (!tabwordIsBarlineOrSBI(t)) {
-				String[] symbols = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
-				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
-				// If the tabword is an ornamentation (which always consists of only a RS, a TS,
-				// and a space)
-				if (r != null && r.getDuration() < dur && symbols.length == 3) {
-					removed.add(i2);
-					// Determine pre, if it has not yet been determined
-					if (pre == null) {
-						for (int j = i-1; j >= 0; j--) {
-							String tPrev = tabwords.get(j);
-							// If tPrev is not a barline or SBI
-							if (!tabwordIsBarlineOrSBI(tPrev) ) {
-								pre = tPrev;
-								durPre = RhythmSymbol.getRhythmSymbol(tPrev.substring(0, 
-									tPrev.indexOf(SymbolDictionary.SYMBOL_SEPARATOR))).getDuration();
-								indPre = j;
-								break;
-							}
-						}
-					}
-					// Increment durPre and set tabword to null
-					durPre += r.getDuration();
-					tabwords.set(i, null);
-				}
-				// If the tabword is the first after a sequence of one or more ornamental notes
-				// (i.e., it does not meet the if conditions above but pre != null)
-				else if (pre != null) {
-					// Determine the new Rs for pre, and adapt and set it
-					String newRs = "";
-					for (RhythmSymbol rs : RhythmSymbol.getRhythmSymbols()) {
-						if (rs.getDuration() == durPre) {
-							newRs = rs.getEncoding();
-							break;
-						}
-					}
-					tabwords.set(indPre, newRs + 
-						pre.substring(pre.indexOf(SymbolDictionary.SYMBOL_SEPARATOR), pre.length()));
-					// Reset
-					pre = null;
-					indPre = -1;
-				}
-				if (symbols.length != 2) { // Do not consider rests
-					i2++;
-				}
-			}
-		}
-		tabwords.removeIf(t -> t == null);
-
-		// 2. Recombine
-		return new Encoding(header + "\r\n\r\n" + recombineTabwords(tabwords) + 
-			SymbolDictionary.END_BREAK_INDICATOR, true);
-	}
-
-
-	public static Encoding stretchEncoding(Tablature tab, double factor) {
-		String[] hAndE = tab.splitHeaderAndEncoding();
-		String header = hAndE[0];
-		String enc = hAndE[1];
-
-		// 1. Adapt header
-		// Reverse meterInfo information 
-		int startInd = header.indexOf("METER_INFO:") + "METER_INFO:".length();
-		String origMeterInfo = header.substring(startInd, 
-			header.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, startInd));
-		List<Integer[]> copyOfMeterInfo = new ArrayList<>();
-		List<Integer[]> mi = tab.getMeterInfo();
-		String stretchedMeterInfo = "";
-		for (int i = 0; i < mi.size(); i++) {
-			Integer[] in = mi.get(i);
-			if (i > 0) {
-				in[2] = mi.get(i-1)[3] + 1;
-			}
-			in[3] = (int) (in[3] * factor);
-			stretchedMeterInfo += in[0] + "/" + in[1] + " (" + in[2] + "-" + in[3] + ")";
-			if (i < copyOfMeterInfo.size()-1) {
-				stretchedMeterInfo += "; ";
-			}
-		}
-		header = header.replace(origMeterInfo, stretchedMeterInfo);
-		
-		// 2. Adapt tabwords
-		List<String> tabwords = getTabwords(enc);
-		for (int i = 0; i < tabwords.size(); i++) {
-			String t = tabwords.get(i);
-			// If t is not a barline or a SBI
-			if (!tabwordIsBarlineOrSBI(t)) {
-				String[] symbols = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
-				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
-				String newRs = "";
-				if (r != null) {
-					for (RhythmSymbol rs : RhythmSymbol.getRhythmSymbols()) {
-						if (rs.getDuration() == r.getDuration() * factor) {
-							newRs = rs.getEncoding();
-							break;
-						}
-					}
-					tabwords.set(i, 
-						newRs + t.substring(t.indexOf(SymbolDictionary.SYMBOL_SEPARATOR), t.length()));
-				}
-			}
-		}
-//		System.out.println(header + "\r\n\r\n" + recombineTabwords(tabwords) + 
-//				SymbolDictionary.END_BREAK_INDICATOR);
-		
-		// 3. Recombine
-		return new Encoding(header + "\r\n\r\n" + recombineTabwords(tabwords) + 
-			SymbolDictionary.END_BREAK_INDICATOR, true);
 	}
 
 }

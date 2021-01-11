@@ -1326,6 +1326,431 @@ public class Encoding implements Serializable {
 
 
 	/**
+	 * Combines any successive rest tabwords in the given list of tabwords.
+	 * 
+	 * @param tabwords
+	 * @return
+	 */
+	// TESTED
+	public static List<String> combineSuccessiveRestTabwords(List<String> tabwords) {
+		List<String> res = new ArrayList<>();
+		
+		List<String> successiveRests = new ArrayList<>();
+		for (String t : tabwords) {
+			String[] split = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
+			// If rest: add to list and continue for loop
+			if (split.length==2 && RhythmSymbol.getRhythmSymbol(split[0]) != null &&
+				split[1].equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
+				successiveRests.add(split[0]);
+			}
+			// If not rest
+			else {
+				// If successive rests still need to be added
+				if (!successiveRests.isEmpty()) {
+					boolean combinedIsOpen = 
+						successiveRests.get(0).contains(RhythmSymbol.tripletOpen);
+					boolean combinedIsClose = 
+						successiveRests.get(successiveRests.size()-1).contains(RhythmSymbol.tripletClose);
+					int totalDur = 0;
+					for (String s : successiveRests) {
+						totalDur += RhythmSymbol.getRhythmSymbol(s).getDuration();
+					}
+					RhythmSymbol combinedRs = null;
+					for (RhythmSymbol rs : RhythmSymbol.getRhythmSymbols()) {
+						// Do not consider coronas
+						if (rs.getDuration() == totalDur && 
+							!rs.getEncoding().startsWith(RhythmSymbol.coronaBrevis.getEncoding().substring(0, 2))) {
+							// In case of triplets beginning/ending: make sure the RS containing 
+							// the open/close indicator is chosen
+							if (combinedIsOpen || combinedIsClose) {
+								String openClose = "";
+								if (combinedIsOpen && !rs.getEncoding().contains(RhythmSymbol.tripletOpen)) {
+									openClose = RhythmSymbol.tripletOpen;
+								}
+								else if (combinedIsClose && !rs.getEncoding().contains(RhythmSymbol.tripletClose)){
+									openClose = RhythmSymbol.tripletClose;
+								}
+								combinedRs = RhythmSymbol.getRhythmSymbol(
+									RhythmSymbol.tripletIndicator + 
+									openClose +
+									rs.getEncoding().substring(RhythmSymbol.tripletIndicator.length()));
+							}
+							else {
+								combinedRs = rs;
+							}
+							break;
+						}
+					}
+					res.add(combinedRs.getEncoding() + SymbolDictionary.SYMBOL_SEPARATOR +
+						ConstantMusicalSymbol.SPACE.getEncoding() + SymbolDictionary.SYMBOL_SEPARATOR);
+					successiveRests.clear();
+				}
+				res.add(t);
+			}
+		}
+		return res;
+	}
+
+
+	/**
+	 * Checks whether the Encoding contains triplets.
+	 * 
+	 * Returns <code>true</code> if the Tablature contain triplets, anf <code>false </code> it not.
+	 */
+	boolean containsTriplets() {
+		if (getCleanEncoding().contains(RhythmSymbol.tripletIndicator)) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+
+	/**
+	 * Gets all the tabwords. 
+	 * 
+	 * @return A <code>List<String></code> of all tabwords in the encoding; the SBI are
+	 * kept in place (i.e, form separate tabwords). A rhythm symbol (the last active one)
+	 * is assigned to each tabword that is lacking one.
+	 */
+	// TESTED
+	public List<String> getTabwords() {
+		String enc = splitHeaderAndEncoding()[1];
+		
+		String[] systems = enc.split(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
+
+		List<String> allTabwords = new ArrayList<>();
+		for (int i = 0; i < systems.length; i++) {
+			String system = systems[i];
+			// List all tabwords and barlines for the current system
+			String[] symbols = system.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
+			List<String> currTabwords = new ArrayList<>();
+			String currTabword = "";
+			for (int j = 0; j < symbols.length; j++) {
+				String s = symbols[j];
+				currTabword += s + SymbolDictionary.SYMBOL_SEPARATOR;
+				// Add tabword after each space or barline (i.e., CMS)
+				if (ConstantMusicalSymbol.constantMusicalSymbols.contains(
+					ConstantMusicalSymbol.getConstantMusicalSymbol(s))) {
+					// Special case for barline followed by barline (this happens when a 
+					// full-bar note is tied at its left (see end quis_me_statim): these two bars
+					// must be seen as a single tabword, so the second barlines must be added too
+					if (j < symbols.length - 2) { 						
+						String nextS = symbols[j+1];
+						String nextNextS = symbols[j+2];
+						if (ConstantMusicalSymbol.constantMusicalSymbols.contains(
+							ConstantMusicalSymbol.getConstantMusicalSymbol(nextS)) &&
+							ConstantMusicalSymbol.constantMusicalSymbols.contains(
+							ConstantMusicalSymbol.getConstantMusicalSymbol(nextNextS))) {
+							currTabword += nextS + SymbolDictionary.SYMBOL_SEPARATOR;
+							j++;
+						}
+					}
+					currTabwords.add(currTabword);
+					currTabword = "";
+				}
+			}
+			allTabwords.addAll(currTabwords);
+			if (i != systems.length-1) {
+				allTabwords.add(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
+			}
+		}
+
+		// Add a RS to each tabword lacking one
+		String activeRs = "";
+		for (int j = 0; j < allTabwords.size(); j++) {
+			String t = allTabwords.get(j);
+			if (!t.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
+				String first = t.substring(0, t.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+				// RS: set activeRs
+				if (RhythmSymbol.getRhythmSymbol(first) != null) {
+					activeRs = first;
+				}
+				// No RS: prepend activeRs to tabword if applicable  
+				else {
+					// Only if tabword is not a MS or a CMS (barline)
+					if (MensurationSign.getMensurationSign(first) == null && 
+						ConstantMusicalSymbol.getConstantMusicalSymbol(first) == null) {
+						allTabwords.set(j, activeRs + SymbolDictionary.SYMBOL_SEPARATOR + t);
+					}
+				}
+			}
+		}
+		return allTabwords;
+	}
+
+
+	/**
+	 * Reverses the encoding.
+	 * 
+	 * @param  meterInfo
+	 * @return
+	 */
+	// TESTED
+	public Encoding reverseEncoding(List<Integer[]> meterInfo) {
+		String header = splitHeaderAndEncoding()[0];
+
+		// 1. Adapt header
+		// Reverse meterInfo information 
+		int startInd = header.indexOf("METER_INFO:") + "METER_INFO:".length();
+		String origMeterInfo = header.substring(startInd, 
+			header.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, startInd));
+		List<Integer[]> copyOfMeterInfo = new ArrayList<>();
+		for (Integer[] in : meterInfo) {
+			copyOfMeterInfo.add(Arrays.copyOf(in, in.length));
+		}
+		Integer[] last = copyOfMeterInfo.get(copyOfMeterInfo.size()-1);
+//		int numBars = last[last.length-1];
+		int numBars = last[3];
+		for (Integer[] in : copyOfMeterInfo) {
+			in[2] = (numBars - in[2]) + 1;
+			in[3] = (numBars - in[3]) + 1;
+		}
+		Collections.reverse(copyOfMeterInfo);
+		String reversedMeterInfo = "";
+		for (int i = 0; i < copyOfMeterInfo.size(); i++) {
+			Integer[] in = copyOfMeterInfo.get(i);
+			reversedMeterInfo += in[0] + "/" + in[1] + " (";
+			if (in[2] == in[3]) {
+				reversedMeterInfo += in[3];
+			}
+			if (in[2] != in[3]) {
+				reversedMeterInfo += in[3] + "-" + in[2];
+			}
+			reversedMeterInfo += ")";
+			if (i < copyOfMeterInfo.size()-1) {
+				reversedMeterInfo += "; ";
+			}
+		}
+		header = header.replace(origMeterInfo, reversedMeterInfo);
+		
+		// 2. Reverse encoding and recombine
+		List<String> tabwords = getTabwords();
+		Collections.reverse(tabwords);
+		return new Encoding(header + "\r\n\r\n" + recombineTabwords(tabwords) + 
+			SymbolDictionary.END_BREAK_INDICATOR, true);
+	}
+
+
+	/**
+	 * Removes all sequences of single-note events shorter than the given duration from the
+	 * encoding, and lengthens the duration of the event preceding the sequence by the total 
+	 * length of the removed sequence.
+	 * 
+	 * @param dur In multiples of 
+	 * @return
+	 */
+	// TESTED
+	public Encoding deornamentEncoding(int dur) {
+		String header = splitHeaderAndEncoding()[0];
+
+		// 1. Adapt tabwords
+		List<String> tabwords = getTabwords();
+		String pre = null;
+		int durPre = -1;
+		int indPre = -1;
+		List<Integer> removed = new ArrayList<>();
+		int i2 = 0;
+		for (int i = 0; i < tabwords.size(); i++) {
+			String t = tabwords.get(i);
+			// If t is not a barline or a SBI
+			if (!tabwordIsBarlineOrSBI(t)) {
+				String[] symbols = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
+				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
+				// If the tabword is an ornamentation (which always consists of only a RS, a TS,
+				// and a space)
+				if (r != null && r.getDuration() < dur && symbols.length == 3) {
+					removed.add(i2);
+					// Determine pre, if it has not yet been determined
+					if (pre == null) {
+						for (int j = i-1; j >= 0; j--) {
+							String tPrev = tabwords.get(j);
+							// If tPrev is not a barline or SBI
+							if (!tabwordIsBarlineOrSBI(tPrev) ) {
+								pre = tPrev;
+								durPre = RhythmSymbol.getRhythmSymbol(tPrev.substring(0, 
+									tPrev.indexOf(SymbolDictionary.SYMBOL_SEPARATOR))).getDuration();
+								indPre = j;
+								break;
+							}
+						}
+					}
+					// Increment durPre and set tabword to null
+					durPre += r.getDuration();
+					tabwords.set(i, null);
+				}
+				// If the tabword is the first after a sequence of one or more ornamental notes
+				// (i.e., it does not meet the if conditions above but pre != null)
+				else if (pre != null) {
+					// Determine the new Rs for pre, and adapt and set it
+					String newRs = "";
+					for (RhythmSymbol rs : RhythmSymbol.getRhythmSymbols()) {
+						if (rs.getDuration() == durPre) {
+							newRs = rs.getEncoding();
+							break;
+						}
+					}
+					tabwords.set(indPre, newRs + 
+						pre.substring(pre.indexOf(SymbolDictionary.SYMBOL_SEPARATOR), pre.length()));
+					// Reset
+					pre = null;
+					indPre = -1;
+				}
+				if (symbols.length != 2) { // Do not consider rests
+					i2++;
+				}
+			}
+		}
+		tabwords.removeIf(t -> t == null);
+
+		// 2. Recombine
+		return new Encoding(header + "\r\n\r\n" + recombineTabwords(tabwords) + 
+			SymbolDictionary.END_BREAK_INDICATOR, true);
+	}
+
+
+	/**
+	 * Stretches the encoding durationally by the given factor.
+	 * 
+	 * @param meterInfo
+	 * @param factor
+	 * @return
+	 */
+	// TESTED
+	public Encoding stretchEncoding(List<Integer[]> meterInfo, double factor) {
+		String header = splitHeaderAndEncoding()[0];
+
+		// 1. Adapt header
+		// Reverse meterInfo information 
+		int startInd = header.indexOf("METER_INFO:") + "METER_INFO:".length();
+		String origMeterInfo = header.substring(startInd, 
+			header.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, startInd));
+		List<Integer[]> copyOfMeterInfo = new ArrayList<>();
+		String stretchedMeterInfo = "";
+		for (int i = 0; i < meterInfo.size(); i++) {
+			Integer[] in = meterInfo.get(i);
+			if (i > 0) {
+				in[2] = meterInfo.get(i-1)[3] + 1;
+			}
+			in[3] = (int) (in[3] * factor);
+			stretchedMeterInfo += in[0] + "/" + in[1] + " (" + in[2] + "-" + in[3] + ")";
+			if (i < copyOfMeterInfo.size()-1) {
+				stretchedMeterInfo += "; ";
+			}
+		}
+		header = header.replace(origMeterInfo, stretchedMeterInfo);
+		
+		// 2. Adapt tabwords
+		List<String> tabwords = getTabwords();
+		for (int i = 0; i < tabwords.size(); i++) {
+			String t = tabwords.get(i);
+			// If t is not a barline or a SBI
+			if (!tabwordIsBarlineOrSBI(t)) {
+				String[] symbols = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
+				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
+				String newRs = "";
+				if (r != null) {
+					for (RhythmSymbol rs : RhythmSymbol.getRhythmSymbols()) {
+						if (rs.getDuration() == r.getDuration() * factor) {
+							newRs = rs.getEncoding();
+							break;
+						}
+					}
+					tabwords.set(i, 
+						newRs + t.substring(t.indexOf(SymbolDictionary.SYMBOL_SEPARATOR), t.length()));
+				}
+			}
+		}
+
+		// 3. Recombine
+		return new Encoding(header + "\r\n\r\n" + recombineTabwords(tabwords) + 
+			SymbolDictionary.END_BREAK_INDICATOR, true);
+	}
+
+
+	/**
+	 * Splits the header and the encoding. Removes all comments and the EBI from the
+	 * encoding.
+	 * 
+	 * @return A <code>String[]</code>, containing
+	 * <ul>
+	 * <li>as element 0: the header</li>
+	 * <li>as element 1: the encoding</li>
+	 * </ul>
+	 */
+	// TESTED
+	String[] splitHeaderAndEncoding() {
+		// Separate header and encoding
+		String raw = getRawEncoding();
+		String[] metadataTags = Encoding.getMetaDataTags();
+		int endHeader = raw.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, 
+			raw.indexOf(metadataTags[metadataTags.length-1]));		
+		String header = raw.substring(0, endHeader+1).trim();
+		String enc = raw.substring(endHeader+1, raw.length()).replace("\r\n", "").trim();
+		
+		// Remove comments and EBI from encoding
+		while (enc.contains(SymbolDictionary.OPEN_INFO_BRACKET)) {
+			int openCommentIndex = enc.indexOf(SymbolDictionary.OPEN_INFO_BRACKET);
+			int closeCommentIndex = 
+				enc.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, openCommentIndex);
+			String comment = enc.substring(openCommentIndex, closeCommentIndex + 1);
+				enc = enc.replace(comment, "");
+		}
+		enc = enc.substring(0, enc.indexOf(SymbolDictionary.END_BREAK_INDICATOR));
+		
+		return new String[]{header, enc};
+	}
+
+
+	/**
+	 * Recombines the given list of tabwords into a String, adding a line break after each 
+	 * constant music symbol (space or barline), as well as after each system break indicator.
+	 * 
+	 * @param tabwords
+	 * @return
+	 */ 
+	// TODO test
+	private String recombineTabwords(List<String> tabwords) {
+		String recombined = "";
+		for (String s : tabwords) {
+			recombined += s;
+			if (!s.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
+				String first = s.substring(0, s.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+				// Add a line break after each CMS (space, barline) 
+				if (ConstantMusicalSymbol.getConstantMusicalSymbol(first) != null) {
+					recombined += "\r\n";
+				}
+			}
+			// Add a line break after each SBI
+			else {
+				recombined += "\r\n";
+			}
+		}		
+		return recombined;
+	}
+
+
+	// TODO test
+	private boolean tabwordIsBarlineOrSBI(String tabword) {
+		if (tabword.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
+			return true;
+		}
+		else {
+			String first = tabword.substring(0, 
+				tabword.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+			if (ConstantMusicalSymbol.constantMusicalSymbols.contains(
+				ConstantMusicalSymbol.getConstantMusicalSymbol(first))) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+	}
+
+
+	/**
 	 * Gets all events in the piece, organised per system. Each event is one of five types 
 	 * (TS event, RS event, rest event, MS event, or barline event). 
 	 *
@@ -1481,7 +1906,7 @@ public class Encoding implements Serializable {
 	 * a system without footnote events, the <code>List</code> remains empty.
 	 */
 	// TESTED
-	public List<List<Integer>> getFootnoteStaffSegmentIndices() {
+	private List<List<Integer>> getFootnoteStaffSegmentIndicesOLD() {
 		List<List<Integer>> segmentIndices = new ArrayList<>();
 
 		// For each system
@@ -1495,8 +1920,8 @@ public class Encoding implements Serializable {
 					ConstantMusicalSymbol.isBarline(currEvent) ? true : false;
 				// If the event contains a footnote: add currSegmentInd
 				if (event[1] != null) {
-					// In case of a barline, add the footnote indicator below the first pipe
-					// char (and not under any repeat dots)
+					// In case of a barline, the footnote indicator is added below the 
+					// first pipe char (and not under any repeat dots)
 					if (isBarlineEvent) {
 						currSegmentInd += currEvent.indexOf(ConstantMusicalSymbol.BARLINE.getEncoding());
 					}
@@ -1507,6 +1932,77 @@ public class Encoding implements Serializable {
 				// with 2 - one segment for the event itself, and one for the space following it
 				currSegmentInd = 
 					isBarlineEvent ? currSegmentInd + currEvent.length() : currSegmentInd + 2;
+			}
+			segmentIndices.add(currSegmentIndices);
+		}
+		return segmentIndices;
+	}
+	
+	
+	/**
+	 * Gets, per system, the segment indices in the tbp Staff of the events of the given
+	 * type.
+	 * 
+	 * @param type The type of event: "footnote" or "barline".
+	 *  
+	 * @return A <code>List</code> of <code>List</code>s, each of which represents a system, 
+	 * and contains the segment indices in the tbp Staff of the events of the given 
+	 * type. NB:
+	 * <ul>
+	 * <li>In case of a system without any events of the given type, the <code>List</code>
+	 *     remains empty.</li>
+	 * <li>In case of a barline that spans multiple segments, the index of the first 
+	 *     segment is given.</li>
+	 * </ul>
+	 */
+	// TESTED
+	List<List<Integer>> getStaffSegmentIndices(String type) {
+		List<List<Integer>> segmentIndices = new ArrayList<>();
+
+		// For each system
+		for (List<String[]> system : getEventsWithFootnotes()) {
+			int currSegmentInd = 0;
+			List<Integer> currSegmentIndices = new ArrayList<>();
+			// For each event in the system
+			for (String[] event : system) {
+				System.out.println(Arrays.toString(event));
+				String currEvent = event[0].substring(0, event[0].lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+				boolean isBarlineEvent = 
+					ConstantMusicalSymbol.isBarline(currEvent) ? true : false;
+				if (type.equals("footnote")) {
+					// If the event contains a footnote: add currSegmentInd
+					if (event[1] != null) {
+						// In case of a barline, the footnote indicator is added below the 
+						// first pipe char (and not under any repeat dots)
+						if (isBarlineEvent) {
+							currSegmentInd += currEvent.indexOf(ConstantMusicalSymbol.BARLINE.getEncoding());
+						}
+						currSegmentIndices.add(currSegmentInd);
+					}
+					// Increment currSegmentInd. If barline event: increment with the 
+					// number of chars in the barline; if not (so if TS, RS, rest, or 
+					// MS event): increment with 2 - one segment for the event itself,
+					// and one for the space following it
+					currSegmentInd = 
+						isBarlineEvent ? currSegmentInd + currEvent.length() : 
+						currSegmentInd + 2;
+				}
+				else if (type.equals("barline")) {
+					// If the event contains a barline: add currSegmentIn
+					if (isBarlineEvent) {
+						// In case of a barline, the bar number is added above the 
+						// first pipe char (and not under any repeat dots)
+						currSegmentInd += currEvent.indexOf(ConstantMusicalSymbol.BARLINE.getEncoding());
+						currSegmentIndices.add(currSegmentInd);
+					}
+					// Increment currSegmentInd. If barline event: increment with the 
+					// number of chars in the barline; if not (so if TS, RS, rest, or 
+					// MS event): increment with 2 - one segment for the event itself,
+					// and one for the space following it
+					currSegmentInd = 
+						isBarlineEvent ? currSegmentInd + currEvent.length() : 
+						currSegmentInd + 2;
+				}		
 			}
 			segmentIndices.add(currSegmentIndices);
 		}
@@ -1686,7 +2182,9 @@ public class Encoding implements Serializable {
 					}
 				}
 				// e. Add footnote
-				staff.addFootnoteIndicators(getFootnoteStaffSegmentIndices().get(staffIndex));
+				staff.addFootnoteIndicators(getStaffSegmentIndices("footnote").get(staffIndex));
+				// f. Add bar numbers
+				staff.addBarNumbers(getStaffSegmentIndices("barline").get(staffIndex));
 				// Prepare indices for next iteration inner while
 				ssIndex = nextSsIndex;
 				nextSsIndex = currSysEncoding.indexOf(ss, ssIndex + 1); 

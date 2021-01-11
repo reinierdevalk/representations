@@ -28,35 +28,39 @@ public class Staff {
 	 */
 	public Staff(int numberOfSegments) {
 		this.numberOfSegments = numberOfSegments; 
-		this.staffData = new String[STAFF_LINES][numberOfSegments];
-		final String rhythmSegment = " ";
-		final String spaceAroundStaffSegment = " ";
-		final String footnoteSegment = " ";
+		this.staffData = new String[STAFF_LINES][numberOfSegments+2];
+		final String spaceSegment = " ";
 		// Construct the empty Staff line by line, segment by segment 
 		for (int staffLine = RHYTHM_LINE; staffLine < STAFF_LINES; staffLine++) {  
 			for (int segment = 0; segment < numberOfSegments; segment++) { 
 				switch (staffLine) {
 					// staffLine 0: for RS
 					case RHYTHM_LINE:
-						staffData[staffLine][segment] = rhythmSegment;
+						staffData[staffLine][segment] = spaceSegment;
 						break;
 					// staffLine 1: for any diaposons in Italian tablature
 					case DIAPASONS_LINE_ITALIAN: 
-						staffData[staffLine][segment] = spaceAroundStaffSegment;
+						staffData[staffLine][segment] = spaceSegment;
 						break;
 					// staffLine 8: for any diapasons in French and Spanish tablature
 					case DIAPASONS_LINE_OTHER:
-						staffData[staffLine][segment] = spaceAroundStaffSegment;
+						staffData[staffLine][segment] = spaceSegment;
 						break;
 					// staffLine 9: for any footnote indicators
 					case FOOTNOTES_LINE:
-						staffData[staffLine][segment] = footnoteSegment;
+						staffData[staffLine][segment] = spaceSegment;
 						break;
 					// staffLines 2-7: for the tablature staff itself
 					default:
 						staffData[staffLine][segment] = STAFF_SEGMENT;
 				}
 			}
+		}
+		// Allow for bar numbers up to three digits above the final barline of a staff
+		// by adding two spaces to each staff line
+		for (int staffLine = RHYTHM_LINE; staffLine < STAFF_LINES; staffLine++) {
+			staffData[staffLine][numberOfSegments] = spaceSegment;
+			staffData[staffLine][numberOfSegments+1] = spaceSegment;
 		}
 	}
 
@@ -175,20 +179,32 @@ public class Staff {
 	 * @param indices The indices of the segments containing footnotes events.
 	 */
 	public void addFootnoteIndicators(List<Integer> indices) {
-//		int numSegments = getNumberOfSegments();	
 		String footnotesIndicator = "*";
-//		int lineNumberFrench = aTabSymbol.getCourse() + NECESSARY_LINE_SHIFT; 
-//		int fret = aTabSymbol.getFret();
-//		String symbolFrench = frenchSymbols[fret];
 		for (int ind : indices) {
 			staffData[FOOTNOTES_LINE][ind] = footnotesIndicator; 
 		}
-		
-		// Make a string of spaces as long as the staff (getNumberOfSegments)
-		// Get the segment indices where the staff has an event (chord or rest)
-		// Replace the space by a star there
-		// Barline comment should be placed under the barline; count those as well
-		// Make clear in listEvents if a comment is a varline comment (extra field in String[])
+	}
+
+
+	/** 
+	 * Adds every fifth bar number (starting at 5) at the positions in the list given. 
+	 * 
+	 * @param indices The indices of the segments containing barline events.
+	 */
+	public void addBarNumbers(List<Integer> indices) {
+		// Barline is added at the beginning of each bar except for the first start 
+		// counting at 2
+		int count = 2;
+		for (int ind : indices) {
+			if (count % 5 == 0) {
+				String asStr = String.valueOf(count);
+				for (int i = 0; i < asStr.length(); i++) {
+					staffData[DIAPASONS_LINE_ITALIAN][ind + i] = 
+						Character.toString(asStr.charAt(i)); 
+				}
+			}
+			count++;
+		}
 	}
 
 

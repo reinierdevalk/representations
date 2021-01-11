@@ -741,6 +741,209 @@ public class EncodingTest {
 
 
 	@Test
+	public void testCombineSuccessiveRestTabwords() {
+		List<String> tabwords = Arrays.asList(new String[]{
+			"sb.c4.>.", 
+			"mi.>.",	
+			"mi.c4.>.",
+			"mi.>.", "sm.>.", "sm.>.", "mi.>.",
+			"mi.c4.>.",	
+		});
+		
+		List<String> expected = Arrays.asList(new String[]{
+			"sb.c4.>.", 
+			"mi.>.",	
+			"mi.c4.>.",
+			"sb*.>.",
+			"mi.c4.>."
+		});
+		
+		List<String> actual = Encoding.combineSuccessiveRestTabwords(tabwords);
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
+	public void testGetTabwords() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+
+		List<String> expected = Arrays.asList(new String[]{
+			"McC3.>.", 
+			"sb.>.", 
+			"mi.>.", 
+			"mi.a5.c4.b2.a1.>.", 
+			"|.",	
+			"sm*.a6.c4.i2.a1.>.", 
+			"fu.d6.>.", 
+			"sm.c6.a5.e4.b2.>.", 
+			"sm.a6.>.", 
+			"mi.a6.h5.c4.b3.f2.>.", 
+			"sm.a6.b3.a2.a1.>.", 
+			"sm.a3.e2.>.", 
+			"|.", 
+			"/",
+			"fu.a6.c4.a2.a1.>.", 
+			"fu.e2.>.", 
+			"sf.a1.>.", 
+			"sf.e2.>.", 
+			"|.", 
+			"sf.c2.>.", 
+			"sf.e2.>.", 
+			"mi.a1.>.", 
+			"mi.>.", 
+			"mi.a6.c4.a2.a1.>.", 
+			"||."	
+		});
+
+		List<String> actual = encoding.getTabwords();
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
+	public void testReverseEncoding() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+		Tablature tab = new Tablature(encodingTestpiece1, true);
+
+		String expected = 
+			"{AUTHOR: Author }" + "\r\n" +
+			"{TITLE:Title}" + "\r\n" +
+			"{SOURCE:Source (year)}" + "\r\n" + 
+			"\r\n" +
+			"{TABSYMBOLSET:FrenchTab}" + "\r\n" +
+			"{TUNING:A}" + "\r\n" +
+			"{TUNING_SEVENTH_COURSE: }" + "\r\n" +
+			"{METER_INFO:2/2 (1-3)}" + "\r\n" +
+			"{DIMINUTION:1}" + "\r\n" +
+			"\r\n" +
+			"||." + "\r\n" +
+			"mi.a6.c4.a2.a1.>." + "mi.>." + "mi.a1.>." + "sf.e2.>." + "sf.c2.>." +  
+			"|." + "\r\n" +
+			"sf.e2.>." + "sf.a1.>." + "fu.e2.>." + "fu.a6.c4.a2.a1.>." +
+			"/" + "\r\n" +
+			"|." + "\r\n" +
+			"sm.a3.e2.>." + "sm.a6.b3.a2.a1.>." + "mi.a6.h5.c4.b3.f2.>." + "sm.a6.>." + 
+				"sm.c6.a5.e4.b2.>." + "fu.d6.>." + "sm*.a6.c4.i2.a1.>." +
+			"|." + "\r\n" +
+			"mi.a5.c4.b2.a1.>." + "mi.>." + "sb.>." + "McC3.>." +
+			"//";
+
+		String actual = encoding.reverseEncoding(tab.getMeterInfo()).getRawEncoding();
+
+		assertEquals(expected, actual);		
+	}
+
+
+	@Test
+	public void testDeornamentEncoding() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+
+		String expected = 
+			"{AUTHOR: Author }" + "\r\n" +
+			"{TITLE:Title}" + "\r\n" +
+			"{SOURCE:Source (year)}" + "\r\n" + 
+			"\r\n" +
+			"{TABSYMBOLSET:FrenchTab}" + "\r\n" +
+			"{TUNING:A}" + "\r\n" +
+			"{TUNING_SEVENTH_COURSE: }" + "\r\n" +
+			"{METER_INFO:2/2 (1-3)}" + "\r\n" +
+			"{DIMINUTION:1}" + "\r\n" +
+			"\r\n" +
+			
+			"McC3.>." + "sb.>." + "mi.>." + "mi.a5.c4.b2.a1.>." + 
+			"|." + "\r\n" +
+			"mi.a6.c4.i2.a1.>." + 
+			"sm.c6.a5.e4.b2.>." +
+			"sm.a6.>." +			
+			"mi.a6.h5.c4.b3.f2.>." +
+			"sm.a6.b3.a2.a1.>." +
+			"sm.a3.e2.>." +		
+			"|." + "\r\n" +
+			"/" + "\r\n" +
+			"mi.a6.c4.a2.a1.>." +
+			"|." + "\r\n" +
+			"mi.a1.>." +
+			"mi.>." +
+			"mi.a6.c4.a2.a1.>." +
+			"||." + "\r\n" +
+			"//";
+
+		String actual = encoding.deornamentEncoding(12).getRawEncoding();
+
+		assertEquals(expected, actual);		
+	}
+
+
+	@Test
+	public void testStretchEncoding() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+		Tablature tab = new Tablature(encodingTestpiece1, true);
+
+		String expected = 
+			"{AUTHOR: Author }" + "\r\n" +
+			"{TITLE:Title}" + "\r\n" +
+			"{SOURCE:Source (year)}" + "\r\n" + 
+			"\r\n" +
+			"{TABSYMBOLSET:FrenchTab}" + "\r\n" +
+			"{TUNING:A}" + "\r\n" +
+			"{TUNING_SEVENTH_COURSE: }" + "\r\n" +
+			"{METER_INFO:2/2 (1-6)}" + "\r\n" +
+			"{DIMINUTION:1}" + "\r\n" +
+			"\r\n" +
+			
+			"McC3.>.br.>.sb.>.sb.a5.c4.b2.a1.>.|." + "\r\n" +
+			"mi*.a6.c4.i2.a1.>.sm.d6.>.mi.c6.a5.e4.b2.>.mi.a6.>.sb.a6.h5.c4.b3.f2.>.mi.a6.b3.a2.a1.>.mi.a3.e2.>.|." + 
+			"\r\n" + "/" + "\r\n" +
+			"sm.a6.c4.a2.a1.>.sm.e2.>.fu.a1.>.fu.e2.>.|." + "\r\n" + 
+			"fu.c2.>.fu.e2.>.sb.a1.>.sb.>.sb.a6.c4.a2.a1.>.||." + "\r\n" + 
+			"//";
+
+		String actual = encoding.stretchEncoding(tab.getMeterInfo(), 2).getRawEncoding();
+
+		assertEquals(expected, actual);		
+	}
+
+
+	@Test
+	public void testSplitHeaderAndEncoding() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+
+		String header = 
+			"{AUTHOR: Author }" + "\r\n" +
+			"{TITLE:Title}" + "\r\n" +
+			"{SOURCE:Source (year)}" + "\r\n" +
+			"\r\n" +
+			"{TABSYMBOLSET:FrenchTab}" + "\r\n" +
+			"{TUNING:A}" + "\r\n" +
+			"{TUNING_SEVENTH_COURSE: }" + "\r\n" +
+			"{METER_INFO:2/2 (1-3)}" + "\r\n" +
+			"{DIMINUTION:1}";
+		String enc =
+			"McC3.>.sb.>.mi.>.mi.a5.c4.b2.a1.>.|." +  
+			"sm*.a6.c4.i2.a1.>.fu.d6.>.sm.c6.a5.e4.b2.>.a6.>.mi.a6.h5.c4.b3.f2.>.sm.a6.b3.a2.a1.>.a3.e2.>.|./" + 
+			"fu.a6.c4.a2.a1.>.e2.>.sf.a1.>.e2.>.|.c2.>.e2.>.mi.a1.>.mi.>.mi.a6.c4.a2.a1.>.||.";
+
+		String[] expected = new String[]{header, enc};
+		
+		String[] actual = encoding.splitHeaderAndEncoding();
+		
+		assertEquals(expected.length, actual.length);
+		for (int i = 0; i < expected.length; i++) {
+			assertEquals(expected[i], actual[i]);
+		}
+	}
+
+
+	@Test
 	public void testGetEventsWithFootnotes() {
 		Encoding encoding = new Encoding(encodingTestpiece1);
 
@@ -790,16 +993,23 @@ public class EncodingTest {
 
 
 	@Test
-	public void testGetFootnoteStaffSegmentIndices() {
+	public void testStaffSegmentIndices() {
 		Encoding encoding = new Encoding(encodingTestpiece1);
 		
 		List<List<Integer>> expected = new ArrayList<>();
+		// Footnotes
 		// System 1
 		expected.add(Arrays.asList(new Integer[]{8, 17}));
 		// System 2
 		expected.add(new ArrayList<>());
+		// Barlines
+		// System 1
+		expected.add(Arrays.asList(new Integer[]{8, 23}));
+		// System 2
+		expected.add(Arrays.asList(new Integer[]{8, 19}));
 		
-		List<List<Integer>> actual = encoding.getFootnoteStaffSegmentIndices();
+		List<List<Integer>> actual = encoding.getStaffSegmentIndices("footnote");
+		actual.addAll(encoding.getStaffSegmentIndices("barline"));
 		
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {

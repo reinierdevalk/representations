@@ -654,7 +654,7 @@ public class Transcription implements Serializable {
 
 		Encoding eRev = null;
 		if (tab != null) {
-			eRev = Tablature.reverseEncoding(tab); // NB The value of normaliseTuning is irrelevant
+			eRev = tab.getEncoding().reverseEncoding(tab.getMeterInfo()); // NB The value of normaliseTuning is irrelevant
 		}
 		return new Transcription(pRev, eRev);
 	}
@@ -674,7 +674,7 @@ public class Transcription implements Serializable {
 		Piece pDeorn = deornamentPiece(trans, tab, dur);
 		Encoding eDeorn = null;
 		if (tab != null) {
-			eDeorn = Tablature.deornamentEncoding(tab, Tablature.rationalToIntDur(dur)); // NB The value of normaliseTuning is irrelevant
+			eDeorn = tab.getEncoding().deornamentEncoding(Tablature.rationalToIntDur(dur)); // NB The value of normaliseTuning is irrelevant
 		}
 		return new Transcription(pDeorn, eDeorn);
 	}
