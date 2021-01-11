@@ -1836,21 +1836,53 @@ public class Encoding implements Serializable {
 		barlinesAsString.sort(Comparator.comparing(String::length).reversed());
 		for (String s : barlinesAsString) {
 			if (ConstantMusicalSymbol.isBarline(s)) {
-				if (rawEnc.contains(s)) {
+				// If the barline is not followed by a comment
+				if (rawEnc.contains(s + ss)) {
+//				if (rawEnc.contains(s)) {
 					rawEnc = rawEnc.replace(s + ss, s + ss + sp + ss);
+				}
+				// If the barline is followed by a comment
+				System.out.println(rawEnc);
+				if (rawEnc.contains(s + oib)) {
+					// Travers rawEnc and add (sp + ss) after each occurence of 
+					// (s + comment + ss
+					int barlineInd = rawEnc.indexOf(s+oib); // 263
+					System.out.println("barlineInd = " + barlineInd);
+					while (barlineInd >= 0) {
+						int oibInd = rawEnc.indexOf(oib, barlineInd); // 264
+						System.out.println("oibInd = " + oibInd);
+						int cibInd = rawEnc.indexOf(cib, oibInd); // 286
+						System.out.println("cibInd = " + cibInd);
+						int ssInd = rawEnc.indexOf(ss, cibInd); // 287
+						System.out.println("ssInd = " + ssInd);
+						String firstHalf = rawEnc.substring(0, ssInd+1);
+						System.out.println("1st = " + firstHalf);
+						String secondHalf = rawEnc.substring(ssInd+1);
+					    System.out.println("2nd = " + secondHalf);
+					    rawEnc = firstHalf + sp + ss + secondHalf;
+					    barlineInd = rawEnc.indexOf(s+oib, barlineInd + 1);
+					    System.out.println("barlineInd = " + barlineInd);
+					}
 				}
 			}
 		}
+		System.out.println(rawEnc);
 
 		// List events per system
 		List<List<String[]>> eventsPerSystem = new ArrayList<>();
 		int commentCounter = 0;
 		String[] systems = rawEnc.split(sbi);
+		System.out.println(systems[0]);
+		System.out.println(systems[1]);
+		System.out.println("");
+		System.out.println("");
 		for (int i = 0; i < systems.length; i++) {
+			System.out.println("system " + (i+1)); 
 			List<String[]> eventsCurrSystem = new ArrayList<>();
 			String[] events = systems[i].split(sp + ss);
 			for (int j = 0; j < events.length; j++) {
 				String event = events[j];
+				System.out.println("-->"+event+"<--");
 				boolean containsComment = event.contains(oib + FOOTNOTE_INDICATOR);
 				// If the event does not contain a comment: add
 				if (!containsComment) {
@@ -1861,6 +1893,12 @@ public class Encoding implements Serializable {
 					boolean startsWithComment = event.startsWith(oib + FOOTNOTE_INDICATOR);
 					String adaptedEvent = event.substring(0, event.indexOf(oib)) + 
 						event.substring(event.indexOf(cib) + 1);
+					if (startsWithComment) {
+						System.out.println("RAAAAAAAAAAAAA");
+						System.out.println(event);
+						System.out.println(adaptedEvent);
+						System.exit(0);
+					}
 					// Get unadapted comment (the one in event may have been altered if it 
 					// contains symbols split on, such as a space or a SBI)
 					String comment = allEditorialComments.get(commentCounter);
@@ -1870,6 +1908,7 @@ public class Encoding implements Serializable {
 					if (!startsWithComment) {
 						eventsCurrSystem.add(new String[]{adaptedEvent, comment, commentNum});
 					}
+					// TODO this won't happen anymore
 					// If the comment is at the beginning of the event: reset last added and add
 					// NB: If there is a barline that is followed by a comment before the current
 					// event, that comment will end up preceding the current event. Example:
@@ -1891,8 +1930,13 @@ public class Encoding implements Serializable {
 					}
 				}
 			}
+			System.out.println("new sys");
+			for (String[] e : eventsCurrSystem) {
+				System.out.println(Arrays.asList(e));
+			}
 			eventsPerSystem.add(eventsCurrSystem);
 		}
+		System.exit(0);
 		return eventsPerSystem;
 	}
 
