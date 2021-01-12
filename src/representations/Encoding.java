@@ -1751,12 +1751,12 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Gets all events in the piece, organised per system. Each event is one of five types 
-	 * (TS event, RS event, rest event, MS event, or barline event). 
+	 * Gets all events in the piece, organised per system. Each event is one of five types: 
+	 * TS event, RS event, rest event, MS event, or barline event. 
 	 *
 	 * @return A <code>List</code>, each element of which represents a system as a 
-	 * <code>List</code> of <code>String[]</code>s, each of which represents an event. Each
-	 * event contains 
+	 * <code>List</code> of <code>String[]</code>s, each of which represents an event. 
+	 * Each event contains 
 	 * <ul>
 	 * <li>at element 0: the event as encoded</li>
 	 * <li>at element 1: if the event has a footnote, that footnote; otherwise 
@@ -1819,7 +1819,8 @@ public class Encoding implements Serializable {
 		for (String comment : allNonEditorialComments) {
 			rawEnc = rawEnc.replace(comment, "");
 		}
-		
+		System.out.println(rawEnc);
+
 		// To enable splitting, add a space after all barlines. NB: This will also affect any
 		// barlines in comments (but only if they are followed by a symbol separator!) - which
 		// is not a problem as the unadapted comments are stored in allNonEditorialComments		
@@ -1831,58 +1832,79 @@ public class Encoding implements Serializable {
 		}
 		// Sort the barlines by length (longest first), so that they are replaced correctly
 		// (a shorter barline, e.g., :|, can be part of a longer one, e.g., :|:, leading to 
-		// partial replacement of the longer one)
+		// partial replacement of the longer one) // TODO no longer necessary: make util
 		// See https://stackoverflow.com/questions/29280257/how-to-sort-an-arraylist-by-its-elements-size-in-java
 		barlinesAsString.sort(Comparator.comparing(String::length).reversed());
-		for (String s : barlinesAsString) {
-			if (ConstantMusicalSymbol.isBarline(s)) {
-				// If the barline is not followed by a comment
-				if (rawEnc.contains(s + ss)) {
-//				if (rawEnc.contains(s)) {
-					rawEnc = rawEnc.replace(s + ss, s + ss + sp + ss);
-				}
-				// If the barline is followed by a comment
-				System.out.println(rawEnc);
-				if (rawEnc.contains(s + oib)) {
-					// Travers rawEnc and add (sp + ss) after each occurence of 
-					// (s + comment + ss
-					int barlineInd = rawEnc.indexOf(s+oib); // 263
-					System.out.println("barlineInd = " + barlineInd);
-					while (barlineInd >= 0) {
-						int oibInd = rawEnc.indexOf(oib, barlineInd); // 264
-						System.out.println("oibInd = " + oibInd);
-						int cibInd = rawEnc.indexOf(cib, oibInd); // 286
-						System.out.println("cibInd = " + cibInd);
-						int ssInd = rawEnc.indexOf(ss, cibInd); // 287
-						System.out.println("ssInd = " + ssInd);
-						String firstHalf = rawEnc.substring(0, ssInd+1);
-						System.out.println("1st = " + firstHalf);
-						String secondHalf = rawEnc.substring(ssInd+1);
-					    System.out.println("2nd = " + secondHalf);
-					    rawEnc = firstHalf + sp + ss + secondHalf;
-					    barlineInd = rawEnc.indexOf(s+oib, barlineInd + 1);
-					    System.out.println("barlineInd = " + barlineInd);
+		// A barline is always preceded and followed by a SS. By including both these 
+		// SSs in the replace command, it is ensured that a shorter barline that is part 
+		// of a longer one does not accidentally replace part of the longer one. 
+		// Example: if s == "|:", any occurences of "|:." will be replaced, but also the 
+		// last two chars in any occurrences of "||:." By adding a SS also before s, 
+		// only occurrences of ".|:." will be replaced.
+		// NB: Any barlines at the beginning of a piece are NOT preceded by a SS, and 
+		// must be dealt with separately
+		for (String b : barlinesAsString) {
+			System.out.println("s ===== " + b);
+			if (ConstantMusicalSymbol.isBarline(b)) {
+				boolean startsWithBarline = rawEnc.startsWith(b+ss);
+				String firstHalf, secondHalf;
+				int breakInd = -1;
+				if (!startsWithBarline) {
+					// If the barline is not followed by a comment: replace all
+					if (rawEnc.contains(ss+b+ss)) {
+						rawEnc = rawEnc.replace(ss+b+ss, ss+b+ss+sp+ss);
 					}
+					// If the barline is followed by a comment: replace one by one
+					if (rawEnc.contains(ss+b+oib)) {
+						// Traverse rawEnc and add (sp + ss) after each occurence of 
+						// b + comment + ss
+						int barlineInd = rawEnc.indexOf(ss+b+oib); // 263
+						System.out.println("barlineInd = " + barlineInd);
+						while (barlineInd >= 0) {
+							int oibInd = rawEnc.indexOf(oib, barlineInd); // 264
+							System.out.println("oibInd = " + oibInd);
+							int cibInd = rawEnc.indexOf(cib, oibInd); // 286
+							System.out.println("cibInd = " + cibInd);
+							int ssInd = rawEnc.indexOf(ss, cibInd); // 287
+							System.out.println("ssInd = " + ssInd);
+							breakInd = ssInd + 1;
+							firstHalf = rawEnc.substring(0, breakInd);
+							System.out.println("1st = " + firstHalf);
+							secondHalf = rawEnc.substring(breakInd);
+							System.out.println("2nd = " + secondHalf);
+							rawEnc = firstHalf + sp + ss + secondHalf;
+							barlineInd = rawEnc.indexOf(ss+b+oib, barlineInd + 1);
+							System.out.println("barlineInd = " + barlineInd);
+						}
+					}
+				}
+				else { 
+					// If the barline is not followed by a comment: replace
+					if (rawEnc.startsWith(b+ss)) {
+						breakInd = rawEnc.indexOf(ss)+1;
+					}
+					// If the barline is followed by a comment: replace 
+					if (rawEnc.startsWith(b+oib)) {
+						breakInd = rawEnc.indexOf(cib)+1 + ss.length();
+					}
+					firstHalf = rawEnc.substring(0, breakInd);
+					secondHalf = rawEnc.substring(breakInd);
+					rawEnc = firstHalf + sp + ss + secondHalf;
 				}
 			}
 		}
 		System.out.println(rawEnc);
+//		System.exit(0);
 
 		// List events per system
 		List<List<String[]>> eventsPerSystem = new ArrayList<>();
 		int commentCounter = 0;
 		String[] systems = rawEnc.split(sbi);
-		System.out.println(systems[0]);
-		System.out.println(systems[1]);
-		System.out.println("");
-		System.out.println("");
 		for (int i = 0; i < systems.length; i++) {
-			System.out.println("system " + (i+1)); 
 			List<String[]> eventsCurrSystem = new ArrayList<>();
 			String[] events = systems[i].split(sp + ss);
 			for (int j = 0; j < events.length; j++) {
 				String event = events[j];
-				System.out.println("-->"+event+"<--");
 				boolean containsComment = event.contains(oib + FOOTNOTE_INDICATOR);
 				// If the event does not contain a comment: add
 				if (!containsComment) {
@@ -1890,53 +1912,45 @@ public class Encoding implements Serializable {
 				}
 				// If the event contains a comment: separate event and comment, and add
 				if (containsComment) {
-					boolean startsWithComment = event.startsWith(oib + FOOTNOTE_INDICATOR);
+//					boolean startsWithComment = event.startsWith(oib + FOOTNOTE_INDICATOR);
 					String adaptedEvent = event.substring(0, event.indexOf(oib)) + 
 						event.substring(event.indexOf(cib) + 1);
-					if (startsWithComment) {
-						System.out.println("RAAAAAAAAAAAAA");
-						System.out.println(event);
-						System.out.println(adaptedEvent);
-						System.exit(0);
-					}
 					// Get unadapted comment (the one in event may have been altered if it 
 					// contains symbols split on, such as a space or a SBI)
 					String comment = allEditorialComments.get(commentCounter);
 					String commentNum = "footnote #" + (commentCounter + 1);
 					commentCounter++;
-					// If the comment is at the end of the event: add
-					if (!startsWithComment) {
-						eventsCurrSystem.add(new String[]{adaptedEvent, comment, commentNum});
-					}
-					// TODO this won't happen anymore
-					// If the comment is at the beginning of the event: reset last added and add
-					// NB: If there is a barline that is followed by a comment before the current
-					// event, that comment will end up preceding the current event. Example:
-					// original encoding:         sm.a2.a1.>.|.{@a footnote}sm.a2.a1.>. 
-					// space added after barline: sm.a2.a1.>.|.>.{@a footnote}sm.a2.a1.>.
-					// after split on space:      [sm.a2.a1., |., {@a footnote}sm.a2.a1.]
-					// In such a case, the comment must be moved to the last added element in
-					// eventsPerSystem
-					else {						
-						// systemToAdapt is the previous system if event is the first in the 
-						// current system, and the current system if not 
-						List<String[]> systemToAdapt = 
-							(j == 0) ? eventsPerSystem.get(i-1) : eventsCurrSystem;  
-						// Adapt comment and commentNum in element last added to systemToAdapt
-						systemToAdapt.set(systemToAdapt.size()-1, new String[]{
-							systemToAdapt.get(systemToAdapt.size()-1)[EVENT_IND], comment, commentNum});
-						// Add
-						eventsCurrSystem.add(new String[]{adaptedEvent, null, null});
-					}
+//					// If the comment is at the end of the event: add
+//					if (!startsWithComment) {
+					eventsCurrSystem.add(new String[]{adaptedEvent, comment, commentNum});
+//					}
+//					// If the comment is at the beginning of the event: reset last added and add
+//					// NB: If there is a barline that is followed by a comment before the current
+//					// event, that comment will end up preceding the current event. Example:
+//					// original encoding:         sm.a2.a1.>.|.{@a footnote}sm.a2.a1}.>. 
+//					// space added after barline: sm.a2.a1.>.|.>.{@a footnote}sm.a2.a1}.>.
+//					// after split on space:      [sm.a2.a1., |., {@a footnote}sm.a2.a1}]
+//					// In such a case, the comment must be moved to the last added element in
+//					// eventsPerSystem
+//					else {						
+//						// systemToAdapt is the previous system if event is the first in the 
+//						// current system, and the current system if not 
+//						List<String[]> systemToAdapt = 
+//							(j == 0) ? eventsPerSystem.get(i-1) : eventsCurrSystem;  
+//						// Adapt comment and commentNum in element last added to systemToAdapt
+//						systemToAdapt.set(systemToAdapt.size()-1, new String[]{
+//							systemToAdapt.get(systemToAdapt.size()-1)[EVENT_IND], comment, commentNum});
+//						// Add
+//						eventsCurrSystem.add(new String[]{adaptedEvent, null, null});
+//					}
 				}
 			}
-			System.out.println("new sys");
-			for (String[] e : eventsCurrSystem) {
-				System.out.println(Arrays.asList(e));
-			}
+//			System.out.println("new sys");
+//			for (String[] e : eventsCurrSystem) {
+//				System.out.println(Arrays.asList(e));
+//			}
 			eventsPerSystem.add(eventsCurrSystem);
 		}
-		System.exit(0);
 		return eventsPerSystem;
 	}
 
