@@ -190,20 +190,26 @@ public class Staff {
 	 * Adds every fifth bar number (starting at 5) at the positions in the list given. 
 	 * 
 	 * @param indices The indices of the segments containing barline events.
+	 * @param firstBar The number of the bar with which the staff begins (this bar can
+	 *                 be a continuation of the last bar in the previous staff).
 	 */
-	public void addBarNumbers(List<Integer> indices) {
-		// Barline is added at the beginning of each bar except for the first start 
-		// counting at 2
-		int count = 2;
-		for (int ind : indices) {
-			if (count % 5 == 0) {
-				String asStr = String.valueOf(count);
-				for (int i = 0; i < asStr.length(); i++) {
-					staffData[DIAPASONS_LINE_ITALIAN][ind + i] = 
-						Character.toString(asStr.charAt(i)); 
+	public void addBarNumbers(List<Integer> indices, int firstBar) {
+		int count = firstBar;
+		for (int i = 0; i < indices.size(); i++) {
+			int ind = indices.get(i);
+			// Ignore decorative opening barline
+			if (ind != 0) {
+				if (count % 5 == 0) {
+					String asStr = String.valueOf(count);
+					// ind is the index of the barline closing the current bar; add
+					// the bar number at the one opening it, so at the previous ind
+					for (int j = 0; j < asStr.length(); j++) {
+						staffData[DIAPASONS_LINE_ITALIAN][indices.get(i-1) + j] = 
+								Character.toString(asStr.charAt(j)); 
+					}
 				}
+				count++;
 			}
-			count++;
 		}
 	}
 

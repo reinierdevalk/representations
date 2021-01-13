@@ -1819,7 +1819,6 @@ public class Encoding implements Serializable {
 		for (String comment : allNonEditorialComments) {
 			rawEnc = rawEnc.replace(comment, "");
 		}
-		System.out.println(rawEnc);
 
 		// To enable splitting, add a space after all barlines. NB: This will also affect any
 		// barlines in comments (but only if they are followed by a symbol separator!) - which
@@ -1844,41 +1843,13 @@ public class Encoding implements Serializable {
 		// NB: Any barlines at the beginning of a piece are NOT preceded by a SS, and 
 		// must be dealt with separately
 		for (String b : barlinesAsString) {
-			System.out.println("s ===== " + b);
 			if (ConstantMusicalSymbol.isBarline(b)) {
-				boolean startsWithBarline = rawEnc.startsWith(b+ss);
 				String firstHalf, secondHalf;
+				int startInd = 0;
 				int breakInd = -1;
-				if (!startsWithBarline) {
-					// If the barline is not followed by a comment: replace all
-					if (rawEnc.contains(ss+b+ss)) {
-						rawEnc = rawEnc.replace(ss+b+ss, ss+b+ss+sp+ss);
-					}
-					// If the barline is followed by a comment: replace one by one
-					if (rawEnc.contains(ss+b+oib)) {
-						// Traverse rawEnc and add (sp + ss) after each occurence of 
-						// b + comment + ss
-						int barlineInd = rawEnc.indexOf(ss+b+oib); // 263
-						System.out.println("barlineInd = " + barlineInd);
-						while (barlineInd >= 0) {
-							int oibInd = rawEnc.indexOf(oib, barlineInd); // 264
-							System.out.println("oibInd = " + oibInd);
-							int cibInd = rawEnc.indexOf(cib, oibInd); // 286
-							System.out.println("cibInd = " + cibInd);
-							int ssInd = rawEnc.indexOf(ss, cibInd); // 287
-							System.out.println("ssInd = " + ssInd);
-							breakInd = ssInd + 1;
-							firstHalf = rawEnc.substring(0, breakInd);
-							System.out.println("1st = " + firstHalf);
-							secondHalf = rawEnc.substring(breakInd);
-							System.out.println("2nd = " + secondHalf);
-							rawEnc = firstHalf + sp + ss + secondHalf;
-							barlineInd = rawEnc.indexOf(ss+b+oib, barlineInd + 1);
-							System.out.println("barlineInd = " + barlineInd);
-						}
-					}
-				}
-				else { 
+				// a. If the encoding starts with a barline, handle this barline first 
+				// and adapt startInd
+				if (rawEnc.startsWith(b+ss)) { 
 					// If the barline is not followed by a comment: replace
 					if (rawEnc.startsWith(b+ss)) {
 						breakInd = rawEnc.indexOf(ss)+1;
@@ -1890,11 +1861,37 @@ public class Encoding implements Serializable {
 					firstHalf = rawEnc.substring(0, breakInd);
 					secondHalf = rawEnc.substring(breakInd);
 					rawEnc = firstHalf + sp + ss + secondHalf;
+					startInd = (b+ss).length();
+				}
+				// b. Handle any remaining barlines
+				// If the barline is not followed by a comment: replace all
+				if (rawEnc.contains(ss+b+ss)) {
+					rawEnc = rawEnc.replace(ss+b+ss, ss+b+ss+sp+ss);
+				}
+				// If the barline is followed by a comment: replace one by one
+				if (rawEnc.contains(ss+b+oib)) {
+					// Traverse rawEnc and add (sp + ss) after each occurence of 
+					// b + comment + ss
+					int barlineInd = rawEnc.indexOf(ss+b+oib, startInd); // 263
+					while (barlineInd >= 0) {
+						int oibInd = rawEnc.indexOf(oib, barlineInd); // 264
+//						System.out.println("oibInd = " + oibInd);
+						int cibInd = rawEnc.indexOf(cib, oibInd); // 286
+//						System.out.println("cibInd = " + cibInd);
+						int ssInd = rawEnc.indexOf(ss, cibInd); // 287
+//						System.out.println("ssInd = " + ssInd);
+						breakInd = ssInd + 1;
+						firstHalf = rawEnc.substring(0, breakInd);
+//						System.out.println("1st = " + firstHalf);
+						secondHalf = rawEnc.substring(breakInd);
+//						System.out.println("2nd = " + secondHalf);
+						rawEnc = firstHalf + sp + ss + secondHalf;
+						barlineInd = rawEnc.indexOf(ss+b+oib, barlineInd + 1);
+//						System.out.println("barlineInd = " + barlineInd);
+					}
 				}
 			}
 		}
-		System.out.println(rawEnc);
-//		System.exit(0);
 
 		// List events per system
 		List<List<String[]>> eventsPerSystem = new ArrayList<>();
@@ -1995,8 +1992,8 @@ public class Encoding implements Serializable {
 		}
 		return segmentIndices;
 	}
-	
-	
+
+
 	/**
 	 * Gets, per system, the segment indices in the tbp Staff of the events of the given
 	 * type.
@@ -2023,7 +2020,7 @@ public class Encoding implements Serializable {
 			List<Integer> currSegmentIndices = new ArrayList<>();
 			// For each event in the system
 			for (String[] event : system) {
-				System.out.println(Arrays.toString(event));
+//				System.out.println(Arrays.toString(event));
 				String currEvent = event[0].substring(0, event[0].lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR));
 				boolean isBarlineEvent = 
 					ConstantMusicalSymbol.isBarline(currEvent) ? true : false;
@@ -2141,10 +2138,17 @@ public class Encoding implements Serializable {
 		String cleanEnc = getCleanEncoding();
 		TabSymbolSet tss = getTabSymbolSet();
 
+		List<List<Integer>> barlineSegmentInds = getStaffSegmentIndices("barline");
+		List<List<Integer>> footnoteSegmentInds = getStaffSegmentIndices("footnote");
+		
+		System.out.println(barlineSegmentInds);
+		System.out.println(footnoteSegmentInds);
+		
 		// Search all systems one by one
 		int staffIndex = 0;
 		int sbiIndex = -1;
 		int nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
+		int firstBarNum = 1;
 		while (sbiIndex + 1 != nextSbiIndex) { 
 			RhythmSymbol prevRhythmSymbol = null;
 			Staff staff = new Staff(getStaffLength());
@@ -2154,6 +2158,7 @@ public class Encoding implements Serializable {
 			// add its tablature representation to staff 
 			int ssIndex = -1;
 			int nextSsIndex = currSysEncoding.indexOf(ss, ssIndex);
+			String lastEncodedSymbol = null;
 			while (nextSsIndex != -1) {
 				String encodedSymbol = currSysEncoding.substring(ssIndex + 1, nextSsIndex);
 				int nextNextSsIndex = currSysEncoding.indexOf(ss, nextSsIndex + 1);
@@ -2239,20 +2244,48 @@ public class Encoding implements Serializable {
 						segment ++;
 					}
 				}
-				// e. Add footnote
-				staff.addFootnoteIndicators(getStaffSegmentIndices("footnote").get(staffIndex));
-				// f. Add bar numbers
-				staff.addBarNumbers(getStaffSegmentIndices("barline").get(staffIndex));
+//				// e. Add footnote
+//				staff.addFootnoteIndicators(getStaffSegmentIndices("footnote").get(staffIndex));
+//				// f. Add bar numbers
+//				System.out.println("staff = " + (staffIndex + 1));
+//				System.out.println(getStaffSegmentIndices("barline"));
+//				staff.addBarNumbers(getStaffSegmentIndices("barline").get(staffIndex));
 				// Prepare indices for next iteration inner while
 				ssIndex = nextSsIndex;
-				nextSsIndex = currSysEncoding.indexOf(ss, ssIndex + 1); 
+				nextSsIndex = currSysEncoding.indexOf(ss, ssIndex + 1);
+				lastEncodedSymbol = encodedSymbol;
 			}
+			// e. Add footnote
+			staff.addFootnoteIndicators(footnoteSegmentInds.get(staffIndex));
+			// f. Add bar numbers
+			staff.addBarNumbers(barlineSegmentInds.get(staffIndex), firstBarNum);
+						
 			// System traversed? Add to tablature; prepare indices for next iteration outer while
-			staffIndex++;
 			tab += staff.getStaff() + Staff.SPACE_BETWEEN_STAFFS;
+			staffIndex++;
 			sbiIndex = nextSbiIndex;
 			nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
+			// Update firstBarNum
+			// NB: the below works both for (a) systems ending with a barline (where the 
+			// next system starts with the next bar, and (b) systems not ending with a 
+			// barline (where the next system continues with the same bar). 
+			// Example (a); firstBarNum = 1; lastBarNumCurrStaff = 6
+			// system 1 = ... | ... | ... | ... | ... | ... | (ends w/ bar 6)
+			// system 2 = ... | ... | etc.                    (starts w/ bar 7)
+			// Example (b); firstBarNum = 1; lastBarNumCurrStaff = 5
+			// system 1 = ... | ... | ... | ... | ... | ...   (ends w/ bar 6)
+			// system 2 = ... | ... | etc.                    (starts w/ bar )
+			// Determine first bar number of next staff
+			int lastBarNumCurrStaff = 0;
+			for (int ind : barlineSegmentInds.get(staffIndex)) {
+				// Ignore decorative opening barlines
+				if (ind != 0) {
+					lastBarNumCurrStaff++;
+				}
+			}
+			firstBarNum += lastBarNumCurrStaff;
 		}
+		System.exit(0);
 		return tab;
 	}
 	
