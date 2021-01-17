@@ -11,8 +11,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import javax.swing.plaf.synth.SynthSeparatorUI;
-
 import tbp.ConstantMusicalSymbol;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
@@ -29,10 +27,10 @@ public class Encoding implements Serializable {
 	private String name; 
 	private String rawEncoding;
 	private String cleanEncoding;
-	private boolean hasMetadataErrors;
+//	private boolean hasMetadataErrors;
 	private List<String> infoAndSettings;
-	private List<String> footnotes;
 	private List<String> metaData;
+	private List<String> footnotes;
 	private static final int AUTHOR_IND = 0;
 	private static final int TITLE_IND = 1;
 	private static final int SOURCE_IND = 2;
@@ -41,7 +39,6 @@ public class Encoding implements Serializable {
 	private static final int TUNING_BASS_COURSES_IND = 5;
 	public static final int METER_IND = 6;
 	public static final int DIMINUTION_IND = 7;
-//	private static final String DUR_SCALE = "DUR_SCALE";
 	private static final int EVENT_IND = 0;
 	private static final int FOOTNOTE_IND = 1;
 	private static final int FOOTNOTE_NUM_IND = 2;
@@ -148,14 +145,19 @@ public class Encoding implements Serializable {
 		// Unchecked encoding
 		if (!isChecked) {
 			setRawEncoding(rawEncoding);
-			setHasMetadataErrors(); // needs rawEncoding
-			if (getHasMetadataErrors() == true) {
+//			setHasMetadataErrors(); // needs rawEncoding
+//			if (getHasMetadataErrors() == true) {
+//				return;
+//			}
+			if (checkForMetadataErrors() == true) {
 				return;
 			}
-			setFootnotes(); // needs rawEncoding
+//			setFootnotes(); // needs rawEncoding
 			setCleanEncoding(); // needs rawEncoding 
 			setInfoAndSettings(); // needs rawEncoding
-			setMetaData(); // needs infoAndSettings
+			setExtendedEvents(); // needs rawEncoding
+			setMetaData(); niet nodig hier// needs infoAndSettings
+			setFootnotes(); niet nodig hier // needs rawEncoding
 		}
 		// Checked encoding (retrieved from an existing Encoding)
 		else {
@@ -182,14 +184,19 @@ public class Encoding implements Serializable {
 
 	private void createEncoding(String rawEncoding) {
 		setRawEncoding(rawEncoding);
-		setHasMetadataErrors(); // needs rawEncoding
-		if (getHasMetadataErrors() == true) {
+//		setHasMetadataErrors(); // needs rawEncoding
+//		if (getHasMetadataErrors() == true) {
+//			throw new RuntimeException(METADATA_ERROR);
+//		}
+		if (checkForMetadataErrors() == true) {
 			throw new RuntimeException(METADATA_ERROR);
 		}
-		setFootnotes(); // needs rawEncoding
+		
+//		setFootnotes(); // needs rawEncoding
 		setCleanEncoding(); // needs rawEncoding 
 		setInfoAndSettings(); // needs rawEncoding 
 		setMetaData(); // needs infoAndSettings
+		setFootnotes(); // needs rawEncoding
 		if (checkForEncodingErrors() != null) { // needs rawEncoding, cleanEncoding, and infoAndSettings
 			throw new RuntimeException("ERROR: The encoding contains encoding errors; run the TabViewer to correct them.");
 		}
@@ -211,14 +218,14 @@ public class Encoding implements Serializable {
 	}
 
 
-	private void setHasMetadataErrors() {
-		hasMetadataErrors = (checkForMetadataErrors() == true) ? true : false;
-	}
+//	private void setHasMetadataErrors() {
+//		hasMetadataErrors = (checkForMetadataErrors() == true) ? true : false;
+//	}
 
 
-	public boolean getHasMetadataErrors() {
-		return hasMetadataErrors;
-	}
+//	public boolean getHasMetadataErrors() {
+//		return hasMetadataErrors;
+//	}
 
 
 	/**
@@ -236,7 +243,7 @@ public class Encoding implements Serializable {
 	 *  it is correct.  
 	 */
 	// TESTED
-	boolean checkForMetadataErrors() {		
+	public boolean checkForMetadataErrors() {		
 		String oib = SymbolDictionary.OPEN_INFO_BRACKET;
 		String cib = SymbolDictionary.CLOSE_INFO_BRACKET;
 		
@@ -326,7 +333,7 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Sets <code>footnotes</code>, a list containing of all footnotes, numbered and 
+	 * Sets <code>footnotes</code>, a list containing all footnotes, numbered and 
 	 * separated per system as follows: ["system 1", "(1) Footnote text", "system 3", 
 	 * "(2) Footnote text", "(3) Footnote text"]
 	 */
@@ -358,6 +365,7 @@ public class Encoding implements Serializable {
 	}
 
 
+	
 	// TESTED (together with setFootnotes())
 	public List<String> getFootnotes() {
 		return footnotes;
@@ -402,15 +410,7 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Sets infoAndSettings, a String[] containing:
-	 *   at element 0: the author
-	 *   at element 1: the title
-	 *   at element 2: the source
-	 *   at element 3: the TabSymbolSet used for the encoding
-	 *   at element 4: the tuning
-	 *   at element 5: the TuningSeventhCourse (if any)
-	 *   at element 6: the meter information
-	 *   at element 7: the diminution
+	 * Sets <code>infoAndSettings</code>.
 	 */
 	// TESTED (together with getInfoAndSettings())
 	void setInfoAndSettings() {
@@ -428,6 +428,21 @@ public class Encoding implements Serializable {
 	}
 
 
+	/**
+	 * Gets info and settings.
+	 * 
+	 * @return A <code>String[]</code> containing:
+	 * <ul>
+	 * <li>at element 0: the author</li>
+	 * <li>at element 1: the title</li>
+	 * <li>at element 2: the source</li>
+	 * <li>at element 3: the TabSymbolSet used for the encoding</li>
+	 * <li>at element 4: the tuning</li>
+	 * <li>at element 5: the TuningSeventhCourse (if any)</li>
+	 * <li>at element 6: the meter information</li>
+	 * <li>at element 7: the diminution</li>
+	 * </ul>
+	 */
 	// TESTED (together with setInfoAndSettings())
 	public List<String> getInfoAndSettings() {
 		return infoAndSettings;
@@ -1415,9 +1430,10 @@ public class Encoding implements Serializable {
 	 * is assigned to each tabword that is lacking one.
 	 */
 	// TESTED
+	// TODOO get this from eventsWithFootnotes
 	public List<String> getTabwords() {
 		String enc = splitHeaderAndEncoding()[1];
-		
+
 		String[] systems = enc.split(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
 
 		List<String> allTabwords = new ArrayList<>();
@@ -1580,8 +1596,8 @@ public class Encoding implements Serializable {
 					durPre += r.getDuration();
 					tabwords.set(i, null);
 				}
-				// If the tabword is the first after a sequence of one or more ornamental notes
-				// (i.e., it does not meet the if conditions above but pre != null)
+				// If the tabword is the first after a sequence of one or more ornamental
+				// notes (i.e., it does not meet the if conditions above but pre != null)
 				else if (pre != null) {
 					// Determine the new Rs for pre, and adapt and set it
 					String newRs = "";
@@ -1766,7 +1782,7 @@ public class Encoding implements Serializable {
 	 * </ul>
 	 */
 	// TESTED
-	public List<List<String[]>> getEventsWithFootnotes() {
+	List<List<String[]>> getEventsWithFootnotes() {hier
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String oib = SymbolDictionary.OPEN_INFO_BRACKET;
 		String cib = SymbolDictionary.CLOSE_INFO_BRACKET;
@@ -1896,13 +1912,16 @@ public class Encoding implements Serializable {
 		// List events per system
 		List<List<String[]>> eventsPerSystem = new ArrayList<>();
 		int commentCounter = 0;
+		int bar = 1;
 		String[] systems = rawEnc.split(sbi);
 		for (int i = 0; i < systems.length; i++) {
 			List<String[]> eventsCurrSystem = new ArrayList<>();
 			String[] events = systems[i].split(sp + ss);
 			for (int j = 0; j < events.length; j++) {
 				String event = events[j];
+				System.out.println(Arrays.asList(event));
 				boolean containsComment = event.contains(oib + FOOTNOTE_INDICATOR);
+				
 				// If the event does not contain a comment: add
 				if (!containsComment) {
 					eventsCurrSystem.add(new String[]{event, null, null});
@@ -1953,48 +1972,6 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Gets, per system, the segment indices in the tbp Staff of the events that have a 
-	 * footnote.
-	 * 
-	 * @return A <code>List</code> of <code>List</code>s, each of which represents a system, 
-	 * and contains the segment indices in the tbp Staff of the footnote events. In case of
-	 * a system without footnote events, the <code>List</code> remains empty.
-	 */
-	// TESTED
-	private List<List<Integer>> getFootnoteStaffSegmentIndicesOLD() {
-		List<List<Integer>> segmentIndices = new ArrayList<>();
-
-		// For each system
-		for (List<String[]> system : getEventsWithFootnotes()) {
-			int currSegmentInd = 0;
-			List<Integer> currSegmentIndices = new ArrayList<>();
-			// For each event in the system
-			for (String[] event : system) {
-				String currEvent = event[0].substring(0, event[0].lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR));
-				boolean isBarlineEvent = 
-					ConstantMusicalSymbol.isBarline(currEvent) ? true : false;
-				// If the event contains a footnote: add currSegmentInd
-				if (event[1] != null) {
-					// In case of a barline, the footnote indicator is added below the 
-					// first pipe char (and not under any repeat dots)
-					if (isBarlineEvent) {
-						currSegmentInd += currEvent.indexOf(ConstantMusicalSymbol.BARLINE.getEncoding());
-					}
-					currSegmentIndices.add(currSegmentInd);
-				}
-				// Increment currSegmentInd. If barline event: increment with the number of 
-				// chars in the barline; if not (so if TS, RS, rest, or MS event): increment
-				// with 2 - one segment for the event itself, and one for the space following it
-				currSegmentInd = 
-					isBarlineEvent ? currSegmentInd + currEvent.length() : currSegmentInd + 2;
-			}
-			segmentIndices.add(currSegmentIndices);
-		}
-		return segmentIndices;
-	}
-
-
-	/**
 	 * Gets, per system, the segment indices in the tbp Staff of the events of the given
 	 * type.
 	 * 
@@ -2015,49 +1992,46 @@ public class Encoding implements Serializable {
 		List<List<Integer>> segmentIndices = new ArrayList<>();
 
 		// For each system
-		for (List<String[]> system : getEventsWithFootnotes()) {
+		for (List<String[]> system : getEventsWithFootnotes()) { // needs rawEncoding
 			int currSegmentInd = 0;
 			List<Integer> currSegmentIndices = new ArrayList<>();
 			// For each event in the system
 			for (String[] event : system) {
-//				System.out.println(Arrays.toString(event));
 				String currEvent = event[0].substring(0, event[0].lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR));
 				boolean isBarlineEvent = 
 					ConstantMusicalSymbol.isBarline(currEvent) ? true : false;
 				if (type.equals("footnote")) {
 					// If the event contains a footnote: add currSegmentInd
 					if (event[1] != null) {
-						// In case of a barline, the footnote indicator is added below the 
-						// first pipe char (and not under any repeat dots)
+						// In case of a barline, the footnote indicator is added below 
+						// the first pipe char (and not below any repeat dots), so 
+						// currSegmentInd must be incremented with the index in currEvent
+						// of that pipe char
 						if (isBarlineEvent) {
 							currSegmentInd += currEvent.indexOf(ConstantMusicalSymbol.BARLINE.getEncoding());
 						}
 						currSegmentIndices.add(currSegmentInd);
 					}
-					// Increment currSegmentInd. If barline event: increment with the 
-					// number of chars in the barline; if not (so if TS, RS, rest, or 
-					// MS event): increment with 2 - one segment for the event itself,
-					// and one for the space following it
-					currSegmentInd = 
-						isBarlineEvent ? currSegmentInd + currEvent.length() : 
-						currSegmentInd + 2;
 				}
 				else if (type.equals("barline")) {
 					// If the event contains a barline: add currSegmentIn
+					// Nb: decorative
 					if (isBarlineEvent) {
-						// In case of a barline, the bar number is added above the 
-						// first pipe char (and not under any repeat dots)
+						// The bar number is added above the first pipe char (and not
+						// below any repeat dots), so currSegmentInd must be incremented 
+						// with the index in currEvent of that pipe char
 						currSegmentInd += currEvent.indexOf(ConstantMusicalSymbol.BARLINE.getEncoding());
 						currSegmentIndices.add(currSegmentInd);
 					}
-					// Increment currSegmentInd. If barline event: increment with the 
-					// number of chars in the barline; if not (so if TS, RS, rest, or 
-					// MS event): increment with 2 - one segment for the event itself,
-					// and one for the space following it
-					currSegmentInd = 
-						isBarlineEvent ? currSegmentInd + currEvent.length() : 
-						currSegmentInd + 2;
-				}		
+				}
+
+				// Increment currSegmentInd. If barline event: increment with the 
+				// number of chars in the barline; if not (so if TS, RS, rest, or 
+				// MS event): increment with 2: one segment for the event itself,
+				// and one for the space following it
+				currSegmentInd = 
+					isBarlineEvent ? currSegmentInd + currEvent.length() : 
+					currSegmentInd + 2;
 			}
 			segmentIndices.add(currSegmentIndices);
 		}
@@ -2120,6 +2094,43 @@ public class Encoding implements Serializable {
 
 
 	/**
+	 * Get the bar number of bar with which each system starts (which may be an 
+	 * incomplete bar continued from the previous system).
+	 *  
+	 * @param barlineSegmentInds
+	 * @return 
+	 */
+	// TESTED
+	static List<Integer> getFirstBarNumber(List<List<Integer>> barlineSegmentInds) {
+		List<Integer> firstBarNumbers = new ArrayList<>();
+		// NB: the below works both for systems starting with a complete bar
+		//                       [5]       [6]
+		// ... | ... | ... | ... | ... | / ... | ... | etc.
+		// 
+		// and for systems starting with an incomplete bar
+		//                       [5]         [6]          
+		// ... | ... | ... | ... | ... / ... | ... | etc.
+		int firstBar = 1;
+		firstBarNumbers.add(firstBar);
+		for (int i = 0; i < barlineSegmentInds.size(); i++) {
+			int lastBarCurrStaff = 0;
+			for (int ind : barlineSegmentInds.get(i)) {
+				// Ignore decorative opening barlines
+				if (ind != 0) {
+					lastBarCurrStaff++;
+				}
+			}
+			firstBar += lastBarCurrStaff;
+			// Do not add for non-existing system after last system
+			if (i < barlineSegmentInds.size() -1) {
+				firstBarNumbers.add(firstBar);
+			}
+		}
+		return firstBarNumbers;
+	}
+
+
+	/**
 	 * Renders the encoding as String.
 	 * 
 	 * @param TabSymbolSet Determines the tablature style.
@@ -2141,14 +2152,11 @@ public class Encoding implements Serializable {
 		List<List<Integer>> barlineSegmentInds = getStaffSegmentIndices("barline");
 		List<List<Integer>> footnoteSegmentInds = getStaffSegmentIndices("footnote");
 		
-		System.out.println(barlineSegmentInds);
-		System.out.println(footnoteSegmentInds);
-		
 		// Search all systems one by one
 		int staffIndex = 0;
 		int sbiIndex = -1;
 		int nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
-		int firstBarNum = 1;
+		int firstBar = 1;
 		while (sbiIndex + 1 != nextSbiIndex) { 
 			RhythmSymbol prevRhythmSymbol = null;
 			Staff staff = new Staff(getStaffLength());
@@ -2159,6 +2167,7 @@ public class Encoding implements Serializable {
 			int ssIndex = -1;
 			int nextSsIndex = currSysEncoding.indexOf(ss, ssIndex);
 			String lastEncodedSymbol = null;
+			boolean startsWithUnfinishedBar = false;
 			while (nextSsIndex != -1) {
 				String encodedSymbol = currSysEncoding.substring(ssIndex + 1, nextSsIndex);
 				int nextNextSsIndex = currSysEncoding.indexOf(ss, nextSsIndex + 1);
@@ -2255,41 +2264,24 @@ public class Encoding implements Serializable {
 				nextSsIndex = currSysEncoding.indexOf(ss, ssIndex + 1);
 				lastEncodedSymbol = encodedSymbol;
 			}
+			boolean endsWithBarline = ConstantMusicalSymbol.isBarline(lastEncodedSymbol);
 			// e. Add footnote
 			staff.addFootnoteIndicators(footnoteSegmentInds.get(staffIndex));
 			// f. Add bar numbers
-			staff.addBarNumbers(barlineSegmentInds.get(staffIndex), firstBarNum);
+			staff.addBarNumbers(barlineSegmentInds.get(staffIndex), firstBar, 
+				startsWithUnfinishedBar, endsWithBarline);
 						
-			// System traversed? Add to tablature; prepare indices for next iteration outer while
+			// System traversed? Add to tab and update information for the next system
 			tab += staff.getStaff() + Staff.SPACE_BETWEEN_STAFFS;
+			startsWithUnfinishedBar = endsWithBarline ? false : true;
+			if (staffIndex < barlineSegmentInds.size() -1) {
+				firstBar = getFirstBarNumber(barlineSegmentInds).get(staffIndex+1);
+			}
 			staffIndex++;
 			sbiIndex = nextSbiIndex;
 			nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
-			// Update firstBarNum
-			// NB: the below works both for (a) systems ending with a barline (where the 
-			// next system starts with the next bar, and (b) systems not ending with a 
-			// barline (where the next system continues with the same bar). 
-			// Example (a); firstBarNum = 1; lastBarNumCurrStaff = 6
-			// system 1 = ... | ... | ... | ... | ... | ... | (ends w/ bar 6)
-			// system 2 = ... | ... | etc.                    (starts w/ bar 7)
-			// Example (b); firstBarNum = 1; lastBarNumCurrStaff = 5
-			// system 1 = ... | ... | ... | ... | ... | ...   (ends w/ bar 6)
-			// system 2 = ... | ... | etc.                    (starts w/ bar )
-			// Determine first bar number of next staff
-			int lastBarNumCurrStaff = 0;
-			for (int ind : barlineSegmentInds.get(staffIndex)) {
-				// Ignore decorative opening barlines
-				if (ind != 0) {
-					lastBarNumCurrStaff++;
-				}
-			}
-			firstBarNum += lastBarNumCurrStaff;
 		}
-		System.exit(0);
 		return tab;
 	}
-	
-	
-	
 
 }

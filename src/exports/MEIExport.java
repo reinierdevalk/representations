@@ -86,14 +86,14 @@ public class MEIExport {
 		Tablature testTab = new Tablature(new File(
 			"F:/research/data/data/encodings/tab-int/4vv/" + testTabFile + ".tbp"), false);	
 		
-		List<List<String[]>> grr = testTab.getEncoding().getEventsWithFootnotes();
-		for (int i = 0; i < grr.size(); i++) {
-			List<String[]> l = grr.get(i);
-			System.out.println("system " + i);
-			for (String[] s : l) {
-				System.out.println(Arrays.asList(s));
-			}
-		}
+//		List<List<String[]>> grr = testTab.getEncoding().getEventsWithFootnotes();
+//		for (int i = 0; i < grr.size(); i++) {
+//			List<String[]> l = grr.get(i);
+//			System.out.println("system " + i);
+//			for (String[] s : l) {
+//				System.out.println(Arrays.asList(s));
+//			}
+//		}
 		System.exit(0);
 		
 		exportTabMEIFile(testTab, "C:/Users/Reinier/Desktop/" + testTab.getPieceName() + "-tab");

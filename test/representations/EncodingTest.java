@@ -1037,5 +1037,30 @@ public class EncodingTest {
 		int actual = encoding.getStaffLength();
 		assertEquals(expected, actual);
 	}
+	
+	
+	@Test
+	public void testGetFirstBarNumber() {
+		List<List<Integer>> barlineSegmentInds = new ArrayList<>();
+		// Second system starting with a complete bar
+		//                       [5]       [6]
+		// ... | ... | ... | ... | ... | / ... | ... | etc.
+		barlineSegmentInds.add(Arrays.asList(new Integer[]{4, 8, 12, 16, 20}));
+		barlineSegmentInds.add(Arrays.asList(new Integer[]{4, 8}));
+		// Fourth system starting with an incomplete bar
+		// [8]                   [12]        [13]          
+		// ... | ... | ... | ... | ... / ... | ... | etc.
+		barlineSegmentInds.add(Arrays.asList(new Integer[]{4, 8, 12, 16}));
+		barlineSegmentInds.add(Arrays.asList(new Integer[]{4, 8}));
+
+		List<Integer> expected = Arrays.asList(new Integer[]{1, 6, 8, 12});
+
+		List<Integer> actual = Encoding.getFirstBarNumber(barlineSegmentInds);
+		System.out.println(actual);
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+	}
 
 }

@@ -475,7 +475,7 @@ public class TabViewer extends JFrame{
 		// corrections compared to what is in the loaded file)
 		Encoding enc = new Encoding(rawEnc, false);
 		// a. If the encoding contains metadata errors: place error message
-		if (enc.getHasMetadataErrors()) {
+		if (enc.checkForMetadataErrors()) {
 			getErrorMessageLabel("upper").setText(Encoding.METADATA_ERROR);
 			getErrorMessageLabel("lower").setText("");
 		}

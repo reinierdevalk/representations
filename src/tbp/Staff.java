@@ -7,17 +7,18 @@ public class Staff {
 	private int numberOfSegments;
 	private String[][] staffData;
 	private static final String STAFF_SEGMENT = "-";
-	private static final int STAFF_LINES = 10;  
-	private static final int RHYTHM_LINE = 0;
-	private static final int DIAPASONS_LINE_ITALIAN = 1;
-	private static final int TOP_TABLATURE_LINE = 2;
-	private static final int UPPER_MIDDLE_TABLATURE_LINE = 4;
-	private static final int LOWER_MIDDLE_TABLATURE_LINE = 5;
-	private static final int BOTTOM_TABLATURE_LINE = 7;
-	private static final int DIAPASONS_LINE_OTHER = 8;
-	private static final int FOOTNOTES_LINE = 9;
-	private static final int NECESSARY_LINE_SHIFT = 1;
-	public static final String SPACE_BETWEEN_STAFFS = "\n\n";
+	private static final int STAFF_LINES = 11;
+	private static final int BAR_NUMS_LINE = 0;
+	private static final int RHYTHM_LINE = 1;
+	private static final int DIAPASONS_LINE_ITALIAN = 2;
+	private static final int TOP_TABLATURE_LINE = 3;
+	private static final int UPPER_MIDDLE_TABLATURE_LINE = 5;
+	private static final int LOWER_MIDDLE_TABLATURE_LINE = 6;
+	private static final int BOTTOM_TABLATURE_LINE = 8;
+	private static final int DIAPASONS_LINE_OTHER = 9;
+	private static final int FOOTNOTES_LINE = 10;
+	private static final int NECESSARY_LINE_SHIFT = 2;
+	public static final String SPACE_BETWEEN_STAFFS = "\n";
 	
 
 	/**
@@ -31,26 +32,30 @@ public class Staff {
 		this.staffData = new String[STAFF_LINES][numberOfSegments+2];
 		final String spaceSegment = " ";
 		// Construct the empty Staff line by line, segment by segment 
-		for (int staffLine = RHYTHM_LINE; staffLine < STAFF_LINES; staffLine++) {  
+		for (int staffLine = BAR_NUMS_LINE; staffLine < STAFF_LINES; staffLine++) {  
 			for (int segment = 0; segment < numberOfSegments; segment++) { 
 				switch (staffLine) {
-					// staffLine 0: for RS
+					// staffLine 0: for bar numbers
+					case BAR_NUMS_LINE:
+						staffData[staffLine][segment] = spaceSegment;
+						break;
+					// staffLine 1: for RS
 					case RHYTHM_LINE:
 						staffData[staffLine][segment] = spaceSegment;
 						break;
-					// staffLine 1: for any diaposons in Italian tablature
+					// staffLine 2: for any diaposons in Italian tablature
 					case DIAPASONS_LINE_ITALIAN: 
 						staffData[staffLine][segment] = spaceSegment;
 						break;
-					// staffLine 8: for any diapasons in French and Spanish tablature
+					// staffLine 9: for any diapasons in French and Spanish tablature
 					case DIAPASONS_LINE_OTHER:
 						staffData[staffLine][segment] = spaceSegment;
 						break;
-					// staffLine 9: for any footnote indicators
+					// staffLine 10: for any footnote indicators
 					case FOOTNOTES_LINE:
 						staffData[staffLine][segment] = spaceSegment;
 						break;
-					// staffLines 2-7: for the tablature staff itself
+					// staffLines 3-8: for the tablature staff itself
 					default:
 						staffData[staffLine][segment] = STAFF_SEGMENT;
 				}
@@ -58,7 +63,7 @@ public class Staff {
 		}
 		// Allow for bar numbers up to three digits above the final barline of a staff
 		// by adding two spaces to each staff line
-		for (int staffLine = RHYTHM_LINE; staffLine < STAFF_LINES; staffLine++) {
+		for (int staffLine = BAR_NUMS_LINE; staffLine < STAFF_LINES; staffLine++) {
 			staffData[staffLine][numberOfSegments] = spaceSegment;
 			staffData[staffLine][numberOfSegments+1] = spaceSegment;
 		}
@@ -187,25 +192,66 @@ public class Staff {
 
 
 	/** 
-	 * Adds every fifth bar number (starting at 5) at the positions in the list given. 
+	 * Adds every fifth bar number at the positions in the list given. Bar numbers are 
+	 * added above the barline that starts the bar, or, in those cases where this barline
+	 * is the last event in a staff, at the start of the next staff.
 	 * 
 	 * @param indices The indices of the segments containing barline events.
-	 * @param firstBar The number of the bar with which the staff begins (this bar can
-	 *                 be a continuation of the last bar in the previous staff).
+	 * @param firstBar The number of the bar with which the staff begins (this bar can be
+	 *                 a continuation of the last (unfinished) bar in the previous staff).
+	 * @param startsWithUnfinished Whether or not the system starts with an unfinished bar.
+	 * @param endsWithBarline Whether or not the system ends with a barline.                 
 	 */
-	public void addBarNumbers(List<Integer> indices, int firstBar) {
+	public void addBarNumbers(List<Integer> indices, int firstBar, boolean startsWithUnfinished,
+		boolean endsWithBarline) {
+		int freq = 5;
 		int count = firstBar;
+		
+		// a. If applicable: handle start of staff
+		// Add a bar number at the start if the first bar is a multiple-of-freq bar that 
+		// is not an unfinished bar from the previous system. Example for freq = 5:
+		//                           [5]     
+		// ... | ... | ... | ... | / ... | ... | ... | ... |
+		if (count % freq == 0 && !startsWithUnfinished) {
+			String asStr = "[" + String.valueOf(count) + "]";
+			// Add each char in the bar number at index 0
+			for (int j = 0; j < asStr.length(); j++) {
+				staffData[BAR_NUMS_LINE][0 + j] = 
+					Character.toString(asStr.charAt(j)); 
+			}
+		}
+
+		// b. Handle rest of staff
+		// Add a bar number at the barline index if the barline closes a bar with
+		// count (n*freq)-1 (which opens a bar with count n*freq). Example:
+		//                       [5]
+		// ... | ... | ... | ... | ... | / ... | ... | etc.
+		//
+		// This approach ensures correct bar numbering in those cases where a bar
+		// continues on the next system. Example numbering on upper staff:
+		//                       [5]
+		// ... | ... | ... | ... | ... / ... | ... | etc.
+		// 
+		// Example numbering on lower staff
+		//                             [5]
+		// ... | ... | ... | ... / ... | ... | etc.
+		// 
+		// Exception: if a barline closes a bar with count (n*freq)-1 but it is the last 
+		// event in the staff, the bar number goes to the start of the next staff (see a.)
 		for (int i = 0; i < indices.size(); i++) {
 			int ind = indices.get(i);
 			// Ignore decorative opening barline
 			if (ind != 0) {
-				if (count % 5 == 0) {
-					String asStr = String.valueOf(count);
-					// ind is the index of the barline closing the current bar; add
-					// the bar number at the one opening it, so at the previous ind
-					for (int j = 0; j < asStr.length(); j++) {
-						staffData[DIAPASONS_LINE_ITALIAN][indices.get(i-1) + j] = 
+				// If the barline at ind closes a bar with count (n*freq)-1
+				if (count % freq == (freq-1)) {			
+					// Add bar number only if if the barline is not the last event in the staff
+					if (!(i == indices.size()-1 && endsWithBarline)) {
+						String asStr = "[" + String.valueOf(count+1) + "]";
+						// Add each char in the bar number at ind
+						for (int j = 0; j < asStr.length(); j++) {
+							staffData[BAR_NUMS_LINE][ind + j] = 
 								Character.toString(asStr.charAt(j)); 
+						}
 					}
 				}
 				count++;
