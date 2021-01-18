@@ -503,7 +503,7 @@ public class TabViewer extends JFrame{
 			// b. If the encoding contains no encoding errors: show the tablature in a new window 
 			else {
 				StringBuffer metaData = new StringBuffer();
-				enc.getMetaData().forEach(s -> metaData.append(s + "\n"));
+				enc.getMetadata().forEach(s -> metaData.append(s + "\n"));
 				StringBuffer footnotes = new StringBuffer();
 				enc.getFootnotes().forEach(s -> footnotes.append(s + "\n"));
 				// Determine TabSymbolSet
@@ -520,8 +520,8 @@ public class TabViewer extends JFrame{
 				}
 				getTabArea().setText(
 					metaData.toString() + "\n" + Staff.SPACE_BETWEEN_STAFFS + 
-					enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected()) + 
-					footnotes.toString().substring(0, footnotes.lastIndexOf("\n"))
+					enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected()) 
+					+ footnotes.toString().substring(0, footnotes.lastIndexOf("\n"))
 				);
 				initializeTabViewer(encPath);
 			} 

@@ -239,7 +239,7 @@ public class TabImport {
 				rulesMap.get("durScale") : "1" // diminution	
 		};
 		StringBuffer metaDataStr = 
-			new StringBuffer(createMetaData(metadata, Encoding.getMetaDataTags()));
+			new StringBuffer(createMetaData(metadata, Encoding.getMetadataTags()));
 //		StringBuffer metaDataStr = new StringBuffer(Encoding.createMetadata(metadata));
 
 		return metaDataStr.append(tbpEncoding).toString();
@@ -674,7 +674,7 @@ public class TabImport {
 		};
 
 		StringBuffer metaDataStr = 
-			new StringBuffer(createMetaData(metadata, Encoding.getMetaDataTags()));
+			new StringBuffer(createMetaData(metadata, Encoding.getMetadataTags()));
 
 		return metaDataStr.append(enc).toString();
 	}
