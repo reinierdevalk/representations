@@ -1033,29 +1033,34 @@ public class EncodingTest {
 		int actual = encoding.getStaffLength();
 		assertEquals(expected, actual);
 	}
-	
-	
+
+
 	@Test
-	public void testGetFirstBarNumber() {
-		List<List<Integer>> barlineSegmentInds = new ArrayList<>();
-		// Second system starting with a complete bar
-		//                       [5]       [6]
-		// ... | ... | ... | ... | ... | / ... | ... | etc.
-		barlineSegmentInds.add(Arrays.asList(new Integer[]{4, 8, 12, 16, 20}));
-		barlineSegmentInds.add(Arrays.asList(new Integer[]{4, 8}));
-		// Fourth system starting with an incomplete bar
-		// [8]                   [12]        [13]          
-		// ... | ... | ... | ... | ... / ... | ... | etc.
-		barlineSegmentInds.add(Arrays.asList(new Integer[]{4, 8, 12, 16}));
-		barlineSegmentInds.add(Arrays.asList(new Integer[]{4, 8}));
+	public void testSystemBarNumber() {
+		Encoding encoding1 = new Encoding(encodingTestpiece1);
+		Encoding encoding2 = new Encoding(new File("F:/research/data/data/encodings/tab-int/3vv/newsidler-1536_7-disant_adiu.tbp"));
 
-		List<Integer> expected = Arrays.asList(new Integer[]{1, 6, 8, 12});
-
-		List<Integer> actual = Encoding.getFirstBarNumber(barlineSegmentInds);
-		System.out.println(actual);
+		List<List<Integer>> expected = new ArrayList<>();
+		// encoding1
+		expected.add(Arrays.asList(new Integer[]{1, 2}));
+		expected.add(Arrays.asList(new Integer[]{3, 4}));
+		// encoding2
+		expected.add(Arrays.asList(new Integer[]{1, 2, 3, 4, 5, 6}));
+		expected.add(Arrays.asList(new Integer[]{7, 8, 9, 10, 11}));
+		expected.add(Arrays.asList(new Integer[]{12, 13, 14, 15, 16}));
+		expected.add(Arrays.asList(new Integer[]{17, 18, 19, 20, 21}));
+		expected.add(Arrays.asList(new Integer[]{22, 23, 24, 25, 26, 27, 28}));
+		expected.add(Arrays.asList(new Integer[]{28, 29, 30, 31, 32, 33}));
+		
+		List<List<Integer>> actual = encoding1.getSystemBarNumbers();
+		actual.addAll(encoding2.getSystemBarNumbers());
+		
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j), actual.get(i).get(j) );
+			}
 		}
 	}
 

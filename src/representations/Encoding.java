@@ -559,8 +559,15 @@ public class Encoding implements Serializable {
 				}
 				
 				// Increment bar (if it is not a decorative opening barline)
-				// NB This works because the barlines are sorted by length
+				// NB: This works both for systems ending with a complete bar
+				//                       [5]       [6]
+				// ... | ... | ... | ... | ... | / ... | ... | etc.
+				// 
+				// and for systems ending with an incomplete bar
+				//                       [5]         [6]          
+				// ... | ... | ... | ... | ... / ... | ... | etc.
 				if (j > 0) {
+					// NB: This is possible because the barlines are sorted by length
 					for (String b : barlinesAsString) {
 						if (event.startsWith(b)) {
 							bar++;
@@ -568,19 +575,8 @@ public class Encoding implements Serializable {
 					}
 				}
 			}
-//			System.out.println("new sys");
-//			for (String[] e : eventsCurrSystem) {
-//				System.out.println(Arrays.asList(e));
-//			}
 			eventsPerSystem.add(eventsCurrSystem);
 		}
-//		for (List<String[]> l : eventsPerSystem) {
-//			System.out.println("system-------------------------");
-//			for (String[] s : l) {
-//				System.out.println(Arrays.toString(s));
-//			}
-//			System.out.println("-------------");
-//		}
 		eventsBarlinesFootnotes = eventsPerSystem;
 	}
 
@@ -1662,7 +1658,7 @@ public class Encoding implements Serializable {
 	 * is assigned to each tabword that is lacking one.
 	 */
 	// TESTED
-	// TODOO get this from eventsWithFootnotes
+	TODO get this from eventsWithFootnotes
 	public List<String> getTabwords() {
 		String enc = splitHeaderAndEncoding()[1];
 
@@ -2120,47 +2116,29 @@ public class Encoding implements Serializable {
 		}
 		return largestStaffLength;
 	}
-	
-	
-	List<List<Integer>> getBarNumbers() {
-		return null;
-	}
 
 
 	/**
-	 * Get the bar number of bar with which each system starts (which may be an 
-	 * incomplete bar continued from the previous system).
+	 * Gets the bar numbers for each system. If a system ends with an incomplete 
+	 * bar, the next systems begins with that same bar.
 	 *  
-	 * @param barlineSegmentInds
-	 * @return 
+	 * @return A <code>List</code>, each element of which represents a system as a 
+	 * <code>List</code> of <code>Integer</code>s.
 	 */
-	// TESTED
-	static List<Integer> getFirstBarNumber(List<List<Integer>> barlineSegmentInds) {
-		List<Integer> firstBarNumbers = new ArrayList<>();
-		// NB: the below works both for systems starting with a complete bar
-		//                       [5]       [6]
-		// ... | ... | ... | ... | ... | / ... | ... | etc.
-		// 
-		// and for systems starting with an incomplete bar
-		//                       [5]         [6]          
-		// ... | ... | ... | ... | ... / ... | ... | etc.
-		int firstBar = 1;
-		firstBarNumbers.add(firstBar);
-		for (int i = 0; i < barlineSegmentInds.size(); i++) {
-			int lastBarCurrStaff = 0;
-			for (int ind : barlineSegmentInds.get(i)) {
-				// Ignore decorative opening barlines
-				if (ind != 0) {
-					lastBarCurrStaff++;
+	// 
+	List<List<Integer>> getSystemBarNumbers() {
+		List<List<Integer>> sbn = new ArrayList<>();
+		for (List<String[]> system : getEventsBarlinesFootnotes()) {
+			List<Integer> barsCurrSystem = new ArrayList<>();
+			for (String[] event : system) {
+				int bar = Integer.parseInt(event[BAR_IND]);
+				if (!barsCurrSystem.contains(bar)) {
+					barsCurrSystem.add(bar);
 				}
 			}
-			firstBar += lastBarCurrStaff;
-			// Do not add for non-existing system after last system
-			if (i < barlineSegmentInds.size() -1) {
-				firstBarNumbers.add(firstBar);
-			}
+			sbn.add(barsCurrSystem);
 		}
-		return firstBarNumbers;
+		return sbn;
 	}
 
 
@@ -2169,7 +2147,10 @@ public class Encoding implements Serializable {
 	 * 
 	 * @param TabSymbolSet Determines the tablature style.
 	 * @param ignoreRepeatedRhythmSymbols If set to <code>true</code>, RS will only be 
-	 * displayed when they change - regardless of whether this is specified in the encoding.
+	 *        displayed when they change - regardless of whether this is specified in 
+	 *        the encoding.
+	 * @param showHeader Whether or not to show the header (author, title, source).
+	 * @param showFootnotes Whethe or not to show the footnotes.       
 	 * 
 	 * @return A String representation of the encoding.
 	 */
@@ -2186,7 +2167,15 @@ public class Encoding implements Serializable {
 
 		List<List<Integer>> barlineSegmentInds = getStaffSegmentIndices("barline");
 		List<List<Integer>> footnoteSegmentInds = getStaffSegmentIndices("footnote");
-		
+
+		// Add (formatted) metadata
+		if (showHeader) {
+			StringBuffer metaData = new StringBuffer();
+			getMetadata().forEach(s -> metaData.append(s + "\n"));
+			tab += metaData.toString() + "\n" + Staff.SPACE_BETWEEN_STAFFS
+				+ Staff.SPACE_BETWEEN_STAFFS;
+		}
+
 		// Search all systems one by one
 		int staffIndex = 0;
 		int sbiIndex = -1;
@@ -2310,12 +2299,20 @@ public class Encoding implements Serializable {
 			tab += staff.getStaff() + Staff.SPACE_BETWEEN_STAFFS;
 			startsWithUnfinishedBar = endsWithBarline ? false : true;
 			if (staffIndex < barlineSegmentInds.size() -1) {
-				firstBar = getFirstBarNumber(barlineSegmentInds).get(staffIndex+1);
+				firstBar = getSystemBarNumbers().get(staffIndex+1).get(0);
 			}
 			staffIndex++;
 			sbiIndex = nextSbiIndex;
 			nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
 		}
+		
+		// Add (formatted) footnotes
+		if (showFootnotes) {
+			StringBuffer footnotes = new StringBuffer();
+			getFootnotes().forEach(s -> footnotes.append(s + "\n"));
+			tab += footnotes.toString().substring(0, footnotes.lastIndexOf("\n"));
+		}
+
 		return tab;
 	}
 

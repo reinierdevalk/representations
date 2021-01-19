@@ -502,10 +502,6 @@ public class TabViewer extends JFrame{
 			}
 			// b. If the encoding contains no encoding errors: show the tablature in a new window 
 			else {
-				StringBuffer metaData = new StringBuffer();
-				enc.getMetadata().forEach(s -> metaData.append(s + "\n"));
-				StringBuffer footnotes = new StringBuffer();
-				enc.getFootnotes().forEach(s -> footnotes.append(s + "\n"));
 				// Determine TabSymbolSet
 				TabSymbolSet tss = null;
 				outerLoop: for (String type : getTabTypes()) {
@@ -518,11 +514,8 @@ public class TabViewer extends JFrame{
 						}
 					}
 				}
-				getTabArea().setText(
-					metaData.toString() + "\n" + Staff.SPACE_BETWEEN_STAFFS + 
-					enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected()) 
-					+ footnotes.toString().substring(0, footnotes.lastIndexOf("\n"))
-				);
+				getTabArea().setText(enc.visualise(tss, 
+					getRhythmSymbolsCheckBox().isSelected(), true, true));
 				initializeTabViewer(encPath);
 			} 
 		}
@@ -600,138 +593,6 @@ public class TabViewer extends JFrame{
 	private JScrollPane getTabViewerPane() { // alternative for getTabViewerPanel()
 		return new JScrollPane(getTabArea(), JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
 			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-	}
-
-
-	/**
-	 * Visualises the encoding as tablature. 
-	 * 
-	 * @return 
-	 */
-	@Deprecated // moved to Encoding
-	private String visualise(Encoding enc) {
-		String tab = "";
-		
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
-		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
-
-		String cleanEnc = enc.getCleanEncoding();
-//		String cleanEnc = encoding.getCleanEncoding();
-		TabSymbolSet tss = enc.getTabSymbolSet();
-//		TabSymbolSet tss = encoding.getTabSymbolSet();
-
-		// Search all systems one by one
-		int sbiIndex = -1;
-		int nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
-		while (sbiIndex + 1 != nextSbiIndex) { 
-			RhythmSymbol prevRhythmSymbol = null;
-			Staff staff = new Staff(enc.getStaffLength());
-			int segment = 0;
-			String currSysEncoding = cleanEnc.substring(sbiIndex + 1, nextSbiIndex);
-			// Check for each system the encoded symbols one by one and for each encoded symbol 
-			// add its tablature representation to staff 
-			int ssIndex = -1;
-			int nextSsIndex = currSysEncoding.indexOf(ss, ssIndex);
-			while (nextSsIndex != -1) {
-				String encodedSymbol = currSysEncoding.substring(ssIndex + 1, nextSsIndex);
-				int nextNextSsIndex = currSysEncoding.indexOf(ss, nextSsIndex + 1);
-				// nextEncodedSymbol is needed for b, c, and d below and can exist for all encoded 
-				// symbols except for the last--i.e., as long as nextNextSsIndex is not -1
-				String nextEncodedSymbol = null;
-				if (nextNextSsIndex != -1) {
-					nextEncodedSymbol = currSysEncoding.substring(nextSsIndex + 1, nextNextSsIndex);
-				}
-				// a. Add ConstantMusicalSymbol?
-				if (ConstantMusicalSymbol.getConstantMusicalSymbol(encodedSymbol) != null) {
-					ConstantMusicalSymbol c = ConstantMusicalSymbol.getConstantMusicalSymbol(encodedSymbol);
-					staff.addConstantMusicalSymbol(encodedSymbol, segment);
-					segment = segment + c.getSymbol().length();
-				}
-				// b. Add TabSymbol?
-				else if (TabSymbol.getTabSymbol(encodedSymbol, tss) != null) { 
-					TabSymbol t = TabSymbol.getTabSymbol(encodedSymbol, tss);
-					if (frenchTabRadioButton.isSelected()) {   
-						staff.addTabSymbolFrench(t, segment); 
-					}
-					else if (italianTabRadioButton.isSelected()) {
-						staff.addTabSymbolItalian(t, segment);
-					}
-					else if (spanishTabRadioButton.isSelected()) {
-						staff.addTabSymbolSpanish(t, segment);
-					}
-					else if (germanTabRadioButton.isSelected()) {
-						// TODO 
-					} 
-					// Is encodedSymbol followed by a space and not by another TS--i.e., is it the 
-					// last TS of a vertical sonority? Increment segment
-					// NB: LAYOUT RULE 4 guarantees that a vertical sonority is always followed by a
-					// space, meaning that nextEncodedSymbol always exists if encodedSymbol is a TS
-					if (nextEncodedSymbol.equals(sp)) {
-						segment++;
-					}
-				}
-				// c. Add RhythmSymbol?
-				else if (RhythmSymbol.getRhythmSymbol(encodedSymbol) != null) {
-					RhythmSymbol r = RhythmSymbol.getRhythmSymbol(encodedSymbol);
-					boolean showBeam = true;
-					// rhythmSymbolsCheckBox not selected? Add RS; always add any beam
-					if (!rhythmSymbolsCheckBox.isSelected()) {
-						staff.addRhythmSymbol(r, segment, showBeam);    
-					}
-					// rhythmSymbolsCheckBox selected? Add RS only if r is not equal to 
-					// previousRhythmSymbol; never add any beam
-					else {
-						// Compare r with prevRhythmSymbol; if prevRhythmSymbol is null or if they
-						// do not have the same duration: add r to staff
-						// NB: because of possibly present beams, direct comparison does not work: an RS and 
-						// its beamed variant are considered inequal because they are defined as two different 
-						// objects
-						showBeam = false;
-						if (prevRhythmSymbol == null) {
-							staff.addRhythmSymbol(r, segment, showBeam);
-						}
-						else {
-							if (r.getDuration() != prevRhythmSymbol.getDuration()) {
-								staff.addRhythmSymbol(r, segment, showBeam);
-							}
-						}
-					}
-					// Is encodedSymbol followed by a space and not by a TS--i.e., does encodedSymbol
-					// represent a rest? Increment segment
-					// NB: LAYOUT RULE 5 guarantees that a rest is always followed by a space, 
-					// meaning that nextEncodedSymbol always exists if encodedSymbol is a RS
-					if (nextEncodedSymbol.equals(sp)) {
-						segment ++;
-					}
-					prevRhythmSymbol = r;
-				}     
-				// d. Add MensurationSign?
-				else if (MensurationSign.getMensurationSign(encodedSymbol) != null) {
-					MensurationSign m = MensurationSign.getMensurationSign(encodedSymbol);
-					staff.addMensurationSign(m, segment);
-					// Is encodedSymbol followed by a space and not by another MS--i.e., is
-					// encodedSymbol the only or the last symbol of a (compound) MS? Increment segment
-					// NB: LAYOUT RULE 6 guarantees that the last MS is always followed by a space,
-					// meaning that nextEncodedSymbol always exists if encodedSymbol is a MS 
-					if (nextEncodedSymbol.equals(sp)) {
-						segment ++;
-					}
-				}
-				// Prepare indices for next iteration inner while
-				ssIndex = nextSsIndex;
-				nextSsIndex = currSysEncoding.indexOf(ss, ssIndex + 1); 
-			}
-			// System traversed? Add to tablature; prepare indices for next iteration outer while
-			System.out.println(staff.getStaff());
-			System.out.println(staff.getNumberOfSegments());
-//			System.exit(0);
-			
-			tab += staff.getStaff() + Staff.SPACE_BETWEEN_STAFFS;
-			sbiIndex = nextSbiIndex;
-			nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
-		}
-		return tab;
 	}
 
 
