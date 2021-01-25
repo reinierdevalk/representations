@@ -31,12 +31,6 @@ import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 
 import representations.Encoding;
-import tbp.ConstantMusicalSymbol;
-import tbp.MensurationSign;
-import tbp.RhythmSymbol;
-import tbp.Staff;
-import tbp.SymbolDictionary;
-import tbp.TabSymbol;
 import tbp.TabSymbolSet;
 
 public class TabViewer extends JFrame{
@@ -420,7 +414,7 @@ public class TabViewer extends JFrame{
 	 * TabViewer menu.
 	 * 
 	 * @param enc The encoding
-	 * @param encPath The path to save the encoding to. 
+	 * @param encPath The path to save the encoding to.
 	 * 
 	 */
 	private void saveFileAction(String enc, String encPath) {
@@ -467,13 +461,13 @@ public class TabViewer extends JFrame{
 		final int lastErrorCharIndex = 1;
 		final int errorStringIndex = 2;
 		final int ruleStringIndex = 3;
-		
+
 		// 1. Create an unchecked encoding
 		// The first time the viewbutton is clicked, encodingArea.getText() will always be 
 		// exactly as in the file that is loaded because it is set as such in openFileAction().
 		// Any next time, it will be exactly what is in the encodingArea (which now may have 
 		// corrections compared to what is in the loaded file)
-		Encoding enc = new Encoding(rawEnc, false);
+		Encoding enc = new Encoding(rawEnc, null, false); // TODO fix name
 		// a. If the encoding contains metadata errors: place error message
 		if (enc.checkForMetadataErrors()) {
 			getErrorMessageLabel("upper").setText(Encoding.METADATA_ERROR);

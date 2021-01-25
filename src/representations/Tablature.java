@@ -54,7 +54,7 @@ public class Tablature implements Serializable {
 
 	public Tablature(File argFile, boolean argNormaliseTuning) { 	
 		Encoding e = new Encoding(argFile);
-		e.setName(argFile.getName().substring(0, (argFile.getName().length() - ".tbp".length())));
+//		e.setName(argFile.getName().substring(0, (argFile.getName().length() - ".tbp".length())));
 		setEncoding(e);
 		createTablature(argNormaliseTuning);
 	}
@@ -1394,7 +1394,8 @@ public class Tablature implements Serializable {
 
 	/**
 	 * Gets, for each triplet in the Tablature, the onset time of the opening event and the
-	 * offset time of the closing event. 
+	 * offset time of the closing event.
+	 *  
 	 * @return <code>null</code> if there are no triplets; otherwise a list containing, for 
 	 *         each triplet, a Rational[] containing <br>
 	 *         <ul>

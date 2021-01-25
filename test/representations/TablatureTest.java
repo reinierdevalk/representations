@@ -1623,7 +1623,8 @@ public class TablatureTest extends TestCase {
 		String bar3Beat3 = "mi.>.mi.a6.c4.a2.a1.>.";
 		String bar3Beat3Triplets = "tr[mi.>.trmi.a6.c4.a2.a1.>.tr]mi.a6.c4.a2.a1.>.";
 		origEncoding = origEncoding.replace(bar3Beat3, bar3Beat3Triplets);
-		tablature = new Tablature(new Encoding(origEncoding, true), true);
+		tablature = new Tablature(new Encoding(origEncoding, 
+			new Encoding(encodingTestpiece).getName(), true), true);
 		
 		expected.add(new Rational[]{new Rational(5, 4), new Rational(17, 12), 
 			new Rational(RhythmSymbol.semiminim.getDuration(), 1)});
