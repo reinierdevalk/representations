@@ -15,7 +15,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import representations.Encoding;
+import representations.Encoding.TuningBassCourses;
+import tbp.TabSymbolSet;
 
 
 public class EncodingTest {
@@ -28,6 +29,12 @@ public class EncodingTest {
 
 	@After
 	public void tearDown() throws Exception {
+	}
+
+
+	@Test
+	public void testSetAndGetName() {		
+		assertEquals("testpiece", new Encoding(encodingTestpiece1).getName());
 	}
 
 
@@ -65,41 +72,6 @@ public class EncodingTest {
 
 
 	@Test
-	public void testCheckForMetaDataErrors() {
-		List<String> rawEncodings = new ArrayList<String>();
-		// Missing tag
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}{DIMINUTION:d}\nencoding");
-		// Wrong sequence of tags
-		rawEncodings.add("{AUTHOR:a}{METER_INFO:m}{SOURCE:s}{TABSYMBOLSET:t}{TUNING_SEVENTH_COURSE:t}{TUNING:t}{TITLE:t}\nencoding");
-		// OPEN_ or CLOSE_INFO_BRACKET errors
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\nencoding"); // CLOSE_INFO_BRACKET missing in tags
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\nencoding"); // OPEN_INFO_BRACKET missing in tags
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\nencoding"); // Double CLOSE_INFO_BRACKET in tags
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\nencoding"); // Double OPEN_INFO_BRACKET in tags
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m\nencoding"); // CLOSE_INFO_BRACKET missing after last tag
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\ne{n}c{od{i}n{g}"); // CLOSE_INFO_BRACKET missing in remainder 
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\ne{n}c{o}di}n{g}"); // OPEN_INFO_BRACKET missing in remainder 
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\ne{n}c{o}d{i}n{g"); // CLOSE_INFO_BRACKET missing at end
-		// Correct encoding
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}{DIMINUTION:d}\ne{n}c{o}d{i}n{g}");
-
-		List<Boolean> expected = Arrays.asList(new Boolean[]{true, true, true, true, true, true, true, true, true, true, false}); 
-
-		List<Boolean> actual = new ArrayList<Boolean>();
-		for (int i = 0; i < rawEncodings.size(); i++) {
-			Encoding encoding = new Encoding();
-			encoding.setRawEncoding(rawEncodings.get(i));
-			actual.add(encoding.checkForMetadataErrors());
-		}
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		}
-	}
-
-
-	@Test
 	public void testSetAndGetCleanEncoding() {
 		Encoding encoding = new Encoding();
 		String rawEncoding = "";
@@ -121,9 +93,9 @@ public class EncodingTest {
 		assertEquals(expected, actual);
 	}
 
-	
+
 	@Test
-	public void testSetAndGetEventsWithFootnotes() {
+	public void testSetAndGetEventsBarlinesFootnotes() {
 		Encoding encoding = new Encoding();
 		String rawEncoding = "";
 		try {
@@ -222,6 +194,194 @@ public class EncodingTest {
 			"bar 1", "@Footnote 1", "bar 2", "@Footnote 2", "bar 3"});
 
 		List<String> actual = encoding.getAllMetadata();
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+	}
+
+
+	@Test
+	public void testSetAndGetTunings() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+
+		Encoding.Tuning[] expected = new Encoding.Tuning[]{Encoding.Tuning.A, Encoding.Tuning.A};
+
+		Encoding.Tuning[] actual = encoding.getTunings();
+
+		assertEquals(expected.length, actual.length);
+		for (int i = 0; i < expected.length; i++) {
+			assertEquals(expected[i], actual[i]);
+		}
+	}
+
+
+	@Test
+	public void testSetAndGetListsOfSymbols() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+
+		List<List<String>> expected = new ArrayList<List<String>>();
+		// listOfAllSymbols
+		expected.add(Arrays.asList(new String[]{
+			"McC3", ">", "sb", ">", "mi", ">", "mi", "a5", "c4", "b2", "a1",">", "|", "sm*", 
+			"a6", "c4", "i2", "a1", ">", "fu", "d6", ">", "sm", "c6", "a5",	"e4", "b2", ">", 
+			"a6", ">", "mi", "a6", "h5", "c4",	"b3", "f2", ">", "sm", "a6", "b3", "a2", "a1",
+			">", "a3", "e2", ">", "|", "fu", "a6", "c4", "a2", "a1", ">", "e2", ">", "sf", 
+			"a1", ">", "e2", ">", "|", "c2",	">", "e2", ">", "mi", "a1", ">", "mi", ">", 
+			"mi", "a6", "c4", "a2", "a1", ">", "||"
+		}));
+		// listOfTabSymbols
+		expected.add(Arrays.asList(new String[]{"a5", "c4", "b2", "a1", "a6", "c4", "i2", "a1",
+			"d6", "c6", "a5", "e4", "b2", "a6", "a6", "h5", "c4", "b3", "f2", "a6", "b3", "a2",
+			"a1", "a3", "e2",	"a6", "c4", "a2", "a1", "e2", "a1", "e2", "c2", "e2", "a1", 
+			"a6", "c4", "a2", "a1"
+		}));
+		// listOfRhythmSymbols
+		expected.add(Arrays.asList(new String[]{"sb", "mi", "mi",	"sm*", "fu", "sm", "mi", "sm", "fu", "sf", "mi", 
+			"mi", "mi"}));
+		// listOfMensurationSigns
+		expected.add(Arrays.asList(new String[]{"McC3"}));
+		// listOfBarlines
+		expected.add(Arrays.asList(new String[]{"|", "|", "|", "||"}));
+		// listOfAllEvents
+		expected.add(Arrays.asList(new String[]{
+			"McC3", "sb", "mi", "mi.a5.c4.b2.a1", "|", "sm*.a6.c4.i2.a1", "fu.d6",
+			"sm.c6.a5.e4.b2", "a6", "mi.a6.h5.c4.b3.f2", "sm.a6.b3.a2.a1", "a3.e2", "|", 
+			"fu.a6.c4.a2.a1", "e2", "sf.a1", "e2", "|", "c2", "e2", "mi.a1", "mi", 
+			"mi.a6.c4.a2.a1", "||"
+		}));
+
+		List<List<String>> actual = encoding.getListsOfSymbols();
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j), actual.get(i).get(j) );
+			}
+		}
+	}
+
+
+	@Test
+	public void testSetAndGetListsOfStatistics() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+
+		List<List<Integer>> expected = new ArrayList<List<Integer>>();
+		// isTabSymbolEvent
+		expected.add(Arrays.asList(new Integer[]{
+			0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0}));
+		// isRhythmSymbolEvent
+		expected.add(Arrays.asList(new Integer[]{
+			0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0}));
+		// isRestEvent
+		expected.add(Arrays.asList(new Integer[]{
+			0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0}));
+		// isMensurationSignEvent
+		expected.add(Arrays.asList(new Integer[]{
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}));
+		// isBarlineEvent
+		expected.add(Arrays.asList(new Integer[]{
+			0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1}));
+		// sizeOfEvents
+		expected.add(Arrays.asList(new Integer[]{
+			0, 0, 0, 4, 0, 4, 1, 4, 1, 5, 4, 2, 0, 4, 1, 1, 1, 0, 1, 1, 1, 0, 4, 0}));
+		// durationOfEvents
+//		expected.add(Arrays.asList(new Integer[]{
+//			0, 16, 8, 8, 0, 6, 2, 4, 4, 8, 4, 4, 0, 2, 2, 1, 1, 0, 1, 1, 8, 8, 8, 0}));
+		expected.add(Arrays.asList(new Integer[]{
+			0, 48, 24, 24, 0, 18, 6, 12, 12, 24, 12, 12, 0, 6, 6, 3, 3, 0, 3, 3, 24, 24, 24, 0}));
+		// horizontalPositionOfTabSymbols
+		expected.add(Arrays.asList(new Integer[]{
+			3, 3, 3, 3, 5, 5, 5, 5, 6, 7, 7, 7, 7, 8, 9, 9, 9, 9, 9, 10, 10, 10, 10, 11, 
+			11, 13, 13, 13, 13, 14, 15, 16, 18, 19, 20, 22, 22, 22, 22}));
+		// verticalPositionOfTabSymbols
+		expected.add(Arrays.asList(new Integer[]{
+			0, 1, 2, 3, 0, 1, 2, 3, 0, 0, 1, 2, 3, 0, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1,
+			2, 3, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3}));
+		// durationOfTabSymbols
+//		expected.add(Arrays.asList(new Integer[]{
+//			8, 8, 8, 8, 6, 6, 6, 6, 2, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 2, 2,
+//			2, 2, 2, 1, 1, 1, 1, 8, 8, 8, 8, 8}));
+		expected.add(Arrays.asList(new Integer[]{
+			24, 24, 24, 24, 18, 18, 18, 18, 6, 12, 12, 12, 12, 12, 24, 24, 24, 24, 24, 12, 12, 
+			12, 12, 12, 12, 6, 6, 6, 6, 6, 3, 3, 3, 3, 24, 24, 24, 24, 24}));
+		// gridXOfTabSymbols
+//		expected.add(Arrays.asList(new Integer[]{
+//			24, 24, 24, 24, 32, 32, 32, 32, 38, 40, 40, 40, 40, 44, 48, 48, 48, 48, 48, 56,
+//			56, 56, 56, 60, 60, 64, 64, 64, 64, 66, 68, 69, 70, 71, 72, 88, 88,	88, 88}));
+		expected.add(Arrays.asList(new Integer[]{
+			72, 72, 72, 72, 96, 96, 96, 96, 114, 120, 120, 120, 120, 132, 144, 144, 144, 144, 
+			144, 168, 168, 168, 168, 180, 180, 192, 192, 192, 192, 198, 204, 207, 210, 213, 216, 
+			264, 264, 264, 264}));
+		// gridYOfTabSymbols
+		expected.add(Arrays.asList(new Integer[]{
+			50, 57, 65, 69, 45, 57, 72, 69, 48, 47, 50, 59, 65, 45, 45, 57, 57, 60, 69, 45,
+			60, 64, 69, 59, 68, 45, 57, 64, 69, 68, 69, 68, 66, 68, 69, 45, 57, 64, 69}));
+		// horizontalPositionInTabSymbolEventsOnly
+		expected.add(Arrays.asList(new Integer[]{
+			0, 0, 0, 0, 1, 1, 1, 1, 2, 3, 3, 3, 3, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 8, 8,
+			8, 8, 9, 10, 11, 12, 13, 14, 15, 15, 15, 15}));
+
+		List<List<Integer>> actual = encoding.getListsOfStatistics();
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j), actual.get(i).get(j) );
+			}
+		}
+	}
+
+
+	@Test
+	public void testGetTuningBassCourses() {
+		Encoding encoding1 = new Encoding(encodingTestpiece1);
+		Encoding encoding2 = new Encoding(new File("F:/research/data/data/encodings/tab-int/5vv/adriansen-1584_6-d_vn_si.tbp"));
+
+		List<TuningBassCourses> expected = 
+			Arrays.asList(new TuningBassCourses[]{null, TuningBassCourses.SECOND});
+
+		List<TuningBassCourses> actual = Arrays.asList(new TuningBassCourses[]{
+			encoding1.getTuningBassCourses(), encoding2.getTuningBassCourses()});
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
+	public void testCheckForMetaDataErrors() {
+		List<String> rawEncodings = new ArrayList<String>();
+		// Missing tag
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}{DIMINUTION:d}\nencoding");
+		// Wrong sequence of tags
+		rawEncodings.add("{AUTHOR:a}{METER_INFO:m}{SOURCE:s}{TABSYMBOLSET:t}{TUNING_SEVENTH_COURSE:t}{TUNING:t}{TITLE:t}\nencoding");
+		// OPEN_ or CLOSE_INFO_BRACKET errors
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\nencoding"); // CLOSE_INFO_BRACKET missing in tags
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\nencoding"); // OPEN_INFO_BRACKET missing in tags
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\nencoding"); // Double CLOSE_INFO_BRACKET in tags
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\nencoding"); // Double OPEN_INFO_BRACKET in tags
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m\nencoding"); // CLOSE_INFO_BRACKET missing after last tag
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\ne{n}c{od{i}n{g}"); // CLOSE_INFO_BRACKET missing in remainder 
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\ne{n}c{o}di}n{g}"); // OPEN_INFO_BRACKET missing in remainder 
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\ne{n}c{o}d{i}n{g"); // CLOSE_INFO_BRACKET missing at end
+		// Correct encoding
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}{DIMINUTION:d}\ne{n}c{o}d{i}n{g}");
+
+		List<Boolean> expected = Arrays.asList(new Boolean[]{true, true, true, true, true, true, true, true, true, true, false}); 
+
+		List<Boolean> actual = new ArrayList<Boolean>();
+		for (int i = 0; i < rawEncodings.size(); i++) {
+			Encoding encoding = new Encoding();
+			encoding.setRawEncoding(rawEncodings.get(i));
+			actual.add(encoding.checkForMetadataErrors());
+		}
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -626,171 +786,9 @@ public class EncodingTest {
 
 
 	@Test
-	public void testSetAndGetTunings() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
-
-		Encoding.Tuning[] expected = new Encoding.Tuning[]{Encoding.Tuning.A, Encoding.Tuning.A};
-
-		Encoding.Tuning[] actual = encoding.getTunings();
-
-		assertEquals(expected.length, actual.length);
-		for (int i = 0; i < expected.length; i++) {
-			assertEquals(expected[i], actual[i]);
-		}
-	}
-
-
-	@Test
-	public void testSetAndGetListsOfSymbols() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
-
-		List<List<String>> expected = new ArrayList<List<String>>();
-		// listOfAllSymbols
-		expected.add(Arrays.asList(new String[]{
-			"McC3", ">", "sb", ">", "mi", ">", "mi", "a5", "c4", "b2", "a1",">", "|", "sm*", 
-			"a6", "c4", "i2", "a1", ">", "fu", "d6", ">", "sm", "c6", "a5",	"e4", "b2", ">", 
-			"a6", ">", "mi", "a6", "h5", "c4",	"b3", "f2", ">", "sm", "a6", "b3", "a2", "a1",
-			">", "a3", "e2", ">", "|", "fu", "a6", "c4", "a2", "a1", ">", "e2", ">", "sf", 
-			"a1", ">", "e2", ">", "|", "c2",	">", "e2", ">", "mi", "a1", ">", "mi", ">", 
-			"mi", "a6", "c4", "a2", "a1", ">", "||"
-		}));
-		// listOfTabSymbols
-		expected.add(Arrays.asList(new String[]{"a5", "c4", "b2", "a1", "a6", "c4", "i2", "a1",
-			"d6", "c6", "a5", "e4", "b2", "a6", "a6", "h5", "c4", "b3", "f2", "a6", "b3", "a2",
-			"a1", "a3", "e2",	"a6", "c4", "a2", "a1", "e2", "a1", "e2", "c2", "e2", "a1", 
-			"a6", "c4", "a2", "a1"
-		}));
-		// listOfRhythmSymbols
-		expected.add(Arrays.asList(new String[]{"sb", "mi", "mi",	"sm*", "fu", "sm", "mi", "sm", "fu", "sf", "mi", 
-			"mi", "mi"}));
-		// listOfMensurationSigns
-		expected.add(Arrays.asList(new String[]{"McC3"}));
-		// listOfBarlines
-		expected.add(Arrays.asList(new String[]{"|", "|", "|", "||"}));
-		// listOfAllEvents
-		expected.add(Arrays.asList(new String[]{
-			"McC3", "sb", "mi", "mi.a5.c4.b2.a1", "|", "sm*.a6.c4.i2.a1", "fu.d6",
-			"sm.c6.a5.e4.b2", "a6", "mi.a6.h5.c4.b3.f2", "sm.a6.b3.a2.a1", "a3.e2", "|", 
-			"fu.a6.c4.a2.a1", "e2", "sf.a1", "e2", "|", "c2", "e2", "mi.a1", "mi", 
-			"mi.a6.c4.a2.a1", "||"
-		}));
-
-		List<List<String>> actual = encoding.getListsOfSymbols();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j), actual.get(i).get(j) );
-			}
-		}
-	}
-
-
-	@Test
-	public void testSetAndGetListsOfStatistics() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
-
-		List<List<Integer>> expected = new ArrayList<List<Integer>>();
-		// isTabSymbolEvent
-		expected.add(Arrays.asList(new Integer[]{
-			0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0}));
-		// isRhythmSymbolEvent
-		expected.add(Arrays.asList(new Integer[]{
-			0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0}));
-		// isRestEvent
-		expected.add(Arrays.asList(new Integer[]{
-			0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0}));
-		// isMensurationSignEvent
-		expected.add(Arrays.asList(new Integer[]{
-			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}));
-		// isBarlineEvent
-		expected.add(Arrays.asList(new Integer[]{
-			0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1}));
-		// sizeOfEvents
-		expected.add(Arrays.asList(new Integer[]{
-			0, 0, 0, 4, 0, 4, 1, 4, 1, 5, 4, 2, 0, 4, 1, 1, 1, 0, 1, 1, 1, 0, 4, 0}));
-		// durationOfEvents
-//		expected.add(Arrays.asList(new Integer[]{
-//			0, 16, 8, 8, 0, 6, 2, 4, 4, 8, 4, 4, 0, 2, 2, 1, 1, 0, 1, 1, 8, 8, 8, 0}));
-		expected.add(Arrays.asList(new Integer[]{
-			0, 48, 24, 24, 0, 18, 6, 12, 12, 24, 12, 12, 0, 6, 6, 3, 3, 0, 3, 3, 24, 24, 24, 0}));
-		// horizontalPositionOfTabSymbols
-		expected.add(Arrays.asList(new Integer[]{
-			3, 3, 3, 3, 5, 5, 5, 5, 6, 7, 7, 7, 7, 8, 9, 9, 9, 9, 9, 10, 10, 10, 10, 11, 
-			11, 13, 13, 13, 13, 14, 15, 16, 18, 19, 20, 22, 22, 22, 22}));
-		// verticalPositionOfTabSymbols
-		expected.add(Arrays.asList(new Integer[]{
-			0, 1, 2, 3, 0, 1, 2, 3, 0, 0, 1, 2, 3, 0, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1,
-			2, 3, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3}));
-		// durationOfTabSymbols
-//		expected.add(Arrays.asList(new Integer[]{
-//			8, 8, 8, 8, 6, 6, 6, 6, 2, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 2, 2,
-//			2, 2, 2, 1, 1, 1, 1, 8, 8, 8, 8, 8}));
-		expected.add(Arrays.asList(new Integer[]{
-			24, 24, 24, 24, 18, 18, 18, 18, 6, 12, 12, 12, 12, 12, 24, 24, 24, 24, 24, 12, 12, 
-			12, 12, 12, 12, 6, 6, 6, 6, 6, 3, 3, 3, 3, 24, 24, 24, 24, 24}));
-		// gridXOfTabSymbols
-//		expected.add(Arrays.asList(new Integer[]{
-//			24, 24, 24, 24, 32, 32, 32, 32, 38, 40, 40, 40, 40, 44, 48, 48, 48, 48, 48, 56,
-//			56, 56, 56, 60, 60, 64, 64, 64, 64, 66, 68, 69, 70, 71, 72, 88, 88,	88, 88}));
-		expected.add(Arrays.asList(new Integer[]{
-			72, 72, 72, 72, 96, 96, 96, 96, 114, 120, 120, 120, 120, 132, 144, 144, 144, 144, 
-			144, 168, 168, 168, 168, 180, 180, 192, 192, 192, 192, 198, 204, 207, 210, 213, 216, 
-			264, 264, 264, 264}));
-		// gridYOfTabSymbols
-		expected.add(Arrays.asList(new Integer[]{
-			50, 57, 65, 69, 45, 57, 72, 69, 48, 47, 50, 59, 65, 45, 45, 57, 57, 60, 69, 45,
-			60, 64, 69, 59, 68, 45, 57, 64, 69, 68, 69, 68, 66, 68, 69, 45, 57, 64, 69}));
-		// horizontalPositionInTabSymbolEventsOnly
-		expected.add(Arrays.asList(new Integer[]{
-			0, 0, 0, 0, 1, 1, 1, 1, 2, 3, 3, 3, 3, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 8, 8,
-			8, 8, 9, 10, 11, 12, 13, 14, 15, 15, 15, 15}));
-
-		List<List<Integer>> actual = encoding.getListsOfStatistics();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j), actual.get(i).get(j) );
-			}
-		}
-	}
-
-
-	@Test
-	public void testGetMetadata() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
-
-		List<String> expected = 
-			Arrays.asList(new String[]{"Author", "Title", "Source (year)"});
-		List<String> actual = encoding.getMetadata();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		}
-	}
-
-
-	@Test
-	public void testGetFootnotes() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
-
-		List<String> expected = Arrays.asList(new String[]{
-			"bar 1", 
-			"(1) Footnote 1", 
-			"bar 2", 
-			"(2) Footnote 2"
-		});
-
-		List<String> actual = encoding.getFootnotes();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		}
+	public void testGetTabSymbolSet() {
+		assertEquals(TabSymbolSet.FRENCH_TAB, 
+			new Encoding(encodingTestpiece1).getTabSymbolSet());
 	}
 
 
@@ -813,6 +811,25 @@ public class EncodingTest {
 		});
 		
 		List<String> actual = Encoding.combineSuccessiveRestTabwords(tabwords);
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
+	public void testContainsTriplets() {
+		Encoding encoding1 = new Encoding(encodingTestpiece1);
+		Encoding encoding2 = new Encoding(new File(
+		"F:/research/data/data/josquintab/tab/5254_03_benedicta_es_coelorum_desprez-1.tbp"));
+	
+		List<Boolean> expected = Arrays.asList(new Boolean[]{false, true});
+		
+		List<Boolean> actual = Arrays.asList(new Boolean[]{
+			encoding1.containsTriplets(), encoding2.containsTriplets()});
 		
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -861,8 +878,8 @@ public class EncodingTest {
 		}
 		assertEquals(expected, actual);
 	}
-
-
+	
+	
 	@Test
 	public void testReverseEncoding() {
 		Encoding encoding = new Encoding(encodingTestpiece1);
@@ -998,7 +1015,52 @@ public class EncodingTest {
 
 
 	@Test
-	public void testStaffSegmentIndices() {
+	public void testRecombineTabwords() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+
+		String expected = 
+			"McC3.>." + "sb.>." + "mi.>." + "mi.a5.c4.b2.a1.>." + 
+			"|." + "\r\n" +	
+			"sm*.a6.c4.i2.a1.>." + "fu.d6.>." + "sm.c6.a5.e4.b2.>." + "sm.a6.>." + 
+			"mi.a6.h5.c4.b3.f2.>." + "sm.a6.b3.a2.a1.>." + "sm.a3.e2.>." + 
+			"|." + "\r\n" + 
+			"/" + "\r\n" +
+			"fu.a6.c4.a2.a1.>." + "fu.e2.>." + "sf.a1.>." + "sf.e2.>." + 
+			"|." + "\r\n" + 
+			"sf.c2.>." + "sf.e2.>." + "mi.a1.>." + "mi.>." + "mi.a6.c4.a2.a1.>." + 
+			"||." + "\r\n";	
+
+		assertEquals(expected, encoding.recombineTabwords(encoding.getTabwords()));
+	}
+
+
+	@Test
+	public void testTabwordIsBarlineOrSBI() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+		
+		List<Boolean> expected = Arrays.asList(new Boolean[]{
+			false, false, false, false, true, 
+			false, false, false, false, false, false, false, true, 
+			true,
+			false, false, false, false, true, 
+			false, false, false, false, false, true 
+		});
+
+		List<Boolean> actual = new ArrayList<>();
+		for (String s : encoding.getTabwords()) {
+			actual.add(Encoding.tabwordIsBarlineOrSBI(s));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
+	public void testGetStaffSegmentIndices() {
 		Encoding encoding = new Encoding(encodingTestpiece1);
 		
 		List<List<Integer>> expected = new ArrayList<>();
@@ -1061,6 +1123,41 @@ public class EncodingTest {
 			for (int j = 0; j < expected.get(i).size(); j++) {
 				assertEquals(expected.get(i).get(j), actual.get(i).get(j) );
 			}
+		}
+	}
+
+
+	@Test
+	public void testGetMetadata() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+
+		List<String> expected = 
+			Arrays.asList(new String[]{"Author", "Title", "Source (year)"});
+		List<String> actual = encoding.getMetadata();
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+	}
+
+
+	@Test
+	public void testGetFootnotes() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+
+		List<String> expected = Arrays.asList(new String[]{
+			"bar 1", 
+			"(1) Footnote 1", 
+			"bar 2", 
+			"(2) Footnote 2"
+		});
+
+		List<String> actual = encoding.getFootnotes();
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
 		}
 	}
 

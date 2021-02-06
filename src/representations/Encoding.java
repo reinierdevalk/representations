@@ -24,18 +24,18 @@ public class Encoding implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private static final String FOOTNOTE_INDICATOR = "@";
 	private static final String WHITESPACE = " ";
+	public static final String METADATA_ERROR = "METADATA ERROR -- Check for missing curly brackets.";
 
 	private String name; 
 	private String rawEncoding;
 	private String cleanEncoding;
-	private List<List<String[]>> eventsBarlinesFootnotes;
 
+	private List<List<String[]>> eventsBarlinesFootnotes;
 	private static final int EVENT_IND = 0;
 	private static final int BAR_IND = 1;
 	private static final int FOOTNOTE_IND = 2;
 	private static final int FOOTNOTE_NUM_IND = 3;
-	public static final String METADATA_ERROR = "METADATA ERROR -- Check for missing curly brackets.";
-	
+
 	private List<String> infoAndSettings;
 	private static final int AUTHOR_IND = 0;
 	private static final int TITLE_IND = 1;
@@ -72,6 +72,7 @@ public class Encoding implements Serializable {
 	private Tuning[] tunings;
 	public static final int ENCODED_TUNING_IND = 0;
 	public static final int NEW_TUNING_IND = 1;
+
 	public static enum Tuning  {
 		C_AVALLEE("C_AVALLEE", -7, true, Arrays.asList(new String[]{"Bb", "F", "Bb", "D", "G", "C"})),
 		C_HIGH("C_HIGH", 5, false, Arrays.asList(new String[]{"C", "F", "Bb", "D", "G", "C"})),
@@ -197,6 +198,7 @@ public class Encoding implements Serializable {
 
 
 	// S E T T E R S
+	// TESTED (together with getName())
 	void setName(String s) {
 		name = s;
 	}
@@ -375,23 +377,23 @@ public class Encoding implements Serializable {
 				String event = events[j];
 				boolean containsComment = event.contains(oib + FOOTNOTE_INDICATOR);
 
+				String[] e = new String[]{null, null, null, null};
+				e[BAR_IND] = String.valueOf(bar);
 				// If the event does not contain a comment: add
 				if (!containsComment) {
-					eventsCurrSystem.add(new String[]{
-						event, String.valueOf(bar), null, null});
+					e[EVENT_IND] = event;
 				}
 				// If the event contains a comment: separate event and comment, and add
-				if (containsComment) {
-					String adaptedEvent = event.substring(0, event.indexOf(oib)) + 
+				if (containsComment) {					
+					e[EVENT_IND] = event.substring(0, event.indexOf(oib)) + 
 						event.substring(event.indexOf(cib) + 1);
-					// Get unadapted comment (the one in event may have been altered if it 
-					// contains symbols split on, such as a space or a SBI)
-					String comment = allEditorialComments.get(commentCounter);
-					String commentNum = "footnote #" + (commentCounter + 1);
+					// Get unadapted comment (the one in event may have been altered if 
+					// it contains symbols split on, such as a space or a SBI)
+					e[FOOTNOTE_IND] = allEditorialComments.get(commentCounter);
+					e[FOOTNOTE_NUM_IND] = "footnote #" + (commentCounter + 1);
 					commentCounter++;
-					eventsCurrSystem.add(new String[]{
-						adaptedEvent, String.valueOf(bar), comment, commentNum});
 				}
+				eventsCurrSystem.add(e);
 
 				// Increment bar (if it is not a decorative opening barline)
 				// NB: This works both for systems ending with a complete bar
@@ -739,15 +741,15 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Gets the TuningSeventhCourse required for the Tablature.
+	 * Gets the tunings for the bass courses required.
 	 * 
-	 * @return The <code>TuningSeventhCourse</code> required for the Tablature.
+	 * @return The <code>TuningBassCourse</code> required.
 	 */
-	// TODO test
+	// TESTED
 	TuningBassCourses getTuningBassCourses() {
-		for (TuningBassCourses tsc: TuningBassCourses.values()) {
-			if (tsc.toString().equals(getInfoAndSettings().get(TUNING_BASS_COURSES_IND))) {
-				return tsc;
+		for (TuningBassCourses tbc: TuningBassCourses.values()) {
+			if (tbc.toString().equals(getInfoAndSettings().get(TUNING_BASS_COURSES_IND))) {
+				return tbc;
 			}
 		}
 		return null;
@@ -765,6 +767,7 @@ public class Encoding implements Serializable {
 	 * 
 	 * @return The name of the file containing the encoding. 
 	 */
+	// TESTED (together with setName())
 	public String getName() {
 		return name;
 	}
@@ -1484,7 +1487,7 @@ public class Encoding implements Serializable {
 	 * 
 	 * @return
 	 */
-	// TODO test
+	// TESTED
 	public TabSymbolSet getTabSymbolSet() {
 		return TabSymbolSet.getTabSymbolSet(getInfoAndSettings().get(TABSYMBOLSET_IND));
 	}
@@ -1560,9 +1563,9 @@ public class Encoding implements Serializable {
 	/**
 	 * Checks whether the Encoding contains triplets.
 	 * 
-	 * Returns <code>true</code> if the Tablature contain triplets, anf <code>false </code> it not.
+	 * Returns <code>true</code> if the Encoding contain triplets, and <code>false </code> it not.
 	 */
-	// TODO test
+	// TESTED
 	public boolean containsTriplets() {
 		if (getCleanEncoding().contains(RhythmSymbol.tripletIndicator)) {
 			return true;
@@ -1576,7 +1579,7 @@ public class Encoding implements Serializable {
 	/**
 	 * Gets all the tabwords. 
 	 * 
-	 * @return A <code>List<String></code> of all tabwords in the encoding; the SBI are
+	 * @return A <code>List<String></code> of all tabwords in the Encoding; the SBI are
 	 * kept in place (i.e, form separate tabwords). A rhythm symbol (the last active one)
 	 * is assigned to each tabword that is lacking one.
 	 */
@@ -1876,8 +1879,8 @@ public class Encoding implements Serializable {
 	 * @param tabwords
 	 * @return
 	 */ 
-	// TODO test
-	private String recombineTabwords(List<String> tabwords) {
+	// TESTED
+	String recombineTabwords(List<String> tabwords) {
 		String recombined = "";
 		for (String s : tabwords) {
 			recombined += s;
@@ -1897,8 +1900,8 @@ public class Encoding implements Serializable {
 	}
 
 
-	// TODO test
-	private boolean tabwordIsBarlineOrSBI(String tabword) {
+	// TESTED
+	static boolean tabwordIsBarlineOrSBI(String tabword) {
 		if (tabword.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
 			return true;
 		}
