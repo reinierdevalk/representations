@@ -363,24 +363,25 @@ public class TabViewer extends JFrame{
 			
 			// Checked and ready for processing
 			// 3vv
-			encPath += "tab-int/3vv/" + "newsidler-1536_7-disant_adiu.tbp";
+//			encPath += "tab-int/3vv/" + "newsidler-1536_7-disant_adiu.tbp";
 //			encPath += "tab-int/3vv/" + "newsidler-1536_7-mess_pensees.tbp";
 //			encPath += "tab-int/3vv/" + "pisador-1552_7-pleni_de.tbp";
 //			encPath += "tab-int/3vv/" + "judenkuenig-1523_2-elslein_liebes.tbp";
 //			encPath += "tab-int/3vv/" + "newsidler-1544_2-nun_volget.tbp";
-//			encPath += "tab-int/3vv/" + "phalese-1547_7-tant_que-a3.tbp"; 
+//			encPath += "tab-int/3vv/" + "phalese-1547_7-tant_que-3vv.tbp";
 
 			// 4vv
-//			encPath += "tab-int/4vv/" + "ochsenkun_1558_-_absolon_fili.tbp";
-//			encPath += "tab-int/4vv/" + "ochsenkun_1558_-_in_exitu.tbp";
-//			encPath += "tab-int/4vv/" + "ochsenkun_1558_-_qui_habitat.tbp";
+//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-absolon_fili.tbp";
+//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-in_exitu.tbp";
+//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-qui_habitat.tbp";
 //			encPath += "tab-int/4vv/" + "rotta-1546_15-bramo_morir.tbp";
-//			encPath += "tab-int/4vv/" + "phalese_1547_-_tant_que_a4.tbp";
-//			encPath += "tab-int/4vv/" + "ochsenkun_1558_-_herr_gott.tbp";
+			encPath += "tab-int/4vv/" + "phalese-1547_7-tant_que-4vv.tbp";
+//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-herr_gott.tbp";
 //			encPath += "tab-int/4vv/" + "abondante-1548_1-mais_mamignone.tbp";
-//			encPath += "tab-int/4vv/" + "phalese_1563_-_las_on.tbp";
-//			encPath += "tab-int/4vv/" + "barbetta_1582_-_il_nest.tbp";
-//			encPath += "tab-int/4vv/" + "phalese_1563_-_il_estoit.tbp";
+//			encPath += "tab-int/4vv/" + "phalese-1563_12-las_on.tbp";
+//			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest.tbp";
+//			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp";			
+//			encPath += "tab-int/4vv/" + "phalese-1563_12-il_estoit.tbp";
 //			encPath += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
 
 			// 5vv

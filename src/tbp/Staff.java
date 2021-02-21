@@ -205,15 +205,14 @@ public class Staff {
 	public void addBarNumbers(List<Integer> indices, int firstBar, boolean startsWithUnfinished,
 		boolean endsWithBarline) {
 		int freq = 5;
-		int count = firstBar;
 		
-		// a. If applicable: handle start of staff
+		// a. Handle start of staff (if applicable) (no barline index in indices)
 		// Add a bar number at the start if the first bar is a multiple-of-freq bar that 
 		// is not an unfinished bar from the previous system. Example for freq = 5:
 		//                           [5]     
 		// ... | ... | ... | ... | / ... | ... | ... | ... |
-		if (count % freq == 0 && !startsWithUnfinished) {
-			String asStr = "[" + String.valueOf(count) + "]";
+		if (firstBar % freq == 0 && !startsWithUnfinished) {
+			String asStr = "[" + String.valueOf(firstBar) + "]";
 			// Add each char in the bar number at index 0
 			for (int j = 0; j < asStr.length(); j++) {
 				staffData[BAR_NUMS_LINE][0 + j] = 
@@ -221,9 +220,9 @@ public class Staff {
 			}
 		}
 
-		// b. Handle rest of staff
+		// b. Handle rest of staff (barlines indeices in indices)
 		// Add a bar number at the barline index if the barline closes a bar with
-		// count (n*freq)-1 (which opens a bar with count n*freq). Example:
+		// barCount (n*freq)-1 (which opens a bar with barCount n*freq). Example:
 		//                       [5]
 		// ... | ... | ... | ... | ... | / ... | ... | etc.
 		//
@@ -236,26 +235,30 @@ public class Staff {
 		//                             [5]
 		// ... | ... | ... | ... / ... | ... | etc.
 		// 
-		// Exception: if a barline closes a bar with count (n*freq)-1 but it is the last 
+		// Exception: if a barline closes a bar with barCount (n*freq)-1 but it is the last 
 		// event in the staff, the bar number goes to the start of the next staff (see a.)
+		int barCount = firstBar;
+		// Remove any decorative opening barline index
+		if (indices.get(0) == 0) {
+			indices = indices.subList(1, indices.size());
+		}
 		for (int i = 0; i < indices.size(); i++) {
 			int ind = indices.get(i);
-			// Ignore decorative opening barline
-			if (ind != 0) {
-				// If the barline at ind closes a bar with count (n*freq)-1
-				if (count % freq == (freq-1)) {			
-					// Add bar number only if if the barline is not the last event in the staff
-					if (!(i == indices.size()-1 && endsWithBarline)) {
-						String asStr = "[" + String.valueOf(count+1) + "]";
-						// Add each char in the bar number at ind
-						for (int j = 0; j < asStr.length(); j++) {
-							staffData[BAR_NUMS_LINE][ind + j] = 
-								Character.toString(asStr.charAt(j)); 
-						}
+			// If the barline at ind closes a bar with barCount (n*freq)-1
+			if (barCount % freq == (freq-1)) {			
+				// Add bar number only if the barline is not the last event in the staff
+				// (in which case it will be added at the beginning of the next staff; 
+				// see a. above)			
+				if (!(i == indices.size()-1 && endsWithBarline)) {
+					String asStr = "[" + String.valueOf(barCount+1) + "]";
+					// Add each char in the bar number at ind
+					for (int j = 0; j < asStr.length(); j++) {
+						staffData[BAR_NUMS_LINE][ind + j] = 
+							Character.toString(asStr.charAt(j)); 
 					}
 				}
-				count++;
 			}
+			barCount++;
 		}
 	}
 

@@ -752,9 +752,9 @@ public class Transcription implements Serializable {
 						Rational offsetTime = n.getMetricTime().add(duration);
 						Rational newOnsetTime = mirrorPoint.sub(offsetTime); 
 						
-						// TODO Error in barbetta-1582-il_nest.tbp: last chord should be co1 
+						// TODO Error in barbetta-1582_1-il_nest.tbp: last chord should be co1 
 						// (and not co2), leading to newOnsetTime being -1/2 
-						if (origP.getName().equals("barbetta-1582-il_nest.mid") && 
+						if (origP.getName().equals("barbetta-1582_1-il_nest.mid") && 
 							newOnsetTime.equals(new Rational(-1, 2))) {
 							newOnsetTime = Rational.ZERO;
 							duration = new Rational(1, 2);

@@ -36,7 +36,7 @@ public class TabImportTest {
 			"tab-int/3vv/pisador-1552_7-pleni_de.tbp",
 			//
 			"tab-int/4vv/abondante-1548_1-mais_mamignone.tbp",
-			"tab-int/4vv/barbetta-1582-il_nest.tbp",
+			"tab-int/4vv/barbetta-1582_1-il_nest.tbp",
 			"tab-int/4vv/ochsenkun-1558_5-absolon_fili.tbp",
 			"tab-int/4vv/ochsenkun-1558_5-herr_gott.tbp",
 			"tab-int/4vv/ochsenkun-1558_5-in_exitu.tbp",
