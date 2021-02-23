@@ -2108,7 +2108,6 @@ public class Encoding implements Serializable {
 	// TESTED
 	List<List<Integer>> getStaffSegmentIndices(String type) {
 		List<List<Integer>> segmentIndices = new ArrayList<>();
-
 		// For each system
 		for (List<String[]> system : getEventsBarlinesFootnotes()) {
 			int currSegmentInd = 0;
@@ -2117,70 +2116,31 @@ public class Encoding implements Serializable {
 			for (String[] event : system) {
 				String currEvent = event[EVENT_IND].substring(0, 
 					event[EVENT_IND].lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+				// In case of a barline, the bar number/footnote indicator is added 
+				// above/below the first pipe char, so currSegmentInd must be 
+				// incremented with the index in currEvent of that pipe char
 				boolean isBarlineEvent = 
 					ConstantMusicalSymbol.isBarline(currEvent) ? true : false;
 				int charsAfterFirstPipe = 0;
+				if (isBarlineEvent) {
+					int indFirstPipe = 
+						currEvent.indexOf(ConstantMusicalSymbol.BARLINE.getEncoding());
+					currSegmentInd += indFirstPipe;
+					// In case of a multiple-char barline: determine how many chars
+					// follow the first pipe char
+					if (currEvent.length() > 1) {
+						charsAfterFirstPipe = (currEvent.length()-1) - indFirstPipe;
+					}
+				}
+				// Add to list
 				if ((type.equals("footnote") && event[FOOTNOTE_IND] != null) ||
 					(type.equals("barline") && isBarlineEvent)	) {
-					// In case of a barline, the footnote indicator is added below 
-					// the first pipe char (and not below any repeat dots), so 
-					// currSegmentInd must be incremented with the index in currEvent
-					// of that pipe char
-					if (isBarlineEvent) {
-						int indFirstPipe = 
-							currEvent.indexOf(ConstantMusicalSymbol.BARLINE.getEncoding());
-						currSegmentInd += indFirstPipe;
-						// In case of a multiple-char barline: determine how many chars
-						// follow the first pipe char
-						if (currEvent.length() > 1) {
-							charsAfterFirstPipe = (currEvent.length()-1) - indFirstPipe;
-						}
-					}
 					currSegmentIndices.add(currSegmentInd);
 				}
-//				if (type.equals("footnote")) {
-//					// If the event contains a footnote: add currSegmentInd
-//					if (event[FOOTNOTE_IND] != null) {
-//						// In case of a barline, the footnote indicator is added below 
-//						// the first pipe char (and not below any repeat dots), so 
-//						// currSegmentInd must be incremented with the index in currEvent
-//						// of that pipe char
-//						if (isBarlineEvent) {
-//							int indFirstPipe = 
-//								currEvent.indexOf(ConstantMusicalSymbol.BARLINE.getEncoding());
-//							currSegmentInd += indFirstPipe;
-//							// In case of a multiple-char barline: determine how many chars
-//							// follow the first pipe char
-//							if (currEvent.length() > 1) {
-//								charsAfterFirstPipe = (currEvent.length()-1) - indFirstPipe;
-//							}
-//						}
-//						currSegmentIndices.add(currSegmentInd);
-//					}
-//				}
-//				else if (type.equals("barline")) {
-//					// If the event contains a barline: add currSegmentInd
-//					if (isBarlineEvent) {
-//						// The bar number is added above the first pipe char (and not
-//						// below any repeat dots), so currSegmentInd must be incremented 
-//						// with the index in currEvent of that pipe char
-//						int indFirstPipe = 
-//							currEvent.indexOf(ConstantMusicalSymbol.BARLINE.getEncoding());
-//						currSegmentInd += indFirstPipe;
-//						currSegmentIndices.add(currSegmentInd);
-//						// In case of a multiple-char barline: determine how many chars
-//						// follow the first pipe char
-//						if (currEvent.length() > 1) {
-//							charsAfterFirstPipe = (currEvent.length()-1) - indFirstPipe;
-//						}
-//					}
-//				}
-
-				// Increment currSegmentInd to go to the next segment. 
-				// If barline event: increment with the number of chars after the first 
-				// pipe char in the barline + 1
-				// If not (so if TS, RS, rest, or MS event): increment with 2: one 
-				// segment for the event itself, and one for the space following it
+				// Increment currSegmentInd to go to the next segment. If barline event:
+				// increment with the number of chars after the first pipe char in the 
+				// barline + 1. If not (i.e., if TS, RS, rest, or MS event): increment 
+				// with 2: 1 for the event itself and 1 for the space following it
 				currSegmentInd = 
 					isBarlineEvent ? currSegmentInd + (charsAfterFirstPipe + 1) :			
 					currSegmentInd + 2;

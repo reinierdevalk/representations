@@ -363,7 +363,7 @@ public class TabViewer extends JFrame{
 			
 			// Checked and ready for processing
 			// 3vv
-//			encPath += "tab-int/3vv/" + "newsidler-1536_7-disant_adiu.tbp";
+			encPath += "tab-int/3vv/" + "newsidler-1536_7-disant_adiu.tbp";
 //			encPath += "tab-int/3vv/" + "newsidler-1536_7-mess_pensees.tbp";
 //			encPath += "tab-int/3vv/" + "pisador-1552_7-pleni_de.tbp";
 //			encPath += "tab-int/3vv/" + "judenkuenig-1523_2-elslein_liebes.tbp";
@@ -375,7 +375,7 @@ public class TabViewer extends JFrame{
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-in_exitu.tbp";
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-qui_habitat.tbp";
 //			encPath += "tab-int/4vv/" + "rotta-1546_15-bramo_morir.tbp";
-			encPath += "tab-int/4vv/" + "phalese-1547_7-tant_que-4vv.tbp";
+//			encPath += "tab-int/4vv/" + "phalese-1547_7-tant_que-4vv.tbp";
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-herr_gott.tbp";
 //			encPath += "tab-int/4vv/" + "abondante-1548_1-mais_mamignone.tbp";
 //			encPath += "tab-int/4vv/" + "phalese-1563_12-las_on.tbp";
@@ -385,8 +385,8 @@ public class TabViewer extends JFrame{
 //			encPath += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
 
 			// 5vv
-//			encPath += "tab-int/5vv/" + "adriansen_1584_-_dvn_si.tbp";
-//			encPath += "tab-int/5vv/" + "ochsenkun_1558_-_inuiolata_integra.tbp";
+//			encPath += "tab-int/5vv/" + "adriansen-1584_6-d_vn_si.tbp";
+//			encPath += "tab-int/5vv/" + "ochsenkun-1558_5-inuiolata_integra.tbp";
 			
 			// Byrd
 //			encPath += "byrd-int/4vv/as_caesar_wept-II.tbp";
