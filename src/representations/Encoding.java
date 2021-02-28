@@ -31,9 +31,9 @@ public class Encoding implements Serializable {
 	private String cleanEncoding;
 
 	private List<List<String[]>> eventsBarlinesFootnotes;
-	private static final int EVENT_IND = 0;
+	public static final int EVENT_IND = 0;
 	private static final int BAR_IND = 1;
-	private static final int FOOTNOTE_IND = 2;
+	public static final int FOOTNOTE_IND = 2;
 	private static final int FOOTNOTE_NUM_IND = 3;
 
 	private List<String> infoAndSettings;
@@ -802,16 +802,17 @@ public class Encoding implements Serializable {
 	 * <ul>
 	 * <li>at element 0: the event as encoded</li>
 	 * <li>at element 1: the bar the event is in, derived from barline placement (where 
-	 *     decorative barlines at the beginning of a staff are ignored); barlines 
-	 *     themselves are counted as belonging to the bar they close</li>
+	 *                   decorative barlines at the beginning of a staff are ignored); 
+	 *                   barlines themselves are counted as belonging to the bar they 
+	 *                   close</li>
 	 * <li>at element 2: if the event has a footnote, that footnote; otherwise 
-	 * <code>null</code></li>
+	 *     				 <code>null</code></li>
 	 * <li>at element 3: if the event has a footnote, the sequence number of that
-	 * footnote; otherwise <code>null</code></li>
+	 *                   footnote; otherwise <code>null</code></li>
 	 * </ul>
 	 */
 	// TESTED (together with setEventsBarlinesFootnotes())
-	List<List<String[]>> getEventsBarlinesFootnotes() {
+	public List<List<String[]>> getEventsBarlinesFootnotes() {
 		return eventsBarlinesFootnotes;
 	}
 
@@ -1574,6 +1575,32 @@ public class Encoding implements Serializable {
 		else {
 			return false;
 		}
+	}
+
+
+	/**
+	 * Gets the output of getEventsBarlinesFootnotes(), organised per bar.
+	 * 
+	 * @return
+	 */
+	// TESTED
+	public List<List<String[]>> getEventsBarlinesFootnotesPerBar() {		
+		List<String[]> ebfFlat = new ArrayList<>(); 
+		for (List<String[]> l : getEventsBarlinesFootnotes()) {
+			ebfFlat.addAll(l);
+		}
+		List<List<String[]>> ebfPerBar = new ArrayList<>();
+		List<String[]> currBar = new ArrayList<>();
+		for (String[] s : ebfFlat) {
+			currBar.add(s);
+			String event = s[EVENT_IND];
+			String firstInEvent = event.substring(0, event.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+			if (ConstantMusicalSymbol.isBarline(firstInEvent)) {
+				ebfPerBar.add(currBar);
+				currBar = new ArrayList<>();
+			}
+		}
+		return ebfPerBar;
 	}
 
 

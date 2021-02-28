@@ -12,6 +12,7 @@ import java.util.stream.IntStream;
 import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.data.structure.Piece;
 import de.uos.fmt.musitech.utility.math.Rational;
+import representations.Encoding;
 import representations.Tablature;
 import representations.Transcription;
 import tbp.ConstantMusicalSymbol;
@@ -86,18 +87,9 @@ public class MEIExport {
 		Tablature testTab = new Tablature(new File(
 			"F:/research/data/data/encodings/tab-int/4vv/" + testTabFile + ".tbp"), false);	
 		
-//		List<List<String[]>> grr = testTab.getEncoding().getEventsWithFootnotes();
-//		for (int i = 0; i < grr.size(); i++) {
-//			List<String[]> l = grr.get(i);
-//			System.out.println("system " + i);
-//			for (String[] s : l) {
-//				System.out.println(Arrays.asList(s));
-//			}
-//		}
+		exportTabMEIFile(testTab, "C:/Users/Reinier/Desktop/" + testTab.getPieceName() + "-BOE-tab");
+		
 		System.exit(0);
-		
-		exportTabMEIFile(testTab, "C:/Users/Reinier/Desktop/" + testTab.getPieceName() + "-tab");
-		
 		
 		String notationtypeStr = "tab.lute.italian"; // TODO give as param to method
 		String tuningStr = "lute.renaissance.6"; // TODO give as param to method
@@ -515,26 +507,81 @@ public class MEIExport {
 
 		res = res.replace("staffGrp_content_placeholder", staffGrpStr);
 
-		List<List<String>> tabDataStr = getTabData(tab);
-		for (List<String> l : tabDataStr) {
-			System.out.println(l);
-		}
-		System.exit(0);
+//		List<List<String>> tabDataStr = getTabData(tab);
+//		int count = 0;
+//		System.out.println("tabDataStr");
+//		System.out.println("======================");
+//		for (List<String> l : tabDataStr) {
+//			count += l.size();
+//			System.out.println(l);
+//		}
+//		List<String[]> ebfFlat = new ArrayList<>();
+//		for (List<String[]> l : tab.getEncoding().getEventsBarlinesFootnotes()) {
+//			ebfFlat.addAll(l);
+//		}
+		
+//		System.out.println("ebfFlat");
+//		System.out.println("======================");
+//		for (String[] s : ebfFlat) {
+//			System.out.println(Arrays.toString(s));
+//		}
+//		System.out.println();
+//		System.out.println(tabDataStr.size());
+//		System.out.println(ebfFlat.size());
+//		System.out.println(count);
+		
+//		// Ga door tabDataStr en check of elk element hetzelfde is als in sbfFlat
+//		int cnt = 0;
+//		System.out.println("start");
+//		for (List<String> l : tabDataStr) {
+//			for (String s : l) {
+//				String toComp = ebfFlat.get(cnt)[0];
+//				if (!s.equals(toComp.substring(0, toComp.lastIndexOf(".")))) {
+//					System.out.println("error at element " + cnt);
+//				}
+//				cnt++;
+//			}
+//		}
+//		System.out.println("end");
+		
+		List<List<String[]>> ebf = tab.getEncoding().getEventsBarlinesFootnotesPerBar();
 
 		// 3. Make bars
 		// Organise the information per bar
 		StringBuilder sb = new StringBuilder();
 		int prevDur = 0; 
-		for (int i = 0; i < tabDataStr.size(); i++) {
-			List<String> currBar = tabDataStr.get(i);
-			
+		for (int i = 0; i < ebf.size(); i++) {
+///		for (int i = 0; i < tabDataStr.size(); i++) {
+			List<String[]> currBar = ebf.get(i);
+///			List<String> currBar = tabDataStr.get(i);
+
 			// Make XML content for currBar
 			String currBarXML = "";
 			String barline = "";
 			// For each event
 			for (int j = 0; j < currBar.size(); j++) {
-				String currEvent = currBar.get(j);
+				String[] currEventFull = currBar.get(j);
+///				String currEvent = currBar.get(j);
+				String currEvent = currEventFull[Encoding.EVENT_IND];
+				String currEventOrig = currEventFull[Encoding.FOOTNOTE_IND];
+				boolean eventIsCorrected = 
+					currEventOrig != null && currEventOrig.contains("'"); 
+				// Remove final ss
+				currEvent = currEvent.substring(0, currEvent.lastIndexOf(ss));
+				if (eventIsCorrected) {
+					currEventOrig = 
+						currEventOrig.substring(currEventOrig.indexOf("'")+1,
+						currEventOrig.lastIndexOf("'"));
+					if (currEventOrig.endsWith(ss)) {
+						currEventOrig = currEventOrig.substring(0, currEventOrig.length());
+					}
+					System.out.println("i = " + i);
+				}
 				System.out.println("currEvent = " + currEvent);
+				System.out.println("currEventOrig = " + currEventOrig);
+				if (currEventOrig != null) {
+					System.exit(0);
+				}
 				String[] currEventSplit = 
 					(!currEvent.contains(ss)) ? new String[]{currEvent} : currEvent.split("\\" + ss);
 				System.out.println("currEventSplit = " + Arrays.toString(currEventSplit));
@@ -545,10 +592,12 @@ public class MEIExport {
 					if (currEvent.equals(ConstantMusicalSymbol.DOUBLE_BARLINE.getEncoding())) {
 						barline = " right='dbl'";
 					}
-					if (i == tabDataStr.size()-1) {
+					if (i == ebf.size()-1) {
+///					if (i == tabDataStr.size()-1) {
 						barline = " right='end'";
 					}
 				}
+				// Not a barline?
 				else {
 					// Remove any MS (the first has already been taken care of above; any other
 					// are handled below)
@@ -616,16 +665,24 @@ public class MEIExport {
 			sb.append(INDENT + TAB.repeat(2) + "</layer>" + "\r\n");
 			sb.append(INDENT + TAB + "</staff>" + "\r\n");
 			sb.append(INDENT + "</measure>");
-			if (i < tabDataStr.size()-1) {
+			if (i < ebf.size()-1) {
+///			if (i < tabDataStr.size()-1) {
 				sb.append("\r\n");
 			}
 
 			// Append meter change (if applicable)
-			if (i < tabDataStr.size()-1) {
+			if (i < ebf.size()-1) {
+///			if (i < tabDataStr.size()-1) {
 				// Check for meter change in first event of next bar
-				List<String> nextBar = tabDataStr.get(i+1);
-				String firstEventNext = nextBar.get(0);
+				List<String[]> nextBar = ebf.get(i+1);
+///				List<String> nextBar = tabDataStr.get(i+1);
+				String[] firstEventNextFull = nextBar.get(0);
+///				String firstEventNext = nextBar.get(0);
+				String firstEventNext = firstEventNextFull[Encoding.EVENT_IND];
+				// Remove final ss
+				firstEventNext = firstEventNext.substring(0, firstEventNext.lastIndexOf(ss));
 				System.out.println("firstEventNext = " + firstEventNext);
+				System.exit(0);
 				String[] firstEventNextSplit = 
 					(!firstEventNext.contains(ss)) ? new String[]{firstEventNext} : 
 					firstEventNext.split("\\" + ss);

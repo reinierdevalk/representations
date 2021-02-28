@@ -840,6 +840,62 @@ public class EncodingTest {
 
 
 	@Test
+	public void testGetEventsBarlinesFootnotesPerBar() {
+		Encoding encoding = new Encoding(encodingTestpiece1);
+
+		List<List<String[]>> expected = new ArrayList<>();
+		List<String[]> bar1 = new ArrayList<>();
+		bar1.add(new String[]{"McC3.", "1", null, null});
+		bar1.add(new String[]{"sb.", "1", null, null});
+		bar1.add(new String[]{"mi.", "1", null, null});
+		bar1.add(new String[]{"mi.a5.c4.b2.a1.", "1", null, null});
+		bar1.add(new String[]{"|.", "1", "@Footnote 1", "footnote #1"});
+		expected.add(bar1);
+		//
+		List<String[]> bar2 = new ArrayList<>();
+		bar2.add(new String[]{"sm*.a6.c4.i2.a1.", "2", null, null});
+		bar2.add(new String[]{"fu.d6.", "2", null, null});
+		bar2.add(new String[]{"sm.c6.a5.e4.b2.", "2", null, null});
+		bar2.add(new String[]{"a6.", "2", null, null});
+		bar2.add(new String[]{"mi.a6.h5.c4.b3.f2.", "2", "@Footnote 2", "footnote #2"});
+		bar2.add(new String[]{"sm.a6.b3.a2.a1.", "2", null, null});
+		bar2.add(new String[]{"a3.e2.", "2", null, null});
+		bar2.add(new String[]{"|.", "2", null, null});
+		expected.add(bar2);
+		//
+		List<String[]> bar3 = new ArrayList<>();
+		bar3.add(new String[]{"fu.a6.c4.a2.a1.", "3", null, null});
+		bar3.add(new String[]{"e2.", "3", null, null});
+		bar3.add(new String[]{"sf.a1.", "3", null, null});
+		bar3.add(new String[]{"e2.", "3", null, null});
+		bar3.add(new String[]{"|.", "3", null, null});
+		expected.add(bar3);
+		//
+		List<String[]> bar4 = new ArrayList<>();
+		bar4.add(new String[]{"c2.", "4", null, null});
+		bar4.add(new String[]{"e2.", "4", null, null});
+		bar4.add(new String[]{"mi.a1.", "4", null, null});
+		bar4.add(new String[]{"mi.", "4", null, null});
+		bar4.add(new String[]{"mi.a6.c4.a2.a1.", "4", null, null});
+		bar4.add(new String[]{"||.", "4", null, null});
+		expected.add(bar4);
+		
+		List<List<String[]>> actual = encoding.getEventsBarlinesFootnotesPerBar();
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {			
+			assertEquals(expected.get(i).size(), actual.get(i).size());
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j).length, actual.get(i).get(j).length);
+				for (int k = 0; k < expected.get(i).get(j).length; k++) {
+					assertEquals(expected.get(i).get(j)[k], actual.get(i).get(j)[k]);
+				}
+			}
+		}
+	}
+
+
+	@Test
 	public void testGetTabwords() {
 		Encoding encoding = new Encoding(encodingTestpiece1);
 

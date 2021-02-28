@@ -363,11 +363,11 @@ public class TabViewer extends JFrame{
 			
 			// Checked and ready for processing
 			// 3vv
-			encPath += "tab-int/3vv/" + "newsidler-1536_7-disant_adiu.tbp";
+//			encPath += "tab-int/3vv/" + "newsidler-1536_7-disant_adiu.tbp";
 //			encPath += "tab-int/3vv/" + "newsidler-1536_7-mess_pensees.tbp";
-//			encPath += "tab-int/3vv/" + "pisador-1552_7-pleni_de.tbp";
+//			encPath += "tab-int/3vv/" + "pisador-1552_7-pleni_de.tbp"; // TODO remove every second barline
 //			encPath += "tab-int/3vv/" + "judenkuenig-1523_2-elslein_liebes.tbp";
-//			encPath += "tab-int/3vv/" + "newsidler-1544_2-nun_volget.tbp";
+//			encPath += "tab-int/3vv/" + "newsidler-1544_2-nun_volget.tbp"; // TODO remove every second barline in ternary part
 //			encPath += "tab-int/3vv/" + "phalese-1547_7-tant_que-3vv.tbp";
 
 			// 4vv
@@ -379,8 +379,8 @@ public class TabViewer extends JFrame{
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-herr_gott.tbp";
 //			encPath += "tab-int/4vv/" + "abondante-1548_1-mais_mamignone.tbp";
 //			encPath += "tab-int/4vv/" + "phalese-1563_12-las_on.tbp";
-//			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest.tbp";
-//			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp";			
+//			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest.tbp"; // TODO remove every second barline
+//			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp"; // TODO remove every second barline
 //			encPath += "tab-int/4vv/" + "phalese-1563_12-il_estoit.tbp";
 //			encPath += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
 
