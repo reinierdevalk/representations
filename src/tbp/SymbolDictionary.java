@@ -14,88 +14,12 @@ public class SymbolDictionary {
 	
 	// II. Musical symbols
 	// 1. Constant musical symbols
-//	public static List<ConstantMusicalSymbol> constantMusicalSymbols = Arrays.asList(new ConstantMusicalSymbol[]{
-//		ConstantMusicalSymbol.SPACE,
-//		ConstantMusicalSymbol.BARLINE,
-//		ConstantMusicalSymbol.DOUBLE_BARLINE,
-//		ConstantMusicalSymbol.SINGLE_REPEAT_BARLINE_OPEN,
-//		ConstantMusicalSymbol.SINGLE_REPEAT_BARLINE_CLOSE,
-//		ConstantMusicalSymbol.SINGLE_REPEAT_BARLINE_DOUBLE_SIDED,
-//		ConstantMusicalSymbol.DOUBLE_REPEAT_BARLINE_OPEN,
-//		ConstantMusicalSymbol.DOUBLE_REPEAT_BARLINE_CLOSE,
-//		ConstantMusicalSymbol.DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED
-//	});
-
+	// (see ContantMusicalSymbol)
 	// 2. Variable musical symbols
 	// a. RhythmSymbols	
-//	public static List<RhythmSymbol> rhythmSymbols = Arrays.asList(new RhythmSymbol[]{
-//		// Plain
-//		RhythmSymbol.brevis,
-//		RhythmSymbol.semibrevis,
-//		RhythmSymbol.minim,
-//		RhythmSymbol.semiminim,
-//		RhythmSymbol.fusa,
-//		RhythmSymbol.semifusa,
-//		RhythmSymbol.coronaBrevis,
-//		RhythmSymbol.coronaSemibrevis,
-//		RhythmSymbol.coronaDottedSemibrevis,
-//
-//		// Dotted
-//		RhythmSymbol.rhythmDot,
-//		RhythmSymbol.fermateDotted,
-//		RhythmSymbol.semibrevisDotted,
-//		RhythmSymbol.minimDotted,
-//		RhythmSymbol.semiminimDotted,
-//		RhythmSymbol.fusaDotted,
-//
-//		// Beamed
-//		RhythmSymbol.beamedSemiminim,
-//		RhythmSymbol.beamedFusa,
-//		RhythmSymbol.beamedSemifusa,
-//		// Dotted and beamed
-//		RhythmSymbol.beamedSemiminimDotted
-//	});
-
+	// (see RhythmSymbol)
 	// b. MensurationSigns
-//	public static List<MensurationSign> mensurationSigns = Arrays.asList(new MensurationSign[]{
-//		// C
-//		MensurationSign.C,
-//		new MensurationSign("MC6", "C", 6, new Integer[]{4, 4}),
-//		new MensurationSign("MC5", "C", 5, new Integer[]{4, 4}),
-//		new MensurationSign("MC4", "C", 4, new Integer[]{4, 4}),
-//		new MensurationSign("MC3", "C", 3, new Integer[]{4, 4}),
-//		new MensurationSign("MC2", "C", 2, new Integer[]{4, 4}),
-//		new MensurationSign("MC1", "C", 1, new Integer[]{4, 4}),
-//		// O
-//		MensurationSign.O,
-//		new MensurationSign("MO6", "O", 6, new Integer[]{3, 4}),
-//		new MensurationSign("MO5", "O", 5, new Integer[]{3, 4}),
-//		new MensurationSign("MO4", "O", 4, new Integer[]{3, 4}),
-//		new MensurationSign("MO3", "O", 3, new Integer[]{3, 4}),
-//		new MensurationSign("MO2", "O", 2, new Integer[]{3, 4}),
-//		new MensurationSign("MO1", "O", 1, new Integer[]{3, 4}),
-//		// 3
-//		MensurationSign.three,
-//		new MensurationSign("M36", "3", 6, new Integer[]{3, 4}),
-//		new MensurationSign("M35", "3", 5, new Integer[]{3, 4}),
-//		new MensurationSign("M34", "3", 4, new Integer[]{3, 4}),
-//		new MensurationSign("M33", "3", 3, new Integer[]{3, 4}),
-//		new MensurationSign("M32", "3", 2, new Integer[]{3, 4}),
-//		new MensurationSign("M31", "3", 1, new Integer[]{3, 4}),
-//		// Crossed C
-//		MensurationSign.crossedC,
-//		new MensurationSign("McC6", "\u00A2", 6, new Integer[]{2, 2}),
-//		new MensurationSign("McC5", "\u00A2", 5, new Integer[]{2, 2}),
-//		new MensurationSign("McC4", "\u00A2", 4, new Integer[]{2, 2}),
-//		new MensurationSign("McC3", "\u00A2", 3, new Integer[]{2, 2}),
-//		new MensurationSign("McC2", "\u00A2", 2, new Integer[]{2, 2}),
-//		new MensurationSign("McC1", "\u00A2", 1, new Integer[]{2, 2}),
-//		// 3/2, 4/2, 6/2
-//		MensurationSign.threeTwo,
-//		MensurationSign.fourTwo,
-//		MensurationSign.sixTwo
-//	});
-
+	// (see MensurationSign)
 	// c. TabSymbols and TabSymbolSets
 	// ochsenkun1558
 	public static List<TabSymbol> ochsenkun1558Content = Arrays.asList(new TabSymbol[]{
@@ -584,17 +508,5 @@ public class SymbolDictionary {
 		new TabSymbol("81", 8, 1, 75),
 		new TabSymbol("91", 9, 1, 76)
 	});
-
-
-//	private TabSymbolSet[] allTabSymbolSets = {ochsenkun1558, newsidler1536, heckel1562, frenchTab, italianTab, spanishTab};
-//	public static List<TabSymbolSet> tabSymbolSets = Arrays.asList(new TabSymbolSet[]{
-//		TabSymbolSet.OCHSENKUN_1558, 
-//		TabSymbolSet.NEWSIDLER_1536, 
-//		TabSymbolSet.HECKEL_1562, 
-//		TabSymbolSet.JUDENKUENIG_1523, 
-//		TabSymbolSet.FRENCH_TAB, 
-//		TabSymbolSet.ITALIAN_TAB, 
-//		TabSymbolSet.SPANISH_TAB
-//	});
 
 }

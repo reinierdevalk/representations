@@ -31,12 +31,6 @@ import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 
 import representations.Encoding;
-import tbp.ConstantMusicalSymbol;
-import tbp.MensurationSign;
-import tbp.RhythmSymbol;
-import tbp.Staff;
-import tbp.SymbolDictionary;
-import tbp.TabSymbol;
 import tbp.TabSymbolSet;
 
 public class TabViewer extends JFrame{
@@ -369,29 +363,30 @@ public class TabViewer extends JFrame{
 			
 			// Checked and ready for processing
 			// 3vv
-//			encPath += "tab-int/3vv/" + "newsidler_1536-disant_adiu.tbp";
-//			encPath += "tab-int/3vv/" + "newsidler_1536-mess_pensees.tbp";
-//			encPath += "tab-int/3vv/" + "pisador-1552_7-pleni_de.tbp";
+//			encPath += "tab-int/3vv/" + "newsidler-1536_7-disant_adiu.tbp";
+//			encPath += "tab-int/3vv/" + "newsidler-1536_7-mess_pensees.tbp";
+//			encPath += "tab-int/3vv/" + "pisador-1552_7-pleni_de.tbp"; // TODO remove every second barline
 //			encPath += "tab-int/3vv/" + "judenkuenig-1523_2-elslein_liebes.tbp";
-//			encPath += "tab-int/3vv/" + "newsidler-1544_2-nun_volget.tbp";
-//			encPath += "tab-int/3vv/" + "phalese-1547-tant_que-a3.tbp"; 
+//			encPath += "tab-int/3vv/" + "newsidler-1544_2-nun_volget.tbp"; // TODO remove every second barline in ternary part
+//			encPath += "tab-int/3vv/" + "phalese-1547_7-tant_que-3vv.tbp";
 
 			// 4vv
-//			encPath += "tab-int/4vv/" + "ochsenkun_1558_-_absolon_fili.tbp";
-//			encPath += "tab-int/4vv/" + "ochsenkun_1558_-_in_exitu.tbp";
-//			encPath += "tab-int/4vv/" + "ochsenkun_1558_-_qui_habitat.tbp";
+//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-absolon_fili.tbp";
+//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-in_exitu.tbp";
+//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-qui_habitat.tbp";
 //			encPath += "tab-int/4vv/" + "rotta-1546_15-bramo_morir.tbp";
-//			encPath += "tab-int/4vv/" + "phalese_1547_-_tant_que_a4.tbp";
-//			encPath += "tab-int/4vv/" + "ochsenkun_1558_-_herr_gott.tbp";
+//			encPath += "tab-int/4vv/" + "phalese-1547_7-tant_que-4vv.tbp";
+//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-herr_gott.tbp";
 //			encPath += "tab-int/4vv/" + "abondante-1548_1-mais_mamignone.tbp";
-//			encPath += "tab-int/4vv/" + "phalese_1563_-_las_on.tbp";
-//			encPath += "tab-int/4vv/" + "barbetta_1582_-_il_nest.tbp";
-//			encPath += "tab-int/4vv/" + "phalese_1563_-_il_estoit.tbp";
-			encPath += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
+//			encPath += "tab-int/4vv/" + "phalese-1563_12-las_on.tbp";
+//			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest.tbp"; // TODO remove every second barline
+//			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp"; // TODO remove every second barline
+//			encPath += "tab-int/4vv/" + "phalese-1563_12-il_estoit.tbp";
+//			encPath += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
 
 			// 5vv
-//			encPath += "tab-int/5vv/" + "adriansen_1584_-_dvn_si.tbp";
-//			encPath += "tab-int/5vv/" + "ochsenkun_1558_-_inuiolata_integra.tbp";
+//			encPath += "tab-int/5vv/" + "adriansen-1584_6-d_vn_si.tbp";
+//			encPath += "tab-int/5vv/" + "ochsenkun-1558_5-inuiolata_integra.tbp";
 			
 			// Byrd
 //			encPath += "byrd-int/4vv/as_caesar_wept-II.tbp";
@@ -420,7 +415,7 @@ public class TabViewer extends JFrame{
 	 * TabViewer menu.
 	 * 
 	 * @param enc The encoding
-	 * @param encPath The path to save the encoding to. 
+	 * @param encPath The path to save the encoding to.
 	 * 
 	 */
 	private void saveFileAction(String enc, String encPath) {
@@ -467,15 +462,15 @@ public class TabViewer extends JFrame{
 		final int lastErrorCharIndex = 1;
 		final int errorStringIndex = 2;
 		final int ruleStringIndex = 3;
-		
+
 		// 1. Create an unchecked encoding
 		// The first time the viewbutton is clicked, encodingArea.getText() will always be 
 		// exactly as in the file that is loaded because it is set as such in openFileAction().
 		// Any next time, it will be exactly what is in the encodingArea (which now may have 
 		// corrections compared to what is in the loaded file)
-		Encoding enc = new Encoding(rawEnc, false);
+		Encoding enc = new Encoding(rawEnc, null, false); // TODO fix name
 		// a. If the encoding contains metadata errors: place error message
-		if (enc.getHasMetadataErrors()) {
+		if (enc.checkForMetadataErrors()) {
 			getErrorMessageLabel("upper").setText(Encoding.METADATA_ERROR);
 			getErrorMessageLabel("lower").setText("");
 		}
@@ -502,10 +497,6 @@ public class TabViewer extends JFrame{
 			}
 			// b. If the encoding contains no encoding errors: show the tablature in a new window 
 			else {
-				StringBuffer metaData = new StringBuffer();
-				enc.getMetaData().forEach(s -> metaData.append(s + "\n"));
-				StringBuffer footnotes = new StringBuffer();
-				enc.getFootnotes().forEach(s -> footnotes.append(s + "\n"));
 				// Determine TabSymbolSet
 				TabSymbolSet tss = null;
 				outerLoop: for (String type : getTabTypes()) {
@@ -518,11 +509,8 @@ public class TabViewer extends JFrame{
 						}
 					}
 				}
-				getTabArea().setText(
-					metaData.toString() + "\n" + Staff.SPACE_BETWEEN_STAFFS + 
-					enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected()) + 
-					footnotes.toString().substring(0, footnotes.lastIndexOf("\n"))
-				);
+				getTabArea().setText(enc.visualise(tss, 
+					getRhythmSymbolsCheckBox().isSelected(), true, true));
 				initializeTabViewer(encPath);
 			} 
 		}
@@ -600,138 +588,6 @@ public class TabViewer extends JFrame{
 	private JScrollPane getTabViewerPane() { // alternative for getTabViewerPanel()
 		return new JScrollPane(getTabArea(), JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
 			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-	}
-
-
-	/**
-	 * Visualises the encoding as tablature. 
-	 * 
-	 * @return 
-	 */
-	@Deprecated // moved to Encoding
-	private String visualise(Encoding enc) {
-		String tab = "";
-		
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
-		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
-
-		String cleanEnc = enc.getCleanEncoding();
-//		String cleanEnc = encoding.getCleanEncoding();
-		TabSymbolSet tss = enc.getTabSymbolSet();
-//		TabSymbolSet tss = encoding.getTabSymbolSet();
-
-		// Search all systems one by one
-		int sbiIndex = -1;
-		int nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
-		while (sbiIndex + 1 != nextSbiIndex) { 
-			RhythmSymbol prevRhythmSymbol = null;
-			Staff staff = new Staff(enc.getStaffLength());
-			int segment = 0;
-			String currSysEncoding = cleanEnc.substring(sbiIndex + 1, nextSbiIndex);
-			// Check for each system the encoded symbols one by one and for each encoded symbol 
-			// add its tablature representation to staff 
-			int ssIndex = -1;
-			int nextSsIndex = currSysEncoding.indexOf(ss, ssIndex);
-			while (nextSsIndex != -1) {
-				String encodedSymbol = currSysEncoding.substring(ssIndex + 1, nextSsIndex);
-				int nextNextSsIndex = currSysEncoding.indexOf(ss, nextSsIndex + 1);
-				// nextEncodedSymbol is needed for b, c, and d below and can exist for all encoded 
-				// symbols except for the last--i.e., as long as nextNextSsIndex is not -1
-				String nextEncodedSymbol = null;
-				if (nextNextSsIndex != -1) {
-					nextEncodedSymbol = currSysEncoding.substring(nextSsIndex + 1, nextNextSsIndex);
-				}
-				// a. Add ConstantMusicalSymbol?
-				if (ConstantMusicalSymbol.getConstantMusicalSymbol(encodedSymbol) != null) {
-					ConstantMusicalSymbol c = ConstantMusicalSymbol.getConstantMusicalSymbol(encodedSymbol);
-					staff.addConstantMusicalSymbol(encodedSymbol, segment);
-					segment = segment + c.getSymbol().length();
-				}
-				// b. Add TabSymbol?
-				else if (TabSymbol.getTabSymbol(encodedSymbol, tss) != null) { 
-					TabSymbol t = TabSymbol.getTabSymbol(encodedSymbol, tss);
-					if (frenchTabRadioButton.isSelected()) {   
-						staff.addTabSymbolFrench(t, segment); 
-					}
-					else if (italianTabRadioButton.isSelected()) {
-						staff.addTabSymbolItalian(t, segment);
-					}
-					else if (spanishTabRadioButton.isSelected()) {
-						staff.addTabSymbolSpanish(t, segment);
-					}
-					else if (germanTabRadioButton.isSelected()) {
-						// TODO 
-					} 
-					// Is encodedSymbol followed by a space and not by another TS--i.e., is it the 
-					// last TS of a vertical sonority? Increment segment
-					// NB: LAYOUT RULE 4 guarantees that a vertical sonority is always followed by a
-					// space, meaning that nextEncodedSymbol always exists if encodedSymbol is a TS
-					if (nextEncodedSymbol.equals(sp)) {
-						segment++;
-					}
-				}
-				// c. Add RhythmSymbol?
-				else if (RhythmSymbol.getRhythmSymbol(encodedSymbol) != null) {
-					RhythmSymbol r = RhythmSymbol.getRhythmSymbol(encodedSymbol);
-					boolean showBeam = true;
-					// rhythmSymbolsCheckBox not selected? Add RS; always add any beam
-					if (!rhythmSymbolsCheckBox.isSelected()) {
-						staff.addRhythmSymbol(r, segment, showBeam);    
-					}
-					// rhythmSymbolsCheckBox selected? Add RS only if r is not equal to 
-					// previousRhythmSymbol; never add any beam
-					else {
-						// Compare r with prevRhythmSymbol; if prevRhythmSymbol is null or if they
-						// do not have the same duration: add r to staff
-						// NB: because of possibly present beams, direct comparison does not work: an RS and 
-						// its beamed variant are considered inequal because they are defined as two different 
-						// objects
-						showBeam = false;
-						if (prevRhythmSymbol == null) {
-							staff.addRhythmSymbol(r, segment, showBeam);
-						}
-						else {
-							if (r.getDuration() != prevRhythmSymbol.getDuration()) {
-								staff.addRhythmSymbol(r, segment, showBeam);
-							}
-						}
-					}
-					// Is encodedSymbol followed by a space and not by a TS--i.e., does encodedSymbol
-					// represent a rest? Increment segment
-					// NB: LAYOUT RULE 5 guarantees that a rest is always followed by a space, 
-					// meaning that nextEncodedSymbol always exists if encodedSymbol is a RS
-					if (nextEncodedSymbol.equals(sp)) {
-						segment ++;
-					}
-					prevRhythmSymbol = r;
-				}     
-				// d. Add MensurationSign?
-				else if (MensurationSign.getMensurationSign(encodedSymbol) != null) {
-					MensurationSign m = MensurationSign.getMensurationSign(encodedSymbol);
-					staff.addMensurationSign(m, segment);
-					// Is encodedSymbol followed by a space and not by another MS--i.e., is
-					// encodedSymbol the only or the last symbol of a (compound) MS? Increment segment
-					// NB: LAYOUT RULE 6 guarantees that the last MS is always followed by a space,
-					// meaning that nextEncodedSymbol always exists if encodedSymbol is a MS 
-					if (nextEncodedSymbol.equals(sp)) {
-						segment ++;
-					}
-				}
-				// Prepare indices for next iteration inner while
-				ssIndex = nextSsIndex;
-				nextSsIndex = currSysEncoding.indexOf(ss, ssIndex + 1); 
-			}
-			// System traversed? Add to tablature; prepare indices for next iteration outer while
-			System.out.println(staff.getStaff());
-			System.out.println(staff.getNumberOfSegments());
-//			System.exit(0);
-			
-			tab += staff.getStaff() + Staff.SPACE_BETWEEN_STAFFS;
-			sbiIndex = nextSbiIndex;
-			nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
-		}
-		return tab;
 	}
 
 

@@ -49,10 +49,10 @@ public class TranscriptionTest extends TestCase {
 //		midiTestGetMeterInfoNoAna = new File(Runner.midiPathTest + "test_get_meter_key_info_no_anacrusis.mid");
 		
 		String s = MEIExport.rootDir;
-		encodingTestpiece1 = new File(s + "data/encodings/test/" + "testpiece.tbp");
-		midiTestpiece1 = new File(s + "data/MIDI/test/" + "testpiece.mid");
-		midiTestGetMeterInfo = new File(s + "data/MIDI/test/" + "test_get_meter_key_info.mid");
-		midiTestGetMeterInfoNoAna = new File(s + "data/MIDI/test/" + "test_get_meter_key_info_no_anacrusis.mid");
+		encodingTestpiece1 = new File(s + "data/data/encodings/test/" + "testpiece.tbp");
+		midiTestpiece1 = new File(s + "data/data/MIDI/test/" + "testpiece.mid");
+		midiTestGetMeterInfo = new File(s + "data/data/MIDI/test/" + "test_get_meter_key_info.mid");
+		midiTestGetMeterInfoNoAna = new File(s + "data/data/MIDI/test/" + "test_get_meter_key_info_no_anacrusis.mid");
 	}
 
 
@@ -1476,7 +1476,7 @@ public class TranscriptionTest extends TestCase {
 //			"4vv/ochsenkun-1558_5-herr_gott", // non
 //			"4vv/abondante-1548_1-mais_mamignone", // non
 //			"4vv/phalese-1563_12-las_on", // non
-//			"4vv/barbetta-1582-il_nest", // non
+//			"4vv/barbetta-1582_+-il_nest", // non
 				
 //			"ah_golden_hairs-NEW",
 //			"an_aged_dame-II", //
@@ -2293,7 +2293,7 @@ public class TranscriptionTest extends TestCase {
 			"4vv/ochsenkun-1558_5-herr_gott", // correct (full & minimum)
 			"4vv/abondante-1548_1-mais_mamignone", // incorrect (full & minimum)): voice crossing at density 4 TODO fix SNU  
 			"4vv/phalese-1563_12-las_on", // correct (full & minimum)
-			"4vv/barbetta-1582-il_nest", // correct (full & minimum)
+			"4vv/barbetta-1582_1-il_nest", // correct (full & minimum)
 		});
 
 		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
