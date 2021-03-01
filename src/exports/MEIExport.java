@@ -749,9 +749,6 @@ public class MEIExport {
 			sb.append(INDENT + TAB + "</staff>" + "\r\n");
 			sb.append(INDENT + "</measure>");
 			System.out.println(sb.toString());
-			if (i == 6) {
-				System.exit(0);
-			}
 			if (i < ebf.size()-1) {
 ///			if (i < tabDataStr.size()-1) {
 				sb.append("\r\n");
