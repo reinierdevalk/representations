@@ -382,7 +382,7 @@ public class TabViewer extends JFrame{
 //			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest.tbp"; // TODO remove every second barline
 //			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp"; // TODO remove every second barline
 //			encPath += "tab-int/4vv/" + "phalese-1563_12-il_estoit.tbp";
-//			encPath += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
+			encPath += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
 
 			// 5vv
 //			encPath += "tab-int/5vv/" + "adriansen-1584_6-d_vn_si.tbp";

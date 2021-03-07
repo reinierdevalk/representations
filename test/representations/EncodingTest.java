@@ -61,7 +61,7 @@ public class EncodingTest {
 			"{bar 1}" + "\r\n" +
 			"McC3.>.sb.>.mi.>.mi.a5.c4.b2.a1.>.|{@Footnote 1}." + "\r\n" +
 			"{bar 2}" + "\r\n" +
-			"sm*.a6.c4.i2.a1.>.fu.d6.>.sm.c6.a5.e4.b2.>.a6.>.mi.a6.h5.c4.b3.f2{@Footnote 2}.>.sm.a6.b3.a2.a1.>.a3.e2.>.|./" + "\r\n" + 
+			"sm*.a6.c4.i2.a1.>.fu.d6.>.sm.c6.a5.e4.b2.>.a6.>.mi.a6.h5.c4.b3.f2{@'mi.a6.' in source}.>.sm.a6.b3.a2.a1.>.a3.e2.>.|./" + "\r\n" + 
 			"{bar 3}" + "\r\n" +
 			"fu.a6.c4.a2.a1.>.e2.>.sf.a1.>.e2.>.|.c2.>.e2.>.mi.a1.>.mi.>.mi.a6.c4.a2.a1.>.||.//";
 
@@ -118,7 +118,7 @@ public class EncodingTest {
 		system1.add(new String[]{"fu.d6.", "2", null, null});
 		system1.add(new String[]{"sm.c6.a5.e4.b2.", "2", null, null});
 		system1.add(new String[]{"a6.", "2", null, null});
-		system1.add(new String[]{"mi.a6.h5.c4.b3.f2.", "2", "@Footnote 2", "footnote #2"});
+		system1.add(new String[]{"mi.a6.h5.c4.b3.f2.", "2", "@'mi.a6.' in source", "footnote #2"});
 		system1.add(new String[]{"sm.a6.b3.a2.a1.", "2", null, null});
 		system1.add(new String[]{"a3.e2.", "2", null, null});
 		system1.add(new String[]{"|.", "2", null, null});
@@ -191,7 +191,7 @@ public class EncodingTest {
 			"AUTHOR: Author ", "TITLE:Title", "SOURCE:Source (year)",
 			"TABSYMBOLSET:FrenchTab", "TUNING:A", "TUNING_SEVENTH_COURSE: ", 
 			"METER_INFO:2/2 (1-3)", "DIMINUTION:1",
-			"bar 1", "@Footnote 1", "bar 2", "@Footnote 2", "bar 3"});
+			"bar 1", "@Footnote 1", "bar 2", "@'mi.a6.' in source", "bar 3"});
 
 		List<String> actual = encoding.getAllMetadata();
 
@@ -456,8 +456,8 @@ public class EncodingTest {
 		if (print) {
 			System.out.println(encoding.getRawEncoding().indexOf("McC3.")); // 176
 			System.out.println(encoding.getRawEncoding().indexOf("sm*.a6.c4.i2.a1.")); // 236
-			System.out.println(encoding.getRawEncoding().indexOf("sm.a6.b3.a2.a1")); // 317
-			System.out.println(encoding.getRawEncoding().indexOf("fu.a6.c4.a2.a1.")); // 356
+			System.out.println(encoding.getRawEncoding().indexOf("sm.a6.b3.a2.a1")); // 325
+			System.out.println(encoding.getRawEncoding().indexOf("fu.a6.c4.a2.a1.")); // 364
 		}
 		Integer[] expected = new Integer[encoding.getRawEncoding().length()];
 		Arrays.fill(expected, -1);
@@ -472,22 +472,22 @@ public class EncodingTest {
 		}
 		// Section 2 ("sm*.a6.c4.i2.a1." up until "sm.a6.b3.a2.a1"): 68 chars (in 
 		// rawEncoding split up by footnote into 65 + 3)
-		// indices 36-103 in cleanEncoding (= 236-300 and 314-316 in rawEncoding)
+		// indices 36-103 in cleanEncoding (= 236-300 and 322-324 in rawEncoding)
 		for (int i = 0; i < 65; i++) {
 			expected[236 + i] = 0 + 35 + 1 + i;
 		}
 		for (int i = 0; i < 3; i++) {
-			expected[314 + i] = 0 + 35 + 1 + 65 + i;
+			expected[322 + i] = 0 + 35 + 1 + 65 + i;
 		}		
 		// Section 3 ("sm.a6.b3.a2.a1" up until and including SBI): 28 chars
-		// indices 104-131 in cleanEncoding (= 317-344 in rawEncoding)
+		// indices 104-131 in cleanEncoding (= 325-352 in rawEncoding)
 		for (int i = 0; i < 28; i++) {
-			expected[317 + i] = 0 + 35 + 1 + 65 + 3 + i;
+			expected[325 + i] = 0 + 35 + 1 + 65 + 3 + i;
 		}		
 		// Section 4 ("fu.a6.c4.a2.a1." up until and including EBI): 82 chars
-		// indices 132-213 in cleanEncoding (= 356-437 in rawEncoding)
+		// indices 132-213 in cleanEncoding (= 364-445 in rawEncoding)
 		for (int i = 0; i < 82; i++) {
-			expected[356 + i] = 0 + 35 + 1 + 65 + 3 + 28 + i;
+			expected[364 + i] = 0 + 35 + 1 + 65 + 3 + 28 + i;
 		}
 
 		Integer[] actual = encoding.alignRawAndCleanEncoding();
@@ -748,28 +748,32 @@ public class EncodingTest {
 		}
 		encoding.setRawEncoding(rawEncoding);
 		encoding.setCleanEncoding();
-
+		
 		List<Integer> expected = new ArrayList<Integer>();
-		// Section 1: indices 0-35 in cleanEncoding (= 176-210 and 224 in rawEncoding)  
+		// Section 1 (until footnote 1, including SS following it):
+		// indices 0-35 in cleanEncoding (= 176-210 and 224 in rawEncoding)
 		for (int i = 176; i <= 210; i++) {
 			expected.add(i);
 		}
 		for (int i = 224; i <= 224; i++) {
 			expected.add(i);
 		}
-		// Section 2: indices 36-103 in cleanEncoding (= 236-300 and 314-316 in rawEncoding)
+		// Section 2 (until footnote 2, including SS+space+SS following it): 
+		// indices 36-103 in cleanEncoding (= 236-300 and 322-324 in rawEncoding)
 		for (int i = 236; i <= 300; i++) {
 			expected.add(i);
 		}
-		for (int i = 314; i <= 316; i++) {
+		for (int i = 322; i <= 324; i++) {
 			expected.add(i);
 		}
-		// Section 3: indices 104-131 in cleanEncoding (= 317-344 in rawEncoding) 
-		for (int i = 317; i <= 344; i++) {
+		// Section 3 (until SBI, including it):
+		// indices 104-131 in cleanEncoding (= 325-352 in rawEncoding)
+		for (int i = 325; i <= 352; i++) {
 			expected.add(i);
 		}
-		// Section 4: indices 132-213 in cleanEncoding (= 356-437 in rawEncoding) 
-		for (int i = 356; i <= 437; i++) {
+		// Section 4 (until end): 
+		// indices 132-213 in cleanEncoding (= 364-445 in rawEncoding)
+		for (int i = 364; i <= 445; i++) {
 			expected.add(i);
 		}
 
@@ -857,7 +861,7 @@ public class EncodingTest {
 		bar2.add(new String[]{"fu.d6.", "2", null, null});
 		bar2.add(new String[]{"sm.c6.a5.e4.b2.", "2", null, null});
 		bar2.add(new String[]{"a6.", "2", null, null});
-		bar2.add(new String[]{"mi.a6.h5.c4.b3.f2.", "2", "@Footnote 2", "footnote #2"});
+		bar2.add(new String[]{"mi.a6.h5.c4.b3.f2.", "2", "@'mi.a6.' in source", "footnote #2"});
 		bar2.add(new String[]{"sm.a6.b3.a2.a1.", "2", null, null});
 		bar2.add(new String[]{"a3.e2.", "2", null, null});
 		bar2.add(new String[]{"|.", "2", null, null});
@@ -1206,7 +1210,7 @@ public class EncodingTest {
 			"bar 1", 
 			"(1) Footnote 1", 
 			"bar 2", 
-			"(2) Footnote 2"
+			"(2) 'mi.a6.' in source"
 		});
 
 		List<String> actual = encoding.getFootnotes();

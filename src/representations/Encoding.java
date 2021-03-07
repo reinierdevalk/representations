@@ -22,7 +22,7 @@ import tbp.TabSymbolSet;
 public class Encoding implements Serializable {
 
 	private static final long serialVersionUID = 1L;
-	private static final String FOOTNOTE_INDICATOR = "@";
+	public static final String FOOTNOTE_INDICATOR = "@";
 	private static final String WHITESPACE = " ";
 	public static final String METADATA_ERROR = "METADATA ERROR -- Check for missing curly brackets.";
 

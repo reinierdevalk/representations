@@ -471,6 +471,7 @@ public class MEIExport {
 		notationtypeStr = "tab.lute.italian"; // TODO overwrites because currently only Italian tab in TabMEI		
 		
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
 
 		// 1. Make meiHead
 		String[] meiHead = new String[MEI_HEAD.size()];
@@ -573,22 +574,49 @@ public class MEIExport {
 				System.out.println("event = " + (j+1));
 				String[] currEventFull = currBar.get(j);
 ///				String currEvent = currBar.get(j);
-				String currEvent = currEventFull[Encoding.EVENT_IND];
+				String currEvent = currEventFull[Encoding.EVENT_IND];				
 				String currEventOrig = currEventFull[Encoding.FOOTNOTE_IND];
-				boolean eventIsCorrected = 
-					currEventOrig != null && currEventOrig.contains("'"); 
+
+				String[] nextEventFull = null;
+				String nextEvent = null;
+				String nextEventOrig = null;
+				if (j < currBar.size()-1) {
+					nextEventFull = currBar.get(j+1);
+					nextEvent = nextEventFull[Encoding.EVENT_IND];
+					nextEventOrig = nextEventFull[Encoding.FOOTNOTE_IND];
+				}
+								
 				// Remove final ss
 				currEvent = currEvent.substring(0, currEvent.lastIndexOf(ss));
-				if (eventIsCorrected) {
-					currEventOrig = 
-						currEventOrig.substring(currEventOrig.indexOf("'")+1,
-						currEventOrig.lastIndexOf("'"));
-					if (currEventOrig.endsWith(ss)) {
-						currEventOrig = currEventOrig.substring(0, currEventOrig.length());
-					}
+				if (nextEvent != null) {
+					nextEvent = nextEvent.substring(0, nextEvent.lastIndexOf(ss));
 				}
+				
+				List<String> currAndNextOrig = 
+					Arrays.asList(new String[]{currEventOrig, nextEventOrig});							
+				// Extract correction and remove any trailing SS
+				for (int k = 0; k < currAndNextOrig.size(); k++) {
+					String e = currAndNextOrig.get(k);
+					if (e != null) {
+						if (e.contains("'")) {
+							e = e.substring(e.indexOf("'")+1, e.lastIndexOf("'"));
+						}
+						else {
+							e = e.substring(e.indexOf(Encoding.FOOTNOTE_INDICATOR) + 1);
+						}
+						if (e.endsWith(ss)) {
+							e = e.substring(0, e.length()-1);
+						}
+					}
+					currAndNextOrig.set(k, e);
+				}
+				currEventOrig = currAndNextOrig.get(0);
+				nextEventOrig = currAndNextOrig.get(1);
+
 				System.out.println("currEvent = " + currEvent);
 				System.out.println("currEventOrig = " + currEventOrig);
+				System.out.println("nextEvent = " + nextEvent);
+				System.out.println("nextEventOrig = " + nextEventOrig);
 
 				// sicAndCorr contains two elements if there is an adaptation; else only one
 				List<String> sicAndCorr = new ArrayList<>();
@@ -613,107 +641,146 @@ public class MEIExport {
 					for (int k = 0; k < sicAndCorr.size(); k++) {
 						System.out.println("option = " + k);
 						String sicOrCorrEvent = sicAndCorr.get(k);
-						String[] currEventSplit = 
-							(!sicOrCorrEvent.contains(ss)) ? new String[]{sicOrCorrEvent} :
-							sicOrCorrEvent.split("\\" + ss);
-//						String[] currEventSplit = 
-//							(!currEvent.contains(ss)) ? new String[]{currEvent} : 
-//							currEvent.split("\\" + ss);
-						System.out.println("currEventSplit = " + Arrays.toString(currEventSplit));
-						// Remove any MS (the first has already been taken care of above; any other
-						// are handled below)
-						if (MensurationSign.getMensurationSign(currEventSplit[0]) != null) {
-							currEventSplit = Arrays.copyOfRange(currEventSplit, 1, currEventSplit.length);
+						System.out.println("sicOrCorrEvent = " + sicOrCorrEvent); 
+						
+						// isReplacedByMultipleEvents and replacesMultipleEvents occur only
+						// in sic case (k == 0)
+						boolean isReplacedByMultipleEvents = 
+							sicOrCorrEvent.endsWith(sp) && 
+							(nextEventOrig != null && nextEventOrig.equals("not in source"));
+						boolean replacesMultipleEvents = 
+							sicOrCorrEvent.contains(sp) && !sicOrCorrEvent.endsWith(sp);
+						
+						// multipleEvents contains the events to include in the <sic> or
+						// <corr> tag. Cases:
+						// - default case: <sic> and <corr> contain one event
+						// - if replacesMultipleEvents: <sic> contains multiple <tabGrp>s, 
+						//   <corr> one
+						// - if isReplacedByMultipleEvents: <sic> contains one <tabGrp>, 
+						//   <corr> multiple
+						String[] multipleEvents = new String[]{sicOrCorrEvent};
+						if (replacesMultipleEvents) {
+							multipleEvents = new String[]{sicOrCorrEvent};
 						}
-						if (currEventSplit.length != 0) {
-//							boolean isTriplet = false;
-							// Determine dur
-							int dur = prevDur;
-							int dots = 0;
-							RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(currEventSplit[0]);
-							if (rs != null) {
-//								if (rs.getEncoding().startsWith(RhythmSymbol.tripletIndicator)) {
-//									isTriplet = true;
-//									System.out.println("starts with tripletIndicator");
-//									System.out.println(Arrays.toString(meters.get(meterIndex)));
-//									System.exit(0);
-//								}
-//								else {
-								dots = rs.getNumDots();
-								// Get undotted version if applicable 
-								if (dots != 0) {
-									rs = rs.getUndotted();
-								}
-								Rational durAsRat = Tablature.SMALLEST_RHYTHMIC_VALUE.mul(rs.getDuration());
-								dur = durAsRat.getDenom();
-								// Reset prevDur only if there is no adaptation, or in case of
-								// the adapted version (at index k = 1)
-								if (sicAndCorr.size() == 1 || k == 1) {
-									prevDur = dur;
-								}
-//								}
-							}
-							// tabGrp
-							String tabGrpID = "";
-							List<String> currBarXML = new ArrayList<>();
-							currBarXML.add(INDENT + TAB.repeat(3) +
-								"<tabGrp xml:id='" + tabGrpID + "'" + " " + "dur='" + dur + "'" +
-								((dots > 0) ? " " + "dots='" + dots + "'" : "") + ">");
-//							currBarXML += INDENT + TAB.repeat(3) +
-//								"<tabGrp xml:id='" + tabGrpID + "'" + " " + "dur='" + dur + "'" +
-//								((dots > 0) ? " " + "dots='" + dots + "'" : "") + ">" + "\r\n";
-							// tabRhythm
-							if (rs != null) {
-								String tabRhythmID = "";
-								currBarXML.add(INDENT + TAB.repeat(4) + 
-									"<tabRhythm xml:id='" + tabRhythmID + "'/>");	
-//								currBarXML += INDENT + TAB.repeat(4) + 
-//									"<tabRhythm xml:id='" + tabRhythmID + "'/>" + "\r\n"; 
-							}
-							// Rests are covered by the tabRhythm
-							int start = (rs != null) ? 1 : 0; 
-							// Notes
-							for (int l = start; l < currEventSplit.length; l++) {
-								TabSymbol ts = TabSymbol.getTabSymbol(currEventSplit[l], tss);
-								String noteID = "";
-								currBarXML.add(INDENT + TAB.repeat(4) +
-									"<note xml:id='" + noteID + "'" + " " + 
-									"tab.course='" + ts.getCourse() + "'" + " " + 
-									"tab.fret='" + ts.getFret() + "'" + "/>");
-//								currBarXML += INDENT + TAB.repeat(4) +
-//									"<note xml:id='" + noteID + "'" + " " + 
-//									"tab.course='" + ts.getCourse() + "'" + " " + 
-//									"tab.fret='" + ts.getFret() + "'" + "/>" + "\r\n";			
-							}
-							currBarXML.add(INDENT + TAB.repeat(3) + "</tabGrp>");
-//							currBarXML += INDENT + TAB.repeat(3) + "</tabGrp>" + "\r\n";
-							
-							// If applicable: add sic and and corr tags and correct indentation
-							if (sicAndCorr.size() == 2) {		
-								for (int l = 0; l < currBarXML.size(); l++) {
-									currBarXML.set(l, TAB.repeat(2) + currBarXML.get(l));
-								}
-//								System.out.println("****");
-//								for (String line : currBarXML) {
-//									System.out.println("line = " + line);
-//								}
-								String tag = (k == 0) ? "sic" : "corr";
-								currBarXML.add(0, INDENT + TAB.repeat(3+1) + "<" + tag + ">");
-								currBarXML.add(INDENT + TAB.repeat(3+1) + "</" + tag + ">");
-								if (k == 0) {
-									currBarXML.add(0, INDENT + TAB.repeat(3) + "<choice>");
-								}
-								if (k == 1) {
-									currBarXML.add(INDENT + TAB.repeat(3) + "</choice>");
-								}
-							}
-							System.out.println("currBarXML:");
-							for (String s : currBarXML) {
-								System.out.println(s);
-							}
-							currEventXMLAsList.add(currBarXML);
+						if (isReplacedByMultipleEvents) {
+							sicOrCorrEvent = sicOrCorrEvent.substring(0, 
+								sicOrCorrEvent.indexOf(ss + sp));
+							System.out.println(sicOrCorrEvent);
+							System.exit(0);
+							multipleEvents = sicOrCorrEvent.split(
+								ss + ConstantMusicalSymbol.SPACE.getEncoding() + ss);	
 						}
 						
+						if (multipleEvents.length > 1) {
+							for (String s : multipleEvents) {
+								System.out.println(s);
+							}
+							System.exit(0);
+						}
+						
+						for (int z = 0; z < multipleEvents.length; z++) {
+							String ev = multipleEvents[z];
+							String[] currEventSplit = 
+								(!ev.contains(ss)) ? new String[]{ev} : ev.split("\\" + ss);
+//							String[] currEventSplit = 
+//								(!sicOrCorrEvent.contains(ss)) ? new String[]{sicOrCorrEvent} :
+//								sicOrCorrEvent.split("\\" + ss);
+//							String[] currEventSplit = 
+//								(!currEvent.contains(ss)) ? new String[]{currEvent} : 
+//								currEvent.split("\\" + ss);
+							System.out.println("currEventSplit = " + Arrays.toString(currEventSplit));
+							// Remove any MS (the first has already been taken care of above; any other
+							// are handled below)
+							if (MensurationSign.getMensurationSign(currEventSplit[0]) != null) {
+								currEventSplit = Arrays.copyOfRange(currEventSplit, 1, currEventSplit.length);
+							}
+							if (currEventSplit.length != 0) {
+//								boolean isTriplet = false;
+								// Determine dur
+								int dur = prevDur;
+								int dots = 0;
+								RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(currEventSplit[0]);
+								if (rs != null) {
+//									if (rs.getEncoding().startsWith(RhythmSymbol.tripletIndicator)) {
+//										isTriplet = true;
+//										System.out.println("starts with tripletIndicator");
+//										System.out.println(Arrays.toString(meters.get(meterIndex)));
+//										System.exit(0);
+//									}
+									dots = rs.getNumDots();
+									// Get undotted version if applicable 
+									if (dots != 0) {
+										rs = rs.getUndotted();
+									}
+									Rational durAsRat = Tablature.SMALLEST_RHYTHMIC_VALUE.mul(rs.getDuration());
+									dur = durAsRat.getDenom();
+									// Reset prevDur only if there is no adaptation, or in case of
+									// the adapted version (at index k == 1)
+									if (sicAndCorr.size() == 1 || k == 1) {
+										prevDur = dur;
+									}
+								}
+								// tabGrp
+								String tabGrpID = "";
+								List<String> currBarXML = new ArrayList<>();
+								currBarXML.add(INDENT + TAB.repeat(3) +
+									"<tabGrp xml:id='" + tabGrpID + "'" + " " + "dur='" + dur + "'" +
+									((dots > 0) ? " " + "dots='" + dots + "'" : "") + ">");
+//								currBarXML += INDENT + TAB.repeat(3) +
+//									"<tabGrp xml:id='" + tabGrpID + "'" + " " + "dur='" + dur + "'" +
+//									((dots > 0) ? " " + "dots='" + dots + "'" : "") + ">" + "\r\n";
+								// tabRhythm
+								if (rs != null) {
+									String tabRhythmID = "";
+									currBarXML.add(INDENT + TAB.repeat(4) + 
+										"<tabRhythm xml:id='" + tabRhythmID + "'/>");	
+//									currBarXML += INDENT + TAB.repeat(4) + 
+//										"<tabRhythm xml:id='" + tabRhythmID + "'/>" + "\r\n"; 
+								}
+								// Rests are covered by the tabRhythm
+								int start = (rs != null) ? 1 : 0; 
+								// Notes
+								for (int l = start; l < currEventSplit.length; l++) {
+									TabSymbol ts = TabSymbol.getTabSymbol(currEventSplit[l], tss);
+									String noteID = "";
+									currBarXML.add(INDENT + TAB.repeat(4) +
+										"<note xml:id='" + noteID + "'" + " " + 
+										"tab.course='" + ts.getCourse() + "'" + " " + 
+										"tab.fret='" + ts.getFret() + "'" + "/>");
+//									currBarXML += INDENT + TAB.repeat(4) +
+//										"<note xml:id='" + noteID + "'" + " " + 
+//										"tab.course='" + ts.getCourse() + "'" + " " + 
+//										"tab.fret='" + ts.getFret() + "'" + "/>" + "\r\n";			
+								}
+								currBarXML.add(INDENT + TAB.repeat(3) + "</tabGrp>");
+//								currBarXML += INDENT + TAB.repeat(3) + "</tabGrp>" + "\r\n";
+						
+								// If applicable: add sic and and corr tags and correct indentation
+								if (sicAndCorr.size() == 2 && z == multipleEvents.length - 1) {		
+									for (int l = 0; l < currBarXML.size(); l++) {
+										currBarXML.set(l, TAB.repeat(2) + currBarXML.get(l));
+									}
+//									System.out.println("****");
+//									for (String line : currBarXML) {
+//										System.out.println("line = " + line);
+//									}
+									String tag = (k == 0) ? "sic" : "corr";
+									currBarXML.add(0, INDENT + TAB.repeat(3+1) + "<" + tag + ">");
+									currBarXML.add(INDENT + TAB.repeat(3+1) + "</" + tag + ">");
+									if (k == 0) {
+										currBarXML.add(0, INDENT + TAB.repeat(3) + "<choice>");
+									}
+									if (k == 1) {
+										currBarXML.add(INDENT + TAB.repeat(3) + "</choice>");
+									}
+								}
+								System.out.println("currBarXML:");
+								for (String s : currBarXML) {
+									System.out.println(s);
+								}
+								currEventXMLAsList.add(currBarXML);
+							}
+						}
 					} // over sicAndCorr
 					// Make XML strings
 					for (List<String> l : currEventXMLAsList) {
