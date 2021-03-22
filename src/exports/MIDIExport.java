@@ -195,8 +195,8 @@ public class MIDIExport {
 				Integer[] tst = timeSigTicks.get(i);
 				mt = new MetaMessage();
 				// 2^x = den --> x = log_2(den) = log_e(den)/log_e(2)
-				double dd = Math.log(mi[1])/Math.log(2);
-				byte[] bts = {(byte)(int)mi[0], (byte)dd, 0x18, 0x08}; // nn=in[0], cc=24, bb=8
+				double dd = Math.log(mi[Transcription.MI_DEN])/Math.log(2);
+				byte[] bts = {(byte)(int)mi[Transcription.MI_NUM], (byte)dd, 0x18, 0x08}; // nn=in[0], cc=24, bb=8
 				mt.setMessage(0x58, bts, 4);			
 				tracks.get(0).add(new MidiEvent(mt,(long)tst[0]));
 			}

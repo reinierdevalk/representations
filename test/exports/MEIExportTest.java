@@ -1,5 +1,6 @@
 package exports;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -7,12 +8,26 @@ import java.util.List;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import junit.framework.TestCase;
+import representations.Encoding;
+import tbp.SymbolDictionary;
 
 public class MEIExportTest extends TestCase {
 
+	private File encodingTestpiece;
+	private final Rational r128 = new Rational(1, 128);
+	private final Rational r64 = new Rational(1, 64);
+	private final Rational r32 = new Rational(1, 32);
+	private final Rational r16 = new Rational(1, 16);
+	private final Rational r8 = new Rational(1, 8);
+	private final Rational r4 = new Rational(1, 4);
+	private final Rational r2 = new Rational(1, 2);
+	private final Rational r1 = new Rational(1, 1);
+		
 	protected void setUp() throws Exception {
 		super.setUp();
+		encodingTestpiece = new File(MEIExport.rootDir + "data/data/encodings/test/"  + "testpiece.tbp");
 	}
+
 
 	protected void tearDown() throws Exception {
 		super.tearDown();
@@ -100,14 +115,6 @@ public class MEIExportTest extends TestCase {
 	}
 
 
-	private final Rational r128 = new Rational(1, 128);
-	private final Rational r64 = new Rational(1, 64);
-	private final Rational r32 = new Rational(1, 32);
-	private final Rational r16 = new Rational(1, 16);
-	private final Rational r8 = new Rational(1, 8);
-	private final Rational r4 = new Rational(1, 4);
-	private final Rational r2 = new Rational(1, 2);
-	private final Rational r1 = new Rational(1, 1);
 	private List<List<Rational>> getTestFractions() {
 		List<List<Rational>> testFractions = new ArrayList<List<Rational>>();
 		testFractions.add(Arrays.asList(new Rational[]{r128}));
@@ -163,8 +170,70 @@ public class MEIExportTest extends TestCase {
 		
 		return testFractions;
 	}
-	
-	
+
+
+	public void testGetXMLDur() {
+		Encoding encoding = new Encoding(encodingTestpiece);
+		
+		List<Integer[]> expected = new ArrayList<>();
+		// Bar 1
+		expected.add(null);
+		expected.add(new Integer[]{2, 0});
+		expected.add(new Integer[]{4, 0});
+		expected.add(new Integer[]{4, 0});
+		expected.add(null);
+		// Bar 2
+		expected.add(new Integer[]{8, 1});
+		expected.add(new Integer[]{16, 0});
+		expected.add(new Integer[]{8, 0});
+		expected.add(null);
+		expected.add(new Integer[]{4, 0});
+		expected.add(new Integer[]{8, 0});
+		expected.add(null);
+		expected.add(null);
+		// Bar 3
+		expected.add(new Integer[]{16, 0});
+		expected.add(null);
+		expected.add(new Integer[]{32, 0});
+		expected.add(null);
+		expected.add(null);
+		// Bar 4
+		expected.add(null);
+		expected.add(null);
+		expected.add(new Integer[]{4, 0});		
+		expected.add(new Integer[]{4, 0});
+		expected.add(new Integer[]{4, 0});
+		expected.add(null);
+
+		List<Integer[]> actual = new ArrayList<>();
+		List<String> events = new ArrayList<>();
+		List<List<String[]>> ebl = encoding.getEventsBarlinesFootnotesPerBar();
+		for (List<String[]> l : ebl) {
+			for (String[] s : l) {
+				events.add(s[0]);
+			}
+		}
+		for (String event : events) {
+			if (!event.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR) &&
+				!event.equals(SymbolDictionary.END_BREAK_INDICATOR)) {
+				actual.add(MEIExport.getXMLDur(event));
+			}
+		}
+
+		for (int i = 0; i < expected.size(); i++) {
+			if (expected.get(i) != null) {
+				assertEquals(expected.get(i).length, actual.get(i).length);
+				for (int j = 0; j < expected.get(i).length; j++) {
+					assertEquals(expected.get(i)[j], actual.get(i)[j]);
+				}
+			}
+			else {
+				assertEquals(expected.get(i), actual.get(i));
+			}
+		}
+	}
+
+
 	public void testGetUnitFractions() {
 		List<List<Rational>> expected = new ArrayList<List<Rational>>(getTestFractions());
 		List<List<Rational>> actual = new ArrayList<List<Rational>>();

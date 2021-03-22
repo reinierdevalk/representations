@@ -11,7 +11,6 @@ import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.utility.math.Rational;
 import representations.Encoding.Tuning;
 import tbp.ConstantMusicalSymbol;
-import tbp.MensurationSign;
 import tbp.RhythmSymbol;
 import tbp.SymbolDictionary;
 import tbp.TabSymbol;
@@ -47,6 +46,12 @@ public class Tablature implements Serializable {
 	public static final int CHORD_SIZE_AS_NUM_ONSETS = 7;
 	public static final int NOTE_SEQ_NUM = 8;
 	private static final int TABLATURE_EVENT_SEQ_NUM = 9;
+
+	public static final int MI_NUM = 0;
+	public static final int MI_DEN = 1;
+	public static final int MI_FIRST_BAR = 2;
+	public static final int MI_LAST_BAR = 3;
+	public static final int MI_DIM = 4;
 
 	public Tablature() {
 	}
@@ -211,21 +216,19 @@ public class Tablature implements Serializable {
 				// times 2:	2/2 --> (2*2)/2 = 2/1
 				// times 4:	2/2 --> (2*4)/2 = 4/1
 				if (dim > 0) {
-					newMeter = new Rational(currMeterInfo[0] * dim, currMeterInfo[1]);
-//					currentMeterInfo[1] = currentMeterInfo[1] / dim;
+					newMeter = new Rational(currMeterInfo[MI_NUM] * dim, currMeterInfo[MI_DEN]);
 				}
 				// divided by 2: 2/2 --> (2/2)/2 = 1/2 
 				// divided by 4: 2/2 --> (2/4)/2 = 1/4
 				else {
 					newMeter = 
-						new Rational(currMeterInfo[0], Math.abs(dim)).div(currMeterInfo[1]);
-//					currentMeterInfo[1] = currentMeterInfo[1] * Math.abs(dim);
+						new Rational(currMeterInfo[MI_NUM], Math.abs(dim)).div(currMeterInfo[MI_DEN]);
 				}
 				newMeter.reduce();
-				currMeterInfo[0] = newMeter.getNumer();
-				currMeterInfo[1] = newMeter.getDenom();
+				currMeterInfo[MI_NUM] = newMeter.getNumer();
+				currMeterInfo[MI_DEN] = newMeter.getDenom();
 			}
-			currMeterInfo[4] = dim;
+			currMeterInfo[MI_DIM] = dim;
 			mi.add(currMeterInfo);
 		}
 		return mi;
@@ -235,7 +238,7 @@ public class Tablature implements Serializable {
 	public static int getDiminution(int bar, List<Integer[]> mi) {
 		int diminution = 1; 
 		for (Integer[] in : mi) {
-			if (bar >= in[2] && bar <= in[3]) {
+			if (bar >= in[MI_FIRST_BAR] && bar <= in[MI_LAST_BAR]) {
 				diminution = in[4];
 				break;
 			}
@@ -288,20 +291,20 @@ public class Tablature implements Serializable {
 			String currInfo = originalMeters[i].trim();
 			// Meter
 			String currMeter = currInfo.substring(0, currInfo.indexOf("(")).trim();
-			currentMeterInfo[0] = Integer.parseInt(currMeter.split("/")[0].trim());
-			currentMeterInfo[1] = Integer.parseInt(currMeter.split("/")[1].trim());
+			currentMeterInfo[MI_NUM] = Integer.parseInt(currMeter.split("/")[0].trim());
+			currentMeterInfo[MI_DEN] = Integer.parseInt(currMeter.split("/")[1].trim());
 			// Bar number(s)
 			String currBars = 
 				currInfo.substring(currInfo.indexOf("(") + 1, currInfo.indexOf(")")).trim();
 			// If the meter is only for a single bar
 			if (!currBars.contains("-")) {
-				currentMeterInfo[2] = Integer.parseInt(currBars.trim());
-				currentMeterInfo[3] = Integer.parseInt(currBars.trim());
+				currentMeterInfo[MI_FIRST_BAR] = Integer.parseInt(currBars.trim());
+				currentMeterInfo[MI_LAST_BAR] = Integer.parseInt(currBars.trim());
 			}
 			// If the meter is for more than one bar
 			else {
-				currentMeterInfo[2] = Integer.parseInt(currBars.split("-")[0].trim());
-				currentMeterInfo[3] = Integer.parseInt(currBars.split("-")[1].trim());
+				currentMeterInfo[MI_FIRST_BAR] = Integer.parseInt(currBars.split("-")[0].trim());
+				currentMeterInfo[MI_LAST_BAR] = Integer.parseInt(currBars.split("-")[1].trim());
 			}
 			originalMeterInfo.add(currentMeterInfo);
 		}
@@ -347,8 +350,8 @@ public class Tablature implements Serializable {
 		metricTimesBeatZeroAdapted.add(0);
 		for (int i = 1 ; i < originalMeterInfo.size(); i++) {
 			Integer[] prevMeterInfo = originalMeterInfo.get(i-1);
-			int prevNumBars = (prevMeterInfo[3] - prevMeterInfo[2]) + 1;
-			Rational prevMeter = new Rational(prevMeterInfo[0], prevMeterInfo[1]);
+			int prevNumBars = (prevMeterInfo[MI_LAST_BAR] - prevMeterInfo[MI_FIRST_BAR]) + 1;
+			Rational prevMeter = new Rational(prevMeterInfo[MI_NUM], prevMeterInfo[MI_DEN]);
 			// The metric time (duration of the previous bars) for beat zero equals 
 			// original: previous meter * number of bars in that meter 
 			// adapted: previous meter * number of bars in that meter * (or /) the dim for that meter
@@ -362,11 +365,7 @@ public class Tablature implements Serializable {
 				beatZeroAdapted = prevMeter.mul(prevNumBars).div(Math.abs(prevDim));
 			}
 			// Represent Rational r as integer using cross-multiplication
-			// num(r)/den(r) = x/32 --> x * den(r) = num(r) * 32 --> x = (num(r) * 32) / den(r) 
-//			int beatZeroAsInt = 
-//				(beatZero.getNumer() * SMALLEST_RHYTHMIC_VALUE.getDenom()) / beatZero.getDenom();
-//			int beatZeroAdaptedAsInt = 
-//				(beatZeroAdapted.getNumer() * SMALLEST_RHYTHMIC_VALUE.getDenom()) / beatZeroAdapted.getDenom();
+			// num(r)/den(r) = x/32 --> x * den(r) = num(r) * 32 --> x = (num(r) * 32) / den(r)
 			int beatZeroAsInt = rationalToIntDur(beatZero);
 			int beatZeroAdaptedAsInt = rationalToIntDur(beatZeroAdapted);
 
@@ -743,15 +742,15 @@ public class Tablature implements Serializable {
 
 		// 0. Determine the presence of an anacrusis
 		boolean containsAnacrusis = false;
-		if (argMeterInfo.get(0)[2] == 0) {
+		if (argMeterInfo.get(0)[MI_FIRST_BAR] == 0) {
 			containsAnacrusis = true;
 		}
 
 		// 1. Determine the largest meter denominator and then the common denominator
 		int largestMeterDenom = -1;
-		for (Integer[] i : argMeterInfo) {
-			if (i[1] > largestMeterDenom) {
-				largestMeterDenom = i[1];
+		for (Integer[] in : argMeterInfo) {
+			if (in[MI_DEN] > largestMeterDenom) {
+				largestMeterDenom = in[MI_DEN];
 			}
 		}
 		int commonDenom = metricTime.getDenom() * largestMeterDenom;
@@ -763,7 +762,8 @@ public class Tablature implements Serializable {
 		// b. All meters
 		List<Rational> metersInLargestDenom = new ArrayList<Rational>();
 		for (int i = 0; i < argMeterInfo.size(); i++) {
-			Integer[] currentMeter = new Integer[]{argMeterInfo.get(i)[0], argMeterInfo.get(i)[1]};
+			Integer[] currentMeter = 
+				new Integer[]{argMeterInfo.get(i)[MI_NUM], argMeterInfo.get(i)[MI_DEN]};
 			// factor will always be an int because largestMeterDenom will always be a multiple of currentMeter[1]    	
 			int factor = (largestMeterDenom / currentMeter[1]) * metricTime.getDenom();  
 			metersInLargestDenom.add(new Rational(currentMeter[0] * factor, commonDenom));
@@ -787,7 +787,8 @@ public class Tablature implements Serializable {
 		// Determine the remaining meter change points
 		for (int i = startIndex; i < argMeterInfo.size(); i++) {
 			// Determine the number of bars in the current meter
-			int numBarsInCurrentMeter = (argMeterInfo.get(i)[3] - argMeterInfo.get(i)[2]) + 1;
+			int numBarsInCurrentMeter = 
+				(argMeterInfo.get(i)[MI_LAST_BAR] - argMeterInfo.get(i)[MI_FIRST_BAR]) + 1;
 			// Determine the metric time of the next meter change point and add it to meterChangePointsMetricTimes
 			// NB: When creating the new Rational do not use add() to avoid automatic reduction
 			Rational currentMeter = metersInLargestDenom.get(i);
@@ -804,8 +805,8 @@ public class Tablature implements Serializable {
 			Rational lengthAnacrusis = metersInLargestDenom.get(0);
 			Rational meterFirstBar = metersInLargestDenom.get(1);
 			int toAdd = meterFirstBar.getNumer() - lengthAnacrusis.getNumer();
-			Rational positionInBar = new Rational(metricTimeInLargestDenom.getNumer() + toAdd, commonDenom);
-//			positionInBar = positionInBar.div(meterFirstBar);
+			Rational positionInBar = 
+				new Rational(metricTimeInLargestDenom.getNumer() + toAdd, commonDenom);
 			positionInBar.reduce();
 			// Set metricPosition; the bar number is 0
 			metricPosition[0] = new Rational(0, 1);
@@ -824,7 +825,7 @@ public class Tablature implements Serializable {
 					// Determine the bar number
 					int currentDistance = metricTimeInLargestDenom.getNumer() - currentPrevious.getNumer();
 					int numberOfBarsToAdd =	(currentDistance - (currentDistance % currentBarSize)) / currentBarSize;   			
-					int currentBarNumber = argMeterInfo.get(i + startIndex)[2] + numberOfBarsToAdd;
+					int currentBarNumber = argMeterInfo.get(i + startIndex)[MI_FIRST_BAR] + numberOfBarsToAdd;
 					// Determine the position in the bar
 					Rational currentPositionInBar = new Rational(currentDistance % currentBarSize, commonDenom);
 //					Rational currentMeter = metersInLargestDenom.get(i + startIndex);
@@ -1415,35 +1416,35 @@ public class Tablature implements Serializable {
 		else {
 			pairs = new ArrayList<>();
 			TabSymbolSet tss = getEncoding().getTabSymbolSet();
-			List<String> tabwords = getEncoding().getTabwords();
+			List<String> events = getEncoding().getEvents();
 			List<Rational[]> onsetTimes = getAllOnsetTimesRestsInclusive();
 
-			// 1. Align tabwords and onsetTimes
+			// 1. Align events and onsetTimes
 			// Remove all SBI
-			tabwords.removeIf(t -> t.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR));
-			// Combine all successive rest tabwords
-			tabwords = Encoding.combineSuccessiveRestTabwords(tabwords);
-			// Remove all tabwords that are neither a chord nor a rest
+			events.removeIf(t -> t.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR));
+			// Combine all successive rest events
+			events = Encoding.combineSuccessiveRestEvents(events);
+			// Remove all events that are neither a chord nor a rest
 			List<String> tmp = new ArrayList<>();
-			for (String t : tabwords) {
+			for (String t : events) {
 				String[] split = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
 				// Remove space from split
 				if (split[split.length-1].equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
 					split = Arrays.copyOf(split, split.length-1);
 				}
-				// Add tabword if first element is a RS or last element is a TS
+				// Add event if first element is a RS or last element is a TS
 				if (RhythmSymbol.getRhythmSymbol(split[0]) != null ||
 						TabSymbol.getTabSymbol(split[(split.length)-1], tss) != null) {
 					tmp.add(t);
 				}
 			}
-			tabwords = tmp;
+			events = tmp;
 
-			// 2. Get the start and end onset times of triplet tabwords
+			// 2. Get the start and end onset times of triplet events
 			Rational[] pair = new Rational[]{null, null, null};
 			int dur = 0;
-			for (int i = 0; i < tabwords.size(); i++) {
-				String curr = tabwords.get(i);
+			for (int i = 0; i < events.size(); i++) {
+				String curr = events.get(i);
 				Rational ons = onsetTimes.get(i)[0];
 				ons.reduce();
 				if (curr.startsWith(RhythmSymbol.tripletIndicator)) {

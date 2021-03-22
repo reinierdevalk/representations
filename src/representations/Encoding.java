@@ -1496,17 +1496,17 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Combines any successive rest tabwords in the given list of tabwords.
+	 * Combines any successive rest events in the given list of events.
 	 * 
-	 * @param tabwords
+	 * @param events
 	 * @return
 	 */
 	// TESTED
-	public static List<String> combineSuccessiveRestTabwords(List<String> tabwords) {
+	public static List<String> combineSuccessiveRestEvents(List<String> events) {
 		List<String> res = new ArrayList<>();
 		
 		List<String> successiveRests = new ArrayList<>();
-		for (String t : tabwords) {
+		for (String t : events) {
 			String[] split = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
 			// If rest: add to list and continue for loop
 			if (split.length==2 && RhythmSymbol.getRhythmSymbol(split[0]) != null &&
@@ -1605,20 +1605,20 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Gets all the tabwords. 
+	 * Gets all the events. 
 	 * 
-	 * @return A <code>List<String></code> of all tabwords in the Encoding; the SBI are
-	 * kept in place (i.e, form separate tabwords). A rhythm symbol (the last active one)
-	 * is assigned to each tabword that is lacking one.
+	 * @return A <code>List<String></code> of all events in the Encoding; the SBI are
+	 * kept in place (i.e, form separate events). A rhythm symbol (the last active one)
+	 * is assigned to each event that is lacking one.
 	 */
 	// TESTED
-	public List<String> getTabwords() {
-		List<String> allTabwords = new ArrayList<>();
+	public List<String> getEvents() {
+		List<String> allEvents = new ArrayList<>();
 		
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
 
-		// List all tabwords and barlines for each system
+		// List all events and barlines for each system
 		List<List<String[]>> ebf = getEventsBarlinesFootnotes(); 
 		for (int i = 0; i < ebf.size(); i++) {
 			List<String[]> system = ebf.get(i);
@@ -1632,49 +1632,49 @@ public class Encoding implements Serializable {
 				}
 				// Special case for barline followed by barline (this happens when a 
 				// full-bar note is tied at its left (see end quis_me_statim): these 
-				// two bars must be seen as a single tabword, so the first barline must 
-				// be added to the tabword added last
+				// two bars must be seen as a single event, so the first barline must 
+				// be added to the event added last
 				if (j < system.size() - 1) {
 					String nextE = system.get(j+1)[EVENT_IND];
 					boolean nextIsCMS = ConstantMusicalSymbol.getConstantMusicalSymbol(
 						nextE.substring(0, nextE.lastIndexOf(ss))) != null;
 					if (isCMS && nextIsCMS) {
-						// Add first barline to last tabword
-						int lastInd = allTabwords.size()-1;
-						allTabwords.set(lastInd, allTabwords.get(lastInd) + e);
+						// Add first barline to last event
+						int lastInd = allEvents.size()-1;
+						allEvents.set(lastInd, allEvents.get(lastInd) + e);
 						// Set e to second barline and skip event at j+1
 						e = nextE;
 						j++;
 					}
 				}
-				allTabwords.add(e);
+				allEvents.add(e);
 			}
 			if (i < ebf.size() - 1) {
-				allTabwords.add("/");
+				allEvents.add("/");
 			}
 		}
 
-		// Add a RS to each tabword lacking one
+		// Add a RS to each event lacking one
 		String activeRs = "";
-		for (int j = 0; j < allTabwords.size(); j++) {
-			String t = allTabwords.get(j);
+		for (int j = 0; j < allEvents.size(); j++) {
+			String t = allEvents.get(j);
 			if (!t.equals(sbi)) {
 				String first = t.substring(0, t.indexOf(ss));
 				// RS: set activeRs
 				if (RhythmSymbol.getRhythmSymbol(first) != null) {
 					activeRs = first;
 				}
-				// No RS: prepend activeRs to tabword if applicable  
+				// No RS: prepend activeRs to event if applicable  
 				else {
-					// Only if tabword is not a MS or a CMS (barline)
+					// Only if event is not a MS or a CMS (barline)
 					if (MensurationSign.getMensurationSign(first) == null && 
 						ConstantMusicalSymbol.getConstantMusicalSymbol(first) == null) {
-						allTabwords.set(j, activeRs + ss + t);
+						allEvents.set(j, activeRs + ss + t);
 					}
 				}
 			}
 		}
-		return allTabwords;
+		return allEvents;
 	}
 
 
@@ -1723,9 +1723,9 @@ public class Encoding implements Serializable {
 		header = header.replace(origMeterInfo, reversedMeterInfo);
 		
 		// 2. Reverse encoding and recombine
-		List<String> tabwords = getTabwords();
-		Collections.reverse(tabwords);
-		return new Encoding(header + "\r\n\r\n" + recombineTabwords(tabwords) + 
+		List<String> events = getEvents();
+		Collections.reverse(events);
+		return new Encoding(header + "\r\n\r\n" + recombineEvents(events) + 
 			SymbolDictionary.END_BREAK_INDICATOR, getName(), true);
 	}
 
@@ -1742,29 +1742,29 @@ public class Encoding implements Serializable {
 	public Encoding deornamentEncoding(int dur) {
 		String header = splitHeaderAndEncoding()[0];
 
-		// 1. Adapt tabwords
-		List<String> tabwords = getTabwords();
+		// 1. Adapt events
+		List<String> events = getEvents();
 		String pre = null;
 		int durPre = -1;
 		int indPre = -1;
 		List<Integer> removed = new ArrayList<>();
 		int i2 = 0;
-		for (int i = 0; i < tabwords.size(); i++) {
-			String t = tabwords.get(i);
+		for (int i = 0; i < events.size(); i++) {
+			String t = events.get(i);
 			// If t is not a barline or a SBI
-			if (!tabwordIsBarlineOrSBI(t)) {
+			if (!eventIsBarlineOrSBI(t)) {
 				String[] symbols = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
 				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
-				// If the tabword is an ornamentation (which always consists of only a RS, a TS,
+				// If the event is an ornamentation (which always consists of only a RS, a TS,
 				// and a space)
 				if (r != null && r.getDuration() < dur && symbols.length == 3) {
 					removed.add(i2);
 					// Determine pre, if it has not yet been determined
 					if (pre == null) {
 						for (int j = i-1; j >= 0; j--) {
-							String tPrev = tabwords.get(j);
+							String tPrev = events.get(j);
 							// If tPrev is not a barline or SBI
-							if (!tabwordIsBarlineOrSBI(tPrev) ) {
+							if (!eventIsBarlineOrSBI(tPrev) ) {
 								pre = tPrev;
 								durPre = RhythmSymbol.getRhythmSymbol(tPrev.substring(0, 
 									tPrev.indexOf(SymbolDictionary.SYMBOL_SEPARATOR))).getDuration();
@@ -1773,11 +1773,11 @@ public class Encoding implements Serializable {
 							}
 						}
 					}
-					// Increment durPre and set tabword to null
+					// Increment durPre and set event to null
 					durPre += r.getDuration();
-					tabwords.set(i, null);
+					events.set(i, null);
 				}
-				// If the tabword is the first after a sequence of one or more ornamental
+				// If the event is the first after a sequence of one or more ornamental
 				// notes (i.e., it does not meet the if conditions above but pre != null)
 				else if (pre != null) {
 					// Determine the new Rs for pre, and adapt and set it
@@ -1788,7 +1788,7 @@ public class Encoding implements Serializable {
 							break;
 						}
 					}
-					tabwords.set(indPre, newRs + 
+					events.set(indPre, newRs + 
 						pre.substring(pre.indexOf(SymbolDictionary.SYMBOL_SEPARATOR), pre.length()));
 					// Reset
 					pre = null;
@@ -1799,10 +1799,10 @@ public class Encoding implements Serializable {
 				}
 			}
 		}
-		tabwords.removeIf(t -> t == null);
+		events.removeIf(t -> t == null);
 
 		// 2. Recombine
-		return new Encoding(header + "\r\n\r\n" + recombineTabwords(tabwords) + 
+		return new Encoding(header + "\r\n\r\n" + recombineEvents(events) + 
 			SymbolDictionary.END_BREAK_INDICATOR, getName(), true);
 	}
 
@@ -1838,12 +1838,12 @@ public class Encoding implements Serializable {
 		}
 		header = header.replace(origMeterInfo, stretchedMeterInfo);
 		
-		// 2. Adapt tabwords
-		List<String> tabwords = getTabwords();
-		for (int i = 0; i < tabwords.size(); i++) {
-			String t = tabwords.get(i);
+		// 2. Adapt events
+		List<String> events = getEvents();
+		for (int i = 0; i < events.size(); i++) {
+			String t = events.get(i);
 			// If t is not a barline or a SBI
-			if (!tabwordIsBarlineOrSBI(t)) {
+			if (!eventIsBarlineOrSBI(t)) {
 				String[] symbols = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
 				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
 				String newRs = "";
@@ -1854,14 +1854,14 @@ public class Encoding implements Serializable {
 							break;
 						}
 					}
-					tabwords.set(i, 
+					events.set(i, 
 						newRs + t.substring(t.indexOf(SymbolDictionary.SYMBOL_SEPARATOR), t.length()));
 				}
 			}
 		}
 
 		// 3. Recombine
-		return new Encoding(header + "\r\n\r\n" + recombineTabwords(tabwords) + 
+		return new Encoding(header + "\r\n\r\n" + recombineEvents(events) + 
 			SymbolDictionary.END_BREAK_INDICATOR, getName(), true);
 	}
 
@@ -1901,16 +1901,16 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Recombines the given list of tabwords into a String, adding a line break after each 
+	 * Recombines the given list of events into a String, adding a line break after each 
 	 * constant music symbol (space or barline), as well as after each system break indicator.
 	 * 
-	 * @param tabwords
+	 * @param events
 	 * @return
 	 */ 
 	// TESTED
-	String recombineTabwords(List<String> tabwords) {
+	String recombineEvents(List<String> events) {
 		String recombined = "";
-		for (String s : tabwords) {
+		for (String s : events) {
 			recombined += s;
 			if (!s.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
 				String first = s.substring(0, s.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
@@ -1929,13 +1929,13 @@ public class Encoding implements Serializable {
 
 
 	// TESTED
-	static boolean tabwordIsBarlineOrSBI(String tabword) {
-		if (tabword.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
+	static boolean eventIsBarlineOrSBI(String event) {
+		if (event.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
 			return true;
 		}
 		else {
-			String first = tabword.substring(0, 
-				tabword.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+			String first = event.substring(0, 
+				event.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
 			if (ConstantMusicalSymbol.constantMusicalSymbols.contains(
 				ConstantMusicalSymbol.getConstantMusicalSymbol(first))) {
 				return true;
@@ -2310,34 +2310,34 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Gets all the tabwords. 
+	 * Gets all the events. 
 	 * 
-	 * @return A <code>List<String></code> of all tabwords in the encoding; the SBI are
-	 * kept in place (i.e, form separate tabwords). A rhythm symbol (the last active one)
-	 * is assigned to each tabword that is lacking one.
+	 * @return A <code>List<String></code> of all events in the encoding; the SBI are
+	 * kept in place (i.e, form separate events). A rhythm symbol (the last active one)
+	 * is assigned to each event that is lacking one.
 	 */
 	// TESTED
-	private List<String> getTabwordsOLD() {
+	private List<String> getEventsOLD() {
 		String enc = splitHeaderAndEncoding()[1];
 
 		String[] systems = enc.split(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
 
-		List<String> allTabwords = new ArrayList<>();
+		List<String> allEvents = new ArrayList<>();
 		for (int i = 0; i < systems.length; i++) {
 			String system = systems[i];
-			// List all tabwords and barlines for the current system
+			// List all events and barlines for the current system
 			String[] symbols = system.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
-			List<String> currTabwords = new ArrayList<>();
-			String currTabword = "";
+			List<String> currEvents = new ArrayList<>();
+			String currEvent = "";
 			for (int j = 0; j < symbols.length; j++) {
 				String s = symbols[j];
-				currTabword += s + SymbolDictionary.SYMBOL_SEPARATOR;
-				// Add tabword after each space or barline (i.e., CMS)
+				currEvent += s + SymbolDictionary.SYMBOL_SEPARATOR;
+				// Add event after each space or barline (i.e., CMS)
 				if (ConstantMusicalSymbol.constantMusicalSymbols.contains(
 					ConstantMusicalSymbol.getConstantMusicalSymbol(s))) {
 					// Special case for barline followed by barline (this happens when a 
 					// full-bar note is tied at its left (see end quis_me_statim): these two bars
-					// must be seen as a single tabword, so the second barline must be added too
+					// must be seen as a single event, so the second barline must be added too
 					if (j < symbols.length - 2) { 						
 						String nextS = symbols[j+1];
 						String nextNextS = symbols[j+2];
@@ -2345,41 +2345,41 @@ public class Encoding implements Serializable {
 							ConstantMusicalSymbol.getConstantMusicalSymbol(nextS)) &&
 							ConstantMusicalSymbol.constantMusicalSymbols.contains(
 							ConstantMusicalSymbol.getConstantMusicalSymbol(nextNextS))) {
-							currTabword += nextS + SymbolDictionary.SYMBOL_SEPARATOR;
+							currEvent += nextS + SymbolDictionary.SYMBOL_SEPARATOR;
 							j++;
 						}
 					}
-					currTabwords.add(currTabword);
-					currTabword = "";
+					currEvents.add(currEvent);
+					currEvent = "";
 				}
 			}
-			allTabwords.addAll(currTabwords);
+			allEvents.addAll(currEvents);
 			if (i != systems.length-1) {
-				allTabwords.add(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
+				allEvents.add(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
 			}
 		}
 
-		// Add a RS to each tabword lacking one
+		// Add a RS to each event lacking one
 		String activeRs = "";
-		for (int j = 0; j < allTabwords.size(); j++) {
-			String t = allTabwords.get(j);
+		for (int j = 0; j < allEvents.size(); j++) {
+			String t = allEvents.get(j);
 			if (!t.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
 				String first = t.substring(0, t.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
 				// RS: set activeRs
 				if (RhythmSymbol.getRhythmSymbol(first) != null) {
 					activeRs = first;
 				}
-				// No RS: prepend activeRs to tabword if applicable  
+				// No RS: prepend activeRs to event if applicable  
 				else {
-					// Only if tabword is not a MS or a CMS (barline)
+					// Only if event is not a MS or a CMS (barline)
 					if (MensurationSign.getMensurationSign(first) == null && 
 						ConstantMusicalSymbol.getConstantMusicalSymbol(first) == null) {
-						allTabwords.set(j, activeRs + SymbolDictionary.SYMBOL_SEPARATOR + t);
+						allEvents.set(j, activeRs + SymbolDictionary.SYMBOL_SEPARATOR + t);
 					}
 				}
 			}
 		}
-		return allTabwords;
+		return allEvents;
 	}
 
 }

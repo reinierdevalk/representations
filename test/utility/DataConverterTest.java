@@ -17,8 +17,8 @@ public class DataConverterTest extends TestCase {
 
 //	private File midiTestpiece1 = new File(Runner.midiPathTest + "testpiece.mid");
 //	private File encodingTestpiece1 = new File(Runner.encodingsPathTest + "testpiece.tbp");
-	private File midiTestpiece1 = new File(MEIExport.rootDir + "data/MIDI/test/" + "testpiece.mid");
-	private File encodingTestpiece1 = new File(MEIExport.rootDir + "data/encodings/test/" + "testpiece.tbp");
+	private File midiTestpiece1 = new File(MEIExport.rootDir + "data/data/MIDI/test/" + "testpiece.mid");
+	private File encodingTestpiece1 = new File(MEIExport.rootDir + "data/data/encodings/test/" + "testpiece.tbp");
 
 
 	public DataConverterTest(String name) {
@@ -436,7 +436,14 @@ public class DataConverterTest extends TestCase {
 			new Rational(13, 16)
 		});
 		
-		List<Integer> expected = Arrays.asList(new Integer[]{2, 4, 20, 26});
+		List<Integer> expected = null;
+//		List<Integer> expected = Arrays.asList(new Integer[]{2, 4, 20, 26});
+		if (Transcription.DURATION_LABEL_SIZE == 64) {
+			expected = Arrays.asList(new Integer[]{4, 8, 40, 52});
+		}
+		else if (Transcription.DURATION_LABEL_SIZE == 96) {
+			
+		}
 		
 		List<Integer> actual = new ArrayList<Integer>();
 		for (Rational r : durs) {

@@ -83,6 +83,13 @@ public class Transcription implements Serializable {
 	public static final int CHORD_SEQ_NUM = 5;
 	public static final int CHORD_SIZE_AS_NUM_ONSETS = 6;
 	public static final int NOTE_SEQ_NUM = 7;
+	
+	public static final int MI_NUM = Tablature.MI_NUM;
+	public static final int MI_DEN = Tablature.MI_DEN;
+	public static final int MI_FIRST_BAR = Tablature.MI_FIRST_BAR;
+	public static final int MI_LAST_BAR = Tablature.MI_LAST_BAR;
+	public static final int MI_NUM_MT_FIRST_BAR = 4;
+	public static final int MI_DEN_MT_FIRST_BAR = 5;
 
 	private String adaptations = "Adaptations:" + "\n";
 	private String chordsSpecification = "Chord error details:" + "\n";
@@ -1684,22 +1691,22 @@ public class Transcription implements Serializable {
 	}
 
 
-	/**
-	 * Sets meterInfo.
-	 * 
-	 * NB: Non-tablature case only.
-	 */
-	private void setMeterInfo(File file) {
-//		File file = getFile();
-		String[] contents = file.list();
-		for (String s: contents) {
-			if (s.endsWith(".txt")) {
-				File meterFile = new File(file + "/" + s);
-				String meterInfoString = ToolBox.readTextFile(meterFile);
-//				meterInfo = Tablature.createMeterInfo(meterInfoString);
-			}
-		}
-	}
+//	/**
+//	 * Sets meterInfo.
+//	 * 
+//	 * NB: Non-tablature case only.
+//	 */
+//	private void setMeterInfo(File file) {
+////		File file = getFile();
+//		String[] contents = file.list();
+//		for (String s: contents) {
+//			if (s.endsWith(".txt")) {
+//				File meterFile = new File(file + "/" + s);
+//				String meterInfoString = ToolBox.readTextFile(meterFile);
+////				meterInfo = Tablature.createMeterInfo(meterInfoString);
+//			}
+//		}
+//	}
 	
 	
 	/**
@@ -1715,7 +1722,6 @@ public class Transcription implements Serializable {
 	/**
 	 * Sets keyInfo.
 	 * 
-	 * @param argMeterInfo <code>null</code> in the non-tablature case.
 	 */
 	void setKeyInfo(/*List<Integer[]> argMeterInfo*/) {
 ////		if (meterInfo == null) {
@@ -1746,10 +1752,10 @@ public class Transcription implements Serializable {
 	 */
 	// TESTED
 	public static Rational getMeter(Rational mt, List<Integer[]> meterInfo) {
-		for (Integer[] i : meterInfo) {
-			Rational curr = new Rational(i[0], i[1]);
-			Rational start = new Rational(i[4], i[5]);
-			int numBarsInMeter = (i[3] - i[2]) + 1; 
+		for (Integer[] in : meterInfo) {
+			Rational curr = new Rational(in[MI_NUM], in[MI_DEN]);
+			Rational start = new Rational(in[MI_NUM_MT_FIRST_BAR], in[MI_DEN_MT_FIRST_BAR]);
+			int numBarsInMeter = (in[MI_LAST_BAR] - in[MI_FIRST_BAR]) + 1; 
 			Rational end = start.add(curr.mul(numBarsInMeter));
 			if (mt.isGreaterOrEqual(start) && mt.isLess(end)) {
 				return curr;
@@ -1769,8 +1775,8 @@ public class Transcription implements Serializable {
 	// TESTED
 	public static Rational getMeter(int bar, List<Integer[]> meterInfo) {
 		for (Integer[] in : meterInfo) {
-			if (bar >= in[2] && bar < in[3]+1) {
-				return new Rational(in[0], in[1]);
+			if (bar >= in[MI_FIRST_BAR] && bar < in[MI_LAST_BAR]+1) {
+				return new Rational(in[MI_NUM], in[MI_DEN]);
 			}
 		}
 		return null;
@@ -1842,7 +1848,9 @@ public class Transcription implements Serializable {
 				Rational rem = end.sub(currMetricTime);
 				numBars = (rem.div(currMeter)).ceil();
 			}
-			mInfo.add(new Integer[]{(int)curr[0], (int)curr[1], start, start + (numBars - 1),
+			mInfo.add(new Integer[]{
+				(int)curr[0], (int)curr[1], 
+				start, start + (numBars - 1),
 				currMetricTime.getNumer(), currMetricTime.getDenom()});
 			start += numBars;
 		}		
@@ -1886,7 +1894,7 @@ public class Transcription implements Serializable {
 				lastBar = firstBarNext - 1;
 			}
 			else {
-				lastBar = meterInfo.get(meterInfo.size() -1)[3];
+				lastBar = meterInfo.get(meterInfo.size() -1)[MI_LAST_BAR];
 			}
 			keyInfo.add(new Integer[]{key, mode, firstBar, lastBar, mt.getNumer(), mt.getDenom()});
 		}
@@ -6993,8 +7001,9 @@ public class Transcription implements Serializable {
 				// Onset bar meter
 				Rational meterOnset = null;
 				for (Integer[] currentMeter : meterInfo) {
-					if (barNumberOnset >= currentMeter[2] && barNumberOnset <= currentMeter[3]) {
-						meterOnset = new Rational(currentMeter[0], currentMeter[1]);
+					if (barNumberOnset >= currentMeter[MI_FIRST_BAR] && 
+						barNumberOnset <= currentMeter[MI_LAST_BAR]) {
+						meterOnset = new Rational(currentMeter[MI_NUM], currentMeter[MI_DEN]);
 					}
 				}
 				// 3. Determine currentMirrorPoint
@@ -7006,8 +7015,10 @@ public class Transcription implements Serializable {
 				if (barNumberOffset > barNumberOnset) {     	
 					for (int i = barNumberOnset + 1; i <= barNumberOffset; i++) {
 						for (Integer[] currentMeter : meterInfo) {
-							if (i >= currentMeter[2] && i <= currentMeter[3]) { 
-								durationSucceedingBars = durationSucceedingBars.add(new Rational(currentMeter[0], currentMeter[1]));
+							if (i >= currentMeter[MI_FIRST_BAR] && i <= currentMeter[MI_LAST_BAR]) { 
+								durationSucceedingBars = 
+									durationSucceedingBars.add(new Rational(currentMeter[MI_NUM], 
+									currentMeter[MI_DEN]));
 							}
 						}
 					}

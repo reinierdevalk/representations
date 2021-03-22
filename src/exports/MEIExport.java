@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.sun.org.apache.bcel.internal.generic.NEWARRAY;
-
 import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.data.structure.Piece;
 import de.uos.fmt.musitech.utility.math.Rational;
@@ -74,6 +72,8 @@ public class MEIExport {
 		"tripletOpen", "tripletMid", "tripletClose", "beamOpen", "beamClose"});
 	private static final String TAB = "    ";
 	private static final String INDENT = TAB.repeat(6);
+	private static final int XML_DUR_IND = 0;
+	private static final int XML_DOTS_IND = 1;
 	
 	public static void main(String[] args) {
 		
@@ -479,7 +479,8 @@ public class MEIExport {
 		else {
 			notationtypeStr = "tab.lute.german";
 		}
-		notationtypeStr = "tab.lute.italian"; // TODO overwrites because currently only Italian tab in TabMEI		
+		// TODO Overwrite because TabMEI currently only supports Italian tab
+		notationtypeStr = "tab.lute.italian";
 		
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
@@ -492,9 +493,11 @@ public class MEIExport {
 		List<String[]> meters = new ArrayList<>();
 		for (Integer[] in : mi) {
 			meters.add(new String[]{
-				"meter.count='" + in[0] + "'", 
-				"meter.unit='" + in[1] + "'",
-				(in[0] == 4 && in[1] == 4 || in[0] == 2 && in[1] == 2) ? " meter.sym='common'" : ""});
+				"meter.count='" + in[Tablature.MI_NUM] + "'", 
+				"meter.unit='" + in[Tablature.MI_DEN] + "'",
+				(in[Tablature.MI_NUM] == 4 && in[Tablature.MI_DEN] == 4 || 
+				 in[Tablature.MI_NUM] == 2 && in[Tablature.MI_DEN] == 2) ? 
+				" meter.sym='common'" : ""});
 		}
 		for (String[] s : meters) {
 			System.out.println(Arrays.toString(s));
@@ -524,7 +527,8 @@ public class MEIExport {
 		// 3. Make bars
 		// Organise the information per bar
 		StringBuilder sb = new StringBuilder();
-		int prevDurXML = 0; 
+		Integer[] prevDurXML = new Integer[]{0, 0}; 
+//		int prevDotsXML = 0;
 		for (int i = 0; i < ebf.size(); i++) {
 ///		for (int i = 0; i < tabDataStr.size(); i++) {
 			System.out.println("bar = " + (i+1));
@@ -623,10 +627,11 @@ public class MEIExport {
 //					Rational currDurAsRat = 
 //						Tablature.SMALLEST_RHYTHMIC_VALUE.mul(currEventRS.getDuration());
 //					int currDurXML = currDurAsRat.getDenom();
-					int currDurXML = getXMLDur(currEvent);
+					Integer[] currDurXML = getXMLDur(currEvent);
+//					int currDotsXML = getXMLDur(currEvent)[1];
 					
-					int currDurOrigXML = -1;
-
+					Integer[] currDurOrigXML = null;
+//					int currDotsOrigXML = -1;
 					if (currEventOrig != null) {
 //						RhythmSymbol currEventOrigRS = RhythmSymbol.getRhythmSymbol(
 //							currEventOrig.substring(0, currEventOrig.indexOf(ss)));
@@ -634,6 +639,7 @@ public class MEIExport {
 //							Tablature.SMALLEST_RHYTHMIC_VALUE.mul(currEventOrigRS.getDuration());
 //						currDurOrigXML = currDurOrigAsRat.getDenom();
 						currDurOrigXML = getXMLDur(currEventOrig);
+//						currDotsOrigXML = getXMLDur(currEventOrig)[1];
 					}
 
 					System.out.println("currDurXML " + currDurXML);
@@ -676,13 +682,13 @@ public class MEIExport {
 						isCorrected && !oneReplacedByMultiple && !multipleReplacedByOne;
 
 					// multipleEvents contains the events to include in the <sic>/<corr> tags 
-					List<String> multipleEvents = new ArrayList<>();
+//					List<String> multipleEvents = new ArrayList<>();
 					List<String> sicList = new ArrayList<>();
 					List<String> corrList = new ArrayList<>();
 					// No <sic> and <corr>
 					if (defaultCase) {
 						sicList.add(sicEvent);
-						System.out.println("prevDurXML " + prevDurXML);
+//						System.out.println("prevDurXML " + prevDurXML[XML_DUR_IND]);
 //						System.exit(0);
 					}
 					// Both <sic> and <corr> contain one <tabGrp>
@@ -694,9 +700,10 @@ public class MEIExport {
 					// --> multipleEvents represents <sic> case
 					if (multipleReplacedByOne) {
 						for (String s : sicEvent.split(sp + ss)) {
-							multipleEvents.add(removeTrailingSymbolSeparator(s));
+							sicList.add(removeTrailingSymbolSeparator(s));
+//							multipleEvents.add(removeTrailingSymbolSeparator(s));
 						}
-						sicList = new ArrayList<>(multipleEvents);
+//						sicList = new ArrayList<>(multipleEvents);
 						corrList.add(corrEvent);
 						System.out.println("sicList  :" + sicList);
 						System.out.println("corrList :" + corrList);
@@ -707,7 +714,11 @@ public class MEIExport {
 					// NB It is assumed that the replacement is within the bar
 					if (oneReplacedByMultiple) {
 						System.out.println("isReplacedByMultipleEvents");
-						multipleEvents.add(corrEvent);
+						sicEvent = sicEvent.substring(0, sicEvent.indexOf(sp));
+						sicList.add(removeTrailingSymbolSeparator(sicEvent));
+
+						corrList.add(corrEvent);
+//						multipleEvents.add(corrEvent);
 						RhythmSymbol rsSic = 
 							RhythmSymbol.getRhythmSymbol(sicEvent.substring(0, sicEvent.indexOf(ss)));
 						int durSic; 
@@ -740,7 +751,8 @@ public class MEIExport {
 							// If the next element has a footnote
 							if (nextEventOrig != null) {
 								nextEventOrig = removeTrailingSymbolSeparator(nextEventOrig);
-								multipleEvents.add(nextEvent);
+								corrList.add(nextEvent);
+//								multipleEvents.add(nextEvent);
 								// Determine duration of corrected event, increment durCorr,
 								// and update durrCorrToTrack
 								RhythmSymbol nextEventRS = 
@@ -758,15 +770,13 @@ public class MEIExport {
 								durCorr += durCorrNext;		
 							}
 							if (durCorr == durSic) {
-								System.out.println(multipleEvents);
-								int eventsToSkip = multipleEvents.size() - 1;
+								int eventsToSkip = corrList.size() - 1;
+//								int eventsToSkip = multipleEvents.size() - 1;
 								j += eventsToSkip;
 								break;
 							}
 						}
-						sicEvent = sicEvent.substring(0, sicEvent.indexOf(sp));
-						sicList.add(removeTrailingSymbolSeparator(sicEvent));
-						corrList = new ArrayList<>(multipleEvents);
+//						corrList = new ArrayList<>(multipleEvents);
 						System.out.println("sicList  :" + sicList);
 						System.out.println("corrList :" + corrList);
 //						System.exit(0);
@@ -783,7 +793,7 @@ public class MEIExport {
 						System.out.println(sicList);
 						System.out.println("corrList");
 						System.out.println(corrList);
-						System.out.println("prevDurXML " + prevDurXML);
+						System.out.println("prevDurXML " + prevDurXML[XML_DUR_IND]);
 //						System.exit(0);
 					}
 				
@@ -809,19 +819,20 @@ public class MEIExport {
 						eventAsXML += INDENT + TAB.repeat(4) + "</corr>" + "\r\n";
 					}	
 					if (isCorrected) {
-						eventAsXML += INDENT + TAB.repeat(3) + "<choice>" + "\r\n";
+						eventAsXML += INDENT + TAB.repeat(3) + "</choice>" + "\r\n";
 					}
 					System.out.println(eventAsXML);
 					currBarXMLAsString += eventAsXML;
 					
-					if (multipleReplacedByOne) {
-						System.exit(0);
-					}
+//					if (multipleReplacedByOne) {
+//						System.exit(0);
+//					}
 					
 					// Update prevDurXML
 					// a. Set prevDurXML to currDurXML
 					if (defaultCase || defaultCorrectedCase || multipleReplacedByOne) {
 						prevDurXML = currDurXML;
+//						prevDotsXML = currDotsXML;
 					}
 					// b. Set prevDurXML to the last specified duration in corrList  
 					if (oneReplacedByMultiple) {
@@ -830,14 +841,15 @@ public class MEIExport {
 						List<String> corrListRev = new ArrayList<>(corrList);
 						Collections.reverse(corrListRev);
 						for (String event : corrListRev) {
-							int lastDurXML = getXMLDur(event);
-							if (lastDurXML != -1) {
+							Integer[] lastDurXML = getXMLDur(event);
+							if (lastDurXML != null) {
 								prevDurXML = lastDurXML;
 								break;
 							}
 						}
-						System.out.println(prevDurXML);
-						System.exit(0);
+//						System.out.println(prevDurXML[XML_DUR_IND]);
+//						System.out.println(prevDurXML[XML_DOTS_IND]);
+//						System.exit(0);
 					}
 
 //					for (int z = 0; z < multipleEvents.size(); z++) {
@@ -979,21 +991,33 @@ public class MEIExport {
 
 
 	/**
-	 * Gets the XML duration of the given event.
+	 * Gets the XML duration (1 for a whole note, 2 for a half note, 4 for a quarter note, etc.)
+	 * of the given event.
 	 * 
 	 * @param event
-	 * @return The XML duration, or -1 if the given event does not start with a RhythmSymbol.
+	 * @return An <code>Integer[]</code> containing
+	 *         <ul> 
+	 *         <li>as element 0: the XML duration</li>
+	 *         <li>as element 1: the XML dots</li>
+	 *         </ul> 
+	 *         or <code>null</code> if the given event does not start with a RhythmSymbol.
 	 */
-	// TODO test
-	private static int getXMLDur(String event) {
-		int durXML = -1;
+	// TESTED
+	static Integer[] getXMLDur(String event) {
+		Integer[] XMLDur = null;
 		RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(event.substring(0, 
 			event.indexOf(SymbolDictionary.SYMBOL_SEPARATOR)));
 		if (rs != null) {
+			int dots = rs.getNumDots();
+			// Get undotted version if applicable 
+			if (dots != 0) {
+				rs = rs.getUndotted();
+			}
 			Rational rsAsRat = Tablature.SMALLEST_RHYTHMIC_VALUE.mul(rs.getDuration());
-			durXML = rsAsRat.getDenom();
+			int durXML = rsAsRat.getDenom();
+			XMLDur = new Integer[]{durXML, dots};
 		}
-		return durXML;
+		return XMLDur;
 	}
 
 
@@ -1002,82 +1026,80 @@ public class MEIExport {
 	 * this tabGrp to the String that is returned.
 	 * 
 	 * @param events The list of events.
-	 * @param prevXMLDur The last XML duration encountered before the events in the given list.
+	 * @param prevXMLDur An <code>Integer[]</code> containing the last XML duration (element 0)
+	 *                   and number of dots (element 1) encountered before the events in the 
+	 *                   given list.
 	 * @param isCorrected Whether or not the tabGrp is part of a corrected tabGrp (i.e., is
 	 *        embedded in a <sic> or <corr> tag)
 	 * @param tss The TabSymbolSet.
 	 * @return The tabGrps, formatted.
 	 */
 	// TODO test
-	private static String getTabGrps(List<String> events, int prevXMLDur, boolean isCorrected, 
-		TabSymbolSet tss) {
-		String currBarXML = "";
+	private static String getTabGrps(List<String> events, Integer[] prevXMLDur, 
+		boolean isCorrected, TabSymbolSet tss) {
+		String tabGrpsStr = "";
 		
 		// If the tabGrp is part of a <sic>/<corr> pair, two extra tabs must be added: 
 		// one for the <choice> tag, and one for the <sic>/<corr> tag
 		int addedTabs = isCorrected ? 2 : 0;
 
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR; 
-		for (int z = 0; z < events.size(); z++) {
-			String ev = events.get(z);
+		for (int i = 0; i < events.size(); i++) {
+			String e = events.get(i);
 			String[] currEventSplit = 
-				(!ev.contains(ss)) ? new String[]{ev} : ev.split("\\" + ss);
-			System.out.println("currEventSplit = " + Arrays.toString(currEventSplit));
+				(!e.contains(ss)) ? new String[]{e} : e.split("\\" + ss);
 			// Remove any MS (the first has already been taken care of above; any other
 			// are handled below)
 			if (MensurationSign.getMensurationSign(currEventSplit[0]) != null) {
 				currEventSplit = Arrays.copyOfRange(currEventSplit, 1, currEventSplit.length);
 			}
+			// If the event is not only a MS
 			if (currEventSplit.length != 0) {
-				// Determine dur
-				int dur = prevXMLDur;
-				int dots = 0;
-				RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(currEventSplit[0]);
-				if (rs != null) {
-					dots = rs.getNumDots();
-					// Get undotted version if applicable 
-					if (dots != 0) {
-						rs = rs.getUndotted();
-					}
-					Rational durAsRat = Tablature.SMALLEST_RHYTHMIC_VALUE.mul(rs.getDuration());
-					dur = durAsRat.getDenom();
-//					// Reset prevDur only if there is no adaptation or when handling
-//					// the corr version -- not when handling the 
-//					int k = 0;
-//					if (!isCorrected || isCorrected && k == 1) {
-						prevXMLDur = dur;
-//					}
-				}
-				// tabGrp
-				String tabGrpID = "";
-//				String currBarXML = "";
-				currBarXML += INDENT + TAB.repeat(3 + addedTabs) +
-					"<tabGrp xml:id='" + tabGrpID + "'" + " " + "dur='" + dur + "'" +
-					((dots > 0) ? " " + "dots='" + dots + "'" : "") + ">" + "\r\n";
-				// tabRhythm
-				if (rs != null) {
-					String tabRhythmID = "";
-					currBarXML += INDENT + TAB.repeat(4 + addedTabs) + 
-						"<tabRhythm xml:id='" + tabRhythmID + "'/>" + "\r\n"; 
-				}
-				// Rests are covered by the tabRhythm
-				int start = (rs != null) ? 1 : 0; 
-				// Notes
-				for (int l = start; l < currEventSplit.length; l++) {
-					TabSymbol ts = TabSymbol.getTabSymbol(currEventSplit[l], tss);
-					String noteID = "";
-					currBarXML += INDENT + TAB.repeat(4 + addedTabs) +
-						"<note xml:id='" + noteID + "'" + " " + 
-						"tab.course='" + ts.getCourse() + "'" + " " + 
-						"tab.fret='" + ts.getFret() + "'" + "/>" + "\r\n";			
-				}
-				currBarXML += INDENT + TAB.repeat(3 + addedTabs) + "</tabGrp>" + "\r\n";
+				// Determine previous (last active) duration
+				int dur = prevXMLDur[XML_DUR_IND];
+				int dots = prevXMLDur[XML_DOTS_IND];
 
-				System.out.println("currBarXML:");
-				System.out.println(currBarXML);
+				// Determine current duration and update prevDurXML accordingly
+				Integer[] currXMLDur = getXMLDur(String.join(ss, currEventSplit));
+				if (currXMLDur != null) {
+					dur = currXMLDur[XML_DUR_IND];
+					dots = currXMLDur[XML_DOTS_IND];
+					prevXMLDur = currXMLDur;
+				}
+
+				// Make tabGrp
+				// 1. <tabGrp>
+				String tabGrpID = "";
+				tabGrpsStr += 
+					INDENT + TAB.repeat(3 + addedTabs) + "<" + 
+					String.join(" ", "tabGrp", "xml:id='" + tabGrpID + "'", "dur='" + dur + "'") + 
+					((dots > 0) ? (" dots='" + dots + "'") : "") + 
+					">" + "\r\n";
+				// 2. <tabRhythm> (also covers rests)
+				if (currXMLDur != null) {
+					String tabRhythmID = "";
+					tabGrpsStr += 
+						INDENT + TAB.repeat(4 + addedTabs) + "<" + 
+						String.join(" ", "tabRhythm", "xml:id='" + tabRhythmID + "'") + 
+						"/>" + "\r\n"; 
+				}
+				// 3. <note>s (rests are covered by the tabRhythm)
+				for (int j = ((currXMLDur != null) ? 1 : 0); j < currEventSplit.length; j++) {
+					TabSymbol ts = TabSymbol.getTabSymbol(currEventSplit[j], tss);
+					String noteID = "";
+					tabGrpsStr += 
+						INDENT + TAB.repeat(4 + addedTabs) + "<" + 
+						String.join(" ", "note", "xml:id='" + noteID + "'", "tab.course='" + 
+						ts.getCourse() + "'", "tab.fret='" + ts.getFret() + "'") + 
+						"/>" + "\r\n";			
+				}
+				tabGrpsStr += 
+					INDENT + TAB.repeat(3 + addedTabs) + "</" + 
+					"tabGrp" + 
+					">" + "\r\n";
 			}
 		}
-		return currBarXML;
+		return tabGrpsStr;
 	}
 
 
@@ -1124,9 +1146,10 @@ public class MEIExport {
 		Integer[] kiInit = ki.get(0);
 		String scoreDefStr = 
 			"key.sig='" + Math.abs(kiInit[0]) + (kiInit[0] < 0 ? "f" : "s") + "'" + " " +
-			"meter.count='" + miInit[0] + "'" + " " + 
-			"meter.unit='" + miInit[1] + "'" + 
-			(miInit[0] == 4 && miInit[1] == 4 || miInit[0] == 2 && miInit[1] == 2 ? 
+			"meter.count='" + miInit[Tablature.MI_NUM] + "'" + " " + 
+			"meter.unit='" + miInit[Tablature.MI_DEN] + "'" + 
+			(miInit[Tablature.MI_NUM] == 4 && miInit[Tablature.MI_DEN] == 4 || 
+			 miInit[Tablature.MI_NUM] == 2 && miInit[Tablature.MI_DEN] == 2 ? 
 			" " + "meter.sym='common'" : "");
 		res = res.replace("scoreDef_placeholder", scoreDefStr.trim());
 
@@ -1134,11 +1157,13 @@ public class MEIExport {
 		List<String[]> nonInitMeters = new ArrayList<>();
 		for (Integer[] in : mi.subList(1, mi.size())) {
 			nonInitMeters.add(new String[]{
-				"meter.count='" + in[0] + "'", 
-				" meter.unit='" + in[1] + "'",
-				(in[0] == 4 && in[1] == 4 || in[0] == 2 && in[1] == 2) ? " meter.sym='common'" : ""});
+				"meter.count='" + in[Tablature.MI_NUM] + "'", 
+				" meter.unit='" + in[Tablature.MI_DEN] + "'",
+				(in[Tablature.MI_NUM] == 4 && in[Tablature.MI_DEN] == 4 || 
+				 in[Tablature.MI_NUM] == 2 && in[Tablature.MI_DEN] == 2) ? " meter.sym='common'" : ""});
 		}
-		List<Integer> meterChangeBars = ToolBox.getItemsAtIndex(mi, 2).subList(1, mi.size());
+		List<Integer> meterChangeBars = 
+			ToolBox.getItemsAtIndex(mi, Tablature.MI_FIRST_BAR).subList(1, mi.size());
 
 		// b. Make staffGrp (goes inside scoreDef)
 		String staffGrpAtt = "symbol='brace' barthru='true'";
@@ -1428,7 +1453,7 @@ public class MEIExport {
 			"<mRest " + "xml:id='" + argVoice + "."  + bar/*argBar*/ + "." + "0.r.0'" + "/>";
 
 		int diminution = 1;
-		if (mi.get(0).length == 5) {
+		if (mi.get(0).length == 5) { // TODO not safe
 			diminution = Tablature.getDiminution(bar, mi);
 		}
 
@@ -1708,7 +1733,7 @@ public class MEIExport {
 		Rational[] pairAndLen = null;
 		int bar = Tablature.getMetricPosition(onset, mi)[0].getNumer();
 		int diminution = 1;
-		if (mi.get(0).length == 5) {
+		if (mi.get(0).length == 5) { // TODO not safe
 			diminution = Tablature.getDiminution(bar, mi);
 		}
 
@@ -1758,18 +1783,18 @@ public class MEIExport {
 		Integer[][] bnp = trans.getBasicNoteProperties();
 
 		// Get meter and key TODO assumed is a single key
-		int numBars = mi.get(mi.size()-1)[3];
+		int numBars = mi.get(mi.size()-1)[Tablature.MI_LAST_BAR];
 		Rational endOffset = Rational.ZERO;
 		for (Integer[] m : mi) {
-			Rational currMeter = new Rational(m[0], m[1]);
-			int barsInCurrMeter = (m[3] - m[2]) + 1;
+			Rational currMeter = new Rational(m[Tablature.MI_NUM], m[Tablature.MI_DEN]);
+			int barsInCurrMeter = (m[Tablature.MI_LAST_BAR] - m[Tablature.MI_FIRST_BAR]) + 1;
 			endOffset = endOffset.add(currMeter.mul(barsInCurrMeter));
 		}
 		Integer[] key = ki.get(0);
 		int numAlt = key[0];
 		// Set initial bar and meter
 		Integer[] initMi = mi.get(0);
-		Rational meter = new Rational(initMi[0], initMi[1]);
+		Rational meter = new Rational(initMi[Tablature.MI_NUM], initMi[Tablature.MI_DEN]);
 		Rational barEnd = meter;
 
 		// Get indices mapping
@@ -2175,7 +2200,7 @@ public class MEIExport {
 				if (offset.isGreater(endOffset)) {
 					offset = endOffset;
 				}
-				int endBar = (offset.equals(endOffset)) ? mi.get(mi.size()-1)[3] : 
+				int endBar = (offset.equals(endOffset)) ? mi.get(mi.size()-1)[Tablature.MI_LAST_BAR] : 
 					Tablature.getMetricPosition(offset, mi)[0].getNumer();
 				
 				List<Integer> bars = 

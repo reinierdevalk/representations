@@ -18,9 +18,9 @@ import tbp.TabSymbolSet;
 
 public class TablatureTest extends TestCase {
 
-	private File encodingTestpiece; // = new File(Runner.encodingsPathTest + "testpiece.txt");	
-	private File encodingTestGetMeterInfo; // = new File(Runner.encodingsPathTest + "test_get_meter_info.txt");
-	private File midiTestpiece; // = new File(Runner.midiPathTest + "testpiece.mid");
+	private File encodingTestpiece;
+	private File encodingTestGetMeterInfo;
+	private File midiTestpiece;
 
 	protected void setUp() throws Exception {
 		super.setUp();
@@ -30,7 +30,7 @@ public class TablatureTest extends TestCase {
 //		midiTestpiece1 = new File(Runner.midiPathTest + "testpiece.mid");
 		encodingTestpiece = new File(MEIExport.rootDir + "data/data/encodings/test/"  + "testpiece.tbp");
 		encodingTestGetMeterInfo = new File(MEIExport.rootDir + "data/data/encodings/test/" + "test_get_meter_info.tbp");
-		midiTestpiece = new File(MEIExport.rootDir + "data/data/MIDI/test/" + "testpiece.mid");
+		midiTestpiece = new File(MEIExport.rootDir + "data/data/MIDI/test/" + "testpiece.mid");	
 	}
 
 	protected void tearDown() throws Exception {

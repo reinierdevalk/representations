@@ -797,8 +797,8 @@ public class EncodingTest {
 
 
 	@Test
-	public void testCombineSuccessiveRestTabwords() {
-		List<String> tabwords = Arrays.asList(new String[]{
+	public void testCombineSuccessiveRestEvents() {
+		List<String> events = Arrays.asList(new String[]{
 			"sb.c4.>.", 
 			"mi.>.",	
 			"mi.c4.>.",
@@ -814,7 +814,7 @@ public class EncodingTest {
 			"mi.c4.>."
 		});
 		
-		List<String> actual = Encoding.combineSuccessiveRestTabwords(tabwords);
+		List<String> actual = Encoding.combineSuccessiveRestEvents(events);
 		
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -900,7 +900,7 @@ public class EncodingTest {
 
 
 	@Test
-	public void testGetTabwords() {
+	public void testGetEvents() {
 		Encoding encoding = new Encoding(encodingTestpiece1);
 
 		List<String> expected = Arrays.asList(new String[]{
@@ -931,7 +931,7 @@ public class EncodingTest {
 			"||."	
 		});
 
-		List<String> actual = encoding.getTabwords();
+		List<String> actual = encoding.getEvents();
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));
@@ -1075,7 +1075,7 @@ public class EncodingTest {
 
 
 	@Test
-	public void testRecombineTabwords() {
+	public void testRecombineEvents() {
 		Encoding encoding = new Encoding(encodingTestpiece1);
 
 		String expected = 
@@ -1090,12 +1090,12 @@ public class EncodingTest {
 			"sf.c2.>." + "sf.e2.>." + "mi.a1.>." + "mi.>." + "mi.a6.c4.a2.a1.>." + 
 			"||." + "\r\n";	
 
-		assertEquals(expected, encoding.recombineTabwords(encoding.getTabwords()));
+		assertEquals(expected, encoding.recombineEvents(encoding.getEvents()));
 	}
 
 
 	@Test
-	public void testTabwordIsBarlineOrSBI() {
+	public void testEventIsBarlineOrSBI() {
 		Encoding encoding = new Encoding(encodingTestpiece1);
 		
 		List<Boolean> expected = Arrays.asList(new Boolean[]{
@@ -1107,8 +1107,8 @@ public class EncodingTest {
 		});
 
 		List<Boolean> actual = new ArrayList<>();
-		for (String s : encoding.getTabwords()) {
-			actual.add(Encoding.tabwordIsBarlineOrSBI(s));
+		for (String s : encoding.getEvents()) {
+			actual.add(Encoding.eventIsBarlineOrSBI(s));
 		}
 
 		assertEquals(expected.size(), actual.size());
