@@ -1145,7 +1145,8 @@ public class MEIExport {
 		Integer[] miInit = mi.get(0);
 		Integer[] kiInit = ki.get(0);
 		String scoreDefStr = 
-			"key.sig='" + Math.abs(kiInit[0]) + (kiInit[0] < 0 ? "f" : "s") + "'" + " " +
+			"key.sig='" + Math.abs(kiInit[Transcription.KI_KEY]) + 
+				(kiInit[Transcription.KI_KEY] < 0 ? "f" : "s") + "'" + " " +
 			"meter.count='" + miInit[Tablature.MI_NUM] + "'" + " " + 
 			"meter.unit='" + miInit[Tablature.MI_DEN] + "'" + 
 			(miInit[Tablature.MI_NUM] == 4 && miInit[Tablature.MI_DEN] == 4 || 
@@ -1453,7 +1454,7 @@ public class MEIExport {
 			"<mRest " + "xml:id='" + argVoice + "."  + bar/*argBar*/ + "." + "0.r.0'" + "/>";
 
 		int diminution = 1;
-		if (mi.get(0).length == 5) { // TODO not safe
+		if (mi.get(0).length == Tablature.MI_SIZE) {
 			diminution = Tablature.getDiminution(bar, mi);
 		}
 
@@ -1733,7 +1734,7 @@ public class MEIExport {
 		Rational[] pairAndLen = null;
 		int bar = Tablature.getMetricPosition(onset, mi)[0].getNumer();
 		int diminution = 1;
-		if (mi.get(0).length == 5) { // TODO not safe
+		if (mi.get(0).length == Tablature.MI_SIZE) {
 			diminution = Tablature.getDiminution(bar, mi);
 		}
 
@@ -1791,7 +1792,7 @@ public class MEIExport {
 			endOffset = endOffset.add(currMeter.mul(barsInCurrMeter));
 		}
 		Integer[] key = ki.get(0);
-		int numAlt = key[0];
+		int numAlt = key[Transcription.KI_KEY];
 		// Set initial bar and meter
 		Integer[] initMi = mi.get(0);
 		Rational meter = new Rational(initMi[Tablature.MI_NUM], initMi[Tablature.MI_DEN]);
@@ -3317,7 +3318,7 @@ public class MEIExport {
 	static List<Integer> getMIDIPitchClassKeySigs(Integer[] key) {
 		List<Integer> mpcKeySigs = new ArrayList<Integer>();
 		
-		int numAlt = key[0];
+		int numAlt = key[Transcription.KI_KEY];
 		// Flats
 		if (numAlt < 0) {
 			mpcKeySigs.addAll(mpcFlats.subList(0, -numAlt));

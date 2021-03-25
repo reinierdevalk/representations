@@ -209,7 +209,9 @@ public class MIDIExport {
 			for (int i = 0; i < keyInfo.size(); i++) {
 				Integer[] ki = keyInfo.get(i);
 				mt = new MetaMessage();
-				byte[] bts = {(byte)(int)ki[0], (byte)(int)ki[1]};
+				byte[] bts = 
+					{(byte)(int)ki[Transcription.KI_KEY], 
+					 (byte)(int)ki[Transcription.KI_MODE]};
 				mt.setMessage(0x59, bts, 2);
 				tracks.get(0).add(new MidiEvent(mt,(long)0));
 			}

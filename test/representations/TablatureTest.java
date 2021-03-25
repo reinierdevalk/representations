@@ -75,7 +75,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testCalculateMeterInfo() {
+	public void testCreateMeterInfo() {
 		Tablature tablature1 = new Tablature();
 		tablature1.setEncoding(new Encoding(encodingTestGetMeterInfo));
 		Tablature tablature2 = new Tablature();
@@ -93,9 +93,9 @@ public class TablatureTest extends TestCase {
 		expected.add(new Integer[]{2, 2, 1, 3, 1});
 		
 		List<Integer[]> actual = 
-			tablature1.calculateMeterInfo(tablature1.getOriginalMeterInfo(), 
+			tablature1.createMeterInfo(/*tablature1.getOriginalMeterInfo(),*/ 
 			tablature1.getDiminutions());
-		actual.addAll(tablature2.calculateMeterInfo(tablature2.getOriginalMeterInfo(), 
+		actual.addAll(tablature2.createMeterInfo(/*tablature2.getOriginalMeterInfo(),*/ 
 			tablature2.getDiminutions()));
 		
 		assertEquals(expected.size(), actual.size());

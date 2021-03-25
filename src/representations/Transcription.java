@@ -88,8 +88,16 @@ public class Transcription implements Serializable {
 	public static final int MI_DEN = Tablature.MI_DEN;
 	public static final int MI_FIRST_BAR = Tablature.MI_FIRST_BAR;
 	public static final int MI_LAST_BAR = Tablature.MI_LAST_BAR;
-	public static final int MI_NUM_MT_FIRST_BAR = 4;
-	public static final int MI_DEN_MT_FIRST_BAR = 5;
+	private static final int MI_NUM_MT_FIRST_BAR = 4;
+	private static final int MI_DEN_MT_FIRST_BAR = 5;
+	public static final int MI_SIZE = 6;
+	
+	public static final int KI_KEY = 0;
+	public static final int KI_MODE = 1;
+	public static final int KI_FIRST_BAR = 2;
+	public static final int KI_LAST_BAR = 3;
+	public static final int KI_NUM_MT_FIRST_BAR = 4;
+	public static final int KI_DEN_MT_FIRST_BAR = 5;
 
 	private String adaptations = "Adaptations:" + "\n";
 	private String chordsSpecification = "Chord error details:" + "\n";
@@ -1723,12 +1731,7 @@ public class Transcription implements Serializable {
 	 * Sets keyInfo.
 	 * 
 	 */
-	void setKeyInfo(/*List<Integer[]> argMeterInfo*/) {
-////		if (meterInfo == null) {
-////			keyInfo = createKeyInfo(getPiece(), getMeterInfo());
-////		}
-//		keyInfo = (argMeterInfo == null) ? createKeyInfo(getPiece(), getMeterInfo()) : 
-//			createKeyInfo(getPiece(), argMeterInfo);
+	void setKeyInfo() {
 		keyInfo = createKeyInfo(getPiece(), getMeterInfo());
 	}
 
@@ -1798,7 +1801,7 @@ public class Transcription implements Serializable {
 	 *   An anacrusis will be denoted with bar numbers 0-0.
 	 */
 	// TESTED
-	public static List<Integer[]> createMeterInfo(Piece piece) {		
+	public static List<Integer[]> createMeterInfo(Piece piece) {	
 //		long[][] timeSigs = getPiece().getMetricalTimeLine().getTimeSignature();
 		long[][] timeSigs = piece.getMetricalTimeLine().getTimeSignature();
 		
@@ -1822,6 +1825,7 @@ public class Transcription implements Serializable {
 		
 		int numBars;
 		for (int i = 0; i < numTimeSigs; i++) {
+			Integer[] currMeterInfo = new Integer[MI_SIZE];
 			long[] curr = timeSigs[i];
 			Rational currMeter = new Rational(curr[0], curr[1]);
 			Rational currMetricTime = new Rational(curr[3], curr[4]);
@@ -1848,10 +1852,19 @@ public class Transcription implements Serializable {
 				Rational rem = end.sub(currMetricTime);
 				numBars = (rem.div(currMeter)).ceil();
 			}
-			mInfo.add(new Integer[]{
-				(int)curr[0], (int)curr[1], 
-				start, start + (numBars - 1),
-				currMetricTime.getNumer(), currMetricTime.getDenom()});
+			currMeterInfo[MI_NUM] = (int)curr[0];
+			currMeterInfo[MI_DEN] = (int)curr[1];
+			currMeterInfo[MI_FIRST_BAR] = start;
+			currMeterInfo[MI_LAST_BAR] = start + (numBars - 1);
+			currMeterInfo[MI_NUM_MT_FIRST_BAR] = currMetricTime.getNumer();
+			currMeterInfo[MI_DEN_MT_FIRST_BAR] = currMetricTime.getDenom();
+			mInfo.add(currMeterInfo);
+//			mInfo.add(
+//				new Integer[]{
+//					(int)curr[0], (int)curr[1], 
+//					start, start + (numBars - 1),
+//					currMetricTime.getNumer(), currMetricTime.getDenom()}
+//			);
 			start += numBars;
 		}		
 		return mInfo;

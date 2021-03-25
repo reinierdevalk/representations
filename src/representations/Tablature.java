@@ -51,7 +51,8 @@ public class Tablature implements Serializable {
 	public static final int MI_DEN = 1;
 	public static final int MI_FIRST_BAR = 2;
 	public static final int MI_LAST_BAR = 3;
-	public static final int MI_DIM = 4;
+	private static final int MI_DIM = 4;
+	public static final int MI_SIZE = 5; // NB this must not be the same as Transcription.MI_SIZE
 
 	public Tablature() {
 	}
@@ -201,11 +202,13 @@ public class Tablature implements Serializable {
 	 * An anacrusis bar will be denoted with bar numbers 0-0.
 	 */
 	// TESTED
-	List<Integer[]> calculateMeterInfo(List<Integer[]> originalMeterInfo, List<Integer> diminutions) {
+	List<Integer[]> createMeterInfo(/*List<Integer[]> originalMeterInfo,*/ 
+		List<Integer> diminutions) {
+		List<Integer[]> originalMeterInfo = getOriginalMeterInfo();
 		List<Integer[]> mi = new ArrayList<>();
 		// For each meter
 		for (int i = 0; i < originalMeterInfo.size(); i++) {
-			Integer[] currMeterInfo = new Integer[5];
+			Integer[] currMeterInfo = new Integer[MI_SIZE];
 			for (int j = 0; j < originalMeterInfo.get(i).length; j++) {
 				currMeterInfo[j] = originalMeterInfo.get(i)[j];
 			}						
@@ -248,7 +251,7 @@ public class Tablature implements Serializable {
 
 
 	void setMeterInfo() {
-		meterInfo = calculateMeterInfo(getOriginalMeterInfo(), getDiminutions());
+		meterInfo = createMeterInfo(/*getOriginalMeterInfo(),*/ getDiminutions());
 	}
 
 
@@ -287,7 +290,7 @@ public class Tablature implements Serializable {
 		String[] originalMeters = 
 			getEncoding().getInfoAndSettings().get(Encoding.METER_IND).split(";");		
 		for (int i = 0; i < originalMeters.length; i++) {
-			Integer[] currentMeterInfo = new Integer[4];
+			Integer[] currentMeterInfo = new Integer[MI_SIZE - 1];
 			String currInfo = originalMeters[i].trim();
 			// Meter
 			String currMeter = currInfo.substring(0, currInfo.indexOf("(")).trim();

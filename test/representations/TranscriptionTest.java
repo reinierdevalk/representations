@@ -5229,6 +5229,7 @@ public class TranscriptionTest extends TestCase {
 		List<List<Double>> actual = new ArrayList<List<Double>>();
 		List<Integer> durations = Arrays.asList(new Integer[]{1, 2, 4, 6, 8, 16, 24, 32});
 		durations = durations.stream().map(p -> p * 3).collect(Collectors.toList()); // trp dur
+		
 		for (int i = 0; i < expected.size(); i++) {
 			actual.add(Transcription.createDurationLabel(durations.get(i)));
 		}
@@ -5374,8 +5375,10 @@ public class TranscriptionTest extends TestCase {
 		ScoreNote adaptedScoreNote = new ScoreNote(new ScorePitch(65), new Rational(5, 4), new Rational(1, 4));
 		expectedDur.getScore().get(1).get(0).get(2).get(0).setScoreNote(adaptedScoreNote);
 		// Also adapt durationLabels
+		durationLabels.set(12, Transcription.QUARTER); // trp dur
+//		durationLabels.set(12, Transcription.createDurationLabel(8*3)); // trp dur
 //		durationLabels.set(12, Transcription.createDurationLabel(8));
-		durationLabels.set(12, Transcription.createDurationLabel(8*3)); // trp dur
+
 		expected.add(expectedDur);
 
 		List<Piece> actual = new ArrayList<Piece>();
