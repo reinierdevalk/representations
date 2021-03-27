@@ -88,8 +88,8 @@ public class Transcription implements Serializable {
 	public static final int MI_DEN = Tablature.MI_DEN;
 	public static final int MI_FIRST_BAR = Tablature.MI_FIRST_BAR;
 	public static final int MI_LAST_BAR = Tablature.MI_LAST_BAR;
-	private static final int MI_NUM_MT_FIRST_BAR = 4;
-	private static final int MI_DEN_MT_FIRST_BAR = 5;
+	private static final int MI_NUM_MT_FIRST_BAR = Tablature.MI_NUM_MT_FIRST_BAR;
+	private static final int MI_DEN_MT_FIRST_BAR = Tablature.MI_DEN_MT_FIRST_BAR;
 	public static final int MI_SIZE = 6;
 	
 	public static final int KI_KEY = 0;
@@ -1801,8 +1801,7 @@ public class Transcription implements Serializable {
 	 *   An anacrusis will be denoted with bar numbers 0-0.
 	 */
 	// TESTED
-	public static List<Integer[]> createMeterInfo(Piece piece) {	
-//		long[][] timeSigs = getPiece().getMetricalTimeLine().getTimeSignature();
+	public static List<Integer[]> createMeterInfo(Piece piece) {
 		long[][] timeSigs = piece.getMetricalTimeLine().getTimeSignature();
 		
 		int numTimeSigs = timeSigs.length;
@@ -1839,7 +1838,6 @@ public class Transcription implements Serializable {
 			else {
 				// Determine the offset of the last note of the piece
 				Rational end = Rational.ZERO;
-//				for (NotationStaff ns : getPiece().getScore()) {
 				for (NotationStaff ns : piece.getScore()) {
 					NotationVoice nv = ns.get(0);
 					NotationChord lastNc = nv.get(nv.size() - 1);

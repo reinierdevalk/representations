@@ -42,12 +42,12 @@ public class TablatureTest extends TestCase {
 		Tablature tablature = new Tablature();
 		tablature.setEncoding(new Encoding(encodingTestGetMeterInfo));
 		List<Integer[]> expected = new ArrayList<>();
-		expected.add(new Integer[]{3, 8, 0, 0});
-		expected.add(new Integer[]{2, 2, 1, 2});
-		expected.add(new Integer[]{3, 4, 3, 4});
-		expected.add(new Integer[]{2, 2, 5, 6});
-		expected.add(new Integer[]{5, 16, 7, 7});
-		expected.add(new Integer[]{2, 2, 8, 8});
+		expected.add(new Integer[]{3, 8, 0, 0, 0, 1});
+		expected.add(new Integer[]{2, 2, 1, 2, 3, 8});
+		expected.add(new Integer[]{3, 4, 3, 4, 19, 8});
+		expected.add(new Integer[]{2, 2, 5, 6, 31, 8});
+		expected.add(new Integer[]{5, 16, 7, 7, 47, 8});
+		expected.add(new Integer[]{2, 2, 8, 8, 99, 16});
 
 		List<Integer[]> actual = tablature.getOriginalMeterInfo();
 
@@ -83,18 +83,19 @@ public class TablatureTest extends TestCase {
 				
 		List<Integer[]> expected = new ArrayList<Integer[]>();
 		// tablature1
-		expected.add(new Integer[]{3, 4, 0, 0, 2});
-		expected.add(new Integer[]{2, 1, 1, 2, 2});
-		expected.add(new Integer[]{3, 4, 3, 4, 1});
-		expected.add(new Integer[]{4, 1, 5, 6, 4});
-		expected.add(new Integer[]{5, 16, 7, 7, 1});
-		expected.add(new Integer[]{1, 2, 8, 8, -2});
+		expected.add(new Integer[]{3, 4, 0, 0, 0, 1, 2});
+		expected.add(new Integer[]{2, 1, 1, 2, 3, 4, 2});
+		expected.add(new Integer[]{3, 4, 3, 4, 19, 4, 1});
+		expected.add(new Integer[]{4, 1, 5, 6, 25, 4, 4});
+		expected.add(new Integer[]{5, 16, 7, 7, 57, 4, 1});
+		expected.add(new Integer[]{1, 2, 8, 8, 233, 16, -2});
 		// tablature2		
-		expected.add(new Integer[]{2, 2, 1, 3, 1});
-		
+		expected.add(new Integer[]{2, 2, 1, 3, 0, 1, 1});
+
 		List<Integer[]> actual = 
 			tablature1.createMeterInfo(/*tablature1.getOriginalMeterInfo(),*/ 
 			tablature1.getDiminutions());
+//		List<Integer[]> actual = new ArrayList<>();
 		actual.addAll(tablature2.createMeterInfo(/*tablature2.getOriginalMeterInfo(),*/ 
 			tablature2.getDiminutions()));
 		
@@ -102,6 +103,7 @@ public class TablatureTest extends TestCase {
 		for (int i = 0; i < expected.size(); i++) {
 	  		assertEquals(expected.get(i).length, actual.get(i).length);
 	  		for (int j = 0; j < expected.get(i).length; j++) {
+	  			System.out.println(i + ", " + j);
 	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
 	  		}
 		}
