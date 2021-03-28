@@ -93,17 +93,13 @@ public class TablatureTest extends TestCase {
 		expected.add(new Integer[]{2, 2, 1, 3, 0, 1, 1});
 
 		List<Integer[]> actual = 
-			tablature1.createMeterInfo(/*tablature1.getOriginalMeterInfo(),*/ 
-			tablature1.getDiminutions());
-//		List<Integer[]> actual = new ArrayList<>();
-		actual.addAll(tablature2.createMeterInfo(/*tablature2.getOriginalMeterInfo(),*/ 
-			tablature2.getDiminutions()));
+			tablature1.createMeterInfo(tablature1.getDiminutions());
+		actual.addAll(tablature2.createMeterInfo(tablature2.getDiminutions()));
 		
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 	  		assertEquals(expected.get(i).length, actual.get(i).length);
 	  		for (int j = 0; j < expected.get(i).length; j++) {
-	  			System.out.println(i + ", " + j);
 	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
 	  		}
 		}

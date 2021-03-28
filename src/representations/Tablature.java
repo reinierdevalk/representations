@@ -202,6 +202,7 @@ public class Tablature implements Serializable {
 	 * <li> as element 5: the denominator of the metric time of that first bar (adapted according to the diminution)</li>
 	 * <li> as element 6: the diminution for the meter </li>
 	 * </ul>
+	 * 
 	 * An anacrusis bar will be denoted with bar numbers 0-0.
 	 */
 	// TESTED
@@ -209,86 +210,52 @@ public class Tablature implements Serializable {
 		List<Integer> diminutions) {
 		List<Integer[]> originalMeterInfo = getOriginalMeterInfo();
 		List<Integer[]> mi = new ArrayList<>();
+
 		// For each meter
 		Rational prevMeterAsRat = Rational.ZERO;
 		int prevNumBars = 0;
 		Rational prevMt = Rational.ZERO;
-		int prevDim = 1;
 		for (int i = 0; i < originalMeterInfo.size(); i++) {
 			Integer[] currMeterInfo = new Integer[MI_SIZE];
 			for (int j = 0; j < originalMeterInfo.get(i).length; j++) {
 				currMeterInfo[j] = originalMeterInfo.get(i)[j];
 			}
-			
-//			Rational currMeter = new Rational(currMeterInfo[MI_NUM], currMeterInfo[MI_DEN]);
-//			int currNum = currMeter.getNumer();
-//			int currDen = currMeter.getDenom();
 			int currNum = currMeterInfo[MI_NUM];
 			int currDen = currMeterInfo[MI_DEN];
 			Rational currMt = 
 				new Rational(currMeterInfo[MI_NUM_MT_FIRST_BAR], currMeterInfo[MI_DEN_MT_FIRST_BAR]);
 			int currNumBars = (currMeterInfo[MI_LAST_BAR] - currMeterInfo[MI_FIRST_BAR]) + 1;
-			System.out.println("i = " + i);
-//			System.out.println("meter = " + currNum + "/" + currDen);
-			// Diminution
-			int dim = diminutions.get(i);
-//			Rational newMeter = new Rational(currNum, currDen);
-//			if (dim != 1) {
-				// 1. Meter
+			int currDim = diminutions.get(i);
+			// 1. Meter
+			Rational newMeter = new Rational(currNum, currDen);
+			if (currDim != 1) {
+				// currDim > 0
+				// currDim = 2:	2/2 --> 2/2 * 2/1 = 4/2 = 2/1
+				// currDim = 4:	2/2 --> 2/2 * 4/1 = 8/2 = 4/1
+				//
+				// currDim < 0
+				// currDim = -2: 2/2 --> 2/2 * 1/2 = 2/4 = 1/2 
+				// currDim = -4: 2/2 --> 2/2 * 1/4 = 2/8 = 1/4
 				Rational multiplier = 
-					(dim > 0) ? new Rational(dim, 1) : new Rational(1, Math.abs(dim));
-//				Rational newMeter;
-				Rational newMeter = new Rational(currNum, currDen);
-				System.out.println("newMeter = " + newMeter);
-				if (dim != 1) {
-					newMeter = newMeter.mul(multiplier);
-					newMeter.reduce();
-				}
-				System.out.println("newMeter = " + newMeter);
-				
-				// times 2:	2/2 --> (2*2)/2 = 2/1
-				// times 4:	2/2 --> (2*4)/2 = 4/1
-//				if (dim > 0) {
-//					newMeter = new Rational(currNum * dim, currDen);					 
-////					newMeter = new Rational(currMeterInfo[MI_NUM] * dim, currMeterInfo[MI_DEN]);
-//				}
-				// divided by 2: 2/2 --> (2/2)/2 = 1/2 
-				// divided by 4: 2/2 --> (2/4)/2 = 1/4
-//				else {
-//					newMeter = new Rational(currNum, Math.abs(dim)).div(currDen);	
-////						new Rational(currMeterInfo[MI_NUM], Math.abs(dim)).div(currMeterInfo[MI_DEN]);
-//				}
+					(currDim > 0) ? new Rational(currDim, 1) : new Rational(1, Math.abs(currDim));
+				newMeter = newMeter.mul(multiplier);
+				newMeter.reduce();
+			}
 
-//				if (dim != 1) {
-//				newMeter.reduce();
-//				}
-				System.out.println("newMeter = " + newMeter);
-				currMeterInfo[MI_NUM] = newMeter.getNumer();
-				currMeterInfo[MI_DEN] = newMeter.getDenom();
-				// 2. Metric time
-				System.out.println("prevDim = " + prevDim);
-//				Rational multiplier = (prevDim > 0) ? new Rational(prevDim, 1) : 
-//					new Rational(1, prevDim);
-//				System.out.println("multiplier = " + multiplier);
-				System.out.println("prevMt = " + prevMt);
-				System.out.println("prevMeterAsRat = " + prevMeterAsRat);
-				System.out.println("prevNumBars = " + prevNumBars);
-				currMt = prevMt.add(prevMeterAsRat.mul(prevNumBars));
-//				currMt = currMt.mul(multiplier);
-				currMt.reduce();
-				System.out.println("currMt = " + currMt);
-				currMeterInfo[MI_NUM_MT_FIRST_BAR] = currMt.getNumer();
-				currMeterInfo[MI_DEN_MT_FIRST_BAR] = currMt.getDenom();
-//			}
-			currMeterInfo[MI_DIM] = dim;
+			currMeterInfo[MI_NUM] = newMeter.getNumer();
+			currMeterInfo[MI_DEN] = newMeter.getDenom();
+			// 2. Metric time
+			currMt = prevMt.add(prevMeterAsRat.mul(prevNumBars));
+			currMt.reduce();
+			currMeterInfo[MI_NUM_MT_FIRST_BAR] = currMt.getNumer();
+			currMeterInfo[MI_DEN_MT_FIRST_BAR] = currMt.getDenom();
+			currMeterInfo[MI_DIM] = currDim;
 
 			// Add and update
 			mi.add(currMeterInfo);
 			prevNumBars = currNumBars;
 			prevMt = currMt;
-			prevDim = dim;
-			prevMeterAsRat = newMeter; 
-//			prevMeterAsRat = new Rational(currNum, currDen);
+			prevMeterAsRat = newMeter;
 		}
 		return mi;
 	}

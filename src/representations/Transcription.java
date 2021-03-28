@@ -86,11 +86,11 @@ public class Transcription implements Serializable {
 	
 	public static final int MI_NUM = Tablature.MI_NUM;
 	public static final int MI_DEN = Tablature.MI_DEN;
-	public static final int MI_FIRST_BAR = Tablature.MI_FIRST_BAR;
-	public static final int MI_LAST_BAR = Tablature.MI_LAST_BAR;
+	private static final int MI_FIRST_BAR = Tablature.MI_FIRST_BAR;
+	private static final int MI_LAST_BAR = Tablature.MI_LAST_BAR;
 	private static final int MI_NUM_MT_FIRST_BAR = Tablature.MI_NUM_MT_FIRST_BAR;
 	private static final int MI_DEN_MT_FIRST_BAR = Tablature.MI_DEN_MT_FIRST_BAR;
-	public static final int MI_SIZE = 6;
+	private static final int MI_SIZE = 6;
 	
 	public static final int KI_KEY = 0;
 	public static final int KI_MODE = 1;
