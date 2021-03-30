@@ -363,7 +363,7 @@ public class TabViewer extends JFrame{
 			
 			// Checked and ready for processing
 			// 3vv
-			encPath += "tab-int/3vv/" + "newsidler-1536_7-disant_adiu.tbp";
+//			encPath += "tab-int/3vv/" + "newsidler-1536_7-disant_adiu.tbp";
 //			encPath += "tab-int/3vv/" + "newsidler-1536_7-mess_pensees.tbp";
 //			encPath += "tab-int/3vv/" + "pisador-1552_7-pleni_de.tbp"; // TODO remove every second barline
 //			encPath += "tab-int/3vv/" + "judenkuenig-1523_2-elslein_liebes.tbp";
@@ -374,7 +374,7 @@ public class TabViewer extends JFrame{
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-absolon_fili.tbp";
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-in_exitu.tbp";
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-qui_habitat.tbp";
-//			encPath += "tab-int/4vv/" + "rotta-1546_15-bramo_morir.tbp";
+			encPath += "tab-int/4vv/" + "rotta-1546_15-bramo_morir.tbp";
 //			encPath += "tab-int/4vv/" + "phalese-1547_7-tant_que-4vv.tbp";
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-herr_gott.tbp";
 //			encPath += "tab-int/4vv/" + "abondante-1548_1-mais_mamignone.tbp";

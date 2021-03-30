@@ -47,12 +47,12 @@ public class Tablature implements Serializable {
 	public static final int NOTE_SEQ_NUM = 8;
 	private static final int TABLATURE_EVENT_SEQ_NUM = 9;
 
-	public static final int MI_NUM = 0;
-	public static final int MI_DEN = 1;
-	public static final int MI_FIRST_BAR = 2;
-	public static final int MI_LAST_BAR = 3;
-	public static final int MI_NUM_MT_FIRST_BAR = 4;
-	public static final int MI_DEN_MT_FIRST_BAR = 5;
+//	public static final int MI_NUM = 0;
+//	public static final int MI_DEN = 1;
+//	public static final int MI_FIRST_BAR = 2;
+//	public static final int MI_LAST_BAR = 3;
+//	public static final int MI_NUM_MT_FIRST_BAR = 4;
+//	public static final int MI_DEN_MT_FIRST_BAR = 5;
 	private static final int MI_DIM = 6;
 	public static final int MI_SIZE = 7; // NB this must not be the same as Transcription.MI_SIZE
 
@@ -220,11 +220,13 @@ public class Tablature implements Serializable {
 			for (int j = 0; j < originalMeterInfo.get(i).length; j++) {
 				currMeterInfo[j] = originalMeterInfo.get(i)[j];
 			}
-			int currNum = currMeterInfo[MI_NUM];
-			int currDen = currMeterInfo[MI_DEN];
+			int currNum = currMeterInfo[Transcription.MI_NUM];
+			int currDen = currMeterInfo[Transcription.MI_DEN];
 			Rational currMt = 
-				new Rational(currMeterInfo[MI_NUM_MT_FIRST_BAR], currMeterInfo[MI_DEN_MT_FIRST_BAR]);
-			int currNumBars = (currMeterInfo[MI_LAST_BAR] - currMeterInfo[MI_FIRST_BAR]) + 1;
+				new Rational(currMeterInfo[Transcription.MI_NUM_MT_FIRST_BAR], 
+				currMeterInfo[Transcription.MI_DEN_MT_FIRST_BAR]);
+			int currNumBars = (currMeterInfo[Transcription.MI_LAST_BAR] - 
+				currMeterInfo[Transcription.MI_FIRST_BAR]) + 1;
 			int currDim = diminutions.get(i);
 			// 1. Meter
 			Rational newMeter = new Rational(currNum, currDen);
@@ -242,13 +244,13 @@ public class Tablature implements Serializable {
 				newMeter.reduce();
 			}
 
-			currMeterInfo[MI_NUM] = newMeter.getNumer();
-			currMeterInfo[MI_DEN] = newMeter.getDenom();
+			currMeterInfo[Transcription.MI_NUM] = newMeter.getNumer();
+			currMeterInfo[Transcription.MI_DEN] = newMeter.getDenom();
 			// 2. Metric time
 			currMt = prevMt.add(prevMeterAsRat.mul(prevNumBars));
 			currMt.reduce();
-			currMeterInfo[MI_NUM_MT_FIRST_BAR] = currMt.getNumer();
-			currMeterInfo[MI_DEN_MT_FIRST_BAR] = currMt.getDenom();
+			currMeterInfo[Transcription.MI_NUM_MT_FIRST_BAR] = currMt.getNumer();
+			currMeterInfo[Transcription.MI_DEN_MT_FIRST_BAR] = currMt.getDenom();
 			currMeterInfo[MI_DIM] = currDim;
 
 			// Add and update
@@ -264,7 +266,7 @@ public class Tablature implements Serializable {
 	public static int getDiminution(int bar, List<Integer[]> mi) {
 		int diminution = 1; 
 		for (Integer[] in : mi) {
-			if (bar >= in[MI_FIRST_BAR] && bar <= in[MI_LAST_BAR]) {
+			if (bar >= in[Transcription.MI_FIRST_BAR] && bar <= in[Transcription.MI_LAST_BAR]) {
 				diminution = in[4];
 				break;
 			}
@@ -324,31 +326,31 @@ public class Tablature implements Serializable {
 			String currMeter = currInfo.substring(0, currInfo.indexOf("(")).trim();
 			int currNum = Integer.parseInt(currMeter.split("/")[0].trim());
 			int currDen = Integer.parseInt(currMeter.split("/")[1].trim());
-			currentMeterInfo[MI_NUM] = currNum;
-			currentMeterInfo[MI_DEN] = currDen;
+			currentMeterInfo[Transcription.MI_NUM] = currNum;
+			currentMeterInfo[Transcription.MI_DEN] = currDen;
 			// 2. Bar number(s)
 			int currNumBars = 0;
 			String currBars = 
 				currInfo.substring(currInfo.indexOf("(") + 1, currInfo.indexOf(")")).trim();
 			// If the meter is only for a single bar
 			if (!currBars.contains("-")) {
-				currentMeterInfo[MI_FIRST_BAR] = Integer.parseInt(currBars.trim());
-				currentMeterInfo[MI_LAST_BAR] = Integer.parseInt(currBars.trim());
+				currentMeterInfo[Transcription.MI_FIRST_BAR] = Integer.parseInt(currBars.trim());
+				currentMeterInfo[Transcription.MI_LAST_BAR] = Integer.parseInt(currBars.trim());
 				currNumBars = 1;
 			}
 			// If the meter is for more than one bar
 			else {
 				int firstBar = Integer.parseInt(currBars.split("-")[0].trim());
 				int lastBar = Integer.parseInt(currBars.split("-")[1].trim());
-				currentMeterInfo[MI_FIRST_BAR] = firstBar;
-				currentMeterInfo[MI_LAST_BAR] = lastBar;
+				currentMeterInfo[Transcription.MI_FIRST_BAR] = firstBar;
+				currentMeterInfo[Transcription.MI_LAST_BAR] = lastBar;
 				currNumBars = (lastBar-firstBar) + 1;
 			}
 			// 3. Metric times
 			Rational currMt = prevMt.add(prevMeterAsRat.mul(prevNumBars));
 			currMt.reduce();
-			currentMeterInfo[MI_NUM_MT_FIRST_BAR] = currMt.getNumer();
-			currentMeterInfo[MI_DEN_MT_FIRST_BAR] = currMt.getDenom();
+			currentMeterInfo[Transcription.MI_NUM_MT_FIRST_BAR] = currMt.getNumer();
+			currentMeterInfo[Transcription.MI_DEN_MT_FIRST_BAR] = currMt.getDenom();
 
 			// Add and update
 			originalMeterInfo.add(currentMeterInfo);
@@ -398,8 +400,10 @@ public class Tablature implements Serializable {
 		metricTimesBeatZeroAdapted.add(0);
 		for (int i = 1 ; i < originalMeterInfo.size(); i++) {
 			Integer[] prevMeterInfo = originalMeterInfo.get(i-1);
-			int prevNumBars = (prevMeterInfo[MI_LAST_BAR] - prevMeterInfo[MI_FIRST_BAR]) + 1;
-			Rational prevMeter = new Rational(prevMeterInfo[MI_NUM], prevMeterInfo[MI_DEN]);
+			int prevNumBars = (prevMeterInfo[Transcription.MI_LAST_BAR] - 
+				prevMeterInfo[Transcription.MI_FIRST_BAR]) + 1;
+			Rational prevMeter = new Rational(prevMeterInfo[Transcription.MI_NUM], 
+				prevMeterInfo[Transcription.MI_DEN]);
 			// The metric time (duration of the previous bars) for beat zero equals 
 			// original: previous meter * number of bars in that meter 
 			// adapted: previous meter * number of bars in that meter * (or /) the dim for that meter
@@ -790,15 +794,15 @@ public class Tablature implements Serializable {
 
 		// 0. Determine the presence of an anacrusis
 		boolean containsAnacrusis = false;
-		if (argMeterInfo.get(0)[MI_FIRST_BAR] == 0) {
+		if (argMeterInfo.get(0)[Transcription.MI_FIRST_BAR] == 0) {
 			containsAnacrusis = true;
 		}
 
 		// 1. Determine the largest meter denominator and then the common denominator
 		int largestMeterDenom = -1;
 		for (Integer[] in : argMeterInfo) {
-			if (in[MI_DEN] > largestMeterDenom) {
-				largestMeterDenom = in[MI_DEN];
+			if (in[Transcription.MI_DEN] > largestMeterDenom) {
+				largestMeterDenom = in[Transcription.MI_DEN];
 			}
 		}
 		int commonDenom = metricTime.getDenom() * largestMeterDenom;
@@ -811,7 +815,8 @@ public class Tablature implements Serializable {
 		List<Rational> metersInLargestDenom = new ArrayList<Rational>();
 		for (int i = 0; i < argMeterInfo.size(); i++) {
 			Integer[] currentMeter = 
-				new Integer[]{argMeterInfo.get(i)[MI_NUM], argMeterInfo.get(i)[MI_DEN]};
+				new Integer[]{argMeterInfo.get(i)[Transcription.MI_NUM], 
+					argMeterInfo.get(i)[Transcription.MI_DEN]};
 			// factor will always be an int because largestMeterDenom will always be a multiple of currentMeter[1]    	
 			int factor = (largestMeterDenom / currentMeter[1]) * metricTime.getDenom();  
 			metersInLargestDenom.add(new Rational(currentMeter[0] * factor, commonDenom));
@@ -835,8 +840,8 @@ public class Tablature implements Serializable {
 		// Determine the remaining meter change points
 		for (int i = startIndex; i < argMeterInfo.size(); i++) {
 			// Determine the number of bars in the current meter
-			int numBarsInCurrentMeter = 
-				(argMeterInfo.get(i)[MI_LAST_BAR] - argMeterInfo.get(i)[MI_FIRST_BAR]) + 1;
+			int numBarsInCurrentMeter = (argMeterInfo.get(i)[Transcription.MI_LAST_BAR] - 
+				argMeterInfo.get(i)[Transcription.MI_FIRST_BAR]) + 1;
 			// Determine the metric time of the next meter change point and add it to meterChangePointsMetricTimes
 			// NB: When creating the new Rational do not use add() to avoid automatic reduction
 			Rational currentMeter = metersInLargestDenom.get(i);
@@ -873,7 +878,8 @@ public class Tablature implements Serializable {
 					// Determine the bar number
 					int currentDistance = metricTimeInLargestDenom.getNumer() - currentPrevious.getNumer();
 					int numberOfBarsToAdd =	(currentDistance - (currentDistance % currentBarSize)) / currentBarSize;   			
-					int currentBarNumber = argMeterInfo.get(i + startIndex)[MI_FIRST_BAR] + numberOfBarsToAdd;
+					int currentBarNumber = argMeterInfo.get(i + 
+						startIndex)[Transcription.MI_FIRST_BAR] + numberOfBarsToAdd;
 					// Determine the position in the bar
 					Rational currentPositionInBar = new Rational(currentDistance % currentBarSize, commonDenom);
 //					Rational currentMeter = metersInLargestDenom.get(i + startIndex);

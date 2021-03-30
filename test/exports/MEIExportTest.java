@@ -210,7 +210,7 @@ public class MEIExportTest extends TestCase {
 		List<List<String[]>> ebl = encoding.getEventsBarlinesFootnotesPerBar();
 		for (List<String[]> l : ebl) {
 			for (String[] s : l) {
-				events.add(s[0]);
+				events.add(s[0].substring(0, s[0].lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR)));
 			}
 		}
 		for (String event : events) {

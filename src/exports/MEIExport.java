@@ -91,12 +91,14 @@ public class MEIExport {
 //		testTabFile = "3vv/pisador-1552_7-pleni_de"; // TODO remove every second barline
 //		testTabFile = "3vv/judenkuenig-1523_2-elslein_liebes";
 //		testTabFile = "3vv/newsidler-1544_2-nun_volget"; // TODO remove every second barline in ternary part
-		testTabFile = "3vv/phalese-1547_7-tant_que-3vv";
+//		testTabFile = "3vv/phalese-1547_7-tant_que-3vv";
+		
+		testTabFile = "4vv/rotta-1546_15-bramo_morir";
 		
 		Tablature testTab = new Tablature(new File(
 			"F:/research/data/data/encodings/tab-int/" + testTabFile + ".tbp"), false);	
 		
-		exportTabMEIFile(testTab, "C:/Users/Reinier/Desktop/3vv/" + testTab.getPieceName());
+		exportTabMEIFile(testTab, "C:/Users/Reinier/Desktop/4vv/" + testTab.getPieceName());
 		
 		System.exit(0);
 		
@@ -443,10 +445,10 @@ public class MEIExport {
 		List<String[]> meters = new ArrayList<>();
 		for (Integer[] in : mi) {
 			meters.add(new String[]{
-				"meter.count='" + in[Tablature.MI_NUM] + "'", 
-				"meter.unit='" + in[Tablature.MI_DEN] + "'",
-				(in[Tablature.MI_NUM] == 4 && in[Tablature.MI_DEN] == 4 || 
-				 in[Tablature.MI_NUM] == 2 && in[Tablature.MI_DEN] == 2) ? 
+				"meter.count='" + in[Transcription.MI_NUM] + "'", 
+				"meter.unit='" + in[Transcription.MI_DEN] + "'",
+				(in[Transcription.MI_NUM] == 4 && in[Transcription.MI_DEN] == 4 || 
+				 in[Transcription.MI_NUM] == 2 && in[Transcription.MI_DEN] == 2) ? 
 				" meter.sym='common'" : ""});
 		}
 
@@ -517,14 +519,6 @@ public class MEIExport {
 					currEventOrig = removeTrailingSymbolSeparator(currEventOrig);
 				}
 
-//				// sicAndCorr contains two elements (the original and the adapted current)
-//				// if there is an adaptation; else only one (the original current event)
-//				List<String> sicAndCorr = new ArrayList<>();
-//				if (currEventOrig != null) {
-//					sicAndCorr.add(currEventOrig);
-//				}
-//				sicAndCorr.add(currEvent);
-
 				// Barline? End of bar reached; set barline if not single
 				if (ConstantMusicalSymbol.isBarline(currEvent)) {
 					// TODO currently only single and double barline possible in MEI
@@ -539,48 +533,16 @@ public class MEIExport {
 				else {
 					// Get XML durations of currEvent, and, if applicable, currEventOrig
 					Integer[] currDurXML = getXMLDur(currEvent);
-//					Integer[] currDurOrigXML = null;
-//					if (currEventOrig != null) {
-//						currDurOrigXML = getXMLDur(currEventOrig);
-//					}
 
 					String sicEvent = !isCorrected ? currEvent : currEventOrig;
 					String corrEvent = !isCorrected ? null : currEvent;
-//					boolean hasFootnote = currEventOrig != null;
-//					boolean isCorrected = currEventOrig != null;
-//					boolean isCorrected = sicAndCorr.size() == 2;
-//					if (!isCorrected) {
-//					if (!isCorrected) {
-//						sicEvent = sicAndCorr.get(0);
-//						sicEvent = currEvent;
-//					}
-//					else {
-//						sicEvent = sicAndCorr.get(0);
-//						if (currEventOrigIsCorrected) {
-//						sicEvent = currEventOrig;
-//						corrEvent = currEvent;
-//							sicEvent = sicAndCorr.get(0);
-//						}
-//						else {
-//							sicEvent = currEvent;
-//							sicEvent = sicAndCorr.get(1);
-//						}
-//						corrEvent = sicAndCorr.get(1);
-//					}
 
 					boolean defaultCase = !isCorrected; 
-//					boolean defaultCase = !hasFootnote;
-					boolean oneReplacedByMultiple = 
-						isCorrected && sicEvent.endsWith(sp);
-//					boolean oneReplacedByMultiple = hasFootnote && sicEvent.endsWith(sp);
+					boolean oneReplacedByMultiple = isCorrected && sicEvent.endsWith(sp);
 					boolean multipleReplacedByOne = 
 						isCorrected && sicEvent.contains(sp) && !sicEvent.endsWith(sp);
-//					boolean multipleReplacedByOne = 
-//						hasFootnote && sicEvent.contains(sp) && !sicEvent.endsWith(sp);
 					boolean defaultCorrectedCase = 
 						isCorrected && !oneReplacedByMultiple && !multipleReplacedByOne;
-//					boolean defaultCorrectedCase = 
-//						hasFootnote && !oneReplacedByMultiple && !multipleReplacedByOne;
 
 					List<String> sicList = new ArrayList<>();
 					List<String> corrList = new ArrayList<>();
@@ -662,27 +624,19 @@ public class MEIExport {
 
 					String eventAsXML = "";
 					if (isCorrected) {
-//					if (hasFootnote) {
 						eventAsXML += INDENT + TAB.repeat(3) + "<choice>" + "\r\n";
 						eventAsXML += INDENT + TAB.repeat(4) + "<sic>" + "\r\n";
 					}
-					System.out.println(sicList);
-					System.out.println(Arrays.toString(prevDurXML));
-//					System.out.println(hasFootnote);
-					System.out.println("TO getTabGrps()");
 					eventAsXML += getTabGrps(sicList, prevDurXML, isCorrected, tss);
 					if (isCorrected) {
-//					if (hasFootnote) {
 						eventAsXML += INDENT + TAB.repeat(4) + "</sic>" + "\r\n";
 					}
 					if (isCorrected) {
-//					if (hasFootnote) {
 						eventAsXML += INDENT + TAB.repeat(4) + "<corr>" + "\r\n";
 						eventAsXML += getTabGrps(corrList, prevDurXML, isCorrected, tss);
 						eventAsXML += INDENT + TAB.repeat(4) + "</corr>" + "\r\n";
 					}
 					if (isCorrected) {
-//					if (hasFootnote) {
 						eventAsXML += INDENT + TAB.repeat(3) + "</choice>" + "\r\n";
 					}
 					currBarXMLAsString += eventAsXML;
@@ -773,10 +727,9 @@ public class MEIExport {
 		Integer[] XMLDur = null;
 
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		// Event consisting of a single TabSymbol contain no SS (the trailing SS has 
-		// been removed from event) 
+		// To make sure that it always works if the trailing SS has been removed from event
 		RhythmSymbol rs = 
-			(!event.contains(ss)) ?	RhythmSymbol.getRhythmSymbol(event) :
+			(!event.contains(ss)) ?	RhythmSymbol.getRhythmSymbol(event) : 
 			RhythmSymbol.getRhythmSymbol(event.substring(0, event.indexOf(ss)));
 
 		if (rs != null) {
@@ -822,17 +775,8 @@ public class MEIExport {
 			String[] currEventSplit = 
 				(!e.contains(ss)) ? new String[]{e} : e.split("\\" + ss);
 			System.out.println(Arrays.asList("css = " + Arrays.toString(currEventSplit)));
-//			// Remove any MS (the first has already been taken care of above; any other
-//			// are handled below)
-			// If the event is a MS event (which can consist of one or multiple MSs)
-			boolean isMSEvent = 
-				MensurationSign.getMensurationSign(currEventSplit[0]) != null ? true : false;
-//			if (MensurationSign.getMensurationSign(currEventSplit[0]) != null) {
-//				currEventSplit = Arrays.copyOfRange(currEventSplit, 1, currEventSplit.length);
-//			}
-			// If the event is not only a MS
-			if (!isMSEvent) {
-//			if (currEventSplit.length != 0) {
+			// If the event is not an MS event (which consist of one or multiple MS)
+			if (MensurationSign.getMensurationSign(currEventSplit[0]) == null) {
 				// Determine previous (last active) duration
 				int dur = prevXMLDur[XML_DUR_IND];
 				int dots = prevXMLDur[XML_DOTS_IND];
@@ -928,10 +872,10 @@ public class MEIExport {
 		String scoreDefStr = 
 			"key.sig='" + Math.abs(kiInit[Transcription.KI_KEY]) + 
 				(kiInit[Transcription.KI_KEY] < 0 ? "f" : "s") + "'" + " " +
-			"meter.count='" + miInit[Tablature.MI_NUM] + "'" + " " + 
-			"meter.unit='" + miInit[Tablature.MI_DEN] + "'" + 
-			(miInit[Tablature.MI_NUM] == 4 && miInit[Tablature.MI_DEN] == 4 || 
-			 miInit[Tablature.MI_NUM] == 2 && miInit[Tablature.MI_DEN] == 2 ? 
+			"meter.count='" + miInit[Transcription.MI_NUM] + "'" + " " + 
+			"meter.unit='" + miInit[Transcription.MI_DEN] + "'" + 
+			(miInit[Transcription.MI_NUM] == 4 && miInit[Transcription.MI_DEN] == 4 || 
+			 miInit[Transcription.MI_NUM] == 2 && miInit[Transcription.MI_DEN] == 2 ? 
 			" " + "meter.sym='common'" : "");
 		res = res.replace("scoreDef_placeholder", scoreDefStr.trim());
 
@@ -939,13 +883,13 @@ public class MEIExport {
 		List<String[]> nonInitMeters = new ArrayList<>();
 		for (Integer[] in : mi.subList(1, mi.size())) {
 			nonInitMeters.add(new String[]{
-				"meter.count='" + in[Tablature.MI_NUM] + "'", 
-				" meter.unit='" + in[Tablature.MI_DEN] + "'",
-				(in[Tablature.MI_NUM] == 4 && in[Tablature.MI_DEN] == 4 || 
-				 in[Tablature.MI_NUM] == 2 && in[Tablature.MI_DEN] == 2) ? " meter.sym='common'" : ""});
+				"meter.count='" + in[Transcription.MI_NUM] + "'", 
+				" meter.unit='" + in[Transcription.MI_DEN] + "'",
+				(in[Transcription.MI_NUM] == 4 && in[Transcription.MI_DEN] == 4 || 
+				 in[Transcription.MI_NUM] == 2 && in[Transcription.MI_DEN] == 2) ? " meter.sym='common'" : ""});
 		}
 		List<Integer> meterChangeBars = 
-			ToolBox.getItemsAtIndex(mi, Tablature.MI_FIRST_BAR).subList(1, mi.size());
+			ToolBox.getItemsAtIndex(mi, Transcription.MI_FIRST_BAR).subList(1, mi.size());
 
 		// b. Make staffGrp (goes inside scoreDef)
 		String staffGrpAtt = "symbol='brace' barthru='true'";
@@ -1565,18 +1509,18 @@ public class MEIExport {
 		Integer[][] bnp = trans.getBasicNoteProperties();
 
 		// Get meter and key TODO assumed is a single key
-		int numBars = mi.get(mi.size()-1)[Tablature.MI_LAST_BAR];
+		int numBars = mi.get(mi.size()-1)[Transcription.MI_LAST_BAR];
 		Rational endOffset = Rational.ZERO;
 		for (Integer[] m : mi) {
-			Rational currMeter = new Rational(m[Tablature.MI_NUM], m[Tablature.MI_DEN]);
-			int barsInCurrMeter = (m[Tablature.MI_LAST_BAR] - m[Tablature.MI_FIRST_BAR]) + 1;
+			Rational currMeter = new Rational(m[Transcription.MI_NUM], m[Transcription.MI_DEN]);
+			int barsInCurrMeter = (m[Transcription.MI_LAST_BAR] - m[Transcription.MI_FIRST_BAR]) + 1;
 			endOffset = endOffset.add(currMeter.mul(barsInCurrMeter));
 		}
 		Integer[] key = ki.get(0);
 		int numAlt = key[Transcription.KI_KEY];
 		// Set initial bar and meter
 		Integer[] initMi = mi.get(0);
-		Rational meter = new Rational(initMi[Tablature.MI_NUM], initMi[Tablature.MI_DEN]);
+		Rational meter = new Rational(initMi[Transcription.MI_NUM], initMi[Transcription.MI_DEN]);
 		Rational barEnd = meter;
 
 		// Get indices mapping
@@ -1982,7 +1926,7 @@ public class MEIExport {
 				if (offset.isGreater(endOffset)) {
 					offset = endOffset;
 				}
-				int endBar = (offset.equals(endOffset)) ? mi.get(mi.size()-1)[Tablature.MI_LAST_BAR] : 
+				int endBar = (offset.equals(endOffset)) ? mi.get(mi.size()-1)[Transcription.MI_LAST_BAR] : 
 					Tablature.getMetricPosition(offset, mi)[0].getNumer();
 				
 				List<Integer> bars = 
