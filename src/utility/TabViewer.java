@@ -374,7 +374,7 @@ public class TabViewer extends JFrame{
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-absolon_fili.tbp";
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-in_exitu.tbp";
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-qui_habitat.tbp";
-			encPath += "tab-int/4vv/" + "rotta-1546_15-bramo_morir.tbp";
+//			encPath += "tab-int/4vv/" + "rotta-1546_15-bramo_morir.tbp";
 //			encPath += "tab-int/4vv/" + "phalese-1547_7-tant_que-4vv.tbp";
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-herr_gott.tbp";
 //			encPath += "tab-int/4vv/" + "abondante-1548_1-mais_mamignone.tbp";
@@ -382,7 +382,7 @@ public class TabViewer extends JFrame{
 //			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest.tbp"; // TODO remove every second barline
 //			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp"; // TODO remove every second barline
 //			encPath += "tab-int/4vv/" + "phalese-1563_12-il_estoit.tbp";
-//			encPath += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
+			encPath += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
 
 			// 5vv
 //			encPath += "tab-int/5vv/" + "adriansen-1584_6-d_vn_si.tbp";

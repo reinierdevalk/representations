@@ -7,16 +7,16 @@ public class Staff {
 	private int numberOfSegments;
 	private String[][] staffData;
 	private static final String STAFF_SEGMENT = "-";
-	private static final int STAFF_LINES = 11;
-	private static final int BAR_NUMS_LINE = 0;
+	public static final int STAFF_LINES = 11;
+	public static final int BAR_NUMS_LINE = 0;
 	private static final int RHYTHM_LINE = 1;
 	private static final int DIAPASONS_LINE_ITALIAN = 2;
 	private static final int TOP_TABLATURE_LINE = 3;
-	private static final int UPPER_MIDDLE_TABLATURE_LINE = 5;
+	public static final int UPPER_MIDDLE_TABLATURE_LINE = 5;
 	private static final int LOWER_MIDDLE_TABLATURE_LINE = 6;
 	private static final int BOTTOM_TABLATURE_LINE = 8;
 	private static final int DIAPASONS_LINE_OTHER = 9;
-	private static final int FOOTNOTES_LINE = 10;
+	public static final int FOOTNOTES_LINE = 10;
 	private static final int NECESSARY_LINE_SHIFT = 2;
 	public static final String SPACE_BETWEEN_STAFFS = "\n";
 	

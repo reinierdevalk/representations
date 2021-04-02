@@ -18,6 +18,7 @@ import tbp.Staff;
 import tbp.SymbolDictionary;
 import tbp.TabSymbol;
 import tbp.TabSymbolSet;
+import tools.ToolBox;
 
 public class Encoding implements Serializable {
 
@@ -45,6 +46,27 @@ public class Encoding implements Serializable {
 	private static final int TUNING_BASS_COURSES_IND = 5;
 	public static final int METER_IND = 6;
 	public static final int DIMINUTION_IND = 7;
+	
+	static final String AUTHOR_TAG = "AUTHOR:";
+	static final String TITLE_TAG = "TITLE:";
+	static final String SOURCE_TAG = "SOURCE:";
+	static final String TABSYMBOLSET_TAG = "TABSYMBOLSET:";
+	static final String TUNING_TAG = "TUNING:";
+	static final String TUNING_SEVENTH_COURSE_TAG = "TUNING_SEVENTH_COURSE:";
+	static final String METER_INFO_TAG = "METER_INFO:";
+	static final String DIMINUTION_TAG = "DIMINUTION:";
+	
+	private static String[] metaDataTags = new String[7];
+	static { metaDataTags = new String[8];
+		metaDataTags[AUTHOR_IND] = AUTHOR_TAG;
+		metaDataTags[TITLE_IND] = TITLE_TAG;
+		metaDataTags[SOURCE_IND] = SOURCE_TAG; 
+		metaDataTags[TABSYMBOLSET_IND] = TABSYMBOLSET_TAG; 
+		metaDataTags[TUNING_IND] = TUNING_TAG; 
+		metaDataTags[TUNING_BASS_COURSES_IND] = TUNING_SEVENTH_COURSE_TAG; 
+		metaDataTags[METER_IND] = METER_INFO_TAG;
+		metaDataTags[DIMINUTION_IND] = DIMINUTION_TAG;
+	}
 		
 	private List<List<String>> listsOfSymbols;
 	private static final int ALL_SYMBOLS_IND = 0;
@@ -119,19 +141,7 @@ public class Encoding implements Serializable {
 		P5P4m3M2, // 10-course with perfect 5th, perfect 4th, minor 3rd, major 2nd: G tuning (10) C, (9) D, (8) E, (7) F  
 		P5P4M3M2, // 10-course with perfect 5th, perfect 4th, major 3rd, major 2nd: G tuning (10) C, (9) D, (8) Eb, (7) F  	
 	};
-
-	private static String[] metaDataTags = new String[]{
-		"AUTHOR:", 
-		"TITLE:", 
-		"SOURCE:", 
-		"TABSYMBOLSET:", 
-		"TUNING:", 
-		"TUNING_SEVENTH_COURSE:", 
-		"METER_INFO:",
-		"DIMINUTION:"
-	};
-
-
+	
 	// C O N S T R U C T O R S
 	public Encoding() {
 	}
@@ -390,7 +400,8 @@ public class Encoding implements Serializable {
 					// Get unadapted comment (the one in event may have been altered if 
 					// it contains symbols split on, such as a space or a SBI)
 					e[FOOTNOTE_IND] = allEditorialComments.get(commentCounter);
-					e[FOOTNOTE_NUM_IND] = "footnote #" + (commentCounter + 1);
+					e[FOOTNOTE_NUM_IND] = "#" + (commentCounter + 1);
+//					e[FOOTNOTE_NUM_IND] = "footnote #" + (commentCounter + 1);
 					commentCounter++;
 				}
 				eventsCurrSystem.add(e);
@@ -808,7 +819,7 @@ public class Encoding implements Serializable {
 	 * <li>at element 2: if the event has a footnote, that footnote; otherwise 
 	 *     				 <code>null</code></li>
 	 * <li>at element 3: if the event has a footnote, the sequence number of that
-	 *                   footnote; otherwise <code>null</code></li>
+	 *                   footnote preced by #; otherwise <code>null</code></li>
 	 * </ul>
 	 */
 	// TESTED (together with setEventsBarlinesFootnotes())
@@ -1690,7 +1701,7 @@ public class Encoding implements Serializable {
 
 		// 1. Adapt header
 		// Reverse meterInfo information 
-		int startInd = header.indexOf("METER_INFO:") + "METER_INFO:".length();
+		int startInd = header.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length();
 		String origMeterInfo = header.substring(startInd, 
 			header.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, startInd));
 		List<Integer[]> copyOfMeterInfo = new ArrayList<>();
@@ -1820,7 +1831,7 @@ public class Encoding implements Serializable {
 
 		// 1. Adapt header
 		// Reverse meterInfo information 
-		int startInd = header.indexOf("METER_INFO:") + "METER_INFO:".length();
+		int startInd = header.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length();
 		String origMeterInfo = header.substring(startInd, 
 			header.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, startInd));
 		List<Integer[]> copyOfMeterInfo = new ArrayList<>();
@@ -1955,7 +1966,7 @@ public class Encoding implements Serializable {
 	 *        displayed when they change - regardless of whether this is specified in 
 	 *        the encoding.
 	 * @param showHeader Whether or not to show the header (author, title, source).
-	 * @param showFootnotes Whethe or not to show the footnotes.       
+	 * @param showFootnotes Whether or not to show the footnotes.       
 	 * 
 	 * @return A String representation of the encoding.
 	 */
@@ -1966,6 +1977,8 @@ public class Encoding implements Serializable {
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
 		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+		String oib = SymbolDictionary.OPEN_INFO_BRACKET;
+		String cib = SymbolDictionary.CLOSE_INFO_BRACKET;
 
 		String cleanEnc = getCleanEncoding();
 		TabSymbolSet tss = getTabSymbolSet();
@@ -2016,7 +2029,7 @@ public class Encoding implements Serializable {
 				else if (TabSymbol.getTabSymbol(encodedSymbol, tss) != null) { 
 					TabSymbol t = TabSymbol.getTabSymbol(encodedSymbol, tss);
 					if (argTss == TabSymbolSet.FRENCH_TAB) {   
-						staff.addTabSymbolFrench(t, segment); 
+						staff.addTabSymbolFrench(t, segment);
 					}
 					else if (argTss == TabSymbolSet.ITALIAN_TAB) {
 						staff.addTabSymbolItalian(t, segment);
@@ -2024,9 +2037,9 @@ public class Encoding implements Serializable {
 					else if (argTss == TabSymbolSet.SPANISH_TAB) {
 						staff.addTabSymbolSpanish(t, segment);
 					}
-					else if (argTss == TabSymbolSet.NEWSIDLER_1536 ) {
-						// TODO 
-					} 
+					else { // TODO German tablature currently rendered as French
+						staff.addTabSymbolFrench(t, segment);
+					}
 					// Is encodedSymbol followed by a space and not by another TS--i.e., is it the 
 					// last TS of a vertical sonority? Increment segment
 					// NB: LAYOUT RULE 4 guarantees that a vertical sonority is always followed by a
@@ -2091,9 +2104,18 @@ public class Encoding implements Serializable {
 			// e. Add footnote
 			staff.addFootnoteIndicators(footnoteSegmentInds.get(staffIndex));
 			// f. Add bar numbers
-			staff.addBarNumbers(barlineSegmentInds.get(staffIndex), firstBar, 
-				startsWithUnfinishedBar, endsWithBarline);
-						
+			boolean containsBarLines = false;
+			for (List<Integer> l : barlineSegmentInds) {
+				if (l.size() != 0) {
+					containsBarLines = true;
+					break;
+				}
+			}
+			if (containsBarLines) {
+				staff.addBarNumbers(barlineSegmentInds.get(staffIndex), firstBar, 
+					startsWithUnfinishedBar, endsWithBarline);
+			}
+
 			// System traversed? Add to tab and update information for the next system
 			tab += staff.getStaff() + Staff.SPACE_BETWEEN_STAFFS;
 			startsWithUnfinishedBar = endsWithBarline ? false : true;
@@ -2108,8 +2130,85 @@ public class Encoding implements Serializable {
 		// Add (formatted) footnotes
 		if (showFootnotes) {
 			StringBuffer footnotes = new StringBuffer();
-			getFootnotes().forEach(s -> footnotes.append(s + "\n"));
-			tab += footnotes.toString().substring(0, footnotes.lastIndexOf("\n"));
+			// Make metadata substitute (not all fields are actually needed)
+			String metadata = "";
+			List<String> ias = getInfoAndSettings();
+			List<String> metadataTags = Arrays.asList(getMetadataTags());
+			for (String tag : metadataTags) {
+				metadata += oib + tag + ias.get(metadataTags.indexOf(tag)) + cib + "\r\n";
+			}
+
+			List<List<String>> allFootnoteLists = new ArrayList<>();
+			for (String[] footnoteInfo : getFootnotes()) {
+//				String event = footnoteInfo[EVENT_IND];
+				String bar = footnoteInfo[BAR_IND];
+				String footnote = footnoteInfo[FOOTNOTE_IND].trim();
+				footnote = 
+					footnote.substring(footnote.indexOf(FOOTNOTE_INDICATOR) + 1, footnote.length());	
+//				String footnoteNum = footnoteInfo[FOOTNOTE_NUM_IND];
+				int numTabs = 3;
+				List<String> footnoteAsList = new ArrayList<>();
+				footnoteAsList.add(ToolBox.tabify("[" + bar + "]", numTabs));
+				// Tablature footnote
+				if (footnote.contains("'")) {
+					String footnoteAsText = 
+						footnote.substring(footnote.lastIndexOf("'") + 1, footnote.length()).trim(); 
+					// Make footnote into a miniature clean encoding by adding a space 
+					// and EBI. NB: miniCleanEnc always ends with a SS
+					String miniCleanEnc = 
+						footnote.substring(footnote.indexOf("'") + 1, footnote.lastIndexOf("'"));
+					if (!miniCleanEnc.endsWith(sp + ss)) {
+						miniCleanEnc += sp + ss;
+					}
+					miniCleanEnc += SymbolDictionary.END_BREAK_INDICATOR;
+					// Make Encoding out of miniature raw encoding (i.e., clean encoding 
+					// with metadata fields prepended) and visualise
+					String footnoteAsTab = new Encoding(
+						metadata + "\r\n" + miniCleanEnc, "", true).visualise(
+						tss, false, false, true);
+
+					// footnoteAsTabSplit has Staff.STAFF_LINES lines, and begins with an 
+					// empty one (for the content of Staff.BAR_NUMS_LINE) and ends with 
+					// am empty one (for the content of Staff.FOOTNOTES_LINE)
+					String[] footnoteAsTabSplit = footnoteAsTab.split("\n");
+					for (int i = 0; i < footnoteAsTabSplit.length; i++) {
+						String line = footnoteAsTabSplit[i].trim();
+						// Add footnote
+						String toAdd = 
+							i == Staff.UPPER_MIDDLE_TABLATURE_LINE ? (" " + footnoteAsText) : "";
+						footnoteAsList.add(ToolBox.tabify(line + toAdd, numTabs));
+					}
+//					for (String s : footnoteAsList) {
+//						System.out.println(s + "<--");
+//						System.out.println("1.......2.......3.......");
+//					}
+				}
+				// Text footnote
+				else {
+					// Prepend with empty lines
+					for (int j = 0; j < Staff.UPPER_MIDDLE_TABLATURE_LINE; j++) {
+						footnoteAsList.add(ToolBox.tabify("", numTabs));
+					}
+					// Add footnote broken up as list
+					footnoteAsList.addAll(ToolBox.breakIntoLines(footnote, ToolBox.TAB_LEN * numTabs));
+					// Append with empty lines
+					int len = footnoteAsList.size();
+					for (int j = len; j < Staff.STAFF_LINES + 1; j++) {
+						footnoteAsList.add(ToolBox.tabify("", numTabs));
+					}
+					// If one of the other two footnotes in the footnote row are tab footnotes
+					
+					// Else
+				}
+				System.out.println("--------------------");
+				for (String s : footnoteAsList) {
+					System.out.println(s);
+				}
+				allFootnoteLists.add(footnoteAsList);
+			}
+//			getFootnotes().forEach(s -> footnotes.append(s + "\n"));
+//			tab += footnotes.toString().substring(0, footnotes.lastIndexOf("\n"));
+			System.out.println(allFootnoteLists.size());
 		}
 
 		return tab;
@@ -2274,33 +2373,36 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Gets the footnotes.
+	 * Gets the footnotes, formatted as in the output of getEventsBarlinesFootnotes().
 	 * 
-	 * @return A <code>List</code> of strings consisting of all footnotes, numbered and 
-	 * separated per bar as follows: 
-	 * ["bar 1", "(1) Footnote text", "bar 3", "(2) Footnote text", "(3) Footnote text"]
+	 * @return A <code>List</code> of <code>String[]</code>s, one for each footnote.
 	 */
 	// TESTED
-	List<String> getFootnotes() {
-		List<String> footnotes = new ArrayList<>();
+	List<String[]> getFootnotes() {
+		List<String[]> footnotes = new ArrayList<>();
 		List<List<String[]>> ebf = getEventsBarlinesFootnotes();
 		// For each system
 		for (int i = 0; i < ebf.size(); i++) {
-			List<String> footnotesCurrSys = new ArrayList<>();
+			List<String[]> footnotesCurrSys = new ArrayList<>();
 			// For each event
 			for (String[] currEvent : ebf.get(i)) {
-				String footnote = currEvent[FOOTNOTE_IND];
-				if (footnote != null) {
-					String bar = "bar " + currEvent[BAR_IND];
-					String footnoteNumStr = currEvent[FOOTNOTE_NUM_IND];
-					int footnoteNum = 
-						Integer.parseInt(footnoteNumStr.substring(footnoteNumStr.indexOf("#") + 1)); 
-					// Add bar (only if it has not been added yet)
-					if (!footnotesCurrSys.contains(bar)) {
-						footnotesCurrSys.add(bar);
-					}
-					footnotesCurrSys.add("(" + footnoteNum + ") " + 
-						footnote.substring(footnote.indexOf(FOOTNOTE_INDICATOR) + 1));
+//				// Get footnote
+//				String footnote = currEvent[FOOTNOTE_IND];
+				if (currEvent[FOOTNOTE_IND] != null) {
+					footnotesCurrSys.add(currEvent);
+//					footnote = footnote.substring(footnote.indexOf(FOOTNOTE_INDICATOR) + 1);
+////					String bar = "bar " + currEvent[BAR_IND];
+////					String footnoteNumStr = currEvent[FOOTNOTE_NUM_IND];
+////					int footnoteNum = 
+////						Integer.parseInt(footnoteNumStr.substring(footnoteNumStr.indexOf("#") + 1)); 
+//					footnotesCurrSys.add(new String[]{
+//						currEvent[BAR_IND], currEvent[FOOTNOTE_NUM_IND], footnote});
+////					// Add bar (only if it has not been added yet)
+////					if (!footnotesCurrSys.contains(bar)) {
+////						footnotesCurrSys.add(bar);
+////					}
+////					footnotesCurrSys.add("(" + footnoteNum + ") " + 
+////					footnote.substring(footnote.indexOf(FOOTNOTE_INDICATOR) + 1));
 				}
 			}
 			footnotes.addAll(footnotesCurrSys);			

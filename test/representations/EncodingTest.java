@@ -188,9 +188,13 @@ public class EncodingTest {
 		encoding.setRawEncoding(rawEncoding);
 		
 		List<String> expected = Arrays.asList(new String[]{
-			"AUTHOR: Author ", "TITLE:Title", "SOURCE:Source (year)",
-			"TABSYMBOLSET:FrenchTab", "TUNING:A", "TUNING_SEVENTH_COURSE: ", 
-			"METER_INFO:2/2 (1-3)", "DIMINUTION:1",
+			Encoding.AUTHOR_TAG + " Author ", Encoding.TITLE_TAG + "Title", 
+			Encoding.SOURCE_TAG + "Source (year)", Encoding.TABSYMBOLSET_TAG + "FrenchTab", 
+			Encoding.TUNING_TAG + "A", Encoding.TUNING_SEVENTH_COURSE_TAG + " ", 
+			Encoding.METER_INFO_TAG + "2/2 (1-3)", Encoding.DIMINUTION_TAG + "1",	
+//			"AUTHOR: Author ", "TITLE:Title", "SOURCE:Source (year)",
+//			"TABSYMBOLSET:FrenchTab", "TUNING:A", "TUNING_SEVENTH_COURSE: ", 
+//			"METER_INFO:2/2 (1-3)", "DIMINUTION:1",
 			"bar 1", "@Footnote 1", "bar 2", "@'mi.a6.' in source", "bar 3"});
 
 		List<String> actual = encoding.getAllMetadata();
@@ -853,7 +857,7 @@ public class EncodingTest {
 		bar1.add(new String[]{"sb.", "1", null, null});
 		bar1.add(new String[]{"mi.", "1", null, null});
 		bar1.add(new String[]{"mi.a5.c4.b2.a1.", "1", null, null});
-		bar1.add(new String[]{"|.", "1", "@Footnote 1", "footnote #1"});
+		bar1.add(new String[]{"|.", "1", "@Footnote 1", "#1"});
 		expected.add(bar1);
 		//
 		List<String[]> bar2 = new ArrayList<>();
@@ -861,7 +865,7 @@ public class EncodingTest {
 		bar2.add(new String[]{"fu.d6.", "2", null, null});
 		bar2.add(new String[]{"sm.c6.a5.e4.b2.", "2", null, null});
 		bar2.add(new String[]{"a6.", "2", null, null});
-		bar2.add(new String[]{"mi.a6.h5.c4.b3.f2.", "2", "@'mi.a6.' in source", "footnote #2"});
+		bar2.add(new String[]{"mi.a6.h5.c4.b3.f2.", "2", "@'mi.a6.' in source", "#2"});
 		bar2.add(new String[]{"sm.a6.b3.a2.a1.", "2", null, null});
 		bar2.add(new String[]{"a3.e2.", "2", null, null});
 		bar2.add(new String[]{"|.", "2", null, null});
@@ -1206,18 +1210,18 @@ public class EncodingTest {
 	public void testGetFootnotes() {
 		Encoding encoding = new Encoding(encodingTestpiece1);
 
-		List<String> expected = Arrays.asList(new String[]{
-			"bar 1", 
-			"(1) Footnote 1", 
-			"bar 2", 
-			"(2) 'mi.a6.' in source"
-		});
+		List<String[]> expected = new ArrayList<>();
+		expected.add(new String[]{"|.", "1", "@Footnote 1", "#1"});
+		expected.add(new String[]{"mi.a6.h5.c4.b3.f2.", "2", "@'mi.a6.' in source", "#2"});
 
-		List<String> actual = encoding.getFootnotes();
+		List<String[]> actual = encoding.getFootnotes();
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
+			assertEquals(expected.get(i).length, actual.get(i).length);
+			for (int j = 0; j < expected.get(i).length; j++) {
+				assertEquals(expected.get(i)[j], actual.get(i)[j]);
+			}
 		}
 	}
 
