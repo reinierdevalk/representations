@@ -11,6 +11,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import javax.swing.plaf.synth.SynthSeparatorUI;
+
 import tbp.ConstantMusicalSymbol;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
@@ -2127,10 +2129,9 @@ public class Encoding implements Serializable {
 			nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
 		}
 		
-		// Add (formatted) footnotes
+		// Add formatted footnotes
 		if (showFootnotes) {
-			StringBuffer footnotes = new StringBuffer();
-			// Make metadata substitute (not all fields are actually needed)
+			// Make metadata substitute (NB: not all fields are actually needed)
 			String metadata = "";
 			List<String> ias = getInfoAndSettings();
 			List<String> metadataTags = Arrays.asList(getMetadataTags());
@@ -2138,78 +2139,140 @@ public class Encoding implements Serializable {
 				metadata += oib + tag + ias.get(metadataTags.indexOf(tag)) + cib + "\r\n";
 			}
 
+			// 1. Fill allFootnoteLists with footnoteLists. A footnoteList is a list of 
+			// 1 + Staff.STAFF_LINES strings, representing the bar number + the 
+			// individual lines of a footnote
 			List<List<String>> allFootnoteLists = new ArrayList<>();
-			for (String[] footnoteInfo : getFootnotes()) {
+			int numTabs = 3;
+			int footnoteListGroupSize = 3;
+			String emptyLine = ToolBox.tabify("", numTabs);
+			for (String[] curr : getFootnotes()) {
 //				String event = footnoteInfo[EVENT_IND];
-				String bar = footnoteInfo[BAR_IND];
-				String footnote = footnoteInfo[FOOTNOTE_IND].trim();
-				footnote = 
-					footnote.substring(footnote.indexOf(FOOTNOTE_INDICATOR) + 1, footnote.length());	
+//				String currBar = currFootnoteInfo[BAR_IND];
 //				String footnoteNum = footnoteInfo[FOOTNOTE_NUM_IND];
-				int numTabs = 3;
-				List<String> footnoteAsList = new ArrayList<>();
-				footnoteAsList.add(ToolBox.tabify("[" + bar + "]", numTabs));
-				// Tablature footnote
-				if (footnote.contains("'")) {
-					String footnoteAsText = 
-						footnote.substring(footnote.lastIndexOf("'") + 1, footnote.length()).trim(); 
+				String currFootnote = curr[FOOTNOTE_IND].trim();
+				currFootnote = 
+					currFootnote.substring(currFootnote.indexOf(FOOTNOTE_INDICATOR) + 1, 
+					currFootnote.length());	
+
+				// currFootnoteList contains the bar number and the currentFootnote,
+				// which is either a tablature footnote or a text footnote, both split
+				// up into Staff.STAFF_LINES lines
+				List<String> currFootnoteList = new ArrayList<>();
+				currFootnoteList.add(ToolBox.tabify("[" + curr[BAR_IND] + "]", numTabs));
+				// a. Tablature footnote
+				if (currFootnote.contains("'")) {
+					// Get the tab part of the footnote
 					// Make footnote into a miniature clean encoding by adding a space 
 					// and EBI. NB: miniCleanEnc always ends with a SS
 					String miniCleanEnc = 
-						footnote.substring(footnote.indexOf("'") + 1, footnote.lastIndexOf("'"));
+						currFootnote.substring(currFootnote.indexOf("'") + 1,
+						currFootnote.lastIndexOf("'"));
 					if (!miniCleanEnc.endsWith(sp + ss)) {
 						miniCleanEnc += sp + ss;
 					}
 					miniCleanEnc += SymbolDictionary.END_BREAK_INDICATOR;
 					// Make Encoding out of miniature raw encoding (i.e., clean encoding 
 					// with metadata fields prepended) and visualise
-					String footnoteAsTab = new Encoding(
-						metadata + "\r\n" + miniCleanEnc, "", true).visualise(
-						tss, false, false, true);
+					String currFootnoteTabPart = 
+						new Encoding(metadata + "\r\n" + miniCleanEnc, "", true).
+						visualise(tss, false, false, true);
 
-					// footnoteAsTabSplit has Staff.STAFF_LINES lines, and begins with an 
-					// empty one (for the content of Staff.BAR_NUMS_LINE) and ends with 
-					// am empty one (for the content of Staff.FOOTNOTES_LINE)
-					String[] footnoteAsTabSplit = footnoteAsTab.split("\n");
-					for (int i = 0; i < footnoteAsTabSplit.length; i++) {
-						String line = footnoteAsTabSplit[i].trim();
-						// Add footnote
-						String toAdd = 
-							i == Staff.UPPER_MIDDLE_TABLATURE_LINE ? (" " + footnoteAsText) : "";
-						footnoteAsList.add(ToolBox.tabify(line + toAdd, numTabs));
+					// Get the text part of the footnote (generally, 'in source')
+					String currFootnoteTextPart = 
+						currFootnote.substring(currFootnote.lastIndexOf("'") + 1, 
+						currFootnote.length()).trim();
+
+					// Split currFootnoteTabPart into lines. currFootnoteTabPartSplit both 
+					// begins with an empty line (for the content of Staff.BAR_NUMS_LINE) 
+					// and ends with one (for the content of Staff.FOOTNOTES_LINE). The text 
+					// part of the footnote is added after Staff.UPPER_MIDDLE_TABLATURE_LINE
+					String[] currFootnoteTabPartSplit = currFootnoteTabPart.split("\n");
+					for (int i = 0; i < currFootnoteTabPartSplit.length; i++) {
+						currFootnoteList.add(
+							ToolBox.tabify(
+							currFootnoteTabPartSplit[i].trim() + // line
+							(i == Staff.UPPER_MIDDLE_TABLATURE_LINE ? // text part (or "")
+							(" " + currFootnoteTextPart) : ""),	
+							numTabs));
 					}
-//					for (String s : footnoteAsList) {
-//						System.out.println(s + "<--");
-//						System.out.println("1.......2.......3.......");
-//					}
 				}
-				// Text footnote
+				// b. Text footnote
 				else {
 					// Prepend with empty lines
 					for (int j = 0; j < Staff.UPPER_MIDDLE_TABLATURE_LINE; j++) {
-						footnoteAsList.add(ToolBox.tabify("", numTabs));
+						currFootnoteList.add(emptyLine);
 					}
-					// Add footnote broken up as list
-					footnoteAsList.addAll(ToolBox.breakIntoLines(footnote, ToolBox.TAB_LEN * numTabs));
+					// Add footnote (broken up as list)
+					currFootnoteList.addAll(ToolBox.breakIntoLines(currFootnote, 
+						ToolBox.TAB_LEN * numTabs));
 					// Append with empty lines
-					int len = footnoteAsList.size();
+					int len = currFootnoteList.size();
 					for (int j = len; j < Staff.STAFF_LINES + 1; j++) {
-						footnoteAsList.add(ToolBox.tabify("", numTabs));
+						currFootnoteList.add(emptyLine);
 					}
-					// If one of the other two footnotes in the footnote row are tab footnotes
-					
-					// Else
 				}
 				System.out.println("--------------------");
-				for (String s : footnoteAsList) {
+				for (String s : currFootnoteList) {
 					System.out.println(s);
 				}
-				allFootnoteLists.add(footnoteAsList);
+				allFootnoteLists.add(currFootnoteList);
+			}
+
+			// 2. Make footnoteListGroups and turn them into strings. A footnoteListGroup 
+			// is a list of n footnoteLists (where n = footnoteListGroupSize) that are
+			// to be displayed next to one another
+			StringBuffer footnotesStr = new StringBuffer();
+			// Pad allFootnoteLists with nulls to make divisible by footnoteGroupSize
+			int numFootnotes = allFootnoteLists.size();
+			while (numFootnotes % footnoteListGroupSize != 0) {
+				allFootnoteLists.add(null);
+				numFootnotes = allFootnoteLists.size();
+			}
+			for (int i = 0; i < numFootnotes; i+=(footnoteListGroupSize-1)) {
+				System.out.println("i = " + i);
+				// Get the footnotes in the current group and check if one of them is a 
+				// tablature footnote, which is so if the element at 
+				// 1 + Staff.TOP_TABLATURE_LINE (+1 is for the bar number) is not empty
+				List<List<String>> currGroup = 
+					allFootnoteLists.subList(i, i + footnoteListGroupSize);
+				boolean groupHasTabFootnote = false;
+				for (List<String> l : currGroup) {
+					if (l != null) {
+						if (!l.get(1 + Staff.TOP_TABLATURE_LINE).equals(emptyLine)) {
+							groupHasTabFootnote = true;
+							break;
+						}
+					}
+				}
+				if (groupHasTabFootnote) {
+					String groupStr = "";
+					// Add the jth line of each footnote to footnotes
+					for (int j = 0; j < currGroup.get(0).size() ; j++) {
+						for (int k = 0 ; k < currGroup.size(); k++) {
+							if (currGroup.get(k) != null) {
+								footnotesStr.append(currGroup.get(k).get(j));
+							}
+						}
+						List<String> footnoteAsList = currGroup.get(j);
+//						footnotes.append(currFootnote.
+//						footnotes.append(
+//							footnoteListL.get(j) + footnoteListM.get(j) + footnoteListR.get(j) + "\r\n");
+					}
+					System.out.println(footnotesStr.toString());
+				}
+				else {
+					
+				}
+				System.exit(0);
+				
+				
 			}
 //			getFootnotes().forEach(s -> footnotes.append(s + "\n"));
 //			tab += footnotes.toString().substring(0, footnotes.lastIndexOf("\n"));
 			System.out.println(allFootnoteLists.size());
 		}
+		
 
 		return tab;
 	}

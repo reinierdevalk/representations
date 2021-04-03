@@ -11,7 +11,7 @@ public class Staff {
 	public static final int BAR_NUMS_LINE = 0;
 	private static final int RHYTHM_LINE = 1;
 	private static final int DIAPASONS_LINE_ITALIAN = 2;
-	private static final int TOP_TABLATURE_LINE = 3;
+	public static final int TOP_TABLATURE_LINE = 3;
 	public static final int UPPER_MIDDLE_TABLATURE_LINE = 5;
 	private static final int LOWER_MIDDLE_TABLATURE_LINE = 6;
 	private static final int BOTTOM_TABLATURE_LINE = 8;
