@@ -1987,6 +1987,9 @@ public class Encoding implements Serializable {
 
 		List<List<Integer>> barlineSegmentInds = getStaffSegmentIndices("barline");
 		List<List<Integer>> footnoteSegmentInds = getStaffSegmentIndices("footnote");
+//		for (List<Integer> l : barlineSegmentInds) {
+//			System.out.println(l);
+//		}
 
 		// Add (formatted) metadata
 		if (showHeader) {
@@ -2001,6 +2004,7 @@ public class Encoding implements Serializable {
 		int sbiIndex = -1;
 		int nextSbiIndex = cleanEnc.indexOf(sbi, sbiIndex + 1);
 		int firstBar = 1;
+		int firstFootnote = 1;
 		boolean startsWithUnfinishedBar = false;
 		while (sbiIndex + 1 != nextSbiIndex) { 
 			RhythmSymbol prevRhythmSymbol = null;
@@ -2011,6 +2015,7 @@ public class Encoding implements Serializable {
 			// add its tablature representation to staff 
 			int ssIndex = -1;
 			int nextSsIndex = currSysEncoding.indexOf(ss, ssIndex);
+			String firstEncodedSymbol = currSysEncoding.substring(0, nextSsIndex);
 			String lastEncodedSymbol = null;
 			while (nextSsIndex != -1) {
 				String encodedSymbol = currSysEncoding.substring(ssIndex + 1, nextSsIndex);
@@ -2042,10 +2047,11 @@ public class Encoding implements Serializable {
 					else { // TODO German tablature currently rendered as French
 						staff.addTabSymbolFrench(t, segment);
 					}
-					// Is encodedSymbol followed by a space and not by another TS--i.e., is it the 
-					// last TS of a vertical sonority? Increment segment
-					// NB: LAYOUT RULE 4 guarantees that a vertical sonority is always followed by a
-					// space, meaning that nextEncodedSymbol always exists if encodedSymbol is a TS
+					// Is encodedSymbol followed by a space and not by another TS - i.e., 
+					// is it the last TS of a vertical sonority? Increment segment
+					// NB: LAYOUT RULE 4 guarantees that a vertical sonority is always 
+					// followed by a space, meaning that nextEncodedSymbol always exists 
+					// if encodedSymbol is a TS
 					if (nextEncodedSymbol.equals(sp)) {
 						segment++;
 					}
@@ -2102,9 +2108,12 @@ public class Encoding implements Serializable {
 				nextSsIndex = currSysEncoding.indexOf(ss, ssIndex + 1);
 				lastEncodedSymbol = encodedSymbol;
 			}
+			boolean startsWithBarline = ConstantMusicalSymbol.isBarline(firstEncodedSymbol);
 			boolean endsWithBarline = ConstantMusicalSymbol.isBarline(lastEncodedSymbol);
-			// e. Add footnote
-			staff.addFootnoteIndicators(footnoteSegmentInds.get(staffIndex));
+			// e. Add footnotes
+			List<Integer> currFootnoteSegmentInds = footnoteSegmentInds.get(staffIndex);
+			staff.addFootnoteNumbers(currFootnoteSegmentInds, firstFootnote);
+			firstFootnote += currFootnoteSegmentInds.size();
 			// f. Add bar numbers
 			boolean containsBarLines = false;
 			for (List<Integer> l : barlineSegmentInds) {
@@ -2115,10 +2124,11 @@ public class Encoding implements Serializable {
 			}
 			if (containsBarLines) {
 				staff.addBarNumbers(barlineSegmentInds.get(staffIndex), firstBar, 
-					startsWithUnfinishedBar, endsWithBarline);
+					startsWithUnfinishedBar, startsWithBarline, endsWithBarline);
 			}
 
 			// System traversed? Add to tab and update information for the next system
+			System.out.println("making staff " + (staffIndex+1));
 			tab += staff.getStaff() + Staff.SPACE_BETWEEN_STAFFS;
 			startsWithUnfinishedBar = endsWithBarline ? false : true;
 			if (staffIndex < barlineSegmentInds.size() -1) {
@@ -2140,13 +2150,19 @@ public class Encoding implements Serializable {
 			}
 
 			// 1. Fill allFootnoteLists with footnoteLists. A footnoteList is a list of 
-			// 1 + Staff.STAFF_LINES strings, representing the bar number + the 
-			// individual lines of a footnote
+			// Staff.STAFF_LINES strings, representing the individual lines of a footnote
 			List<List<String>> allFootnoteLists = new ArrayList<>();
 			int numTabs = 3;
 			int footnoteListGroupSize = 3;
 			String emptyLine = ToolBox.tabify("", numTabs);
-			for (String[] curr : getFootnotes()) {
+			// Remove any follow-up footnotes from the footnotes
+			List<String[]> footnotes = new ArrayList<>();
+			for (String[] s : getFootnotes()) {
+				if (!s[FOOTNOTE_IND].equals(FOOTNOTE_INDICATOR)) {
+					footnotes.add(s);
+				}
+			}
+			for (String[] curr : footnotes) {
 //				String event = footnoteInfo[EVENT_IND];
 //				String currBar = currFootnoteInfo[BAR_IND];
 //				String footnoteNum = footnoteInfo[FOOTNOTE_NUM_IND];
@@ -2159,7 +2175,7 @@ public class Encoding implements Serializable {
 				// which is either a tablature footnote or a text footnote, both split
 				// up into Staff.STAFF_LINES lines
 				List<String> currFootnoteList = new ArrayList<>();
-				currFootnoteList.add(ToolBox.tabify("[" + curr[BAR_IND] + "]", numTabs));
+//				currFootnoteList.add(ToolBox.tabify("[" + curr[BAR_IND] + "]", numTabs));
 				// a. Tablature footnote
 				if (currFootnote.contains("'")) {
 					// Get the tab part of the footnote
@@ -2203,19 +2219,19 @@ public class Encoding implements Serializable {
 					for (int j = 0; j < Staff.UPPER_MIDDLE_TABLATURE_LINE; j++) {
 						currFootnoteList.add(emptyLine);
 					}
-					// Add footnote (broken up as list)
-					currFootnoteList.addAll(ToolBox.breakIntoLines(currFootnote, 
-						ToolBox.TAB_LEN * numTabs));
+					// Add footnote broken up as a list, with each line tabified
+					List<String> currFootnoteBrokenAndTabified = new ArrayList<>(); 
+					ToolBox.breakIntoLines(currFootnote, (ToolBox.TAB_LEN * numTabs - 1)).
+						forEach(s -> currFootnoteBrokenAndTabified.add(ToolBox.tabify(s, numTabs)));
+					currFootnoteList.addAll(currFootnoteBrokenAndTabified);
 					// Append with empty lines
 					int len = currFootnoteList.size();
-					for (int j = len; j < Staff.STAFF_LINES + 1; j++) {
+					for (int j = len; j < Staff.STAFF_LINES; j++) {
 						currFootnoteList.add(emptyLine);
 					}
 				}
-				System.out.println("--------------------");
-				for (String s : currFootnoteList) {
-					System.out.println(s);
-				}
+				// Set the first line to the bar number the footnote applies to
+				currFootnoteList.set(0, ToolBox.tabify("[" + curr[BAR_IND] + "]", numTabs));
 				allFootnoteLists.add(currFootnoteList);
 			}
 
@@ -2229,48 +2245,45 @@ public class Encoding implements Serializable {
 				allFootnoteLists.add(null);
 				numFootnotes = allFootnoteLists.size();
 			}
-			for (int i = 0; i < numFootnotes; i+=(footnoteListGroupSize-1)) {
-				System.out.println("i = " + i);
+			for (int i = 0; i < numFootnotes; i+=(footnoteListGroupSize)) {
 				// Get the footnotes in the current group and check if one of them is a 
-				// tablature footnote, which is so if the element at 
-				// 1 + Staff.TOP_TABLATURE_LINE (+1 is for the bar number) is not empty
-				List<List<String>> currGroup = 
+				// tablature footnote
+				List<List<String>> currFnListGroup = 
 					allFootnoteLists.subList(i, i + footnoteListGroupSize);
-				boolean groupHasTabFootnote = false;
-				for (List<String> l : currGroup) {
-					if (l != null) {
-						if (!l.get(1 + Staff.TOP_TABLATURE_LINE).equals(emptyLine)) {
-							groupHasTabFootnote = true;
-							break;
-						}
+				boolean hasTabFootnote = false;
+				for (List<String> l : currFnListGroup) {
+					if (l != null && !l.get(1 + Staff.TOP_TABLATURE_LINE).equals(emptyLine)) {
+						hasTabFootnote = true;
+						break;
 					}
 				}
-				if (groupHasTabFootnote) {
-					String groupStr = "";
-					// Add the jth line of each footnote to footnotes
-					for (int j = 0; j < currGroup.get(0).size() ; j++) {
-						for (int k = 0 ; k < currGroup.size(); k++) {
-							if (currGroup.get(k) != null) {
-								footnotesStr.append(currGroup.get(k).get(j));
+				if (hasTabFootnote) {
+					String fnListGroupStr = "";
+					// For each line in a footnoteList
+					for (int j = 0; j < currFnListGroup.get(0).size() ; j++) {
+						// For each footnoteList in the footnoteListGroup
+						for (int k = 0 ; k < currFnListGroup.size(); k++) {
+							// Append current line in each footnoteList
+							if (currFnListGroup.get(k) != null) {
+								fnListGroupStr += currFnListGroup.get(k).get(j);
 							}
 						}
-						List<String> footnoteAsList = currGroup.get(j);
-//						footnotes.append(currFootnote.
-//						footnotes.append(
-//							footnoteListL.get(j) + footnoteListM.get(j) + footnoteListR.get(j) + "\r\n");
+						fnListGroupStr += "\r\n";
 					}
-					System.out.println(footnotesStr.toString());
+					footnotesStr.append(fnListGroupStr);
+//					System.out.println(footnotesStr.toString());			
 				}
 				else {
 					
 				}
-				System.exit(0);
+//				System.exit(0);
 				
 				
 			}
+			tab += footnotesStr;
 //			getFootnotes().forEach(s -> footnotes.append(s + "\n"));
 //			tab += footnotes.toString().substring(0, footnotes.lastIndexOf("\n"));
-			System.out.println(allFootnoteLists.size());
+//			System.out.println(allFootnoteLists.size());
 		}
 		
 
@@ -2321,9 +2334,14 @@ public class Encoding implements Serializable {
 						charsAfterFirstPipe = (currEvent.length()-1) - indFirstPipe;
 					}
 				}
+				
+				// Exclude follow-up footnotes (consisting only of a FOOTNOTE_INDICATOR)
+				boolean isFootnoteEvent = 
+					event[FOOTNOTE_IND] != null && !event[FOOTNOTE_IND].equals(FOOTNOTE_INDICATOR);
+
 				// Add to list
-				if ((type.equals("footnote") && event[FOOTNOTE_IND] != null) ||
-					(type.equals("barline") && isBarlineEvent)	) {
+				if ( (type.equals("footnote") && isFootnoteEvent) ||
+					 (type.equals("barline") && isBarlineEvent)	) {
 					currSegmentIndices.add(currSegmentInd);
 				}
 				// Increment currSegmentInd to go to the next segment. If barline event:
@@ -2441,7 +2459,7 @@ public class Encoding implements Serializable {
 	 * @return A <code>List</code> of <code>String[]</code>s, one for each footnote.
 	 */
 	// TESTED
-	List<String[]> getFootnotes() {
+	public List<String[]> getFootnotes() { // TODO not public
 		List<String[]> footnotes = new ArrayList<>();
 		List<List<String[]>> ebf = getEventsBarlinesFootnotes();
 		// For each system

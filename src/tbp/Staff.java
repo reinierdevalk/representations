@@ -1,6 +1,9 @@
 package tbp;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Staff { 
   
@@ -19,7 +22,15 @@ public class Staff {
 	public static final int FOOTNOTES_LINE = 10;
 	private static final int NECESSARY_LINE_SHIFT = 2;
 	public static final String SPACE_BETWEEN_STAFFS = "\n";
-	
+
+	public static final String OPEN_BAR_NUM_BRACKET = "[";
+	public static final String CLOSE_BAR_NUM_BRACKET = "]";
+	private static final String OPEN_FOOTNOTE_PAR = "(";
+	private static final String CLOSE_FOOTNOTE_PAR = ")";
+
+	private static final int LEFT_MARGIN = 1; // must be >= 1
+	private static final int BAR_NUM_FREQ = 5;
+
 
 	/**
 	 * Constructor. Creates an empty Staff of the specified length.
@@ -76,17 +87,60 @@ public class Staff {
 	 * @return 
 	 */
 	public String getStaff() { 
-		String result = "";   
-		for (String[] staffLine: staffData) {
+		String staffStr = "";
+
+		// If the first non-empty string is not an OPEN_BAR_NUM_BRACKET, the staff 
+		// starts with a bar number. Only if the staff contains bar numbers
+		List<String> bnlAsList = Arrays.asList(staffData[BAR_NUMS_LINE]);
+		boolean startsWithBarNum =
+			bnlAsList.contains(CLOSE_BAR_NUM_BRACKET) && !String.join("", 
+			bnlAsList).trim().substring(0, 1).equals(OPEN_BAR_NUM_BRACKET) ? true : 
+			false;
+
+		// If the first non-empty string is not an OPEN_FOOTNOTE_PAR, the staff 
+		// starts with a footnote. Only if the staff contains footnotes
+		List<String> flAsList = Arrays.asList(staffData[FOOTNOTES_LINE]);
+		boolean startsWithFootnote =
+			flAsList.contains(CLOSE_FOOTNOTE_PAR) && !String.join("", 
+			flAsList).trim().substring(0, 1).equals(OPEN_FOOTNOTE_PAR) ? true : 
+			false;
+
+		boolean startsWithDecorBarline = 
+			ConstantMusicalSymbol.isBarline(staffData[TOP_TABLATURE_LINE][0]);
+
+		for (int i = 0; i < staffData.length; i++) {
+			String[] staffLine = staffData[i];
+			String staffLineStr = "";
+			// Create the string for staffLine
 			for (String segment: staffLine) {
-				result += segment;
+				staffLineStr += segment;
 			}
-			result += "\n";
+			// Shift. If the staff starts with a decorative barline, reduce shift with 1
+			int shift = !startsWithDecorBarline ? LEFT_MARGIN: LEFT_MARGIN - 1;
+			// a. Shift rhythm symbol line and tablature lines
+			if (i >= RHYTHM_LINE && i <= DIAPASONS_LINE_OTHER) {
+				staffLineStr = " ".repeat(shift) + staffLineStr;
+			}
+			// b. Shift bar numbers line
+			if (i == BAR_NUMS_LINE) {
+				staffLineStr = 
+					!startsWithBarNum ? " ".repeat(shift) + staffLineStr :
+					" ".repeat(LEFT_MARGIN-1) + OPEN_BAR_NUM_BRACKET + 
+					(!startsWithDecorBarline ? staffLineStr : staffLineStr.substring(1));
+			}
+			// c. Shit footnotes line
+			if (i == FOOTNOTES_LINE) {
+				staffLineStr = 
+					!startsWithFootnote ? " ".repeat(shift) + staffLineStr :
+					" ".repeat(LEFT_MARGIN-1) + OPEN_FOOTNOTE_PAR + 
+					(!startsWithDecorBarline ? staffLineStr : staffLineStr.substring(1));
+			}
+			staffStr += staffLineStr + "\n";
 		}  
-		return result;
+		return staffStr;
 	}
-	
-	
+
+
 	public int getNumberOfSegments() {
 		return numberOfSegments;
 	}
@@ -179,19 +233,6 @@ public class Staff {
 
 
 	/** 
-	 * Adds the footnote indicators at the positions in the list given 
-	 * 
-	 * @param indices The indices of the segments containing footnotes events.
-	 */
-	public void addFootnoteIndicators(List<Integer> indices) {
-		String footnotesIndicator = "*";
-		for (int ind : indices) {
-			staffData[FOOTNOTES_LINE][ind] = footnotesIndicator; 
-		}
-	}
-
-
-	/** 
 	 * Adds every fifth bar number at the positions in the list given. Bar numbers are 
 	 * added above the barline that starts the bar, or, in those cases where this barline
 	 * is the last event in a staff, at the start of the next staff.
@@ -200,29 +241,31 @@ public class Staff {
 	 * @param firstBar The number of the bar with which the staff begins (this bar can be
 	 *                 a continuation of the last (unfinished) bar in the previous staff).
 	 * @param startsWithUnfinished Whether or not the system starts with an unfinished bar.
+	 * @param startsWithBarline Whether or not the system starts with a barline.
 	 * @param endsWithBarline Whether or not the system ends with a barline.                 
 	 */
 	public void addBarNumbers(List<Integer> indices, int firstBar, boolean startsWithUnfinished,
-		boolean endsWithBarline) {
-		int freq = 5;
-		
+		boolean startsWithBarline, boolean endsWithBarline) {
+
 		// a. Handle start of staff (if applicable) (no barline index in indices)
 		// Add a bar number at the start if the first bar is a multiple-of-freq bar that 
-		// is not an unfinished bar from the previous system. Example for freq = 5:
+		// is not an unfinished bar from the previous system. Example for BAR_NUM_FREQ = 5:
 		//                           [5]     
 		// ... | ... | ... | ... | / ... | ... | ... | ... |
-		if (firstBar % freq == 0 && !startsWithUnfinished) {
-			String asStr = "[" + String.valueOf(firstBar) + "]";
-			// Add each char in the bar number at index 0
+		if (firstBar % BAR_NUM_FREQ == 0 && !startsWithUnfinished) {
+			// Do not add OPEN_BAR_NUM_BRACKET, which, if the staff does not start with a
+			// decorative barline, falls outside of it (at index -1)
+			String asStr = String.valueOf(firstBar) + CLOSE_BAR_NUM_BRACKET;
+			// Add each char in the bar number at ind
+			int ind = !startsWithBarline ? 0 : 1;
 			for (int j = 0; j < asStr.length(); j++) {
-				staffData[BAR_NUMS_LINE][0 + j] = 
-					Character.toString(asStr.charAt(j)); 
+				staffData[BAR_NUMS_LINE][ind + j] = asStr.substring(j, j+1); 
 			}
 		}
 
-		// b. Handle rest of staff (barlines indeices in indices)
-		// Add a bar number at the barline index if the barline closes a bar with
-		// barCount (n*freq)-1 (which opens a bar with barCount n*freq). Example:
+		// b. Handle rest of staff (barline indices in indices)
+		// Add a bar number at the barline index if the barline closes a bar with barCount
+		// (n*BAR_NUM_FREQ)-1 (which opens a bar with barCount n*BAR_NUM_FREQ). Example:
 		//                       [5]
 		// ... | ... | ... | ... | ... | / ... | ... | etc.
 		//
@@ -235,8 +278,9 @@ public class Staff {
 		//                             [5]
 		// ... | ... | ... | ... / ... | ... | etc.
 		// 
-		// Exception: if a barline closes a bar with barCount (n*freq)-1 but it is the last 
-		// event in the staff, the bar number goes to the start of the next staff (see a.)
+		// Exception: if a barline closes a bar with barCount (n*BAR_NUM_FREQ)-1 but it
+		// is the last event in the staff, the bar number goes to the start of the next 
+		// staff (see a.)
 		int barCount = firstBar;
 		// Remove any decorative opening barline index
 		if (indices.get(0) == 0) {
@@ -244,21 +288,90 @@ public class Staff {
 		}
 		for (int i = 0; i < indices.size(); i++) {
 			int ind = indices.get(i);
-			// If the barline at ind closes a bar with barCount (n*freq)-1
-			if (barCount % freq == (freq-1)) {			
+			// If the barline at ind closes a bar with barCount (n*BAR_NUM_FREQ)-1
+			if (barCount % BAR_NUM_FREQ == (BAR_NUM_FREQ-1)) {			
 				// Add bar number only if the barline is not the last event in the staff
 				// (in which case it will be added at the beginning of the next staff; 
 				// see a. above)			
 				if (!(i == indices.size()-1 && endsWithBarline)) {
-					String asStr = "[" + String.valueOf(barCount+1) + "]";
+					String asStr = 
+						OPEN_BAR_NUM_BRACKET + String.valueOf(barCount+1) + CLOSE_BAR_NUM_BRACKET;
 					// Add each char in the bar number at ind
 					for (int j = 0; j < asStr.length(); j++) {
-						staffData[BAR_NUMS_LINE][ind + j] = 
-							Character.toString(asStr.charAt(j)); 
+						staffData[BAR_NUMS_LINE][ind + j] = asStr.substring(j, j+1);
+//							Character.toString(asStr.charAt(j)); 
 					}
 				}
 			}
 			barCount++;
+		}
+	}
+
+
+	/** 
+	 * Adds the footnote numbers at the positions in the list given 
+	 * 
+	 * @param indices The indices of the segments containing footnotes events.
+	 */
+	public void addFootnoteNumbers(List<Integer> indices, int firstFootnoteNum) {
+		int footnoteNum = firstFootnoteNum;
+		List<Integer> indsPrevFootnote = new ArrayList<>();
+		for (int ind : indices) {
+			List<Integer> indsCurrFootnote = new ArrayList<>();
+			String footnoteNumAsStr = String.valueOf(footnoteNum);
+			if (ind != 0) {
+				staffData[FOOTNOTES_LINE][ind-1] = OPEN_FOOTNOTE_PAR;
+				indsCurrFootnote.add(ind-1);
+			}
+			for (int j = 0; j < footnoteNumAsStr.length(); j++) {
+				staffData[FOOTNOTES_LINE][ind+j] = footnoteNumAsStr.substring(j, j+1);
+				indsCurrFootnote.add(ind+j);
+			}
+			staffData[FOOTNOTES_LINE][ind+footnoteNumAsStr.length()] = CLOSE_FOOTNOTE_PAR;
+			indsCurrFootnote.add(ind+footnoteNumAsStr.length());
+			
+			// If there is overlap between indsCurrFootnote and indsPrevFootnote: correct.
+			// There are two minimal event distance scenarios, (1) and (2), which require
+			// two types of correction, (a) and (b).
+			// (1) shows the minimal distance between two *event* footnotes (this is 
+			// because successive footnotes within a bar are grouped together). Assuming 
+			// that a piece always has fewer than 100 footnotes, this is never a problem. 
+			// (2) shows the minimal distance between an *event* footnote and a *barline* 
+			// footnote. This becomes a problem if the index of the first footnote is 
+			// greater than 9.
+			//
+			//      H  H             H  H        
+			// (1) |a-|a-|        (2) |a-|a-|    
+			//     |--|--|            |--|--|    
+			//     |b-|b-|            |b-|b-|        
+			//     |c-|c-|            |c-|c-|        
+			//     |--|--|            |--|--|    
+			//     |--|--|            |--|--| 
+			//      *  *               * *
+			//     (1)(2) --> OK      (1 2)   --> (a)
+			//     (10 11)--> (a)     (1011)  --> NOK (b)
+			
+			// See https://stackoverflow.com/questions/2400838/efficient-intersection-of-two-liststring-in-java
+			List<Integer> intersection = 
+				indsPrevFootnote.stream().filter(c -> 
+				indsCurrFootnote.contains(c)).collect(Collectors.toList());
+			// Correction {(a) / (b)} is needed when footnote n+1 overwrites the last
+			// {index / two indices} taken by footnote n (i.e., indsPrevFootnote and
+			// indsCurrFootnote have {one index / two indices} in common). The solution 
+			// implies replacing the OPEN_FOOTNOTE_PAR at the first index in indsCurrFootnote 
+			// with {whitespace / the last digit of the previous footnote number} 
+			if (intersection.size() == 1) {
+				staffData[FOOTNOTES_LINE][indsCurrFootnote.get(0)] = " ";
+			}
+
+			if (intersection.size() == 2) {
+				String lastDigit = String.valueOf(footnoteNum  - 1);
+				staffData[FOOTNOTES_LINE][indsCurrFootnote.get(0)] = 
+					lastDigit.substring(lastDigit.length()-1);
+			}
+			// Update
+			indsPrevFootnote = indsCurrFootnote;
+			footnoteNum++;
 		}
 	}
 

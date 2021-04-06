@@ -510,7 +510,7 @@ public class TabViewer extends JFrame{
 					}
 				}
 				getTabArea().setText(enc.visualise(tss, 
-					getRhythmSymbolsCheckBox().isSelected(), true, true));
+					getRhythmSymbolsCheckBox().isSelected(), true, false)); // HIER
 				initializeTabViewer(encPath);
 			} 
 		}
