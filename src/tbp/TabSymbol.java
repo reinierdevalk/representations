@@ -10,6 +10,7 @@ import representations.Encoding.TuningBassCourses;
 public class TabSymbol implements Serializable {
 
 	private String encoding;
+	private String symbol;
 	private int fret;
 	private int course;
 	private int midiNumber;
@@ -20,14 +21,15 @@ public class TabSymbol implements Serializable {
 	 * to the specified TabSymbolSet.
 	 * 
 	 * @param encoding
+	 * @param symbol
 	 * @param fret
 	 * @param course
 	 * @param midiNumber
-	 * @param aTabSymbolSet
 	 * @return
 	 */
-	public TabSymbol(String encoding, int fret, int course, int midiNumber) {
+	public TabSymbol(String encoding, String symbol, int fret, int course, int midiNumber) {
 		this.encoding = encoding;
+		this.symbol = symbol;
 		this.fret = fret;
 		this.course = course;
 		this.midiNumber = midiNumber;
@@ -41,6 +43,15 @@ public class TabSymbol implements Serializable {
 	 */  
 	public String getEncoding() {
 		return encoding;
+	}
+
+
+	/**
+	 * Returns the TabSymbol's symbol as shown on the staff line.
+	 * @return
+	 */
+	public String getSymbol() {
+		return symbol;
 	}
 
 

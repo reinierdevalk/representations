@@ -16,7 +16,15 @@ public class ConstantMusicalSymbol {
 	public static final ConstantMusicalSymbol DOUBLE_REPEAT_BARLINE_OPEN = new ConstantMusicalSymbol("||:", "||:");
 	public static final ConstantMusicalSymbol DOUBLE_REPEAT_BARLINE_CLOSE = new ConstantMusicalSymbol(":||", ":||");
 	public static final ConstantMusicalSymbol SINGLE_REPEAT_BARLINE_DOUBLE_SIDED = new ConstantMusicalSymbol(":|:", ":|:");
-	public static final ConstantMusicalSymbol DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED = new ConstantMusicalSymbol(":||:", ":||:"); 
+	public static final ConstantMusicalSymbol DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED = new ConstantMusicalSymbol(":||:", ":||:");
+	public static final ConstantMusicalSymbol BARLINE_EDITORIAL = new ConstantMusicalSymbol("¦", "¦");
+	public static final ConstantMusicalSymbol DOUBLE_BARLINE_EDITORIAL = new ConstantMusicalSymbol("¦¦", "¦¦");
+	public static final ConstantMusicalSymbol SINGLE_REPEAT_BARLINE_OPEN_EDITORIAL = new ConstantMusicalSymbol("¦:", "¦:");
+	public static final ConstantMusicalSymbol SINGLE_REPEAT_BARLINE_CLOSE_EDITORIAL = new ConstantMusicalSymbol(":¦", ":¦");
+	public static final ConstantMusicalSymbol DOUBLE_REPEAT_BARLINE_OPEN_EDITORIAL = new ConstantMusicalSymbol("¦¦:", "¦¦:");
+	public static final ConstantMusicalSymbol DOUBLE_REPEAT_BARLINE_CLOSE_EDITORIAL = new ConstantMusicalSymbol(":¦¦", ":¦¦");
+	public static final ConstantMusicalSymbol SINGLE_REPEAT_BARLINE_DOUBLE_SIDED_EDITORIAL = new ConstantMusicalSymbol(":¦:", ":¦:");
+	public static final ConstantMusicalSymbol DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED_EDITORIAL = new ConstantMusicalSymbol(":¦¦:", ":¦¦:"); 
 	
 	public static List<ConstantMusicalSymbol> constantMusicalSymbols;
 	static { constantMusicalSymbols = Arrays.asList(new ConstantMusicalSymbol[]{
@@ -28,7 +36,15 @@ public class ConstantMusicalSymbol {
 		SINGLE_REPEAT_BARLINE_DOUBLE_SIDED,
 		DOUBLE_REPEAT_BARLINE_OPEN,
 		DOUBLE_REPEAT_BARLINE_CLOSE,
-		DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED});
+		DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED,
+		BARLINE_EDITORIAL,
+		DOUBLE_BARLINE_EDITORIAL,
+		SINGLE_REPEAT_BARLINE_OPEN_EDITORIAL,
+		SINGLE_REPEAT_BARLINE_CLOSE_EDITORIAL,
+		SINGLE_REPEAT_BARLINE_DOUBLE_SIDED_EDITORIAL,
+		DOUBLE_REPEAT_BARLINE_OPEN_EDITORIAL,
+		DOUBLE_REPEAT_BARLINE_CLOSE_EDITORIAL,
+		DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED_EDITORIAL});
 	}
 	
 	
