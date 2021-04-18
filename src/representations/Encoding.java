@@ -291,14 +291,14 @@ public class Encoding implements Serializable {
 				// In rawEnc, temporarily replace any spaces and SBIs within comments, so 
 				// that splitting on them (see below) remains possible
 				// NB: String.replaceFirst() does not work because of regex special characters
+				String temp = comment;
 				if (comment.contains(sp)) {
-					rawEnc = ToolBox.replaceFirstInString(
-						rawEnc, comment, comment.replace(sp, invertedSp));
+					temp = temp.replace(sp, invertedSp);
 				}
 				if (comment.contains(sbi)) {
-					rawEnc = ToolBox.replaceFirstInString(
-						rawEnc, comment, comment.replace(sbi, invertedSbi));
+					temp = temp.replace(sbi, invertedSbi);
 				}
+				rawEnc = ToolBox.replaceFirstInString(rawEnc, comment, temp);
 			}
 			if (commCloseInd == rawEnc.lastIndexOf(cib)) {
 				break;
@@ -1982,8 +1982,6 @@ public class Encoding implements Serializable {
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
 		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
-		String oib = SymbolDictionary.OPEN_INFO_BRACKET;
-		String cib = SymbolDictionary.CLOSE_INFO_BRACKET;
 
 		String cleanEnc = getCleanEncoding();
 		TabSymbolSet tss = getTabSymbolSet();
@@ -2143,273 +2141,318 @@ public class Encoding implements Serializable {
 		
 		// Add formatted footnotes
 		if (showFootnotes) {
-			// Make metadata substitute (NB: not all fields are actually needed)
-			String metadata = "";
-			List<String> ias = getInfoAndSettings();
-			List<String> metadataTags = Arrays.asList(getMetadataTags());
-			for (String tag : metadataTags) {
-				metadata += oib + tag + ias.get(metadataTags.indexOf(tag)) + cib + "\r\n";
+			tab += visualiseFootnotes(argTss);
+		}
+		return tab;
+	}
+
+
+	/**
+	 * 
+	 * @return
+	 */
+	private StringBuffer visualiseFootnotes(TabSymbolSet argTss) {
+		
+		
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
+		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		String oib = SymbolDictionary.OPEN_INFO_BRACKET;
+		String cib = SymbolDictionary.CLOSE_INFO_BRACKET;
+		String footnoteNumBuffer = "    ";
+		int numTabs = 3;
+		int footnoteListGroupSize = 3;
+		String emptyLine = ToolBox.tabify("", numTabs);
+
+		// Remove any follow-up footnotes from the footnotes
+		List<String[]> footnotes = new ArrayList<>();
+		int count = 1;
+		for (String[] s : getFootnotes()) {
+			if (!s[FOOTNOTE_IND].equals(FOOTNOTE_INDICATOR)) {
+				s[FOOTNOTE_NUM_IND] = "#"+count;
+				footnotes.add(s);
+				count++;
 			}
+		}
 
-			// 1. Fill allFootnoteLists with footnoteLists. A footnoteList is a list of 
-			// Staff.STAFF_LINES strings, representing the individual lines of a footnote
-			List<List<String>> allFootnoteLists = new ArrayList<>();
-			int numTabs = 3;
-			int footnoteListGroupSize = 3;
-			String emptyLine = ToolBox.tabify("", numTabs);
-			// Remove any follow-up footnotes from the footnotes
-			List<String[]> footnotes = new ArrayList<>();
-			for (String[] s : getFootnotes()) {
-				if (!s[FOOTNOTE_IND].equals(FOOTNOTE_INDICATOR)) {
-					footnotes.add(s);
-				}
-			}
-			for (String[] curr : footnotes) {
-				System.out.println("---------> " + Arrays.asList(curr));
-//				String event = footnoteInfo[EVENT_IND];
-//				String currBar = currFootnoteInfo[BAR_IND];
-//				String footnoteNum = footnoteInfo[FOOTNOTE_NUM_IND];
-				String currFootnote = curr[FOOTNOTE_IND].trim();
-				currFootnote = 
-					currFootnote.substring(currFootnote.indexOf(FOOTNOTE_INDICATOR) + 1, 
-					currFootnote.length());	
+		// Make metadata substitute (NB: not all fields are actually needed)
+		String metadata = "";
+		List<String> ias = getInfoAndSettings();
+		List<String> metadataTags = Arrays.asList(getMetadataTags());
+		for (String tag : metadataTags) {
+			metadata += oib + tag + ias.get(metadataTags.indexOf(tag)) + cib + "\r\n";
+		}
 
-				// currFootnoteList contains the bar number and the currentFootnote,
-				// which is either a tablature footnote or a text footnote, both split
-				// up into Staff.STAFF_LINES lines
-				List<String> currFootnoteList = new ArrayList<>();
-//				currFootnoteList.add(ToolBox.tabify("[" + curr[BAR_IND] + "]", numTabs));
-				// a. Tablature footnote
-				if (currFootnote.contains("'")) {
-					System.out.println("is tab footnote");
-					// Get the tab part of the footnote
-					// Make footnote into a miniature clean encoding by adding a space 
-					// and EBI. NB: miniCleanEnc always ends with a SS
-					String miniCleanEnc = 
-						currFootnote.substring(currFootnote.indexOf("'") + 1,
-						currFootnote.lastIndexOf("'"));
-					int doubledSymbolCourse = -1;
-					String doubledSymbolFret = null;
-					int changeLine = -1;
-					int changeEvent = -1;
-					boolean hasDoubledSymbol = miniCleanEnc.contains("/");
-					if (hasDoubledSymbol) {
-						// To determine changeEvent, count the spaces before. 
-						// See https://www.baeldung.com/java-count-chars
-						changeEvent = 
-							(int) miniCleanEnc.chars().filter(ch -> ch == sp.charAt(0)).count();
-//						System.out.println(changeEvent);
-//						System.out.println(miniCleanEnc);
-
-						// Determine doubled symbol and remove it from miniCleanEnc
-						String toRemove = 
-							miniCleanEnc.substring(miniCleanEnc.indexOf("/"), 
-							miniCleanEnc.indexOf(ss, miniCleanEnc.indexOf("/"))+1);
-						miniCleanEnc = miniCleanEnc.replace(toRemove, "");
-						String doubledSymbol = 
-							toRemove.substring(toRemove.indexOf("/") + 1, toRemove.indexOf(ss));
-//						System.out.println(doubledSymbol);
+		// 1. Fill allFootnoteLists with footnoteLists. A footnoteList is a list of 
+		// Staff.STAFF_LINES strings, representing the individual lines of a footnote
+		List<List<String>> allFootnoteLists = new ArrayList<>();
+		for (String[] currFn : footnotes) {
+			String currFnStr = currFn[FOOTNOTE_IND].trim();
+			currFnStr = 
+				currFnStr.substring(currFnStr.indexOf(FOOTNOTE_INDICATOR) + 1, currFnStr.length());
+			int currFnNum = 
+				Integer.parseInt(currFn[FOOTNOTE_NUM_IND].trim().substring("#".length()));
+			String currFnNumStr = "(" + currFnNum + ")" + (currFnNum < 10 ? " " : "");
 			
-						TabSymbol ts = TabSymbol.getTabSymbol(doubledSymbol, tss);
-						// From argTss, get the course and symbol
-						for (TabSymbol t :argTss) {
-							if (t.getCourse() == ts.getCourse() && t.getFret() == ts.getFret()) {
-								doubledSymbolCourse = t.getCourse();
-								doubledSymbolFret = t.getSymbol();
-								break;
-							}
-						}
-						// Determine changeLine
-						if (argTss == TabSymbolSet.FRENCH_TAB || argTss == TabSymbolSet.SPANISH_TAB) {
-							changeLine = Staff.TOP_TABLATURE_LINE + (doubledSymbolCourse-1);
-						}
-						else if (argTss == TabSymbolSet.ITALIAN_TAB) {
-							changeLine = Staff.BOTTOM_TABLATURE_LINE - (doubledSymbolCourse-1);
-						}				
-					}
+			// currFootnoteList contains the currentFootnote, which is either a tablature 
+			// footnote or a text footnote, split up into lines
+			List<String> currFootnoteList = new ArrayList<>();
+			// a. Tablature footnote
+			if (currFnStr.contains("'")) {
+				String currFnTabPart = "";
+				// Get the tab part of the footnote
+				// Make footnote into a miniature clean encoding by adding a space 
+				// and EBI. NB: miniCleanEnc always ends with a SS
+				String miniCleanEnc = 
+					currFnStr.substring(currFnStr.indexOf("'") + 1, currFnStr.lastIndexOf("'"));
+				// See https://www.baeldung.com/java-count-chars
+				boolean hasDoubledSymbol = 
+					(int) miniCleanEnc.chars().filter(ch -> ch == "/".charAt(0)).count() > 0;
+				
+				// Handle any doubled symbols, i.e., two symbols on a single course, 
+				// either by mistake or intentionally (German tablature unisons)
+				// In case of a miniCleanEnc with no doubled symbols 
+				if (!hasDoubledSymbol) {
 					if (!miniCleanEnc.endsWith(sp + ss)) {
 						miniCleanEnc += sp + ss;
 					}
-					miniCleanEnc += SymbolDictionary.END_BREAK_INDICATOR;
-					// Make Encoding out of miniature raw encoding (i.e., clean encoding 
-					// with metadata fields prepended) and visualise
-					String currFootnoteTabPart = 
-						new Encoding(metadata + "\r\n" + miniCleanEnc, "", true).
-						visualise(argTss, false, false, true);
-
-					nu: combineer alle doubleSymbol horizontaal events alvorens verder te gaan
-					
-					// Get the text part of the footnote (generally, 'in source')
-					String currFootnoteTextPart = 
-						currFootnote.substring(currFootnote.lastIndexOf("'") + 1, 
-						currFootnote.length()).trim();
-
-					// Split currFootnoteTabPart into lines. currFootnoteTabPartSplit both 
-					// begins with an empty line (for the content of Staff.BAR_NUMS_LINE) 
-					// and ends with one (for the content of Staff.FOOTNOTES_LINE). The text 
-					// part of the footnote is added after Staff.UPPER_MIDDLE_TABLATURE_LINE
-					String[] currFootnoteTabPartSplit = currFootnoteTabPart.split("\n");
-										
-					// Add extra staff segment at the first index that is not a 
-					// space (for staff lines) or add space (for non-staff lines)
-					if (hasDoubledSymbol) {
-						add at end of line
-						for (int i = 0; i < currFootnoteTabPartSplit.length; i++) {
-							String line = currFootnoteTabPartSplit[i];
-							if (line.contains(Staff.STAFF_SEGMENT) && i != Staff.RHYTHM_LINE) {
-								line = ToolBox.insertIntoString(line, Staff.STAFF_SEGMENT,
-									ToolBox.getFirstIndexOfNot(line, 
-									Arrays.asList(new String[]{" "})));
-							}
-							else {
-								line = " " + line;
-							}
-							currFootnoteTabPartSplit[i] = line;
-						}
-					}
-					int lenLine = 
-						currFootnoteTabPartSplit[Staff.TOP_TABLATURE_LINE].length(); 
-					int maxLenFootnoteTextPart = 
-						((ToolBox.TAB_LEN * numTabs) - 1) - (lenLine + 1);
-					int indInTextPartLines = -1;
-					List<String> currFootnoteTextPartBroken = 
-						ToolBox.breakIntoLines(currFootnoteTextPart, 
-						maxLenFootnoteTextPart);
-					for (int i = 0; i < currFootnoteTabPartSplit.length; i++) {
-						String line = currFootnoteTabPartSplit[i];
-						if (hasDoubledSymbol && i == changeLine) {
-							// Replace the current symbol with the combined symbols
-							int indCurr = ToolBox.getFirstIndexOfNot(
-								line, Arrays.asList(new String[]{" ", Staff.STAFF_SEGMENT}));
-							String currSymbol = line.substring(indCurr, indCurr+1);
-							// Replace line. line always has only three non-whitespace 
-							// elements (two staff segments with a symbol in between), 
-							// and so does its replacement
-							// NB: this holds true only if a symbol occupies no more than
-							// one index, which currently is the case for all TabSymbolSets
-							int leadingWhitespace = ToolBox.getFirstIndexOfNot(line, 
-								Arrays.asList(new String[]{" "}));
-							int trailingWhitespace = 
-								line.length() - line.trim().length() - leadingWhitespace;
-							line = 
-								" ".repeat(leadingWhitespace) + 
-								currSymbol + "/" + doubledSymbolFret +
-								" ".repeat(trailingWhitespace);
-						}
-						if (i == Staff.UPPER_MIDDLE_TABLATURE_LINE) {
-							if (currFootnoteTextPart.length() <= maxLenFootnoteTextPart) {
-								line += " " + currFootnoteTextPart; 
-							}
-							else {
-								System.out.println(currFootnoteTextPart);
-//								List<String> currFootnoteTextPartBrokenAndTabified = 
-//									ToolBox.breakIntoLines(currFootnoteTextPart, 
-//									maxLenFootnoteTextPart);
-//								List<String> currFootnoteTextPartBrokenAndTabified = 
-//									new ArrayList<>();
-//								ToolBox.breakIntoLines(currFootnoteTextPart, 
-//									maxLenFootnoteTextPart).forEach(s -> 
-//									currFootnoteTextPartBrokenAndTabified.add(ToolBox.
-//									tabify(s, numTabs)));
-								line += " " + currFootnoteTextPartBroken.get(0);
-								indInTextPartLines = 1;
-	//							System.out.println("-->" + line + "<--");
-	//							System.exit(0);
-							}
-						}
-						if (i > Staff.UPPER_MIDDLE_TABLATURE_LINE && indInTextPartLines != -1) {
-							line += " " + currFootnoteTextPartBroken.get(indInTextPartLines);
-							// Update indInTextPartLines
-							if (indInTextPartLines == currFootnoteTextPartBroken.size() - 1) {
-								indInTextPartLines = -1;
-							}
-							else {
-								indInTextPartLines++;
-							}
-						}
-						currFootnoteList.add(ToolBox.tabify(line, numTabs));
-					}
-
-
-				}
-				// b. Text footnote
+					miniCleanEnc += ebi;
+					currFnTabPart = new Encoding(metadata + "\r\n" + miniCleanEnc,
+						"", true).visualise(argTss, false, false, true);
+				}	
+				// In case of a miniCleanEnc with doubled symbols: make separate 
+				// miniCleanEncs for all events, adapt them, and combine them
 				else {
-					System.out.println("is text footnote");
-					// Prepend with empty lines
-					for (int j = 0; j < Staff.UPPER_MIDDLE_TABLATURE_LINE; j++) {
-						currFootnoteList.add(emptyLine);
-					}
-					// Add footnote broken up as a list, with each line tabified
-					List<String> currFootnoteBrokenAndTabified = new ArrayList<>();
-					ToolBox.breakIntoLines(currFootnote, ToolBox.TAB_LEN * numTabs).
-						forEach(s -> currFootnoteBrokenAndTabified.add(ToolBox.tabify(s, numTabs)));
-					currFootnoteList.addAll(currFootnoteBrokenAndTabified);
-					// Append with empty lines
-					int len = currFootnoteList.size();
-					for (int j = len; j < Staff.STAFF_LINES; j++) {
-						currFootnoteList.add(emptyLine);
-					}
-				}
-				// Set the first line to the bar number the footnote applies to
-				currFootnoteList.set(0, ToolBox.tabify("[" + curr[BAR_IND] + "]", numTabs));
-				allFootnoteLists.add(currFootnoteList);
-			}
+					List<String[]> miniCleanEncsVisSplit = new ArrayList<>();
+					String[] miniCleanEncEvents = miniCleanEnc.split(sp + ss);
+					// For each event
+					for (String currEvent : miniCleanEncEvents) {
+						// If the event contains a doubled symbol 
+						if (currEvent.contains("/")) {
+							// Get doubled symbol (preceded by a /) and remove it
+							// from currMiniCleanEnc; visualise
+							String toRemove = 
+								currEvent.substring(currEvent.indexOf("/"), 
+								currEvent.indexOf(ss, currEvent.indexOf("/"))+1);
+							String currMiniCleanEnc = 
+								currEvent.replace(toRemove, "") + sp + ss + ebi;
+							String currMiniCleanEncVis = new Encoding(
+								metadata + "\r\n" + currMiniCleanEnc, "", true).
+								visualise(argTss, false, false, true);
 
-			// 2. Make footnoteListGroups and turn them into strings. A footnoteListGroup 
-			// is a list of n footnoteLists (where n = footnoteListGroupSize) that are
-			// to be displayed next to one another
-			StringBuffer footnotesStr = new StringBuffer();
-			// Pad allFootnoteLists with nulls to make divisible by footnoteGroupSize
-			int numFootnotes = allFootnoteLists.size();
-			while (numFootnotes % footnoteListGroupSize != 0) {
-				allFootnoteLists.add(null);
-				numFootnotes = allFootnoteLists.size();
-			}
-			for (int i = 0; i < numFootnotes; i+=(footnoteListGroupSize)) {
-				// Get the footnotes in the current group and check if one of them is a 
-				// tablature footnote
-				List<List<String>> currFnListGroup = 
-					allFootnoteLists.subList(i, i + footnoteListGroupSize);
-				boolean hasTabFootnote = false;
-				for (List<String> l : currFnListGroup) {
-					if (l != null && !l.get(1 + Staff.TOP_TABLATURE_LINE).equals(emptyLine)) {
-						hasTabFootnote = true;
-						break;
-					}
-				}
-//				System.out.println(currFnListGroup);
-//				if (hasTabFootnote) {
-					String fnListGroupStr = "";
-					// For each line in a footnoteList
-					for (int j = 0; j < currFnListGroup.get(0).size() ; j++) {
-						// For each footnoteList in the footnoteListGroup
-						for (int k = 0 ; k < currFnListGroup.size(); k++) {
-							// Append current line in each footnoteList
-							if (currFnListGroup.get(k) != null) {
-								fnListGroupStr += currFnListGroup.get(k).get(j);
+							// Get doubled symbol, changeLine, and symbol
+							String doubledSymbol = 
+								toRemove.substring(toRemove.indexOf("/") + 1, 
+								toRemove.indexOf(ss));							
+							TabSymbol doubledSymbolAsTS = 
+								TabSymbol.getTabSymbol(doubledSymbol, getTabSymbolSet());
+							int changeLine = -1;
+							String fret = null;
+							for (TabSymbol t : argTss) { // NB use argTss
+								if (t.getCourse() == doubledSymbolAsTS.getCourse() && 
+									t.getFret() == doubledSymbolAsTS.getFret()) {
+									int course = t.getCourse();
+									// Determine changeLine
+									if (argTss == TabSymbolSet.FRENCH_TAB || 
+										argTss == TabSymbolSet.SPANISH_TAB) {
+										changeLine =
+											Staff.TOP_TABLATURE_LINE + (course-1);
+									}
+									else if (argTss == TabSymbolSet.ITALIAN_TAB) {
+										changeLine = 
+											Staff.BOTTOM_TABLATURE_LINE - (course-1);
+									}
+									fret = t.getSymbol();
+									break;
+								}
 							}
+	
+							// Split into individual lines, add staff segments, and
+							// adapt changeLine
+							String[] currMiniCleanEncVisSplit = 
+								currMiniCleanEncVis.split("\n");
+							for (int i = 0; i < currMiniCleanEncVisSplit.length; i++) {
+								String line = currMiniCleanEncVisSplit[i];
+								if (line.contains(Staff.STAFF_SEGMENT) && i != Staff.RHYTHM_LINE) {
+									line = ToolBox.insertIntoString(line, 
+										Staff.STAFF_SEGMENT.repeat(2),
+										(line.lastIndexOf(Staff.STAFF_SEGMENT) + 1));
+								}
+								else {
+									line = line + " ".repeat(2);
+								}
+								if (i == changeLine) {
+									int ind = ToolBox.getFirstIndexOfNot(line, 
+										Arrays.asList(new String[]{" "}));
+									String toReplace = line.substring(ind, 
+										line.lastIndexOf(Staff.STAFF_SEGMENT) + 1);
+									String replacement = 
+										toReplace.substring(0, 1) + "/" + fret + Staff.STAFF_SEGMENT;
+									line = line.replace(toReplace, replacement);
+								}
+								currMiniCleanEncVisSplit[i] = line;
+							}
+							// Add to miniCleanEncEventsVis
+							miniCleanEncsVisSplit.add(currMiniCleanEncVisSplit);
+						}							
+						// If the event does not contain a doubled symbol
+						else {
+							String currMiniCleanEnc = currEvent + sp + ss + ebi;
+							String currMiniCleanEncVis = new Encoding(
+								metadata + "\r\n" + currMiniCleanEnc, "", true).
+								visualise(argTss, false, false, true);
+							String[] currMiniCleanEncVisSplit = 
+								currMiniCleanEncVis.split("\n");
+							miniCleanEncsVisSplit.add(currMiniCleanEncVisSplit);
 						}
-						fnListGroupStr += "\r\n";
 					}
-					footnotesStr.append(fnListGroupStr);
-//					System.out.println(footnotesStr.toString());			
-//				}
-//				else {
-					
-//				}
-					
-//				System.exit(0);
-				
-				
-			}
-			tab += footnotesStr;
-//			getFootnotes().forEach(s -> footnotes.append(s + "\n"));
-//			tab += footnotes.toString().substring(0, footnotes.lastIndexOf("\n"));
-//			System.out.println(allFootnoteLists.size());
-		}
-		
+					// Combine into miniCleanEncVis
+					// For each line
+					int numLines = miniCleanEncsVisSplit.get(0).length;
+					int numEvents = miniCleanEncsVisSplit.size();
+					for (int i = 0; i < numLines; i++) {
+						// For each event
+						for (int j = 0; j < numEvents; j++) {
+							// Add line i for event j
+							String currLine = miniCleanEncsVisSplit.get(j)[i];
+							// Remove whitespace
+							if (numEvents > 1) {
+								// First and middle event : remove right margin
+								if (j == 0 || (j > 0 && j < numEvents-1)) {
+									currLine = currLine.substring(0, 
+										currLine.length() - Staff.RIGHT_MARGIN);
+								}
+								// Middle event and last event: remove right margin
+								if ((j > 0 && j < numEvents-1) || (j == numEvents-1)) {
+									currLine = currLine.substring(Staff.LEFT_MARGIN);
+								}
+							}
+							currFnTabPart += currLine;
+						}
+						if (i < numLines-1) {
+							currFnTabPart += "\n"; // was "\r\n" 
+						}
+					}
+				}
 
-		return tab;
+				// Get the text part of the footnote (generally, 'in source')
+				String currFootnoteTextPart = 
+					currFnStr.substring(currFnStr.lastIndexOf("'") + 1, 
+					currFnStr.length()).trim();
+
+				// Split currFootnoteTabPart into lines. currFootnoteTabPartSplit both 
+				// begins with an empty line (for the content of Staff.BAR_NUMS_LINE) 
+				// and ends with one (for the content of Staff.FOOTNOTES_LINE). The text 
+				// part of the footnote is added after Staff.UPPER_MIDDLE_TABLATURE_LINE
+				String currFootnoteTabPart = currFnTabPart;
+				String[] currFootnoteTabPartSplit = currFootnoteTabPart.split("\n");
+
+				int lenLine = 
+					footnoteNumBuffer.length() +
+					(currFootnoteTabPartSplit[Staff.TOP_TABLATURE_LINE].length() - 
+					Staff.RIGHT_MARGIN);
+				int maxLen = ((ToolBox.TAB_LEN * numTabs) - 1) - (lenLine + 1);
+				int indInTextPartLines = 0;
+				List<String> currFootnoteTextPartBroken = 
+					ToolBox.breakIntoLines(currFootnoteTextPart, maxLen);
+				// Start at line 1 to skip bar numbers line
+				for (int i = 1; i < currFootnoteTabPartSplit.length; i++) {
+					String line = currFootnoteTabPartSplit[i];
+					// Remove right margin
+					line = line.substring(0, line.length() - Staff.RIGHT_MARGIN);
+					// Add footnote number and text part
+					if (i == Staff.UPPER_MIDDLE_TABLATURE_LINE) {
+						line = currFnNumStr + line + " " + currFootnoteTextPartBroken.get(0);
+						indInTextPartLines++;
+					}
+					else {
+						// If line contains only whitespace: use only tabs
+						if ((i == Staff.DIAPASONS_LINE_ITALIAN || i == Staff.DIAPASONS_LINE_OTHER
+							|| i == Staff.FOOTNOTES_LINE) && 
+							ToolBox.getFirstIndexOfNot(line, 
+							Arrays.asList(new String[]{" ", "\t"})) == -1) {
+							line = "";
+						}
+						else {
+							line = footnoteNumBuffer + line;
+						}
+					}
+					// Add any remainder of the text part
+					if (i > Staff.UPPER_MIDDLE_TABLATURE_LINE && 
+						indInTextPartLines < currFootnoteTextPartBroken.size()) {
+						line += " " + currFootnoteTextPartBroken.get(indInTextPartLines);
+						indInTextPartLines++;
+					}
+					currFootnoteList.add(ToolBox.tabify(line, numTabs));
+				}
+			}
+			// b. Text footnote
+			else {
+				// Prepend with empty lines; start at line 1 to skip bar numbers line
+				for (int j = 1; j < Staff.UPPER_MIDDLE_TABLATURE_LINE; j++) {
+					currFootnoteList.add(emptyLine);
+				}
+				// Add footnote broken up as a list, with each line tabified
+				List<String> currFootnoteBrokenAndTabified = new ArrayList<>();
+				int maxLen = ((ToolBox.TAB_LEN * numTabs) - 1) - 
+					(currFnNumStr.length() + 1);
+				ToolBox.breakIntoLines(currFnStr, maxLen).forEach(
+					s -> currFootnoteBrokenAndTabified.add(ToolBox.tabify(
+					footnoteNumBuffer + " " + s, numTabs)));
+				currFootnoteBrokenAndTabified.set(0, currFnNumStr + 
+					currFootnoteBrokenAndTabified.get(0).substring(currFnNumStr.length()));
+
+				currFootnoteList.addAll(currFootnoteBrokenAndTabified);
+				// Append with empty lines
+				int len = currFootnoteList.size();
+				for (int j = len; j < Staff.STAFF_LINES; j++) {
+					currFootnoteList.add(emptyLine);
+				}
+			}
+//			// Set the first line to the bar number the footnote applies to
+//			currFootnoteList.set(0, ToolBox.tabify("[" + curr[BAR_IND] + "]", numTabs));
+			allFootnoteLists.add(currFootnoteList);
+		}
+
+		// 2. Make footnoteListGroups and turn them into strings. A footnoteListGroup 
+		// is a list of n footnoteLists (where n = footnoteListGroupSize) that are
+		// to be displayed next to one another
+		StringBuffer footnotesStr = new StringBuffer();
+		// Pad allFootnoteLists with nulls to make divisible by footnoteGroupSize
+		int numFootnotes = allFootnoteLists.size();
+		while (numFootnotes % footnoteListGroupSize != 0) {
+			allFootnoteLists.add(null);
+			numFootnotes = allFootnoteLists.size();
+		}
+		for (int i = 0; i < numFootnotes; i+=(footnoteListGroupSize)) {
+			// Get the footnotes in the current group and check if one of them is a 
+			// tablature footnote
+			List<List<String>> currFnListGroup = 
+				allFootnoteLists.subList(i, i + footnoteListGroupSize);
+			boolean hasTabFootnote = false;
+			for (List<String> l : currFnListGroup) {
+				if (l != null && !l.get(1 + Staff.TOP_TABLATURE_LINE).equals(emptyLine)) {
+					hasTabFootnote = true;
+					break;
+				}
+			}
+//			System.out.println(currFnListGroup);
+//			if (hasTabFootnote) {
+			String fnListGroupStr = "";
+			// For each line in a footnoteList
+			for (int j = 0; j < currFnListGroup.get(0).size() ; j++) {
+				// For each footnoteList in the footnoteListGroup
+				for (int k = 0 ; k < currFnListGroup.size(); k++) {
+					// Append current line in each footnoteList
+					if (currFnListGroup.get(k) != null) {
+						fnListGroupStr += currFnListGroup.get(k).get(j);
+					}
+				}
+				fnListGroupStr += "\r\n";
+			}
+			footnotesStr.append(fnListGroupStr);				
+		}
+		return footnotesStr;
 	}
 
 

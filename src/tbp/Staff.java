@@ -13,12 +13,12 @@ public class Staff {
 	public static final int STAFF_LINES = 11;
 	public static final int BAR_NUMS_LINE = 0;
 	public static final int RHYTHM_LINE = 1;
-	private static final int DIAPASONS_LINE_ITALIAN = 2;
+	public static final int DIAPASONS_LINE_ITALIAN = 2;
 	public static final int TOP_TABLATURE_LINE = 3;
 	public static final int UPPER_MIDDLE_TABLATURE_LINE = 5;
 	private static final int LOWER_MIDDLE_TABLATURE_LINE = 6;
 	public static final int BOTTOM_TABLATURE_LINE = 8;
-	private static final int DIAPASONS_LINE_OTHER = 9;
+	public static final int DIAPASONS_LINE_OTHER = 9;
 	public static final int FOOTNOTES_LINE = 10;
 	private static final int NECESSARY_LINE_SHIFT = 2;
 	public static final String SPACE_BETWEEN_STAFFS = "\n";
@@ -28,7 +28,8 @@ public class Staff {
 	private static final String OPEN_FOOTNOTE_PAR = "(";
 	private static final String CLOSE_FOOTNOTE_PAR = ")";
 
-	private static final int LEFT_MARGIN = 1; // must be >= 1
+	public static final int LEFT_MARGIN = 1; // must be >= 1
+	public static final int RIGHT_MARGIN = 2;
 	private static final int BAR_NUM_FREQ = 5;
 
 
@@ -40,7 +41,7 @@ public class Staff {
 	 */
 	public Staff(int numberOfSegments) {
 		this.numberOfSegments = numberOfSegments; 
-		this.staffData = new String[STAFF_LINES][numberOfSegments+2];
+		this.staffData = new String[STAFF_LINES][numberOfSegments+RIGHT_MARGIN];
 		final String spaceSegment = " ";
 		// Construct the empty Staff line by line, segment by segment 
 		for (int staffLine = BAR_NUMS_LINE; staffLine < STAFF_LINES; staffLine++) {  
@@ -73,10 +74,11 @@ public class Staff {
 			}
 		}
 		// Allow for bar numbers up to three digits above the final barline of a staff
-		// by adding two spaces to each staff line
+		// by adding two RIGHT_MARGIN to each staff line
 		for (int staffLine = BAR_NUMS_LINE; staffLine < STAFF_LINES; staffLine++) {
-			staffData[staffLine][numberOfSegments] = spaceSegment;
-			staffData[staffLine][numberOfSegments+1] = spaceSegment;
+			for (int i = 0; i < RIGHT_MARGIN; i++) { 
+				staffData[staffLine][numberOfSegments + i] = spaceSegment;
+			}
 		}
 	}
 
@@ -136,7 +138,7 @@ public class Staff {
 					(!startsWithDecorBarline ? staffLineStr : staffLineStr.substring(1));
 			}
 			staffStr += staffLineStr + "\n";
-		}  
+		}
 		return staffStr;
 	}
 
@@ -299,7 +301,6 @@ public class Staff {
 					// Add each char in the bar number at ind
 					for (int j = 0; j < asStr.length(); j++) {
 						staffData[BAR_NUMS_LINE][ind + j] = asStr.substring(j, j+1);
-//							Character.toString(asStr.charAt(j)); 
 					}
 				}
 			}
