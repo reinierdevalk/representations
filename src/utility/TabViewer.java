@@ -371,8 +371,8 @@ public class TabViewer extends JFrame{
 //			encPath += "tab-int/3vv/" + "phalese-1547_7-tant_que-3vv.tbp";
 
 			// 4vv
-//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-absolon_fili.tbp";
-			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-in_exitu.tbp";
+			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-absolon_fili-copy.tbp";
+//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-in_exitu.tbp";
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-qui_habitat.tbp";
 //			encPath += "tab-int/4vv/" + "rotta-1546_15-bramo_morir.tbp";
 //			encPath += "tab-int/4vv/" + "phalese-1547_7-tant_que-4vv.tbp";

@@ -89,6 +89,23 @@ public class TabSymbolSet extends ArrayList<TabSymbol>{
 
 
 	/**
+	 * Given a TabSymbol from another TabSymbolSet, returns its equivalent in the current
+	 * TabSymbolSet. 
+	 * 
+	 * @param other
+	 * @return
+	 */
+	public TabSymbol getTabSymbolEquivalent(TabSymbol other) {
+		for (TabSymbol curr : this) {
+			if (curr.getCourse() == other.getCourse() && curr.getFret() == other.getFret()) {
+				return curr;
+			}
+		}
+		return null;
+	}
+
+
+	/**
 	 * Searches the specified list for the TabSymbolSet whose attribute name equals the 
 	 * specified name. Returns null if the list does not contain such a TabSymbolSet.
 	 * 
