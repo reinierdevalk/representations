@@ -2194,8 +2194,7 @@ public class Encoding implements Serializable {
 				Integer.parseInt(currFn[FOOTNOTE_NUM_IND].trim().substring("#".length()));
 			String currFnNumStr = "(" + currFnNum + ")" + (currFnNum < 10 ? " " : "");
 			
-			// currFootnoteList contains the currentFootnote, which is either a staff 
-			// footnote or a text-only footnote, split up into lines
+			// Make currFootnoteList, containing the current footnote split up into lines
 			List<String> currFootnoteList = new ArrayList<>();
 			// a. Staff footnote
 			if (currFnStr.contains("'")) {
@@ -2213,8 +2212,6 @@ public class Encoding implements Serializable {
 
 				// Check if the encoding has any doubled symbols: two symbols on a single 
 				// course, either by mistake or intentionally (German tablature unisons)
-				boolean hasDoubledSymbol = // see https://www.baeldung.com/java-count-chars
-					(int) currFnEnc.chars().filter(ch -> ch == "/".charAt(0)).count() > 0;
 				// a. No doubled symbols 
 				if (!currFnEnc.contains("/")) {
 					currFnStaffPart = 
@@ -2253,10 +2250,10 @@ public class Encoding implements Serializable {
 							int course = tsInArgTss.getCourse();
 							int changeLine = -1;
 							if (argTss == TabSymbolSet.FRENCH_TAB || argTss == TabSymbolSet.SPANISH_TAB) {
-								changeLine = Staff.TOP_TABLATURE_LINE + (course-1);
+								changeLine = Staff.TOP_LINE + (course - 1);
 							}
 							else if (argTss == TabSymbolSet.ITALIAN_TAB) {
-								changeLine = Staff.BOTTOM_TABLATURE_LINE - (course-1);
+								changeLine = Staff.BOTTOM_LINE - (course - 1);
 							}
 							for (int i = 0; i < currFnEventStaffPartSplit.length; i++) {
 								String line = currFnEventStaffPartSplit[i];
@@ -2311,7 +2308,7 @@ public class Encoding implements Serializable {
 								if (j == 0 || (j > 0 && j < numEvents-1)) {
 									l = l.substring(0, l.length() - Staff.RIGHT_MARGIN);
 								}
-								// Middle event and last event: remove right margin
+								// Middle event and last event: remove left margin
 								if ((j > 0 && j < numEvents-1) || (j == numEvents-1)) {
 									l = l.substring(Staff.LEFT_MARGIN);
 								}
@@ -2323,83 +2320,71 @@ public class Encoding implements Serializable {
 						}
 					}
 				}
+				// Split currFnStaffPart into lines. currFnStaffPartSplit has Staff.STAFF_LINES
+				// lines, and both begins with an empty line and ens with one (for the 
+				// content of Staff.BAR_NUMS_LINE and Staff.FOOTNOTES_LINE, respectively)
+				String[] currFnStaffPartSplit = currFnStaffPart.split("\n");
 
 				// 2. Get the text part of the footnote (generally, 'in source')
 				String currFnTextPart = 
 					currFnStr.substring(currFnStr.lastIndexOf("'") + 1, 
 					currFnStr.length()).trim();
-
-				// Split currFootnoteTabPart into lines. currFootnoteTabPartSplit both 
-				// begins with an empty line (for the content of Staff.BAR_NUMS_LINE) 
-				// and ends with one (for the content of Staff.FOOTNOTES_LINE). The text 
-				// part of the footnote is added after Staff.UPPER_MIDDLE_TABLATURE_LINE
-				String currFootnoteTabPart = currFnStaffPart;
-				String[] currFootnoteTabPartSplit = currFootnoteTabPart.split("\n");
-
+				// Break the text part into lines and add them to the staff part lines, 
+				// starting at Staff.UPPER_MIDDLE_LINE
 				int lenLine = 
-					footnoteNumBuffer.length() +
-					(currFootnoteTabPartSplit[Staff.TOP_TABLATURE_LINE].length() - 
-					Staff.RIGHT_MARGIN);
-				int maxLen = ((ToolBox.TAB_LEN * numTabs) - 1) - (lenLine + 1);
-				int indInTextPartLines = 0;
-				List<String> currFootnoteTextPartBroken = 
-					ToolBox.breakIntoLines(currFnTextPart, maxLen);
-				// Start at line 1 to skip bar numbers line
-				for (int i = 1; i < currFootnoteTabPartSplit.length; i++) {
-					String line = currFootnoteTabPartSplit[i];
+					footnoteNumBuffer.length() + 
+					(currFnStaffPartSplit[Staff.TOP_LINE].length() - Staff.RIGHT_MARGIN);
+				int maxLenTextPart = ((ToolBox.TAB_LEN * numTabs) - 1) - (lenLine + 1);
+				List<String> currFnTextPartBroken = 
+					ToolBox.breakIntoLines(currFnTextPart, maxLenTextPart);
+				for (int i = 0; i < currFnStaffPartSplit.length; i++) {
+					String line = currFnStaffPartSplit[i];
 					// Remove right margin
 					line = line.substring(0, line.length() - Staff.RIGHT_MARGIN);
-					// Add footnote number and text part
-					if (i == Staff.UPPER_MIDDLE_TABLATURE_LINE) {
-						line = currFnNumStr + line + " " + currFootnoteTextPartBroken.get(0);
-						indInTextPartLines++;
+					// Add line with text part
+					if (i >= Staff.UPPER_MIDDLE_LINE && 
+						i < Staff.UPPER_MIDDLE_LINE + currFnTextPartBroken.size()) {
+						// Prepend prefix: footnote number for first line; buffer for other
+						line = (i == Staff.UPPER_MIDDLE_LINE) ? currFnNumStr + line : 
+							footnoteNumBuffer + line; 
+						// Append text part
+						line += " " + currFnTextPartBroken.get(i - Staff.UPPER_MIDDLE_LINE);
 					}
+					// Add other line
 					else {
 						// If line contains only whitespace: use only tabs
-						if ((i == Staff.DIAPASONS_LINE_ITALIAN || i == Staff.DIAPASONS_LINE_OTHER
-							|| i == Staff.FOOTNOTES_LINE) && 
-							ToolBox.getFirstIndexOfNot(line, 
-							Arrays.asList(new String[]{" ", "\t"})) == -1) {
+						if ((i == Staff.BAR_NUMS_LINE || i == Staff.DIAPASONS_LINE_ITALIAN || 
+							 i == Staff.DIAPASONS_LINE_OTHER || i == Staff.FOOTNOTES_LINE) 
+							&& ToolBox.getFirstIndexOfNot(
+							line, Arrays.asList(new String[]{" ", "\t"})) == -1) {
 							line = "";
 						}
 						else {
 							line = footnoteNumBuffer + line;
 						}
 					}
-					// Add any remainder of the text part
-					if (i > Staff.UPPER_MIDDLE_TABLATURE_LINE && 
-						indInTextPartLines < currFootnoteTextPartBroken.size()) {
-						line += " " + currFootnoteTextPartBroken.get(indInTextPartLines);
-						indInTextPartLines++;
-					}
 					currFootnoteList.add(ToolBox.tabify(line, numTabs));
 				}
 			}
 			// b. Text footnote
 			else {
-				// Prepend with empty lines; start at line 1 to skip bar numbers line
-				for (int j = 1; j < Staff.UPPER_MIDDLE_TABLATURE_LINE; j++) {
+				// Prepend with empty lines
+				for (int j = 0; j < Staff.UPPER_MIDDLE_LINE; j++) {
 					currFootnoteList.add(emptyLine);
 				}
-				// Add footnote broken up as a list, with each line tabified
-				List<String> currFootnoteBrokenAndTabified = new ArrayList<>();
-				int maxLen = ((ToolBox.TAB_LEN * numTabs) - 1) - 
-					(currFnNumStr.length() + 1);
-				ToolBox.breakIntoLines(currFnStr, maxLen).forEach(
-					s -> currFootnoteBrokenAndTabified.add(ToolBox.tabify(
-					footnoteNumBuffer + " " + s, numTabs)));
-				currFootnoteBrokenAndTabified.set(0, currFnNumStr + 
-					currFootnoteBrokenAndTabified.get(0).substring(currFnNumStr.length()));
-
-				currFootnoteList.addAll(currFootnoteBrokenAndTabified);
+				// Break footnote into lines and add
+				int maxLen = ((ToolBox.TAB_LEN * numTabs) - 1) - (currFnNumStr.length() + 1);
+				for (String line : ToolBox.breakIntoLines(currFnStr, maxLen)) {
+					currFootnoteList.add(ToolBox.tabify(
+						((currFootnoteList.size() == Staff.UPPER_MIDDLE_LINE) ?
+						currFnNumStr : footnoteNumBuffer) + " " + line, numTabs));
+				}
 				// Append with empty lines
-				int len = currFootnoteList.size();
-				for (int j = len; j < Staff.STAFF_LINES; j++) {
+				for (int j = currFootnoteList.size(); j < Staff.STAFF_LINES; j++) {
 					currFootnoteList.add(emptyLine);
 				}
 			}
-//			// Set the first line to the bar number the footnote applies to
-//			currFootnoteList.set(0, ToolBox.tabify("[" + curr[BAR_IND] + "]", numTabs));
+			// Add currFootnoteList to allFootnoteLists
 			allFootnoteLists.add(currFootnoteList);
 		}
 
@@ -2421,7 +2406,7 @@ public class Encoding implements Serializable {
 				allFootnoteLists.subList(i, i + footnoteListGroupSize);
 			boolean hasTabFootnote = false;
 			for (List<String> l : currFnListGroup) {
-				if (l != null && !l.get(1 + Staff.TOP_TABLATURE_LINE).equals(emptyLine)) {
+				if (l != null && !l.get(1 + Staff.TOP_LINE).equals(emptyLine)) {
 					hasTabFootnote = true;
 					break;
 				}

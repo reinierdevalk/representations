@@ -14,10 +14,10 @@ public class Staff {
 	public static final int BAR_NUMS_LINE = 0;
 	public static final int RHYTHM_LINE = 1;
 	public static final int DIAPASONS_LINE_ITALIAN = 2;
-	public static final int TOP_TABLATURE_LINE = 3;
-	public static final int UPPER_MIDDLE_TABLATURE_LINE = 5;
-	private static final int LOWER_MIDDLE_TABLATURE_LINE = 6;
-	public static final int BOTTOM_TABLATURE_LINE = 8;
+	public static final int TOP_LINE = 3;
+	public static final int UPPER_MIDDLE_LINE = 5;
+	private static final int LOWER_MIDDLE_LINE = 6;
+	public static final int BOTTOM_LINE = 8;
 	public static final int DIAPASONS_LINE_OTHER = 9;
 	public static final int FOOTNOTES_LINE = 10;
 	private static final int NECESSARY_LINE_SHIFT = 2;
@@ -108,7 +108,7 @@ public class Staff {
 			false;
 
 		boolean startsWithDecorBarline = 
-			ConstantMusicalSymbol.isBarline(staffData[TOP_TABLATURE_LINE][0]);
+			ConstantMusicalSymbol.isBarline(staffData[TOP_LINE][0]);
 
 		for (int i = 0; i < staffData.length; i++) {
 			String[] staffLine = staffData[i];
@@ -161,7 +161,7 @@ public class Staff {
 		String subSymbol; 
 		// Space, barline and double barline
 		if (!c.getEncoding().contains(repeatIndicator)) {
-			for (int staffLine = TOP_TABLATURE_LINE; staffLine <= BOTTOM_TABLATURE_LINE; staffLine++) {
+			for (int staffLine = TOP_LINE; staffLine <= BOTTOM_LINE; staffLine++) {
 				// Add subsymbols one by one to the Staff
 				for (int i = 0; i < c.getSymbol().length(); i++) {
 					subSymbol = Character.toString(c.getSymbol().charAt(i));
@@ -171,15 +171,14 @@ public class Staff {
 		}
 		// All kinds of repeat barlines
 		else {
-			for (int staffLine = TOP_TABLATURE_LINE; staffLine <= BOTTOM_TABLATURE_LINE; staffLine++) {
+			for (int staffLine = TOP_LINE; staffLine <= BOTTOM_LINE; staffLine++) {
 				// Add subsymbols one by one to the Staff
 				// NB: if the subsymbol is a repeatIndicator, the inner two lines of the staff
 				// itself must be filled differently than the outer four
 				for (int i = 0; i < c.getSymbol().length(); i++) {
 					subSymbol = Character.toString(c.getSymbol().charAt(i));
 					if (subSymbol.equals(repeatIndicator)) {
-						if ((staffLine == UPPER_MIDDLE_TABLATURE_LINE) || 
-							(staffLine == LOWER_MIDDLE_TABLATURE_LINE)) {
+						if ((staffLine == UPPER_MIDDLE_LINE) || (staffLine == LOWER_MIDDLE_LINE)) {
 							staffData[staffLine][segment + i] = repeatDot;
 						}
 						else {
