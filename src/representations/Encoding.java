@@ -2141,6 +2141,7 @@ public class Encoding implements Serializable {
 		
 		// Add formatted footnotes
 		if (showFootnotes) {
+			tab += "\n".repeat(2); // why error when using "\r\n"?
 			tab += visualiseFootnotes(argTss);
 		}
 		return tab;
@@ -2152,8 +2153,8 @@ public class Encoding implements Serializable {
 	 * @return
 	 */
 	private StringBuffer visualiseFootnotes(TabSymbolSet argTss) {
-		StringBuffer footnotesStr = new StringBuffer();
-
+		StringBuffer footnotesStr;
+		
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
 		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
@@ -2182,10 +2183,11 @@ public class Encoding implements Serializable {
 			metadata += oib + tag + ias.get(metadataTags.indexOf(tag)) + cib + "\r\n";
 		}
 
-		// 1. Fill allFootnoteLists with footnoteLists. A footnoteList is a list of 
+		// 1. Add footnote lists to allFootnoteLists. A footnote list is a list of 
 		// Staff.STAFF_LINES strings, representing the individual lines of a footnote
 		List<List<String>> allFootnoteLists = new ArrayList<>();
-		String footnoteNumBuffer = "    ";
+		List<Integer> textFootnotes = new ArrayList<>();
+		String fnNumBuffer = "    ";
 		for (String[] currFn : footnotes) {
 			String currFnStr = currFn[FOOTNOTE_IND].trim();
 			currFnStr = 
@@ -2194,8 +2196,8 @@ public class Encoding implements Serializable {
 				Integer.parseInt(currFn[FOOTNOTE_NUM_IND].trim().substring("#".length()));
 			String currFnNumStr = "(" + currFnNum + ")" + (currFnNum < 10 ? " " : "");
 			
-			// Make currFootnoteList, containing the current footnote split up into lines
-			List<String> currFootnoteList = new ArrayList<>();
+			// Make currFnList, containing the current footnote split up into lines
+			List<String> currFnList = new ArrayList<>();
 			// a. Staff footnote
 			if (currFnStr.contains("'")) {
 				// 1. Get the staff part of the footnote
@@ -2332,7 +2334,7 @@ public class Encoding implements Serializable {
 				// Break the text part into lines and add them to the staff part lines, 
 				// starting at Staff.UPPER_MIDDLE_LINE
 				int lenLine = 
-					footnoteNumBuffer.length() + 
+					fnNumBuffer.length() + 
 					(currFnStaffPartSplit[Staff.TOP_LINE].length() - Staff.RIGHT_MARGIN);
 				int maxLenTextPart = ((ToolBox.TAB_LEN * numTabs) - 1) - (lenLine + 1);
 				List<String> currFnTextPartBroken = 
@@ -2346,7 +2348,7 @@ public class Encoding implements Serializable {
 						i < Staff.UPPER_MIDDLE_LINE + currFnTextPartBroken.size()) {
 						// Prepend prefix: footnote number for first line; buffer for other
 						line = (i == Staff.UPPER_MIDDLE_LINE) ? currFnNumStr + line : 
-							footnoteNumBuffer + line; 
+							fnNumBuffer + line; 
 						// Append text part
 						line += " " + currFnTextPartBroken.get(i - Staff.UPPER_MIDDLE_LINE);
 					}
@@ -2360,72 +2362,85 @@ public class Encoding implements Serializable {
 							line = "";
 						}
 						else {
-							line = footnoteNumBuffer + line;
+							line = fnNumBuffer + line;
 						}
 					}
-					currFootnoteList.add(ToolBox.tabify(line, numTabs));
+					currFnList.add(ToolBox.tabify(line, numTabs));
 				}
 			}
 			// b. Text footnote
 			else {
+				textFootnotes.add(currFnNum - 1);
 				// Prepend with empty lines
 				for (int j = 0; j < Staff.UPPER_MIDDLE_LINE; j++) {
-					currFootnoteList.add(emptyLine);
+					currFnList.add(emptyLine);
 				}
 				// Break footnote into lines and add
 				int maxLen = ((ToolBox.TAB_LEN * numTabs) - 1) - (currFnNumStr.length() + 1);
 				for (String line : ToolBox.breakIntoLines(currFnStr, maxLen)) {
-					currFootnoteList.add(ToolBox.tabify(
-						((currFootnoteList.size() == Staff.UPPER_MIDDLE_LINE) ?
-						currFnNumStr : footnoteNumBuffer) + " " + line, numTabs));
+					currFnList.add(ToolBox.tabify(
+						((currFnList.size() == Staff.UPPER_MIDDLE_LINE) ?
+						currFnNumStr : fnNumBuffer) + " " + line, numTabs));
 				}
 				// Append with empty lines
-				for (int j = currFootnoteList.size(); j < Staff.STAFF_LINES; j++) {
-					currFootnoteList.add(emptyLine);
+				for (int j = currFnList.size(); j < Staff.STAFF_LINES; j++) {
+					currFnList.add(emptyLine);
 				}
 			}
-			// Add currFootnoteList to allFootnoteLists
-			allFootnoteLists.add(currFootnoteList);
+			// Add currFnList to allFootnoteLists
+			allFootnoteLists.add(currFnList);
+		}
+		// Remove the Staff.RHYTHM_LINE and Staff.FOOTNOTES_LINE lines, which are always 
+		// unused, from each footnote list
+		for (int i = 0; i < allFootnoteLists.size(); i++) {
+			allFootnoteLists.set(i, 
+				allFootnoteLists.get(i).subList(Staff.RHYTHM_LINE, Staff.FOOTNOTES_LINE));
 		}
 
-		// 2. Make footnoteListGroups and turn them into strings. A footnoteListGroup 
-		// is a list of n footnoteLists (where n = footnoteListGroupSize) that are
-		// to be displayed next to one another
-		
-		// Pad allFootnoteLists with nulls to make divisible by footnoteGroupSize
-		int numFootnotes = allFootnoteLists.size();
-		int footnoteListGroupSize = 3;
-		while (numFootnotes % footnoteListGroupSize != 0) {
+		// 2. Make footnote list groups, stringify them, and add them to footnotesStr. A 
+		// footnote list group is a list of n footnote lists (where n = fnListGroupSize), 
+		// whose stringifications are to be displayed next to one another
+		footnotesStr = new StringBuffer();
+		// Pad allFootnoteLists with nulls to make divisible by fnListGroupSize
+		int numFn = footnotes.size();
+		int fnListGroupSize = 3;
+		while (numFn % fnListGroupSize != 0) {
 			allFootnoteLists.add(null);
-			numFootnotes = allFootnoteLists.size();
+			numFn = allFootnoteLists.size();
 		}
-		for (int i = 0; i < numFootnotes; i+=(footnoteListGroupSize)) {
-			// Get the footnotes in the current group and check if one of them is a 
-			// tablature footnote
+		// Create and stringify footnote list groups
+		for (int i = 0; i < numFn; i+=fnListGroupSize) {
 			List<List<String>> currFnListGroup = 
-				allFootnoteLists.subList(i, i + footnoteListGroupSize);
-			boolean hasTabFootnote = false;
-			for (List<String> l : currFnListGroup) {
-				if (l != null && !l.get(1 + Staff.TOP_LINE).equals(emptyLine)) {
-					hasTabFootnote = true;
+				allFootnoteLists.subList(i, i + fnListGroupSize);
+			// Check if the current group has a staff footnote
+			boolean groupHasStaffFn = false;
+			for (int j = i; j < i+fnListGroupSize; j++) {
+				if (!textFootnotes.contains(j)) {
+					groupHasStaffFn = true;
 					break;
 				}
 			}
-//			System.out.println(currFnListGroup);
-//			if (hasTabFootnote) {
-			String fnListGroupStr = "";
-			// For each line in a footnoteList
-			for (int j = 0; j < currFnListGroup.get(0).size() ; j++) {
-				// For each footnoteList in the footnoteListGroup
-				for (int k = 0 ; k < currFnListGroup.size(); k++) {
-					// Append current line in each footnoteList
-					if (currFnListGroup.get(k) != null) {
-						fnListGroupStr += currFnListGroup.get(k).get(j);
+			// If the footnote list group contains at least one staff footnote
+			if (groupHasStaffFn) {
+				String currFnListGroupStr = "";
+				// For each line in the footnote list
+				for (int j = 0; j < currFnListGroup.get(0).size() ; j++) {
+					// For each footnote list in the footnote list group
+					for (int k = 0 ; k < currFnListGroup.size(); k++) {
+						// Append current line in each footnote list
+						if (currFnListGroup.get(k) != null) {
+							currFnListGroupStr += currFnListGroup.get(k).get(j);
+						}	
 					}
+					currFnListGroupStr += "\r\n";
 				}
-				fnListGroupStr += "\r\n";
+				currFnListGroupStr += "\r\n";
+				footnotesStr.append(currFnListGroupStr);
 			}
-			footnotesStr.append(fnListGroupStr);				
+			// If the footnote list group contains only text footnotes
+			else {
+				// TODO
+			}
 		}
 		return footnotesStr;
 	}
