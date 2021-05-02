@@ -2415,7 +2415,7 @@ public class Encoding implements Serializable {
 			// Check if the current group has a staff footnote
 			boolean groupHasStaffFn = false;
 			for (int j = i; j < i+fnListGroupSize; j++) {
-				if (!textFootnotes.contains(j)) {
+				if (!textFootnotes.contains(j) && allFootnoteLists.get(j) != null) {
 					groupHasStaffFn = true;
 					break;
 				}

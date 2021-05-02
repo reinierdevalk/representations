@@ -371,7 +371,7 @@ public class TabViewer extends JFrame{
 //			encPath += "tab-int/3vv/" + "phalese-1547_7-tant_que-3vv.tbp";
 
 			// 4vv
-			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-absolon_fili-copy.tbp";
+//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-absolon_fili.tbp";
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-in_exitu.tbp";
 //			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-qui_habitat.tbp";
 //			encPath += "tab-int/4vv/" + "rotta-1546_15-bramo_morir.tbp";
@@ -386,7 +386,7 @@ public class TabViewer extends JFrame{
 
 			// 5vv
 //			encPath += "tab-int/5vv/" + "adriansen-1584_6-d_vn_si.tbp";
-//			encPath += "tab-int/5vv/" + "ochsenkun-1558_5-inuiolata_integra.tbp";
+			encPath += "tab-int/5vv/" + "ochsenkun-1558_5-inuiolata_integra.tbp";
 			
 			// Byrd
 //			encPath += "byrd-int/4vv/as_caesar_wept-II.tbp";
