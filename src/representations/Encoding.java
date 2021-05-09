@@ -1988,9 +1988,6 @@ public class Encoding implements Serializable {
 
 		List<List<Integer>> barlineSegmentInds = getStaffSegmentIndices("barline");
 		List<List<Integer>> footnoteSegmentInds = getStaffSegmentIndices("footnote");
-//		for (List<Integer> l : barlineSegmentInds) {
-//			System.out.println(l);
-//		}
 
 		// Add (formatted) metadata
 		if (showHeader) {
@@ -2154,6 +2151,7 @@ public class Encoding implements Serializable {
 	 */
 	private StringBuffer visualiseFootnotes(TabSymbolSet argTss) {
 		StringBuffer footnotesStr;
+		StringBuffer barlinesStr;
 		
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
@@ -2164,14 +2162,23 @@ public class Encoding implements Serializable {
 		int numTabs = 3;
 		String emptyLine = ToolBox.tabify("", numTabs);
 
-		// Remove any follow-up footnotes from the footnotes
+		// Remove any follow-up footnotes; collect no-barline and misplaced-barline bars
 		List<String[]> footnotes = new ArrayList<>();
+		List<Integer> noBarlineBars = new ArrayList<>();
+		List<Integer> misplacedBarlineBars = new ArrayList<>();
 		int count = 1;
 		for (String[] s : getFootnotes()) {
+			// If not a follow-up footnote (containing only a FOOTNOTE_INDICATOR)
 			if (!s[FOOTNOTE_IND].equals(FOOTNOTE_INDICATOR)) {
 				s[FOOTNOTE_NUM_IND] = "#"+count;
 				footnotes.add(s);
 				count++;
+				if (s[FOOTNOTE_IND].startsWith(FOOTNOTE_INDICATOR + "no barline")) {
+					noBarlineBars.add(Integer.parseInt(s[BAR_IND]));
+				}
+				if (s[FOOTNOTE_IND].startsWith(FOOTNOTE_INDICATOR + "misplaced barline")) {
+					misplacedBarlineBars.add(Integer.parseInt(s[BAR_IND]));
+				}
 			}
 		}
 
@@ -2442,6 +2449,32 @@ public class Encoding implements Serializable {
 				// TODO
 			}
 		}
+
+		// Add missing and misplaced barlines information
+		List<List<Integer>> noAndMisplaced = new ArrayList<>();
+		noAndMisplaced.add(noBarlineBars);
+		noAndMisplaced.add(misplacedBarlineBars);
+		for (int i = 0; i < noAndMisplaced.size(); i++) {
+			List<Integer> l = noAndMisplaced.get(i);
+			if (l.size() > 0) {
+				String barsStr = "";
+				List<List<Integer>> groups = ToolBox.groupListOfIntegers(l);
+				for (int j = 0; j < groups.size(); j++) {
+					List<Integer> group = groups.get(j);
+					barsStr = 
+						(group.size() == 1 ? barsStr + "[" + group.get(0) + "]" : 
+						barsStr + "[" + group.get(0) + "-" + group.get(group.size()-1) + "]");
+					if (j < groups.size() - 1) {
+						barsStr += ", ";
+					}
+				}
+				footnotesStr.append(
+					(i == 0 ? "No barline in source at end of " : 
+					"Misplaced barline in source in middle of ") + 
+					(l.size() == 1 ? "bar " : "bars ") + barsStr +
+					(i == 0 ? "\r\n" : ""));
+			}
+		}
 		return footnotesStr;
 	}
 
@@ -2615,7 +2648,7 @@ public class Encoding implements Serializable {
 	 * @return A <code>List</code> of <code>String[]</code>s, one for each footnote.
 	 */
 	// TESTED
-	public List<String[]> getFootnotes() { // TODO not public
+	public List<String[]> getFootnotes() {
 		List<String[]> footnotes = new ArrayList<>();
 		List<List<String[]>> ebf = getEventsBarlinesFootnotes();
 		// For each system
