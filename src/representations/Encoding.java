@@ -28,7 +28,9 @@ public class Encoding implements Serializable {
 	public static final String FOOTNOTE_INDICATOR = "@";
 	private static final String WHITESPACE = " ";
 	public static final String METADATA_ERROR = "METADATA ERROR -- Check for missing curly brackets.";
-
+	private static final String NO_BARLINE_TEXT = "no barline";
+	private static final String MISPLACED_BARLINE_TEXT = "misplaced barline";
+	
 	private String name; 
 	private String rawEncoding;
 	private String cleanEncoding;
@@ -2151,7 +2153,6 @@ public class Encoding implements Serializable {
 	 */
 	private StringBuffer visualiseFootnotes(TabSymbolSet argTss) {
 		StringBuffer footnotesStr;
-		StringBuffer barlinesStr;
 		
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
@@ -2170,14 +2171,19 @@ public class Encoding implements Serializable {
 		for (String[] s : getFootnotes()) {
 			// If not a follow-up footnote (containing only a FOOTNOTE_INDICATOR)
 			if (!s[FOOTNOTE_IND].equals(FOOTNOTE_INDICATOR)) {
-				s[FOOTNOTE_NUM_IND] = "#"+count;
-				footnotes.add(s);
-				count++;
-				if (s[FOOTNOTE_IND].startsWith(FOOTNOTE_INDICATOR + "no barline")) {
+//				s[FOOTNOTE_NUM_IND] = "#"+count;
+//				footnotes.add(s);
+//				count++;
+				if (s[FOOTNOTE_IND].startsWith(FOOTNOTE_INDICATOR + NO_BARLINE_TEXT)) {
 					noBarlineBars.add(Integer.parseInt(s[BAR_IND]));
 				}
-				if (s[FOOTNOTE_IND].startsWith(FOOTNOTE_INDICATOR + "misplaced barline")) {
+				else if (s[FOOTNOTE_IND].startsWith(FOOTNOTE_INDICATOR + MISPLACED_BARLINE_TEXT)) {
 					misplacedBarlineBars.add(Integer.parseInt(s[BAR_IND]));
+				}
+				else {
+					s[FOOTNOTE_NUM_IND] = "#"+count;
+					footnotes.add(s);
+					count++;
 				}
 			}
 		}
@@ -2428,7 +2434,8 @@ public class Encoding implements Serializable {
 				}
 			}
 			// If the footnote list group contains at least one staff footnote
-			if (groupHasStaffFn) {
+			if (groupHasStaffFn || !groupHasStaffFn) {
+//			if (groupHasStaffFn) {
 				String currFnListGroupStr = "";
 				// For each line in the footnote list
 				for (int j = 0; j < currFnListGroup.get(0).size() ; j++) {
@@ -2443,10 +2450,6 @@ public class Encoding implements Serializable {
 				}
 				currFnListGroupStr += "\r\n";
 				footnotesStr.append(currFnListGroupStr);
-			}
-			// If the footnote list group contains only text footnotes
-			else {
-				// TODO
 			}
 		}
 
@@ -2524,9 +2527,13 @@ public class Encoding implements Serializable {
 					}
 				}
 				
-				// Exclude follow-up footnotes (consisting only of a FOOTNOTE_INDICATOR)
+				// Exclude follow-up footnotes (consisting only of a FOOTNOTE_INDICATOR), 
+				// missing barlines footnotes, and misplaced barlines footnotes
 				boolean isFootnoteEvent = 
-					event[FOOTNOTE_IND] != null && !event[FOOTNOTE_IND].equals(FOOTNOTE_INDICATOR);
+					event[FOOTNOTE_IND] != null && 
+					!(event[FOOTNOTE_IND].equals(FOOTNOTE_INDICATOR) ||
+					event[FOOTNOTE_IND].startsWith(FOOTNOTE_INDICATOR + NO_BARLINE_TEXT) ||
+					event[FOOTNOTE_IND].startsWith(FOOTNOTE_INDICATOR + MISPLACED_BARLINE_TEXT));
 
 				// Add to list
 				if ( (type.equals("footnote") && isFootnoteEvent) ||
