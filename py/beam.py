@@ -62,6 +62,7 @@ for data in data_per_voice:
             bars_curr_voice.append(data[new_bar_ind[i]:new_bar_ind[i+1]])
     all_voices.append(bars_curr_voice)
 
+
 def compute_beams(bars_curr_voice):
     beams_output = []
     # for each bar
@@ -127,7 +128,7 @@ def compute_beams(bars_curr_voice):
                         # end of beaming group beam 
                         elif '1/stop' in str(beams[0]):
 #                            beamed_mei = beamed_mei + '    ' + mei_note + lb
- #                           beamed_mei = beamed_mei + '</beam>' + lb
+#                            beamed_mei = beamed_mei + '</beam>' + lb
                             beamed_mei = beamed_mei + '</beam>' + mei_note + lb
                         # middle beam of beaming group
                         else:
