@@ -40,7 +40,7 @@ public class MEIExport {
 	private static final int BREVE = -1;
 	private static final int LONG = -2;
 	
-	private static boolean verbose = false;
+	private static boolean verbose = true;
 	
 	// Keys contains, for each key, the number of sharps (positive) or flats (negative) and 
 	// the MIDI pitch class of the tonic
@@ -1245,6 +1245,10 @@ public class MEIExport {
 				for (int k = 0; k < currBarCurrVoiceStr.size(); k++) {
 					String[] note = currBarCurrVoiceStr.get(k);
 					Integer[] noteInt = currBarCurrVoiceInt.get(k);
+					System.out.println("voice = " + argVoice);
+					System.out.println("k = " + k);
+					System.out.println("note = " + Arrays.toString(note));
+					System.out.println("noteInt = " + Arrays.toString(noteInt));
 //					Rational mp = new Rational(noteInt[INTS.indexOf("metPosNum")], 
 //						noteInt[)INTS.indexOf("metPosDen")]);
 //					Rational durRat = new Rational(Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom(),
@@ -1289,11 +1293,25 @@ public class MEIExport {
 						barList.add("<tuplet dur='" + tupletDur + "' num='3' numbase='2'>");
 						tupletActive = true;
 					}
+					// In angels weed: 384
+					// The lord is my: 
+					if (currBarCurrVoiceInt.get(k)[INTS.indexOf("ind")] == 1384) {
+						System.out.println("= = = = = = = = = = = = = = =");
+						System.out.println(Arrays.toString(currBarCurrVoiceStr.get(k)));
+						System.out.println(Arrays.toString(currBarCurrVoiceInt.get(k)));
+						System.out.println(Arrays.toString(currBarCurrVoiceStr.get(k+1)));
+						System.out.println(Arrays.toString(currBarCurrVoiceInt.get(k+1)));
+						System.out.println("= = = = = = = = = = = = = = =");
+						System.exit(0);
+					}
 					// Check for any chord to be added before noteStr
 					if (k < currBarCurrVoiceStr.size()-1) {
 						if (currOnsNum == currBarCurrVoiceInt.get(k+1)[INTS.indexOf("onsetNum")]) {
 							barList.add("<chord dur='" + noteInt[INTS.indexOf("dur")] + "'>");
 							chordActive = true;
+							System.out.println(Arrays.toString(currBarCurrVoiceInt.get(k+1)));
+							System.out.println(currOnsNum);
+							System.out.println("chordActive");
 						}
 					}
 					// Check for any beams to be added before noteStr
@@ -1378,6 +1396,9 @@ public class MEIExport {
 					// If there is an active in-voice chord: check if it must be closed
 					if (chordActive) {
 						Rational currOnset = new Rational(currOnsNum, currOnsDen);
+						System.out.println(currOnset);
+						// pitch oct acc tie dur dots ID
+						// 
 						Rational nextOnset = new Rational(
 							currBarCurrVoiceInt.get(k+1)[INTS.indexOf("onsetNum")],
 							currBarCurrVoiceInt.get(k+1)[INTS.indexOf("onsetDen")]);
