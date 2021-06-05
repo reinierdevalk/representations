@@ -40,7 +40,7 @@ public class MEIExport {
 	private static final int BREVE = -1;
 	private static final int LONG = -2;
 	
-	private static boolean verbose = true;
+	private static boolean verbose = false;
 	
 	// Keys contains, for each key, the number of sharps (positive) or flats (negative) and 
 	// the MIDI pitch class of the tonic
@@ -996,7 +996,7 @@ public class MEIExport {
 		notesFile.delete();
 
 		// Re-organise the information (i) per bar, (ii) per voice so that it is the same
-		// again as datastr and dataInt
+		// again as dataStr and dataInt
 		List<List<List<String>>> beamedReorganised = new ArrayList<>();
 		// Get each voice as a single string (a list)
 		List<String> voices = Arrays.asList(beamed.split("end of voice" + "\r\n"));
@@ -1032,7 +1032,6 @@ public class MEIExport {
 					String noteCurrBarCurrVoice = notesCurrBarCurrVoice.get(note);
 		
 					if (noteCurrBarCurrVoice.startsWith("<beam>")) {
-						System.out.println(bar + " " + voice + " " + note);
 						dataInt.get(bar).get(voice).get(note)[INTS.indexOf("beamOpen")] = 1;
 					}
 					if (noteCurrBarCurrVoice.startsWith("</beam>")) {
@@ -1245,10 +1244,6 @@ public class MEIExport {
 				for (int k = 0; k < currBarCurrVoiceStr.size(); k++) {
 					String[] note = currBarCurrVoiceStr.get(k);
 					Integer[] noteInt = currBarCurrVoiceInt.get(k);
-					System.out.println("voice = " + argVoice);
-					System.out.println("k = " + k);
-					System.out.println("note = " + Arrays.toString(note));
-					System.out.println("noteInt = " + Arrays.toString(noteInt));
 //					Rational mp = new Rational(noteInt[INTS.indexOf("metPosNum")], 
 //						noteInt[)INTS.indexOf("metPosDen")]);
 //					Rational durRat = new Rational(Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom(),
@@ -1293,17 +1288,7 @@ public class MEIExport {
 						barList.add("<tuplet dur='" + tupletDur + "' num='3' numbase='2'>");
 						tupletActive = true;
 					}
-					// In angels weed: 384
-					// The lord is my: 
-					if (currBarCurrVoiceInt.get(k)[INTS.indexOf("ind")] == 1384) {
-						System.out.println("= = = = = = = = = = = = = = =");
-						System.out.println(Arrays.toString(currBarCurrVoiceStr.get(k)));
-						System.out.println(Arrays.toString(currBarCurrVoiceInt.get(k)));
-						System.out.println(Arrays.toString(currBarCurrVoiceStr.get(k+1)));
-						System.out.println(Arrays.toString(currBarCurrVoiceInt.get(k+1)));
-						System.out.println("= = = = = = = = = = = = = = =");
-						System.exit(0);
-					}
+
 					// Check for any chord to be added before noteStr
 					if (k < currBarCurrVoiceStr.size()-1) {
 						if (currOnsNum == currBarCurrVoiceInt.get(k+1)[INTS.indexOf("onsetNum")]) {
