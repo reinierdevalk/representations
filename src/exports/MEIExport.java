@@ -868,7 +868,9 @@ public class MEIExport {
 		// a. Make scoreDef. The scoreDef contains the initial meter (and key) sigs; any additional 
 		// ones are stored in nonInitMeters and nonInitKeys
 		Integer[] miInit = mi.get(0);
-		Integer[] kiInit = ki.get(0);
+		Integer[] kiInit = // zondag
+			(ki.size() == 0) ? new Integer[]{0, 0, 0, 0, 0, 0, 1} : ki.get(0);
+//		Integer[] kiInit = ki.get(0);
 		String scoreDefStr = 
 			"key.sig='" + Math.abs(kiInit[Transcription.KI_KEY]) + 
 				(kiInit[Transcription.KI_KEY] < 0 ? "f" : "s") + "'" + " " +
@@ -1182,7 +1184,10 @@ public class MEIExport {
 			diminution = Tablature.getDiminution(bar, mi);
 		}
 
-		boolean isMappingCase = mismatchInds.get(0) == null;
+		// If applied to new data (mismatchInds is an empty list), no notes need to be colored
+		boolean highlightNotes = mismatchInds.size() != 0;
+		boolean isMappingCase = highlightNotes && mismatchInds.get(0) == null; // zondag
+//		boolean isMappingCase = mismatchInds.get(0) == null;
 		List<Integer> orn = null;
 		List<Integer> rep = null;
 		List<Integer> ficta = null;
@@ -1200,10 +1205,12 @@ public class MEIExport {
 		}
 		// Modelling case
 		else {
-			inc = mismatchInds.get(1); // TODO was ErrorCalculator.INCORRECT_VOICE
-			over = mismatchInds.get(2); // TODO was ErrorCalculator.OVERLOOKED_VOICE
-			sup = mismatchInds.get(3); // TODO was ErrorCalculator.SUPERFLUOUS_VOICE
-			half = mismatchInds.get(4); // TODO was ErrorCalculator.HALF_VOICE
+			if (highlightNotes) { // zondag
+				inc = mismatchInds.get(1); // TODO was ErrorCalculator.INCORRECT_VOICE
+				over = mismatchInds.get(2); // TODO was ErrorCalculator.OVERLOOKED_VOICE
+				sup = mismatchInds.get(3); // TODO was ErrorCalculator.SUPERFLUOUS_VOICE
+				half = mismatchInds.get(4); // TODO was ErrorCalculator.HALF_VOICE
+			}
 		}
 
 		// If the bar does not contain any notes or rests (this happens when a voice ends
@@ -1359,18 +1366,20 @@ public class MEIExport {
 						}
 					}
 					else {
-						int index = (tabInd != -1) ? tabInd : noteInt[INTS.indexOf("ind")];
-						if (inc.contains(index)) {
-							noteStr += "color='red'" + " ";
-						}
-						else if (over.contains(index)) {
-							noteStr += "color='orange'" + " ";
-						}
-						else if (sup.contains(index)) {
-							noteStr += "color='lime'" + " ";
-						}
-						else if (half.contains(index)) {
-							noteStr += "color='blue'" + " ";
+						if (highlightNotes) { // zondag
+							int index = (tabInd != -1) ? tabInd : noteInt[INTS.indexOf("ind")];
+							if (inc.contains(index)) {
+								noteStr += "color='red'" + " ";
+							}
+							else if (over.contains(index)) {
+								noteStr += "color='orange'" + " ";
+							}
+							else if (sup.contains(index)) {
+								noteStr += "color='lime'" + " ";
+							}
+							else if (half.contains(index)) {
+								noteStr += "color='blue'" + " ";
+							}
 						}
 					}
 					// Trim trailing spaces (not leading spaces, as there may be TABs)
@@ -1522,7 +1531,9 @@ public class MEIExport {
 			int barsInCurrMeter = (m[Transcription.MI_LAST_BAR] - m[Transcription.MI_FIRST_BAR]) + 1;
 			endOffset = endOffset.add(currMeter.mul(barsInCurrMeter));
 		}
-		Integer[] key = ki.get(0);
+		Integer[] key = 
+			(ki.size() == 0) ? new Integer[]{0, 0, 0, 0, 0, 0, 1} : ki.get(0); // zondag
+//		Integer[] key = ki.get(0);
 		int numAlt = key[Transcription.KI_KEY];
 		// Set initial bar and meter
 		Integer[] initMi = mi.get(0);
