@@ -382,15 +382,15 @@ public class MEIExport {
 	private static Integer[][] getStaffAndLayer(int numVoices, int voice) {
 		Integer[][] voiceStaffLayer = new Integer[numVoices][3];
 		if (numVoices == 3) {
-			voiceStaffLayer[0] = new Integer[]{0, 1, 1};
-			voiceStaffLayer[1] = new Integer[]{1, 2, 2};
-			voiceStaffLayer[2] = new Integer[]{2, 2, 1};
+			voiceStaffLayer[0] = new Integer[]{0, 1, 1}; 
+			voiceStaffLayer[1] = new Integer[]{1, 2, 1}; // 2}; 
+			voiceStaffLayer[2] = new Integer[]{2, 2, 2}; // 1}; 
 		}
 		if (numVoices == 4) {
-			voiceStaffLayer[0] = new Integer[]{0, 1, 2};
-			voiceStaffLayer[1] = new Integer[]{1, 1, 1};
-			voiceStaffLayer[2] = new Integer[]{2, 2, 2};
-			voiceStaffLayer[3] = new Integer[]{3, 2, 1};
+			voiceStaffLayer[0] = new Integer[]{0, 1, 1}; // 2};
+			voiceStaffLayer[1] = new Integer[]{1, 1, 2}; // 1};
+			voiceStaffLayer[2] = new Integer[]{2, 2, 1}; // 2};
+			voiceStaffLayer[3] = new Integer[]{3, 2, 2}; // 1};
 		}
 		return voiceStaffLayer;
 	}
