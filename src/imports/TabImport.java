@@ -69,7 +69,7 @@ public class TabImport {
 //			"blame_i_confess-II",
 ////			"delight_is_dead-II",
 //			"in_angels_weed-II",
-//			"in_tower_most_high",
+			"in_tower_most_high",
 //			"o_lord_bow_down-II",
 //			"o_that_we_woeful_wretches-NEW",
 //			"quis_me_statim-II",
@@ -138,7 +138,7 @@ public class TabImport {
 //trrr			"5255_04_stabat_mater_dolorosa_desprez-2",
 		
 			// Chansons
-			"4400_45_ach_unfall_was",
+//			"4400_45_ach_unfall_was",
 //			"4481_49_ach_unfal_wes_zeigst_du_mich",
 //			"4406_51_adieu_mes_amours",
 //			"4467_37_adieu_mes_amours",
@@ -166,12 +166,14 @@ public class TabImport {
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/tab/";
 		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/";
 		path = "F:/research/data/data/josquintab/tab/";
+		path = "F:/research/projects/byrd/";
 		
 		// From ASCII
-//		for (String s : pieces) {
-//			tbp = ascii2Tbp(new File(path + s + ".tab"));
-//			ToolBox.storeTextFile(tbp, new File(path + s + ".tbp"));
-//		}
+		for (String s : pieces) {
+			tbp = ascii2tbp(new File(path + s + ".tab"));
+			ToolBox.storeTextFile(tbp, new File(path + s + ".tbp"));
+		}
+		System.exit(0);
 		
 		// From TabCode
 		for (String s : pieces) {

@@ -869,7 +869,7 @@ public class MEIExport {
 		// ones are stored in nonInitMeters and nonInitKeys
 		Integer[] miInit = mi.get(0);
 		Integer[] kiInit = // zondag
-			(ki.size() == 0) ? new Integer[]{0, 0, 0, 0, 0, 0, 1} : ki.get(0);
+			(ki.size() == 0) ? new Integer[]{-2, 0, 0, 0, 0, 0, 1} : ki.get(0);
 //		Integer[] kiInit = ki.get(0);
 		String scoreDefStr = 
 			"key.sig='" + Math.abs(kiInit[Transcription.KI_KEY]) + 
@@ -1532,7 +1532,7 @@ public class MEIExport {
 			endOffset = endOffset.add(currMeter.mul(barsInCurrMeter));
 		}
 		Integer[] key = 
-			(ki.size() == 0) ? new Integer[]{0, 0, 0, 0, 0, 0, 1} : ki.get(0); // zondag
+			(ki.size() == 0) ? new Integer[]{-2, 0, 0, 0, 0, 0, 1} : ki.get(0); // zondag
 //		Integer[] key = ki.get(0);
 		int numAlt = key[Transcription.KI_KEY];
 		// Set initial bar and meter
