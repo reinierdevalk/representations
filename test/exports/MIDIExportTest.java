@@ -15,7 +15,7 @@ public class MIDIExportTest extends TestCase {
 		super.setUp();
 //		Runner.setPathsToCodeAndData(UI.getRootDir(), false);
 //		midiTestGetMeterInfo = new File(Runner.midiPathTest + "test_get_meter_key_info.mid");
-		midiTestGetMeterInfo = new File(MEIExport.rootDir + "data/data/MIDI/test/" + "test_get_meter_key_info.mid");
+		midiTestGetMeterInfo = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_get_meter_key_info.mid");
 	}
 
 	protected void tearDown() throws Exception {

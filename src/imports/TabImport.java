@@ -165,7 +165,7 @@ public class TabImport {
 		String path = "C:/Users/Reinier/Desktop/tours/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/tab/";
 		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/";
-		path = "F:/research/data/data/josquintab/tab/";
+		path = "F:/research/data/annotated/josquintab/tab/";
 		path = "F:/research/projects/byrd/";
 		
 		// From ASCII

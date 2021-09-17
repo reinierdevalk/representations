@@ -17,8 +17,8 @@ public class DataConverterTest extends TestCase {
 
 //	private File midiTestpiece1 = new File(Runner.midiPathTest + "testpiece.mid");
 //	private File encodingTestpiece1 = new File(Runner.encodingsPathTest + "testpiece.tbp");
-	private File midiTestpiece1 = new File(MEIExport.rootDir + "data/data/MIDI/test/" + "testpiece.mid");
-	private File encodingTestpiece1 = new File(MEIExport.rootDir + "data/data/encodings/test/" + "testpiece.tbp");
+	private File midiTestpiece1 = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "testpiece.mid");
+	private File encodingTestpiece1 = new File(MEIExport.rootDir + "data/annotated/encodings/test/" + "testpiece.tbp");
 
 
 	public DataConverterTest(String name) {

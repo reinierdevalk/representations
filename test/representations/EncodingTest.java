@@ -21,7 +21,7 @@ import tbp.TabSymbolSet;
 
 public class EncodingTest {
 
-	private File encodingTestpiece1 = new File("F:/research/data/data/encodings/test/testpiece.tbp");
+	private File encodingTestpiece1 = new File("F:/research/data/annotated/encodings/test/testpiece.tbp");
 
 	@Before
 	public void setUp() throws Exception {
@@ -343,7 +343,7 @@ public class EncodingTest {
 	@Test
 	public void testGetTuningBassCourses() {
 		Encoding encoding1 = new Encoding(encodingTestpiece1);
-		Encoding encoding2 = new Encoding(new File("F:/research/data/data/encodings/tab-int/5vv/adriansen-1584_6-d_vn_si.tbp"));
+		Encoding encoding2 = new Encoding(new File("F:/research/data/annotated/encodings/tab-int/5vv/adriansen-1584_6-d_vn_si.tbp"));
 
 		List<TuningBassCourses> expected = 
 			Arrays.asList(new TuningBassCourses[]{null, TuningBassCourses.SECOND});
@@ -832,7 +832,7 @@ public class EncodingTest {
 	public void testContainsTriplets() {
 		Encoding encoding1 = new Encoding(encodingTestpiece1);
 		Encoding encoding2 = new Encoding(new File(
-		"F:/research/data/data/josquintab/tab/5254_03_benedicta_es_coelorum_desprez-1.tbp"));
+		"F:/research/data/annotated/josquintab/tab/5254_03_benedicta_es_coelorum_desprez-1.tbp"));
 	
 		List<Boolean> expected = Arrays.asList(new Boolean[]{false, true});
 		
@@ -1164,7 +1164,7 @@ public class EncodingTest {
 	@Test
 	public void testSystemBarNumber() {
 		Encoding encoding1 = new Encoding(encodingTestpiece1);
-		Encoding encoding2 = new Encoding(new File("F:/research/data/data/encodings/tab-int/3vv/newsidler-1536_7-disant_adiu.tbp"));
+		Encoding encoding2 = new Encoding(new File("F:/research/data/annotated/encodings/tab-int/3vv/newsidler-1536_7-disant_adiu.tbp"));
 
 		List<List<Integer>> expected = new ArrayList<>();
 		// encoding1

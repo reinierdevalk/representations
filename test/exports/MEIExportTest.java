@@ -25,7 +25,7 @@ public class MEIExportTest extends TestCase {
 		
 	protected void setUp() throws Exception {
 		super.setUp();
-		encodingTestpiece = new File(MEIExport.rootDir + "data/data/encodings/test/"  + "testpiece.tbp");
+		encodingTestpiece = new File(MEIExport.rootDir + "data/annotated/encodings/test/"  + "testpiece.tbp");
 	}
 
 

@@ -27,7 +27,7 @@ import utility.DataConverter;
 public class MEIExport {
 	
 	public static String rootDir = "F:/research/"; // TODO also defined in UI; should be in one place only
-	public static String MEITemplatePath = rootDir + "data/data/" + "templates/"; // TODO suffix "data/data/" is defined inside Runner.setPathsToCodeAndData() 
+	public static String MEITemplatePath = rootDir + "data/" + "templates/"; // TODO suffix data/defined inside Runner.setPathsToCodeAndData() 
 	public static String scriptPathPythonMEI = rootDir + "software/code/" + "eclipse/formats-representations/py/";
 	
 	private static List<Integer> mpcFlats = 
@@ -96,7 +96,7 @@ public class MEIExport {
 		testTabFile = "4vv/rotta-1546_15-bramo_morir";
 		
 		Tablature testTab = new Tablature(new File(
-			"F:/research/data/data/encodings/tab-int/" + testTabFile + ".tbp"), false);	
+			"F:/research/data/annotated/encodings/tab-int/" + testTabFile + ".tbp"), false);	
 		
 		exportTabMEIFile(testTab, "C:/Users/Reinier/Desktop/4vv/" + testTab.getPieceName());
 		
@@ -381,6 +381,10 @@ public class MEIExport {
 
 	private static Integer[][] getStaffAndLayer(int numVoices, int voice) {
 		Integer[][] voiceStaffLayer = new Integer[numVoices][3];
+		if (numVoices == 2) {
+			voiceStaffLayer[0] = new Integer[]{0, 1, 1}; 
+			voiceStaffLayer[1] = new Integer[]{1, 2, 1};
+		}
 		if (numVoices == 3) {
 			voiceStaffLayer[0] = new Integer[]{0, 1, 1}; 
 			voiceStaffLayer[1] = new Integer[]{1, 2, 1}; // 2}; 
@@ -844,7 +848,7 @@ public class MEIExport {
 	public static void exportMEIFile(Transcription trans, Integer[][] btp, List<Integer[]> mi,
 		List<Integer[]> ki, List<Rational[]> tripletOnsetPairs, List<List<Integer>> mismatchInds, 
 		boolean grandStaff, String path) {
-		System.out.println("\r\n>>> MEIExport.exportMEIFile() called");
+//\\		System.out.println("\r\n>>> MEIExport.exportMEIFile() called");
 
 		List<Object> data = getData(trans, /*tab,*/ btp, mi, ki, tripletOnsetPairs);
 		// Composition of dataStr (and dataInt):
@@ -1577,8 +1581,8 @@ public class MEIExport {
 				onset = new Rational(btp[iTab][Tablature.ONSET_TIME], 
 					Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
 			}
-			System.out.println("i = " + i + " (indTab = " + iTab + "); bar = " + 
-				Tablature.getMetricPosition(onset, mi)[0].getNumer() + "; pitch = " + bnp[i][0]);
+//\\			System.out.println("i = " + i + " (indTab = " + iTab + "); bar = " + 
+//\\				Tablature.getMetricPosition(onset, mi)[0].getNumer() + "; pitch = " + bnp[i][0]);
 			Rational[] barMetPos = Tablature.getMetricPosition(onset, mi);
 			int bar = barMetPos[0].getNumer();
 			Rational metPos = barMetPos[1];
@@ -1700,7 +1704,7 @@ public class MEIExport {
 				Rational precedingInBar = metPos;
 				// Single-bar rest in the same bar
 				if (durRest.isLessOrEqual(precedingInBar)) {
-					System.out.println("CASE: single-bar rest");
+//\\					System.out.println("CASE: single-bar rest");
 					Rational metPosRest = null;
 					Rational onsetRest = offsetPrev; // herr man
 					// If the bar starts with a rest
@@ -1724,7 +1728,7 @@ public class MEIExport {
 				// Single-bar rest in the previous bar (onset is 0/x)
 				else if (precedingInBar.equals(Rational.ZERO) && 
 					durRest.isLessOrEqual(Transcription.getMeter(bar-1, mi))) {
-					System.out.println("CASE: single-bar rest in previous bar");
+//\\					System.out.println("CASE: single-bar rest in previous bar");
 					Rational onsetRest = offsetPrev;
 					Rational metPosRest = 
 						(currVoiceStrings.size() == 0) ? Rational.ZERO :
@@ -1740,7 +1744,7 @@ public class MEIExport {
 				}
 				// Multi-bar rest
 				else {
-					System.out.println("CASE: multi-bar rest");
+//\\					System.out.println("CASE: multi-bar rest");
 					// Check how many bars the note spans
 					List<Rational> subNoteDurs = new ArrayList<>();
 					// subNoteDursOnsets contains the onsets of the subnotes
@@ -1918,7 +1922,7 @@ public class MEIExport {
 			Rational remainingInBar = barEnd.sub(onset);
 			// Single-bar note
 			if (durRounded.isLessOrEqual(remainingInBar)) {
-				System.out.println("CASE: single-bar note");
+//\\				System.out.println("CASE: single-bar note");
 //				Rational durRoundedTripletised = durRounded;
 				List<Boolean> tripletInfo = (tripletOnsetPairs == null) ? null : 
 					isTripletOnset(tripletOnsetPairs, onset);
@@ -1930,7 +1934,7 @@ public class MEIExport {
 			}	
 			// Multi-bar note
 			else {
-				System.out.println("CASE: multi-bar note");
+//\\				System.out.println("CASE: multi-bar note");
 				// Check how many bars the note spans
 				List<Rational> subNoteDurs = new ArrayList<>();
 				List<Rational> subNoteDursOnsets = new ArrayList<>();

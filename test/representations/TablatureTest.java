@@ -28,9 +28,9 @@ public class TablatureTest extends TestCase {
 //		encodingTestpiece1 = new File(Runner.encodingsPathTest + "testpiece.tbp");
 //		encodingTestGetMeterInfo = new File(Runner.encodingsPathTest + "test_get_meter_info.tbp");
 //		midiTestpiece1 = new File(Runner.midiPathTest + "testpiece.mid");
-		encodingTestpiece = new File(MEIExport.rootDir + "data/data/encodings/test/"  + "testpiece.tbp");
-		encodingTestGetMeterInfo = new File(MEIExport.rootDir + "data/data/encodings/test/" + "test_get_meter_info.tbp");
-		midiTestpiece = new File(MEIExport.rootDir + "data/data/MIDI/test/" + "testpiece.mid");	
+		encodingTestpiece = new File(MEIExport.rootDir + "data/annotated/encodings/test/"  + "testpiece.tbp");
+		encodingTestGetMeterInfo = new File(MEIExport.rootDir + "data/annotated/encodings/test/" + "test_get_meter_info.tbp");
+		midiTestpiece = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "testpiece.mid");	
 	}
 
 	protected void tearDown() throws Exception {

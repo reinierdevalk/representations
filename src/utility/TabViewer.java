@@ -328,16 +328,16 @@ public class TabViewer extends JFrame{
 	private void openFileAction(String encPath) {
 		// TODO encodingFile is now hardcoded; make possible to select file from menu
 		if (encPath == null) {
-			String prefix = "F:/research/data/data/encodings/";
+			String prefix = "F:/research/data/annotated/encodings/";
 			encPath = prefix;
 			
 			// Test
-//			encPath += "test/testpiece.tbp";
-//			encPath += "test/test_get_meter_info.tbp";
-//			encPath =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/test/tab/3610_033_inter_natos_mulierum_morales_T-rev.tbp";
-//			encPath =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/test/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T.tbp";
-//			encPath =  "F:/research/projects/byrd/test/il_me_souffit-short.tbp";
-//			encPath =  "F:/research/projects/byrd/test/pleni.tbp";
+//			encPath += "tst/testpiece.tbp";
+//			encPath += "tst/test_get_meter_info.tbp";
+//			encPath =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/tst/tab/3610_033_inter_natos_mulierum_morales_T-rev.tbp";
+//			encPath =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/tst/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T.tbp";
+//			encPath =  "F:/research/projects/byrd/tst/il_me_souffit-short.tbp";
+//			encPath =  "F:/research/projects/byrd/tst/pleni.tbp";
 			
 			// Need to be double-checked
 //			encPath += "newsidler-1536_6-mein_einigs_a.tbp";
@@ -382,18 +382,18 @@ public class TabViewer extends JFrame{
 //			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest.tbp"; // TODO remove every second barline
 //			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp"; // TODO remove every second barline
 //			encPath += "tab-int/4vv/" + "phalese-1563_12-il_estoit.tbp";
-//			encPath += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
+			encPath += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
 
 			// 5vv
 //			encPath += "tab-int/5vv/" + "adriansen-1584_6-d_vn_si.tbp";
-			encPath += "tab-int/5vv/" + "ochsenkun-1558_5-inuiolata_integra.tbp";
+//			encPath += "tab-int/5vv/" + "ochsenkun-1558_5-inuiolata_integra.tbp";
 
 			// Byrd
 //			encPath += "byrd-int/4vv/as_caesar_wept-II.tbp";
 
 			// JosquIntab
-//			encPath = "F:/research/data/data/josquintab/tab/" + "5256_05_inviolata_integra_desprez-2.tbp";
-//			encPath = "F:/research/data/data/josquintab/tab/" + "5263_12_in_exitu_israel_de_egipto_desprez-3.tbp";
+//			encPath = "F:/research/data/annotated/josquintab/tab/" + "5256_05_inviolata_integra_desprez-2.tbp";
+//			encPath = "F:/research/data/annotated/josquintab/tab/" + "5263_12_in_exitu_israel_de_egipto_desprez-3.tbp";
 		}
 		File encFile = new File(encPath);
 		

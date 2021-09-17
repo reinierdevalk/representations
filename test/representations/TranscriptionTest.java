@@ -49,10 +49,10 @@ public class TranscriptionTest extends TestCase {
 //		midiTestGetMeterInfoNoAna = new File(Runner.midiPathTest + "test_get_meter_key_info_no_anacrusis.mid");
 		
 		String s = MEIExport.rootDir;
-		encodingTestpiece1 = new File(s + "data/data/encodings/test/" + "testpiece.tbp");
-		midiTestpiece1 = new File(s + "data/data/MIDI/test/" + "testpiece.mid");
-		midiTestGetMeterInfo = new File(s + "data/data/MIDI/test/" + "test_get_meter_key_info.mid");
-		midiTestGetMeterInfoNoAna = new File(s + "data/data/MIDI/test/" + "test_get_meter_key_info_no_anacrusis.mid");
+		encodingTestpiece1 = new File(s + "data/annotated/encodings/test/" + "testpiece.tbp");
+		midiTestpiece1 = new File(s + "data/annotated/MIDI/test/" + "testpiece.mid");
+		midiTestGetMeterInfo = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info.mid");
+		midiTestGetMeterInfoNoAna = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info_no_anacrusis.mid");
 	}
 
 
@@ -1271,7 +1271,7 @@ public class TranscriptionTest extends TestCase {
 		expected.add(bwv858n2avg);
 
 		List<List<List<Double>>> actual = new ArrayList<List<List<Double>>>();
-		String prefix = "F:/research/data/data/MIDI/bach-WTC/thesis/3vv/";
+		String prefix = "F:/research/data/annotated/MIDI/bach-WTC/thesis/3vv/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			"bach-WTC1-fuga_2-BWV_847",	
 			"bach-WTC1-fuga_2-BWV_847",	
@@ -1376,7 +1376,7 @@ public class TranscriptionTest extends TestCase {
 		expected.add(bwv858n2avg);
 
 		List<List<List<Double>>> actual = new ArrayList<List<List<Double>>>();
-		String prefix = "F:/research/data/data/MIDI/bach-WTC/thesis/3vv/";
+		String prefix = "F:/research/data/annotated/MIDI/bach-WTC/thesis/3vv/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			"bach-WTC1-fuga_2-BWV_847",	
 			"bach-WTC1-fuga_2-BWV_847",	
@@ -2020,7 +2020,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetVoiceEntriesOLDER_EXT() {
-		String prefix = "F:/research/data/data/MIDI/bach-INV/thesis/";
+		String prefix = "F:/research/data/annotated/MIDI/bach-INV/thesis/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			"3vv/bach-INV-inventio_1-BWV_787",
 			"3vv/bach-INV-inventio_2-BWV_788",
@@ -2054,8 +2054,8 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetImitativeVoiceEntries() {
-		String prefixTab = "F:/research/data/data/encodings/tab-int/";
-		String prefix = "F:/research/data/data/MIDI/tab-int/";
+		String prefixTab = "F:/research/data/annotated/encodings/tab-int/";
+		String prefix = "F:/research/data/annotated/MIDI/tab-int/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			// 3vv (using full durations)
 			"3vv/newsidler-1536_7-mess_pensees", // correct
@@ -2136,7 +2136,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetImitativeVoiceEntriesNonTab() {
-		String prefix = "F:/research/data/data/MIDI/bach-WTC/thesis/";
+		String prefix = "F:/research/data/annotated/MIDI/bach-WTC/thesis/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			// 3vv
 			"3vv/bach-WTC1-fuga_2-BWV_847", // correct
@@ -2280,8 +2280,8 @@ public class TranscriptionTest extends TestCase {
 	//						no motif is found at density 2, 3 (non-literal motif repetition)
 	// WTC 4vv --> n=3: all imitative (all correct)
 	public void testGetNonImitativeVoiceEntries() {
-		String prefixTab = "F:/research/data/data/encodings/tab-int/";
-		String prefix = "F:/research/data/data/MIDI/tab-int/";
+		String prefixTab = "F:/research/data/annotated/encodings/tab-int/";
+		String prefix = "F:/research/data/annotated/MIDI/tab-int/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			// 3vv
 			"3vv/newsidler-1536_7-disant_adiu", // correct (full & minimum) TODO fix SNU
@@ -2453,7 +2453,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetNonImitativeVoiceEntriesNonTab() {
-		String prefix = "F:/research/data/data/MIDI/bach-inv/thesis/";
+		String prefix = "F:/research/data/annotated/MIDI/bach-inv/thesis/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			// inv 2vv
 			"2vv/bach-INV-inventio_5-BWV_776", // correct
@@ -2644,7 +2644,7 @@ public class TranscriptionTest extends TestCase {
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3});
 		for (int i = 0; i < fileNames.size(); i++) {
 			if (fileNames.get(i).contains("WTC")) {
-				prefix = "F:/research/data/data/MIDI/bach-WTC/thesis/";
+				prefix = "F:/research/data/annotated/MIDI/bach-WTC/thesis/";
 			}
 			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + ".mid"), null);
 			actual.add(t.getNonImitativeVoiceEntries(null, null, t.getBasicNoteProperties(), 
@@ -4026,9 +4026,9 @@ public class TranscriptionTest extends TestCase {
 //		File midi2 = 
 //			new File(Runner.midiPath + DatasetID.INT_4vv.getName() + "/4vv/phalese-1563_12-las_on.mid");
 		File encoding2 = 
-			new File(MEIExport.rootDir + "data/data/encodings/" + "tab-int" + "/4vv/phalese-1563_12-las_on.tbp");
+			new File(MEIExport.rootDir + "data/annotated/encodings/" + "tab-int" + "/4vv/phalese-1563_12-las_on.tbp");
 		File midi2 = 
-			new File(MEIExport.rootDir + "data/data/MIDI/" + "tab-int" + "/4vv/phalese-1563_12-las_on.mid");
+			new File(MEIExport.rootDir + "data/annotated/MIDI/" + "tab-int" + "/4vv/phalese-1563_12-las_on.mid");
 		
 		Tablature tablature2 = new Tablature(encoding2, true);
 		Transcription transcription2 = new Transcription(midi2, encoding2);
@@ -4895,15 +4895,15 @@ public class TranscriptionTest extends TestCase {
 //			new File(Runner.midiPath + set + "/3vv/judenkuenig-1523_2-elslein_liebes.mid"), 
 //			new File(Runner.encodingsPath + set + "/3vv/judenkuenig-1523_2-elslein_liebes.tbp"));
 		Transcription transcription0 = new Transcription(
-			new File(MEIExport.rootDir + "data/data/MIDI/" + set + "/3vv/judenkuenig-1523_2-elslein_liebes.mid"), 
-			new File(MEIExport.rootDir + "data/data/encodings/" + set + "/3vv/judenkuenig-1523_2-elslein_liebes.tbp"));
+			new File(MEIExport.rootDir + "data/annotated/MIDI/" + set + "/3vv/judenkuenig-1523_2-elslein_liebes.mid"), 
+			new File(MEIExport.rootDir + "data/annotated/encodings/" + set + "/3vv/judenkuenig-1523_2-elslein_liebes.tbp"));
 		
 //		Transcription transcription1 = new Transcription(
 //			new File(Runner.midiPath + set + "/4vv/ochsenkun-1558_5-herr_gott.mid"), 
 //			new File(Runner.encodingsPath + set + "/4vv/ochsenkun-1558_5-herr_gott.tbp"));
 		Transcription transcription1 = new Transcription(
-			new File(MEIExport.rootDir + "data/data/MIDI/" + set + "/4vv/ochsenkun-1558_5-herr_gott.mid"), 
-			new File(MEIExport.rootDir + "data/data/encodings/" + set + "/4vv/ochsenkun-1558_5-herr_gott.tbp"));
+			new File(MEIExport.rootDir + "data/annotated/MIDI/" + set + "/4vv/ochsenkun-1558_5-herr_gott.mid"), 
+			new File(MEIExport.rootDir + "data/annotated/encodings/" + set + "/4vv/ochsenkun-1558_5-herr_gott.tbp"));
 		Transcription transcription2 = 
 			new Transcription(midiTestpiece1, encodingTestpiece1);
 		transcriptions.add(transcription0); transcriptions.add(transcription1); transcriptions.add(transcription2); 
@@ -4931,9 +4931,9 @@ public class TranscriptionTest extends TestCase {
 //		Transcription transcription1 = new Transcription(
 //			new File(Runner.midiPath + set + "/4vv/ochsenkun-1558_5-herr_gott.mid"), null); 
 		Transcription transcription0 = new Transcription(
-			new File(MEIExport.rootDir + "data/data/MIDI/" + set + "/3vv/judenkuenig-1523_2-elslein_liebes.mid"), null);
+			new File(MEIExport.rootDir + "data/annotated/MIDI/" + set + "/3vv/judenkuenig-1523_2-elslein_liebes.mid"), null);
 		Transcription transcription1 = new Transcription(
-			new File(MEIExport.rootDir + "data/data/MIDI/" + set + "/4vv/ochsenkun-1558_5-herr_gott.mid"), null); 
+			new File(MEIExport.rootDir + "data/annotated/MIDI/" + set + "/4vv/ochsenkun-1558_5-herr_gott.mid"), null); 
 		Transcription transcription2 = new Transcription(midiTestpiece1, null);
 		transcriptions.add(transcription0); transcriptions.add(transcription1); transcriptions.add(transcription2); 
 
@@ -4964,7 +4964,7 @@ public class TranscriptionTest extends TestCase {
 		// b. Onset/offset of last note in last bar in upper three voices and with bars in between 
 		// in lowest voice
 		Transcription transcription2 = new Transcription();
-		File file2 = new File(MEIExport.rootDir + "data/data/MIDI/" + "bach-WTC" + "/thesis/4vv/" +
+		File file2 = new File(MEIExport.rootDir + "data/annotated/MIDI/" + "bach-WTC" + "/thesis/4vv/" +
 			"bach-WTC1-fuga_1-BWV_846.mid");
 		transcription2.setPiece(MIDIImport.importMidiFile(file2));
 		transcription2.setMeterInfo();
@@ -4972,7 +4972,7 @@ public class TranscriptionTest extends TestCase {
 		// c. Onset/offset of last note either in penultimate or in last bar, differing per voice;
 		// all voices ending with rests
 		Transcription transcription3 = new Transcription();
-		File file3 = new File(MEIExport.rootDir + "data/data/MIDI/" + "bach-WTC" + "/thesis/4vv/" + 
+		File file3 = new File(MEIExport.rootDir + "data/annotated/MIDI/" + "bach-WTC" + "/thesis/4vv/" + 
 			"bach-WTC2-fuga_16-BWV_885.mid");
 		transcription3.setPiece(MIDIImport.importMidiFile(file3));
 		transcription3.setMeterInfo();
@@ -4980,35 +4980,35 @@ public class TranscriptionTest extends TestCase {
 		// With anacrusis
 		// d. Onset/offset of last note in last bar in all voices
 		Transcription transcription4 = new Transcription();
-		File file4 = new File(MEIExport.rootDir + "data/data/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
+		File file4 = new File(MEIExport.rootDir + "data/annotated/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
 			"bach-WTC1-fuga_11-BWV_856.mid");
 		transcription4.setPiece(MIDIImport.importMidiFile(file4));
 		transcription4.setMeterInfo();
 		trans.add(transcription4);
 		// e. Onset/offset of last note in last bar in all voices
 		Transcription transcription5 = new Transcription();
-		File file5 = new File(MEIExport.rootDir + "data/data/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
+		File file5 = new File(MEIExport.rootDir + "data/annotated/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
 			"bach-WTC2-fuga_10-BWV_879.mid");
 		transcription5.setPiece(MIDIImport.importMidiFile(file5));
 		transcription5.setMeterInfo();
 		trans.add(transcription5);
 		// f. Onset/offset of last note in last bar in all voices
 		Transcription transcription6 = new Transcription();
-		File file6 = new File(MEIExport.rootDir + "data/data/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
+		File file6 = new File(MEIExport.rootDir + "data/annotated/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
 			"bach-WTC2-fuga_12-BWV_881.mid");
 		transcription6.setPiece(MIDIImport.importMidiFile(file6));
 		transcription6.setMeterInfo();
 		trans.add(transcription6);
 		// g. Onset/offset of last note in last bar in all voices
 		Transcription transcription7 = new Transcription();
-		File file7 = new File(MEIExport.rootDir + "data/data/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
+		File file7 = new File(MEIExport.rootDir + "data/annotated/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
 			"bach-WTC2-fuga_13-BWV_882.mid");
 		transcription7.setPiece(MIDIImport.importMidiFile(file7));
 		transcription7.setMeterInfo();
 		trans.add(transcription7);
 		// h. Onset/offset of last note in penultimate/last bar in all voices
 		Transcription transcription8 = new Transcription();
-		File file8 = new File(MEIExport.rootDir + "data/data/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
+		File file8 = new File(MEIExport.rootDir + "data/annotated/MIDI/" + "bach-WTC" + "/thesis/3vv/" + 
 			"bach-WTC2-fuga_24-BWV_893.mid");
 		transcription8.setPiece(MIDIImport.importMidiFile(file8));
 		transcription8.setMeterInfo();
@@ -5510,8 +5510,8 @@ public class TranscriptionTest extends TestCase {
 //			new Transcription(new File(Runner.midiPathTest + "test_add_note.mid"),	
 //			new File(Runner.encodingsPathTest + "test_add_note.tbp"));
 		Transcription transcription = 
-			new Transcription(new File(MEIExport.rootDir + "data/data/MIDI/test/" + "test_add_note.mid"),	
-			new File(MEIExport.rootDir + "data/data/encodings/test/" + "test_add_note.tbp"));
+			new Transcription(new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_add_note.mid"),	
+			new File(MEIExport.rootDir + "data/annotated/encodings/test/" + "test_add_note.tbp"));
 
 		// A Note is added to voice 1 in event 1. Assert that the corresponding NotationChord contains only one
 		// Note (d') before adding 
@@ -5549,7 +5549,7 @@ public class TranscriptionTest extends TestCase {
 //		Transcription transcription = 
 //			new Transcription(new File(Runner.midiPathTest + "test_add_note.mid"), null); 
 		Transcription transcription = 
-			new Transcription(new File(MEIExport.rootDir + "data/data/MIDI/test/" + "test_add_note.mid"), null); 
+			new Transcription(new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_add_note.mid"), null); 
 
 		// A Note is added to voice 1 in event 1. Assert that the corresponding NotationChord contains only one
 		// Note (d') before adding 
@@ -5587,8 +5587,8 @@ public class TranscriptionTest extends TestCase {
 //			new Transcription(new File(Runner.midiPathTest + "test_remove_note.mid"), 
 //			new File(Runner.encodingsPathTest + "test_remove_note.tbp"));
 		Transcription transcription = 
-			new Transcription(new File(MEIExport.rootDir + "data/data/MIDI/test/" + "test_remove_note.mid"), 
-			new File(MEIExport.rootDir + "data/data/encodings/test/" + "test_remove_note.tbp"));
+			new Transcription(new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_remove_note.mid"), 
+			new File(MEIExport.rootDir + "data/annotated/encodings/test/" + "test_remove_note.tbp"));
 
 		// Two Notes are removed from voice 2 in event 1. Assert that the corresponding NotationChord contains three
 		// Notes (e, b, g) before removing 
@@ -5621,7 +5621,7 @@ public class TranscriptionTest extends TestCase {
 //		Transcription transcription = 
 //			new Transcription(new File(Runner.midiPathTest + "test_remove_note.mid"),	null);
 		Transcription transcription = 
-			new Transcription(new File(MEIExport.rootDir + "data/data/MIDI/test/" + "test_remove_note.mid"),	null);
+			new Transcription(new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_remove_note.mid"),	null);
 
 		// Two Notes are removed from voice 2 in event 1. Assert that the corresponding NotationChord contains three
 		// Notes (e, b, g) before removing 
