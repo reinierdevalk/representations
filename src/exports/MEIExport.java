@@ -154,7 +154,7 @@ public class MEIExport {
 
 //		String scoreType = grandStaff ? "grand_staff" : "score";
 //		ToolBox.storeTextFile(mei, 
-//			new File(path + t.getNumberOfVoices() + "vv/" + t.getPieceName() + "-" + 
+//			new File(path + t.getNumberOfVoices() + Runner.voices + "/" + t.getPieceName() + "-" + 
 //			scoreType + ".xml"));
 //		System.out.println(Arrays.asList(data.get(0).get(0)));
 	}
