@@ -332,8 +332,8 @@ public class TabViewer extends JFrame{
 			encPath = prefix;
 			
 			// Test
-//			encPath += "tst/testpiece.tbp";
-//			encPath += "tst/test_get_meter_info.tbp";
+			encPath += "test/testpiece.tbp";
+//			encPath += "test/test_get_meter_info.tbp";
 //			encPath =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/tst/tab/3610_033_inter_natos_mulierum_morales_T-rev.tbp";
 //			encPath =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/tst/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T.tbp";
 //			encPath =  "F:/research/projects/byrd/tst/il_me_souffit-short.tbp";
@@ -382,14 +382,14 @@ public class TabViewer extends JFrame{
 //			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest.tbp"; // TODO remove every second barline
 //			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp"; // TODO remove every second barline
 //			encPath += "tab-int/4vv/" + "phalese-1563_12-il_estoit.tbp";
-			encPath += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
+//			encPath += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
 
 			// 5vv
 //			encPath += "tab-int/5vv/" + "adriansen-1584_6-d_vn_si.tbp";
 //			encPath += "tab-int/5vv/" + "ochsenkun-1558_5-inuiolata_integra.tbp";
 
 			// Byrd
-//			encPath += "byrd-int/4vv/as_caesar_wept-II.tbp";
+//			encPath += "byrd-int/4vv/ah_golden_hairs-NEW.tbp";
 
 			// JosquIntab
 //			encPath = "F:/research/data/annotated/josquintab/tab/" + "5256_05_inviolata_integra_desprez-2.tbp";

@@ -592,7 +592,7 @@ public class Encoding implements Serializable {
 		int currentDuration = 0;
 		List<List<String>> loss = getListsOfSymbols();
 		TabSymbolSet tss = getTabSymbolSet();
-		List<String> listOfAllEvents = loss.get(Encoding.ALL_EVENTS_IND);
+		List<String> listOfAllEvents = loss.get(ALL_EVENTS_IND);
 //		boolean tripletActive = false;
 //		List<Integer> triplet = new ArrayList<>();
 		for (int i = 0; i < listOfAllEvents.size(); i++) {
@@ -704,7 +704,7 @@ public class Encoding implements Serializable {
 			lowestNoteIndex += sizeCurrentEvent;
 		}
 		// Determine for each TS at index i its horizontal and vertical position
-		List<String> listOfTabSymbols = loss.get(Encoding.TAB_SYMBOLS_IND);
+		List<String> listOfTabSymbols = loss.get(TAB_SYMBOLS_IND);
 		for (int i = 0; i < listOfTabSymbols.size(); i++) {
 			// 7-8. horizontalPositionOfTabSymbols and verticalPositionOfTabSymbols
 			// For each event at index j
@@ -1898,7 +1898,7 @@ public class Encoding implements Serializable {
 	String[] splitHeaderAndEncoding() {
 		// Separate header and encoding
 		String raw = getRawEncoding();
-		String[] metadataTags = Encoding.getMetadataTags();
+		String[] metadataTags = getMetadataTags();
 		int endHeader = raw.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, 
 			raw.indexOf(metadataTags[metadataTags.length-1]));		
 		String header = raw.substring(0, endHeader+1).trim();
