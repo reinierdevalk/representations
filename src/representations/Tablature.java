@@ -187,27 +187,24 @@ public class Tablature implements Serializable {
 
 
 	/**
-	 * Given the list of original (unreduced) meters and the reductions, calculates the 
-	 * meterInfo.
+	 * Given a list of diminutions, creates the meterInfo.
 	 * 
 	 * @param diminutions
-	 * @return A <code>List<String[]></code> whose elements represent the meters in 
-	 * the piece. Each element of this list contains:<br>
-	 * <ul>
-	 * <li> as element 0: the numerator of the meter (adapted according to the diminution)</li>
-	 * <li> as element 1: the denominator of the meter (adapted according to the diminution)</li>
-	 * <li> as element 2: the first bar in the meter </li>
-	 * <li> as element 3: the last bar in the meter </li>
-	 * <li> as element 4: the numerator of the metric time of that first bar (adapted according to the diminution)</li>
-	 * <li> as element 5: the denominator of the metric time of that first bar (adapted according to the diminution)</li>
-	 * <li> as element 6: the diminution for the meter </li>
-	 * </ul>
+	 * @return A list whose elements represent the meters in the piece. Each element contains<br>
+	 *         <ul>
+	 *         <li> as element 0: the numerator of the meter (adapted according to the diminution)</li>
+	 *         <li> as element 1: the denominator of the meter (adapted according to the diminution)</li>
+	 *         <li> as element 2: the first bar in the meter </li>
+	 *         <li> as element 3: the last bar in the meter </li>
+	 *         <li> as element 4: the numerator of the metric time of that first bar (adapted according to the diminution)</li>
+	 *         <li> as element 5: the denominator of the metric time of that first bar (adapted according to the diminution)</li>
+	 *         <li> as element 6: the diminution for the meter </li>
+	 *         </ul>
 	 * 
-	 * An anacrusis bar will be denoted with bar numbers 0-0.
+	 *         An anacrusis bar will be denoted with bar numbers 0-0.
 	 */
 	// TESTED
-	List<Integer[]> createMeterInfo(/*List<Integer[]> originalMeterInfo,*/
-		List<Integer> diminutions) {
+	List<Integer[]> createMeterInfo(List<Integer> diminutions) {
 		List<Integer[]> originalMeterInfo = getOriginalMeterInfo();
 		List<Integer[]> mi = new ArrayList<>();
 
@@ -281,16 +278,20 @@ public class Tablature implements Serializable {
 
 
 	/**
-	 * Returns a list whose elements represent the meters in the piece. Each element contains:<br>
-	 * <ul>
-	 * <li> as element 0: the numerator of the meter (adapted according to the diminution)</li>
-	 * <li> as element 1: the denominator of the meter (adapted according to the diminution)</li>
-	 * <li> as element 2: the first bar in the meter </li>
-	 * <li> as element 3: the last bar in the meter </li>
-	 * <li> as element 4: the diminution for the meter </li>
-	 * </ul>
-	 * An anacrusis bar will be denoted with bar numbers 0-0.
+	 * Gets the meterInfo.
 	 * 
+	 * @return A list whose elements represent the meters in the piece. Each element contains<br>
+	 *         <ul>
+	 *         <li> as element 0: the numerator of the meter (adapted according to the diminution)</li>
+	 *         <li> as element 1: the denominator of the meter (adapted according to the diminution)</li>
+	 *         <li> as element 2: the first bar in the meter </li>
+	 *         <li> as element 3: the last bar in the meter </li>
+	 *         <li> as element 4: the numerator of the metric time of that first bar (adapted according to the diminution)</li>
+	 *         <li> as element 5: the denominator of the metric time of that first bar (adapted according to the diminution)</li>
+	 *         <li> as element 6: the diminution for the meter </li>
+	 *         </ul>
+	 *         
+	 *         An anacrusis bar will be denoted with bar numbers 0-0.
 	 */
 	public List<Integer[]> getMeterInfo() {
 		return meterInfo;

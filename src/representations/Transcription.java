@@ -1787,18 +1787,20 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Creates the meterInfo from the Transcription's Piece.
-	 *  
-	 * @return A list, each element of which represents a meter in the piece and contains:
-	 *   <ul>
-	 *   <li> as element 0: the numerator of the meter </li>
-	 *   <li> as element 1: the denominator of the meter </li>
-	 *   <li> as element 2: the first bar in the meter </li>
-	 *   <li> as element 3: the last bar in the meter </li>
-	 *   <li> as element 4: the numerator of the metric time of that first bar </li>
-	 *   <li> as element 5: the denominator of the metric time of that first bar </li>
-	 *   </ul>
-	 *   An anacrusis will be denoted with bar numbers 0-0.
+	 * Given a Piece, creates the meterInfo.
+	 * 
+	 * @param piece  
+	 * @return A list whose elements represent the meters in the piece. Each element contains<br>
+	 *         <ul>
+	 *   	   <li> as element 0: the numerator of the meter </li>
+	 *         <li> as element 1: the denominator of the meter </li>
+	 *         <li> as element 2: the first bar in the meter </li>
+	 *         <li> as element 3: the last bar in the meter </li>
+	 *         <li> as element 4: the numerator of the metric time of that first bar </li>
+	 *         <li> as element 5: the denominator of the metric time of that first bar </li>
+	 *         </ul>
+	 *   
+	 *         An anacrusis bar will be denoted with bar numbers 0-0.
 	 */
 	// TESTED
 	public static List<Integer[]> createMeterInfo(Piece piece) {
@@ -1870,9 +1872,11 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Creates the keyInfo from the Transcription's Piece.
-	 *  
-	 * @return A list, each element of which represents a key in the piece and contains:
+	 * Given a Piece and the meterInfo, creates the keyInfo.
+	 * 
+	 * @param piece
+	 * @param meterInfo 
+	 * @return A list whose elements represent the keys in the piece. Each element contains<br>
 	 *   <ul>
 	 *   <li> as element 0: the key, as a number of sharps (positive) or flats (negative) </li>
 	 *   <li> as element 1: the mode, where major = 0 and minor = 1 </li>
@@ -1883,10 +1887,10 @@ public class Transcription implements Serializable {
 	 *   </ul>
 	 */
 	// TESTED
-	public static List<Integer[]> createKeyInfo(Piece p, List<Integer[]> meterInfo) {
+	public static List<Integer[]> createKeyInfo(Piece piece, List<Integer[]> meterInfo) {
 		List<Integer[]> keyInfo = new ArrayList<Integer[]>();
 		
-		SortedContainer<Marker> keySigs = p.getHarmonyTrack();
+		SortedContainer<Marker> keySigs = piece.getHarmonyTrack();
 		int numKeySigs = keySigs.size();
 		for (int i = 0; i < numKeySigs; i++) {
 			KeyMarker km = (KeyMarker) keySigs.get(i);
@@ -2313,11 +2317,38 @@ public class Transcription implements Serializable {
 	}
 
 
+	/**
+	 * Gets the meterInfo.
+	 * 
+	 * @return A list whose elements represent the meters in the piece. Each element contains<br>
+	 *         <ul>
+	 *         <li> as element 0: the numerator of the meter </li>
+	 *         <li> as element 1: the denominator of the meter </li>
+	 *         <li> as element 2: the first bar in the meter </li>
+	 *         <li> as element 3: the last bar in the meter </li>
+	 *         <li> as element 4: the numerator of the metric time of that first bar </li>
+	 *         <li> as element 5: the denominator of the metric time of that first bar </li>
+	 *         </ul>
+	 *     
+	 *         An anacrusis bar will be denoted with bar numbers 0-0.
+	 */
 	public List<Integer[]> getMeterInfo() {
 		return meterInfo;
 	}
 	
-	
+	/**
+	 * Gets the keyInfo.
+	 * 
+	 * @return A list whose elements represent the keys in the piece. Each element contains<br>
+	 *   <ul>
+	 *   <li> as element 0: the key, as a number of sharps (positive) or flats (negative) </li>
+	 *   <li> as element 1: the mode, where major = 0 and minor = 1 </li>
+	 *   <li> as element 2: the first bar in the key </li>
+	 *   <li> as element 3: the last bar in the key </li>
+	 *   <li> as element 4: the numerator of the metric time of that first bar </li>
+	 *   <li> as element 5: the denominator of the metric time of that first bar </li>
+	 *   </ul>
+	 */
 	public List<Integer[]> getKeyInfo() {
 		return keyInfo;
 	}

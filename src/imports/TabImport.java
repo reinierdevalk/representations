@@ -28,6 +28,7 @@ public class TabImport {
 	private static final String TUNING_VOCAB = "ABCDEFG";
 	private static final Map<String, String> MENSURATION_SIGNS;
 	static { MENSURATION_SIGNS = new LinkedHashMap<String, String>();
+		MENSURATION_SIGNS.put("2/4", MensurationSign.two.getEncoding());
 		MENSURATION_SIGNS.put("3/4", MensurationSign.three.getEncoding());
 		MENSURATION_SIGNS.put("3/4", MensurationSign.O.getEncoding());
 		MENSURATION_SIGNS.put("2/2", MensurationSign.crossedC.getEncoding());
@@ -69,7 +70,7 @@ public class TabImport {
 //			"blame_i_confess-II",
 ////			"delight_is_dead-II",
 //			"in_angels_weed-II",
-			"in_tower_most_high",
+//			"in_tower_most_high",
 //			"o_lord_bow_down-II",
 //			"o_that_we_woeful_wretches-NEW",
 //			"quis_me_statim-II",
@@ -80,6 +81,8 @@ public class TabImport {
 //			"while_phoebus-II"
 
 //			"1132_13_o_sio_potessi_donna_berchem_solo"	
+				
+			"capirola-1520-et_in_terra_pax"	
 				
 //			"3610_033_inter_natos_mulierum_morales_T-rev"
 //			"3618_041_benedictus_from_missa_de_l_homme_arme_morales_T"
@@ -167,6 +170,7 @@ public class TabImport {
 		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/";
 		path = "F:/research/data/annotated/josquintab/tab/";
 		path = "F:/research/projects/byrd/";
+		path = "C:/Users/Reinier/Desktop/test-capirola/";
 		
 		// From ASCII
 		for (String s : pieces) {
@@ -825,7 +829,6 @@ public class TabImport {
 				meterInfoString += "; ";
 			}
 		}
-		
 		return meterInfoString;
 	}
 
