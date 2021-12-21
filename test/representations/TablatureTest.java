@@ -3,6 +3,7 @@ package representations;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import de.uos.fmt.musitech.data.score.NotationChord;
@@ -12,7 +13,10 @@ import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import junit.framework.TestCase;
 import representations.Encoding.Tuning;
+import tbp.ConstantMusicalSymbol;
+import tbp.MensurationSign;
 import tbp.RhythmSymbol;
+import tbp.SymbolDictionary;
 import tbp.TabSymbol;
 import tbp.TabSymbolSet;
 
@@ -1643,6 +1647,27 @@ public class TablatureTest extends TestCase {
 					assertEquals(expected.get(i)[j], actual.get(i)[j]);
 				}
 			}
+		}
+	}
+
+
+	public void testMapTabBarsToMetricBars() {
+		Tablature tablature = new Tablature(encodingTestpiece, true);
+		
+		List<Integer[]> expected = new ArrayList<>();
+		expected.add(new Integer[]{1, 1});
+		expected.add(new Integer[]{2, 2});
+		expected.add(new Integer[]{3, 3});
+		expected.add(new Integer[]{4, 3});
+		
+		List<Integer[]> actual = tablature.mapTabBarsToMetricBars();
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+	  		assertEquals(expected.get(i).length, actual.get(i).length);
+	  		for (int j = 0; j < expected.get(i).length; j++) {
+	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
+	  		}
 		}
 	}
 

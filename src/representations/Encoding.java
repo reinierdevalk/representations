@@ -1599,10 +1599,12 @@ public class Encoding implements Serializable {
 	/**
 	 * Gets the output of getEventsBarlinesFootnotes(), organised per bar.
 	 * 
+	 * @param removeDecoratingOpeningBarlines Removes any decorating opening barlines on
+	 *        any of the systems.
 	 * @return
 	 */
 	// TESTED
-	public List<List<String[]>> getEventsBarlinesFootnotesPerBar() {		
+	public List<List<String[]>> getEventsBarlinesFootnotesPerBar(boolean removeDecoratingOpeningBarlines) {		
 		List<String[]> ebfFlat = new ArrayList<>(); 
 		for (List<String[]> l : getEventsBarlinesFootnotes()) {
 			ebfFlat.addAll(l);
@@ -1613,8 +1615,20 @@ public class Encoding implements Serializable {
 			currBar.add(s);
 			String event = s[EVENT_IND];
 			String firstInEvent = event.substring(0, event.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
-			if (ConstantMusicalSymbol.isBarline(firstInEvent)) {
-				ebfPerBar.add(currBar);
+			if (ConstantMusicalSymbol.isBarline(firstInEvent)) {				
+				// If the event is the only one in currBar: event is decorative opening 
+				// barline; add only if argument is false
+				if (currBar.size() > 1 || (currBar.size() == 1 && !removeDecoratingOpeningBarlines)) {
+					ebfPerBar.add(currBar);
+				}
+//				if (currBar.size() == 1) {
+//					if (!removeDecoratingOpeningBarlines) {
+//						ebfPerBar.add(currBar);
+//					}
+//				}
+//				else {
+//					ebfPerBar.add(currBar);
+//				}
 				currBar = new ArrayList<>();
 			}
 		}

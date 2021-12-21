@@ -113,12 +113,12 @@ public class EncodingTest {
 		system1.add(new String[]{"sb.", "1", null, null});
 		system1.add(new String[]{"mi.", "1", null, null});
 		system1.add(new String[]{"mi.a5.c4.b2.a1.", "1", null, null});
-		system1.add(new String[]{"|.", "1", "@Footnote 1", "footnote #1"});
+		system1.add(new String[]{"|.", "1", "@Footnote 1", "#1"});
 		system1.add(new String[]{"sm*.a6.c4.i2.a1.", "2", null, null});
 		system1.add(new String[]{"fu.d6.", "2", null, null});
 		system1.add(new String[]{"sm.c6.a5.e4.b2.", "2", null, null});
 		system1.add(new String[]{"a6.", "2", null, null});
-		system1.add(new String[]{"mi.a6.h5.c4.b3.f2.", "2", "@'mi.a6.' in source", "footnote #2"});
+		system1.add(new String[]{"mi.a6.h5.c4.b3.f2.", "2", "@'mi.a6.' in source", "#2"});
 		system1.add(new String[]{"sm.a6.b3.a2.a1.", "2", null, null});
 		system1.add(new String[]{"a3.e2.", "2", null, null});
 		system1.add(new String[]{"|.", "2", null, null});
@@ -849,16 +849,36 @@ public class EncodingTest {
 
 	@Test
 	public void testGetEventsBarlinesFootnotesPerBar() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
+//		Encoding encoding = new Encoding(encodingTestpiece1);
+		
+		Encoding encoding = new Encoding();
+		String rawEncoding = "";
+		try {
+			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece1.getAbsolutePath())));
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		// Insert decorative opening barlines at the beginning of each system
+		rawEncoding = rawEncoding.replace("McC3.", "|.McC3.");
+		rawEncoding = rawEncoding.replace("fu.a6.c4.a2.a1.", "||.fu.a6.c4.a2.a1.");
 
-		List<List<String[]>> expected = new ArrayList<>();
+		encoding.setRawEncoding(rawEncoding);
+		encoding.setCleanEncoding();
+		encoding.setEventsBarlinesFootnotes();
+
+		List<List<String[]>> expectedNoBarlines = new ArrayList<>();
+		List<List<String[]>> expectedBarlines = new ArrayList<>();
+		List<String[]> bar1Barline = new ArrayList<>();
+		bar1Barline.add(0, new String[]{"|.", "1", null, null});
+		expectedBarlines.add(bar1Barline);
 		List<String[]> bar1 = new ArrayList<>();
 		bar1.add(new String[]{"McC3.", "1", null, null});
 		bar1.add(new String[]{"sb.", "1", null, null});
 		bar1.add(new String[]{"mi.", "1", null, null});
 		bar1.add(new String[]{"mi.a5.c4.b2.a1.", "1", null, null});
 		bar1.add(new String[]{"|.", "1", "@Footnote 1", "#1"});
-		expected.add(bar1);
+		expectedNoBarlines.add(bar1);
+		expectedBarlines.add(bar1);
 		//
 		List<String[]> bar2 = new ArrayList<>();
 		bar2.add(new String[]{"sm*.a6.c4.i2.a1.", "2", null, null});
@@ -869,15 +889,20 @@ public class EncodingTest {
 		bar2.add(new String[]{"sm.a6.b3.a2.a1.", "2", null, null});
 		bar2.add(new String[]{"a3.e2.", "2", null, null});
 		bar2.add(new String[]{"|.", "2", null, null});
-		expected.add(bar2);
+		expectedNoBarlines.add(bar2);
+		expectedBarlines.add(bar2);
 		//
+		List<String[]> bar3Barline = new ArrayList<>();
+		bar3Barline.add(0, new String[]{"||.", "3", null, null});
+		expectedBarlines.add(bar3Barline);
 		List<String[]> bar3 = new ArrayList<>();
 		bar3.add(new String[]{"fu.a6.c4.a2.a1.", "3", null, null});
 		bar3.add(new String[]{"e2.", "3", null, null});
 		bar3.add(new String[]{"sf.a1.", "3", null, null});
 		bar3.add(new String[]{"e2.", "3", null, null});
 		bar3.add(new String[]{"|.", "3", null, null});
-		expected.add(bar3);
+		expectedNoBarlines.add(bar3);
+		expectedBarlines.add(bar3);
 		//
 		List<String[]> bar4 = new ArrayList<>();
 		bar4.add(new String[]{"c2.", "4", null, null});
@@ -886,17 +911,31 @@ public class EncodingTest {
 		bar4.add(new String[]{"mi.", "4", null, null});
 		bar4.add(new String[]{"mi.a6.c4.a2.a1.", "4", null, null});
 		bar4.add(new String[]{"||.", "4", null, null});
-		expected.add(bar4);
+		expectedNoBarlines.add(bar4);
+		expectedBarlines.add(bar4);
 		
-		List<List<String[]>> actual = encoding.getEventsBarlinesFootnotesPerBar();
+		List<List<String[]>> actualNoBarlines = encoding.getEventsBarlinesFootnotesPerBar(true);
+		List<List<String[]>> actualBarlines = encoding.getEventsBarlinesFootnotesPerBar(false);
 
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {			
-			assertEquals(expected.get(i).size(), actual.get(i).size());
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j).length, actual.get(i).get(j).length);
-				for (int k = 0; k < expected.get(i).get(j).length; k++) {
-					assertEquals(expected.get(i).get(j)[k], actual.get(i).get(j)[k]);
+		for (int i = 0; i < 2; i++) {
+			List<List<String[]>> actual, expected;
+			if (i == 0) {
+				actual = actualNoBarlines;
+				expected = expectedNoBarlines;
+			}
+			else {
+				actual = actualBarlines;
+				expected = expectedBarlines;
+			}
+			
+			assertEquals(expected.size(), actual.size());
+			for (int j = 0; j < expected.size(); j++) {			
+				assertEquals(expected.get(j).size(), actual.get(j).size());
+				for (int k = 0; k < expected.get(j).size(); k++) {
+					assertEquals(expected.get(j).get(k).length, actual.get(j).get(k).length);
+					for (int l = 0; l < expected.get(j).get(k).length; l++) {
+						assertEquals(expected.get(j).get(k)[l], actual.get(j).get(k)[l]);
+					}
 				}
 			}
 		}

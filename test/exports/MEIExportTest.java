@@ -207,7 +207,7 @@ public class MEIExportTest extends TestCase {
 
 		List<Integer[]> actual = new ArrayList<>();
 		List<String> events = new ArrayList<>();
-		List<List<String[]>> ebl = encoding.getEventsBarlinesFootnotesPerBar();
+		List<List<String[]>> ebl = encoding.getEventsBarlinesFootnotesPerBar(true);
 		for (List<String[]> l : ebl) {
 			for (String[] s : l) {
 				events.add(s[0].substring(0, s[0].lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR)));

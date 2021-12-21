@@ -135,8 +135,10 @@ public class MEIExport {
 //			new Tablature(new File("C:/Users/Reinier/Desktop/test-capirola/tab/" + 
 //			"capirola-1520-et_in_terra_pax" + ".tbp"), false);
 		Tablature tab = 
-			new Tablature(new File("F:/research/data/annotated/encodings/tab-int/3vv/" + 
-			"newsidler-1544_2-nun_volget" + ".tbp"), false);
+			new Tablature(new File("F:/research/data/annotated/encodings/tab-int/" + 
+			"3vv/newsidler-1544_2-nun_volget" + 
+//			"4vv/rotta-1546_15-bramo_morir" +
+			".tbp"), false);
 //		tab = null;
 		
 //		List<List<String[]>> data = getData(t);
@@ -412,9 +414,8 @@ public class MEIExport {
 
 
 	private static String removeTrailingSymbolSeparator(String s) {
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		if (s.endsWith(ss)) {
-			s = s.substring(0, s.lastIndexOf(ss)); 
+		if (s.endsWith(SymbolDictionary.SYMBOL_SEPARATOR)) {
+			s = s.substring(0, s.lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR)); 
 		}
 		return s;
 	}
@@ -533,18 +534,19 @@ public class MEIExport {
 
 		res = res.replace("staffGrp_content_placeholder", staffGrpStr);
 		
-		List<List<String[]>> ebf = tab.getEncoding().getEventsBarlinesFootnotesPerBar();
-		// Remove any decorative opening barlines (which affect the XML bar numbering)
-		List<List<String[]>> ebfPruned = new ArrayList<>();
-		for (int i = 0; i < ebf.size(); i++) {
-			List<String[]> bar = ebf.get(i);
-			// Add bar only if it is not one containing only one element that is a barline
-			String f = removeTrailingSymbolSeparator(bar.get(0)[Encoding.EVENT_IND]);
-			if (!(bar.size() == 1 && ConstantMusicalSymbol.isBarline(f))) {
-				ebfPruned.add(bar);
-			}
-		}
-		ebf = ebfPruned;
+		// Get ebf; remove any decorative opening barlines (which affect the XML bar numbering)
+		List<List<String[]>> ebf = tab.getEncoding().getEventsBarlinesFootnotesPerBar(true);
+
+//		List<List<String[]>> ebfPruned = new ArrayList<>();
+//		for (int i = 0; i < ebf.size(); i++) {
+//			List<String[]> bar = ebf.get(i);
+//			// Add bar only if it is not one containing only one element that is a barline
+//			String f = removeTrailingSymbolSeparator(bar.get(0)[Encoding.EVENT_IND]);
+//			if (!(bar.size() == 1 && ConstantMusicalSymbol.isBarline(f))) {
+//				ebfPruned.add(bar);
+//			}
+//		}
+//		ebf = ebfPruned;
 
 		// 3. Make bars
 		// Organise the information per bar
@@ -980,8 +982,9 @@ public class MEIExport {
 //				);
 //			}
 //			String[] initMeterTab = metersTab.get(0);
-			
-			staffGrpTab.add("<staffDef n='1' lines='6' notationtype='" + notationtypeStr + "' xml:id='s1'>"); 
+			int diminution = currMi[Tablature.MI_DIM];
+			staffGrpTab.add("<staffDef n='1' lines='6' notationtype='" + notationtypeStr + 
+				"' tab.dur.sym.ratio='" + diminution + "' xml:id='s1' >"); 
 			// Add tuning (assumed not to change throughout the piece)
 			if (bar == 1) {
 				staffGrpTab.add(TAB + "<tuning tuning.standard='" + tuningStr + "'/>");
@@ -1170,10 +1173,15 @@ public class MEIExport {
 //			System.out.println(Arrays.toString(in));
 //		}
 //		System.exit(0);
-		
+
 		// 2. Make a <scoreDef> for each time the meter or key changes
 		List<Integer> meterChangeBars = 
 			ToolBox.getItemsAtIndex(mi, Transcription.MI_FIRST_BAR);
+		List<Integer> diminutions = 
+			tab != null ? ToolBox.getItemsAtIndex(mi, Tablature.MI_DIM) : null;
+//		System.out.println(meterChangeBars);
+//		System.out.println(diminutions);
+//		System.exit(0);
 		List<Integer> keyChangeBars = 
 			ki != null ? ToolBox.getItemsAtIndex(ki, Transcription.KI_FIRST_BAR) : 
 			new ArrayList<>();
@@ -1183,7 +1191,7 @@ public class MEIExport {
 		allChangeBars = allChangeBars.stream().distinct().collect(Collectors.toList());
 		List<List<String>> scoreDefContentList = new ArrayList<>();
 		for (int bar : allChangeBars) {
-			System.out.println("baaaar = " + bar);
+//			System.out.println("baaaar = " + bar);
 
 			Integer[] currMi = 
 				meterChangeBars.contains(bar) ? mi.get(meterChangeBars.indexOf(bar)) : null;
@@ -1323,6 +1331,9 @@ public class MEIExport {
 		if (ONLY_TAB || TAB_AND_TRANS) {
 			measuresTab = getMeasuresTab(tab);
 			System.out.println(measuresTab.size());
+//			for (String s : measuresTab) {
+//				System.out.println(s);
+//			}
 		}
 		List<String> measuresTrans = new ArrayList<>();
 		StringBuilder sb = new StringBuilder(); // TODO remove
@@ -1331,6 +1342,7 @@ public class MEIExport {
 			// dataStr.size() = number of bars in piece
 			// dataStr.get(b).size() = voices in bar b (and in whole piece) 
 			// dataStr.get(b).get(v).size() = notes in bar b in voice v 
+			// TODO move into getMeasuresTrans()
 			List<Object> data = getData(trans, btp, mi, ki, tripletOnsetPairs);
 			List<List<List<Integer[]>>> dataInt = (List<List<List<Integer[]>>>) data.get(0);
 			List<List<List<String[]>>> dataStr = (List<List<List<String[]>>>) data.get(1);
@@ -1466,10 +1478,45 @@ public class MEIExport {
 			measuresTrans =
 				getMeasuresTrans(dataInt, dataStr, mi, tripletOnsetPairs, mismatchInds,
 				grandStaff, numVoices);
-			System.out.println(measuresTrans.get(0));
+			System.out.println(measuresTrans.size());
 			// Insert non-initial scoreDefs
-			System.out.println(allChangeBars.size());
+//			System.out.println(allChangeBars.size());
 			System.exit(0);
+
+			// Align measures 
+			if (TAB_AND_TRANS) {
+				// Get bar length (in quarter notes) per bar 
+				List<Integer> barLens = new ArrayList<>();
+				for (Integer[] in : mi) {
+					// In whole notes
+					Rational barLenWhole = 
+						new Rational(in[Transcription.MI_NUM], in[Transcription.MI_DEN]);  
+					// In quarter notes
+					int barLen = (int) barLenWhole.div(new Rational(1, 4)).toDouble();
+					// Add to list as many times as there are bars in this meter
+					int numBarsInMeter = 
+						(in[Transcription.MI_LAST_BAR] - in[Transcription.MI_FIRST_BAR]) + 1;
+					barLens.addAll(Collections.nCopies(numBarsInMeter, barLen));
+				}
+				System.out.println(barLens);
+					
+				List<String> measuresTabAligned = new ArrayList<>();
+				for (int i = 0; i < measuresTab.size(); i++) {
+					String[] currMeasure = measuresTab.get(i).split("\r\n");
+					for (String line : currMeasure) {
+						double dur = 0;
+						if (line.contains("tabGrp") && line.contains("dur")) {
+							int firstInd = line.indexOf("dur'");
+							int secondInd = line.indexOf("'", firstInd + "dur='".length()); 
+//							String dur = line.substring(, 
+//								line.indexOf)
+//							dur += line
+						}
+					}
+				}
+				System.exit(0);
+			}
+
 //			// For each bar
 //			for (int i = 0; i < dataStr.size(); i++) {
 //				if (verbose) System.out.println("bar = " + (i+1));
@@ -1620,18 +1667,62 @@ public class MEIExport {
 			);
 		}
 		
-		List<List<String[]>> ebf = tab.getEncoding().getEventsBarlinesFootnotesPerBar();
-		// Remove any decorative opening barlines (which affect the XML bar numbering)
-		List<List<String[]>> ebfPruned = new ArrayList<>();
-		for (int i = 0; i < ebf.size(); i++) {
-			List<String[]> bar = ebf.get(i);
-			// Add bar only if it is not one containing only one element that is a barline
-			String f = removeTrailingSymbolSeparator(bar.get(0)[Encoding.EVENT_IND]);
-			if (!(bar.size() == 1 && ConstantMusicalSymbol.isBarline(f))) {
-				ebfPruned.add(bar);
-			}
-		}
-		ebf = ebfPruned;
+		// Get ebf; remove any decorative opening barlines (which affect the XML bar numbering)
+		List<List<String[]>> ebf = tab.getEncoding().getEventsBarlinesFootnotesPerBar(true);
+		
+//		List<Integer> xmlDurPerBar = new ArrayList<>();
+//		Rational prevDur = null;
+//		for (List<String[]> bar : ebf) {
+//			Rational currXmlDur = Rational.ZERO;
+//			int barNum = Integer.parseInt(bar.get(0)[1]);
+//			for (String[] eventInfo : bar) {
+//				String event = eventInfo[0];
+//				System.out.println(event);
+//				Integer[] xmlDurDots = getXMLDur(event);
+//				String first = event.substring(0, event.indexOf(ss));
+//				// If the event is not a barline event or a MS event
+//				if (!ConstantMusicalSymbol.isBarline(first)
+//					&& MensurationSign.getMensurationSign(first) == null) {
+//					// If the event starts with a RS
+//					Rational xmlDur = null;
+//					if (RhythmSymbol.getRhythmSymbol(first) != null) {
+//						xmlDur = new Rational(1, xmlDurDots[0]);
+//						// Add the value for any dots
+//						for (int i = 0; i < xmlDurDots[1]; i++) {
+//							xmlDur = xmlDur.add(xmlDur.mul(new Rational(1, 2)));
+//						}
+//						prevDur = xmlDur;
+//					}
+//					// If the event does not start with a RS
+//					else {
+//						xmlDur = prevDur; 
+//					}
+//					currXmlDur = currXmlDur.add(xmlDur);
+//				}
+//			}
+//			// Apply diminution
+//			int finalXmlDur = (int) (currXmlDur.div(new Rational(1, 8)).toDouble());
+//			List<Integer> diminutions = ToolBox.getItemsAtIndex(mi, Tablature.MI_DIM);
+//			List<Rational[]> meterChangesByMetricPos = new ArrayList<>();
+//			Rational firstMetPos = Rational.ZERO;
+//			for (Integer[] in : mi) {
+//				int numBarsInMeter = 
+//					in[Transcription.MI_LAST_BAR] - in[Transcription.MI_FIRST_BAR] + 1;
+//				Rational meter = new Rational(in[Transcription.MI_NUM], in[Transcription.MI_DEN]);
+//				System.out.println(meter);
+//				System.out.println(numBarsInMeter);
+//				Rational lastMetPos = firstMetPos.add(meter.mul(numBarsInMeter));
+//				meterChangesByMetricPos.add(new Rational[]{firstMetPos, lastMetPos});
+//				firstMetPos = lastMetPos;
+//			}
+//			for (Rational[] r : meterChangesByMetricPos) {
+//				System.out.println(Arrays.toString(r));
+//			}
+//			int dim = 1;
+//			
+//			xmlDurPerBar.add(finalXmlDur);
+//		}
+//		System.out.println(xmlDurPerBar);
 
 		// 3. Make bars
 		// Organise the information per bar
@@ -1646,6 +1737,7 @@ public class MEIExport {
 
 			StringBuilder sbBar = new StringBuilder();
 			
+//			int barLenInEighths = 0;
 			// Make XML content for currBar
 			String currBarXMLAsString = "";
 			String barline = "";
@@ -1792,7 +1884,42 @@ public class MEIExport {
 					if (isCorrected) {
 						eventAsXML += INDENT + TAB.repeat(3) + "</choice>" + "\r\n";
 					}
+					System.out.println(eventAsXML);
 					currBarXMLAsString += eventAsXML;
+					
+//					// Add duration
+//					if (eventAsXML.contains("dur='")) {
+//						// Remove any <sic> part 
+//						if (eventAsXML.contains("<sic>")) {
+//							int firstInd = eventAsXML.indexOf("<sic>");
+//							int secondInd = eventAsXML.indexOf("</sic>" + "\r\n");
+//							eventAsXML = null;
+//						}
+//						int firstInd = eventAsXML.indexOf("dur='") + "dur='".length();
+//						int secondInd = eventAsXML.indexOf("'", firstInd); 
+//						// As whole note
+//						double dur = 1.0 / Integer.parseInt(eventAsXML.substring(firstInd, secondInd));
+//						double durFinal = dur;
+//						if (eventAsXML.contains("dots='")) {
+//							firstInd = eventAsXML.indexOf("dots='") + "dots='".length();
+//							secondInd = eventAsXML.indexOf("'", firstInd);
+//							int dots = Integer.parseInt(eventAsXML.substring(firstInd, secondInd));
+//							for (int k = 0; k < dots; k++) {
+//								durFinal += durFinal * 0.5;
+//							}
+//						}
+//						System.out.println("-->" + durFinal + "<--");
+//						if (eventAsXML.contains("<corr>")) {
+//	//						get corr part and then all durs
+//	//						System.exit(0);
+//						}
+//						// As eighth note
+////						durFinal = durFinal / 0.125;
+//						barLenInEighths += (int) (durFinal / 0.125);
+////						System.out.println(durFinal);
+////						System.exit(0);
+//					}
+					
 					
 					// Update prevDurXML
 					// a. Set prevDurXML to currDurXML (or, if it is null, to the last 
@@ -1819,15 +1946,25 @@ public class MEIExport {
 			// Wrap currBar in measure-staff-layer elements
 //			// First bar: no indentation required because of section_content_placeholder placement
 //			if (i > 0) {
-			sbBar.append(INDENT);
+//			System.out.println(barLenInEighths);
+//			System.exit(0);
+			boolean oldWay = false;
+			if (oldWay)  
+				sbBar.append(INDENT);
 //			}
-			sbBar.append("<measure n='" + (i+1) + "'" + barline + ">" + "\r\n");
-			sbBar.append(INDENT + TAB + "<staff n='1'" + ">" + "\r\n");
-			sbBar.append(INDENT + TAB.repeat(2) + "<layer n='1'" + ">" + "\r\n");
+			if (oldWay) {
+				sbBar.append("<measure n='" + (i+1) + "'" + barline + ">" + "\r\n");
+				sbBar.append(INDENT + TAB + "<staff n='1'" + ">" + "\r\n");
+				sbBar.append(INDENT + TAB.repeat(2) + "<layer n='1'" + ">" + "\r\n");
+			}
 			sbBar.append(currBarXMLAsString);
-			sbBar.append(INDENT + TAB.repeat(2) + "</layer>" + "\r\n");
-			sbBar.append(INDENT + TAB + "</staff>" + "\r\n");
-			sbBar.append(INDENT + "</measure>");
+			if (oldWay) {
+				sbBar.append(INDENT + TAB.repeat(2) + "</layer>" + "\r\n");
+				sbBar.append(INDENT + TAB + "</staff>" + "\r\n");
+				sbBar.append(INDENT + "</measure>");
+			}
+//			sbBar.append("length in 8th notes: " + String.valueOf(barLenInEighths));
+
 //			System.out.println(sb.toString());
 			if (i < ebf.size()-1) {
 				sbBar.append("\r\n");
@@ -1837,29 +1974,32 @@ public class MEIExport {
 			measuresTab.add(sbBar.toString());
 
 			// Append meter change (if applicable)
-			if (i < ebf.size()-1) {
-				// Check for meter change in first event of next bar
-				List<String[]> nextBar = ebf.get(i+1);
-				String[] firstEventNextFull = nextBar.get(0);
-				String firstEventNext = firstEventNextFull[Encoding.EVENT_IND];
-				// Remove final ss
-				firstEventNext = firstEventNext.substring(0, firstEventNext.lastIndexOf(ss));
-				String[] firstEventNextSplit = 
-					(!firstEventNext.contains(ss)) ? new String[]{firstEventNext} : 
-					firstEventNext.split("\\" + ss);
-				// Meter change found? Add scoreDef after bar
-				if (MensurationSign.getMensurationSign(firstEventNextSplit[0]) != null) {
-					String meterStr = "";
-					for (String s : meters.get(meterIndex+1)) {
-						if (!s.equals("")) {
-							meterStr += s + " ";
+			boolean doThis = false;
+			if (doThis) {
+				if (i < ebf.size()-1) {
+					// Check for meter change in first event of next bar
+					List<String[]> nextBar = ebf.get(i+1);
+					String[] firstEventNextFull = nextBar.get(0);
+					String firstEventNext = firstEventNextFull[Encoding.EVENT_IND];
+					// Remove final ss
+					firstEventNext = firstEventNext.substring(0, firstEventNext.lastIndexOf(ss));
+					String[] firstEventNextSplit = 
+						(!firstEventNext.contains(ss)) ? new String[]{firstEventNext} : 
+						firstEventNext.split("\\" + ss);
+					// Meter change found? Add scoreDef after bar
+					if (MensurationSign.getMensurationSign(firstEventNextSplit[0]) != null) {
+						String meterStr = "";
+						for (String s : meters.get(meterIndex+1)) {
+							if (!s.equals("")) {
+								meterStr += s + " ";
+							}
 						}
+						meterStr = meterStr.trim();
+						String scoreDef = INDENT + "<scoreDef" + " " + meterStr + "/>" + "\r\n";
+//						sb.append(scoreDef);
+						measuresTab.add(scoreDef);
+						meterIndex++;
 					}
-					meterStr = meterStr.trim();
-					String scoreDef = INDENT + "<scoreDef" + " " + meterStr + "/>" + "\r\n";
-//					sb.append(scoreDef);
-					measuresTab.add(scoreDef);
-					meterIndex++;
 				}
 			}
 		}
@@ -2481,6 +2621,7 @@ public class MEIExport {
 	 * @param mi
 	 * @param ki
 	 * @param tripletOnsetPairs
+	 * @returns A 
 	 */
 	@SuppressWarnings("unchecked")
 	private static List<Object> getData(Transcription trans, Integer[][] btp, 

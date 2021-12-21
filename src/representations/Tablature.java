@@ -11,6 +11,7 @@ import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.utility.math.Rational;
 import representations.Encoding.Tuning;
 import tbp.ConstantMusicalSymbol;
+import tbp.MensurationSign;
 import tbp.RhythmSymbol;
 import tbp.SymbolDictionary;
 import tbp.TabSymbol;
@@ -53,7 +54,7 @@ public class Tablature implements Serializable {
 //	public static final int MI_LAST_BAR = 3;
 //	public static final int MI_NUM_MT_FIRST_BAR = 4;
 //	public static final int MI_DEN_MT_FIRST_BAR = 5;
-	private static final int MI_DIM = 6;
+	public static final int MI_DIM = 6;
 	public static final int MI_SIZE = 7; // NB this must not be the same as Transcription.MI_SIZE
 
 	public Tablature() {
@@ -1522,6 +1523,82 @@ public class Tablature implements Serializable {
 			}
 		}		
 		return pairs;
+	}
+
+
+	/**
+	 * Get, for each tab bar, the metric bar it belongs to. A metric bar can have 
+	 * multiple tab bars. Example :<br> 
+	 * metric bars: 2/2 H H | H H | H   H | H   H | H H | H H |<br>
+	 * tab bars   : 2/2 H H | H H | H | H | H | H | H H | H H |<br> 
+ 	 * returns [[1, 1], [2, 2], [3, 3], [4, 3], [5, 4], [6, 4], [7, 5], [8, 6]]
+	 * 
+	 * @return A list of Integer[]s, each representing a tab bar and containing<br>
+	 *         <ul>
+	 *         <li>as element 0: the tab bar</li>
+	 *         <li>as element 1: the metric bar the tab bar belongs to</li>
+	 *         </ul>
+	 */
+	//
+	public List<Integer[]> mapTabBarsToMetricBars() {
+		List<Integer[]> mapped = new ArrayList<>();
+
+		// Get metric bar lengths in SMALLEST_RHYTHMIC_VALUE
+		List<Integer> metricBarLengths = new ArrayList<>();
+		for (Integer[] in : getOriginalMeterInfo()) {
+			Rational currMeter = 
+				new Rational(in[Transcription.MI_NUM], in[Transcription.MI_DEN]);
+			int barLenInSrv = 
+				(int) currMeter.div(Tablature.SMALLEST_RHYTHMIC_VALUE).toDouble();
+			int numBarsInMeter = 
+				(in[Transcription.MI_LAST_BAR] - in[Transcription.MI_FIRST_BAR]) + 1;
+			metricBarLengths.addAll(Collections.nCopies(numBarsInMeter, barLenInSrv));
+		}
+	
+		// Get tablature bar lengths in SMALLEST_RHYTHMIC_VALUE
+		List<Integer> tabBarLengths = new ArrayList<>();
+		List<List<String[]>> ebf = getEncoding().getEventsBarlinesFootnotesPerBar(true);
+		int prevDur = -1;
+		for (List<String[]> bar : ebf) {
+			int durBar = 0;
+			for (String[] eventInfo : bar) {
+				String event = eventInfo[0];
+				String first = 
+					event.substring(0, event.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+				// If the event is not a barline event or a MS event
+				if (!ConstantMusicalSymbol.isBarline(first)
+					&& MensurationSign.getMensurationSign(first) == null) {
+					int dur = -1;
+					RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(first);
+					// If the event starts with a RS
+					if (rs != null) {
+						dur = rs.getDuration();
+						prevDur = dur;
+					}
+					// If the event does not start with a RS
+					else {
+						dur = prevDur; 
+					}
+					durBar += dur;
+				}
+			}
+			tabBarLengths.add(durBar);	
+		}
+
+		// Map
+		int metricBar = 1;
+		int currTabBarLen = 0;
+		for (int i = 0; i < tabBarLengths.size(); i++) {
+			int bar = i+1;
+			mapped.add(new Integer[]{bar, metricBar});
+			currTabBarLen += tabBarLengths.get(i);
+			int currMetricBarLen = metricBarLengths.get(metricBar-1);
+			if (currTabBarLen == currMetricBarLen) {
+				metricBar++;
+				currTabBarLen = 0;
+			}	
+		}
+		return mapped;
 	}
 
 }
