@@ -37,7 +37,7 @@ public class Encoding implements Serializable {
 
 	private List<List<String[]>> eventsBarlinesFootnotes;
 	public static final int EVENT_IND = 0;
-	private static final int BAR_IND = 1;
+	public static final int BAR_IND = 1;
 	public static final int FOOTNOTE_IND = 2;
 	private static final int FOOTNOTE_NUM_IND = 3;
 
