@@ -73,7 +73,8 @@ public class MEIExport {
 		"ind", "indTab", "bar", "onsetNum", "onsetDen", "metPosNum", "metPosDen", "dur", "dots", 
 		"tripletOpen", "tripletMid", "tripletClose", "beamOpen", "beamClose"});
 	private static final String TAB = "    ";
-	private static final String INDENT = TAB.repeat(6);
+	private static final String INDENT_ONE = TAB.repeat(5);
+	private static final String INDENT_TWO = TAB.repeat(6);
 	private static final int XML_DUR_IND = 0;
 	private static final int XML_DOTS_IND = 1;
 	
@@ -529,8 +530,8 @@ public class MEIExport {
 		String staffGrpStr = 
 			"<staffDef n='1'" + " xml:id='s1'" + " lines='6'" + " " + "notationtype='" + 
 			notationtypeStr + "'" + ">" + "\r\n"; 
-		staffGrpStr += INDENT + TAB + TAB + "<tuning tuning.standard='" + tuningStr + "'" + "/>" + "\r\n";		
-		staffGrpStr += INDENT + TAB + "</staffDef>";
+		staffGrpStr += INDENT_TWO + TAB + TAB + "<tuning tuning.standard='" + tuningStr + "'" + "/>" + "\r\n";		
+		staffGrpStr += INDENT_TWO + TAB + "</staffDef>";
 
 		res = res.replace("staffGrp_content_placeholder", staffGrpStr);
 		
@@ -691,20 +692,20 @@ public class MEIExport {
 
 					String eventAsXML = "";
 					if (isCorrected) {
-						eventAsXML += INDENT + TAB.repeat(3) + "<choice>" + "\r\n";
-						eventAsXML += INDENT + TAB.repeat(4) + "<sic>" + "\r\n";
+						eventAsXML += INDENT_TWO + TAB.repeat(3) + "<choice>" + "\r\n";
+						eventAsXML += INDENT_TWO + TAB.repeat(4) + "<sic>" + "\r\n";
 					}
 					eventAsXML += getTabGrps(sicList, prevDurXML, isCorrected, tss);
 					if (isCorrected) {
-						eventAsXML += INDENT + TAB.repeat(4) + "</sic>" + "\r\n";
+						eventAsXML += INDENT_TWO + TAB.repeat(4) + "</sic>" + "\r\n";
 					}
 					if (isCorrected) {
-						eventAsXML += INDENT + TAB.repeat(4) + "<corr>" + "\r\n";
+						eventAsXML += INDENT_TWO + TAB.repeat(4) + "<corr>" + "\r\n";
 						eventAsXML += getTabGrps(corrList, prevDurXML, isCorrected, tss);
-						eventAsXML += INDENT + TAB.repeat(4) + "</corr>" + "\r\n";
+						eventAsXML += INDENT_TWO + TAB.repeat(4) + "</corr>" + "\r\n";
 					}
 					if (isCorrected) {
-						eventAsXML += INDENT + TAB.repeat(3) + "</choice>" + "\r\n";
+						eventAsXML += INDENT_TWO + TAB.repeat(3) + "</choice>" + "\r\n";
 					}
 					currBarXMLAsString += eventAsXML;
 					
@@ -733,15 +734,15 @@ public class MEIExport {
 			// Wrap currBar in measure-staff-layer elements
 //			// First bar: no indentation required because of section_content_placeholder placement
 //			if (i > 0) {
-			sbBar.append(INDENT);
+			sbBar.append(INDENT_TWO);
 //			}
 			sbBar.append("<measure n='" + (i+1) + "'" + barline + ">" + "\r\n");
-			sbBar.append(INDENT + TAB + "<staff n='1'" + ">" + "\r\n");
-			sbBar.append(INDENT + TAB.repeat(2) + "<layer n='1'" + ">" + "\r\n");
+			sbBar.append(INDENT_TWO + TAB + "<staff n='1'" + ">" + "\r\n");
+			sbBar.append(INDENT_TWO + TAB.repeat(2) + "<layer n='1'" + ">" + "\r\n");
 			sbBar.append(currBarXMLAsString);
-			sbBar.append(INDENT + TAB.repeat(2) + "</layer>" + "\r\n");
-			sbBar.append(INDENT + TAB + "</staff>" + "\r\n");
-			sbBar.append(INDENT + "</measure>");
+			sbBar.append(INDENT_TWO + TAB.repeat(2) + "</layer>" + "\r\n");
+			sbBar.append(INDENT_TWO + TAB + "</staff>" + "\r\n");
+			sbBar.append(INDENT_TWO + "</measure>");
 //			System.out.println(sb.toString());
 			if (i < ebf.size()-1) {
 				sbBar.append("\r\n");
@@ -770,7 +771,7 @@ public class MEIExport {
 						}
 					}
 					meterStr = meterStr.trim();
-					String scoreDef = INDENT + "<scoreDef" + " " + meterStr + "/>" + "\r\n";
+					String scoreDef = INDENT_TWO + "<scoreDef" + " " + meterStr + "/>" + "\r\n";
 					sb.append(scoreDef);
 					measuresTab.add(scoreDef);
 					meterIndex++;
@@ -784,7 +785,7 @@ public class MEIExport {
 //		}
 //		System.out.println("= = = = = = = = = = = = = =");
 //		System.exit(0);
-		res = res.replace(INDENT + "section_content_placeholder", sb.toString());
+		res = res.replace(INDENT_TWO + "section_content_placeholder", sb.toString());
 		ToolBox.storeTextFile(res, new File(path + ".xml"));
 	}
 
@@ -909,7 +910,7 @@ public class MEIExport {
 
 
 	/**
-	 * Makes the scoreDef content.
+	 * Makes a scoreDef for the given mi and ki.
 	 * 
 	 * @param currMi
 	 * @param currKi
@@ -919,10 +920,10 @@ public class MEIExport {
 	 * @param numVoices
 	 * @return
 	 */
-	private static List<String> makeScoreDefContent(Integer[] currMi, Integer[] currKi, 
+	private static List<String> makeScoreDef(Integer[] currMi, Integer[] currKi, 
 		TabSymbolSet tss, boolean grandStaff, int bar, int numVoices) {
-		// The scoreDef contains a <staffGrp>, which contains one (TAB_ONLY case) or more 
-		// (other cases) multiple <staffDef>s. In the TAB_AND_TRANS case, the staffDefs for 
+		// The <scoreDef> contains a <staffGrp>, which contains one (TAB_ONLY case) or more 
+		// (other cases) multiple <staffDef>s. In the TAB_AND_TRANS case, the <staffDef>s for 
 		// the CMN are wrapped in another <staffGrp> as to enable across-staff barlines.
 		//
 		// TAB_ONLY case
@@ -951,41 +952,20 @@ public class MEIExport {
 		//             <staffDef> ... </staffDef>
 		//         </staffGrp>
 		//     </staffGrp>
-		// <scoreDef>/
-		
+		// <scoreDef>/	
 		boolean includeKey = currKi != null; 
 		boolean includeMeter = currMi != null; 
-		
-//		List<Integer> meterChangeBars = ToolBox.getItemsAtIndex(mi, Transcription.MI_FIRST_BAR);
-//		List<Integer> keyChangeBars = 
-//			ki != null ? ToolBox.getItemsAtIndex(ki, Transcription.KI_FIRST_BAR) : null;
-//		
-//		Integer[] currMi = 
-//			meterChangeBars.contains(bar) ? mi.get(meterChangeBars.indexOf(bar)) : null;
-//		Integer[] currKi = 
-//			ki != null && keyChangeBars.contains(bar) ? ki.get(meterChangeBars.indexOf(bar)) :
-//			null;
-		
+
 		List<String> scoreDefContent = new ArrayList<>();
 		List<String> staffGrpTab = new ArrayList<>();
 		List<String> staffGrpTrans = new ArrayList<>();
-//		List<String[]> metersTab = new ArrayList<>();
-//		List<String[]> metersTrans = new ArrayList<>();
-//		List<String[]> keysTrans = new ArrayList<>();
 		if (ONLY_TAB || TAB_AND_TRANS) {
 			String notationtypeStr = getNotationTypeStr(tss);
 			String tuningStr = "lute.renaissance.6"; // TODO parameterise
-			
-//			for (Integer[] in : mi) {
-//				metersTab.add(new String[]{
-//					"num='" + in[Transcription.MI_NUM] + "'",
-//					"numbase='" + in[Transcription.MI_DEN] + "'"}
-//				);
-//			}
-//			String[] initMeterTab = metersTab.get(0);
+
 			int diminution = currMi[Tablature.MI_DIM];
 			staffGrpTab.add("<staffDef n='1' lines='6' notationtype='" + notationtypeStr + 
-				"' tab.dur.sym.ratio='" + diminution + "' xml:id='s1' >"); 
+				"' tab.dur.sym.ratio='" + diminution + "' xml:id='s1'>"); 
 			// Add tuning (assumed not to change throughout the piece)
 			if (bar == 1) {
 				staffGrpTab.add(TAB + "<tuning tuning.standard='" + tuningStr + "'/>");
@@ -997,42 +977,7 @@ public class MEIExport {
 			}
 			staffGrpTab.add("</staffDef>");
 		}
-		if (!ONLY_TAB) {
-//			Integer[] kiInit = // zondag
-//				(ki.size() == 0) ? new Integer[]{-2, 0, 0, 0, 0, 0, 1} : ki.get(0);
-//			Integer[] kiInit = ki.get(0);
-//			if (ki.size() == 0) { // zondag
-//				ki.add(new Integer[]{-2, 0, 0, 0, 0, 0, 1});
-//			}
-//			String ksInit = 
-//				Math.abs(kiInit[Transcription.KI_KEY]) + 
-//				(kiInit[Transcription.KI_KEY] < 0 ? "f" : "s");
-			
-//			for (Integer[] in : mi) {
-//				String sym = "";
-//				if (in[Transcription.MI_NUM] == 4 && in[Transcription.MI_DEN] == 4) {
-//					sym = " sym='common'";
-//				}
-//				else if (in[Transcription.MI_NUM] == 2 && in[Transcription.MI_DEN] == 2) {
-//					sym = " sym='cut'";
-//				}
-//				metersTrans.add(new String[]{
-//					"count='" + in[Transcription.MI_NUM] + "'",
-//					"unit='" + in[Transcription.MI_DEN] + "'", 
-//					sym}
-//				);
-//			}
-//			String[] initMeterTrans = metersTrans.get(0);
-
-//			for (Integer[] in : ki) {
-//				keysTrans.add(new String[]{
-//					"sig='" + Math.abs(in[Transcription.KI_KEY]) + 
-//					(in[Transcription.KI_KEY] < 0 ? "f" : "s") + "'",
-//					"mode='major'"} // TODO fix or remove mode
-//				);
-//			}
-//			String[] initKeyTrans = keysTrans.get(0);
-
+		if (ONLY_TRANS || TAB_AND_TRANS) {
 			int numStaffs = grandStaff ? 2 : numVoices;
 			int staffNum = TAB_AND_TRANS ? 2 : 1;
 			String keySig = null;
@@ -1057,8 +1002,7 @@ public class MEIExport {
 				meterSig = 
 					"<meterSig " + "count='" + currMi[Transcription.MI_NUM] + "'" + " " + 
 					"unit='" + currMi[Transcription.MI_DEN] + "'" + sym + "/>";
-			}
-			
+			}	
 			staffGrpTrans.add("<staffGrp symbol='bracket' bar.thru='true'>");
 			for (int i = 0; i < numStaffs; i++) {
 				staffGrpTrans.add(TAB + "<staffDef n='" + staffNum + "' lines='5'>");
@@ -1081,50 +1025,36 @@ public class MEIExport {
 			}
 			staffGrpTrans.add("</staffGrp>");
 		}
-		
+		// Shift lines and wrap total into <staffGrp> (if appropriate) and <scoreDef>
 		if (ONLY_TAB) {
-			// Shift one tab and wrap list into <staffGrp>
 			for (int i = 0; i < staffGrpTab.size(); i++) {
-				staffGrpTab.set(i, TAB + staffGrpTab.get(i));
+				staffGrpTab.set(i, TAB.repeat(2) + staffGrpTab.get(i));
 			}
-			staffGrpTab.add(0, "<staffGrp>");
-			staffGrpTab.add("</staffGrp>");
-			
-//			staffGrpTab = TAB + staffGrpTab.replace("\r\n", "\r\n" + TAB);
-//			scoreDefContent = 
-//				INDENT + "<staffGrp>" + "\r\n" + 
-//				staffGrpTab + "\r\n" +
-//				INDENT + "</staffGrp>";
 			scoreDefContent = staffGrpTab;
+			scoreDefContent.add(0, TAB + "<staffGrp>");
+			scoreDefContent.add(TAB + "</staffGrp>");
 		}
 		else if (ONLY_TRANS) {
-			scoreDefContent = staffGrpTrans;
-		}
-		else if (TAB_AND_TRANS) {
-			// Shift one tab and wrap concatenated lists into <staffGrp>
-			for (int i = 0; i < staffGrpTab.size(); i++) {
-				staffGrpTab.set(i, TAB + staffGrpTab.get(i));
-			}
-//			staffGrpTab.add(0, "<staffGrp>");
-//			staffGrpTab.add("</staffGrp>");
-//			staffGrpTab = TAB + staffGrpTab.replace("\r\n", "\r\n" + TAB);		
 			for (int i = 0; i < staffGrpTrans.size(); i++) {
 				staffGrpTrans.set(i, TAB + staffGrpTrans.get(i));
 			}
-//			staffGrpTrans.add(0, "<staffGrp>");
-//			staffGrpTrans.add("</staffGrp>");
-//			staffGrpTrans = TAB + staffGrpTrans.replace("\r\n", "\r\n" + TAB);
-			
-			scoreDefContent.add("<staffGrp>");
+			scoreDefContent = staffGrpTrans;
+		}
+		else if (TAB_AND_TRANS) {
+			for (int i = 0; i < staffGrpTab.size(); i++) {
+				staffGrpTab.set(i, TAB.repeat(2) + staffGrpTab.get(i));
+			}
+			for (int i = 0; i < staffGrpTrans.size(); i++) {
+				staffGrpTrans.set(i, TAB.repeat(2) + staffGrpTrans.get(i));
+			}
 			scoreDefContent.addAll(staffGrpTab);
 			scoreDefContent.addAll(staffGrpTrans);
-			scoreDefContent.add("</staffGrp>");
-			
-//			scoreDefContent +=	
-//				INDENT + "<staffGrp>" + "\r\n" + 
-//				staffGrpTab + "\r\n" + staffGrpTrans + "\r\n" +
-//				INDENT + "</staffGrp>";
+			scoreDefContent.add(0, TAB + "<staffGrp>");
+			scoreDefContent.add(TAB + "</staffGrp>");
 		}
+		scoreDefContent.add(0, "<scoreDef>");
+		scoreDefContent.add("</scoreDef>");
+
 		return scoreDefContent;
 	}
 
@@ -1144,10 +1074,16 @@ public class MEIExport {
 		List<List<Integer>> mismatchInds, boolean grandStaff, String path) {
 //\\		System.out.println("\r\n>>> MEIExport.exportMEIFile() called");
 
+		
+		// Fix meter in trans (divide by diminution)
+		
 		// mi from tab is the same as mi from trans in TAB_AND_TRANS case
 		List<Integer[]> mi = (tab != null) ? tab.getMeterInfo() : trans.getMeterInfo();
 		Integer[][] btp = tab != null ? tab.getBasicTabSymbolProperties() : null;
 		List<Integer[]> ki = trans != null ? trans.getKeyInfo() : null;
+		if (ki != null && ki.size() == 0) { // TODO zondag
+			ki.add(new Integer[]{-2, 0, 0, 0, 0, 0, 1});
+		}
 		List<Rational[]> tripletOnsetPairs = tab != null ? tab.getTripletOnsetPairs() : null; 
 		String pieceName = tab != null ? tab.getPieceName() : trans.getPieceName();
 		int numVoices = trans != null ? trans.getNumberOfVoices() : 0;
@@ -1158,10 +1094,6 @@ public class MEIExport {
 		else {
 			ONLY_TRANS = true;
 		}
-		
-		for (Integer[] in : mi) {
-			System.out.println(Arrays.toString(in));
-		}
 
 		String res = ToolBox.readTextFile(new File(MEITemplatePath + "template-MEI.xml"));
 
@@ -1170,143 +1102,71 @@ public class MEIExport {
 		meiHead[MEI_HEAD.indexOf("title")] = pieceName;
 		res = res.replace("title_placeholder", meiHead[MEI_HEAD.indexOf("title")]);
 
-//		for (Integer[] in : ki) {
-//			System.out.println(Arrays.toString(in));
-//		}
-//		System.exit(0);
-
 		// 2. Make a <scoreDef> for each time the meter or key changes
 		List<Integer> meterChangeBars = 
 			ToolBox.getItemsAtIndex(mi, Transcription.MI_FIRST_BAR);
 		List<Integer> diminutions = 
 			tab != null ? ToolBox.getItemsAtIndex(mi, Tablature.MI_DIM) : null;
-//		System.out.println(meterChangeBars);
-//		System.out.println(diminutions);
-//		System.exit(0);
 		List<Integer> keyChangeBars = 
 			ki != null ? ToolBox.getItemsAtIndex(ki, Transcription.KI_FIRST_BAR) : 
 			new ArrayList<>();
 		// Combine and remove any duplicates
-		List<Integer> allChangeBars = new ArrayList<>(meterChangeBars);
-		allChangeBars.addAll(new ArrayList<>(keyChangeBars));
-		allChangeBars = allChangeBars.stream().distinct().collect(Collectors.toList());
-		List<List<String>> scoreDefContentList = new ArrayList<>();
-		for (int bar : allChangeBars) {
-//			System.out.println("baaaar = " + bar);
-
+		List<Integer> sectionBars = new ArrayList<>(meterChangeBars);
+		sectionBars.addAll(new ArrayList<>(keyChangeBars));
+		sectionBars = sectionBars.stream().distinct().collect(Collectors.toList());
+		List<List<String>> scoreDefs = new ArrayList<>();
+		for (int bar : sectionBars) {
 			Integer[] currMi = 
 				meterChangeBars.contains(bar) ? mi.get(meterChangeBars.indexOf(bar)) : null;
 			Integer[] currKi = 
 				keyChangeBars.contains(bar) ? ki.get(keyChangeBars.indexOf(bar)) : null;
-			scoreDefContentList.add(makeScoreDefContent(
+			scoreDefs.add(makeScoreDef(
 				currMi, currKi, tab != null ? tab.getEncoding().getTabSymbolSet() : null,
 				grandStaff, bar, numVoices));
 		}
-		for (List<String> l : scoreDefContentList) {
-			for (String s : l) {
-				System.out.println(s);
+		List<String> scoreDefsAsStr = new ArrayList<>();
+		for (int i = 0; i < scoreDefs.size(); i++) {
+			List<String> currScoreDef = scoreDefs.get(i);
+			String currScoreDefStr = "";
+			for (int j = 0; j < currScoreDef.size(); j++) {
+				currScoreDefStr += INDENT_ONE + currScoreDef.get(j) + 
+					(j < currScoreDef.size()-1 ? "\r\n" : "");
 			}
-			System.out.println("------------------------");
+			scoreDefsAsStr.add(currScoreDefStr);
 		}
+//		for (String s : scoreDefsAsStr) {
+//			System.out.println("--------------------------");
+//			System.out.println(s);
+//		}
 //		System.exit(0);
-		String scoreDefContent = "";
-		for (int i = 0; i < scoreDefContentList.size(); i++) {
-			scoreDefContent += INDENT + 
-				scoreDefContentList.get(i) + (i < scoreDefContentList.size()-1 ? "\r\n" : "");
-		}
-//		System.out.println(scoreDefContent);
-		
-		res = res.replace(INDENT + "scoreDef_content_placeholder", scoreDefContent);
-//		System.out.println(res);
-		
-//		// a. Make scoreDef. The scoreDef contains the initial meter (and key) sigs; any additional 
-//		// ones are stored in nonInitMeters and nonInitKeys
-//		Integer[] miInit = mi.get(0);
-//		String ksInit = Math.abs(kiInit[Transcription.KI_KEY]) + 
-//			(kiInit[Transcription.KI_KEY] < 0 ? "f" : "s");
-//		String scoreDefStr = 
-//			"key.sig='" + Math.abs(kiInit[Transcription.KI_KEY]) + 
-//				(kiInit[Transcription.KI_KEY] < 0 ? "f" : "s") + "'" + " " +
-//			"meter.count='" + miInit[Transcription.MI_NUM] + "'" + " " + 
-//			"meter.unit='" + miInit[Transcription.MI_DEN] + "'" + 
-//			(miInit[Transcription.MI_NUM] == 4 && miInit[Transcription.MI_DEN] == 4 || 
-//			 miInit[Transcription.MI_NUM] == 2 && miInit[Transcription.MI_DEN] == 2 ? 
-//			" " + "meter.sym='common'" : "");
-//		res = res.replace("scoreDef_placeholder", scoreDefStr.trim());
-//
-//		// b. Make staffGrp (goes inside scoreDef)
-//		boolean addBracket = false;
-//		String staffGrpAtt = addBracket ? "symbol='bracket' bar.thru='true'" : "bar.thru='true'"; ;
-//		res = res.replace("staffGrp_placeholder", staffGrpAtt);
-//		String staffGrpStr = "";
-//		List<String[]> clefs = getCleffing(numVoices);
-//		String[] gClef = new String[]{"G", "2"};
-//		String[] fClef = new String[]{"F", "4"};
-//		List<String[]> clefs = Arrays.asList(new String[][]{gClef, gClef, fClef, fClef});
-//		if (numVoices == 2) {
-//			clefs = Arrays.asList(new String[][]{gClef, fClef});
-//		}
-//		if (numVoices == 3) {
-//			clefs = Arrays.asList(new String[][]{gClef, fClef, fClef});
-//		}
-//		if (numVoices == 5) {
-//			clefs = Arrays.asList(new String[][]{gClef, gClef, fClef, fClef, fClef});
-//		}
-//		if (numVoices == 6) {
-//			clefs = Arrays.asList(new String[][]{gClef, gClef, gClef, fClef, fClef, fClef});
-//		}
-//		if (grandStaff) {
-//			staffGrpStr += 
-//				"<staffDef n='1' xml:id='s1' lines='5' clef.shape='G' clef.line='2'/>" + "\r\n";
-//			staffGrpStr += 
-//				INDENT + TAB + 
-//				"<staffDef n='2' xml:id='s2' lines='5' clef.shape='F' clef.line='4'/>";
-//		}
-//		else {
-//			for (int i = 0; i < numVoices; i++) {
-//				if (i > 0) {
-//					staffGrpStr += INDENT + TAB;
-//				}
-//				staffGrpStr += 
-//					"<staffDef n='" + (i+1) + "'" +" xml:id='s" + (i+1) + "'" + " lines='5'" +
-//					" clef.shape='" + clefs.get(i)[0] + "'" + " clef.line='" + clefs.get(i)[1] + 
-//					"'" + "/>"; 
-//				if (i < numVoices-1) {
-//					staffGrpStr += "\r\n";
-//				}
+
+		// Add the first <scoreDef> and remove it (and the first bar) from the lists
+//		res = res.replace(INDENT_TWO + "scoreDef_content_placeholder", scoreDefsStr.get(0));
+//		scoreDefs.remove(0);
+//		scoreDefsStr.remove(0);
+//		allChangeBars.remove(0);
+
+//		// List any successive meters and key signatures, which go as attributes into 
+//		// a new <scoreDef>
+//		List<String[]> nonInitMeters = new ArrayList<>();
+//		for (Integer[] in : mi.subList(1, mi.size())) {
+//			String sym = "";
+//			if (in[Transcription.MI_NUM] == 4 && in[Transcription.MI_DEN] == 4) {
+//				sym = " meter.sym='common'";
 //			}
+//			else if (in[Transcription.MI_NUM] == 2 && in[Transcription.MI_DEN] == 2) {
+//				sym = " meter.sym='cut'";
+//			}
+//			nonInitMeters.add(new String[]{
+//				"meter.count='" + in[Transcription.MI_NUM] + "'", 
+//				"meter.unit='" + in[Transcription.MI_DEN] + "'",
+//				sym}
+//			);
 //		}
-//		res = res.replace("staffGrp_content_placeholder", staffGrpStr);
 
-		// List any successive meters and key signatures, which go as attributes into 
-		// a new <scoreDef>
-		List<String[]> nonInitMeters = new ArrayList<>();
-		for (Integer[] in : mi.subList(1, mi.size())) {
-			String sym = "";
-			if (in[Transcription.MI_NUM] == 4 && in[Transcription.MI_DEN] == 4) {
-				sym = " meter.sym='common'";
-			}
-			else if (in[Transcription.MI_NUM] == 2 && in[Transcription.MI_DEN] == 2) {
-				sym = " meter.sym='cut'";
-			}
-			nonInitMeters.add(new String[]{
-				"meter.count='" + in[Transcription.MI_NUM] + "'", 
-				"meter.unit='" + in[Transcription.MI_DEN] + "'",
-				sym}
-			);
-		}
-
-//		List<Integer> meterChangeBars = 
-//			ToolBox.getItemsAtIndex(mi, Transcription.MI_FIRST_BAR).subList(1, mi.size());
-//		System.out.println(meterChangeBars);
-//		System.exit(0);
-		
-		Integer[] kiInit = // zondag
-			(ki.size() == 0) ? new Integer[]{-2, 0, 0, 0, 0, 0, 1} : ki.get(0);
+//		Integer[] kiInit = (ki.size() == 0) ? new Integer[]{-2, 0, 0, 0, 0, 0, 1} : ki.get(0);
 //		Integer[] kiInit = ki.get(0);
-		if (ki.size() == 0) { // zondag
-			ki.add(new Integer[]{-2, 0, 0, 0, 0, 0, 1});
-		}
+		
 //		String ksInit = 
 //			Math.abs(kiInit[Transcription.KI_KEY]) + 
 //			(kiInit[Transcription.KI_KEY] < 0 ? "f" : "s");
@@ -1321,260 +1181,203 @@ public class MEIExport {
 //		}
 //		List<Integer> keyChangeBars = 
 //			ToolBox.getItemsAtIndex(ki, Transcription.KI_FIRST_BAR).subList(1, ki.size());
-		
 
-		// Get tab measures in a separate function
-		// Fix meter in trans (divide by diminution)
-		// Fix barring in tab
-		// combine
-		
-		List<List<String>> measuresTab = new ArrayList<>();
+		List<String> tabBarsAsStr = new ArrayList<>();
+//		List<List<String>> tabBars = null;
+//		List<List<String>> transBars = null;
+		int numMetricBars = mi.get(mi.size()-1)[Transcription.MI_LAST_BAR];
 		if (ONLY_TAB || TAB_AND_TRANS) {
-			measuresTab = getMeasuresTab(tab);
-			System.out.println(measuresTab.size());
-			int count = 1;
-			for (List<String> l : measuresTab) {
-				System.out.println("bar = " + count);
-				for (String s : l) {
-					System.out.println(s);
+			List<List<String>> tabBars = getTabBars(tab);
+			List<Integer[]> tabBarsToMetricBars = tab.mapTabBarsToMetricBars();	
+			int tabBarInd = 0;
+			for (int metricBarInd = 0; metricBarInd < numMetricBars; metricBarInd++) {
+				int currMetricBar = metricBarInd + 1;
+				String currTabBarAsStr = "";
+//				int metricBarInd = j;
+//				currMeasureTabAsStr += INDENT_TWO + "<measure n='" + currMeasure + "'" + 
+//					((j == numBars-1) ? " right='end'" : "") + ">" + "\r\n";
+				// The elements in tabBars start at <tabGrp> level
+				currTabBarAsStr += INDENT_TWO + TAB + "<staff n='1'>" + "\r\n";
+				currTabBarAsStr += INDENT_TWO + TAB.repeat(2) + "<layer n='1'>" + "\r\n";
+				for (String line : tabBars.get(tabBarInd)) {
+					currTabBarAsStr += INDENT_TWO + TAB.repeat(3) + line + "\r\n";
 				}
-				count++;
+				// tabBars follows tablature 'barring'; add any next tab bars to complete
+				// currMetricBar
+				int startInd = tabBarInd + 1;
+//				if (startInd != tabBarsToMetricBars.size()) {
+				for (int k = startInd; k < tabBarsToMetricBars.size(); k++) {
+					if (tabBarsToMetricBars.get(k)[1] == currMetricBar) {
+						currTabBarAsStr += INDENT_TWO + TAB.repeat(3) + "<barline/>" + "\r\n";
+						for (String line : tabBars.get(k)) {
+							currTabBarAsStr += INDENT_TWO + TAB.repeat(3) + line + "\r\n";
+						}
+						// Additional increment of tabBarInd
+						tabBarInd++;
+					}
+					else {
+						break;
+					}
+				}
+//				}
+				// Normal increment of tabBarInd (together with metricBarInd)
+				tabBarInd++;
+				currTabBarAsStr += INDENT_TWO + TAB.repeat(2) + "</layer>" + "\r\n";
+				currTabBarAsStr += INDENT_TWO + TAB + "</staff>";
+				tabBarsAsStr.add(currTabBarAsStr);
 			}
+			System.out.println(tabBarsAsStr.size());
+//			for (String s : tabBarsAsStr) {
+//				System.out.println(s);
+//				System.out.println("===================");
+//			}
+//			System.exit(0);
+			
+			
+//			List<Integer> sectionBarsTab = new ArrayList<>();
+//			int startInd = 0;
+//			for (int bar : sectionBars) {
+//				for (int j = startInd; j < tabBarsToMetricBars.size(); j++) {
+//					Integer[] in = tabBarsToMetricBars.get(j);
+//					if (in[1] == bar) {
+//						sectionBarsTab.add(in[0]);
+//						startInd = j+1;
+//						break;
+//					}
+//				}
+//			}
+//			System.out.println(sectionBarsTab);
+//			System.exit(0);
+//			tabBars = getTabBars(tab);
+//			StringBuilder sb = new StringBuilder();
+//			List<List<Integer>> measuresTabPerSection = new ArrayList<>();
+//			int lastTabBar = tabBars.size();
+			
+			
 		}
-		List<List<String>> measuresTrans = new ArrayList<>();
-//		StringBuilder sb = new StringBuilder();
+		List<String> transBarsAsStr = new ArrayList<>();
 		if (ONLY_TRANS || TAB_AND_TRANS) {
 			// Composition of dataStr (and dataInt):
 			// dataStr.size() = number of bars in piece
 			// dataStr.get(b).size() = voices in bar b (and in whole piece) 
 			// dataStr.get(b).get(v).size() = notes in bar b in voice v 
-			// TODO move into getMeasuresTrans()
+			// TODO move into getTransBars()
 			List<Object> data = getData(trans, btp, mi, ki, tripletOnsetPairs);
 			List<List<List<Integer[]>>> dataInt = (List<List<List<Integer[]>>>) data.get(0);
 			List<List<List<String[]>>> dataStr = (List<List<List<String[]>>>) data.get(1);
-//			int numVoices = dataStr.get(0).size();
 
-//			for (String[] s : dataStr.get(0).get(2)) {
-//				System.out.println(Arrays.toString(s));
-//			}
-//
-//			for (Integer[] s : dataInt.get(0).get(2)) {
-//				System.out.println(Arrays.toString(s));
-//			}					
-//			System.out.println("------------------------");
-		
 			// 3. Make <section> content (bars)			
 			// Apply beaming: set beamOpen and beamClose in dataInt
-			dataInt = beam(dataInt, dataStr, mi, tripletOnsetPairs, mismatchInds, numVoices);	
-////			// Organise the information (i) per voice, (ii) per bar for the python beaming script
-////			List<List<String>> unbeamedBarsPerVoice = new ArrayList<>();
-////			for (int j = 0; j < numVoices; j++) {
-////				List<String> empty = new ArrayList<>();
-////				empty.add("voice=" + j + "\r\n");
-////				unbeamedBarsPerVoice.add(empty);
-////			}
-////			// For each bar
-////			for (int i = 0; i < dataStr.size(); i++) {
-////				int bar = i+1;
-////				if (verbose) System.out.println("bar = " + (i+1));
-////				List<List<Integer[]>> currBarInt = dataInt.get(i);
-////				List<List<String[]>> currBarStr = dataStr.get(i);
-////				// For each voice
-////				for (int j = 0; j < currBarInt.size(); j++) {
-////					if (verbose) System.out.println("voice = " + j);
-////					List<Integer[]> currBarCurrVoiceInt = currBarInt.get(j);
-////					List<String[]> currBarCurrVoiceStr = currBarStr.get(j);
-////					// Add current bar to list corresponding to current voice
-////					List<String> barList = 
-////						getBar(currBarCurrVoiceInt, currBarCurrVoiceStr, mi, tripletOnsetPairs,
-////						mismatchInds, j);
-////					String barListAsStr = "";
-////					Rational currMeter = Transcription.getMeter(bar, mi); 
-////					barListAsStr += 
-////						"meter='" + currMeter.getNumer() + "/" + currMeter.getDenom() + "'" + "\r\n";
-////					for (int k = 0; k < barList.size(); k++) {
-////						barListAsStr += barList.get(k) + "\r\n";
-//////						// Add line break after all but final note
-//////						if (!(i == dataStr.size()-1 && j == currBarInt.size()-1 && 
-//////							k == barList.size()-1)) {
-//////							barListAsStr += "\r\n";
-//////						}
-////					}
-////					unbeamedBarsPerVoice.get(j).add(barListAsStr);
-////				}
-////			}
-////			// Store unbeamedBarsPerVoice
-////			// NB: the stored file ends with a line break
-////			StringBuilder strb = new StringBuilder();
-////			for (List<String> l : unbeamedBarsPerVoice) {
-////				for (String s : l) {
-////					strb.append(s);
-////				}
-////			}
-////			String filePath = scriptPathPythonMEI;
-////			File notesFile = new File(filePath + "notes.txt");
-////			ToolBox.storeTextFile(strb.toString(), notesFile);
-////		
-////			// Call the beaming script and get output; delete
-////			// NB: the output of the beaming script does not end with a line break, but 
-////			// PythonInterface.getScriptOutput() adds one to the end of it
-////			String beamed = "";
-////			try {
-////				beamed = PythonInterface.getScriptOutput(new String[]{
-////					"python", filePath + "beam.py", filePath + "notes.txt"});
-////			} catch (IOException e) {
-////				e.printStackTrace();
-////			}
-////			notesFile.delete();
-////
-////			// Re-organise the information (i) per bar, (ii) per voice so that it is the same
-////			// again as dataStr and dataInt
-////			List<List<List<String>>> beamedReorganised = new ArrayList<>();
-////			// Get each voice as a single string (a list)
-////			List<String> voices = Arrays.asList(beamed.split("end of voice" + "\r\n"));
-////			// Get, for each voice, each bar as a single string (a list)
-////			List<List<String>> barsPerVoice = new ArrayList<>();
-////			for (String currVoice : voices) {
-////				barsPerVoice.add(Arrays.asList(currVoice.split("end of bar" + "\r\n")));
-////			}
-////			// Make, per bar, the empty voices
-////			int numBars = barsPerVoice.get(0).size();
-////			for (int i = 0; i < numBars; i++) {
-////				beamedReorganised.add(new ArrayList<>());
-////			}
-////			// Fill, per bar, the voices
-////			for (int bar = 0; bar < numBars; bar++) {
-////				for (int voice = 0; voice < numVoices; voice++) {
-////					String notesCurrBarCurrVoice = barsPerVoice.get(voice).get(bar);
-//////					// Remove final line break
-//////					notesCurrBarCurrVoice = 
-//////						notesCurrBarCurrVoice.substring(0, notesCurrBarCurrVoice.lastIndexOf("\r\n"));
-////					List<String> notesAsOneString = 
-////						Arrays.asList(notesCurrBarCurrVoice.split("\r\n"));
-////					beamedReorganised.get(bar).add(notesAsOneString);
-////				}
-////			}
-////		
-////			// Align beamedReorganised and dataInt and set beamOpen and beamClose
-////			for (int bar = 0; bar < beamedReorganised.size(); bar++) {
-////				List<List<String>> voicesCurrBar = beamedReorganised.get(bar);
-////				for (int voice = 0; voice < voicesCurrBar.size(); voice++) {
-////					List<String> notesCurrBarCurrVoice = voicesCurrBar.get(voice);
-////					for (int note = 0; note < notesCurrBarCurrVoice.size(); note++) {
-////						String noteCurrBarCurrVoice = notesCurrBarCurrVoice.get(note);
-////		
-////						if (noteCurrBarCurrVoice.startsWith("<beam>")) {
-////							dataInt.get(bar).get(voice).get(note)[INTS.indexOf("beamOpen")] = 1;
-////						}
-////						if (noteCurrBarCurrVoice.startsWith("</beam>")) {
-////							dataInt.get(bar).get(voice).get(note)[INTS.indexOf("beamClose")] = 1;
-////						}
-////					}
-////				}
-////			}
-//
-//			for (String[] s : dataStr.get(0).get(2)) {
-//				System.out.println(Arrays.toString(s));
-//			}
-//
-//			for (Integer[] s : dataInt.get(0).get(2)) {
-//				System.out.println(Arrays.toString(s));
-//			}
-
-			measuresTrans =
-				getMeasuresTrans(dataInt, dataStr, mi, tripletOnsetPairs, mismatchInds,
+			dataInt = beam(dataInt, dataStr, mi, tripletOnsetPairs, mismatchInds, numVoices);
+			List<List<String>> transBars =
+				getTransBars(dataInt, dataStr, mi, tripletOnsetPairs, mismatchInds,
 				grandStaff, numVoices);
-			System.out.println(measuresTrans.size());
-			for (List<String> l : measuresTrans) {
-				for (String s : l) {
-					System.out.println(s);
+			
+			for (int metricBarInd = 0; metricBarInd < numMetricBars; metricBarInd++) {
+//				int currMetricBar = metricBarInd + 1;
+				String currTransBarAsStr = "";
+				// The elements in transBars start at <staff> level
+				for (String line : transBars.get(metricBarInd)) {
+					currTransBarAsStr += INDENT_TWO + TAB + line + "\r\n";
 				}
+				transBarsAsStr.add(currTransBarAsStr);
 			}
-			// Insert non-initial scoreDefs
-//			System.out.println(allChangeBars.size());
-//			System.exit(0);
+			System.out.println(transBarsAsStr.size());
+//			for (String s : transBarsAsStr) {
+//				System.out.println(s);
+//				System.out.println("===================");
+//			}
+			System.out.println(sectionBars);
+			System.exit(0);
+			
+			- make sections (using StringBuilder) of cobined tabBarsAsStr and transBarsAsStr
+			  elements (tab first?) using sectionBars 
+			- add all sections to sectionsAsStr
 
-			add scoreDefs
 			// Align measures
 			StringBuilder sb = new StringBuilder();
 			int tabBarInd = 0;
 			if (TAB_AND_TRANS) {
-				List<Integer[]> tabBarsToMetricBars = tab.mapTabBarsToMetricBars();
-				// metricBarInd is the index of the metric bar in measuresTrans; tabBarInd is
-				// the index of the accompanying tab bar in measuresTab
-				for (int j = 0; j < measuresTrans.size(); j++) {
-					int metricBarInd = j;
-					int currMeasure = metricBarInd + 1;
-					sb.append(INDENT + "<measure n='" + currMeasure + "'" + 
-						((j == measuresTrans.size()-1) ? " right='end'" : "") + ">" + "\r\n");
-					// 1. Add tab (the elements in measuresTab start at <tabGrp> level)
-					sb.append(INDENT + TAB + "<staff n='1'>" + "\r\n");
-					sb.append(INDENT + TAB.repeat(2) + "<layer n='1'>" + "\r\n");
-					for (String line : measuresTab.get(tabBarInd)) {
-						sb.append(INDENT + TAB.repeat(3) + line + "\r\n");
-					}
-					// Add tab bars for any next tab bars that have currMeasure as metric bar
-					int startInd = tabBarInd+1;
-					if (startInd != tabBarsToMetricBars.size()) {
-						for (int k = startInd; k <= tabBarsToMetricBars.size(); k++) {
-							if (tabBarsToMetricBars.get(k)[1] == currMeasure) {
-								sb.append(INDENT + TAB.repeat(3) + "<barline/>" + "\r\n");
-								for (String line : measuresTab.get(k)) {
-									sb.append(INDENT + TAB.repeat(3) + line + "\r\n");
-								}
-								// Additional increment of tabBarInd
-								tabBarInd++;
-							}
-							else {
-								break;
-							}
-						}
-					}
-					sb.append(INDENT + TAB.repeat(2) + "</layer>" + "\r\n");
-					sb.append(INDENT + TAB + "</staff>" + "\r\n");
-					// 2. Add transcription (the elements in measuresTrans start at <staff> level)
-					for (String line : measuresTrans.get(metricBarInd)) {
-						sb.append(INDENT + TAB + line + "\r\n");
-					}
-					sb.append(INDENT + "</measure>" + 
-						((j != measuresTrans.size() - 1) ? "\r\n" : ""));
-					// Normal increment of tabBarInd (together with metricBarInd)
-					tabBarInd++;
-				}
-				System.out.println("@@@@@@@@@@@@@@@@@@@@");
-				System.out.println(sb.toString());
-				System.exit(0);
+//				List<Integer[]> tabBarsToMetricBars = tab.mapTabBarsToMetricBars();
+//				// metricBarInd is the index of the metric bar in measuresTrans; tabBarInd is
+//				// the index of the accompanying tab bar in measuresTab
+//				for (int j = 0; j < transBars.size(); j++) {
+//					int metricBarInd = j;
+//					int currMeasure = metricBarInd + 1;
+//					// 0. Append any <scoreDef>
+//					if (sectionBars.contains(currMeasure)) {
+//						sb.append(scoreDefsAsStr.get(sectionBars.indexOf(currMeasure)));
+//					}
+//					sb.append(INDENT_TWO + "<measure n='" + currMeasure + "'" + 
+//						((j == transBars.size()-1) ? " right='end'" : "") + ">" + "\r\n");
+//					// 1. Add tab (the elements in measuresTab start at <tabGrp> level)
+//					sb.append(INDENT_TWO + TAB + "<staff n='1'>" + "\r\n");
+//					sb.append(INDENT_TWO + TAB.repeat(2) + "<layer n='1'>" + "\r\n");
+//					for (String line : tabBars.get(tabBarInd)) {
+//						sb.append(INDENT_TWO + TAB.repeat(3) + line + "\r\n");
+//					}
+//					// Add tab bars for any next tab bars that have currMeasure as metric bar
+//					int startInd = tabBarInd+1;
+//					if (startInd != tabBarsToMetricBars.size()) {
+//						for (int k = startInd; k <= tabBarsToMetricBars.size(); k++) {
+//							if (tabBarsToMetricBars.get(k)[1] == currMeasure) {
+//								sb.append(INDENT_TWO + TAB.repeat(3) + "<barline/>" + "\r\n");
+//								for (String line : tabBars.get(k)) {
+//									sb.append(INDENT_TWO + TAB.repeat(3) + line + "\r\n");
+//								}
+//								// Additional increment of tabBarInd
+//								tabBarInd++;
+//							}
+//							else {
+//								break;
+//							}
+//						}
+//					}
+//					sb.append(INDENT_TWO + TAB.repeat(2) + "</layer>" + "\r\n");
+//					sb.append(INDENT_TWO + TAB + "</staff>" + "\r\n");
+//					// 2. Add transcription (the elements in measuresTrans start at <staff> level)
+//					for (String line : transBars.get(metricBarInd)) {
+//						sb.append(INDENT_TWO + TAB + line + "\r\n");
+//					}
+//					sb.append(INDENT_TWO + "</measure>" + 
+//						((j != transBars.size() - 1) ? "\r\n" : ""));
+//					// Normal increment of tabBarInd (together with metricBarInd)
+//					tabBarInd++;
+//				}
+//				System.out.println("@@@@@@@@@@@@@@@@@@@@");
+//				System.out.println(sb.toString());
+//				System.exit(0);
 				
-				// Get bar length (in quarter notes) per bar 
-				List<Integer> barLens = new ArrayList<>();
-				for (Integer[] in : mi) {
-					// In whole notes
-					Rational barLenWhole = 
-						new Rational(in[Transcription.MI_NUM], in[Transcription.MI_DEN]);  
-					// In quarter notes
-					int barLen = (int) barLenWhole.div(new Rational(1, 4)).toDouble();
-					// Add to list as many times as there are bars in this meter
-					int numBarsInMeter = 
-						(in[Transcription.MI_LAST_BAR] - in[Transcription.MI_FIRST_BAR]) + 1;
-					barLens.addAll(Collections.nCopies(numBarsInMeter, barLen));
-				}
-				System.out.println(barLens);
+//				// Get bar length (in quarter notes) per bar 
+//				List<Integer> barLens = new ArrayList<>();
+//				for (Integer[] in : mi) {
+//					// In whole notes
+//					Rational barLenWhole = 
+//						new Rational(in[Transcription.MI_NUM], in[Transcription.MI_DEN]);  
+//					// In quarter notes
+//					int barLen = (int) barLenWhole.div(new Rational(1, 4)).toDouble();
+//					// Add to list as many times as there are bars in this meter
+//					int numBarsInMeter = 
+//						(in[Transcription.MI_LAST_BAR] - in[Transcription.MI_FIRST_BAR]) + 1;
+//					barLens.addAll(Collections.nCopies(numBarsInMeter, barLen));
+//				}
+//				System.out.println(barLens);
 					
-				List<String> measuresTabAligned = new ArrayList<>();
-				for (int i = 0; i < measuresTab.size(); i++) {
-					String[] currMeasure = null; //measuresTab.get(i).split("\r\n");
-					for (String line : currMeasure) {
-						double dur = 0;
-						if (line.contains("tabGrp") && line.contains("dur")) {
-							int firstInd = line.indexOf("dur'");
-							int secondInd = line.indexOf("'", firstInd + "dur='".length()); 
-//							String dur = line.substring(, 
-//								line.indexOf)
-//							dur += line
-						}
-					}
-				}
-				System.exit(0);
+//				List<String> measuresTabAligned = new ArrayList<>();
+//				for (int i = 0; i < measuresTab.size(); i++) {
+//					String[] currMeasure = null; //measuresTab.get(i).split("\r\n");
+//					for (String line : currMeasure) {
+//						double dur = 0;
+//						if (line.contains("tabGrp") && line.contains("dur")) {
+//							int firstInd = line.indexOf("dur'");
+//							int secondInd = line.indexOf("'", firstInd + "dur='".length()); 
+////							String dur = line.substring(, 
+////								line.indexOf)
+////							dur += line
+//						}
+//					}
+//				}
+//				System.exit(0);
 			}
 
 //			// For each bar
@@ -1686,16 +1489,17 @@ public class MEIExport {
 //				measuresTrans.add(sbBar.toString());
 //			}
 		}
+		
+		List<String> sectionsAsStr = new ArrayList<>();
+		
 //		res = res.replace(INDENT + "section_content_placeholder", /*sb.toString()*/ null);
 //		System.out.println(res);
-		System.out.println("@@@@@@@@@@@@@@@@@@@@2");
-		System.out.println(measuresTrans.size());
+
 //		for (String s : measuresTrans) {
 //			System.out.println(s);
 //		}
-		System.out.println("----------------");
+//		System.out.println("----------------");
 		
-		System.out.println(measuresTab.size());
 //		for (String s : measuresTab) {
 //			System.out.println(s);
 //		}
@@ -1705,7 +1509,7 @@ public class MEIExport {
 	}
 
 
-	private static List<List<String>> getMeasuresTab(Tablature tab) {
+	private static List<List<String>> getTabBars(Tablature tab) {
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
 		TabSymbolSet tss = tab.getEncoding().getTabSymbolSet();
@@ -2017,7 +1821,7 @@ public class MEIExport {
 //			System.exit(0);
 			boolean oldWay = false;
 			if (oldWay)  
-				sbBar.append(INDENT);
+				sbBar.append(INDENT_TWO);
 //			}
 			if (oldWay) {
 				sbBar.append("<measure n='" + (i+1) + "'" + barline + ">" + "\r\n");
@@ -2065,7 +1869,7 @@ public class MEIExport {
 							}
 						}
 						meterStr = meterStr.trim();
-						String scoreDef = INDENT + "<scoreDef" + " " + meterStr + "/>" + "\r\n";
+						String scoreDef = INDENT_TWO + "<scoreDef" + " " + meterStr + "/>" + "\r\n";
 //						sb.append(scoreDef);
 //						measuresTab.addAll(scoreDef);
 						meterIndex++;
@@ -2077,7 +1881,7 @@ public class MEIExport {
 	}
 
 
-	private static List<List<String>> getMeasuresTrans(List<List<List<Integer[]>>> dataInt,
+	private static List<List<String>> getTransBars(List<List<List<Integer[]>>> dataInt,
 		List<List<List<String[]>>> dataStr, List<Integer[]> mi, /*List<Integer[]> ki,*/
 		List<Rational[]> tripletOnsetPairs, List<List<Integer>> mismatchInds,
 		boolean grandStaff, int numVoices) {			
@@ -2189,7 +1993,7 @@ public class MEIExport {
 
 					String barListAsStr = "";
 					for (int k = 0; k < barList.size(); k++) {
-						barListAsStr += INDENT + TAB.repeat(3) + barList.get(k);
+						barListAsStr += INDENT_TWO + TAB.repeat(3) + barList.get(k);
 						if (k < barList.size()-1) {
 							barListAsStr += "\r\n";
 						}
