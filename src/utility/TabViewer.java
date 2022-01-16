@@ -332,12 +332,13 @@ public class TabViewer extends JFrame{
 			encPath = prefix;
 			
 			// Test
-//			encPath += "test/testpiece.tbp";
+			encPath += "test/testpiece.tbp";
 //			encPath += "test/test_get_meter_info.tbp";
 //			encPath =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/tst/tab/3610_033_inter_natos_mulierum_morales_T-rev.tbp";
 //			encPath =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/tst/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T.tbp";
 //			encPath =  "F:/research/projects/byrd/tst/il_me_souffit-short.tbp";
 //			encPath =  "F:/research/projects/byrd/tst/pleni.tbp";
+//			encPath =  "C:/Users/Reinier/Desktop/test-capirola/tab/capirola-1520-et_in_terra_pax.tbp";
 			
 			// Need to be double-checked
 //			encPath += "newsidler-1536_6-mein_einigs_a.tbp";
@@ -367,7 +368,7 @@ public class TabViewer extends JFrame{
 //			encPath += "tab-int/3vv/" + "newsidler-1536_7-mess_pensees.tbp";
 //			encPath += "tab-int/3vv/" + "pisador-1552_7-pleni_de.tbp"; // TODO remove every second barline
 //			encPath += "tab-int/3vv/" + "judenkuenig-1523_2-elslein_liebes.tbp";
-			encPath += "tab-int/3vv/" + "newsidler-1544_2-nun_volget.tbp"; // TODO remove every second barline in ternary part
+//			encPath += "tab-int/3vv/" + "newsidler-1544_2-nun_volget.tbp"; // TODO remove every second barline in ternary part
 //			encPath += "tab-int/3vv/" + "phalese-1547_7-tant_que-3vv.tbp";
 
 			// 4vv

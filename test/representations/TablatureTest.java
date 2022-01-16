@@ -3,7 +3,6 @@ package representations;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import de.uos.fmt.musitech.data.score.NotationChord;
@@ -13,10 +12,7 @@ import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import junit.framework.TestCase;
 import representations.Encoding.Tuning;
-import tbp.ConstantMusicalSymbol;
-import tbp.MensurationSign;
 import tbp.RhythmSymbol;
-import tbp.SymbolDictionary;
 import tbp.TabSymbol;
 import tbp.TabSymbolSet;
 
@@ -32,7 +28,7 @@ public class TablatureTest extends TestCase {
 //		encodingTestpiece1 = new File(Runner.encodingsPathTest + "testpiece.tbp");
 //		encodingTestGetMeterInfo = new File(Runner.encodingsPathTest + "test_get_meter_info.tbp");
 //		midiTestpiece1 = new File(Runner.midiPathTest + "testpiece.mid");
-		encodingTestpiece = new File(MEIExport.rootDir + "data/annotated/encodings/test/"  + "testpiece.tbp");
+		encodingTestpiece = new File(MEIExport.rootDir + "data/annotated/encodings/test/" + "testpiece.tbp");
 		encodingTestGetMeterInfo = new File(MEIExport.rootDir + "data/annotated/encodings/test/" + "test_get_meter_info.tbp");
 		midiTestpiece = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "testpiece.mid");	
 	}
@@ -42,7 +38,38 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testGetOriginalMeterInfo() {
+	public void testCreateDiminutionPerBar() {
+		// For encodingTestGetMeterInfo
+		List<Integer[]> expected = new ArrayList<>();
+		expected.add(new Integer[]{0, 2});
+		expected.add(new Integer[]{1, 2});
+		expected.add(new Integer[]{2, 2});
+		expected.add(new Integer[]{3, 4});
+		expected.add(new Integer[]{4, 4});
+		expected.add(new Integer[]{5, 1});
+		expected.add(new Integer[]{6, 1});
+		expected.add(new Integer[]{7, 1});
+		expected.add(new Integer[]{8, -2});
+		// For encodingTestPiece
+		expected.add(new Integer[]{1, 1});
+		expected.add(new Integer[]{2, 1});
+		expected.add(new Integer[]{3, 1});
+		
+		List<Integer[]> actual = 
+			new Tablature(encodingTestGetMeterInfo, false).createDiminutionPerBar();
+		actual.addAll(new Tablature(encodingTestpiece, false).createDiminutionPerBar());
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+	  		assertEquals(expected.get(i).length, actual.get(i).length);
+	  		for (int j = 0; j < expected.get(i).length; j++) {
+	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
+	  		}
+		}
+	}
+
+
+	public void testGetUndiminutedMeterInfoInternal() {
 		Tablature tablature = new Tablature();
 		tablature.setEncoding(new Encoding(encodingTestGetMeterInfo));
 		List<Integer[]> expected = new ArrayList<>();
@@ -53,7 +80,7 @@ public class TablatureTest extends TestCase {
 		expected.add(new Integer[]{5, 16, 7, 7, 47, 8});
 		expected.add(new Integer[]{2, 2, 8, 8, 99, 16});
 
-		List<Integer[]> actual = tablature.getOriginalMeterInfo();
+		List<Integer[]> actual = tablature.getUndiminutedMeterInfoInternal();
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -65,11 +92,11 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testGetDiminutions() {
+	public void testGetDiminutionsInternal() {
 		Tablature tablature = new Tablature();
 		tablature.setEncoding(new Encoding(encodingTestGetMeterInfo));
-		List<Integer> expected = Arrays.asList(new Integer[]{2, 2, 1, 4, 1, -2});
-		List<Integer> actual = tablature.getDiminutions();
+		List<Integer> expected = Arrays.asList(new Integer[]{2, 2, 4, 1, 1, -2});
+		List<Integer> actual = tablature.getDiminutionsInternal();
 		
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -80,25 +107,31 @@ public class TablatureTest extends TestCase {
 
 
 	public void testCreateMeterInfo() {
-		Tablature tablature1 = new Tablature();
-		tablature1.setEncoding(new Encoding(encodingTestGetMeterInfo));
-		Tablature tablature2 = new Tablature();
-		tablature2.setEncoding(new Encoding(encodingTestpiece));
+		Tablature t1 = new Tablature();
+		t1.setEncoding(new Encoding(encodingTestGetMeterInfo));
+		Tablature t2 = new Tablature();
+		t2.setEncoding(new Encoding(encodingTestpiece));
 				
 		List<Integer[]> expected = new ArrayList<Integer[]>();
 		// tablature1
+//		expected.add(new Integer[]{3, 4, 0, 0, 0, 1, 2});
+//		expected.add(new Integer[]{2, 1, 1, 2, 3, 4, 2});
+//		expected.add(new Integer[]{3, 1, 3, 4, 19, 4, 4});
+//		expected.add(new Integer[]{2, 2, 5, 6, 25, 4, 1});
+//		expected.add(new Integer[]{5, 16, 7, 7, 57, 4, 1});
+//		expected.add(new Integer[]{2, 4, 8, 8, 233, 16, -2});
 		expected.add(new Integer[]{3, 4, 0, 0, 0, 1, 2});
 		expected.add(new Integer[]{2, 1, 1, 2, 3, 4, 2});
-		expected.add(new Integer[]{3, 4, 3, 4, 19, 4, 1});
-		expected.add(new Integer[]{4, 1, 5, 6, 25, 4, 4});
-		expected.add(new Integer[]{5, 16, 7, 7, 57, 4, 1});
-		expected.add(new Integer[]{1, 2, 8, 8, 233, 16, -2});
+		expected.add(new Integer[]{3, 1, 3, 4, 19, 4, 4});
+		expected.add(new Integer[]{2, 2, 5, 6, 43, 4, 1});
+		expected.add(new Integer[]{5, 16, 7, 7, 51, 4, 1});
+		expected.add(new Integer[]{2, 4, 8, 8, 209, 16, -2});
 		// tablature2		
 		expected.add(new Integer[]{2, 2, 1, 3, 0, 1, 1});
 
 		List<Integer[]> actual = 
-			tablature1.createMeterInfo(tablature1.getDiminutions());
-		actual.addAll(tablature2.createMeterInfo(tablature2.getDiminutions()));
+			t1.createMeterInfo(t1.getUndiminutedMeterInfoInternal(), t1.getDiminutionsInternal());
+		actual.addAll(t2.createMeterInfo(t2.getUndiminutedMeterInfoInternal(), t2.getDiminutionsInternal()));
 		
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -107,6 +140,64 @@ public class TablatureTest extends TestCase {
 	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
 	  		}
 		}
+	}
+
+
+	public void testGetDiminutedMeter() {
+		List<Rational> expected = new ArrayList<>();
+		expected.add(new Rational(2, 1)); // 2/2, dim = 2
+		expected.add(new Rational(4, 2)); // 4/4, dim = 2
+		expected.add(new Rational(4, 1)); // 4/4, dim = 4
+		expected.add(new Rational(2, 4)); // 2/2, dim = -2
+		expected.add(new Rational(4, 8)); // 4/4, dim = -2
+		expected.add(new Rational(4, 16)); // 4/4, dim = -4
+
+		Rational twoTwo = new Rational(2, 2);
+		Rational fourFour = new Rational(4, 4);
+		List<Rational> meters = Arrays.asList(new Rational[]{
+			twoTwo, fourFour, fourFour, twoTwo, fourFour, fourFour
+		});
+		List<Integer> dims = Arrays.asList(new Integer[]{2, 2, 4, -2, -2, -4});
+		List<Rational> actual = new ArrayList<>();
+		for (int i = 0; i < meters.size(); i++) {
+			actual.add(Tablature.getDiminutedMeter(meters.get(i), dims.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		} 
+		assertEquals(expected, actual);
+	}
+
+
+	public void testRevertDiminutedMeter() {
+		Rational twoTwo = new Rational(2, 2);
+		Rational fourFour = new Rational(4, 4);
+		
+		List<Rational> expected = new ArrayList<>();
+		expected.add(twoTwo); // 2/1, dim = 2
+		expected.add(fourFour); // 4/2, dim = 2
+		expected.add(fourFour); // 4/1, dim = 4
+		expected.add(twoTwo); // 2/4, dim = -2
+		expected.add(fourFour); // 4/8, dim = -2
+		expected.add(fourFour); // 4/16, dim = -4
+
+		List<Rational> meters = Arrays.asList(new Rational[]{
+			new Rational(2, 1), new Rational(4, 2), new Rational(4, 1), 
+			new Rational(2, 4), new Rational(4, 8), new Rational(4, 16)
+		});
+		List<Integer> dims = Arrays.asList(new Integer[]{2, 2, 4, -2, -2, -4});
+		List<Rational> actual = new ArrayList<>();
+		for (int i = 0; i < meters.size(); i++) {
+			actual.add(Tablature.revertDiminutedMeter(meters.get(i), dims.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		} 
+		assertEquals(expected, actual);
 	}
 
 
@@ -372,7 +463,7 @@ public class TablatureTest extends TestCase {
 	// ********************************************************************************
 	
 
-	public void testGetTranpositionInterval() {
+	public void testGetTranspositionInterval() {
 		Tablature tablature = new Tablature(encodingTestpiece, false);
 		assertEquals(-2, tablature.getTranspositionInterval());
 	}
@@ -468,36 +559,36 @@ public class TablatureTest extends TestCase {
 			// Bar 3 (meter = 3/4): onset time beat 0 = 19/8 = 76/32
 			expected.add(new Rational[]{new Rational(3, 1), new Rational(0, 512)});
 			expected.add(new Rational[]{new Rational(3, 1), new Rational(0, 512)});
-			expected.add(new Rational[]{new Rational(3, 1), new Rational(1, 4)}); // new Rational(1, 3)});
-			expected.add(new Rational[]{new Rational(3, 1), new Rational(3, 8)}); // new Rational(1, 2)});
-			expected.add(new Rational[]{new Rational(3, 1), new Rational(7, 16)}); // new Rational(7, 12)});
-			expected.add(new Rational[]{new Rational(3, 1), new Rational(1, 2)}); // new Rational(2, 3)});
-			expected.add(new Rational[]{new Rational(3, 1), new Rational(1, 2)}); // new Rational(2, 3)});
+			expected.add(new Rational[]{new Rational(3, 1), new Rational(1, 1)}); // new Rational(1, 4)});
+			expected.add(new Rational[]{new Rational(3, 1), new Rational(3, 2)}); // new Rational(3, 8)});
+			expected.add(new Rational[]{new Rational(3, 1), new Rational(7, 4)}); // new Rational(7, 16)});
+			expected.add(new Rational[]{new Rational(3, 1), new Rational(2, 1)}); // new Rational(1, 2)});
+			expected.add(new Rational[]{new Rational(3, 1), new Rational(2, 1)}); // new Rational(1, 2)});
 			// Bar 4 (meter = 3/4): onset time beat 0 = 25/8 = 100/32
 			expected.add(new Rational[]{new Rational(4, 1), new Rational(0, 512)});
-			expected.add(new Rational[]{new Rational(4, 1), new Rational(3, 16)}); // new Rational(1, 4)});
-			expected.add(new Rational[]{new Rational(4, 1), new Rational(7, 32)}); // new Rational(7, 24)});
-			expected.add(new Rational[]{new Rational(4, 1), new Rational(1, 4)}); // new Rational(1, 3)});
-			expected.add(new Rational[]{new Rational(4, 1), new Rational(1, 4)}); // new Rational(1, 3)});
+			expected.add(new Rational[]{new Rational(4, 1), new Rational(3, 4)}); // new Rational(3, 16)});
+			expected.add(new Rational[]{new Rational(4, 1), new Rational(7, 8)}); // new Rational(7, 32)});
+			expected.add(new Rational[]{new Rational(4, 1), new Rational(1, 1)}); // new Rational(1, 4)});
+			expected.add(new Rational[]{new Rational(4, 1), new Rational(1, 1)}); // new Rational(1, 4)});
 			// Bar 5 (meter = 2/2): onset time beat 0 = 31/8 = 124/32
 			expected.add(new Rational[]{new Rational(5, 1), new Rational(0, 512)});
 			expected.add(new Rational[]{new Rational(5, 1), new Rational(0, 512)});
-			expected.add(new Rational[]{new Rational(5, 1), new Rational(2, 1)});
-			expected.add(new Rational[]{new Rational(5, 1), new Rational(2, 1)});
+			expected.add(new Rational[]{new Rational(5, 1), new Rational(1, 2)}); // new Rational(2, 1)});
+			expected.add(new Rational[]{new Rational(5, 1), new Rational(1, 2)}); // new Rational(2, 1)});
 			// Bar 6 (meter = 2/2): onset time beat 0 = 39/8 = 156/32
 			expected.add(new Rational[]{new Rational(6, 1), new Rational(0, 512)});
-			expected.add(new Rational[]{new Rational(6, 1), new Rational(1, 2)});
-			expected.add(new Rational[]{new Rational(6, 1), new Rational(1, 1)});
-			expected.add(new Rational[]{new Rational(6, 1), new Rational(3, 2)});
-			expected.add(new Rational[]{new Rational(6, 1), new Rational(2, 1)});
-			expected.add(new Rational[]{new Rational(6, 1), new Rational(5, 2)});
-			expected.add(new Rational[]{new Rational(6, 1), new Rational(3, 1)});
-			expected.add(new Rational[]{new Rational(6, 1), new Rational(3, 1)});
+			expected.add(new Rational[]{new Rational(6, 1), new Rational(1, 8)}); // new Rational(1, 2)});
+			expected.add(new Rational[]{new Rational(6, 1), new Rational(1, 4)}); // new Rational(1, 1)});
+			expected.add(new Rational[]{new Rational(6, 1), new Rational(3, 8)}); // new Rational(3, 2)});
+			expected.add(new Rational[]{new Rational(6, 1), new Rational(1, 2)}); // new Rational(2, 1)});
+			expected.add(new Rational[]{new Rational(6, 1), new Rational(5, 8)}); // new Rational(5, 2)});
+			expected.add(new Rational[]{new Rational(6, 1), new Rational(3, 4)}); // new Rational(3, 1)});
+			expected.add(new Rational[]{new Rational(6, 1), new Rational(3, 4)}); // new Rational(3, 1)});
 			// Bar 7 (meter = 5/16): onset time beat 0 = 47/8 = 188/32
 			expected.add(new Rational[]{new Rational(7, 1), new Rational(0, 512)}); 
-			expected.add(new Rational[]{new Rational(7, 1), new Rational(1, 8)}); // new Rational(2, 5)});
-			expected.add(new Rational[]{new Rational(7, 1), new Rational(3, 16)}); // new Rational(3, 5)});
-			expected.add(new Rational[]{new Rational(7, 1), new Rational(1, 4)}); // new Rational(4, 5)});
+			expected.add(new Rational[]{new Rational(7, 1), new Rational(1, 8)}); 
+			expected.add(new Rational[]{new Rational(7, 1), new Rational(3, 16)});
+			expected.add(new Rational[]{new Rational(7, 1), new Rational(1, 4)});
 			// Bar 8 (meter = 2/2): onset time beat 0 = 99/16 = 198/32
 			expected.add(new Rational[]{new Rational(8, 1), new Rational(0, 512)});
 			expected.add(new Rational[]{new Rational(8, 1), new Rational(0, 512)});
@@ -508,10 +599,10 @@ public class TablatureTest extends TestCase {
 			expected.add(new Rational[]{new Rational(8, 1), new Rational(3, 8)});
 		}
 		List<Rational[]> actual = new ArrayList<Rational[]>();
-		Integer[][] basicTabsymbolProperties = tablature.getBasicTabSymbolProperties();
+		Integer[][] btp = tablature.getBasicTabSymbolProperties();
 		List<Integer[]> meterInfo = tablature.getMeterInfo();
-		for (int i = 0; i < basicTabsymbolProperties.length; i++) {
-			Rational currentMetricTime = new Rational(basicTabsymbolProperties[i][Tablature.ONSET_TIME],
+		for (int i = 0; i < btp.length; i++) {
+			Rational currentMetricTime = new Rational(btp[i][Tablature.ONSET_TIME],
 				Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
 			currentMetricTime.reduce();
 			actual.add(Tablature.getMetricPosition(currentMetricTime, meterInfo));
@@ -561,11 +652,11 @@ public class TablatureTest extends TestCase {
 			expected.add(chord15); expected.add(chord15); expected.add(chord15); expected.add(chord15); 
 		}
 
-		basicTabsymbolProperties = tablature.getBasicTabSymbolProperties(); 
+		btp = tablature.getBasicTabSymbolProperties(); 
 		meterInfo = tablature.getMeterInfo();
-		for (int i = 0; i < basicTabsymbolProperties.length; i++) {
+		for (int i = 0; i < btp.length; i++) {
 			Rational currentMetricTime = 
-				new Rational(basicTabsymbolProperties[i][Tablature.ONSET_TIME],
+				new Rational(btp[i][Tablature.ONSET_TIME],
 				Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
 			actual.add(Tablature.getMetricPosition(currentMetricTime, meterInfo));
 		}
@@ -751,37 +842,37 @@ public class TablatureTest extends TestCase {
 		expected.add(new Rational(15, 4));
 		//
 		expected.add(new Rational(19, 4));
-		expected.add(new Rational(20, 4));
-		expected.add(new Rational(41, 8));
-		expected.add(new Rational(83, 16));
-		expected.add(new Rational(21, 4));
-		//
-		expected.add(new Rational(22, 4));
-		expected.add(new Rational(91, 16));
-		expected.add(new Rational(183, 32));
 		expected.add(new Rational(23, 4));
-		//
 		expected.add(new Rational(25, 4));
-		expected.add(new Rational(33, 4));
+		expected.add(new Rational(26, 4));
+		expected.add(new Rational(27, 4));
 		//
-		expected.add(new Rational(41, 4));
+		expected.add(new Rational(31, 4));
+		expected.add(new Rational(34, 4));
+		expected.add(new Rational(69, 8));
+		expected.add(new Rational(35, 4));
+		//
 		expected.add(new Rational(43, 4));
 		expected.add(new Rational(45, 4));
+		//
 		expected.add(new Rational(47, 4));
+		expected.add(new Rational(95, 8));
+		expected.add(new Rational(48, 4));
+		expected.add(new Rational(97, 8));
 		expected.add(new Rational(49, 4));
+		expected.add(new Rational(99, 8));
+		expected.add(new Rational(50, 4));
+		//
 		expected.add(new Rational(51, 4));
-		expected.add(new Rational(53, 4));
+		expected.add(new Rational(103, 8));
+		expected.add(new Rational(207, 16));
+		expected.add(new Rational(104, 8));
 		//
-		expected.add(new Rational(57, 4));
-		expected.add(new Rational(115, 8));
-		expected.add(new Rational(231, 16));
-		expected.add(new Rational(232, 16));
-		//
-		expected.add(new Rational(233, 16));
-		expected.add(new Rational(237, 16));
-		expected.add(new Rational(238, 16));
-		expected.add(new Rational(477, 32));
-		expected.add(new Rational(478, 32));
+		expected.add(new Rational(209, 16));
+		expected.add(new Rational(213, 16));
+		expected.add(new Rational(107, 8));
+		expected.add(new Rational(429, 32));
+		expected.add(new Rational(215, 16));
 		
 		List<Rational> actual = tablature.getAllOnsetTimes();
 		
@@ -1539,18 +1630,15 @@ public class TablatureTest extends TestCase {
 	
 	public void testGetNumberOfCourseCrossingsInChord() {
 		Tablature tablature = new Tablature(encodingTestpiece, false);
-		
-		// Determine expected
+
 		List<Integer> expected = Arrays.asList(new Integer[]{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
-		
-		// Calculate actual
+
 		List<Integer> actual = new ArrayList<Integer>();
 		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
 		for (int i = 0; i < tablatureChords.size(); i++) {
 			actual.add(tablature.getNumberOfCourseCrossingsInChord(i));
 		}
-		
-		// Assert equality
+
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));
@@ -1669,6 +1757,154 @@ public class TablatureTest extends TestCase {
 	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
 	  		}
 		}
+	}
+
+
+	public void testGetMensurationSigns() {
+		Tablature tablature1 = new Tablature(encodingTestpiece, true);
+		Tablature tablature2 = 
+			new Tablature(new File(MEIExport.rootDir + "data/annotated/encodings/tab-int/3vv/" + 
+			"newsidler-1544_2-nun_volget" + ".tbp"), true);
+
+		List<String[]> expected = new ArrayList<>();
+		// tablature1
+		expected.add(new String[]{"McC3", "1", "1"});
+		// tablature2
+		expected.add(new String[]{"MO3.M34", "42", "42"});
+		expected.add(new String[]{"McC3", "50", "46"});
+
+		List<String[]> actual = tablature1.getMensurationSigns();
+		actual.addAll(tablature2.getMensurationSigns());
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).length, actual.get(i).length);
+			for (int j = 0; j < expected.get(i).length; j++) {
+				assertEquals(expected.get(i)[j], actual.get(i)[j]);
+			}
+		}
+	}
+
+
+	public void testGetNumberOfTabBars() {
+		List<Integer> expected = Arrays.asList(new Integer[]{9, 4, 96});
+		List<Integer> actual = new ArrayList<>();
+		// No decorative opening barlines and non-metric barlines
+		actual.add(new Tablature(encodingTestGetMeterInfo, false).getNumberOfTabBars());
+		// Non-metric barlines
+		actual.add(new Tablature(encodingTestpiece, false).getNumberOfTabBars());
+		// Decorative opening barline and non-metric barlines 
+		actual.add(new Tablature(new File(MEIExport.rootDir + 
+			"data/annotated/encodings/tab-int/3vv/" + 
+			"newsidler-1544_2-nun_volget" + ".tbp"), true).getNumberOfTabBars());
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testGetNumberOfMetricBars() {		
+		List<Integer[]> expected = new ArrayList<>();
+		expected.add(new Integer[]{8, 1});
+		expected.add(new Integer[]{3, 0});
+
+		List<Integer[]> actual = new ArrayList<>();
+		actual.add(new Tablature(encodingTestGetMeterInfo, false).getNumberOfMetricBars());
+		actual.add(new Tablature(encodingTestpiece, false).getNumberOfMetricBars());
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+	  		assertEquals(expected.get(i).length, actual.get(i).length);
+	  		for (int j = 0; j < expected.get(i).length; j++) {
+	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
+	  		}
+		}
+	}
+	
+	
+	public void testGetDiminution() {				
+		List<Integer> expected = new ArrayList<>();
+		// For encodingTestGetMeterInfo
+		expected.addAll(Arrays.asList(new Integer[]{2, 2, 2, 4, 4, 1, 1, 1, -2}));
+		// For encodingTestPiece
+		expected.addAll(Arrays.asList(new Integer[]{1, 1, 1}));
+		
+		List<Integer> actual = new ArrayList<>();
+		List<Tablature> tabs = Arrays.asList(new Tablature[]{
+			new Tablature(encodingTestGetMeterInfo, false),
+			new Tablature(encodingTestpiece, false)});
+		for (Tablature t : tabs) {
+			// Take into account anacrusis
+			boolean anacrusis = t.getNumberOfMetricBars()[1] == 1;
+			int startBar = anacrusis ? 0 : 1;			
+			int stopBar = t.getNumberOfMetricBars()[0];
+			for (int bar = startBar; bar <= stopBar; bar++) {
+				actual.add(t.getDiminution(bar));
+			}
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+	
+	
+	public void testGetDiminutionMt() {				
+		List<List<Rational>> allMetricTimes = new ArrayList<>();
+		// For encodingTestGetMeterInfo
+		List<Rational> metricTimes1 = new ArrayList<>();
+		metricTimes1.add(new Rational(0, 1)); // start bar 0 (anacrusis)
+		metricTimes1.add(new Rational(4, 4)); // in bar 1
+		metricTimes1.add(new Rational(11, 4)); // start bar 2
+		metricTimes1.add(new Rational(23, 4)); // in bar 3
+		metricTimes1.add(new Rational(31, 4)); // start bar 4
+		metricTimes1.add(new Rational(45, 4)); // in bar 5
+		metricTimes1.add(new Rational(47, 4)); // start bar 6
+		metricTimes1.add(new Rational(52, 4)); // in bar 7
+		metricTimes1.add(new Rational(209, 16)); // start bar 8
+		allMetricTimes.add(metricTimes1);
+		// For encodingTestpiece
+		List<Rational> metricTimes2 = new ArrayList<>();
+		metricTimes2.add(new Rational(0, 1)); // start bar 1
+		metricTimes2.add(new Rational(7, 4)); // in bar 2
+		metricTimes2.add(new Rational(8, 4)); // start bar 3
+		metricTimes2.add(new Rational(10, 4)); // in bar 3
+		allMetricTimes.add(metricTimes2);
+		
+		List<Integer> expected = new ArrayList<>();
+		// For encodingTestGetMeterInfo
+		expected.addAll(Arrays.asList(new Integer[]{2, 2, 2, 4, 4, 1, 1, 1, -2}));
+		// For encodingTestPiece
+		expected.addAll(Arrays.asList(new Integer[]{1, 1, 1, 1}));
+		
+		List<Integer> actual = new ArrayList<>();
+		List<Tablature> tabs = Arrays.asList(new Tablature[]{
+			new Tablature(encodingTestGetMeterInfo, false),
+			new Tablature(encodingTestpiece, false)});		
+		for (int i = 0; i < tabs.size(); i++) {
+			Tablature t = tabs.get(i);
+			// Take into account anacrusis
+//			boolean anacrusis = t.getNumberOfMetricBars()[1] == 1;
+//			int startBar = anacrusis ? 0 : 1;			
+//			int stopBar = t.getNumberOfMetricBars()[0];
+			for (Rational mt : allMetricTimes.get(i)) {
+				actual.add(t.getDiminution(mt));
+			}
+//			for (int bar = startBar; bar <= stopBar; bar++) {
+//				actual.add(t.getDiminution(bar));
+//			}
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
 	}
 
 }

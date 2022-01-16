@@ -2382,7 +2382,7 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED
-	Integer[][] getBasicNotePropertiesChord(int chordIndex) { // TODO not in use
+	public Integer[][] getBasicNotePropertiesChord(int chordIndex) {
 
 		// Determine the size of the chord at chordIndex and the index of the lowest note in it
 		int chordSize = 0;
