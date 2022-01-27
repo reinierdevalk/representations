@@ -2074,20 +2074,6 @@ public class Transcription implements Serializable {
 //	}
 
 
-	/**
-	 * Sets <i>basicNoteProperties</i>, a two-dimensional Array in which the basic Note properties are stored.
-	 * It contains for each Note in row i the following properties:
-	 * in column 0: the Note's pitch (as a MIDInumber)
-	 * in column 1-2: the numerator and denominator of the Note's MetricTime (both reduced as much as possible)
-	 * in column 3-4: the numerator and denominator of the Note's MetricDuration (both reduced as much as possible)
-	 * in column 5: the sequence number of the chord the Note is in
-	 * in column 6: the size of the chord the Note is in (as new onsets only, so not including any sustained Notes)
-	 * in column 7: the Note's sequence number in the chord, not including any sustained notes. The sequence number
-	 *              is based on pitch only; voice crossing are left out of consideration. Where two notes have the 
-	 *              same pitch, the one with the longer duration is listed first.
-	 *              
-	 * NB: Non-tablature case only.
-	 */
 	// TESTED (together with getBasicNoteProperties())
 	void setBasicNoteProperties() {
 		NoteSequence noteSeq = getNoteSequence();
@@ -2354,9 +2340,91 @@ public class Transcription implements Serializable {
 	}
 
 
+	/**
+	 * Gets <i>basicNoteProperties</i>, a two-dimensional Array in which the basic Note properties are stored.
+	 * It contains for each Note in row i the following properties:
+	 * in column 0: the Note's pitch (as a MIDInumber)
+	 * in column 1-2: the numerator and denominator of the Note's MetricTime (both reduced as much as possible)
+	 * in column 3-4: the numerator and denominator of the Note's MetricDuration (both reduced as much as possible)
+	 * in column 5: the sequence number of the chord the Note is in
+	 * in column 6: the size of the chord the Note is in (as new onsets only, so not including any sustained Notes)
+	 * in column 7: the Note's sequence number in the chord, not including any sustained notes. The sequence number
+	 *              is based on pitch only; voice crossing are left out of consideration. Where two notes have the 
+	 *              same pitch, the one with the longer duration is listed first.
+	 *              
+	 * NB: Non-tablature case only.
+	 */
 	// TESTED (together with setBasicNoteProperties)
 	public Integer[][] getBasicNoteProperties() {
 		return basicNoteProperties;
+	}
+	
+	/**
+	 * Undiminutes the given basic note properties.
+	 * 
+	 * @param bnp Basic note properties, diminuted (w.r.t. metric time and duration).
+	 * @param mi meterInfo (from tablature), diminuted (w.r.t. )
+	 * @return
+	 */
+	// TESTED
+	public static Integer[][] undiminuteBasicNoteProperties(Integer[][] bnp, List<Integer[]> mi) {
+		Integer[][] undiminutedBnp = new Integer[bnp.length][bnp[0].length];
+		Rational prevMt = null;
+		Rational prevMtDim = null;
+
+		int prevDim = 0;
+		// For each first note in a chord
+		for (int i = 0 ; i < bnp.length; i++) {
+			Integer[] currNote = bnp[i];
+			int chordInd = currNote[CHORD_SEQ_NUM];
+			int currChordSize = currNote[CHORD_SIZE_AS_NUM_ONSETS];
+			// Get original metric time and diminution
+			Rational currMt = 
+				new Rational(currNote[ONSET_TIME_NUMER], currNote[ONSET_TIME_DENOM]);
+			int currDim = Tablature.getDiminution(currMt, mi);
+			// Get the diminuted metric time for the chord the note at index i is in
+			Rational currMtDim;
+			// If the chord is the first chord of the piece
+			if (chordInd == 0) {
+				if (currMt.equals(Rational.ZERO)) {
+					currMtDim = currMt;
+				}
+				else {
+					currMtDim = 
+						(currDim > 0) ? currMt.div(currDim) : 
+						currMt.mul(Math.abs(currDim));							
+				}
+			}
+			// If the chord is a chord after the first: to get currMtDim, add the
+			// diminuted difference between currMt and prevMt to prevMtDim
+			else {
+				Rational mtIncrease = 
+					prevDim > 0 ? (currMt.sub(prevMt)).div(prevDim) : 
+					(currMt.sub(prevMt)).mul(Math.abs(prevDim));
+				currMtDim = prevMtDim.add(mtIncrease);
+			}
+
+			// Adapt metric time and duration for all notes in the chord
+			for (int j = i; j < i + currChordSize; j++) {
+				Integer[] curr = bnp[j];
+				// Metric time
+				curr[ONSET_TIME_NUMER] = currMtDim.getNumer();
+				curr[ONSET_TIME_DENOM] = currMtDim.getDenom();
+				// Duration
+				Rational currDur = new Rational(curr[DUR_NUMER], curr[DUR_DENOM]);
+				Rational currDurDim = 
+					(currDim > 0) ? currDur.div(currDim) : currDur.mul(Math.abs(currDim));
+				curr[DUR_NUMER] = currDurDim.getNumer();
+				curr[DUR_DENOM] = currDurDim.getDenom();
+				undiminutedBnp[j] = curr;
+			}
+			// Increment variables
+			prevMt = currMt;
+			prevDim = currDim;
+			prevMtDim = currMtDim;
+			i = (i + currChordSize) - 1;
+		}
+		return undiminutedBnp;
 	}
 
 
@@ -2366,7 +2434,7 @@ public class Transcription implements Serializable {
 	}
 
 
-	//TESTED (together with setEqualDurationUnisonsInfo())
+	// TESTED (together with setEqualDurationUnisonsInfo())
 	public List<Integer[]> getEqualDurationUnisonsInfo() {
 		return equalDurationUnisonsInfo;
 	}

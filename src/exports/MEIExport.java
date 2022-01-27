@@ -991,7 +991,7 @@ public class MEIExport {
 			if (ONLY_TAB || TAB_AND_TRANS) {
 				diminution = currMi[Tablature.MI_DIM];
 				Rational undiminutedMeter = 
-					Tablature.revertDiminutedMeter(new Rational(count, unit), diminution);
+					Tablature.undiminuteMeter(new Rational(count, unit), diminution);
 				count = undiminutedMeter.getNumer();
 				unit = undiminutedMeter.getDenom();
 			}
@@ -2424,92 +2424,96 @@ public class MEIExport {
 			// Adapt complete bnp if any of the meters has a dimunition other than 1
 			List<Integer> diminutions = ToolBox.getItemsAtIndex(mi, Tablature.MI_DIM);
 			if (Collections.frequency(diminutions, 1) != diminutions.size()) {
-				// Reset mi
-				mi = tab.getUndiminutedMeterInfo();
-				// Undiminute bnp
-				make tested method in Transcription
-				Integer[][] undiminutedBnp = new Integer[bnp.length][bnp[0].length];
-				Rational prevMt = null;
-				Rational prevMtDim = null;
-				
-				int prevDim = 0;
-				// For each first note in a chord
-				for (int i = 0 ; i < bnp.length; i++) {
-//					System.out.println("i = " + i);
-					Integer[] currNote = bnp[i];
-//					System.out.println("currNote = " + Arrays.toString(currNote));
-//					Integer[] currCopy = Arrays.copyOf(currNote, currNote.length);
-					int chordInd = currNote[Transcription.CHORD_SEQ_NUM];
-					int currChordSize = currNote[Transcription.CHORD_SIZE_AS_NUM_ONSETS];
-//					System.out.println("chordInd = " + chordInd);
-					// Get original metric time and diminution
-					Rational currMt = 
-						new Rational(currNote[Transcription.ONSET_TIME_NUMER],
-						currNote[Transcription.ONSET_TIME_DENOM]);
-//					System.out.println("currMt = " + currMt);
-					int currDim = tab.getDiminution(currMt);
-//					System.out.println("currDim = " + currDim);
-					// Get the diminuted metric time for the chord the note at index i is in
-					Rational currMtDim;
-					// If the chord is the first chord of the piece
-					if (chordInd == 0) {
-						if (currMt.equals(Rational.ZERO)) {
-							currMtDim = currMt;
-						}
-						else {
-							currMtDim = 
-								(currDim > 0) ? currMt.div(currDim) : 
-								currMt.mul(Math.abs(currDim));							
-						}
-					}
-					// If the chord is a chord after the first: to get currMtDim, add the
-					// diminuted difference between currMt and prevMt to prevMtDim
-					else {
-						Rational mtIncrease = 
-							prevDim > 0 ? (currMt.sub(prevMt)).div(prevDim) : 
-							(currMt.sub(prevMt)).mul(Math.abs(prevDim));
-						currMtDim = prevMtDim.add(mtIncrease);
-					}
-//					System.out.println("currMtDim = " + currMtDim);
-					
-					// Adapt metric time and duration for all notes in the chord
-//					int newI = -1;
-					for (int j = i; j < i + currChordSize; j++) {
-//					for (int j = i; j < bnp.length; j++) {
-//						System.out.println("j = " + j);
-						Integer[] curr = bnp[j];
-						// Metric time
-						curr[Transcription.ONSET_TIME_NUMER] = currMtDim.getNumer();
-						curr[Transcription.ONSET_TIME_DENOM] = currMtDim.getDenom();
-						// Duration
-						Rational currDur = 
-							new Rational(curr[Transcription.DUR_NUMER],
-							curr[Transcription.DUR_DENOM]);
-						Rational currDurDim = 
-							(currDim > 0) ? currDur.div(currDim) : currDur.mul(currDim);
-						curr[Transcription.DUR_NUMER] = currDurDim.getNumer();
-						curr[Transcription.DUR_DENOM] = currDurDim.getDenom();
-						undiminutedBnp[j] = curr;
-//						System.out.println("curr = " + Arrays.toString(curr));
-//						if (j+i < bnp.length) {
-//							if (bnp[j+1][Transcription.CHORD_SEQ_NUM] == chordInd+1) {
-//						newI = j;
-//								break;
-//							}
-//						}
-					}
-					// Increment variables
-					prevMt = currMt;
-					prevDim = currDim;
-					prevMtDim = currMtDim;
-//					i = newI;
-					i = (i + currChordSize) - 1;
-//					System.out.println("prevMt = " + prevMt);
-//					System.out.println("currDim = " + currDim);
-//					System.out.println("prevMtDim = " + prevMtDim);
-//					System.out.println("i = " + i);
+				// Undiminute bnp using diminuted mi
+				for (Integer[] in : mi) {
+					System.out.println(Arrays.toString(in));
 				}
-				bnp = undiminutedBnp;
+				System.exit(0);
+				bnp = Transcription.undiminuteBasicNoteProperties(bnp, mi);
+				// Reset mi to undiminuted 
+				mi = tab.getUndiminutedMeterInfo();
+//				Integer[][] undiminutedBnp = new Integer[bnp.length][bnp[0].length];
+//				Rational prevMt = null;
+//				Rational prevMtDim = null;
+//				
+//				int prevDim = 0;
+//				// For each first note in a chord
+//				for (int i = 0 ; i < bnp.length; i++) {
+////					System.out.println("i = " + i);
+//					Integer[] currNote = bnp[i];
+////					System.out.println("currNote = " + Arrays.toString(currNote));
+////					Integer[] currCopy = Arrays.copyOf(currNote, currNote.length);
+//					int chordInd = currNote[Transcription.CHORD_SEQ_NUM];
+//					int currChordSize = currNote[Transcription.CHORD_SIZE_AS_NUM_ONSETS];
+////					System.out.println("chordInd = " + chordInd);
+//					// Get original metric time and diminution
+//					Rational currMt = 
+//						new Rational(currNote[Transcription.ONSET_TIME_NUMER],
+//						currNote[Transcription.ONSET_TIME_DENOM]);
+////					System.out.println("currMt = " + currMt);
+//					int currDim = Tablature.getDiminution(currMt, mi);
+////					System.out.println("currDim = " + currDim);
+//					// Get the diminuted metric time for the chord the note at index i is in
+//					Rational currMtDim;
+//					// If the chord is the first chord of the piece
+//					if (chordInd == 0) {
+//						if (currMt.equals(Rational.ZERO)) {
+//							currMtDim = currMt;
+//						}
+//						else {
+//							currMtDim = 
+//								(currDim > 0) ? currMt.div(currDim) : 
+//								currMt.mul(Math.abs(currDim));							
+//						}
+//					}
+//					// If the chord is a chord after the first: to get currMtDim, add the
+//					// diminuted difference between currMt and prevMt to prevMtDim
+//					else {
+//						Rational mtIncrease = 
+//							prevDim > 0 ? (currMt.sub(prevMt)).div(prevDim) : 
+//							(currMt.sub(prevMt)).mul(Math.abs(prevDim));
+//						currMtDim = prevMtDim.add(mtIncrease);
+//					}
+////					System.out.println("currMtDim = " + currMtDim);
+//					
+//					// Adapt metric time and duration for all notes in the chord
+////					int newI = -1;
+//					for (int j = i; j < i + currChordSize; j++) {
+////					for (int j = i; j < bnp.length; j++) {
+////						System.out.println("j = " + j);
+//						Integer[] curr = bnp[j];
+//						// Metric time
+//						curr[Transcription.ONSET_TIME_NUMER] = currMtDim.getNumer();
+//						curr[Transcription.ONSET_TIME_DENOM] = currMtDim.getDenom();
+//						// Duration
+//						Rational currDur = 
+//							new Rational(curr[Transcription.DUR_NUMER],
+//							curr[Transcription.DUR_DENOM]);
+//						Rational currDurDim = 
+//							(currDim > 0) ? currDur.div(currDim) : currDur.mul(currDim);
+//						curr[Transcription.DUR_NUMER] = currDurDim.getNumer();
+//						curr[Transcription.DUR_DENOM] = currDurDim.getDenom();
+//						undiminutedBnp[j] = curr;
+////						System.out.println("curr = " + Arrays.toString(curr));
+////						if (j+i < bnp.length) {
+////							if (bnp[j+1][Transcription.CHORD_SEQ_NUM] == chordInd+1) {
+////						newI = j;
+////								break;
+////							}
+////						}
+//					}
+//					// Increment variables
+//					prevMt = currMt;
+//					prevDim = currDim;
+//					prevMtDim = currMtDim;
+////					i = newI;
+//					i = (i + currChordSize) - 1;
+////					System.out.println("prevMt = " + prevMt);
+////					System.out.println("currDim = " + currDim);
+////					System.out.println("prevMtDim = " + prevMtDim);
+////					System.out.println("i = " + i);
+//				}
+//				bnp = undiminutedBnp;
 			}
 		}
 //		System.out.println(bnp.length);
@@ -2596,7 +2600,7 @@ public class MEIExport {
 //			}
 			
 			// If adaptCMNDur, diminution has been made undone in bnp
-			int diminution = adaptCMNDur ? 1 : tab.getDiminution(onset);
+			int diminution = adaptCMNDur ? 1 : Tablature.getDiminution(onset, mi);
 
 			// Increment barEnd and clear lists when new bar is reached
 			if (onset.isGreaterOrEqual(barEnd)) {

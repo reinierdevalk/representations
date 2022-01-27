@@ -29,10 +29,12 @@ import utility.DataConverter;
 
 public class TranscriptionTest extends TestCase {
 
-	private File encodingTestpiece1;
-	private File midiTestpiece1;
-	private File midiTestGetMeterInfo;
-	private File midiTestGetMeterInfoNoAna;
+	private File encodingTestpiece;
+	private File midiTestpiece;
+	private File encodingTestGetMeterInfo;
+	private File midiTestGetMeterKeyInfo;
+	private File midiTestGetMeterKeyInfoNoAnacrusis;
+	private File midiTestGetMeterKeyInfoDiminuted;
 
 	public TranscriptionTest(String name) {
 		super(name);
@@ -49,10 +51,13 @@ public class TranscriptionTest extends TestCase {
 //		midiTestGetMeterInfoNoAna = new File(Runner.midiPathTest + "test_get_meter_key_info_no_anacrusis.mid");
 		
 		String s = MEIExport.rootDir;
-		encodingTestpiece1 = new File(s + "data/annotated/encodings/test/" + "testpiece.tbp");
-		midiTestpiece1 = new File(s + "data/annotated/MIDI/test/" + "testpiece.mid");
-		midiTestGetMeterInfo = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info.mid");
-		midiTestGetMeterInfoNoAna = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info_no_anacrusis.mid");
+		encodingTestpiece = new File(s + "data/annotated/encodings/test/" + "testpiece.tbp");
+		encodingTestGetMeterInfo = new File(s + "data/annotated/encodings/test/" + "test_get_meter_info.tbp");
+		
+		midiTestpiece = new File(s + "data/annotated/MIDI/test/" + "testpiece.mid");
+		midiTestGetMeterKeyInfo = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info.mid");
+		midiTestGetMeterKeyInfoNoAnacrusis = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info_no_anacrusis.mid");
+		midiTestGetMeterKeyInfoDiminuted = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info_diminuted.mid");
 	}
 
 
@@ -107,8 +112,8 @@ public class TranscriptionTest extends TestCase {
 
 	public void testReverse() {
 		// a. Tablature case
-		Tablature tab = new Tablature(encodingTestpiece1, false);
-		Transcription t = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Tablature tab = new Tablature(encodingTestpiece, false);
+		Transcription t = new Transcription(midiTestpiece, encodingTestpiece);
 		Transcription revTrans = Transcription.reverse(t, tab);
 		List<List<Note>> expected = new ArrayList<List<Note>>();
 		// Voice 0
@@ -178,7 +183,7 @@ public class TranscriptionTest extends TestCase {
 		
 		// b. Non-tablature case
 		tab = null;
-		t = new Transcription(midiTestpiece1, null);
+		t = new Transcription(midiTestpiece, null);
 		revTrans = Transcription.reverse(t, tab);
 		// Voice 0
 		List<Note> expected5 = new ArrayList<Note>();
@@ -260,8 +265,8 @@ public class TranscriptionTest extends TestCase {
 
 	public void testDeornament() {
 		// a. Tablature case
-		Tablature tab = new Tablature(encodingTestpiece1, false);
-		Transcription t = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Tablature tab = new Tablature(encodingTestpiece, false);
+		Transcription t = new Transcription(midiTestpiece, encodingTestpiece);
 		Transcription deornTrans = Transcription.deornament(t, tab, new Rational(1, 8));
 		List<List<Note>> expected = new ArrayList<List<Note>>();
 		// Voice 0
@@ -325,7 +330,7 @@ public class TranscriptionTest extends TestCase {
 
 		// b. Non-tablature case
 		tab = null;
-		t = new Transcription(midiTestpiece1, null);
+		t = new Transcription(midiTestpiece, null);
 		deornTrans = Transcription.deornament(t, tab, new Rational(1, 8));
 		// Voice 0
 		List<Note> expected5 = new ArrayList<Note>();
@@ -407,7 +412,7 @@ public class TranscriptionTest extends TestCase {
 	public void testInitialiseNoteSequence() {
 		Transcription transcription = new Transcription();
 //		transcription.setFile(midiTestpiece1);
-		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
+		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 //		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
 
@@ -486,7 +491,7 @@ public class TranscriptionTest extends TestCase {
 	public void testInitialiseVoiceLabels() {
 		Transcription transcription = new Transcription();
 //		transcription.setFile(midiTestpiece1);
-		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
+		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 //		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
 		transcription.initialiseVoiceLabels();
@@ -543,7 +548,7 @@ public class TranscriptionTest extends TestCase {
 
 	public void testInitialiseDurationLabels() {
 		Transcription transcription = new Transcription();
-		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
+		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 		transcription.initialiseNoteSequence();
 		transcription.initialiseVoiceLabels(); // not strictly necessary
 		transcription.initialiseDurationLabels();
@@ -604,9 +609,9 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testHandleCoDNotes() {
-		Tablature tablature = new Tablature(encodingTestpiece1, true);
+		Tablature tablature = new Tablature(encodingTestpiece, true);
 		Transcription transcription = new Transcription();
-		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
+		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 		transcription.initialiseNoteSequence();
 		transcription.initialiseVoiceLabels(); 
 		transcription.initialiseDurationLabels();
@@ -672,9 +677,9 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testHandleCourseCrossings() {
-		Tablature tablature = new Tablature(encodingTestpiece1, true);
+		Tablature tablature = new Tablature(encodingTestpiece, true);
 		Transcription transcription = new Transcription();
-		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
+		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 		transcription.initialiseNoteSequence();
 		transcription.initialiseVoiceLabels(); 
 		transcription.initialiseDurationLabels();
@@ -820,8 +825,8 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testAlignTabAndTransIndices() {
-		Tablature tablature = new Tablature(encodingTestpiece1, false);
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Tablature tablature = new Tablature(encodingTestpiece, false);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 		
 		List<List<List<Integer>>> expected = new ArrayList<>();
 		List<List<Integer>> tabToTrans = new ArrayList<>();
@@ -955,8 +960,8 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetTimePitchMatrix() {
-		Tablature tablature = new Tablature(encodingTestpiece1, false);
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Tablature tablature = new Tablature(encodingTestpiece, false);
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		Rational[][] expected = new Rational[39][3];
 //		expected[0] = new Rational[]{new Rational(3,4), new Rational(4,4), new Rational(50,1)};
@@ -1080,7 +1085,7 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testGetTimePitchMatrixNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		Rational[][] expected = new Rational[40][3];
 		expected[0] = new Rational[]{new Rational(3,4), new Rational(4,4), new Rational(50,1)};
@@ -1147,8 +1152,8 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetNoteDensity() {
-		Tablature tablature = new Tablature(encodingTestpiece1, false);
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Tablature tablature = new Tablature(encodingTestpiece, false);
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<Integer> expected = Arrays.asList(new Integer[]{
 			4, 4, 4, 4, 
@@ -1177,7 +1182,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetNoteDensityNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		List<Integer> expected = Arrays.asList(new Integer[]{
 			4, 4, 4, 4, 
@@ -2720,8 +2725,8 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetNonUnisonNeighbourChord() {
-		Tablature tablature = new Tablature(encodingTestpiece1, false);
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Tablature tablature = new Tablature(encodingTestpiece, false);
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 		
 		// a. Previous
 		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
@@ -2782,7 +2787,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetNonUnisonNeighbourChordNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 		
 		// a. Previous
 		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
@@ -2841,8 +2846,8 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetChordInfo() {
-		Tablature tablature = new Tablature(encodingTestpiece1, false);
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Tablature tablature = new Tablature(encodingTestpiece, false);
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
 
@@ -2978,7 +2983,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetChordInfoNonTab() {	
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
 
@@ -3132,10 +3137,10 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testTranspose() {      
-		Tablature tablature = new Tablature(encodingTestpiece1, false);
+		Tablature tablature = new Tablature(encodingTestpiece, false);
 		Transcription transcription = new Transcription();
 //		transcription.setFile(midiTestpiece1);
-		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
+		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 //		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
 		transcription.initialiseVoiceLabels(); 
@@ -3313,28 +3318,28 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testCheckAlignment() {
-		Tablature tablature = new Tablature(encodingTestpiece1, true);
+		Tablature tablature = new Tablature(encodingTestpiece, true);
 
 		// Make a Transcription with a NoteSequence lacking one note
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 		NoteSequence noteSeqInequal = transcription.getNoteSequence();
 		noteSeqInequal.deleteNoteAt(9);
 		Transcription inequal = new Transcription();
 		inequal.setNoteSequence(noteSeqInequal);
 		// Make a Transcription with a pitch misalignment
-		transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		transcription = new Transcription(midiTestpiece, encodingTestpiece);
 		NoteSequence noteSeqMisalignedPitch = transcription.getNoteSequence();
 		noteSeqMisalignedPitch.replaceNoteAt(9, Transcription.createNote(37, new Rational(5, 4), new Rational(1, 8)));
 		Transcription misalignedPitch = new Transcription();
 		misalignedPitch.setNoteSequence(noteSeqMisalignedPitch);
 		// Make a Transcription with an onset time misalignment
-		transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		transcription = new Transcription(midiTestpiece, encodingTestpiece);
 		NoteSequence noteSeqMisalignedOnsetTime = transcription.getNoteSequence();
 		noteSeqMisalignedOnsetTime.replaceNoteAt(9, Transcription.createNote(47, new Rational(6, 4), new Rational(1, 8)));
 		Transcription misalignedOnsetTime = new Transcription();
 		misalignedOnsetTime.setNoteSequence(noteSeqMisalignedOnsetTime);
 		// Make a Transcription that is correctly aligned
-		transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		transcription = new Transcription(midiTestpiece, encodingTestpiece);
 		// Add all Transcriptions to transcriptions
 		List<Transcription> transcriptions = 
 			Arrays.asList(new Transcription[]{inequal, misalignedPitch, misalignedOnsetTime, transcription});
@@ -3354,7 +3359,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetMeter() {
-		Transcription tr = new Transcription(midiTestGetMeterInfo, null);
+		Transcription tr = new Transcription(midiTestGetMeterKeyInfo, null);
 		
 		List<Rational> all = Arrays.asList(new Rational[]{
 			new Rational(2, 8), // b0
@@ -3394,7 +3399,7 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testGetMeterBar() {
-		Transcription tr = new Transcription(midiTestGetMeterInfo, null);
+		Transcription tr = new Transcription(midiTestGetMeterKeyInfo, null);
 		
 		List<Rational> expected = Arrays.asList(new Rational[]{
 			new Rational(3, 8), // b0
@@ -3422,8 +3427,8 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testCreateMeterInfo() {
-		Transcription tr = new Transcription(midiTestGetMeterInfo, null);
-		Transcription tr2 = new Transcription(midiTestGetMeterInfoNoAna, null);
+		Transcription tr = new Transcription(midiTestGetMeterKeyInfo, null);
+		Transcription tr2 = new Transcription(midiTestGetMeterKeyInfoNoAnacrusis, null);
 
 		List<Integer[]> expected = new ArrayList<Integer[]>();
 		// With anacrusis
@@ -3454,8 +3459,8 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testCreateKeyInfo() {
-		Transcription tr = new Transcription(midiTestGetMeterInfo, null);
-		Transcription tr2 = new Transcription(midiTestGetMeterInfoNoAna, null);
+		Transcription tr = new Transcription(midiTestGetMeterKeyInfo, null);
+		Transcription tr2 = new Transcription(midiTestGetMeterKeyInfoNoAnacrusis, null);
 		
 		List<Integer[]> expected = new ArrayList<Integer[]>();
 		// With anacrusis
@@ -3485,7 +3490,7 @@ public class TranscriptionTest extends TestCase {
 	public void testHandleUnisons() {
 		Transcription transcription = new Transcription();
 //		transcription.setFile(midiTestpiece1);
-		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
+		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 //		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
 		transcription.initialiseVoiceLabels();
@@ -3535,7 +3540,7 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testSetAndGetNoteSequence() {
-    Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+    Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
     // Determine expected
     // NB: Expected cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes with
@@ -3612,7 +3617,7 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testSetAndGetNoteSequenceNonTab() {
-    Transcription transcription = new Transcription(midiTestpiece1, null);
+    Transcription transcription = new Transcription(midiTestpiece, null);
     
     // Determine expected
     // NB: Expected cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes with
@@ -3690,7 +3695,7 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testSetAndGetVoiceLabels() {
-    Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+    Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
     List<Double> voice0 = Transcription.VOICE_0;
     List<Double> voice1 = Transcription.VOICE_1;
@@ -3745,7 +3750,7 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testSetAndGetVoiceLabelsNonTab() {
-    Transcription transcription = new Transcription(midiTestpiece1, null);
+    Transcription transcription = new Transcription(midiTestpiece, null);
 
     List<Double> voice0 = Transcription.VOICE_0;
     List<Double> voice1 = Transcription.VOICE_1;
@@ -3800,7 +3805,7 @@ public class TranscriptionTest extends TestCase {
 	 
 	public void testSetAndGetChordVoiceLabels() {		
 //		Tablature tablature = new Tablature(encodingTestpiece1, true);
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<Double> voice0 = Transcription.VOICE_0;
 		List<Double> voice1 = Transcription.VOICE_1;
@@ -3879,7 +3884,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testSetAndGetChordVoiceLabelsNonTab() {		    
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		List<Double> voice0 = Transcription.VOICE_0;
 		List<Double> voice1 = Transcription.VOICE_1;
@@ -3957,7 +3962,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testSetAndGetDurationLabels() {
-    Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+    Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
     
     List<Double> quarterAndEighth = new ArrayList<Double>(Transcription.QUARTER);
     quarterAndEighth.set(3, 1.0);
@@ -4015,11 +4020,94 @@ public class TranscriptionTest extends TestCase {
 	  }
 	  assertEquals(expected, actual);
 	}
-	
-	
+
+
+	public void testUndiminuteBasicNoteProperties() {
+		Tablature tab = new Tablature(encodingTestGetMeterInfo, false);
+		Transcription trans = new Transcription(midiTestGetMeterKeyInfoDiminuted, null);
+
+		Integer[][] expected = 
+			new Integer[trans.getBasicNoteProperties().length][trans.getBasicNoteProperties()[0].length];
+		// Anacrusis
+		expected[0] = new Integer[]{69, 0, 1024, 1, 8, 0, 1, 0};
+		expected[1] = new Integer[]{69, 1, 8, 1, 8, 1, 1, 0};
+		expected[2] = new Integer[]{69, 1, 4, 1, 8, 2, 1, 0};
+		// Bar 1
+		expected[3] = new Integer[]{64, 3, 8, 1, 2, 3, 2, 0};
+		expected[4] = new Integer[]{69, 3, 8, 3, 8, 3, 2, 1};
+		expected[5] = new Integer[]{69, 3, 4, 1, 8, 4, 1, 0};
+		expected[6] = new Integer[]{64, 7, 8, 1, 2, 5, 2, 0};
+		expected[7] = new Integer[]{69, 7, 8, 1, 2, 5, 2, 1};
+		// Bar 2
+		expected[8] = new Integer[]{64, 11, 8, 1, 2, 6, 2, 0};
+		expected[9] = new Integer[]{69, 11, 8, 1, 4, 6, 2, 1};
+		expected[10] = new Integer[]{69, 13, 8, 1, 16, 7, 1, 0};
+		expected[11] = new Integer[]{69, 27, 16, 1, 16, 8, 1, 0};
+		expected[12] = new Integer[]{69, 7, 4, 1, 32, 9, 1, 0};
+		expected[13] = new Integer[]{69, 57, 32, 1, 32, 10, 1, 0};
+		expected[14] = new Integer[]{69, 29, 16, 1, 32, 11, 1, 0};
+		expected[15] = new Integer[]{69, 59, 32, 1, 32, 12, 1, 0};
+		expected[16] = new Integer[]{64, 15, 8, 1, 2, 13, 2, 0};
+		expected[17] = new Integer[]{69, 15, 8, 1, 2, 13, 2, 1};
+		// Bar 3
+		expected[18] = new Integer[]{64, 19, 8, 1, 2, 14, 2, 0};
+		expected[19] = new Integer[]{69, 19, 8, 1, 4, 14, 2, 1};
+		expected[20] = new Integer[]{69, 21, 8, 1, 8, 15, 1, 0};
+		expected[21] = new Integer[]{69, 11, 4, 1, 16, 16, 1, 0};
+		expected[22] = new Integer[]{69, 45, 16, 1, 16, 17, 1, 0};
+		expected[23] = new Integer[]{64, 23, 8, 1, 2, 18, 2, 0};
+		expected[24] = new Integer[]{69, 23, 8, 1, 4, 18, 2, 1};
+		// Bar 4
+		expected[25] = new Integer[]{69, 25, 8, 3, 16, 19, 1, 0};
+		expected[26] = new Integer[]{69, 53, 16, 1, 32, 20, 1, 0};
+		expected[27] = new Integer[]{69, 107, 32, 1, 32, 21, 1, 0};
+		expected[28] = new Integer[]{64, 27, 8, 1, 2, 22, 2, 0};
+		expected[29] = new Integer[]{69, 27, 8, 1, 2, 22, 2, 1};
+		// Bar 5
+		expected[30] = new Integer[]{64, 31, 8, 1, 2, 23, 2, 0};
+		expected[31] = new Integer[]{69, 31, 8, 1, 2, 23, 2, 1};
+		expected[32] = new Integer[]{64, 35, 8, 1, 2, 24, 2, 0};
+		expected[33] = new Integer[]{69, 35, 8, 1, 2, 24, 2, 1};
+		// Bar 6
+		expected[34] = new Integer[]{69, 39, 8, 1, 8, 25, 1, 0};
+		expected[35] = new Integer[]{69, 5, 1, 1, 8, 26, 1, 0};
+		expected[36] = new Integer[]{69, 41, 8, 1, 8, 27, 1, 0};
+		expected[37] = new Integer[]{69, 21, 4, 1, 8, 28, 1, 0};
+		expected[38] = new Integer[]{69, 43, 8, 1, 8, 29, 1, 0};
+		expected[39] = new Integer[]{69, 11, 2, 1, 8, 30, 1, 0};
+		expected[40] = new Integer[]{64, 45, 8, 1, 4, 31, 2, 0};
+		expected[41] = new Integer[]{69, 45, 8, 1, 4, 31, 2, 1};
+		// Bar 7
+		expected[42] = new Integer[]{69, 47, 8, 1, 8, 32, 1, 0};
+		expected[43] = new Integer[]{69, 6, 1, 1, 16, 33, 1, 0};
+		expected[44] = new Integer[]{69, 97, 16, 1, 16, 34, 1, 0};
+		expected[45] = new Integer[]{69, 49, 8, 1, 16, 35, 1, 0};
+		// Bar 8
+		expected[46] = new Integer[]{64, 99, 16, 1, 2, 36, 2, 0};
+		expected[47] = new Integer[]{69, 99, 16, 1, 2, 36, 2, 1};
+		expected[48] = new Integer[]{69, 107, 16, 1, 8, 37, 1, 0};
+		expected[49] = new Integer[]{69, 109, 16, 1, 16, 38, 1, 0};
+		expected[50] = new Integer[]{69, 55, 8, 1, 16, 39, 1, 0};
+		expected[51] = new Integer[]{64, 111, 16, 1, 4, 40, 2, 0};
+		expected[52] = new Integer[]{69, 111, 16, 1, 8, 40, 2, 1};
+		
+		Integer[][] actual = 
+			Transcription.undiminuteBasicNoteProperties(trans.getBasicNoteProperties(), 
+			tab.getMeterInfo());
+		
+		assertEquals(expected.length, actual.length);
+		for (int i = 0; i < expected.length; i++) {
+			assertEquals(expected[i].length, actual[i].length);
+			for (int j = 0; j < expected[i].length; j++) {
+				assertEquals(expected[i][j], actual[i][j]);
+			}
+		}
+	}
+
+
 	public void testSetAndGetVoicesCoDNotes() {
-		Tablature tablature1 = new Tablature(encodingTestpiece1, true);
-		Transcription transcription1 = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Tablature tablature1 = new Tablature(encodingTestpiece, true);
+		Transcription transcription1 = new Transcription(midiTestpiece, encodingTestpiece);
 		
 //		File encoding2 = 
 //			new File(Runner.encodingsPath + DatasetID.INT_4vv.getName() + "/4vv/phalese-1563_12-las_on.tbp");
@@ -4099,7 +4187,7 @@ public class TranscriptionTest extends TestCase {
 	public void testSetAndGetEqualDurationUnisonsInfo() {
 		Transcription transcription = new Transcription();
 //		transcription.setFile(midiTestpiece1);
-		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
+		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 //		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
 		// The voice labels must be initialised before the NoteSeqeunce is adapted, as initialiseVoiceLabels() needs
@@ -4156,79 +4244,76 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testSetAndGetBasicNoteProperties() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
-		
-	  // Determine expected
-    Integer[][] expected = new Integer[40][8];
-    // Chord 0
-    expected[0] = new Integer[]{50, 3, 4, 1, 4, 0, 4, 0}; 
-    expected[1] = new Integer[]{57, 3, 4, 1, 4, 0, 4, 1};
-    expected[2] = new Integer[]{65, 3, 4, 1, 4, 0, 4, 2};
-    expected[3] = new Integer[]{69, 3, 4, 1, 4, 0, 4, 3};
-    // Chord 1
-    expected[4] = new Integer[]{45, 1, 1, 3, 16, 1, 4, 0};
-    expected[5] = new Integer[]{57, 1, 1, 1, 4, 1, 4, 1};
-    expected[6] = new Integer[]{69, 1, 1, 1, 8, 1, 4, 2};
-    expected[7] = new Integer[]{72, 1, 1, 1, 4, 1, 4, 3};
-    // Chord 2
-    expected[8] = new Integer[]{48, 19, 16, 1, 16, 2, 1, 0};
-    // Chord 3
-    expected[9] = new Integer[]{47, 5, 4, 1, 8, 3, 5, 0};
-    expected[10] = new Integer[]{50, 5, 4, 1, 4, 3, 5, 1};
-    expected[11] = new Integer[]{59, 5, 4, 1, 4, 3, 5, 2};
-    expected[12] = new Integer[]{65, 5, 4, 1, 4, 3, 5, 3};
-    expected[13] = new Integer[]{65, 5, 4, 1, 8, 3, 5, 4};
-    // Chord 4
-    expected[14] = new Integer[]{45, 11, 8, 1, 8, 4, 1, 0};
-    // Chord 5
-    expected[15] = new Integer[]{45, 3, 2, 1, 4, 5, 5, 0};
-    expected[16] = new Integer[]{57, 3, 2, 1, 2, 5, 5, 1};
-    expected[17] = new Integer[]{57, 3, 2, 1, 4, 5, 5, 2};
-    expected[18] = new Integer[]{60, 3, 2, 1, 4, 5, 5, 3};
-    expected[19] = new Integer[]{69, 3, 2, 1, 4, 5, 5, 4};
-    // Chord 6
-    expected[20] = new Integer[]{45, 7, 4, 1, 4, 6, 4, 0};
-    expected[21] = new Integer[]{60, 7, 4, 1, 8, 6, 4, 1};
-    expected[22] = new Integer[]{64, 7, 4, 1, 8, 6, 4, 2};
-    expected[23] = new Integer[]{69, 7, 4, 1, 4, 6, 4, 3};
-    // Chord 7
-    expected[24] = new Integer[]{59, 15, 8, 1, 8, 7, 2, 0};
-    expected[25] = new Integer[]{68, 15, 8, 1, 8, 7, 2, 1};
-    // Chord 8
-    expected[26] = new Integer[]{45, 2, 1, 1, 2, 8, 4, 0};
-    expected[27] = new Integer[]{57, 2, 1, 1, 2, 8, 4, 1};
-    expected[28] = new Integer[]{64, 2, 1, 1, 2, 8, 4, 2};
-    expected[29] = new Integer[]{69, 2, 1, 1, 16, 8, 4, 3};
-    // Chords 9-14
-    expected[30] = new Integer[]{68, 33, 16, 1, 16, 9, 1, 0};
-    expected[31] = new Integer[]{69, 17, 8, 1, 32, 10, 1, 0};
-    expected[32] = new Integer[]{68, 69, 32, 1, 32, 11, 1, 0};
-    expected[33] = new Integer[]{66, 35, 16, 1, 32, 12, 1, 0};
-    expected[34] = new Integer[]{68, 71, 32, 1, 32, 13, 1, 0};
-    expected[35] = new Integer[]{69, 9, 4, 1, 4, 14, 1, 0};
-    // Chord 15
-    expected[36] = new Integer[]{45, 11, 4, 1, 4, 15, 4, 0};
-    expected[37] = new Integer[]{57, 11, 4, 1, 4, 15, 4, 1};
-    expected[38] = new Integer[]{64, 11, 4, 1, 4, 15, 4, 2};
-    expected[39] = new Integer[]{69, 11, 4, 1, 4, 15, 4, 3};
-    
-    // Calculate actual
-    transcription.setBasicNoteProperties();
-    Integer[][] actual = transcription.getBasicNoteProperties();
-    
-    // Assert equality
-    assertEquals(expected.length, actual.length);
-    for (int i = 0; i < expected.length; i++) {
-    	assertEquals(expected[i].length, actual[i].length);
-    	for (int j = 0; j < expected[i].length; j++) {
-    		assertEquals(expected[i][j], actual[i][j]);
-    	}
-    }
+		Transcription transcription = new Transcription(midiTestpiece, null);
+
+		Integer[][] expected = new Integer[40][8];
+		// Chord 0
+		expected[0] = new Integer[]{50, 3, 4, 1, 4, 0, 4, 0}; 
+		expected[1] = new Integer[]{57, 3, 4, 1, 4, 0, 4, 1};
+		expected[2] = new Integer[]{65, 3, 4, 1, 4, 0, 4, 2};
+		expected[3] = new Integer[]{69, 3, 4, 1, 4, 0, 4, 3};
+		// Chord 1
+		expected[4] = new Integer[]{45, 1, 1, 3, 16, 1, 4, 0};
+		expected[5] = new Integer[]{57, 1, 1, 1, 4, 1, 4, 1};
+		expected[6] = new Integer[]{69, 1, 1, 1, 8, 1, 4, 2};
+		expected[7] = new Integer[]{72, 1, 1, 1, 4, 1, 4, 3};
+		// Chord 2
+		expected[8] = new Integer[]{48, 19, 16, 1, 16, 2, 1, 0};
+		// Chord 3
+		expected[9] = new Integer[]{47, 5, 4, 1, 8, 3, 5, 0};
+		expected[10] = new Integer[]{50, 5, 4, 1, 4, 3, 5, 1};
+		expected[11] = new Integer[]{59, 5, 4, 1, 4, 3, 5, 2};
+		expected[12] = new Integer[]{65, 5, 4, 1, 4, 3, 5, 3};
+		expected[13] = new Integer[]{65, 5, 4, 1, 8, 3, 5, 4};
+		// Chord 4
+		expected[14] = new Integer[]{45, 11, 8, 1, 8, 4, 1, 0};
+		// Chord 5
+		expected[15] = new Integer[]{45, 3, 2, 1, 4, 5, 5, 0};
+		expected[16] = new Integer[]{57, 3, 2, 1, 2, 5, 5, 1};
+		expected[17] = new Integer[]{57, 3, 2, 1, 4, 5, 5, 2};
+		expected[18] = new Integer[]{60, 3, 2, 1, 4, 5, 5, 3};
+		expected[19] = new Integer[]{69, 3, 2, 1, 4, 5, 5, 4};
+		// Chord 6
+		expected[20] = new Integer[]{45, 7, 4, 1, 4, 6, 4, 0};
+		expected[21] = new Integer[]{60, 7, 4, 1, 8, 6, 4, 1};
+		expected[22] = new Integer[]{64, 7, 4, 1, 8, 6, 4, 2};
+		expected[23] = new Integer[]{69, 7, 4, 1, 4, 6, 4, 3};
+		// Chord 7
+		expected[24] = new Integer[]{59, 15, 8, 1, 8, 7, 2, 0};
+		expected[25] = new Integer[]{68, 15, 8, 1, 8, 7, 2, 1};
+		// Chord 8
+		expected[26] = new Integer[]{45, 2, 1, 1, 2, 8, 4, 0};
+		expected[27] = new Integer[]{57, 2, 1, 1, 2, 8, 4, 1};
+		expected[28] = new Integer[]{64, 2, 1, 1, 2, 8, 4, 2};
+		expected[29] = new Integer[]{69, 2, 1, 1, 16, 8, 4, 3};
+		// Chords 9-14
+		expected[30] = new Integer[]{68, 33, 16, 1, 16, 9, 1, 0};
+		expected[31] = new Integer[]{69, 17, 8, 1, 32, 10, 1, 0};
+		expected[32] = new Integer[]{68, 69, 32, 1, 32, 11, 1, 0};
+		expected[33] = new Integer[]{66, 35, 16, 1, 32, 12, 1, 0};
+		expected[34] = new Integer[]{68, 71, 32, 1, 32, 13, 1, 0};
+		expected[35] = new Integer[]{69, 9, 4, 1, 4, 14, 1, 0};
+		// Chord 15
+		expected[36] = new Integer[]{45, 11, 4, 1, 4, 15, 4, 0};
+		expected[37] = new Integer[]{57, 11, 4, 1, 4, 15, 4, 1};
+		expected[38] = new Integer[]{64, 11, 4, 1, 4, 15, 4, 2};
+		expected[39] = new Integer[]{69, 11, 4, 1, 4, 15, 4, 3};
+
+		transcription.setBasicNoteProperties();
+		Integer[][] actual = transcription.getBasicNoteProperties();
+
+		assertEquals(expected.length, actual.length);
+		for (int i = 0; i < expected.length; i++) {
+			assertEquals(expected[i].length, actual[i].length);
+			for (int j = 0; j < expected[i].length; j++) {
+				assertEquals(expected[i][j], actual[i][j]);
+			}
+		}
 	}
 		
 	
 	public void testGetBasicNotePropertiesChord() {		
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		List<Integer[][]> expected = new ArrayList<Integer[][]>();
 		// Chord 0
@@ -4323,7 +4408,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetPitchesInChord() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
   	List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		// Chord 0
@@ -4371,7 +4456,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetPitchesInChordWithLowestNoteIndex() {	  	  
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		expected.add(Arrays.asList(new Integer[]{50, 57, 65, 69})); 
@@ -4443,10 +4528,10 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetCoDInfo() {    
-		Tablature tablature = new Tablature(encodingTestpiece1, true);
+		Tablature tablature = new Tablature(encodingTestpiece, true);
 			Transcription transcription = new Transcription();
 //		transcription.setFile(midiTestpiece1);
-		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
+		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 //		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
 		transcription.initialiseVoiceLabels(); 
@@ -4561,7 +4646,7 @@ public class TranscriptionTest extends TestCase {
 	public void testGetUnisonInfo() {
 		Transcription transcription = new Transcription();
 //		transcription.setFile(midiTestpiece1);
-		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
+		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 //		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
 		transcription.initialiseVoiceLabels();
@@ -4606,7 +4691,7 @@ public class TranscriptionTest extends TestCase {
 
 	public void testGetAndSetTranscriptionChords(){
 //		Tablature tablature = new Tablature(encodingTestpiece1, true);
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<List<Note>> expected = new ArrayList<List<Note>>();
 		// Chord 0
@@ -4693,7 +4778,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetAndSetTranscriptionChordsNonTab(){
-    Transcription transcription = new Transcription(midiTestpiece1, null);
+    Transcription transcription = new Transcription(midiTestpiece, null);
 
     // Determine expected
     List<List<Note>> expected = new ArrayList<List<Note>>();
@@ -4784,7 +4869,7 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testSetAndGetNumberOfNewNotesPerChord() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		// Determine expected
 		List<Integer> expected = Arrays.asList(new Integer[]{4, 4, 1, 5, 1, 5, 4, 2, 4, 1, 1, 1, 1, 1, 1, 4});
@@ -4802,7 +4887,7 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testGetNumberOfNotes() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 		int expected = 40;
 		int actual = transcription.getNumberOfNotes();
 		assertEquals(expected, actual);
@@ -4810,7 +4895,7 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testGetIndicesPerChord() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 		
 		// Determine expected
 		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
@@ -4875,7 +4960,7 @@ public class TranscriptionTest extends TestCase {
 		
 	
 	public void testGetLargestTranscriptionChord() {
-	 	Transcription transcription = new Transcription(midiTestpiece1, null);
+	 	Transcription transcription = new Transcription(midiTestpiece, null);
 
     // Determine expected
     int expected = 5;
@@ -4905,7 +4990,7 @@ public class TranscriptionTest extends TestCase {
 			new File(MEIExport.rootDir + "data/annotated/MIDI/" + set + "/4vv/ochsenkun-1558_5-herr_gott.mid"), 
 			new File(MEIExport.rootDir + "data/annotated/encodings/" + set + "/4vv/ochsenkun-1558_5-herr_gott.tbp"));
 		Transcription transcription2 = 
-			new Transcription(midiTestpiece1, encodingTestpiece1);
+			new Transcription(midiTestpiece, encodingTestpiece);
 		transcriptions.add(transcription0); transcriptions.add(transcription1); transcriptions.add(transcription2); 
 
 		List<Integer> expected = Arrays.asList(new Integer[]{3, 4, 5});
@@ -4934,7 +5019,7 @@ public class TranscriptionTest extends TestCase {
 			new File(MEIExport.rootDir + "data/annotated/MIDI/" + set + "/3vv/judenkuenig-1523_2-elslein_liebes.mid"), null);
 		Transcription transcription1 = new Transcription(
 			new File(MEIExport.rootDir + "data/annotated/MIDI/" + set + "/4vv/ochsenkun-1558_5-herr_gott.mid"), null); 
-		Transcription transcription2 = new Transcription(midiTestpiece1, null);
+		Transcription transcription2 = new Transcription(midiTestpiece, null);
 		transcriptions.add(transcription0); transcriptions.add(transcription1); transcriptions.add(transcription2); 
 
 		List<Integer> expected = Arrays.asList(new Integer[]{3, 4, 5});
@@ -4958,7 +5043,7 @@ public class TranscriptionTest extends TestCase {
 		// a. Onset/offset of last note in last bar in all voices but the lowest, which ends
 		// one bar before the others
 		Transcription transcription1 = new Transcription();
-		transcription1.setPiece(MIDIImport.importMidiFile(midiTestpiece1));
+		transcription1.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 		transcription1.setMeterInfo();
 		trans.add(transcription1);
 		// b. Onset/offset of last note in last bar in upper three voices and with bars in between 
@@ -5071,8 +5156,7 @@ public class TranscriptionTest extends TestCase {
 	
 	public void testGetAllMetricPositions() {
 		// a. For a piece with meter changes
-//		Tablature tablature = new Tablature(encodingTestGetMeterInfo, true);
-		Transcription transcription = new Transcription(midiTestGetMeterInfo, null);
+		Transcription transcription = new Transcription(midiTestGetMeterKeyInfo, null);
 
 		List<Rational[]> expected = new ArrayList<Rational[]>();
 		
@@ -5143,7 +5227,7 @@ public class TranscriptionTest extends TestCase {
 		
 		// b. For a piece with no meter changes
 //		tablature = new Tablature(encodingTestpiece1, true);
-		transcription = new Transcription(midiTestpiece1, null);
+		transcription = new Transcription(midiTestpiece, null);
 		
 		// Bar 1: onset time beat 0 = 0/32
 		Rational[] chord0 = new Rational[]{new Rational(1, 1), new Rational(3, 4)};
@@ -5268,7 +5352,7 @@ public class TranscriptionTest extends TestCase {
 	
 	public void testGetLowestAndHighestPitchPerVoice() {
 //    Tablature tablature = new Tablature(encodingTestpiece1, true);
-    Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+    Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
  
     // Determine expected 
     Integer[][]expected = new Integer[Transcription.MAXIMUM_NUMBER_OF_VOICES][2];
@@ -5293,7 +5377,7 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testGetLowestAndHighestPitchPerVoiceNonTab() {
-    Transcription transcription = new Transcription(midiTestpiece1, null);
+    Transcription transcription = new Transcription(midiTestpiece, null);
    
     // Determine expected 
     Integer[][]expected = new Integer[Transcription.MAXIMUM_NUMBER_OF_VOICES][2];
@@ -5318,11 +5402,11 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testCreatePiece() {
-		Tablature tablature = new Tablature(encodingTestpiece1, true);
+		Tablature tablature = new Tablature(encodingTestpiece, true);
 		Integer[][] btp = tablature.getBasicTabSymbolProperties();
 		Integer[][] bnp = null;
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1); // not modelling duration
-		Transcription transcription2 = new Transcription(midiTestpiece1, encodingTestpiece1); // modelling duration
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece); // not modelling duration
+		Transcription transcription2 = new Transcription(midiTestpiece, encodingTestpiece); // modelling duration
 		List<List<Double>> voiceLabels = transcription.getVoiceLabels();
 		List<List<Double>> durationLabels = transcription.getDurationLabels();
 
@@ -5423,7 +5507,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testCreatePieceNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 		Integer[][] btp = null;
 		Integer[][] bnp = transcription.getBasicNoteProperties();
 		List<List<Double>> voiceLabels = transcription.getVoiceLabels();
@@ -5652,7 +5736,7 @@ public class TranscriptionTest extends TestCase {
 
 	public void testGetAllOnsetTimes() {
 //		Tablature tablature = new Tablature(encodingTestpiece1, true);
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<Rational> expected = new ArrayList<Rational>();
 		// Chord 0
@@ -5694,7 +5778,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetAllOnsetTimesNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		List<Rational> expected = new ArrayList<Rational>();
 		// Chord 0
@@ -5737,7 +5821,7 @@ public class TranscriptionTest extends TestCase {
 
 	public void testListNotesPerVoice() {
 //    Tablature tablature = new Tablature(encodingTestpiece1, true);
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		// Voice 0
@@ -5766,7 +5850,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testListNotesPerVoiceNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		// Voice 0
@@ -5795,7 +5879,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testListNotesPerVoiceAltNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		List<Rational[]> expected = new ArrayList<>();
 		expected.add(new Rational[]{
@@ -5835,7 +5919,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetLastNotesInVoices() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 		
 		List<List<List<Rational[]>>> expected = new ArrayList<>();
 		List<Rational[]> empty = new ArrayList<>();
@@ -5967,7 +6051,7 @@ public class TranscriptionTest extends TestCase {
 
 	public void testGetVoiceAssignments() {
 //		Tablature tablature = new Tablature(encodingTestpiece1, true);
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		// Chord 0
@@ -6013,7 +6097,7 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testGetAdjacentNoteInVoice() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		NotationSystem ns = transcription.getPiece().getScore();
 		//
@@ -6125,8 +6209,8 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetIndicesOfSustainedPreviousNotes() {
-		Tablature tablature = new Tablature(encodingTestpiece1, true);
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Tablature tablature = new Tablature(encodingTestpiece, true);
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		List<Integer> emptyList = Arrays.asList(new Integer[]{});
@@ -6186,7 +6270,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetIndicesOfSustainedPreviousNotesNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		List<Integer> emptyList = Arrays.asList(new Integer[]{});
@@ -6241,8 +6325,8 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetPitchesOfSustainedPreviousNotesInChord() {
-		Tablature tablature = new Tablature(encodingTestpiece1, true);
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Tablature tablature = new Tablature(encodingTestpiece, true);
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		expected.add(Arrays.asList(new Integer[]{})); 
@@ -6284,7 +6368,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetPitchesOfSustainedPreviousNotesInChordNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		expected.add(Arrays.asList(new Integer[]{})); 
@@ -6325,8 +6409,8 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testGetVoicesOfSustainedPreviousNotesInChord() {
-		Tablature tablature = new Tablature(encodingTestpiece1, true);
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Tablature tablature = new Tablature(encodingTestpiece, true);
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		// Chord 0
@@ -6380,7 +6464,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetVoicesOfSustainedPreviousNotesInChordNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		// Chord 0
@@ -6438,7 +6522,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetAllPitchesAndVoicesInChordNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		List<List<Integer>> voiceAssignments = getVoiceAssignmentsNonTab();
 
@@ -6996,7 +7080,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetVoiceCrossingInformationInChord() {
-		Tablature tablature = new Tablature(encodingTestpiece1, false);
+		Tablature tablature = new Tablature(encodingTestpiece, false);
 
 		List<List<Integer>> voiceAssignments = getVoiceAssignments();
 
@@ -7048,7 +7132,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetVoiceCrossingInformationInChordNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 		List<List<Integer>> voiceAssignments = getVoiceAssignmentsNonTab();
 
 		List<List<Integer>> empty = new ArrayList<List<Integer>>();
@@ -7119,7 +7203,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetVoiceRangeInformation() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 		
 		List<Integer[]> expected = new ArrayList<>();
 		expected.add(new Integer[]{64, 72});
@@ -7141,7 +7225,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGenerateChordDictionary() {
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 			
 		// Determine expected
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
@@ -7175,7 +7259,7 @@ public class TranscriptionTest extends TestCase {
 	
 	public void testGenerateVoiceAssignmentDictionary(){
 //		Tablature tablature = new Tablature(encodingTestpiece1, true);
-		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
+		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		// Determine expected. Add each voice assignment only once
  		List<List<Integer>> expected = new ArrayList<List<Integer>>();  		
@@ -7208,7 +7292,7 @@ public class TranscriptionTest extends TestCase {
 
 	public void testGenerateVoiceAssignmentDictionaryNonTab(){
 //		Tablature tablature = new Tablature(encodingTestpiece1, true);
-		Transcription transcription = new Transcription(midiTestpiece1, null);
+		Transcription transcription = new Transcription(midiTestpiece, null);
 
 		// Determine expected. Add each voice assignment only once
  		List<List<Integer>> expected = new ArrayList<List<Integer>>();  		

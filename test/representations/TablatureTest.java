@@ -11,6 +11,7 @@ import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import junit.framework.TestCase;
+import paths.Paths;
 import representations.Encoding.Tuning;
 import tbp.RhythmSymbol;
 import tbp.TabSymbol;
@@ -24,54 +25,91 @@ public class TablatureTest extends TestCase {
 
 	protected void setUp() throws Exception {
 		super.setUp();
-//		Runner.setPathsToCodeAndData(UI.getRootDir(), false);
-//		encodingTestpiece1 = new File(Runner.encodingsPathTest + "testpiece.tbp");
-//		encodingTestGetMeterInfo = new File(Runner.encodingsPathTest + "test_get_meter_info.tbp");
-//		midiTestpiece1 = new File(Runner.midiPathTest + "testpiece.mid");
-		encodingTestpiece = new File(MEIExport.rootDir + "data/annotated/encodings/test/" + "testpiece.tbp");
-		encodingTestGetMeterInfo = new File(MEIExport.rootDir + "data/annotated/encodings/test/" + "test_get_meter_info.tbp");
-		midiTestpiece = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "testpiece.mid");	
+		String root = Paths.getRootPath() + Paths.getDataDir(); 
+		encodingTestpiece = 
+			new File(root + Paths.getEncodingsPath() + Paths.getTestDir() + "testpiece.tbp");
+		encodingTestGetMeterInfo = 
+			new File(root + Paths.getEncodingsPath() + Paths.getTestDir() + "test_get_meter_info.tbp");
+		midiTestpiece = 
+			new File(root + Paths.getMIDIPath() + Paths.getTestDir() + "testpiece.mid");	
 	}
+
 
 	protected void tearDown() throws Exception {
 		super.tearDown();
 	}
 
 
-	public void testCreateDiminutionPerBar() {
-		// For encodingTestGetMeterInfo
-		List<Integer[]> expected = new ArrayList<>();
-		expected.add(new Integer[]{0, 2});
-		expected.add(new Integer[]{1, 2});
-		expected.add(new Integer[]{2, 2});
-		expected.add(new Integer[]{3, 4});
-		expected.add(new Integer[]{4, 4});
-		expected.add(new Integer[]{5, 1});
-		expected.add(new Integer[]{6, 1});
-		expected.add(new Integer[]{7, 1});
-		expected.add(new Integer[]{8, -2});
-		// For encodingTestPiece
-		expected.add(new Integer[]{1, 1});
-		expected.add(new Integer[]{2, 1});
-		expected.add(new Integer[]{3, 1});
+	private Integer[][] getBtpUntransposed() {
+		Integer[][] btpUntransposed = new Integer[39][10];
+		// Chord 0
+		btpUntransposed[0] = new Integer[]{50, 5, 0, 72, 24, 48, 0, 4, 0, 3};
+		btpUntransposed[1] = new Integer[]{57, 4, 2, 72, 24, 24, 0, 4, 1, 3};
+		btpUntransposed[2] = new Integer[]{65, 2, 1, 72, 24, 24, 0, 4, 2, 3};
+		btpUntransposed[3] = new Integer[]{69, 1, 0, 72, 24, 24, 0, 4, 3, 3};
+		// Chord 1
+		btpUntransposed[4] = new Integer[]{45, 6, 0, 96, 18, 18, 1, 4, 0, 5};
+		btpUntransposed[5] = new Integer[]{57, 4, 2, 96, 18, 24, 1, 4, 1, 5};
+		btpUntransposed[6] = new Integer[]{72, 2, 8, 96, 18, 24, 1, 4, 2, 5};
+		btpUntransposed[7] = new Integer[]{69, 1, 0, 96, 18, 72, 1, 4, 3, 5};
+		// Chord 2
+		btpUntransposed[8] = new Integer[]{48, 6, 3, 114, 6, 6, 2, 1, 0, 6};
+		// Chord 3
+		btpUntransposed[9] = new Integer[]{47, 6, 2, 120, 12, 12, 3, 4, 0, 7};
+		btpUntransposed[10] = new Integer[]{50, 5, 0, 120, 12, 24, 3, 4, 1, 7};
+		btpUntransposed[11] = new Integer[]{59, 4, 4, 120, 12, 24, 3, 4, 2, 7};
+		btpUntransposed[12] = new Integer[]{65, 2, 1, 120, 12, 24, 3, 4, 3, 7};
+		// Chord 4
+		btpUntransposed[13] = new Integer[]{45, 6, 0, 132, 12, 12, 4, 1, 0, 8};
+		// Chord 5
+		btpUntransposed[14] = new Integer[]{45, 6, 0, 144, 24, 24, 5, 5, 0, 9};
+		btpUntransposed[15] = new Integer[]{57, 5, 7, 144, 24, 144, 5, 5, 1, 9};
+		btpUntransposed[16] = new Integer[]{57, 4, 2, 144, 24, 48, 5, 5, 2, 9};
+		btpUntransposed[17] = new Integer[]{60, 3, 1, 144, 24, 24, 5, 5, 3, 9};
+		btpUntransposed[18] = new Integer[]{69, 2, 5, 144, 24, 24, 5, 5, 4, 9};
+		// Chord 6
+		btpUntransposed[19] = new Integer[]{45, 6, 0, 168, 12, 24, 6, 4, 0, 10};
+		btpUntransposed[20] = new Integer[]{60, 3, 1, 168, 12, 12, 6, 4, 1, 10};
+		btpUntransposed[21] = new Integer[]{64, 2, 0, 168, 12, 12, 6, 4, 2, 10};
+		btpUntransposed[22] = new Integer[]{69, 1, 0, 168, 12, 24, 6, 4, 3, 10};
+		// Chord 7
+		btpUntransposed[23] = new Integer[]{59, 3, 0, 180, 12, 108, 7, 2, 0, 11};
+		btpUntransposed[24] = new Integer[]{68, 2, 4, 180, 12, 12, 7, 2, 1, 11};
+		// Chord 8
+		btpUntransposed[25] = new Integer[]{45, 6, 0, 192, 6, 72, 8, 4, 0, 13};
+		btpUntransposed[26] = new Integer[]{57, 4, 2, 192, 6, 72, 8, 4, 1, 13};
+		btpUntransposed[27] = new Integer[]{64, 2, 0, 192, 6, 6, 8, 4, 2, 13};
+		btpUntransposed[28] = new Integer[]{69, 1, 0, 192, 6, 12, 8, 4, 3, 13};
+		// Chord 9-14
+		btpUntransposed[29] = new Integer[]{68, 2, 4, 198, 6, 9, 9, 1, 0, 14};
+		btpUntransposed[30] = new Integer[]{69, 1, 0, 204, 3, 12, 10, 1, 0, 15};
+		btpUntransposed[31] = new Integer[]{68, 2, 4, 207, 3, 3, 11, 1, 0, 16};
+		btpUntransposed[32] = new Integer[]{66, 2, 2, 210, 3, 3, 12, 1, 0, 18};
+		btpUntransposed[33] = new Integer[]{68, 2, 4, 213, 3, 51, 13, 1, 0, 19};
+		btpUntransposed[34] = new Integer[]{69, 1, 0, 216, 24, 48, 14, 1, 0, 20};
+		// Chord 15
+		btpUntransposed[35] = new Integer[]{45, 6, 0, 264, 24, 24, 15, 4, 0, 22};
+		btpUntransposed[36] = new Integer[]{57, 4, 2, 264, 24, 24, 15, 4, 1, 22};
+		btpUntransposed[37] = new Integer[]{64, 2, 0, 264, 24, 24, 15, 4, 2, 22};
+		btpUntransposed[38] = new Integer[]{69, 1, 0, 264, 24, 24, 15, 4, 3, 22};
 		
-		List<Integer[]> actual = 
-			new Tablature(encodingTestGetMeterInfo, false).createDiminutionPerBar();
-		actual.addAll(new Tablature(encodingTestpiece, false).createDiminutionPerBar());
-		
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-	  		assertEquals(expected.get(i).length, actual.get(i).length);
-	  		for (int j = 0; j < expected.get(i).length; j++) {
-	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
-	  		}
-		}
+		return btpUntransposed;
 	}
 
 
-	public void testGetUndiminutedMeterInfoInternal() {
-		Tablature tablature = new Tablature();
-		tablature.setEncoding(new Encoding(encodingTestGetMeterInfo));
+	private Integer[][] getBtpTransposed() {
+		Integer[][] btpTransposed = getBtpUntransposed();
+		int transpositionInterval = -2;
+		for (int i = 0; i < btpTransposed.length; i++) {
+			btpTransposed[i][Tablature.PITCH] = btpTransposed[i][Tablature.PITCH] + transpositionInterval;
+		}
+		return btpTransposed;
+	}
+
+
+	public void testMakeUndiminutedMeterInfo() {
+		Tablature t = new Tablature();
+		t.setEncoding(new Encoding(encodingTestGetMeterInfo));
 		List<Integer[]> expected = new ArrayList<>();
 		expected.add(new Integer[]{3, 8, 0, 0, 0, 1});
 		expected.add(new Integer[]{2, 2, 1, 2, 3, 8});
@@ -80,7 +118,7 @@ public class TablatureTest extends TestCase {
 		expected.add(new Integer[]{5, 16, 7, 7, 47, 8});
 		expected.add(new Integer[]{2, 2, 8, 8, 99, 16});
 
-		List<Integer[]> actual = tablature.getUndiminutedMeterInfoInternal();
+		List<Integer[]> actual = t.makeUndiminutedMeterInfo();
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -92,12 +130,13 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testGetDiminutionsInternal() {
-		Tablature tablature = new Tablature();
-		tablature.setEncoding(new Encoding(encodingTestGetMeterInfo));
+	public void testMakeDiminutions() {
+		Tablature t = new Tablature();
+		t.setEncoding(new Encoding(encodingTestGetMeterInfo));
+
 		List<Integer> expected = Arrays.asList(new Integer[]{2, 2, 4, 1, 1, -2});
-		List<Integer> actual = tablature.getDiminutionsInternal();
-		
+		List<Integer> actual = t.makeDiminutions();
+
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));
@@ -106,33 +145,31 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testCreateMeterInfo() {
+	public void testMakeMeterInfo() {
 		Tablature t1 = new Tablature();
 		t1.setEncoding(new Encoding(encodingTestGetMeterInfo));
+		t1.setUndiminutedMeterInfo();
+		t1.setDiminutions();
+
 		Tablature t2 = new Tablature();
 		t2.setEncoding(new Encoding(encodingTestpiece));
-				
+		t2.setUndiminutedMeterInfo();
+		t2.setDiminutions();
+	
 		List<Integer[]> expected = new ArrayList<Integer[]>();
-		// tablature1
-//		expected.add(new Integer[]{3, 4, 0, 0, 0, 1, 2});
-//		expected.add(new Integer[]{2, 1, 1, 2, 3, 4, 2});
-//		expected.add(new Integer[]{3, 1, 3, 4, 19, 4, 4});
-//		expected.add(new Integer[]{2, 2, 5, 6, 25, 4, 1});
-//		expected.add(new Integer[]{5, 16, 7, 7, 57, 4, 1});
-//		expected.add(new Integer[]{2, 4, 8, 8, 233, 16, -2});
+		// t1
 		expected.add(new Integer[]{3, 4, 0, 0, 0, 1, 2});
 		expected.add(new Integer[]{2, 1, 1, 2, 3, 4, 2});
 		expected.add(new Integer[]{3, 1, 3, 4, 19, 4, 4});
 		expected.add(new Integer[]{2, 2, 5, 6, 43, 4, 1});
 		expected.add(new Integer[]{5, 16, 7, 7, 51, 4, 1});
 		expected.add(new Integer[]{2, 4, 8, 8, 209, 16, -2});
-		// tablature2		
+		// t2		
 		expected.add(new Integer[]{2, 2, 1, 3, 0, 1, 1});
 
-		List<Integer[]> actual = 
-			t1.createMeterInfo(t1.getUndiminutedMeterInfoInternal(), t1.getDiminutionsInternal());
-		actual.addAll(t2.createMeterInfo(t2.getUndiminutedMeterInfoInternal(), t2.getDiminutionsInternal()));
-		
+		List<Integer[]> actual = t1.makeMeterInfo();
+		actual.addAll(t2.makeMeterInfo());
+
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 	  		assertEquals(expected.get(i).length, actual.get(i).length);
@@ -143,7 +180,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testGetDiminutedMeter() {
+	public void testDiminuteMeter() {
 		List<Rational> expected = new ArrayList<>();
 		expected.add(new Rational(2, 1)); // 2/2, dim = 2
 		expected.add(new Rational(4, 2)); // 4/4, dim = 2
@@ -160,7 +197,7 @@ public class TablatureTest extends TestCase {
 		List<Integer> dims = Arrays.asList(new Integer[]{2, 2, 4, -2, -2, -4});
 		List<Rational> actual = new ArrayList<>();
 		for (int i = 0; i < meters.size(); i++) {
-			actual.add(Tablature.getDiminutedMeter(meters.get(i), dims.get(i)));
+			actual.add(Tablature.diminuteMeter(meters.get(i), dims.get(i)));
 		}
 
 		assertEquals(expected.size(), actual.size());
@@ -171,33 +208,65 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testRevertDiminutedMeter() {
-		Rational twoTwo = new Rational(2, 2);
-		Rational fourFour = new Rational(4, 4);
-		
-		List<Rational> expected = new ArrayList<>();
-		expected.add(twoTwo); // 2/1, dim = 2
-		expected.add(fourFour); // 4/2, dim = 2
-		expected.add(fourFour); // 4/1, dim = 4
-		expected.add(twoTwo); // 2/4, dim = -2
-		expected.add(fourFour); // 4/8, dim = -2
-		expected.add(fourFour); // 4/16, dim = -4
+	public void testMakeDiminutionPerBar() {
+		Tablature t1 = new Tablature();
+		t1.setEncoding(new Encoding(encodingTestGetMeterInfo));
+		t1.setUndiminutedMeterInfo();
+		t1.setDiminutions();
+		t1.setMeterInfo();
 
-		List<Rational> meters = Arrays.asList(new Rational[]{
-			new Rational(2, 1), new Rational(4, 2), new Rational(4, 1), 
-			new Rational(2, 4), new Rational(4, 8), new Rational(4, 16)
-		});
-		List<Integer> dims = Arrays.asList(new Integer[]{2, 2, 4, -2, -2, -4});
-		List<Rational> actual = new ArrayList<>();
-		for (int i = 0; i < meters.size(); i++) {
-			actual.add(Tablature.revertDiminutedMeter(meters.get(i), dims.get(i)));
-		}
+		Tablature t2 = new Tablature();
+		t2.setEncoding(new Encoding(encodingTestpiece));
+		t2.setUndiminutedMeterInfo();
+		t2.setDiminutions();
+		t2.setMeterInfo();
+
+		// For encodingTestGetMeterInfo
+		List<Integer[]> expected = new ArrayList<>();
+		expected.add(new Integer[]{0, 2});
+		expected.add(new Integer[]{1, 2});
+		expected.add(new Integer[]{2, 2});
+		expected.add(new Integer[]{3, 4});
+		expected.add(new Integer[]{4, 4});
+		expected.add(new Integer[]{5, 1});
+		expected.add(new Integer[]{6, 1});
+		expected.add(new Integer[]{7, 1});
+		expected.add(new Integer[]{8, -2});
+		// For encodingTestPiece
+		expected.add(new Integer[]{1, 1});
+		expected.add(new Integer[]{2, 1});
+		expected.add(new Integer[]{3, 1});
+
+		List<Integer[]> actual = t1.makeDiminutionPerBar();
+		actual.addAll(t2.makeDiminutionPerBar());
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		} 
-		assertEquals(expected, actual);
+	  		assertEquals(expected.get(i).length, actual.get(i).length);
+	  		for (int j = 0; j < expected.get(i).length; j++) {
+	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
+	  		}
+		}
+	}
+
+
+	public void testMakeBasicTabSymbolProperties() {
+		Tablature t = new Tablature();
+		t.setEncoding(new Encoding(encodingTestpiece));
+		t.setUndiminutedMeterInfo();
+		t.setDiminutions();
+		t.setMeterInfo();
+
+		Integer[][] expected = getBtpUntransposed();
+		Integer[][] actual = t.makeBasicTabSymbolProperties();
+
+		assertEquals(expected.length, actual.length);
+		for (int i = 0; i < expected.length; i++) {
+			assertEquals(expected[i].length, actual[i].length);
+			for (int j = 0; j < expected[i].length; j++) {
+				assertEquals(expected[i][j], actual[i][j]);
+			}
+		}
 	}
 
 
@@ -283,12 +352,150 @@ public class TablatureTest extends TestCase {
 		}
 	}
 
-	
-	public void testSetAndGetNumberOfNotesPerChord() {
-		Tablature tablature = new Tablature(encodingTestpiece, false);
+
+	public void testNormaliseTuning() {
+		Tablature t = new Tablature();
+		t.setEncoding(new Encoding(encodingTestpiece));
+		t.setUndiminutedMeterInfo();
+		t.setDiminutions();
+		t.setMeterInfo();
+		t.setBasicTabSymbolProperties();
+
+		Tuning expectedTuning = Tuning.G;
+		List<Integer> expectedGridYValues = Arrays.asList(new Integer[]{
+			48, 55, 63, 67, 43, 55, 70, 67, 46, 45, 48,	57, 63, 43, 43, 55, 55, 58, 67, 43, 
+			58, 62, 67, 57, 66, 43, 55, 62, 67, 66, 67, 66, 64, 66, 67, 43, 55, 62, 67});
+		Integer[][] expectedBtp = getBtpTransposed(); 
+
+		t.normaliseTuning(true);
+
+		Tuning actualTuning = t.getEncoding().getTunings()[Encoding.NEW_TUNING_IND];
+		assertEquals(expectedTuning, actualTuning);
+		//		
+		List<Integer> actualGridYValues = t.getEncoding().getListsOfStatistics().get(Encoding.GRID_Y_IND);
+		assertEquals(expectedGridYValues.size(), actualGridYValues.size());
+		for (int i = 0; i < expectedGridYValues.size(); i++) {
+			assertEquals(expectedGridYValues.get(i), actualGridYValues.get(i));
+		}
+		//
+		Integer[][] actualBtp = t.getBasicTabSymbolProperties();
+		assertEquals(expectedBtp.length, actualBtp.length);
+		for (int i = 0; i < expectedBtp.length; i++) {
+			assertEquals(expectedBtp[i].length, actualBtp[i].length);
+			for (int j = 0; j < expectedBtp[i].length; j++) {
+				assertEquals(expectedBtp[i][j], actualBtp[i][j]);
+			}
+		}
+	}
+
+
+	public void testMakeTablatureChords() {
+		Tablature t = new Tablature();
+		t.setEncoding(new Encoding(encodingTestpiece));
+		t.setUndiminutedMeterInfo();
+		t.setDiminutions();
+		t.setMeterInfo();
+		t.setBasicTabSymbolProperties();
+		t.setNormaliseTuning(false);
+
+		List<List<TabSymbol>> expected = new ArrayList<List<TabSymbol>>();
+		TabSymbolSet tss = t.getEncoding().getTabSymbolSet();
+		// Chord 0
+		expected.add(Arrays.asList(new TabSymbol[]{
+			TabSymbol.getTabSymbol("a5", tss),
+			TabSymbol.getTabSymbol("c4", tss),
+			TabSymbol.getTabSymbol("b2", tss),
+			TabSymbol.getTabSymbol("a1", tss)
+		}));
+		// Chord 1
+		expected.add(Arrays.asList(new TabSymbol[]{
+			TabSymbol.getTabSymbol("a6", tss),
+			TabSymbol.getTabSymbol("c4", tss),
+			TabSymbol.getTabSymbol("i2", tss),
+			TabSymbol.getTabSymbol("a1", tss)	
+		}));
+		// Chord 2
+		expected.add(Arrays.asList(new TabSymbol[]{
+			TabSymbol.getTabSymbol("d6", tss)
+		})); 
+		// Chord 3
+		expected.add(Arrays.asList(new TabSymbol[]{
+			TabSymbol.getTabSymbol("c6", tss),
+			TabSymbol.getTabSymbol("a5", tss),
+			TabSymbol.getTabSymbol("e4", tss),
+			TabSymbol.getTabSymbol("b2", tss)
+		}));
+		// Chord 4
+		expected.add(Arrays.asList(new TabSymbol[]{
+			TabSymbol.getTabSymbol("a6", tss)
+		}));
+		// Chord 5
+		expected.add(Arrays.asList(new TabSymbol[]{
+			TabSymbol.getTabSymbol("a6", tss),
+			TabSymbol.getTabSymbol("h5", tss),
+			TabSymbol.getTabSymbol("c4", tss),
+			TabSymbol.getTabSymbol("b3", tss),
+			TabSymbol.getTabSymbol("f2", tss)
+		}));
+		// Chord 6
+		expected.add(Arrays.asList(new TabSymbol[]{
+			TabSymbol.getTabSymbol("a6", tss),
+			TabSymbol.getTabSymbol("b3", tss),
+			TabSymbol.getTabSymbol("a2", tss),
+			TabSymbol.getTabSymbol("a1", tss)
+		}));
+		// Chord 7
+		expected.add(Arrays.asList(new TabSymbol[]{
+			TabSymbol.getTabSymbol("a3", tss),
+			TabSymbol.getTabSymbol("e2", tss)
+		}));
+		// Chord 8
+		expected.add(Arrays.asList(new TabSymbol[]{
+			TabSymbol.getTabSymbol("a6", tss),
+			TabSymbol.getTabSymbol("c4", tss),
+			TabSymbol.getTabSymbol("a2", tss),
+			TabSymbol.getTabSymbol("a1", tss)
+		}));
+		// Chord 9-14
+		expected.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
+		expected.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("a1", tss)}));
+		expected.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
+		expected.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("c2", tss)}));
+		expected.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
+		expected.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("a1", tss)}));
+		// Chord 15
+		expected.add(Arrays.asList(new TabSymbol[]{
+			TabSymbol.getTabSymbol("a6", tss),
+			TabSymbol.getTabSymbol("c4", tss),
+			TabSymbol.getTabSymbol("a2", tss),
+			TabSymbol.getTabSymbol("a1", tss)
+		}));
+
+		List<List<TabSymbol>> actual = t.makeTablatureChords();
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).size(), actual.get(i).size());
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+			}
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testMakeNumberOfNotesPerChord() {
+		Tablature t = new Tablature();
+		t.setEncoding(new Encoding(encodingTestpiece));
+		t.setUndiminutedMeterInfo();
+		t.setDiminutions();
+		t.setMeterInfo();
+		t.setBasicTabSymbolProperties();
+		t.setNormaliseTuning(false);
+		t.setTablatureChords();
 
 		List<Integer> expected = Arrays.asList(new Integer[]{4, 4, 1, 4, 1, 5, 4, 2, 4, 1, 1, 1, 1, 1, 1, 4});
-		List<Integer> actual = tablature.getNumberOfNotesPerChord();
+		List<Integer> actual = t.makeNumberOfNotesPerChord();
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -298,70 +505,39 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testSetAndGetBasicTabSymbolProperties() {
-		Tablature tablature = new Tablature(encodingTestpiece, false);
 
-		Integer[][] expected = new Integer[39][10];
-		// Chord 0
-		expected[0] = new Integer[]{50, 5, 0, 72, 24, 48, 0, 4, 0, 3};
-		expected[1] = new Integer[]{57, 4, 2, 72, 24, 24, 0, 4, 1, 3};
-		expected[2] = new Integer[]{65, 2, 1, 72, 24, 24, 0, 4, 2, 3};
-		expected[3] = new Integer[]{69, 1, 0, 72, 24, 24, 0, 4, 3, 3};
-		// Chord 1
-		expected[4] = new Integer[]{45, 6, 0, 96, 18, 18, 1, 4, 0, 5};
-		expected[5] = new Integer[]{57, 4, 2, 96, 18, 24, 1, 4, 1, 5};
-		expected[6] = new Integer[]{72, 2, 8, 96, 18, 24, 1, 4, 2, 5};
-		expected[7] = new Integer[]{69, 1, 0, 96, 18, 72, 1, 4, 3, 5};
-		// Chord 2
-		expected[8] = new Integer[]{48, 6, 3, 114, 6, 6, 2, 1, 0, 6};
-		// Chord 3
-		expected[9] = new Integer[]{47, 6, 2, 120, 12, 12, 3, 4, 0, 7};
-		expected[10] = new Integer[]{50, 5, 0, 120, 12, 24, 3, 4, 1, 7};
-		expected[11] = new Integer[]{59, 4, 4, 120, 12, 24, 3, 4, 2, 7};
-		expected[12] = new Integer[]{65, 2, 1, 120, 12, 24, 3, 4, 3, 7};
-		// Chord 4
-		expected[13] = new Integer[]{45, 6, 0, 132, 12, 12, 4, 1, 0, 8};
-		// Chord 5
-		expected[14] = new Integer[]{45, 6, 0, 144, 24, 24, 5, 5, 0, 9};
-		expected[15] = new Integer[]{57, 5, 7, 144, 24, 144, 5, 5, 1, 9};
-		expected[16] = new Integer[]{57, 4, 2, 144, 24, 48, 5, 5, 2, 9};
-		expected[17] = new Integer[]{60, 3, 1, 144, 24, 24, 5, 5, 3, 9};
-		expected[18] = new Integer[]{69, 2, 5, 144, 24, 24, 5, 5, 4, 9};
-		// Chord 6
-		expected[19] = new Integer[]{45, 6, 0, 168, 12, 24, 6, 4, 0, 10};
-		expected[20] = new Integer[]{60, 3, 1, 168, 12, 12, 6, 4, 1, 10};
-		expected[21] = new Integer[]{64, 2, 0, 168, 12, 12, 6, 4, 2, 10};
-		expected[22] = new Integer[]{69, 1, 0, 168, 12, 24, 6, 4, 3, 10};
-		// Chord 7
-		expected[23] = new Integer[]{59, 3, 0, 180, 12, 108, 7, 2, 0, 11};
-		expected[24] = new Integer[]{68, 2, 4, 180, 12, 12, 7, 2, 1, 11};
-		// Chord 8
-		expected[25] = new Integer[]{45, 6, 0, 192, 6, 72, 8, 4, 0, 13};
-		expected[26] = new Integer[]{57, 4, 2, 192, 6, 72, 8, 4, 1, 13};
-		expected[27] = new Integer[]{64, 2, 0, 192, 6, 6, 8, 4, 2, 13};
-		expected[28] = new Integer[]{69, 1, 0, 192, 6, 12, 8, 4, 3, 13};
-		// Chord 9-14
-		expected[29] = new Integer[]{68, 2, 4, 198, 6, 9, 9, 1, 0, 14};
-		expected[30] = new Integer[]{69, 1, 0, 204, 3, 12, 10, 1, 0, 15};
-		expected[31] = new Integer[]{68, 2, 4, 207, 3, 3, 11, 1, 0, 16};
-		expected[32] = new Integer[]{66, 2, 2, 210, 3, 3, 12, 1, 0, 18};
-		expected[33] = new Integer[]{68, 2, 4, 213, 3, 51, 13, 1, 0, 19};
-		expected[34] = new Integer[]{69, 1, 0, 216, 24, 48, 14, 1, 0, 20};
-		// Chord 15
-		expected[35] = new Integer[]{45, 6, 0, 264, 24, 24, 15, 4, 0, 22};
-		expected[36] = new Integer[]{57, 4, 2, 264, 24, 24, 15, 4, 1, 22};
-		expected[37] = new Integer[]{64, 2, 0, 264, 24, 24, 15, 4, 2, 22};
-		expected[38] = new Integer[]{69, 1, 0, 264, 24, 24, 15, 4, 3, 22};
+
+
+
+
+
+	public void testRevertDiminutedMeter() {
+		Rational twoTwo = new Rational(2, 2);
+		Rational fourFour = new Rational(4, 4);
 		
-		Integer[][] actual = tablature.getBasicTabSymbolProperties();
-		
-		assertEquals(expected.length, actual.length);
-		for (int i = 0; i < expected.length; i++) {
-			assertEquals(expected[i].length, actual[i].length);
-			for (int j = 0; j < expected[i].length; j++) {
-				assertEquals(expected[i][j], actual[i][j]);
-			}
+		List<Rational> expected = new ArrayList<>();
+		expected.add(twoTwo); // 2/1, dim = 2
+		expected.add(fourFour); // 4/2, dim = 2
+		expected.add(fourFour); // 4/1, dim = 4
+		expected.add(twoTwo); // 2/4, dim = -2
+		expected.add(fourFour); // 4/8, dim = -2
+		expected.add(fourFour); // 4/16, dim = -4
+
+		List<Rational> meters = Arrays.asList(new Rational[]{
+			new Rational(2, 1), new Rational(4, 2), new Rational(4, 1), 
+			new Rational(2, 4), new Rational(4, 8), new Rational(4, 16)
+		});
+		List<Integer> dims = Arrays.asList(new Integer[]{2, 2, 4, -2, -2, -4});
+		List<Rational> actual = new ArrayList<>();
+		for (int i = 0; i < meters.size(); i++) {
+			actual.add(Tablature.undiminuteMeter(meters.get(i), dims.get(i)));
 		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		} 
+		assertEquals(expected, actual);
 	}
 
 
@@ -466,42 +642,6 @@ public class TablatureTest extends TestCase {
 	public void testGetTranspositionInterval() {
 		Tablature tablature = new Tablature(encodingTestpiece, false);
 		assertEquals(-2, tablature.getTranspositionInterval());
-	}
-	
-	
-	public void testNormaliseTuning() {
-		Tablature tablature = new Tablature(encodingTestpiece, false);
-
-		Tuning expectedTuning = Tuning.G;
-		List<Integer> expectedGridYValues = Arrays.asList(new Integer[]{
-			48, 55, 63, 67, 43, 55, 70, 67, 46, 45, 48,	57, 63, 43, 43, 55, 55, 58, 67, 43, 
-			58, 62, 67, 57, 66, 43, 55, 62, 67, 66, 67, 66, 64, 66, 67, 43, 55, 62, 67});
-		Integer[][] btp = tablature.getBasicTabSymbolProperties();	
-		Integer[][] expectedBasicTabSymbolProperties = Arrays.copyOfRange(btp, 0, btp.length); 
-		int transpositionInterval = -2;
-		for (int i = 0; i < btp.length; i++) {
-			expectedBasicTabSymbolProperties[i][Tablature.PITCH] = 
-				btp[i][Tablature.PITCH] + transpositionInterval;
-		}
-
-		tablature.normaliseTuning();
-		Encoding enc = tablature.getEncoding();
-		Tuning actualTuning = enc.getTunings()[Encoding.NEW_TUNING_IND];
-		List<Integer> actualGridYValues = enc.getListsOfStatistics().get(Encoding.GRID_Y_IND);
-		Integer[][] actualBasicTabSymbolProperties = tablature.getBasicTabSymbolProperties();
-
-		assertEquals(expectedTuning, actualTuning);
-		assertEquals(expectedGridYValues.size(), actualGridYValues.size());
-		for (int i = 0; i < expectedGridYValues.size(); i++) {
-			assertEquals(expectedGridYValues.get(i), actualGridYValues.get(i));
-		}
-		assertEquals(expectedBasicTabSymbolProperties.length, actualBasicTabSymbolProperties.length);
-		for (int i = 0; i < expectedBasicTabSymbolProperties.length; i++) {
-			assertEquals(expectedBasicTabSymbolProperties[i].length, actualBasicTabSymbolProperties[i].length);
-			for (int j = 0; j < expectedBasicTabSymbolProperties[i].length; j++) {
-				assertEquals(expectedBasicTabSymbolProperties[i][j], actualBasicTabSymbolProperties[i][j]);
-			}
-		}
 	}
 
 
@@ -1098,95 +1238,6 @@ public class TablatureTest extends TestCase {
 				assertEquals(expected.get(i)[j], actual.get(i)[j]);
 			}
 		}
-	}
-
-
-	public void testSetAndGetTablatureChords() {
-		Tablature tablature = new Tablature(encodingTestpiece, false);
-		TabSymbolSet tss = TabSymbolSet.getTabSymbolSet("FrenchTab");
-		
-		List<List<TabSymbol>> expected = new ArrayList<List<TabSymbol>>();
-		// Chord 0
-		expected.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a5", tss),
-			TabSymbol.getTabSymbol("c4", tss),
-			TabSymbol.getTabSymbol("b2", tss),
-			TabSymbol.getTabSymbol("a1", tss)
-		}));
-		// Chord 1
-		expected.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a6", tss),
-			TabSymbol.getTabSymbol("c4", tss),
-			TabSymbol.getTabSymbol("i2", tss),
-			TabSymbol.getTabSymbol("a1", tss)	
-		}));
-		// Chord 2
-		expected.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("d6", tss)
-		})); 
-		// Chord 3
-		expected.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("c6", tss),
-			TabSymbol.getTabSymbol("a5", tss),
-			TabSymbol.getTabSymbol("e4", tss),
-			TabSymbol.getTabSymbol("b2", tss)
-		}));
-		// Chord 4
-		expected.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a6", tss)
-		}));
-		// Chord 5
-		expected.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a6", tss),
-			TabSymbol.getTabSymbol("h5", tss),
-			TabSymbol.getTabSymbol("c4", tss),
-			TabSymbol.getTabSymbol("b3", tss),
-			TabSymbol.getTabSymbol("f2", tss)
-		}));
-		// Chord 6
-		expected.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a6", tss),
-			TabSymbol.getTabSymbol("b3", tss),
-			TabSymbol.getTabSymbol("a2", tss),
-			TabSymbol.getTabSymbol("a1", tss)
-		}));
-		// Chord 7
-		expected.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a3", tss),
-			TabSymbol.getTabSymbol("e2", tss)
-		}));
-		// Chord 8
-		expected.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a6", tss),
-			TabSymbol.getTabSymbol("c4", tss),
-			TabSymbol.getTabSymbol("a2", tss),
-			TabSymbol.getTabSymbol("a1", tss)
-		}));
-		// Chord 9-14
-		expected.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
-		expected.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("a1", tss)}));
-		expected.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
-		expected.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("c2", tss)}));
-		expected.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
-		expected.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("a1", tss)}));
-		// Chord 15
-		expected.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a6", tss),
-			TabSymbol.getTabSymbol("c4", tss),
-			TabSymbol.getTabSymbol("a2", tss),
-			TabSymbol.getTabSymbol("a1", tss)
-		}));
-
-		List<List<TabSymbol>> actual = tablature.getTablatureChords();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size());
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
-			}
-		}
-		assertEquals(expected, actual);
 	}
 
 
@@ -1888,16 +1939,9 @@ public class TablatureTest extends TestCase {
 			new Tablature(encodingTestpiece, false)});		
 		for (int i = 0; i < tabs.size(); i++) {
 			Tablature t = tabs.get(i);
-			// Take into account anacrusis
-//			boolean anacrusis = t.getNumberOfMetricBars()[1] == 1;
-//			int startBar = anacrusis ? 0 : 1;			
-//			int stopBar = t.getNumberOfMetricBars()[0];
 			for (Rational mt : allMetricTimes.get(i)) {
-				actual.add(t.getDiminution(mt));
+				actual.add(Tablature.getDiminution(mt, t.getMeterInfo()));
 			}
-//			for (int bar = startBar; bar <= stopBar; bar++) {
-//				actual.add(t.getDiminution(bar));
-//			}
 		}
 
 		assertEquals(expected.size(), actual.size());

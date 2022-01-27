@@ -496,6 +496,11 @@ public class Encoding implements Serializable {
 	}
 
 
+	public void setTunings(Tuning[] t) {
+		tunings = t;
+	}
+
+
 	/**
 	 * Sets <code>listsOfSymbols</code>. 
 	 * This method must always be called along with (before) setListsOfStatistics().
@@ -756,6 +761,11 @@ public class Encoding implements Serializable {
 		los.add(HORIZONTAL_POS_TAB_SYMBOLS_ONLY_IND, horizontalPositionInTabSymbolEventsOnly);
 	
 		listsOfStatistics = los;
+	}
+
+
+	public void setListOfStatistics(List<List<Integer>> l) {
+		listsOfStatistics = l;
 	}
 
 
