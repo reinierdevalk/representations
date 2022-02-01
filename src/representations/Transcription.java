@@ -65,6 +65,7 @@ public class Transcription implements Serializable {
 	private List<List<Double>> voiceLabels;
 	private List<List<List<Double>>> chordVoiceLabels;
 	private List<List<Double>> durationLabels;
+	private List<List<Double>> minimumDurationLabels;
 	private List<List<List<Double>>> durationLabelsOLD;
 	private List<Integer[]> voicesCoDNotes = null;
 	private List<Integer[]> equalDurationUnisonsInfo;
@@ -428,6 +429,7 @@ public class Transcription implements Serializable {
 			setMeterInfo(tab.getMeterInfo());
 			setKeyInfo(/*tab.getMeterInfo()*/); // must be done after possible transpose()
 			setTranscriptionChordsFinal(); // sets the final version of the transcription chords
+			setMinimumDurationLabels(tab);
 		}
 		// b. In the non-tablature case
 		else {
@@ -734,9 +736,13 @@ public class Transcription implements Serializable {
 		Piece reversedPiece = new Piece();
 
 		Rational mirrorPoint = trans.getMirrorPoint(trans.getMeterInfo());
-		List<Rational[]> onsetsAndMinDurs = null;
+//		List<Rational[]> onsetsAndMinDurs = null;
+		List<Rational> onsets = null;
+		List<Rational> minDurs = null;
 		if (tab != null) {
-			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations(); // NB The value of normaliseTuning is irrelevant
+			onsets = ToolBox.getItemsAtIndex(tab.getMetricTimePerChord(false), 0);
+			minDurs = tab.getMinimumDurationPerChord();
+//			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations();
 		}
 		
 		Piece origP = trans.getUnadaptedGTPiece();
@@ -756,9 +762,18 @@ public class Transcription implements Serializable {
 						Rational duration = n.getMetricDuration();
 						// In tablature case: use minimum duration
 						if (tab != null) {
-							for (Rational[] item : onsetsAndMinDurs) {
-								if (item[0].equals(n.getMetricTime())) {
-									duration = item[1];
+//							for (Rational[] item : onsetsAndMinDurs) {
+//								if (item[0].equals(n.getMetricTime())) {
+//									duration = item[1];
+//									duration.reduce();
+//									break;
+//								}
+//							}
+							// NB: onsets and minDurs are corresponding lists and can be 
+							//     indexed concurrently
+							for (int i = 0; i < onsets.size(); i++) {
+								if (onsets.get(i).equals(n.getMetricTime())) {
+									duration = minDurs.get(i);
 									duration.reduce();
 									break;
 								}
@@ -809,10 +824,12 @@ public class Transcription implements Serializable {
 		List<Rational> onsetTimes = trans.getAllOnsetTimes();
 		List<List<Note>> chords = trans.getTranscriptionChords();
 		List<List<TabSymbol>> tabChords = null;
-		List<Rational[]> onsetsAndMinDurs = null;
+//		List<Rational[]> onsetsAndMinDurs = null;
+		List<Rational> minDurs = null;
 		if (tab != null) {
 			tabChords = tab.getTablatureChords(); 
-			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations();
+//			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations();
+			minDurs = tab.getMinimumDurationPerChord();
 		}
 
 		Piece origP = trans.getUnadaptedGTPiece();
@@ -837,7 +854,9 @@ public class Transcription implements Serializable {
 
 					boolean isOrn; 
 					if (tabChords != null) { 
-						isOrn = tabChords.get(ind).size() == 1 && onsetsAndMinDurs.get(ind)[1].isLess(dur);
+						isOrn = tabChords.get(ind).size() == 1 && 
+							minDurs.get(ind).isLess(dur);
+//							onsetsAndMinDurs.get(ind)[1].isLess(dur);
 					}
 					else {
 						isOrn = currNc.size() == 1 && chords.get(ind).size() == 1 &&
@@ -1081,6 +1100,16 @@ public class Transcription implements Serializable {
 	void setDurationLabels(List<List<Double>> argDurationLabels) {
 		durationLabels = argDurationLabels;
 	}
+	
+	
+	void setMinimumDurationLabels(Tablature tab) {
+		minimumDurationLabels = makeMinimumDurationLabels(tab);
+	}
+
+
+	public List<List<Double>> getMinimumDurationLabels() {
+		return minimumDurationLabels;
+	}
 
 
 	/**
@@ -1180,25 +1209,25 @@ public class Transcription implements Serializable {
 			}	     
 			// c. Check for (a) unison(s)
 			if (tablature.getUnisonInfo(i) != null) {
-				if (tablature.getUnisonInfo(i).length == 1) {
+				if (tablature.getUnisonInfo(i).size() == 1) {
 					chordsWithOneUnison.add(metricPosAsString);
 				}
-				if (tablature.getUnisonInfo(i).length == 2) {
+				if (tablature.getUnisonInfo(i).size() == 2) {
 					chordsWithTwoUnisons.add(metricPosAsString);
 				}
-				if (tablature.getUnisonInfo(i).length == 3) {
+				if (tablature.getUnisonInfo(i).size() == 3) {
 					chordsWithThreeUnisons.add(metricPosAsString);
 				}
 			}
 			// d. Check for (a) course crossing(s)
 			if (tablature.getCourseCrossingInfo(i) != null) {
-				if (tablature.getCourseCrossingInfo(i).length == 1) {
+				if (tablature.getCourseCrossingInfo(i).size() == 1) {
 					chordsWithOneCourseCrossing.add(metricPosAsString);
 				}
-				if (tablature.getCourseCrossingInfo(i).length == 2) {
+				if (tablature.getCourseCrossingInfo(i).size() == 2) {
 					chordsWithTwoCourseCrossings.add(metricPosAsString);
 				}
-				if (tablature.getCourseCrossingInfo(i).length == 3) {
+				if (tablature.getCourseCrossingInfo(i).size() == 3) {
 					chordsWithThreeCourseCrossings.add(metricPosAsString);
 				}
 			}
@@ -1612,9 +1641,9 @@ public class Transcription implements Serializable {
 		for (int i = 0; i < tablatureChords.size(); i++) {
 			// If the chord contains a course crossing
 			if (tablature.getCourseCrossingInfo(i) != null) {
-				Integer[][] chordCrossingInfo = tablature.getCourseCrossingInfo(i);
+				List<Integer[]> chordCrossingInfo = tablature.getCourseCrossingInfo(i);
 				// For each course crossing in the chord
-				for (int j = 0; j < chordCrossingInfo.length; j++) {
+				for (int j = 0; j < chordCrossingInfo.size(); j++) {
 					// 1. Determine the indices in noteSeq, voiceLab, and durationLab of the lower and upper CCnotes
 					// a. Calculate the number of Notes preceding the CC chord by summing the size of all previous chords
 					int notesPreceding = 0;
@@ -1622,8 +1651,8 @@ public class Transcription implements Serializable {
 						notesPreceding += transcriptionChords.get(k).size();
 					}
 					// b. Calculate the indices
-					int indexOfLowerCCNote = notesPreceding + chordCrossingInfo[j][2];
-					int indexOfUpperCCNote = notesPreceding + chordCrossingInfo[j][3];
+					int indexOfLowerCCNote = notesPreceding + chordCrossingInfo.get(j)[2];
+					int indexOfUpperCCNote = notesPreceding + chordCrossingInfo.get(j)[3];
 
 					// 2. Swap
 					noteSeq.swapNotes(indexOfLowerCCNote, indexOfUpperCCNote);
@@ -1634,8 +1663,8 @@ public class Transcription implements Serializable {
 
 					// 3. Concat information to adaptations
 					adaptations = adaptations.concat("  Course crossing found in chord " + i + ": notes no. " + 
-						chordCrossingInfo[j][2] + " (pitch " + chordCrossingInfo[j][0]	+ ") and " + chordCrossingInfo[j][3] +
-						" (pitch " + chordCrossingInfo[j][1] + ") in that chord swapped in the NoteSequence; "+ "list of " + 
+						chordCrossingInfo.get(j)[2] + " (pitch " + chordCrossingInfo.get(j)[0]	+ ") and " + chordCrossingInfo.get(j)[3] +
+						" (pitch " + chordCrossingInfo.get(j)[1] + ") in that chord swapped in the NoteSequence; "+ "list of " + 
 						"voice labels and list of durations adapted accordingly." + "\n");
 				}
 			}
@@ -7236,6 +7265,23 @@ public class Transcription implements Serializable {
 
 
 	/**
+	 * Returns the minimum duration as a duration label for each TabSymbol in the given 
+	 * Tablature.
+	 * 
+	 * @param tab
+	 * @return
+	 */
+	// TESTED
+	static List<List<Double>> makeMinimumDurationLabels(Tablature tab) {
+		List<List<Double>> minDurLabels = new ArrayList<>();
+		for (Integer[] in : tab.getBasicTabSymbolProperties()) {
+			minDurLabels.add(createDurationLabel(in[Tablature.MIN_DURATION]));
+		}
+		return minDurLabels;
+	}
+
+
+	/**
 	 * Determines whether the given voice label represents a CoD.
 	 * 
 	 * @param voiceLabel
@@ -7374,29 +7420,31 @@ public class Transcription implements Serializable {
 	}
 
 
-  /**
-   * Creates a Note with the given pitch, MetricTime, and MetricDuration. 
-   * 
-   * @param pitch
-   * @param metricTime
-   * @param metricDuration
-   * @return
-   */
-  public static Note createNote(int pitch, Rational metricTime, Rational metricDuration) {
-  	// A Note consists of a ScoreNote and a PerformanceNote; each need to be created separately first 
-  	// 1. Create the ScoreNote
-  	ScorePitch scorePitch = new ScorePitch(pitch);
-  	ScoreNote scoreNote = new ScoreNote(scorePitch, metricTime, metricDuration);
-	  // 2. Create the PerformanceNote. The argumentless constructor can be used; after the creation only the
-   	// object variable pitch needs to be set: the others (duration, velocity, and generated) are irrelevant here
-  	PerformanceNote performanceNote = new PerformanceNote();
-	  performanceNote.setPitch(pitch);
-	  
-	  Note note = new Note(scoreNote, performanceNote);
-    // TODO? OR, as PerformanceNote does not really apply in our case:
-//	  MidiNote midiNote = MidiNote.convert(performanceNote);
-//    Note note = new Note(scoreNote, midiNote);
-	  
+	/**
+	 * Creates a Note with the given pitch, MetricTime, and MetricDuration. 
+	 * 
+	 * @param pitch
+	 * @param metricTime
+	 * @param metricDuration
+	 * @return
+	 */
+	public static Note createNote(int pitch, Rational metricTime, Rational metricDuration) {
+		// A Note consists of a ScoreNote and a PerformanceNote; each need to be created 
+		// separately first 
+		// 1. Create the ScoreNote
+		ScorePitch scorePitch = new ScorePitch(pitch);
+		ScoreNote scoreNote = new ScoreNote(scorePitch, metricTime, metricDuration);
+		// 2. Create the PerformanceNote. The argumentless constructor can be used; after 
+		// the creation only the object variable pitch needs to be set: the others 
+		// (duration, velocity, and generated) are irrelevant here
+		PerformanceNote performanceNote = new PerformanceNote();
+		performanceNote.setPitch(pitch);
+
+		Note note = new Note(scoreNote, performanceNote);
+		// TODO? OR, as PerformanceNote does not really apply in our case:
+//		MidiNote midiNote = MidiNote.convert(performanceNote);
+//		Note note = new Note(scoreNote, midiNote);
+
 		return note;
 	}
   
@@ -8718,9 +8766,9 @@ public class Transcription implements Serializable {
 		for (int i = 0; i < tablatureChords.size(); i++) {
 			// If the chord contains a course crossing
 			if (tablature.getCourseCrossingInfo(i) != null) {
-				Integer[][] chordCrossingInfo = tablature.getCourseCrossingInfo(i);
+				List<Integer[]> chordCrossingInfo = tablature.getCourseCrossingInfo(i);
 			 	// For each course crossing in the chord
-				for (int j = 0; j < chordCrossingInfo.length; j++) {
+				for (int j = 0; j < chordCrossingInfo.size(); j++) {
 					// 1. Determine the indices in noteSeq, voiceLab, and durationLab of the lower and upper CCnotes
 			    // a. Calculate the number of Notes preceding the CC chord by summing the size of all previous chords
 			 		int notesPreceding = 0;
@@ -8728,8 +8776,8 @@ public class Transcription implements Serializable {
 			    	notesPreceding += transcriptionChords.get(k).size();
 			    }
 			    // b. Calculate the indices
-			    int indexOfLowerCCNote = notesPreceding + chordCrossingInfo[j][2];
-			    int indexOfUpperCCNote = notesPreceding + chordCrossingInfo[j][3];
+			    int indexOfLowerCCNote = notesPreceding + chordCrossingInfo.get(j)[2];
+			    int indexOfUpperCCNote = notesPreceding + chordCrossingInfo.get(j)[3];
 			    
 			    // 2. Swap
 			    noteSeq.swapNotes(indexOfLowerCCNote, indexOfUpperCCNote);
@@ -8738,8 +8786,8 @@ public class Transcription implements Serializable {
 					
 			    // 3. Concat information to adaptations
 					adaptations = adaptations.concat("  Course crossing found in chord " + i + ": notes no. " + 
-			      chordCrossingInfo[j][2] + " (pitch " + chordCrossingInfo[j][0]	+ ") and " + chordCrossingInfo[j][3] +
-			      " (pitch " + chordCrossingInfo[j][1]	+ ") in that chord swapped in the NoteSequence; "+ "list of " + 
+			      chordCrossingInfo.get(j)[2] + " (pitch " + chordCrossingInfo.get(j)[0]	+ ") and " + chordCrossingInfo.get(j)[3] +
+			      " (pitch " + chordCrossingInfo.get(j)[1]	+ ") in that chord swapped in the NoteSequence; "+ "list of " + 
 			      "voice labels and list of durations adapted accordingly." + "\n");
 			  }
 			}

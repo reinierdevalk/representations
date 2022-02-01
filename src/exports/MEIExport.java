@@ -1172,7 +1172,8 @@ public class MEIExport {
 		if (ONLY_TAB && !alignWithMetricBarring) {
 			List<Integer> meterChangeBarsTab = new ArrayList<>();
 			for (int i : meterChangeBars) {
-				int indexInTbtmb = ToolBox.getItemsAtIndex(tabBarsToMetricBars, 1).indexOf(i);
+				int indexInTbtmb = 
+					ToolBox.getItemsAtIndex(tabBarsToMetricBars, 1).indexOf(i);
 				meterChangeBarsTab.add(tabBarsToMetricBars.get(indexInTbtmb)[0]);
 			}
 			meterChangeBars = meterChangeBarsTab;

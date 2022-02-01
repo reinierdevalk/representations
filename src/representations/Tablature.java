@@ -26,6 +26,7 @@ public class Tablature implements Serializable {
 	public static final int MAXIMUM_NUMBER_OF_NOTES = 5;
 	public static final Rational SMALLEST_RHYTHMIC_VALUE = 
 		new Rational(RhythmSymbol.semifusa.getDuration()/3, RhythmSymbol.brevis.getDuration());
+	public static final int SRV_DEN = SMALLEST_RHYTHMIC_VALUE.getDenom();
 
 	public static final int PITCH = 0;
 	public static final int COURSE = 1;
@@ -76,22 +77,17 @@ public class Tablature implements Serializable {
 
 
 	private void init(Encoding encoding, boolean argNormaliseTuning) {
+		// Each of the following methods needs one or more of the preceding ones
 		setEncoding(encoding);
-		setPieceName(encoding.getName());
-		// Each of the following methods needs one or more of the preceding methods 
+		setPieceName(); 
 		setUndiminutedMeterInfo();
 		setDiminutions();
 		setMeterInfo();
 		setDiminutionPerBar();
 		setBasicTabSymbolProperties();
 		setNormaliseTuning(argNormaliseTuning);
-//		if (argNormaliseTuning) {
-//			normaliseTuning(); 
-//		}
-//		setNormaliseTuning(argNormaliseTuning);
 		setTablatureChords();
 		setNumberOfNotesPerChord();
-//		setDiminutionPerBar();
 	}
 
 
@@ -105,8 +101,8 @@ public class Tablature implements Serializable {
 	}
 
 
-	void setPieceName(String argName) {
-		pieceName = argName; 
+	void setPieceName() {
+		pieceName = getEncoding().getName(); 
 	}
 
 
@@ -230,43 +226,6 @@ public class Tablature implements Serializable {
 			prevMeterAsRat = newMeter;
 		}
 		return mi;
-	}
-
-
-	/**
-	 * Given a meter and a diminution, calculates the diminuted meter.
-	 * 
-	 * <ul>
-	 * <li>diminution > 0: meter count stays the same; meter unit doubles</li>
-	 * <ul>
-	 * <li>diminution = 2:	2/2 --> 2/(2/2) = 2/1</li>
-	 * <li>diminution = 2:	4/4 --> 4/(4/2) = 4/2</li>
-	 * <li>diminution = 4:	4/4 --> 4/(4/4) = 4/1</li>
-	 * </ul>
-	 * <li>diminution < 0: meter count stays the same; meter unit halves</li>
-	 * <ul>
-	 * <li>diminution = -2: 2/2 --> 2/(2*|-2|) = 2/4</li>
-	 * <li>diminution = -2: 4/4 --> 4/(4*|-2|) = 4/8</li>                    
-	 * <li>diminution = -4: 4/4 --> 4/(4*|-4|) = 4/16</li>
-	 * </ul>
-	 * </ul>
-	 * @param meter
-	 * @param diminution
-	 * @return
-	 */
-	// TESTED
-	static Rational diminuteMeter(Rational meter, int diminution) {
-		Rational newMeter;
-		if (diminution == 1) {
-			newMeter = new Rational(meter.getNumer(), meter.getDenom());
-		}
-		else if (diminution > 0) {
-			newMeter = new Rational(meter.getNumer(), (int) (meter.getDenom() / diminution)); 
-		}
-		else {
-			newMeter = new Rational(meter.getNumer(), (meter.getDenom() * Math.abs(diminution)));
-		}
-		return newMeter;
 	}
 
 
@@ -645,14 +604,14 @@ public class Tablature implements Serializable {
 	 * 
 	 * @return An Integer[][], containing for each TS (row) the following properties:<br>
 	 *   <ul>
-	 *   <li>as element 0: the pitch of the TS (as a MIDInumber)</li>
+	 *   <li>as element 0: the pitch of the TS (as a MIDI number)</li>
 	 *   <li>as element 1: the course of the TS</li>
 	 *   <li>as element 2: the fret of the TS</li>
-	 *   <li>as element 3: the onset time of the TS (as multiples of SMALLEST_RHYTHMIC_VALUE.getDenom())</li>
+	 *   <li>as element 3: the onset time of the TS (as multiples of SRV_DEN)</li>
 	 *   <li>as element 4: the minimum duration of the TS, which is also the duration of the chord it is in 
-	 *                     (as multiples of SMALLEST_RHYTHMIC_VALUE.getDenom())</li>
+	 *                     (as multiples of SRV_DEN)</li>
 	 *   <li>as element 5: the maximum duration of the TS, i.e., its duration until it is cut off by another TS on the
-	 *                     same course (as multiples of SMALLEST_RHYTHMIC_VALUE.getDenom())</li>                
+	 *                     same course (as multiples of SRV_DEN)</li>                
 	 *   <li>as element 6: the sequence number of the chord the TS is in</li>
 	 *   <li>as element 7: the size of the chord the TS is in</li>
 	 *   <li>as element 8: the sequence number within the chord of the TS</li>
@@ -694,6 +653,30 @@ public class Tablature implements Serializable {
 	//
 	//  C L A S S  M E T H O D S
 	//
+	//  P I T C H
+	/**
+	 * Gets the pitches in the chord at the given index. Element 0 of the List represents the
+	 * lowest note's pitch, element 1 the second-lowest note's, etc.
+	 * 
+	 * NB: If the chord contains course crossings, the list returned will not be in numerical 
+	 * order.
+	 * 
+	 * @param btp
+	 * @param lowestNoteIndex
+	 * @return
+	 */
+	// TESTED
+	public static List<Integer> getPitchesInChord(Integer[][] btp, int lowestNoteIndex) {
+		List<Integer> pitchesInChord = new ArrayList<Integer>();	
+		int chordSize = btp[lowestNoteIndex][CHORD_SIZE_AS_NUM_ONSETS];
+		for (int i = lowestNoteIndex; i < lowestNoteIndex + chordSize; i++) {
+			pitchesInChord.add(btp[i][PITCH]);
+		}
+		return pitchesInChord;
+	}
+
+
+	//  T I M E
 	/**
 	 * Gets the metric position of the note at the onset time. Returns a Rational[] with 
 	 *   <ul>
@@ -706,41 +689,41 @@ public class Tablature implements Serializable {
 	 * <br><br>
 	 * Example: a metric time of 9/8 in meter 6/8 returns 2/1 and 3/8 (i.e., the fourth 8th note in bar 2).
 	 * 
-	 * @param metricTime
-	 * @param argMeterInfo
+	 * @param mt
+	 * @param meterInfo
 	 * @return
 	 */
 	// TESTED
-	public static Rational[] getMetricPosition(Rational metricTime, List<Integer[]> argMeterInfo) {
+	public static Rational[] getMetricPosition(Rational mt, List<Integer[]> meterInfo) {
 		Rational[] metricPosition = new Rational[2];
 
 		// 0. Determine the presence of an anacrusis
 		boolean containsAnacrusis = false;
-		if (argMeterInfo.get(0)[Transcription.MI_FIRST_BAR] == 0) {
+		if (meterInfo.get(0)[Transcription.MI_FIRST_BAR] == 0) {
 			containsAnacrusis = true;
 		}
 
 		// 1. Determine the largest meter denominator and then the common denominator
 		int largestMeterDenom = -1;
-		for (Integer[] in : argMeterInfo) {
+		for (Integer[] in : meterInfo) {
 			if (in[Transcription.MI_DEN] > largestMeterDenom) {
 				largestMeterDenom = in[Transcription.MI_DEN];
 			}
 		}
-		int commonDenom = metricTime.getDenom() * largestMeterDenom;
+		int commonDenom = mt.getDenom() * largestMeterDenom;
 
 		// 2. Express metricTime and all meters in commonDenom  	
 		// a. metricTime
 		Rational metricTimeInLargestDenom = 
-			new Rational(metricTime.getNumer() * largestMeterDenom, metricTime.getDenom() * largestMeterDenom);
+			new Rational(mt.getNumer() * largestMeterDenom, mt.getDenom() * largestMeterDenom);
 		// b. All meters
 		List<Rational> metersInLargestDenom = new ArrayList<Rational>();
-		for (int i = 0; i < argMeterInfo.size(); i++) {
+		for (int i = 0; i < meterInfo.size(); i++) {
 			Integer[] currentMeter = 
-				new Integer[]{argMeterInfo.get(i)[Transcription.MI_NUM], 
-					argMeterInfo.get(i)[Transcription.MI_DEN]};
+				new Integer[]{meterInfo.get(i)[Transcription.MI_NUM], 
+					meterInfo.get(i)[Transcription.MI_DEN]};
 			// factor will always be an int because largestMeterDenom will always be a multiple of currentMeter[1]    	
-			int factor = (largestMeterDenom / currentMeter[1]) * metricTime.getDenom();  
+			int factor = (largestMeterDenom / currentMeter[1]) * mt.getDenom();  
 			metersInLargestDenom.add(new Rational(currentMeter[0] * factor, commonDenom));
 		}
 
@@ -760,10 +743,10 @@ public class Tablature implements Serializable {
 			startIndex = 0;
 		}
 		// Determine the remaining meter change points
-		for (int i = startIndex; i < argMeterInfo.size(); i++) {
+		for (int i = startIndex; i < meterInfo.size(); i++) {
 			// Determine the number of bars in the current meter
-			int numBarsInCurrentMeter = (argMeterInfo.get(i)[Transcription.MI_LAST_BAR] - 
-				argMeterInfo.get(i)[Transcription.MI_FIRST_BAR]) + 1;
+			int numBarsInCurrentMeter = (meterInfo.get(i)[Transcription.MI_LAST_BAR] - 
+				meterInfo.get(i)[Transcription.MI_FIRST_BAR]) + 1;
 			// Determine the metric time of the next meter change point and add it to meterChangePointsMetricTimes
 			// NB: When creating the new Rational do not use add() to avoid automatic reduction
 			Rational currentMeter = metersInLargestDenom.get(i);
@@ -802,7 +785,7 @@ public class Tablature implements Serializable {
 					int numberOfBarsToAdd =	
 						(currentDistance - (currentDistance % currentBarSize)) / currentBarSize;   			
 					int currentBarNumber = 
-						argMeterInfo.get(i + startIndex)[Transcription.MI_FIRST_BAR] + 
+						meterInfo.get(i + startIndex)[Transcription.MI_FIRST_BAR] + 
 						numberOfBarsToAdd;
 					// Determine the position in the bar
 					Rational currentPositionInBar = 
@@ -820,58 +803,27 @@ public class Tablature implements Serializable {
 
 
 	/**
-	 * Returns the int value of the given duration Rational.
-	 *  
-	 * @param dur
-	 * @return
-	 */
-	// TESTED
-	public static int rationalToIntDur(Rational dur) {
-		return dur.mul(SMALLEST_RHYTHMIC_VALUE.getDenom()).getNumer();
-	}
-
-
-	/**
-	 * Converts the TabSymbol at the given onsetIndex into a Note.
-	 * 
-	 * @param argBtp The basicTabSymbolProperties
-	 * @param noteIndex The index of the onset in the Tablature
-	 * @return
-	 */
-	public static Note convertTabSymbolToNote(Integer[][] argBtp, int noteIndex) {
-		Rational noteMinDuration = 
-			new Rational(argBtp[noteIndex][MIN_DURATION], SMALLEST_RHYTHMIC_VALUE.getDenom()); 
-		Rational noteOnsetTime = 
-			new Rational(argBtp[noteIndex][ONSET_TIME], SMALLEST_RHYTHMIC_VALUE.getDenom());
-		Note note = 
-			Transcription.createNote(argBtp[noteIndex][PITCH], noteOnsetTime, noteMinDuration);
-		return note; 
-	}
-
-
-	/**
 	 * Gets the minimum duration of the given Note.
 	 * 
 	 * NB Tablature case only. 
 	 * 
-	 * @param argBtp
+	 * @param btp
 	 * @param note
 	 * @return
 	 */
 	// TESTED
-	public static Rational getMinimumDurationOfNote(Integer[][] argBtp, Note note) {
+	public static Rational getMinimumDurationOfNote(Integer[][] btp, Note note) {
 		int pitch = note.getMidiPitch();
 		Rational metricTime = note.getMetricTime(); 
-		int metricTimeAsInt =	
-			metricTime.getNumer() * (SMALLEST_RHYTHMIC_VALUE.getDenom() / metricTime.getDenom());
+		int metricTimeAsInt = metricTime.getNumer() * (SRV_DEN / metricTime.getDenom());
 
 		// Find the note with pitch and metricTimeAsInt. In case there are two such notes 
 		// (i.e., in case of a unison), their minimum duration will be the same as they are 
 		// in the same chord
 		Rational minDuration = null;
-		for (Integer[] in : argBtp) {
+		for (Integer[] in : btp) {
 			if (in[ONSET_TIME] == metricTimeAsInt && in[PITCH] == pitch) {
-				minDuration = new Rational(in[MIN_DURATION], SMALLEST_RHYTHMIC_VALUE.getDenom());
+				minDuration = new Rational(in[MIN_DURATION], SRV_DEN);
 				break;
 			}
 		}
@@ -880,36 +832,52 @@ public class Tablature implements Serializable {
 
 
 	/**
-	 * Gets the diminution for the given metric time.
-	 * 
-	 * @param mt
-	 * @param mi
+	 * Returns the int value of the given duration Rational.
+	 *  
+	 * @param dur
 	 * @return
 	 */
 	// TESTED
-	public static int getDiminution(Rational mt, List<Integer[]> mi) {
-		int diminution = 1; 
-		// For each meter
-		for (int i = 0; i < mi.size(); i++) {
-			Integer[] in = mi.get(i);
-			// Not last meter: check if mt falls in current meter
-			if (i < mi.size() - 1) {
-				Rational lower = new Rational(in[Transcription.MI_NUM_MT_FIRST_BAR], 
-					in[Transcription.MI_DEN_MT_FIRST_BAR]);
-				Rational upper = 
-					new Rational(mi.get(i+1)[Transcription.MI_NUM_MT_FIRST_BAR], 
-					mi.get(i+1)[Transcription.MI_DEN_MT_FIRST_BAR]);
-				if (mt.isGreaterOrEqual(lower) && mt.isLess(upper)) {
-					diminution = in[MI_DIM];
-					break;
-				}
-			}
-			// Last (or only) meter: mt must fall in this meter
-			else {
-				diminution = in[MI_DIM];
-			}
+	public static int rationalToIntDur(Rational dur) {
+		return dur.mul(SRV_DEN).getNumer();
+	}
+
+
+	//  M E T E R
+	/**
+	 * Given a meter and a diminution, calculates the diminuted meter.
+	 * 
+	 * <ul>
+	 * <li>diminution > 0: meter count stays the same; meter unit doubles</li>
+	 * <ul>
+	 * <li>diminution = 2:	2/2 --> 2/(2/2) = 2/1</li>
+	 * <li>diminution = 2:	4/4 --> 4/(4/2) = 4/2</li>
+	 * <li>diminution = 4:	4/4 --> 4/(4/4) = 4/1</li>
+	 * </ul>
+	 * <li>diminution < 0: meter count stays the same; meter unit halves</li>
+	 * <ul>
+	 * <li>diminution = -2: 2/2 --> 2/(2*|-2|) = 2/4</li>
+	 * <li>diminution = -2: 4/4 --> 4/(4*|-2|) = 4/8</li>                    
+	 * <li>diminution = -4: 4/4 --> 4/(4*|-4|) = 4/16</li>
+	 * </ul>
+	 * </ul>
+	 * @param meter
+	 * @param diminution
+	 * @return
+	 */
+	// TESTED
+	public static Rational diminuteMeter(Rational meter, int diminution) {
+		Rational newMeter;
+		if (diminution == 1) {
+			newMeter = new Rational(meter.getNumer(), meter.getDenom());
 		}
-		return diminution;
+		else if (diminution > 0) {
+			newMeter = new Rational(meter.getNumer(), (int) (meter.getDenom() / diminution)); 
+		}
+		else {
+			newMeter = new Rational(meter.getNumer(), (meter.getDenom() * Math.abs(diminution)));
+		}
+		return newMeter;
 	}
 
 
@@ -950,172 +918,123 @@ public class Tablature implements Serializable {
 	}
 
 
+	/**
+	 * Gets the diminution for the given metric time.
+	 * 
+	 * @param mt
+	 * @param meterInfo
+	 * @return
+	 */
+	// TESTED
+	public static int getDiminution(Rational mt, List<Integer[]> meterInfo) {
+		int diminution = 1; 
+		// For each meter
+		for (int i = 0; i < meterInfo.size(); i++) {
+			Integer[] in = meterInfo.get(i);
+			// Not last meter: check if mt falls in current meter
+			if (i < meterInfo.size() - 1) {
+				Rational lower = new Rational(in[Transcription.MI_NUM_MT_FIRST_BAR], 
+					in[Transcription.MI_DEN_MT_FIRST_BAR]);
+				Rational upper = 
+					new Rational(meterInfo.get(i+1)[Transcription.MI_NUM_MT_FIRST_BAR], 
+					meterInfo.get(i+1)[Transcription.MI_DEN_MT_FIRST_BAR]);
+				if (mt.isGreaterOrEqual(lower) && mt.isLess(upper)) {
+					diminution = in[MI_DIM];
+					break;
+				}
+			}
+			// Last (or only) meter: mt must fall in this meter
+			else {
+				diminution = in[MI_DIM];
+			}
+		}
+		return diminution;
+	}
+
+
+	//  O T H E R
+	/**
+	 * Converts the TabSymbol at the given note index into a Note.
+	 * 
+	 * @param btp The basic TabSymbol properties
+	 * @param noteIndex The index of the note in the Tablature
+	 * @return
+	 */
+	// TESTED
+	public static Note convertTabSymbolToNote(Integer[][] btp, int noteIndex) {
+		return Transcription.createNote(
+			btp[noteIndex][PITCH], 
+			new Rational(btp[noteIndex][ONSET_TIME], SRV_DEN), 
+			new Rational(btp[noteIndex][MIN_DURATION], SRV_DEN)
+		);
+	}
+
+
 	//////////////////////////////////////
 	//
 	//  I N S T A N C E  M E T H O D S
 	//
+	//  P I T C H
 	/**
-	 * Gets the basicTabSymbolProperties of the chord at the given index in the Tablature, i.e., the elements of 
-	 * <i>basicTabSymbolProperties</i> corresponding to the notes within that chord. 
+	 * Gets the pitches in the chord at the given index. Element 0 of the List represents the
+	 * lowest note's pitch, element 1 the second-lowest note's, etc. 
 	 * 
-	 * @param chordIndex 
+	 * NB: If the chord contains course crossings, the list returned will not be in numerical 
+	 * order.
+	 * 
+	 * @param chordIndex
 	 * @return
 	 */
 	// TESTED
-	public Integer[][] getBasicTabSymbolPropertiesChord(int chordIndex) {
-		// Determine the size of the chord at chordIndex and the index of the lowest note in it
-		int chordSize = 0;
-		int lowestNoteIndex = 0;
-		Integer[][] btp = getBasicTabSymbolProperties();
-		for (int i = 0; i < btp.length; i++) {
-			if (btp[i][CHORD_SEQ_NUM] == chordIndex) {
-				lowestNoteIndex = i;
-				chordSize = btp[i][CHORD_SIZE_AS_NUM_ONSETS];
-				break;
-			}
+	public List<Integer> getPitchesInChord(int chordIndex) {
+		List<Integer> pitchesInChord = new ArrayList<Integer>();
+		Integer[][] btpChord = getBasicTabSymbolPropertiesChord(chordIndex);	
+		for (Integer[] currBtp : btpChord) {
+			pitchesInChord.add(currBtp[PITCH]);
 		}
-		// Create and return basicTabSymbolPropertiesChord
-		Integer[][] basicTabSymbolPropertiesChord = 
-			Arrays.copyOfRange(btp, lowestNoteIndex, lowestNoteIndex + chordSize);   
-		return basicTabSymbolPropertiesChord;
+		return pitchesInChord;
 	}
 
 
 	/**
-	 * Returns the interval (in semitones) by which the tablature must be transposed in order
-	 * to normalise its tuning to G.
-	 * 
-	 * @return
+	 * Gets information on the unison(s) in the chord at the given index. A unison occurs when 
+	 * two different Tablature notes in the same chord have the same pitch.  
+	 *
+	 * NB: This method presumes that<br>
+	 * <ul>
+	 * <li>A chord contains only one unison, and neither a CoD nor a course crossing.</li>
+	 * <li>A chord will not contain two unisons of the same pitch (e.g., 6th c., 10th fr. - 
+	 *    5th c., 5th fr. - 4th c., open), which is theoretically possible but will not occur
+	 *    in practice.</li>
+	 * </ul>
+	 *
+	 * @param chordIndex
+	 * @return An List of Integer[]s, each element of which represents a unison pair (starting 
+	 * from below), each element of which contains<br>
+	 * <ul>
+	 * <li>As element 0: the pitch (as a MIDI number) of the unison note.</li>
+	 * <li>As element 1: the sequence number in the chord of the lower unison note (i.e., 
+	 *     the one appearing first in the chord).</li>
+	 * <li>As element 2: the sequence number in the chord of the upper unison note.</li> 
+	 * </ul>
+	 * If the chord does not contain (a) unison(s), <code>null</code> is returned. 
 	 */
 	// TESTED
-	public int getTranspositionInterval() {
-		int transpositionInterval = 0;
-		Tuning originalTuning = getEncoding().getTunings()[Encoding.ENCODED_TUNING_IND];
-		for (Tuning t : Tuning.values()) {
-			if (t.equals(originalTuning)) {
-				transpositionInterval = -(t.getTransposition());
-				break;
-			}
-		}
-		return transpositionInterval;
-	}
-
-
-	/**
-	 * Returns all metric positions.
-	 * 
-	 * @return
-	 */
-	// TESTED
-	public List<Rational[]> getAllMetricPositions() {
-		List<Rational[]> allMetricPositions = new ArrayList<Rational[]>();
-		List<Integer[]> meterInf = getMeterInfo();
-		Integer[][] btp = getBasicTabSymbolProperties();
-		for (Integer[] b : btp) {
-			Rational currentMetricTime = 
-				new Rational(b[ONSET_TIME], SMALLEST_RHYTHMIC_VALUE.getDenom());
-			allMetricPositions.add(getMetricPosition(currentMetricTime, meterInf)); 
-		}
-		return allMetricPositions;
-	}
-
-
-	/**
-	 * Returns all onset times.
-	 * 
-	 * @return
-	 */
-	// TESTED
-	public List<Rational> getAllOnsetTimes() {
-		List<Rational> allOnsetTimes = new ArrayList<Rational>();
-		Integer[][] btp = getBasicTabSymbolProperties();
-		for (Integer[] b : btp) {
-			Rational currOnsetTime = new Rational(b[ONSET_TIME], SMALLEST_RHYTHMIC_VALUE.getDenom()); 
-			if (!allOnsetTimes.contains(currOnsetTime)) {
-				allOnsetTimes.add(currOnsetTime);
-			}
-		}
-		Collections.sort(allOnsetTimes);
-		return allOnsetTimes;
-	}
-
-
-	/**
-	 * Returns all onset times, including those of rests.
-	 * 
-	 * NB: individual, successive rests are combined into single rests; any rest added after
-	 * the final chord are omitted. Rests before the first chord are included.
-	 * 
-	 * @return For each note or rest event, a Rational[] containing<br>
-	 *         <ul>
-	 *         <li>as element 0: the onset time</li>
-	 *         <li>as element 1: whether (1) or not (0) it is a note event </li>
-	 *         </ul>
-	 */
-	// TESTED
-	public List<Rational[]> getAllOnsetTimesRestsInclusive() {
-		List<Rational[]> allOnsetTimes = new ArrayList<>();
-		
-		List<Rational[]> otmd = getAllOnsetTimesAndMinDurations();
-		// Check for rests before first chord; if there are, add 0 as first onset time
-		// NB This assumes that anacruses do not happen
-		if (otmd.get(0)[0].isGreater(Rational.ZERO)) {
-			allOnsetTimes.add(new Rational[]{Rational.ZERO, Rational.ZERO});
-		}
-		for (int i = 0; i < otmd.size(); i++) {
-			Rational currOns = otmd.get(i)[0];
-			allOnsetTimes.add(new Rational[]{currOns, Rational.ONE});
-			// For all but last onset: check for possible rests between curr and next onset
-			if (i < otmd.size()-1) {
-				// If nextOnset does not follow immediately: add rest onset in between
-				Rational currOffs = currOns.add(otmd.get(i)[1]); 
-				Rational nextOns = otmd.get(i+1)[0];
-				if (currOffs.isLess(nextOns)) {
-					allOnsetTimes.add(new Rational[]{currOffs, Rational.ZERO});
+	public List<Integer[]> getUnisonInfo(int chordIndex) {
+		List<Integer[]> unisonInfo = new ArrayList<>();
+		// For each pitch in pitchesInChord
+		List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
+		for (int i = 0; i < pitchesInChord.size(); i++) {
+			int currentPitch = pitchesInChord.get(i);        
+			// Search the remainder of pitchesInChord for a note with the same pitch (unison)
+			for (int j = i + 1; j < pitchesInChord.size(); j++) {
+				if (pitchesInChord.get(j) == currentPitch) {
+					unisonInfo.add(new Integer[]{currentPitch, i, j});
+					break; // See NB b) for reason of break
 				}
-			}
+			} 
 		}
-		return allOnsetTimes;
-	}
-
-
-	/**
-	 * Returns, for each onset time, the onset time and the minimum duration of the chord at it.
-	 * 
-	 * @return
-	 */
-	// TESTED
-	public List<Rational[]> getAllOnsetTimesAndMinDurations() {
-		List<Rational[]> allOnsetTimesAndMinDurs = new ArrayList<Rational[]>();
-		Integer[][] btp = getBasicTabSymbolProperties();
-		List<Rational> allOnsetTimes = new ArrayList<>();
-		for (Integer[] b : btp) {
-			Rational currentOnsetTime = 
-				new Rational(b[ONSET_TIME], SMALLEST_RHYTHMIC_VALUE.getDenom());
-			Rational currentMinDur = new Rational(b[MIN_DURATION], SMALLEST_RHYTHMIC_VALUE.getDenom());
-			if (!allOnsetTimes.contains(currentOnsetTime)) {
-				allOnsetTimes.add(currentOnsetTime);
-				allOnsetTimesAndMinDurs.add(new Rational[]{currentOnsetTime, currentMinDur});
-			}
-		}
-//		Collections.sort(allOnsetTimesAndMinDurs);
-		ToolBox.sortByRational(allOnsetTimesAndMinDurs, 0);
-		return allOnsetTimesAndMinDurs;
-	}
-
-
-	/**
-	 * Returns the minimum duration as a duration label for each TabSymbol in the tablature.
-	 *   
-	 * @return
-	 */
-	// TESTED
-	public List<List<Double>> getMinimumDurationLabels() {
-		List<List<Double>> minDurLabels = new ArrayList<>();
-		for (Integer[] in : getBasicTabSymbolProperties()) {
-			minDurLabels.add(Transcription.createDurationLabel(in[MIN_DURATION]));
-		}
-		return minDurLabels;
+		return unisonInfo.size() != 0 ? unisonInfo : null;
 	}
 
 
@@ -1127,89 +1046,56 @@ public class Tablature implements Serializable {
 	 * @return
 	 */
 	// TESTED
-	int getNumberOfUnisonsInChord(int chordIndex) { // TODO integrate into getUnisonInfo()?
-		int numberOfUnisons = 0;
-
-		List<List<TabSymbol>> tablatureChords = getTablatureChords();
-		List<TabSymbol> tablatureChord = tablatureChords.get(chordIndex);
-
-		// Only relevant if tablatureChord contains multiple TS
-		if (tablatureChord.size() > 1) {
-			// List all the unique pitches in tablatureChord
-			List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
-			List<Integer> uniquePitchesInChord = new ArrayList<Integer>();
-			for (int pitch : pitchesInChord) {
-				if (!uniquePitchesInChord.contains(pitch)) {
-					uniquePitchesInChord.add(pitch);
-				}
-			}
-			// Compare the sizes of pitchesInChord and uniquePitchesInChord; if they are not the same the chord
-			// contains (a) unison(s)
-			if (pitchesInChord.size() == (uniquePitchesInChord.size() + 1)) {
-				numberOfUnisons = 1;
-			}
-			if (pitchesInChord.size() == (uniquePitchesInChord.size() + 2)) {
-				numberOfUnisons = 2;
-			}
-			if (pitchesInChord.size() == (uniquePitchesInChord.size() + 3)) {
-				numberOfUnisons = 3;
-			}
+	public int getNumberOfUnisonsInChord(int chordIndex) {
+		if (getUnisonInfo(chordIndex) == null) {
+			return 0;
 		}
-		return numberOfUnisons;
+		else {
+			return getUnisonInfo(chordIndex).size();
+		}
 	}
 
 
 	/**
-	 * Gets information on the unison(s) in the chord at the given index. A unison occurs when 
-	 * two different Tablature notes in the same chord have the same pitch.  
-	 *
-	 * Returns an Integer[][], each element of which represents a unison pair (starting from below), each element
-	 * of which contains:
-	 *   as element 0: the pitch (as a MIDInumber) of the unison note
-	 *   as element 1: the sequence number in the chord of the lower unison note (i.e., the one appearing first in the chord)
-	 *   as element 2: the sequence number in the chord of the upper unison note 
-	 * If the chord does not contain (a) unison(s), <code>null</code> is returned. 
-	 *
-	 * NB: This method presumes that
-	 * a) a chord contains only one unison, and neither a CoD nor a course crossing;
-	 * b) a chord will not contain two unisons of the same pitch (e.g., 6th c., 10th fr. - 
-	 *    5th c., 5th fr. - 4th c., open), which is theoretically possible but will not occur in
-	 *    practice.
-	 *
-	 * @param chordIndex
-	 * @return
+	 * Gets information on the course crossing(s) in the chord at the given index in the given
+	 * list. A course crossing occurs when an note on course x has a pitch that is higher than
+	 * that of a note (in the same chord) on course y above it.
+	 * 
+	 * NB: This method presumes that<br>
+	 * <ul>
+	 * <li>A chord contains only one course crossing, and neither a CoD nor a unison.</li> 
+	 * <li>The course crossing will not span more than two pitches, which is theoretically 
+	 *    possible (e.g., 6th c., 12th fr. - 5th c., 6th fr. - 4th c., open), but will not 
+	 *    likely occur in practice.</li>
+	 * </ul>
+	 * @param chordIndex 
+	 * @return A List of Integer[]s, each element of which represents a course crossing pair 
+	 * (starting from below), each element of which contains<br>
+	 * <ul>
+	 * <li>As element 0: the pitch (as a MIDI number) of the lower CC note (i.e., the one 
+	 *     appearing first in the chord).</li>
+	 * <li>As element 1: the pitch (as a MIDI number) of the upper CC note.</li>
+	 * <li>As element 2: the sequence number in the chord of the lower CC note.</li>
+	 * <li>As element 3: the sequence number in the chord of the upper CC note.</li>
+	 * </ul>  
+	 * If the chord does not contain (a) course crossing(s), <code>null</code> is returned. 
 	 */
 	// TESTED
-	public Integer[][] getUnisonInfo(int chordIndex) {
-		Integer[][] unisonInfo = null;
-
-		// If the chord at chordIndex contains (a) unison(s)
-		if (getNumberOfUnisonsInChord(chordIndex) > 0) {
-			unisonInfo = new Integer[getNumberOfUnisonsInChord(chordIndex)][3];
-
-			// List the pitches in the chord at chordIndex
-			List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
-
-			// For each pitch in pitchesInChord 
-			int currentRowInUnisonInfo = 0;
-			for (int i = 0; i < pitchesInChord.size(); i++) {
-				int currentPitch = pitchesInChord.get(i);        
-				// Search the remainder of eventPitches for an onset with the same pitch
-				for (int j = i + 1; j < pitchesInChord.size(); j++) {
-					// Same pitch found? Unison found; fill the currentRowInUnisonInfo-th row of unisonInfo, increase
-					// currentRowInUnisonInfo, break from inner for, and continue with the next iteration of the outer
-					// for (the next pitch)
-					if (pitchesInChord.get(j) == currentPitch) {
-						unisonInfo[currentRowInUnisonInfo][0] = currentPitch;
-						unisonInfo[currentRowInUnisonInfo][1] = i;
-						unisonInfo[currentRowInUnisonInfo][2] = j;
-						currentRowInUnisonInfo++;
-						break; // See NB b) for reason of break
-					}
-				} 
-			}
+	public List<Integer[]> getCourseCrossingInfo(int chordIndex) {
+		List<Integer[]> courseCrossingsInfo = new ArrayList<>();
+		// For each pitch in pitchesInChord
+		List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
+		for (int i = 0; i < pitchesInChord.size(); i++) {
+			int currentPitch = pitchesInChord.get(i);        
+			// Search the remainder of pitchesInChord for a note with a lower pitch (course crossing)
+			for (int j = i + 1; j < pitchesInChord.size(); j++) {
+				if (pitchesInChord.get(j) < currentPitch) {
+					courseCrossingsInfo.add(new Integer[]{currentPitch, pitchesInChord.get(j), i, j});
+					break; // See NB b) for reason of break
+				}
+			} 
 		}
-		return unisonInfo;
+		return courseCrossingsInfo.size() != 0 ? courseCrossingsInfo : null;
 	}
 
 
@@ -1221,188 +1107,21 @@ public class Tablature implements Serializable {
 	 * @return 
 	 */
 	// TESTED
-	int getNumberOfCourseCrossingsInChord(int chordIndex) {
-		int numberOfCourseCrossings = 0;
-
-		List<TabSymbol> tablatureChord = getTablatureChords().get(chordIndex);
-		// Only relevant if tablatureChord contains multiple TS
-		if (tablatureChord.size() > 1) {
-			// List all the pitches in tablatureChord
-			List<Integer> pitchesInChord = getPitchesInChord(chordIndex); 
-			// Check for each pitch all the pitches above it; increase numberOfCourseCrossings if a lower pitch
-			// is found
-			for (int i = 0; i < pitchesInChord.size(); i++) {
-				int currentPitch = pitchesInChord.get(i);
-				// Check the following pitches; if a lower pitch is found: increase numberOfCourseCrossings, break
-				// from inner for, and continue with the next iteration of the outer for (the next note) 
-				for (int j = i + 1; j < pitchesInChord.size(); j++) {
-					if (pitchesInChord.get(j) < currentPitch) {
-						numberOfCourseCrossings++;
-						break;
-					}
-				}
-			}
+	public int getNumberOfCourseCrossingsInChord(int chordIndex) {
+		if (getCourseCrossingInfo(chordIndex) == null) {
+			return 0;
 		}
-		return numberOfCourseCrossings;
+		else {
+			return getCourseCrossingInfo(chordIndex).size();
+		}
 	}
 
 
 	/**
-	 * Gets information on the course crossing(s) in the event at the given index in the given list. A course
-	 * crossing occurs when an note on course x has a pitch that is higher than that of a note (in the same chord)
-	 * on course y above it.
-	 * Returns an Integer[][], each element of which represents a course crossing pair (starting from below), 
-	 * each element of which contains
-	 *   as element 0: the pitch (as a MIDInumber) of the lower CC-note (i.e., the one appearing first in the chord)
-	 *   as element 1: the pitch (as a MIDInumber) of the upper CC-note
-	 *   as element 2: the sequence number in the chord of the lower CC-note
-	 *   as element 3: the sequence number in the chord of the upper CC-note 
-	 * If the chord does not contain (a) course crossing(s), <code>null</code> is returned.   
-	 *
-	 * NB: This method presumes that
-	 * a) a chord contains only one course crossing, and neither a CoD nor a unison; 
-	 * b) the course crossing will not span more than two pitches, which is theoretically possible (e.g.,
-	 * 6th c., 12th fr. - 5th c., 6th fr. - 4th c., open), but will not likely occur in practice.
-	 *
-	 * @param chordIndex 
-	 * @return 
-	 */
-	// TESTED
-	public Integer[][] getCourseCrossingInfo(int chordIndex) {
-
-		Integer[][] courseCrossingsInfo = null;
-
-		// If the chord at chordIndex contains (a) course crossing(s)
-		if (getNumberOfCourseCrossingsInChord(chordIndex) > 0) {
-			courseCrossingsInfo = new Integer[getNumberOfCourseCrossingsInChord(chordIndex)][4];
-
-			// List the pitches in the chord at chordIndex
-			List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
-
-			// For each pitch in pitchesInChord
-			int currentRowInCourseCrossingInfo = 0;
-			for (int i = 0; i < pitchesInChord.size(); i++) {
-				int currentPitch = pitchesInChord.get(i);        
-				// Search the remainder of pitchesInChord for a note with a lower pitch
-				for (int j = i + 1; j < pitchesInChord.size(); j++) {
-					// Lower pitch found? Course crossing found; fill the currentRowInCourseCrossingsInfo-th row of 
-					// courseCrossingsInfo, increase currentRowInCourseCrossingsInfo, break from inner for, and 
-					// continue with the next iteration of the outer for (the next pitch)
-					if (pitchesInChord.get(j) < currentPitch) {
-						int lowerPitch = pitchesInChord.get(j);
-						courseCrossingsInfo[currentRowInCourseCrossingInfo][0] = currentPitch;
-						courseCrossingsInfo[currentRowInCourseCrossingInfo][1] = lowerPitch;
-						courseCrossingsInfo[currentRowInCourseCrossingInfo][2] = i;
-						courseCrossingsInfo[currentRowInCourseCrossingInfo][3] = j;
-						currentRowInCourseCrossingInfo++;
-						break; // See NB b) for reason of break
-					}
-				} 
-			}
-		}
-		return courseCrossingsInfo;
-	}
-
-
-	// TESTED
-	public int getNumberOfNotes() {
-		return getBasicTabSymbolProperties().length;	
-	}
-
-
-	/**
-	 * Returns a List<List>> containing, for each chord, the indices in the Tablature of the notes in that chord.
-	 * 
-	 * @param isBwd 
-	 * @return
-	 */
-	// TESTED
-	public List<List<Integer>> getIndicesPerChord(boolean isBwd) {
-		List<List<Integer>> indicesPerChord = new ArrayList<List<Integer>>();
-
-		List<List<TabSymbol>> tablatureChords = getTablatureChords();
-		if (isBwd) {
-//		if (procMode == ProcessingMode.BWD) {
-			Collections.reverse(tablatureChords);
-		}
-
-		int startIndex = 0;
-		// For each chord
-		int numChords = tablatureChords.size();
-		for (int i = 0; i < numChords; i++) {
-		List<Integer> indicesCurrChord = new ArrayList<Integer>();
-		int endIndex = startIndex + tablatureChords.get(i).size();
-		// For each note in the chord at index i: add its index to indicesCurrChord
-		for (int j = startIndex; j < endIndex; j++) {
-			indicesCurrChord.add(j);
-		}
-		// When the chord is traversed: add indicesCurrChord to indicesPerChord
-		indicesPerChord.add(indicesCurrChord);
-		startIndex = endIndex;	
-		}
-		return indicesPerChord;
-	}
-
-
-	/**
-	 * Returns the size of the largest chord in the tablature.
-	 * 
-	 * @return
-	 */
-	// TESTED
-	public int getLargestTablatureChord() {
-		List<Integer> onsetsPerChord = getNumberOfNotesPerChord();
-		return Collections.max(onsetsPerChord);
-	}
-
-
-	/**
-	 * Gets the pitches in the chord at the given index. Element 0 of the List represents the lowest note's pitch,
-	 * element 1 the second-lowest note's, etc. If the chord contains course crossings, the List will not be in
-	 * numerical order.
-	 * 
-	 * @param basicTabSymbolPropertiesChord
-	 * @return
-	 */
-	// TESTED
-	public List<Integer> getPitchesInChord(int chordIndex) {
-		List<Integer> pitchesInChord = new ArrayList<Integer>();
-
-		Integer[][] basicTabSymbolPropertiesChord = getBasicTabSymbolPropertiesChord(chordIndex);	
-		for (Integer[] currentBasicTabSymbolProperties : basicTabSymbolPropertiesChord) {
-			pitchesInChord.add(currentBasicTabSymbolProperties[PITCH]);
-		}
-		return pitchesInChord;
-	}
-
-
-	/**
-	 * Gets the pitches in the chord. Element 0 of the List represents the lowest note's pitch, element 1 the
-	 * second-lowest note's, etc.
-	 * 
-	 * NB: If the chord contains course crossings, the List will not be in numerical order.
-	 * 
-	 * @param btp
-	 * @param lowestNoteIndex
-	 * @return
-	 */
-	// TESTED
-	public static List<Integer> getPitchesInChord(Integer[][] btp, int lowestNoteIndex) {
-		List<Integer> pitchesInChord = new ArrayList<Integer>();	
-		int chordSize = btp[lowestNoteIndex][CHORD_SIZE_AS_NUM_ONSETS];
-		for (int i = lowestNoteIndex; i < lowestNoteIndex + chordSize; i++) {
-			Integer[] currentBasicTabSymbolProperties = btp[i];
-			int currentPitch = currentBasicTabSymbolProperties[PITCH];
-			pitchesInChord.add(currentPitch);
-		}
-		return pitchesInChord;
-	}
-
-
-	/**
-	 * Lists all the unique chords in the tablature in the order they are encountered. Each chord is 
-	 * represented as a series of pitches, with the lowest pitch listed first. Chords with course crossings 
-	 * are therefore rearranged so that their pitches are sorted numerically.
+	 * Lists all the unique chords in the tablature in the order they are encountered. Each 
+	 * chord is represented as a series of pitches, with the lowest pitch listed first. Chords 
+	 * with course crossings are therefore rearranged so that their pitches are sorted 
+	 * numerically.
 	 * 
 	 * @return
 	 */
@@ -1427,37 +1146,84 @@ public class Tablature implements Serializable {
 
 
 	/**
-	 * Returns a reversed version of the Tablature.
+	 * Returns the interval (in semitones) by which the tablature must be transposed in order
+	 * to normalise its tuning to G.
 	 * 
-	 * @param tab
 	 * @return
 	 */
-	public static Tablature reverse(Tablature tab) {
-		return new Tablature(
-			tab.getEncoding().reverseEncoding(tab.getMeterInfo()), 
-			tab.getNormaliseTuning());
+	// TESTED
+	public int getTranspositionInterval() {
+		int transpositionInterval = 0;
+		Tuning originalTuning = getEncoding().getTunings()[Encoding.ENCODED_TUNING_IND];
+		for (Tuning t : Tuning.values()) {
+			if (t.equals(originalTuning)) {
+				transpositionInterval = -(t.getTransposition());
+				break;
+			}
+		}
+		return transpositionInterval;
+	}
+
+
+	//  T I M E
+	/**
+	 * Returns the metric times for all chords, including, if specified, those of rest events.
+	 * 
+	 * NB: Successive individual rest events are combined into a single rest event. Any rest
+	 *     events before the first chord are included; any added after the final chord are not.
+	 * 
+	 * @param includeRestEvents Whether or not to include rest event metric times.
+	 * @return For each chord or rest event, a Rational[] containing<br>
+	 *         <ul>
+	 *         <li>As element 0: the metric time.</li>
+	 *         <li>As element 1: whether (Rational.ONE) or not (Rational.ZERO) it is a note 
+	 *             event.</li>
+	 *         </ul>
+	 */
+	// TESTED
+	public List<Rational[]> getMetricTimePerChord(boolean includeRestEvents) {
+		List<Rational[]> allMetricTimes = new ArrayList<Rational[]>();
+		Integer[][] btp = getBasicTabSymbolProperties();
+
+		// If there is a rest before the first chord, add it at onset time zero
+		// NB An anacrusis is interpreted as a full bar starting with rests
+		if (includeRestEvents && btp[0][ONSET_TIME] > 0) {
+			allMetricTimes.add(new Rational[]{Rational.ZERO, Rational.ZERO});
+		}
+		for (int i = 0; i < btp.length; i++) {
+			Integer[] in = btp[i];
+			Rational currOnsetTime = new Rational(in[ONSET_TIME], SRV_DEN);
+			Rational currMinDur = new Rational(in[MIN_DURATION], SRV_DEN);
+			Rational currOffsetTime = currOnsetTime.add(currMinDur);
+			Rational nextOnsetTime = 
+				(i < btp.length-1) ? new Rational(btp[i+1][ONSET_TIME], SRV_DEN) :
+				currOffsetTime;
+			allMetricTimes.add(new Rational[]{currOnsetTime, Rational.ONE});
+			if (includeRestEvents && currOffsetTime.isLess(nextOnsetTime)) {
+				allMetricTimes.add(new Rational[]{currOffsetTime, Rational.ZERO});
+			}
+			i += in[CHORD_SIZE_AS_NUM_ONSETS]-1;
+		}
+		return allMetricTimes;
 	}
 
 
 	/**
-	 * Returns a deornamented version of the Tablature.
+	 * Returns the minimum durations for all chords.
 	 * 
-	 * @param tab
-	 * @param dur Only (single-event) notes with a duration shorter than this duration are 
-	 *            considered ornamental.
 	 * @return
 	 */
-	public static Tablature deornament(Tablature tab, Rational dur) {
-		return new Tablature(
-			tab.getEncoding().deornamentEncoding(rationalToIntDur(dur)), 
-			tab.getNormaliseTuning());
-	}
-
-
-	public static Tablature stretch(Tablature tab, int factor) {
-		return new Tablature(
-			tab.getEncoding().stretchEncoding(tab.getMeterInfo(), factor), 
-			tab.getNormaliseTuning());
+	// TESTED
+	public List<Rational> getMinimumDurationPerChord() {
+		List<Rational> allMinimumDurations = new ArrayList<>();
+		Integer[][] btp = getBasicTabSymbolProperties();
+		for (int i = 0; i < btp.length; i++) {
+			Integer[] in = btp[i];
+			Rational currMinDur = new Rational(in[MIN_DURATION], SRV_DEN);
+			allMinimumDurations.add(currMinDur);
+			i += in[CHORD_SIZE_AS_NUM_ONSETS]-1;
+		}
+		return allMinimumDurations;
 	}
 
 
@@ -1475,8 +1241,7 @@ public class Tablature implements Serializable {
 	 *         </ul>
 	 */
 	// TESTED
-	public List<Rational[]> getTripletOnsetPairs() {
-		
+	public List<Rational[]> getTripletOnsetPairs() {	
 		List<Rational[]> pairs; 
 		if (!getEncoding().containsTriplets()) {
 			pairs = null;
@@ -1485,7 +1250,8 @@ public class Tablature implements Serializable {
 			pairs = new ArrayList<>();
 			TabSymbolSet tss = getEncoding().getTabSymbolSet();
 			List<String> events = getEncoding().getEvents();
-			List<Rational[]> onsetTimes = getAllOnsetTimesRestsInclusive();
+			List<Rational[]> onsetTimes = getMetricTimePerChord(true);
+//			List<Rational[]> onsetTimes = getAllOnsetTimesRestsInclusive();
 
 			// 1. Align events and onsetTimes
 			// Remove all SBI
@@ -1538,81 +1304,7 @@ public class Tablature implements Serializable {
 	}
 
 
-	/**
-	 * Get, for each tab bar, the metric bar it belongs to. A metric bar can have 
-	 * multiple tab bars. Example :<br> 
-	 * metric bars: 2/2 H H | H H | H   H | H   H | H H | H H |<br>
-	 * tab bars   : 2/2 H H | H H | H | H | H | H | H H | H H |<br> 
- 	 * returns [[1, 1], [2, 2], [3, 3], [4, 3], [5, 4], [6, 4], [7, 5], [8, 6]]
-	 * 
-	 * @return A list of Integer[]s, each representing a tab bar and containing<br>
-	 *         <ul>
-	 *         <li>as element 0: the tab bar</li>
-	 *         <li>as element 1: the metric bar the tab bar belongs to</li>
-	 *         </ul>
-	 */
-	// TESTED
-	public List<Integer[]> mapTabBarsToMetricBars() {
-		List<Integer[]> mapped = new ArrayList<>();
-
-		// Get metric bar lengths in SMALLEST_RHYTHMIC_VALUE
-		List<Integer> metricBarLengths = new ArrayList<>();
-		for (Integer[] in : getUndiminutedMeterInfo()) {
-			Rational currMeter = 
-				new Rational(in[Transcription.MI_NUM], in[Transcription.MI_DEN]);
-			int barLenInSrv = (int) currMeter.div(SMALLEST_RHYTHMIC_VALUE).toDouble();
-			int numBarsInMeter = 
-				(in[Transcription.MI_LAST_BAR] - in[Transcription.MI_FIRST_BAR]) + 1;
-			metricBarLengths.addAll(Collections.nCopies(numBarsInMeter, barLenInSrv));
-		}
-	
-		// Get tablature bar lengths in SMALLEST_RHYTHMIC_VALUE
-		List<Integer> tabBarLengths = new ArrayList<>();
-		List<List<String[]>> ebf = getEncoding().getEventsBarlinesFootnotesPerBar(true);
-		int prevDur = -1;
-		for (List<String[]> bar : ebf) {
-			int durBar = 0;
-			for (String[] eventInfo : bar) {
-				String event = eventInfo[0];
-				String first = 
-					event.substring(0, event.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
-				// If the event is not a barline event or a MS event
-				if (!ConstantMusicalSymbol.isBarline(first)
-					&& MensurationSign.getMensurationSign(first) == null) {
-					int dur = -1;
-					RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(first);
-					// If the event starts with a RS
-					if (rs != null) {
-						dur = rs.getDuration();
-						prevDur = dur;
-					}
-					// If the event does not start with a RS
-					else {
-						dur = prevDur; 
-					}
-					durBar += dur;
-				}
-			}
-			tabBarLengths.add(durBar);	
-		}
-
-		// Map
-		int metricBar = 1;
-		int currTabBarLen = 0;
-		for (int i = 0; i < tabBarLengths.size(); i++) {
-			int bar = i+1;
-			mapped.add(new Integer[]{bar, metricBar});
-			currTabBarLen += tabBarLengths.get(i);
-			int currMetricBarLen = metricBarLengths.get(metricBar-1);
-			if (currTabBarLen == currMetricBarLen) {
-				metricBar++;
-				currTabBarLen = 0;
-			}	
-		}
-		return mapped;
-	}
-
-
+	//  M E T E R
 	/**
 	 * Gets, for each MensurationSign in the encoding, the sign's encoding, its tab bar,
 	 * and its metric bar.
@@ -1698,6 +1390,205 @@ public class Tablature implements Serializable {
 
 
 	/**
+	 * Get, for each tab bar, the metric bar it belongs to. A metric bar can have 
+	 * multiple tab bars. Example :<br> 
+	 * metric bars: 2/2 H H | H H | H   H | H   H | H H | H H |<br>
+	 * tab bars   : 2/2 H H | H H | H | H | H | H | H H | H H |<br> 
+ 	 * returns [[1, 1], [2, 2], [3, 3], [4, 3], [5, 4], [6, 4], [7, 5], [8, 6]]
+	 * 
+	 * @return A list of Integer[]s, each representing a tab bar and containing<br>
+	 *         <ul>
+	 *         <li>as element 0: the tab bar</li>
+	 *         <li>as element 1: the metric bar the tab bar belongs to</li>
+	 *         </ul>
+	 */
+	// TESTED
+	public List<Integer[]> mapTabBarsToMetricBars() {
+		List<Integer[]> mapped = new ArrayList<>();
+
+		// Get metric bar lengths in SMALLEST_RHYTHMIC_VALUE
+		List<Integer> metricBarLengths = new ArrayList<>();
+		for (Integer[] in : getUndiminutedMeterInfo()) {
+			Rational currMeter = 
+				new Rational(in[Transcription.MI_NUM], in[Transcription.MI_DEN]);
+			int barLenInSrv = (int) currMeter.div(SMALLEST_RHYTHMIC_VALUE).toDouble();
+			int numBarsInMeter = 
+				(in[Transcription.MI_LAST_BAR] - in[Transcription.MI_FIRST_BAR]) + 1;
+			metricBarLengths.addAll(Collections.nCopies(numBarsInMeter, barLenInSrv));
+		}
+	
+		// Get tablature bar lengths in SMALLEST_RHYTHMIC_VALUE
+		List<Integer> tabBarLengths = new ArrayList<>();
+		List<List<String[]>> ebf = getEncoding().getEventsBarlinesFootnotesPerBar(true);
+		int prevDur = -1;
+		for (List<String[]> bar : ebf) {
+			int durBar = 0;
+			for (String[] eventInfo : bar) {
+				String event = eventInfo[0];
+				String first = 
+					event.substring(0, event.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+				// If the event is not a barline event or a MS event
+				if (!ConstantMusicalSymbol.isBarline(first)
+					&& MensurationSign.getMensurationSign(first) == null) {
+					int dur = -1;
+					RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(first);
+					// If the event starts with a RS
+					if (rs != null) {
+						dur = rs.getDuration();
+						prevDur = dur;
+					}
+					// If the event does not start with a RS
+					else {
+						dur = prevDur; 
+					}
+					durBar += dur;
+				}
+			}
+			tabBarLengths.add(durBar);	
+		}
+
+		// Map
+		int metricBar = 1;
+		int currTabBarLen = 0;
+		for (int i = 0; i < tabBarLengths.size(); i++) {
+			int bar = i+1;
+			mapped.add(new Integer[]{bar, metricBar});
+			currTabBarLen += tabBarLengths.get(i);
+			int currMetricBarLen = metricBarLengths.get(metricBar-1);
+			if (currTabBarLen == currMetricBarLen) {
+				metricBar++;
+				currTabBarLen = 0;
+			}	
+		}
+		return mapped;
+	}
+
+
+	//  O T H E R
+	/**
+	 * Gets the basicTabSymbolProperties of the chord at the given index in the Tablature, 
+	 * i.e., the elements of basicTabSymbolProperties corresponding to the notes within that
+	 * chord. 
+	 * 
+	 * @param chordIndex 
+	 * @return
+	 */
+	// TESTED
+	public Integer[][] getBasicTabSymbolPropertiesChord(int chordIndex) {
+		// Determine the size of the chord at chordIndex and the index of the lowest note in it
+		int chordSize = 0;
+		int lowestNoteIndex = 0;
+		Integer[][] btp = getBasicTabSymbolProperties();
+		for (int i = 0; i < btp.length; i++) {
+			if (btp[i][CHORD_SEQ_NUM] == chordIndex) {
+				lowestNoteIndex = i;
+				chordSize = btp[i][CHORD_SIZE_AS_NUM_ONSETS];
+				break;
+			}
+		}
+		// Create and return basicTabSymbolPropertiesChord
+		Integer[][] basicTabSymbolPropertiesChord = 
+			Arrays.copyOfRange(btp, lowestNoteIndex, lowestNoteIndex + chordSize);   
+		return basicTabSymbolPropertiesChord;
+	}
+
+
+	// TESTED
+	public int getNumberOfNotes() {
+		return getBasicTabSymbolProperties().length;	
+	}
+
+
+	/**
+	 * Returns a List<List>> containing, for each chord, the indices in the Tablature of the
+	 * notes in that chord.
+	 * 
+	 * @param isBwd 
+	 * @return
+	 */
+	// TESTED
+	public List<List<Integer>> getIndicesPerChord(boolean isBwd) {
+		List<List<Integer>> indicesPerChord = new ArrayList<List<Integer>>();
+
+		List<List<TabSymbol>> tablatureChords = getTablatureChords();
+		if (isBwd) {
+			Collections.reverse(tablatureChords);
+		}
+
+		int startIndex = 0;
+		// For each chord
+		for (int i = 0; i < tablatureChords.size(); i++) {
+		List<Integer> indicesCurrChord = new ArrayList<Integer>();
+		int endIndex = startIndex + tablatureChords.get(i).size();
+		// For each note in the chord at index i: add its index to indicesCurrChord
+		for (int j = startIndex; j < endIndex; j++) {
+			indicesCurrChord.add(j);
+		}
+		indicesPerChord.add(indicesCurrChord);
+		startIndex = endIndex;	
+		}
+		return indicesPerChord;
+	}
+
+
+	/**
+	 * Returns the size of the largest chord in the tablature.
+	 * 
+	 * @return
+	 */
+	// TESTED
+	public int getLargestTablatureChord() {
+		return Collections.max(getNumberOfNotesPerChord());
+	}
+
+
+	/**
+	 * Returns a reversed version of the Tablature.
+	 * 
+	 * @param tab
+	 * @return
+	 */
+	// TODO test
+	public static Tablature reverse(Tablature tab) { // TODO make non-static?
+		return new Tablature(
+			tab.getEncoding().reverseEncoding(tab.getMeterInfo()), tab.getNormaliseTuning());
+//		return new Tablature(
+//			getEncoding().reverseEncoding(getMeterInfo()), getNormaliseTuning());
+	}
+
+
+	/**
+	 * Returns a deornamented version of the Tablature.
+	 * 
+	 * @param tab
+	 * @param dur Only (single-event) notes with a duration shorter than this duration are 
+	 *            considered ornamental.
+	 * @return
+	 */
+	// TODO test
+	public static Tablature deornament(Tablature tab, Rational dur) { // TODO make non-static?
+		return new Tablature(
+			tab.getEncoding().deornamentEncoding(rationalToIntDur(dur)), 
+			tab.getNormaliseTuning());
+	}
+
+
+	/**
+	 * Returns a durationally stretched version of the Tablature.
+	 * 
+	 * @param tab
+	 * @param factor The factor to stretch the durations.
+	 * @return
+	 */
+	// TODO test
+	public static Tablature stretch(Tablature tab, int factor) { // TODO make non-static?
+		return new Tablature(
+			tab.getEncoding().stretchEncoding(tab.getMeterInfo(), factor), 
+			tab.getNormaliseTuning());
+	}
+
+
+	/**
 	 * Converts the TabSymbol at the given onsetIndex into a Note. Alternative to the method
 	 * with the same name.
 	 * 
@@ -1712,13 +1603,110 @@ public class Tablature implements Serializable {
 		int tabSymbolOnsetTime = btp[onsetIndex][ONSET_TIME];
 
 		// 2. Convert ints into Rationals 
-		Rational noteMinimumDuration = new Rational(tabSymbolMinimumDuration, SMALLEST_RHYTHMIC_VALUE.getDenom()); 
-		Rational noteOnsetTime = new Rational(tabSymbolOnsetTime, SMALLEST_RHYTHMIC_VALUE.getDenom());
+		Rational noteMinimumDuration = new Rational(tabSymbolMinimumDuration, SRV_DEN); 
+		Rational noteOnsetTime = new Rational(tabSymbolOnsetTime, SRV_DEN);
 
 		// 3. Create a Note with the given pitch, onset time, and minimum duration
 		Note note = Transcription.createNote(tabSymbolPitch, noteOnsetTime, noteMinimumDuration);
 
 		return note; 
+	}
+
+
+	/**
+	 * Returns all onset times.
+	 * 
+	 * @return
+	 */
+	private List<Rational> getAllOnsetTimes() {
+		List<Rational> allOnsetTimes = new ArrayList<Rational>();
+		Integer[][] btp = getBasicTabSymbolProperties();
+		for (Integer[] in : btp) {
+			Rational currOnsetTime = new Rational(in[ONSET_TIME], SRV_DEN); 
+			if (!allOnsetTimes.contains(currOnsetTime)) {
+				allOnsetTimes.add(currOnsetTime);
+			}
+		}
+		Collections.sort(allOnsetTimes);
+		return allOnsetTimes;
+	}
+
+
+	/**
+	 * Returns all metric positions.
+	 * 
+	 * @return
+	 */
+	// TESTED
+	private List<Rational[]> getAllMetricPositions() {
+		List<Rational[]> allMetricPositions = new ArrayList<Rational[]>();
+		List<Integer[]> mi = getMeterInfo();
+		Integer[][] btp = getBasicTabSymbolProperties();
+		for (Integer[] b : btp) {
+			allMetricPositions.add(getMetricPosition(new Rational(b[ONSET_TIME], SRV_DEN), mi)); 
+		}
+		return allMetricPositions;
+	}
+
+
+	/**
+	 * Returns all onset times, including those of rests.
+	 * 
+	 * NB: individual, successive rests are combined into single rests; any rest added after
+	 * the final chord are omitted. Rests before the first chord are included.
+	 * 
+	 * @return For each note or rest event, a Rational[] containing<br>
+	 *         <ul>
+	 *         <li>as element 0: the onset time</li>
+	 *         <li>as element 1: whether (1) or not (0) it is a note event </li>
+	 *         </ul>
+	 */
+	private List<Rational[]> getAllOnsetTimesRestsInclusive() {
+		List<Rational[]> allOnsetTimes = new ArrayList<>();
+		
+		List<Rational[]> otmd = getAllOnsetTimesAndMinDurations();
+		// Check for rests before first chord; if there are, add 0 as first onset time
+		// NB This assumes that anacruses do not happen
+		if (otmd.get(0)[0].isGreater(Rational.ZERO)) {
+			allOnsetTimes.add(new Rational[]{Rational.ZERO, Rational.ZERO});
+		}
+		for (int i = 0; i < otmd.size(); i++) {
+			Rational currOns = otmd.get(i)[0];
+			allOnsetTimes.add(new Rational[]{currOns, Rational.ONE});
+			// For all but last onset: check for possible rests between curr and next onset
+			if (i < otmd.size()-1) {
+				// If nextOnset does not follow immediately: add rest onset in between
+				Rational currOffs = currOns.add(otmd.get(i)[1]); 
+				Rational nextOns = otmd.get(i+1)[0];
+				if (currOffs.isLess(nextOns)) {
+					allOnsetTimes.add(new Rational[]{currOffs, Rational.ZERO});
+				}
+			}
+		}
+		return allOnsetTimes;
+	}
+
+
+	/**
+	 * Returns, for each onset time, the onset time and the minimum duration of the chord at it.
+	 * 
+	 * @return
+	 */
+	// TESTED
+	private List<Rational[]> getAllOnsetTimesAndMinDurations() {
+		List<Rational[]> allOnsetTimesAndMinDurs = new ArrayList<Rational[]>();
+		Integer[][] btp = getBasicTabSymbolProperties();
+		List<Rational> allOnsetTimes = new ArrayList<>();
+		for (Integer[] b : btp) {
+			Rational currentOnsetTime = new Rational(b[ONSET_TIME], SRV_DEN);
+			Rational currentMinDur = new Rational(b[MIN_DURATION], SRV_DEN);
+			if (!allOnsetTimes.contains(currentOnsetTime)) {
+				allOnsetTimes.add(currentOnsetTime);
+				allOnsetTimesAndMinDurs.add(new Rational[]{currentOnsetTime, currentMinDur});
+			}
+		}
+		ToolBox.sortByRational(allOnsetTimesAndMinDurs, 0);
+		return allOnsetTimesAndMinDurs;
 	}
 
 

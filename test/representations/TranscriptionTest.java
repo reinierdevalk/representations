@@ -3,6 +3,7 @@ package representations;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -479,6 +480,7 @@ public class TranscriptionTest extends TestCase {
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
+//			assert(expected.get(i).isEquivalent(actual.get(i)));
 			// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
 			// objects: therefore check that pitch, metricTime, and metricDuration are the same
 			assertEquals(expected.get(i).getMidiPitch(), actual.get(i).getMidiPitch());
@@ -605,6 +607,48 @@ public class TranscriptionTest extends TestCase {
 
 	public void testCheckChords() {
 		// TODO
+	}
+
+
+	public void testMakeMinimumDurationLabels() {
+		List<List<Double>> expected = new ArrayList<>();
+		//
+		expected.addAll(Collections.nCopies(4, Transcription.QUARTER));
+		//
+		expected.addAll(Collections.nCopies(4, Transcription.DOTTED_EIGHTH));
+		//
+		expected.add(Transcription.SIXTEENTH);
+		//
+		expected.addAll(Collections.nCopies(4, Transcription.EIGHTH));
+		//
+		expected.add(Transcription.EIGHTH);
+		//
+		expected.addAll(Collections.nCopies(5, Transcription.QUARTER));
+		//
+		expected.addAll(Collections.nCopies(4, Transcription.EIGHTH));
+		//
+		expected.addAll(Collections.nCopies(2, Transcription.EIGHTH));
+		//
+		expected.addAll(Collections.nCopies(4, Transcription.SIXTEENTH));
+		//
+		expected.add(Transcription.SIXTEENTH);
+		expected.addAll(Collections.nCopies(4, Transcription.THIRTYSECOND));
+		//
+		expected.add(Transcription.QUARTER);
+		//
+		expected.addAll(Collections.nCopies(4, Transcription.QUARTER));
+
+		List<List<Double>> actual = 
+			Transcription.makeMinimumDurationLabels(new Tablature(encodingTestpiece, false));
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).size(), actual.get(i).size()); 
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+			}
+		}
+		assertEquals(expected, actual);
 	}
 
 
@@ -1504,7 +1548,7 @@ public class TranscriptionTest extends TestCase {
 			Transcription tr = new Transcription(new File(prefix + s + ".mid"), encoding);
 			System.out.println("@-@-@-@-@" + s);
 			tr.determineVoiceEntriesHIGHLEVEL(t.getBasicTabSymbolProperties(), 
-				t.getMinimumDurationLabels(), null, 4, 3);
+				tr.getMinimumDurationLabels(), null, 4, 3);
 		}
 	}
 
@@ -2432,7 +2476,7 @@ public class TranscriptionTest extends TestCase {
 			Tablature tab = new Tablature(enc, false);
 			Transcription t = new Transcription(new File(prefix + piece + ".mid"), enc);
 			actual.add(t.getNonImitativeVoiceEntries(tab.getBasicTabSymbolProperties(), 
-				tab.getMinimumDurationLabels(), null, voices.get(i), 3));
+				t.getMinimumDurationLabels(), null, voices.get(i), 3));
 		}
 
 		assertEquals(expected.size(), actual.size());
