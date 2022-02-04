@@ -1011,7 +1011,8 @@ public class EncodingTest {
 			"mi.a5.c4.b2.a1.>." + "mi.>." + "sb.>." + "McC3.>." +
 			"//";
 
-		String actual = encoding.reverseEncoding(tab.getMeterInfo()).getRawEncoding();
+		String actual = 
+			encoding.reverseEncoding(tab.getTimeline().getMeterInfo()).getRawEncoding();
 
 		assertEquals(expected, actual);		
 	}
@@ -1081,7 +1082,8 @@ public class EncodingTest {
 			"fu.c2.>.fu.e2.>.sb.a1.>.sb.>.sb.a6.c4.a2.a1.>.||." + "\r\n" + 
 			"//";
 
-		String actual = encoding.stretchEncoding(tab.getMeterInfo(), 2).getRawEncoding();
+		String actual = 
+			encoding.stretchEncoding(tab.getTimeline().getMeterInfo(), 2).getRawEncoding();
 
 		assertEquals(expected, actual);		
 	}

@@ -11,8 +11,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import javax.swing.plaf.synth.SynthSeparatorUI;
-
 import tbp.ConstantMusicalSymbol;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
@@ -1870,15 +1868,20 @@ public class Encoding implements Serializable {
 		for (int i = 0; i < meterInfo.size(); i++) {
 			Integer[] in = meterInfo.get(i);
 			if (i > 0) {
-				in[2] = meterInfo.get(i-1)[3] + 1;
+				in[Timeline.MI_FIRST_BAR] = 
+					meterInfo.get(i-1)[Timeline.MI_LAST_BAR] + 1;
 			}
-			in[3] = (int) (in[3] * factor);
-			stretchedMeterInfo += in[0] + "/" + in[1] + " (" + in[2] + "-" + in[3] + ")";
+			in[Timeline.MI_LAST_BAR] = (int) (in[Timeline.MI_LAST_BAR] * factor);
+			stretchedMeterInfo += 
+				in[Timeline.MI_NUM] + "/" + in[Timeline.MI_DEN] + 
+				" (" + in[Timeline.MI_FIRST_BAR] + "-" + in[Timeline.MI_LAST_BAR] + ")";
 			if (i < copyOfMeterInfo.size()-1) {
 				stretchedMeterInfo += "; ";
 			}
 		}
 		header = header.replace(origMeterInfo, stretchedMeterInfo);
+		System.out.println(header);
+//		System.exit(0);
 		
 		// 2. Adapt events
 		List<String> events = getEvents();

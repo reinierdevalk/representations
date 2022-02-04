@@ -14,6 +14,7 @@ import de.uos.fmt.musitech.data.structure.Piece;
 import de.uos.fmt.musitech.utility.math.Rational;
 import representations.Encoding;
 import representations.Tablature;
+import representations.Timeline;
 import representations.Transcription;
 import tbp.ConstantMusicalSymbol;
 import tbp.MensurationSign;
@@ -508,19 +509,19 @@ public class MEIExport {
 		meiHead[MEI_HEAD.indexOf("title")] = tab.getPieceName();
 		res = res.replace("title_placeholder", meiHead[MEI_HEAD.indexOf("title")]);
 
-		List<Integer[]> mi = tab.getMeterInfo();
+		List<Integer[]> mi = tab.getTimeline().getMeterInfo();
 		List<String[]> meters = new ArrayList<>();
 		for (Integer[] in : mi) {
 			String sym = "";
-			if (in[Transcription.MI_NUM] == 4 && in[Transcription.MI_DEN] == 4) {
+			if (in[Timeline.MI_NUM] == 4 && in[Timeline.MI_DEN] == 4) {
 				sym = " meter.sym='common'";
 			}
-			else if (in[Transcription.MI_NUM] == 2 && in[Transcription.MI_DEN] == 2) {
+			else if (in[Timeline.MI_NUM] == 2 && in[Timeline.MI_DEN] == 2) {
 				sym = " meter.sym='cut'";
 			}
 			meters.add(new String[]{
-				"meter.count='" + in[Transcription.MI_NUM] + "'", 
-				"meter.unit='" + in[Transcription.MI_DEN] + "'",
+				"meter.count='" + in[Timeline.MI_NUM] + "'", 
+				"meter.unit='" + in[Timeline.MI_DEN] + "'",
 				sym}
 			);
 		}
@@ -985,13 +986,13 @@ public class MEIExport {
 		boolean includeMeter = currMi != null;
 
 		int diminution = 0;
-		int count = currMi[Transcription.MI_NUM];
-		int unit = currMi[Transcription.MI_DEN];
+		int count = currMi[Timeline.MI_NUM];
+		int unit = currMi[Timeline.MI_DEN];
 		if (adaptCMNDur) {
 			if (ONLY_TAB || TAB_AND_TRANS) {
-				diminution = currMi[Tablature.MI_DIM];
+				diminution = currMi[Timeline.MI_DIM];
 				Rational undiminutedMeter = 
-					Tablature.undiminuteMeter(new Rational(count, unit), diminution);
+					Timeline.undiminuteMeter(new Rational(count, unit), diminution);
 				count = undiminutedMeter.getNumer();
 				unit = undiminutedMeter.getDenom();
 			}
@@ -1152,8 +1153,8 @@ public class MEIExport {
 		}
 		List<Integer[]> tabBarsToMetricBars = (tab != null) ? tab.mapTabBarsToMetricBars() : null;
 		// mi from tab is the same as mi from trans in TAB_AND_TRANS case
-		List<Integer[]> mi = (tab != null) ? tab.getMeterInfo() : trans.getMeterInfo();
-		int numMetricBars = mi.get(mi.size()-1)[Transcription.MI_LAST_BAR];
+		List<Integer[]> mi = (tab != null) ? tab.getTimeline().getMeterInfo() : trans.getMeterInfo();
+		int numMetricBars = mi.get(mi.size()-1)[Timeline.MI_LAST_BAR];
 		int numTabBars = (tab != null) ? tabBarsToMetricBars.size() : -1;
 		int numBars = !alignWithMetricBarring ? numTabBars : numMetricBars;
 		Integer[][] btp = tab != null ? tab.getBasicTabSymbolProperties() : null;
@@ -1167,7 +1168,7 @@ public class MEIExport {
 		List<String[]> tabMensSigns = tab != null ? tab.getMensurationSigns() : null;
 		
 		// List all bars in which the meter, or, if appropriate, the key changes 
-		List<Integer> meterChangeBars = ToolBox.getItemsAtIndex(mi, Transcription.MI_FIRST_BAR);
+		List<Integer> meterChangeBars = ToolBox.getItemsAtIndex(mi, Timeline.MI_FIRST_BAR);
 		// Adapt meterChangeBars if needed
 		if (ONLY_TAB && !alignWithMetricBarring) {
 			List<Integer> meterChangeBarsTab = new ArrayList<>();
@@ -1179,7 +1180,7 @@ public class MEIExport {
 			meterChangeBars = meterChangeBarsTab;
 		}
 		List<Integer> diminutions = 
-			tab != null ? ToolBox.getItemsAtIndex(mi, Tablature.MI_DIM) : null;
+			tab != null ? ToolBox.getItemsAtIndex(mi, Timeline.MI_DIM) : null;
 		List<Integer> keyChangeBars = 
 			ki != null ? ToolBox.getItemsAtIndex(ki, Transcription.KI_FIRST_BAR) : 
 			new ArrayList<>();
@@ -1399,7 +1400,7 @@ public class MEIExport {
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
 		TabSymbolSet tss = tab.getEncoding().getTabSymbolSet();
-		List<Integer[]> mi = tab.getMeterInfo();
+		List<Integer[]> mi = tab.getTimeline().getMeterInfo();
 //		List<String[]> meters = new ArrayList<>();
 //		int meterIndex = 0;
 		List<Integer[]> tabBarsToMetricBars = tab.mapTabBarsToMetricBars();
@@ -2423,7 +2424,7 @@ public class MEIExport {
 //			Rational initialMeterChangeOnset = Rational.ZERO;
 			
 			// Adapt complete bnp if any of the meters has a dimunition other than 1
-			List<Integer> diminutions = ToolBox.getItemsAtIndex(mi, Tablature.MI_DIM);
+			List<Integer> diminutions = ToolBox.getItemsAtIndex(mi, Timeline.MI_DIM);
 			if (Collections.frequency(diminutions, 1) != diminutions.size()) {
 				// Undiminute bnp using diminuted mi
 				for (Integer[] in : mi) {
@@ -2432,7 +2433,7 @@ public class MEIExport {
 				System.exit(0);
 				bnp = Transcription.undiminuteBasicNoteProperties(bnp, mi);
 				// Reset mi to undiminuted 
-				mi = tab.getUndiminutedMeterInfo();
+				mi = tab.getTimeline().getUndiminutedMeterInfo();
 //				Integer[][] undiminutedBnp = new Integer[bnp.length][bnp[0].length];
 //				Rational prevMt = null;
 //				Rational prevMtDim = null;
@@ -2525,18 +2526,18 @@ public class MEIExport {
 //		System.exit(0);
 		
 		// Get meter and key TODO assumed is a single key
-		int numBars = mi.get(mi.size()-1)[Transcription.MI_LAST_BAR];
+		int numBars = mi.get(mi.size()-1)[Timeline.MI_LAST_BAR];
 		Rational endOffset = Rational.ZERO;
 		for (Integer[] m : mi) {
-			Rational currMeter = new Rational(m[Transcription.MI_NUM], m[Transcription.MI_DEN]);
-			int barsInCurrMeter = (m[Transcription.MI_LAST_BAR] - m[Transcription.MI_FIRST_BAR]) + 1;
+			Rational currMeter = new Rational(m[Timeline.MI_NUM], m[Timeline.MI_DEN]);
+			int barsInCurrMeter = (m[Timeline.MI_LAST_BAR] - m[Timeline.MI_FIRST_BAR]) + 1;
 			endOffset = endOffset.add(currMeter.mul(barsInCurrMeter));
 		}
 		Integer[] key = ki.get(0);
 		int numAlt = key[Transcription.KI_KEY];
 		// Set initial bar and meter
 		Integer[] initMi = mi.get(0);
-		Rational meter = new Rational(initMi[Transcription.MI_NUM], initMi[Transcription.MI_DEN]);
+		Rational meter = new Rational(initMi[Timeline.MI_NUM], initMi[Timeline.MI_DEN]);
 		Rational barEnd = meter;
 
 		// Get indices mapping
@@ -2968,7 +2969,7 @@ public class MEIExport {
 				if (offset.isGreater(endOffset)) {
 					offset = endOffset;
 				}
-				int endBar = (offset.equals(endOffset)) ? mi.get(mi.size()-1)[Transcription.MI_LAST_BAR] : 
+				int endBar = (offset.equals(endOffset)) ? mi.get(mi.size()-1)[Timeline.MI_LAST_BAR] : 
 					Tablature.getMetricPosition(offset, mi)[0].getNumer();
 				
 				List<Integer> bars = 

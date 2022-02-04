@@ -85,13 +85,13 @@ public class Transcription implements Serializable {
 	public static final int CHORD_SIZE_AS_NUM_ONSETS = 6;
 	public static final int NOTE_SEQ_NUM = 7;
 	
-	public static final int MI_NUM = 0;
-	public static final int MI_DEN = 1;
-	public static final int MI_FIRST_BAR = 2;
-	public static final int MI_LAST_BAR = 3;
-	public static final int MI_NUM_MT_FIRST_BAR = 4;
-	public static final int MI_DEN_MT_FIRST_BAR = 5;
-	private static final int MI_SIZE = 6;
+//	public static final int MI_NUM = 0;
+//	public static final int MI_DEN = 1;
+//	public static final int MI_FIRST_BAR = 2;
+//	public static final int MI_LAST_BAR = 3;
+//	public static final int MI_NUM_MT_FIRST_BAR = 4;
+//	public static final int MI_DEN_MT_FIRST_BAR = 5;
+//	private static final int MI_SIZE = 6;
 	
 	public static final int KI_KEY = 0;
 	public static final int KI_MODE = 1;
@@ -426,7 +426,7 @@ public class Transcription implements Serializable {
 			if (isGroundTruthTranscription) {
 				transpose(tab.getTranspositionInterval());
 			}
-			setMeterInfo(tab.getMeterInfo());
+			setMeterInfo(tab.getTimeline().getMeterInfo());
 			setKeyInfo(/*tab.getMeterInfo()*/); // must be done after possible transpose()
 			setTranscriptionChordsFinal(); // sets the final version of the transcription chords
 			setMinimumDurationLabels(tab);
@@ -671,7 +671,7 @@ public class Transcription implements Serializable {
 
 		Encoding eRev = null;
 		if (tab != null) {
-			eRev = tab.getEncoding().reverseEncoding(tab.getMeterInfo()); // NB The value of normaliseTuning is irrelevant
+			eRev = tab.getEncoding().reverseEncoding(tab.getTimeline().getMeterInfo()); // NB The value of normaliseTuning is irrelevant
 		}
 		return new Transcription(pRev, eRev);
 	}
@@ -1174,7 +1174,8 @@ public class Transcription implements Serializable {
 			Integer[][] basicTabSymbolPropertiesChord = tablature.getBasicTabSymbolPropertiesChord(i);
 			Rational onsetTime = new Rational(basicTabSymbolPropertiesChord[0][Tablature.ONSET_TIME], 
 				Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-			Rational[] metricPosition = Tablature.getMetricPosition(onsetTime, tablature.getMeterInfo());
+			Rational[] metricPosition = 
+				Tablature.getMetricPosition(onsetTime, tablature.getTimeline().getMeterInfo());
 			String bar = String.valueOf(metricPosition[0].getNumer());
 			String positionWithinBar = " " + String.valueOf(metricPosition[1]);
 			if (metricPosition[1].getNumer() == 0) {
@@ -1785,9 +1786,9 @@ public class Transcription implements Serializable {
 	// TESTED
 	public static Rational getMeter(Rational mt, List<Integer[]> meterInfo) {
 		for (Integer[] in : meterInfo) {
-			Rational curr = new Rational(in[MI_NUM], in[MI_DEN]);
-			Rational start = new Rational(in[MI_NUM_MT_FIRST_BAR], in[MI_DEN_MT_FIRST_BAR]);
-			int numBarsInMeter = (in[MI_LAST_BAR] - in[MI_FIRST_BAR]) + 1; 
+			Rational curr = new Rational(in[Timeline.MI_NUM], in[Timeline.MI_DEN]);
+			Rational start = new Rational(in[Timeline.MI_NUM_MT_FIRST_BAR], in[Timeline.MI_DEN_MT_FIRST_BAR]);
+			int numBarsInMeter = (in[Timeline.MI_LAST_BAR] - in[Timeline.MI_FIRST_BAR]) + 1; 
 			Rational end = start.add(curr.mul(numBarsInMeter));
 			if (mt.isGreaterOrEqual(start) && mt.isLess(end)) {
 				return curr;
@@ -1807,8 +1808,8 @@ public class Transcription implements Serializable {
 	// TESTED
 	public static Rational getMeter(int bar, List<Integer[]> meterInfo) {
 		for (Integer[] in : meterInfo) {
-			if (bar >= in[MI_FIRST_BAR] && bar < in[MI_LAST_BAR]+1) {
-				return new Rational(in[MI_NUM], in[MI_DEN]);
+			if (bar >= in[Timeline.MI_FIRST_BAR] && bar < in[Timeline.MI_LAST_BAR]+1) {
+				return new Rational(in[Timeline.MI_NUM], in[Timeline.MI_DEN]);
 			}
 		}
 		return null;
@@ -1855,7 +1856,7 @@ public class Transcription implements Serializable {
 		
 		int numBars;
 		for (int i = 0; i < numTimeSigs; i++) {
-			Integer[] currMeterInfo = new Integer[MI_SIZE];
+			Integer[] currMeterInfo = new Integer[Timeline.MI_SIZE_TRANS];
 			long[] curr = timeSigs[i];
 			Rational currMeter = new Rational(curr[0], curr[1]);
 			Rational currMetricTime = new Rational(curr[3], curr[4]);
@@ -1881,12 +1882,12 @@ public class Transcription implements Serializable {
 				Rational rem = end.sub(currMetricTime);
 				numBars = (rem.div(currMeter)).ceil();
 			}
-			currMeterInfo[MI_NUM] = (int)curr[0];
-			currMeterInfo[MI_DEN] = (int)curr[1];
-			currMeterInfo[MI_FIRST_BAR] = start;
-			currMeterInfo[MI_LAST_BAR] = start + (numBars - 1);
-			currMeterInfo[MI_NUM_MT_FIRST_BAR] = currMetricTime.getNumer();
-			currMeterInfo[MI_DEN_MT_FIRST_BAR] = currMetricTime.getDenom();
+			currMeterInfo[Timeline.MI_NUM] = (int)curr[0];
+			currMeterInfo[Timeline.MI_DEN] = (int)curr[1];
+			currMeterInfo[Timeline.MI_FIRST_BAR] = start;
+			currMeterInfo[Timeline.MI_LAST_BAR] = start + (numBars - 1);
+			currMeterInfo[Timeline.MI_NUM_MT_FIRST_BAR] = currMetricTime.getNumer();
+			currMeterInfo[Timeline.MI_DEN_MT_FIRST_BAR] = currMetricTime.getDenom();
 			mInfo.add(currMeterInfo);
 //			mInfo.add(
 //				new Integer[]{
@@ -1938,7 +1939,7 @@ public class Transcription implements Serializable {
 				lastBar = firstBarNext - 1;
 			}
 			else {
-				lastBar = meterInfo.get(meterInfo.size() -1)[MI_LAST_BAR];
+				lastBar = meterInfo.get(meterInfo.size() -1)[Timeline.MI_LAST_BAR];
 			}
 			keyInfo.add(new Integer[]{key, mode, firstBar, lastBar, mt.getNumer(), mt.getDenom()});
 		}
@@ -7140,9 +7141,10 @@ public class Transcription implements Serializable {
 				// Onset bar meter
 				Rational meterOnset = null;
 				for (Integer[] currentMeter : meterInfo) {
-					if (barNumberOnset >= currentMeter[MI_FIRST_BAR] && 
-						barNumberOnset <= currentMeter[MI_LAST_BAR]) {
-						meterOnset = new Rational(currentMeter[MI_NUM], currentMeter[MI_DEN]);
+					if (barNumberOnset >= currentMeter[Timeline.MI_FIRST_BAR] && 
+						barNumberOnset <= currentMeter[Timeline.MI_LAST_BAR]) {
+						meterOnset = new Rational(currentMeter[Timeline.MI_NUM], 
+							currentMeter[Timeline.MI_DEN]);
 					}
 				}
 				// 3. Determine currentMirrorPoint
@@ -7154,10 +7156,11 @@ public class Transcription implements Serializable {
 				if (barNumberOffset > barNumberOnset) {     	
 					for (int i = barNumberOnset + 1; i <= barNumberOffset; i++) {
 						for (Integer[] currentMeter : meterInfo) {
-							if (i >= currentMeter[MI_FIRST_BAR] && i <= currentMeter[MI_LAST_BAR]) { 
+							if (i >= currentMeter[Timeline.MI_FIRST_BAR] && 
+								i <= currentMeter[Timeline.MI_LAST_BAR]) { 
 								durationSucceedingBars = 
-									durationSucceedingBars.add(new Rational(currentMeter[MI_NUM], 
-									currentMeter[MI_DEN]));
+									durationSucceedingBars.add(new Rational(
+									currentMeter[Timeline.MI_NUM], currentMeter[Timeline.MI_DEN]));
 							}
 						}
 					}
@@ -8344,7 +8347,7 @@ public class Transcription implements Serializable {
 			// a. in the tablature case
 			if (tablature != null) {
 				currentChordSize = tablature.getTablatureChords().get(i).size();
-				meterInfo = tablature.getMeterInfo();
+				meterInfo = tablature.getTimeline().getMeterInfo();
 				for (Integer[] btp : basicTabSymbolProperties) {
 					if (btp[Tablature.CHORD_SEQ_NUM] == i) {
 						onsetCurrNote = new Rational(btp[Tablature.ONSET_TIME], 

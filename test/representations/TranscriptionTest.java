@@ -4137,7 +4137,7 @@ public class TranscriptionTest extends TestCase {
 		
 		Integer[][] actual = 
 			Transcription.undiminuteBasicNoteProperties(trans.getBasicNoteProperties(), 
-			tab.getMeterInfo());
+			tab.getTimeline().getMeterInfo());
 		
 		assertEquals(expected.length, actual.length);
 		for (int i = 0; i < expected.length; i++) {

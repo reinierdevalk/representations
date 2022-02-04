@@ -19,6 +19,7 @@ import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.data.score.ScoreNote;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.Piece;
+import representations.Timeline;
 import representations.Transcription;
 import tools.ToolBox;
 
@@ -195,8 +196,8 @@ public class MIDIExport {
 				Integer[] tst = timeSigTicks.get(i);
 				mt = new MetaMessage();
 				// 2^x = den --> x = log_2(den) = log_e(den)/log_e(2)
-				double dd = Math.log(mi[Transcription.MI_DEN])/Math.log(2);
-				byte[] bts = {(byte)(int)mi[Transcription.MI_NUM], (byte)dd, 0x18, 0x08}; // nn=in[0], cc=24, bb=8
+				double dd = Math.log(mi[Timeline.MI_DEN])/Math.log(2);
+				byte[] bts = {(byte)(int)mi[Timeline.MI_NUM], (byte)dd, 0x18, 0x08}; // nn=in[0], cc=24, bb=8
 				mt.setMessage(0x58, bts, 4);			
 				tracks.get(0).add(new MidiEvent(mt,(long)tst[0]));
 			}
