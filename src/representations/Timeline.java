@@ -1,6 +1,7 @@
 package representations;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import de.uos.fmt.musitech.utility.math.Rational;
@@ -20,14 +21,8 @@ public class Timeline {
 	public static final int MI_SIZE_TRANS = 6; // TODO make private
 
 	private List<Integer[]> undiminutedMeterInfo;
-	private List<Integer> diminutions;
 	private List<Integer[]> meterInfo;	
 	private List<Integer[]> diminutionPerBar;
-	
-	// From Tablature
-	// MI_NUM, MI_DEN, MI_FIRST_BAR, MI_LAST_BAR, MI_NUM_MT_FIRST_BAR, and MI_DEN_MT_FIRST_BAR 
-	// are the same as for a Transcription, and are defined there
-//	private static final int MI_SIZE = 7;
 
 
 	///////////////////////////////
@@ -40,9 +35,8 @@ public class Timeline {
 
 
 	private void init(Encoding encoding) {
-		setDiminutions(encoding);
 		setUndiminutedMeterInfo(encoding);
-		setMeterInfo();
+		setMeterInfo(encoding);
 		setDiminutionPerBar();
 	}
 
@@ -52,22 +46,6 @@ public class Timeline {
 	//  S E T T E R S  
 	//  for instance variables
 	//
-	void setDiminutions(Encoding encoding) {
-		diminutions = makeDiminutions(encoding);
-	}
-
-
-	// TESTED
-	List<Integer> makeDiminutions(Encoding encoding) {
-		List<Integer> diminutions = new ArrayList<>();
-		String diminutionsStr = encoding.getInfoAndSettings().get(Encoding.DIMINUTION_IND);
-		for (String s : diminutionsStr.split(";")) {
-			diminutions.add(Integer.parseInt(s.trim()));
-		}
-		return diminutions;
-	}
-
-
 	void setUndiminutedMeterInfo(Encoding encoding) {
 		undiminutedMeterInfo = makeUndiminutedMeterInfo(encoding);
 	}
@@ -125,16 +103,18 @@ public class Timeline {
 	}
 
 
-	void setMeterInfo() {
-		meterInfo = makeMeterInfo();
+	void setMeterInfo(Encoding encoding) {
+		meterInfo = makeMeterInfo(encoding);
 	}
 
 
 	// TESTED
-	List<Integer[]> makeMeterInfo() {
+	List<Integer[]> makeMeterInfo(Encoding encoding) {
 		List<Integer[]> mi = new ArrayList<>();
 
-		List<Integer> diminutions = getDiminutions();
+		List<Integer> diminutions = new ArrayList<>();
+		String dimStr = encoding.getInfoAndSettings().get(Encoding.DIMINUTION_IND);
+		Arrays.asList(dimStr.split(";")).forEach(d -> diminutions.add(Integer.parseInt(d.trim())));
 		List<Integer[]> undiminutedMeterInfo = getUndiminutedMeterInfo();
 		// For each meter
 		Rational prevMeterAsRat = Rational.ZERO;
@@ -155,7 +135,6 @@ public class Timeline {
 			int currDim = diminutions.get(i);
 			// 1. Meter
 			Rational newMeter = diminuteMeter(new Rational(currNum, currDen), currDim);
-
 			currMeterInfo[MI_NUM] = newMeter.getNumer();
 			currMeterInfo[MI_DEN] = newMeter.getDenom();
 			// 2. Metric time
@@ -204,11 +183,6 @@ public class Timeline {
 	//  G E T T E R S
 	//  for instance variables
 	//
-	public List<Integer> getDiminutions() {
-		return diminutions;
-	}
-
-
 	/**
 	 * Gets the original (undiminuted) meterInfo.
 	 * 
@@ -248,6 +222,11 @@ public class Timeline {
 	}
 
 
+	/**
+	 * Gets the diminution for each metric bar.
+	 * 
+	 * @return
+	 */
 	public List<Integer[]> getDiminutionPerBar() {
 		return diminutionPerBar;
 	}
@@ -328,6 +307,198 @@ public class Timeline {
 			newMeter = new Rational(meter.getNumer(), (int) (meter.getDenom() / Math.abs(diminution)));
 		}
 		return newMeter;
+	}
+
+
+	/**
+	 * Gets the metric position of the note at the onset time. Returns a Rational[] with 
+	 *   <ul>
+	 *   <li>as element 0: the bar number (whose denominator will always be 1);</li>
+	 *   <li>as element 1: the position within the bar, reduced and starting at 0/x (where x is the common denominator,
+	 *                 i.e., the product of the denominator of metricTime and the largest meter denominator).</li>
+	 *   </ul>
+	 * If there is an anacrusis: if metricTime falls within the anacrusis, the bar number returned will be 0,
+	 * and the position within the bar will be the position as if the anacrusis were a full bar.
+	 * <br><br>
+	 * Example: a metric time of 9/8 in meter 6/8 returns 2/1 and 3/8 (i.e., the fourth 8th note in bar 2).
+	 * 
+	 * @param mt
+	 * @param meterInfo
+	 * @return
+	 */
+	// TESTED
+	public static Rational[] getMetricPosition(Rational mt, List<Integer[]> meterInfo) {
+		Rational[] metricPosition = new Rational[2];
+
+		// 0. Determine the presence of an anacrusis
+		boolean containsAnacrusis = false;
+		if (meterInfo.get(0)[MI_FIRST_BAR] == 0) {
+			containsAnacrusis = true;
+		}
+
+		// 1. Determine the largest meter denominator and then the common denominator
+		int largestMeterDenom = -1;
+		for (Integer[] in : meterInfo) {
+			if (in[MI_DEN] > largestMeterDenom) {
+				largestMeterDenom = in[MI_DEN];
+			}
+		}
+		int commonDenom = mt.getDenom() * largestMeterDenom;
+
+		// 2. Express metricTime and all meters in commonDenom  	
+		// a. metricTime
+		Rational metricTimeInLargestDenom = 
+			new Rational(mt.getNumer() * largestMeterDenom, mt.getDenom() * largestMeterDenom);
+		// b. All meters
+		List<Rational> metersInLargestDenom = new ArrayList<Rational>();
+		for (int i = 0; i < meterInfo.size(); i++) {
+			Integer[] currentMeter = 
+				new Integer[]{meterInfo.get(i)[MI_NUM], meterInfo.get(i)[MI_DEN]};
+			// factor will always be an int because largestMeterDenom will always be a multiple of currentMeter[1]    	
+			int factor = (largestMeterDenom / currentMeter[1]) * mt.getDenom();  
+			metersInLargestDenom.add(new Rational(currentMeter[0] * factor, commonDenom));
+		}
+
+		// 3. List for the initial meter and any following meter change points the metric time (in commonDenom).
+		// The first element of the list will be the metric time of the first full bar
+		// The last element of the list will be the metric time of the fictional bar after the last bar
+		List<Rational> meterChangePointsMetricTimes = new ArrayList<Rational>();
+		// Determine the initial meter change point and set startIndex so that if an anacrusis is present, the
+		// first element of argMeterInfo (containing the anacrusis information) is skipped
+		int startIndex;
+		if (containsAnacrusis) {
+			meterChangePointsMetricTimes.add(new Rational(metersInLargestDenom.get(0).getNumer(), commonDenom));
+			startIndex = 1;
+		}
+		else {
+			meterChangePointsMetricTimes.add(new Rational(0, commonDenom));
+			startIndex = 0;
+		}
+		// Determine the remaining meter change points
+		for (int i = startIndex; i < meterInfo.size(); i++) {
+			// Determine the number of bars in the current meter
+			int numBarsInCurrentMeter = 
+				(meterInfo.get(i)[MI_LAST_BAR] - meterInfo.get(i)[MI_FIRST_BAR]) + 1;
+			// Determine the metric time of the next meter change point and add it to meterChangePointsMetricTimes
+			// NB: When creating the new Rational do not use add() to avoid automatic reduction
+			Rational currentMeter = metersInLargestDenom.get(i);
+			int toAdd = numBarsInCurrentMeter * currentMeter.getNumer();
+			meterChangePointsMetricTimes.add(new Rational(meterChangePointsMetricTimes.get(i - startIndex).getNumer() +
+				toAdd, commonDenom));	 	
+		}
+
+		// 4. Determine the bar number and the position in the bar, and set metricPosition
+		// a. If metricTime falls within the anacrusis (the if can only be satisfied if there
+		// is an anacrusis)
+		if (metricTimeInLargestDenom.getNumer() < meterChangePointsMetricTimes.get(0).getNumer()) {
+			// Determine the position in the bar as if it were a full bar 
+			Rational lengthAnacrusis = metersInLargestDenom.get(0);
+			Rational meterFirstBar = metersInLargestDenom.get(1);
+			int toAdd = meterFirstBar.getNumer() - lengthAnacrusis.getNumer();
+			Rational positionInBar = 
+				new Rational(metricTimeInLargestDenom.getNumer() + toAdd, commonDenom);
+			positionInBar.reduce();
+			// Set metricPosition; the bar number is 0
+			metricPosition[0] = new Rational(0, 1);
+			metricPosition[1] = positionInBar;
+		}
+		// b. If metricTime falls after the anacrusis
+		else {
+			for (int i = 0; i < meterChangePointsMetricTimes.size() - 1; i++) {
+				// Determine the meter change points and bar size (in commonDenom) for the current meter
+				Rational currentPrevious = meterChangePointsMetricTimes.get(i);
+				Rational currentNext = meterChangePointsMetricTimes.get(i + 1); 
+				int currentBarSize = metersInLargestDenom.get(i + startIndex).getNumer();
+
+				// If metricTime falls within the current meter change points: determine bar number and position in bar
+				if (metricTimeInLargestDenom.isGreaterOrEqual(currentPrevious) && metricTimeInLargestDenom.isLess(currentNext)) {
+					// Determine the bar number
+					int currentDistance = metricTimeInLargestDenom.getNumer() - currentPrevious.getNumer();
+					int numberOfBarsToAdd =	
+						(currentDistance - (currentDistance % currentBarSize)) / currentBarSize;   			
+					int currentBarNumber = 
+						meterInfo.get(i + startIndex)[MI_FIRST_BAR] + numberOfBarsToAdd;
+					// Determine the position in the bar
+					Rational currentPositionInBar = 
+						new Rational(currentDistance % currentBarSize, commonDenom);
+					currentPositionInBar.reduce();
+					// Set metricPosition and break
+					metricPosition[0] = new Rational(currentBarNumber, 1);
+					metricPosition[1] = currentPositionInBar;
+					break;
+				}
+			}
+		}
+		return metricPosition;
+	}
+
+
+	/**
+	 * Gets the diminution for the given metric time.
+	 * 
+	 * @param mt
+	 * @param meterInfo
+	 * @return
+	 */
+	// TESTED
+	public static int getDiminution(Rational mt, List<Integer[]> meterInfo) {
+		int diminution = 1; 
+		// For each meter
+		for (int i = 0; i < meterInfo.size(); i++) {
+			Integer[] in = meterInfo.get(i);
+			// Not last meter: check if mt falls in current meter
+			if (i < meterInfo.size() - 1) {
+				Rational lower = 
+					new Rational(in[MI_NUM_MT_FIRST_BAR], in[MI_DEN_MT_FIRST_BAR]);
+				Rational upper = 
+					new Rational(meterInfo.get(i+1)[MI_NUM_MT_FIRST_BAR], 
+					meterInfo.get(i+1)[MI_DEN_MT_FIRST_BAR]);
+				if (mt.isGreaterOrEqual(lower) && mt.isLess(upper)) {
+					diminution = in[MI_DIM];
+					break;
+				}
+			}
+			// Last (or only) meter: mt must fall in this meter
+			else {
+				diminution = in[MI_DIM];
+			}
+		}
+		return diminution;
+	}
+
+
+	//////////////////////////////////////
+	//
+	//  I N S T A N C E  M E T H O D S
+	//
+	/**
+	 * Gets the diminution for the given metric bar.
+	 * 
+	 * @param bar
+	 * @return
+	 */
+	// TESTED
+	public int getDiminution(int bar) {
+		List<Integer[]> dpb = getDiminutionPerBar();
+		return dpb.get(ToolBox.getItemsAtIndex(dpb, 0).indexOf(bar))[1];
+	}
+
+
+	/**
+	 * Gets the number of metric bars, as specified in the meterInfo.
+	 * 
+	 * @return An Integer[] containing<br>
+	 * <ul>
+	 * <li>as element 0: the number of metric bars, not counting any anacrusis</li>
+	 * <li>as element 1: 1 if there is an anacrusis; 0 if not</li>
+	 * </ul>
+	 */
+	// TESTED
+	public Integer[] getNumberOfMetricBars() {
+		List<Integer[]> mi = getMeterInfo();
+		int firstBar = mi.get(0)[MI_FIRST_BAR];
+		int lastBar = mi.get(mi.size()-1)[MI_LAST_BAR];
+		return new Integer[]{lastBar, firstBar == 0 ? 1 : 0};
 	}
 
 }

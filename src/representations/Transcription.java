@@ -1175,7 +1175,7 @@ public class Transcription implements Serializable {
 			Rational onsetTime = new Rational(basicTabSymbolPropertiesChord[0][Tablature.ONSET_TIME], 
 				Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
 			Rational[] metricPosition = 
-				Tablature.getMetricPosition(onsetTime, tablature.getTimeline().getMeterInfo());
+				Timeline.getMetricPosition(onsetTime, tablature.getTimeline().getMeterInfo());
 			String bar = String.valueOf(metricPosition[0].getNumer());
 			String positionWithinBar = " " + String.valueOf(metricPosition[1]);
 			if (metricPosition[1].getNumer() == 0) {
@@ -1929,13 +1929,13 @@ public class Transcription implements Serializable {
 			int mode = Math.abs(km.getMode().getCode() -1);
 			Rational mt = km.getMetricTime();
 			// It is assumed that key signature changes only occur at the beginning of a bar
-			int firstBar = Tablature.getMetricPosition(mt, meterInfo)[0].getNumer();
+			int firstBar = Timeline.getMetricPosition(mt, meterInfo)[0].getNumer();
 			int lastBar = -1;
 			// If there is a next keysig
 			if ((i+1) < numKeySigs) {
 				KeyMarker next = (KeyMarker) keySigs.get(i+1);
 				Rational mtNext = next.getMetricTime();
-				int firstBarNext = Tablature.getMetricPosition(mtNext, meterInfo)[0].getNumer();
+				int firstBarNext = Timeline.getMetricPosition(mtNext, meterInfo)[0].getNumer();
 				lastBar = firstBarNext - 1;
 			}
 			else {
@@ -2411,7 +2411,7 @@ public class Transcription implements Serializable {
 			// Get original metric time and diminution
 			Rational currMt = 
 				new Rational(currNote[ONSET_TIME_NUMER], currNote[ONSET_TIME_DENOM]);
-			int currDim = Tablature.getDiminution(currMt, mi);
+			int currDim = Timeline.getDiminution(currMt, mi);
 			// Get the diminuted metric time for the chord the note at index i is in
 			Rational currMtDim;
 			// If the chord is the first chord of the piece
@@ -6494,7 +6494,7 @@ public class Transcription implements Serializable {
 						new Rational(n.getMidiPitch(), 1), 
 						n.getMetricTime(),
 						n.getMetricDuration(), 
-						Tablature.getMetricPosition(n.getMetricTime(), getMeterInfo())[1]});
+						Timeline.getMetricPosition(n.getMetricTime(), getMeterInfo())[1]});
 				}
 			}
 			notesPerVoice.add(notes);
@@ -7132,9 +7132,9 @@ public class Transcription implements Serializable {
 				// the onset- and offset bar(s) as well as the onset meter 
 				// NB: The offset time of the last note must be reduced to ensure that it falls with the bar 
 				// (if it coincides with the final barline, offsetTimeLastNote will not have a metric position)
-				Rational[] metricPositionOnset = Tablature.getMetricPosition(onsetTimeLastNote, meterInfo);
+				Rational[] metricPositionOnset = Timeline.getMetricPosition(onsetTimeLastNote, meterInfo);
 				Rational reduction = new Rational(1, 128);
-				Rational[] metricPositionOffset = Tablature.getMetricPosition(offsetTimeLastNote.sub(reduction), meterInfo);
+				Rational[] metricPositionOffset = Timeline.getMetricPosition(offsetTimeLastNote.sub(reduction), meterInfo);
 				// Onset- and offset bar(s)
 				int barNumberOnset = metricPositionOnset[0].getNumer();
 				int barNumberOffset = metricPositionOffset[0].getNumer();
@@ -7225,7 +7225,7 @@ public class Transcription implements Serializable {
 		for (Integer[] b : bnp) {
 			Rational currentMetricTime = 
 				new Rational(b[ONSET_TIME_NUMER], b[ONSET_TIME_DENOM]);
-			allMetricPositions.add(Tablature.getMetricPosition(currentMetricTime, meterInf)); 
+			allMetricPositions.add(Timeline.getMetricPosition(currentMetricTime, meterInf)); 
 		}
 		return allMetricPositions;	
 	}
@@ -8372,8 +8372,8 @@ public class Transcription implements Serializable {
 			}
 
 			String currMeasure = 
-				"" + Tablature.getMetricPosition(onsetCurrNote, meterInfo)[0].getNumer() + " " +
-				Tablature.getMetricPosition(onsetCurrNote, meterInfo)[1];
+				"" + Timeline.getMetricPosition(onsetCurrNote, meterInfo)[0].getNumer() + " " +
+				Timeline.getMetricPosition(onsetCurrNote, meterInfo)[1];
 
 			// a. Get the voice crossing information within the chord (Type 1)
 			List<List<Double>> currentChordVoiceLabels = chordVoiceLabels.get(i);
@@ -8437,8 +8437,8 @@ public class Transcription implements Serializable {
 									if ((prevVoice < currVoice && pitchPrevNote < pitchCurrNote) ||
 										(prevVoice > currVoice && pitchPrevNote > pitchCurrNote)) {
 //										double prevMeasure = onsetPrevNote.toDouble() + 1.0;
-										String prevMeasure = "" + Tablature.getMetricPosition(onsetPrevNote, meterInfo)[0].getNumer() + 
-											" " + Tablature.getMetricPosition(onsetPrevNote, meterInfo)[1];
+										String prevMeasure = "" + Timeline.getMetricPosition(onsetPrevNote, meterInfo)[0].getNumer() + 
+											" " + Timeline.getMetricPosition(onsetPrevNote, meterInfo)[1];
 										voiceCrossingInformation = 
 											voiceCrossingInformation.concat("Type 2 voice crossing at chordIndex " + i + "; notes involved are:" + "\n" + 
 											"  note at index " + j + " (m. " + currMeasure + "; pitch " + pitchCurrNote + "; voice " + currVoice + ")" + "\n" +  

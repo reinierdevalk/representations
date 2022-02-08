@@ -1474,7 +1474,7 @@ public class MEIExport {
 			List<String[]> currBarEvents = ebf.get(i);
 			int currTabBar = Integer.parseInt(currBarEvents.get(0)[Encoding.BAR_IND]);
 			int currMetricBar = tabBarsToMetricBars.get(currTabBar-1)[1];
-			int currDim = tab.getDiminution(currMetricBar);
+			int currDim = tab.getTimeline().getDiminution(currMetricBar);
 //			int currDim = Tablature.getDiminution(currMetricBar, mi);
 				
 
@@ -1881,7 +1881,7 @@ public class MEIExport {
 				int diminution = 1;
 				if (TAB_AND_TRANS) {
 //				if (mi.get(0).length == Tablature.MI_SIZE) {
-					diminution = tab.getDiminution(bar);
+					diminution = tab.getTimeline().getDiminution(bar);
 //					diminution = Tablature.getDiminution(bar, mi);
 				}
 				List<String> currNotesAsXML = 
@@ -1933,7 +1933,7 @@ public class MEIExport {
 				int diminution = 1;
 				if (TAB_AND_TRANS) {
 //				if (mi.get(0).length == Tablature.MI_SIZE) {
-					diminution = tab.getDiminution(bar);
+					diminution = tab.getTimeline().getDiminution(bar);
 //					diminution = Tablature.getDiminution(bar, mi);
 				}
 				List<String> barList = 
@@ -2588,7 +2588,7 @@ public class MEIExport {
 //			Rational[] barMetPos = 
 //				!adaptCMNDur ? Tablature.getMetricPosition(onset, mi) :
 //				Tablature.getMetricPosition(onset, tab.getUndiminutedMeterInfo());		
-			Rational[] barMetPos = Tablature.getMetricPosition(onset, mi);	
+			Rational[] barMetPos = Timeline.getMetricPosition(onset, mi);	
 				
 //			System.out.println(Arrays.toString(tab.getUndiminutedMeterInfo().get(0)));
 			int bar = barMetPos[0].getNumer();
@@ -2602,7 +2602,7 @@ public class MEIExport {
 //			}
 			
 			// If adaptCMNDur, diminution has been made undone in bnp
-			int diminution = adaptCMNDur ? 1 : Tablature.getDiminution(onset, mi);
+			int diminution = adaptCMNDur ? 1 : Timeline.getDiminution(onset, mi);
 
 			// Increment barEnd and clear lists when new bar is reached
 			if (onset.isGreaterOrEqual(barEnd)) {
@@ -2689,7 +2689,7 @@ public class MEIExport {
 				// (see https://en.wikipedia.org/wiki/Note_value)
 				Rational l = new Rational((int)Math.pow(2, dotsPrev) - 1, (int)Math.pow(2, dotsPrev));
 				durPrev = durPrev.add(durPrev.mul(l));
-				metPosPrev = Tablature.getMetricPosition(onsetPrev, mi)[1]; 
+				metPosPrev = Timeline.getMetricPosition(onsetPrev, mi)[1]; 
 				offsetPrev = onsetPrev.add(durPrev);
 
 				// To tripletise is to give a note its nominal (shown) value instead of its 
@@ -2754,7 +2754,7 @@ public class MEIExport {
 					Rational onsetRest = offsetPrev;
 					Rational metPosRest = 
 						(currVoiceStrings.size() == 0) ? Rational.ZERO :
-						Tablature.getMetricPosition(onsetRest, mi)[1];
+						Timeline.getMetricPosition(onsetRest, mi)[1];
 //					Rational durRestTripletised = durRest;
 					List<Boolean> tripletInfo = (tripletOnsetPairs == null) ? null :
 						isTripletOnset(tripletOnsetPairs, onsetRest);
@@ -2776,7 +2776,7 @@ public class MEIExport {
 						subNoteDursOnsets.add(onset.sub(precedingInBar)); // herr man
 					}
 					Rational remainder = durRest.sub(precedingInBar);
-					int beginBar = Tablature.getMetricPosition(offsetPrev, mi)[0].getNumer();
+					int beginBar = Timeline.getMetricPosition(offsetPrev, mi)[0].getNumer();
 					List<Integer> bars = 
 						IntStream.rangeClosed(beginBar, bar).boxed().collect(Collectors.toList());
 					for (int j = bar-1; j >= beginBar; j--) {
@@ -2970,7 +2970,7 @@ public class MEIExport {
 					offset = endOffset;
 				}
 				int endBar = (offset.equals(endOffset)) ? mi.get(mi.size()-1)[Timeline.MI_LAST_BAR] : 
-					Tablature.getMetricPosition(offset, mi)[0].getNumer();
+					Timeline.getMetricPosition(offset, mi)[0].getNumer();
 				
 				List<Integer> bars = 
 					IntStream.rangeClosed(bar, endBar).boxed().collect(Collectors.toList());
@@ -3215,7 +3215,7 @@ public class MEIExport {
 		// for loop breaks at the end of k = 0  
 		for (int k = 0; k < uf.size(); k++) {
 			if (verbose) System.out.println("k = " + k);
-			int currBar = Tablature.getMetricPosition(currOnset, mi)[0].getNumer();
+			int currBar = Timeline.getMetricPosition(currOnset, mi)[0].getNumer();
 			String[] copyOfCurr = Arrays.copyOf(curr, curr.length);
 			Rational durAsRat = uf.get(k);
 			if (isDotted) {
@@ -3297,7 +3297,7 @@ public class MEIExport {
 				if (top != null) {
 					currTripletOpenOnset = 
 						getExtendedTripletOnsetPair(currOnset, tripletOnsetPairs, mi, diminution)[0];
-					metPosTripletOpen = Tablature.getMetricPosition(currTripletOpenOnset, mi)[1];
+					metPosTripletOpen = Timeline.getMetricPosition(currTripletOpenOnset, mi)[1];
 					currTripletLen = top[3];
 					tripletBorder = metPosTripletOpen.add(currTripletLen);
 					onsetTripletBorder = currTripletOpenOnset.add(currTripletLen);
@@ -3912,7 +3912,7 @@ public class MEIExport {
 		// for loop breaks at the end of k = 0  
 		for (int k = 0; k < uf.size(); k++) {
 			System.out.println("k = " + k);
-			int currBar = Tablature.getMetricPosition(currOnset, mi)[0].getNumer();
+			int currBar = Timeline.getMetricPosition(currOnset, mi)[0].getNumer();
 			String[] copyOfCurr = Arrays.copyOf(curr, curr.length);
 			Rational durAsRat = uf.get(k);
 			if (isDotted) {
@@ -3994,7 +3994,7 @@ public class MEIExport {
 				if (top != null) {
 					currTripletOpenOnset = 
 						getExtendedTripletOnsetPair(currOnset, tripletOnsetPairs, mi, diminution)[0];
-					metPosTripletOpen = Tablature.getMetricPosition(currTripletOpenOnset, mi)[1];
+					metPosTripletOpen = Timeline.getMetricPosition(currTripletOpenOnset, mi)[1];
 					currTripletLen = top[3];
 					tripletBorder = metPosTripletOpen.add(currTripletLen);
 					onsetTripletBorder = currTripletOpenOnset.add(currTripletLen);

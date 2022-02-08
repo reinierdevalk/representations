@@ -33,8 +33,8 @@ public class EncodingTest {
 
 
 	@Test
-	public void testSetAndGetName() {		
-		assertEquals("testpiece", new Encoding(encodingTestpiece1).getName());
+	public void testSetAndGetPiecename() {		
+		assertEquals("testpiece", new Encoding(encodingTestpiece1).getPiecename());
 	}
 
 

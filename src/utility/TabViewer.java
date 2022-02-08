@@ -52,6 +52,7 @@ public class TabViewer extends JFrame{
 		Arrays.asList(new String[]{"french", "italian", "spanish", "german", "tabCode"});
 	private final Integer[] FRAME_DIMS = new Integer[]{717, 672};
 	private final Integer[] PANEL_DIMS = new Integer[]{586, 413};
+	private File file;
 
 
 	public static void main(String[] args) {
@@ -74,6 +75,16 @@ public class TabViewer extends JFrame{
 		setTabRadioButtons();
 		setRhythmSymbolsCheckBox();
 		initializeEncodingViewer(encPath);
+	}
+
+
+	private void setFile(File f) {
+		file = f;
+	}
+	
+	
+	private File getFile() {
+		return file;
 	}
 
 
@@ -397,6 +408,7 @@ public class TabViewer extends JFrame{
 //			encPath = "F:/research/data/annotated/josquintab/tab/" + "5263_12_in_exitu_israel_de_egipto_desprez-3.tbp";
 		}
 		File encFile = new File(encPath);
+		setFile(encFile);
 		
 		getPieceInfoLabel().setText(encFile.getName());
 		String rawEncoding = "";
@@ -465,11 +477,12 @@ public class TabViewer extends JFrame{
 		final int ruleStringIndex = 3;
 
 		// 1. Create an unchecked encoding
-		// The first time the viewbutton is clicked, encodingArea.getText() will always be 
-		// exactly as in the file that is loaded because it is set as such in openFileAction().
-		// Any next time, it will be exactly what is in the encodingArea (which now may have 
-		// corrections compared to what is in the loaded file)
-		Encoding enc = new Encoding(rawEnc, null, false); // TODO fix name
+		// Every time the viewbutton is clicked, a new rawEnc is made. The first time the 
+		// viewbutton is clicked, encodingArea.getText() will always be exactly as in the 
+		// file that is loaded because it is set as such in openFileAction(). Any next time,
+		// it will be exactly what is in the encodingArea (which now may have corrections 
+		// compared to what is in the loaded file)
+		Encoding enc = new Encoding(rawEnc, "", Encoding.MINIMAL);
 		// a. If the encoding contains metadata errors: place error message
 		if (enc.checkForMetadataErrors()) {
 			getErrorMessageLabel("upper").setText(Encoding.METADATA_ERROR);
@@ -477,6 +490,7 @@ public class TabViewer extends JFrame{
 		}
 		// b. If the encoding contains no metadata errors: continue
 		else {
+			enc = new Encoding(rawEnc, "", Encoding.METADATA_CHECKED);
 			// 2. Check the encoding
 			// Remove any remaining highlights and error messages
 			getHilit().removeAllHighlights();
@@ -498,6 +512,7 @@ public class TabViewer extends JFrame{
 			}
 			// b. If the encoding contains no encoding errors: show the tablature in a new window 
 			else {
+				enc = new Encoding(rawEnc, "", Encoding.SYNTAX_CHECKED);
 				// Determine TabSymbolSet
 				TabSymbolSet tss = null;
 				outerLoop: for (String type : getTabTypes()) {

@@ -19,6 +19,7 @@ import de.uos.fmt.musitech.data.structure.container.NoteSequence;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import representations.Tablature;
+import representations.Timeline;
 import representations.Transcription;
 import tbp.TabSymbol;
 import tools.ToolBox;
@@ -829,7 +830,7 @@ public class Analyser {
 			List<Note> currentChord = transcription.getTranscriptionChords().get(i);
 
 			Rational currentOnsetTime = currentChord.get(0).getMetricTime();
-			Rational[] metricPos = Tablature.getMetricPosition(currentOnsetTime, meterInfo);
+			Rational[] metricPos = Timeline.getMetricPosition(currentOnsetTime, meterInfo);
 			String barNum = String.valueOf(metricPos[0].getNumer());
 			String posInBar = "";
 			if (metricPos[1].getNumer() != 0) {
@@ -947,7 +948,7 @@ public class Analyser {
 
 			if (size > maxNumVoices) {
 				// Determine onsetTimeAsString
-				Rational[] metricPosition = Tablature.getMetricPosition(onsetTimeCurrentNote, meterInfo);
+				Rational[] metricPosition = Timeline.getMetricPosition(onsetTimeCurrentNote, meterInfo);
 				String onsetTimeAsString = "" + metricPosition[0].getNumer();
 				if (metricPosition[1].getNumer() != 0) {
 					onsetTimeAsString += " " + metricPosition[1]; 
@@ -987,7 +988,7 @@ public class Analyser {
 		Rational mt = new Rational(basicNoteProperties[numNotes - 1][Transcription.ONSET_TIME_NUMER],
 			basicNoteProperties[numNotes - 1][Transcription.ONSET_TIME_DENOM]);
 
-		Rational[] metricPosition = Tablature.getMetricPosition(mt, meterInfo);
+		Rational[] metricPosition = Timeline.getMetricPosition(mt, meterInfo);
 		System.out.println("bar no   = " + (double) metricPosition[0].getNumer() / metricPosition[0].getDenom());
 		System.out.println("position = " + (double) metricPosition[1].getNumer() / metricPosition[1].getDenom());
 	}
@@ -1042,8 +1043,8 @@ public class Analyser {
 			doubleNoteInformation += "Voice = " + i + "\r\n";
 			for (Note n: metricTimeMoreThanOnce) {
 				doubleNoteInformation += "More than one note in voice " + i + " in bar " + 
-					Tablature.getMetricPosition(n.getMetricTime(), meterInfo)[0].getNumer() + ", beat " + 
-					Tablature.getMetricPosition(n.getMetricTime(), meterInfo)[1] + " (pitch = " + n.getMidiPitch() + "))" + "\r\n";
+					Timeline.getMetricPosition(n.getMetricTime(), meterInfo)[0].getNumer() + ", beat " + 
+					Timeline.getMetricPosition(n.getMetricTime(), meterInfo)[1] + " (pitch = " + n.getMidiPitch() + "))" + "\r\n";
 			}    
 		}
 		return doubleNoteInformation;
@@ -1210,7 +1211,7 @@ public class Analyser {
 				}
 				Rational onsetTime = new Rational(basicNoteProperties[noteIndex][Transcription.ONSET_TIME_NUMER],
 					basicNoteProperties[noteIndex][Transcription.ONSET_TIME_DENOM]);	
-				Rational[] metricPos = Tablature.getMetricPosition(onsetTime, meterInfo);
+				Rational[] metricPos = Timeline.getMetricPosition(onsetTime, meterInfo);
 				System.out.println("More than " + maxNumVoiceCrossingPairs + " voice crossing pair(s) in chord " + i + " (bar " + metricPos[0].getNumer() + 
 					" " + metricPos[1] + ")");	
 			}

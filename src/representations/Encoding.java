@@ -23,40 +23,42 @@ import tools.ToolBox;
 public class Encoding implements Serializable {
 
 	private static final long serialVersionUID = 1L;
+
+	public static final String EXTENSION = ".tbp"; // TODO replace everywhere 
 	public static final String FOOTNOTE_INDICATOR = "@";
-	private static final String WHITESPACE = " ";
 	public static final String METADATA_ERROR = "METADATA ERROR -- Check for missing curly brackets.";
+	public static final String ENCODING_ERROR = "ENCODING ERROR -- Run TabViewer to correct.";
+	public static final int MINIMAL = 0;
+	public static final int METADATA_CHECKED = 1;
+	public static final int SYNTAX_CHECKED = 2;
 	private static final String NO_BARLINE_TEXT = "no barline";
 	private static final String MISPLACED_BARLINE_TEXT = "misplaced barline";
-	
-	private String name; 
-	private String rawEncoding;
-	private String cleanEncoding;
 
+	
 	private List<List<String[]>> eventsBarlinesFootnotes;
 	public static final int EVENT_IND = 0;
 	public static final int BAR_IND = 1;
 	public static final int FOOTNOTE_IND = 2;
-	private static final int FOOTNOTE_NUM_IND = 3;
+	public static final int FOOTNOTE_NUM_IND = 3;
 
 	private List<String> infoAndSettings;
-	private static final int AUTHOR_IND = 0;
-	private static final int TITLE_IND = 1;
-	private static final int SOURCE_IND = 2;
+	public static final int AUTHOR_IND = 0;
+	public static final int TITLE_IND = 1;
+	public static final int SOURCE_IND = 2;
 	public static final int TABSYMBOLSET_IND = 3;
-	private static final int TUNING_IND = 4;
-	private static final int TUNING_BASS_COURSES_IND = 5;
+	public static final int TUNING_IND = 4;
+	public static final int TUNING_BASS_COURSES_IND = 5;
 	public static final int METER_IND = 6;
 	public static final int DIMINUTION_IND = 7;
 	
-	static final String AUTHOR_TAG = "AUTHOR:";
-	static final String TITLE_TAG = "TITLE:";
-	static final String SOURCE_TAG = "SOURCE:";
-	static final String TABSYMBOLSET_TAG = "TABSYMBOLSET:";
-	static final String TUNING_TAG = "TUNING:";
-	static final String TUNING_SEVENTH_COURSE_TAG = "TUNING_SEVENTH_COURSE:";
-	static final String METER_INFO_TAG = "METER_INFO:";
-	static final String DIMINUTION_TAG = "DIMINUTION:";
+	public static final String AUTHOR_TAG = "AUTHOR:";
+	public static final String TITLE_TAG = "TITLE:";
+	public static final String SOURCE_TAG = "SOURCE:";
+	public static final String TABSYMBOLSET_TAG = "TABSYMBOLSET:";
+	public static final String TUNING_TAG = "TUNING:";
+	public static final String TUNING_SEVENTH_COURSE_TAG = "TUNING_SEVENTH_COURSE:";
+	public static final String METER_INFO_TAG = "METER_INFO:";
+	public static final String DIMINUTION_TAG = "DIMINUTION:";
 	
 	private static String[] metaDataTags = new String[7];
 	static { metaDataTags = new String[8];
@@ -71,21 +73,21 @@ public class Encoding implements Serializable {
 	}
 		
 	private List<List<String>> listsOfSymbols;
-	private static final int ALL_SYMBOLS_IND = 0;
+	public static final int ALL_SYMBOLS_IND = 0;
 	public static final int TAB_SYMBOLS_IND = 1;
-	private static final int RHYTHM_SYMBOLS_IND = 2;
-	private static final int MENSURATION_SIGNS_IND = 3;
-	private static final int BARLINES_IND = 4;
+	public static final int RHYTHM_SYMBOLS_IND = 2;
+	public static final int MENSURATION_SIGNS_IND = 3;
+	public static final int BARLINES_IND = 4;
 	public static final int ALL_EVENTS_IND = 5;
 	
 	private List<List<Integer>> listsOfStatistics;
 	public static final int IS_TAB_SYMBOL_EVENT_IND = 0;
-	private static final int IS_RHYTHM_SYMBOL_EVENT_IND = 1;
+	public static final int IS_RHYTHM_SYMBOL_EVENT_IND = 1;
 	public static final int IS_REST_EVENT_IND = 2;
-	private static final int IS_MENSURATION_SIGN_EVENT_IND = 3;
-	private static final int IS_BARLINE_EVENT_IND = 4;
+	public static final int IS_MENSURATION_SIGN_EVENT_IND = 3;
+	public static final int IS_BARLINE_EVENT_IND = 4;
 	public static final int SIZE_OF_EVENTS_IND = 5;
-	private static final int DURATION_OF_EVENTS_IND = 6;  
+	public static final int DURATION_OF_EVENTS_IND = 6;  
 	public static final int HORIZONTAL_POSITION_IND = 7;
 	public static final int VERTICAL_POSITION_IND = 8;
 	public static final int DURATION_IND = 9;
@@ -96,6 +98,12 @@ public class Encoding implements Serializable {
 	private Tuning[] tunings;
 	public static final int ENCODED_TUNING_IND = 0;
 	public static final int NEW_TUNING_IND = 1;
+	
+	private String piecename; 
+	private String rawEncoding;
+	private boolean hasMetadataErrors;
+	private String cleanEncoding;
+	private String[] encodingErrors;
 
 	public static enum Tuning  {
 		C_AVALLEE("C_AVALLEE", -7, true, Arrays.asList(new String[]{"Bb", "F", "Bb", "D", "G", "C"})),
@@ -143,97 +151,137 @@ public class Encoding implements Serializable {
 		P5P4m3M2, // 10-course with perfect 5th, perfect 4th, minor 3rd, major 2nd: G tuning (10) C, (9) D, (8) E, (7) F  
 		P5P4M3M2, // 10-course with perfect 5th, perfect 4th, major 3rd, major 2nd: G tuning (10) C, (9) D, (8) Eb, (7) F  	
 	};
-	
-	// C O N S T R U C T O R S
+
+
+//	public Encoding(String rawEncoding, boolean nothing) {
+//		setPiecename("");
+//		setRawEncoding(rawEncoding);
+//		if (checkForMetadataErrors() == true) {
+//			return;
+//		}
+//		setCleanEncoding();
+//		setInfoAndSettings();
+//		setEventsBarlinesFootnotes();
+//	}
+
+
+//	/**
+//	 * Constructor for an Encoding derived from another. 
+//	 * 
+//	 * @param rawEncoding
+//	 * @param piecename
+//	 */
+//	public Encoding(String rawEncoding, String piecename/*, boolean isChecked*/) {
+//		setPiecename(piecename);
+//		// Unchecked encoding
+////		if (!isChecked) {
+////			setRawEncoding(rawEncoding);
+////			if (checkForMetadataErrors() == true) { // needs rawEncoding
+////				return;
+////			}
+////			setCleanEncoding(); // needs rawEncoding 
+////			setInfoAndSettings(); // needs rawEncoding
+////			setEventsBarlinesFootnotes(); // needs rawEncoding 
+////		}
+//		// Checked encoding 
+////		else {
+//		createEncoding(rawEncoding, piecename);
+////		}
+//	}
+
+
+//	/**
+//	 * Constructor for a checked encoding.
+//	 * 
+//	 * @param argFile
+//	 */
+//	public Encoding(File f, boolean nothing) {
+////		String rawEncoding = "";
+////		try {
+////			rawEncoding = new String(Files.readAllBytes(Paths.get(f.getAbsolutePath())));
+////		} catch (IOException e1) {
+////			e1.printStackTrace();
+////		}
+////		setName(f.getName().substring(0, (f.getName().length() - EXTENSION.length())));
+////		setPiecename(getFilename(f));
+//		String rawEncoding = ToolBox.readTextFile(f);
+//		String piecename = getFilename(f);
+//		createEncoding(rawEncoding, piecename);
+//	}
+
+
+//	public Encoding(File f, String argRawEncoding) { // TODO add String piecename
+//		String rawEncoding = f != null ? ToolBox.readTextFile(f) : argRawEncoding;
+//		String piecename = f != null ? getFilename(f) : "";
+//		init(rawEncoding, piecename, true);
+//	}
+
+
+	///////////////////////////////
+	//
+	//  C O N S T R U C T O R S
+	//
 	public Encoding() {
 	}
 
 
-	/**
-	 * Constructor for an unchecked encoding.
-	 * 
-	 * @param rawEncoding
-	 * @param name
-	 * @param Whether or not the Encoding is checked (retrieved from an existing Encoding).
-	 */
-	public Encoding(String rawEncoding, String name, boolean isChecked) {
-		setName(name);
-		// Unchecked encoding
-		if (!isChecked) {
+	public Encoding(File f) {
+		init(ToolBox.readTextFile(f), ToolBox.getFilename(f, EXTENSION), SYNTAX_CHECKED);
+	}
+
+
+	public Encoding(String rawEncoding, String piecename, int stage) {
+		init(rawEncoding, piecename, stage);
+	}
+
+
+	private void init(String rawEncoding, String piecename, int stage) {
+		// Each of the following methods needs one or more of the preceding ones
+		if (stage == MINIMAL || stage == METADATA_CHECKED || stage == SYNTAX_CHECKED) {
+			setPiecename(piecename);
 			setRawEncoding(rawEncoding);
-			if (checkForMetadataErrors() == true) { // needs rawEncoding
-				return;
-			}
-			setCleanEncoding(); // needs rawEncoding 
-			setEventsBarlinesFootnotes(); // needs rawEncoding 
-			setInfoAndSettings(); // needs rawEncoding
 		}
-		// Checked encoding 
-		else {
-			createEncoding(rawEncoding);
+		if (stage == METADATA_CHECKED || stage == SYNTAX_CHECKED) {
+			setCleanEncoding();
+			setInfoAndSettings();
+			setEventsBarlinesFootnotes();
+		}
+		if (stage == SYNTAX_CHECKED) {
+			setTunings();
+			setListsOfSymbols();
+			setListsOfStatistics();
 		}
 	}
 
 
-	/**
-	 * Constructor for a checked encoding.
-	 * 
-	 * @param argFile
-	 */
-	public Encoding(File argFile) { 
-		String rawEncoding = "";
-		try {
-			rawEncoding = new String(Files.readAllBytes(Paths.get(argFile.getAbsolutePath())));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		setName(argFile.getName().substring(0, (argFile.getName().length() - ".tbp".length())));
-		createEncoding(rawEncoding);
+	//////////////////////////////
+	//
+	//  S E T T E R S  
+	//  for instance variables
+	//
+	void setPiecename(String s) {
+		piecename = s;
 	}
 
 
-	private void createEncoding(String rawEncoding) {
-		setRawEncoding(rawEncoding);
-		if (checkForMetadataErrors() == true) { // needs rawEncoding
-			throw new RuntimeException(METADATA_ERROR);
-		}
-		setCleanEncoding(); // needs rawEncoding
-		setEventsBarlinesFootnotes(); // needs rawEncoding 
-		setInfoAndSettings(); // needs rawEncoding
-		if (checkForEncodingErrors() != null) { // needs rawEncoding, cleanEncoding, and infoAndSettings
-			throw new RuntimeException("ERROR: The encoding contains encoding errors; run the TabViewer to correct them.");
-		}
-		setTunings();
-		setListsOfSymbols();
-		setListsOfStatistics();
+	void setRawEncoding(String s) {
+		rawEncoding = s.trim();
 	}
 
 
-	// S E T T E R S
-	// TESTED (together with getName())
-	void setName(String s) {
-		name = s;
-	}
-
-
-	// TESTED (together with getRawEncoding())
-	void setRawEncoding(String aString) {
-		this.rawEncoding = aString.trim();
-	}
-
-
-	/**
-	 * Sets <code>cleanEncoding</code>.    
-	 */  
-	// TESTED (together with getCleanEncoding())
 	void setCleanEncoding() {
+		cleanEncoding = makeCleanEncoding();
+	}
+
+
+	// TESTED
+	String makeCleanEncoding() {
 		String cleanEnc = "";
-		
 		String rawEnc = getRawEncoding();
-		
+
 		String oib = SymbolDictionary.OPEN_INFO_BRACKET;
 		String cib = SymbolDictionary.CLOSE_INFO_BRACKET;
-		
+
 		// 1. Remove all carriage returns and line breaks; remove leading and trailing whitespace
 		cleanEnc = rawEnc.replaceAll("\r", "");
 		cleanEnc = cleanEnc.replaceAll("\n", "");
@@ -248,15 +296,38 @@ public class Encoding implements Serializable {
 			String comment = cleanEnc.substring(openCommentIndex, closeCommentIndex + 1);
 			cleanEnc = cleanEnc.replace(comment, "");
 		}
-		cleanEncoding = cleanEnc;
+		return cleanEnc;
 	}
 
 
-	/**
-	 * Sets <code>eventsBarlinesFootnotes</code>.
-	 **/
-	// TESTED (together with getEventsBarlinesFootnotes())
+	void setInfoAndSettings() {
+		infoAndSettings = makeInfoAndSettings();
+	}
+
+
+	// TESTED
+	List<String> makeInfoAndSettings() {
+		List<String> ias = new ArrayList<>(); 
+		List<String> metaData = getAllMetadata(); // needs rawEncoding
+		ias.add(AUTHOR_IND, metaData.get(0).substring(metaData.get(0).indexOf(":") + 1).trim());
+		ias.add(TITLE_IND, metaData.get(1).substring(metaData.get(1).indexOf(":" ) + 1).trim());
+		ias.add(SOURCE_IND, metaData.get(2).substring(metaData.get(2).indexOf(":") + 1).trim());
+		ias.add(TABSYMBOLSET_IND, metaData.get(3).substring(metaData.get(3).indexOf(":") + 1).trim());
+		ias.add(TUNING_IND, metaData.get(4).substring(metaData.get(4).indexOf(":") + 1).trim());
+		ias.add(TUNING_BASS_COURSES_IND, metaData.get(5).substring(metaData.get(5).indexOf(":") + 1).trim());
+		ias.add(METER_IND, metaData.get(6).substring(metaData.get(6).indexOf(":") + 1).trim());
+		ias.add(DIMINUTION_IND, metaData.get(7).substring(metaData.get(7).indexOf(":") + 1).trim());
+		return ias;
+	}
+
+
 	void setEventsBarlinesFootnotes() {
+		eventsBarlinesFootnotes = makeEventsBarlinesFootnotes();
+	}
+
+
+	// TESTED
+	List<List<String[]>> makeEventsBarlinesFootnotes() {
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String oib = SymbolDictionary.OPEN_INFO_BRACKET;
 		String cib = SymbolDictionary.CLOSE_INFO_BRACKET;
@@ -431,26 +502,31 @@ public class Encoding implements Serializable {
 			}
 			eventsPerSystem.add(eventsCurrSystem);
 		}
-		eventsBarlinesFootnotes = eventsPerSystem;
+		return eventsPerSystem;
 	}
 
 
-	/**
-	 * Sets <code>infoAndSettings</code>.
-	 */
-	// TESTED (together with getInfoAndSettings())
-	void setInfoAndSettings() {
-		List<String> ias = new ArrayList<>(); 
-		List<String> metaData = getAllMetadata(); // needs rawEncoding
-		ias.add(AUTHOR_IND, metaData.get(0).substring(metaData.get(0).indexOf(":") + 1).trim());
-		ias.add(TITLE_IND, metaData.get(1).substring(metaData.get(1).indexOf(":" ) + 1).trim());
-		ias.add(SOURCE_IND, metaData.get(2).substring(metaData.get(2).indexOf(":") + 1).trim());
-		ias.add(TABSYMBOLSET_IND, metaData.get(3).substring(metaData.get(3).indexOf(":") + 1).trim());
-		ias.add(TUNING_IND, metaData.get(4).substring(metaData.get(4).indexOf(":") + 1).trim());
-		ias.add(TUNING_BASS_COURSES_IND, metaData.get(5).substring(metaData.get(5).indexOf(":") + 1).trim());
-		ias.add(METER_IND, metaData.get(6).substring(metaData.get(6).indexOf(":") + 1).trim());
-		ias.add(DIMINUTION_IND, metaData.get(7).substring(metaData.get(7).indexOf(":") + 1).trim());
-		infoAndSettings = ias;
+	void setTunings() {
+		tunings = makeTunings();
+	}
+
+
+	void setTunings(Tuning[] t) {
+		tunings = t;
+	}
+
+
+	// TESTED
+	Tuning[] makeTunings() {
+		Tuning[] tun = new Tuning[2];
+		for (Tuning t : Tuning.values()) { 
+			if (t.toString().equals(getInfoAndSettings().get(TUNING_IND))) {
+				tun[ENCODED_TUNING_IND] = t;
+				tun[NEW_TUNING_IND] = t; 
+				break;
+			}
+		}
+		return tun;
 	}
 
 
@@ -477,34 +553,13 @@ public class Encoding implements Serializable {
 	}
 
 
-	/**
-	 *  Sets <code>tunings</code>.
-	 */
-	// TESTED (together with getTunings());
-	void setTunings() {
-		Tuning[] tun = new Tuning[2];
-		for (Tuning t : Tuning.values()) { 
-			if (t.toString().equals(getInfoAndSettings().get(TUNING_IND))) {
-				tun[ENCODED_TUNING_IND] = t;
-				tun[NEW_TUNING_IND] = t; 
-				break;
-			}
-		}
-		tunings = tun;
-	}
-
-
-	public void setTunings(Tuning[] t) {
-		tunings = t;
-	}
-
-
-	/**
-	 * Sets <code>listsOfSymbols</code>. 
-	 * This method must always be called along with (before) setListsOfStatistics().
-	 */
-	// TESTED (together with getListsOfSymbols())
 	void setListsOfSymbols() {
+		listsOfSymbols = makeListsOfSymbols();
+	}
+
+
+	// TESTED
+	List<List<String>> makeListsOfSymbols() {
 		List<List<String>> los = new ArrayList<>();
 		
 		// Remove EBI and SBI from cleanEncoding    
@@ -571,16 +626,22 @@ public class Encoding implements Serializable {
 		los.add(BARLINES_IND, listOfBarlines);
 		los.add(ALL_EVENTS_IND, listOfAllEvents);
 		
-		listsOfSymbols = los;
+		return los;
 	}
 
 
-	/**
-	 * Sets <code>listsOfStatistics</code>. 
-	 * This method must always be called along with (after) setListsOfSymbols().
-	 */
-	// TESTED (together with getListsOfStatistics())
-	void setListsOfStatistics() { 
+	void setListsOfStatistics() {
+		listsOfStatistics = makeListsOfStatistics();
+	}
+
+
+	void setListOfStatistics(List<List<Integer>> l) {
+		listsOfStatistics = l;
+	}
+
+
+	// TESTED
+	List<List<Integer>> makeListsOfStatistics() { 
 		List<List<Integer>> los = new ArrayList<>();
 		
 		// 0-6. Make the lists that have the same size as listOfAllEvents
@@ -758,12 +819,7 @@ public class Encoding implements Serializable {
 		los.add(GRID_Y_IND, gridYOfTabSymbols);
 		los.add(HORIZONTAL_POS_TAB_SYMBOLS_ONLY_IND, horizontalPositionInTabSymbolEventsOnly);
 	
-		listsOfStatistics = los;
-	}
-
-
-	public void setListOfStatistics(List<List<Integer>> l) {
-		listsOfStatistics = l;
+		return los;
 	}
 
 
@@ -783,7 +839,6 @@ public class Encoding implements Serializable {
 	}
 
 
-	// G E T T E R S
 	public static String[] getMetadataTags() {
 		return metaDataTags;
 	}
@@ -795,8 +850,8 @@ public class Encoding implements Serializable {
 	 * @return The name of the file containing the encoding. 
 	 */
 	// TESTED (together with setName())
-	public String getName() {
-		return name;
+	public String getPiecename() {
+		return piecename;
 	}
 
 
@@ -815,6 +870,11 @@ public class Encoding implements Serializable {
 	// TESTED (together with setCleanEncoding())
 	public String getCleanEncoding() {
 		return cleanEncoding;
+	}
+
+
+	public boolean getHasMetadataErrors() {
+		return hasMetadataErrors;
 	}
 
 
@@ -869,10 +929,10 @@ public class Encoding implements Serializable {
 	 * 
 	 * @return The tunings, a <code>Tuning[]</code> containing:
 	 * <ul>
-	 * <li>as element 0: the encoded tuning: is set with the tuning specified in the
-	 *                   encoding; retains this initial value</li>
-	 * <li>as element 1: the new tuning: is set with the tuning specified in the 
-	 *                   encoding; this value may change during further processing</li>
+	 * <li>As element 0: the encoded tuning: is set with the tuning specified in the
+	 *                   encoding; retains this initial value.</li>
+	 * <li>As element 1: the new tuning: is set with the tuning specified in the 
+	 *                   encoding; this value may change during further processing.</li>
 	 * </ul>  
 	 */
 	// TESTED (together with setTunings())
@@ -951,26 +1011,26 @@ public class Encoding implements Serializable {
 	}
 
 
-	// O T H E R  M E T H O D S
 	/**
 	 * Verifies the correct encoding of all metadata in rawEncoding, i.e., checks whether:
 	 * <ul>
-	 * <li><code>rawEncoding</code> contains all info and settings tags in the correct sequence</li> 
-	 * <li>whether each tag is preceded by an <code>OPEN_INFO_BRACKET</code> and succeeded by a 
-	 *     <code>CLOSE_INFO_BRACKET</code></li>
-	 * <li>whether any additional information items after the info and settings items (pages,
+	 * <li><code>rawEncoding</code> contains all info and settings tags in the correct 
+	 *           sequence.</li> 
+	 * <li>Whether each tag is preceded by an <code>OPEN_INFO_BRACKET</code> and succeeded 
+	 *     by a <code>CLOSE_INFO_BRACKET</code></li>
+	 * <li>Whether any additional information items after the info and settings items (pages,
 	 *     footnotes) are preceded by an <code>OPEN_INFO_BRACKET</code> and succeeded by a 
 	 *     <code>CLOSE_INFO_BRACKET</code></li>
 	 * </ul>
 	 * 
-	 * @return <code>true</code> if the encoding has metadata errors, and <code>false</code> if
-	 *  it is correct.  
+	 * @return <code>true</code> if the encoding has metadata errors, and <code>false</code> 
+	 *         if not.
 	 */
 	// TESTED
 	public boolean checkForMetadataErrors() {		
 		String oib = SymbolDictionary.OPEN_INFO_BRACKET;
 		String cib = SymbolDictionary.CLOSE_INFO_BRACKET;
-		
+
 		// 1. Info and settings tags
 		// Check whether rawEncoding contains all info and settings tags, in the correct order
 		List<Integer> indicesOfTags = new ArrayList<Integer>();
@@ -1057,7 +1117,7 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Checks the encoding to see whether 
+	 * Checks the Encoding to see whether 
 	 * <ul>
 	 * <li>all VALIDITY RULES are met</li> 
 	 * <li>there are no unknown or missing symbols</li> 
@@ -1066,10 +1126,9 @@ public class Encoding implements Serializable {
 	 * NB: The encoding must always be checked in the sequence checkValidityRules() - checkSymbols() - 
 	 *     checkLayoutRules()<br><br>
 	 *      
-	 * @return
-	 * <ul>
-	 * <li><code>null</code> if and only if all three conditions are true</li> 
-     * <li>a String[] containing the relevant error information if not</li>
+	 * @return <ul>
+	 * <li><code>null</code> if and only if all three conditions are <code>true</code>.</li> 
+     * <li>A String[] containing the relevant error information if not.</li>
      * </ul>
 	 */
 	// TESTED
@@ -1084,7 +1143,9 @@ public class Encoding implements Serializable {
 		else if (checkLayoutRules(indicesRawAndCleanAligned) != null) {
 			return checkLayoutRules(indicesRawAndCleanAligned);
 		}
-		return null;
+		else {
+			return null;
+		}
 	}
 
 
@@ -1145,12 +1206,13 @@ public class Encoding implements Serializable {
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
 		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		String ws = " ";
 		
 		// Check VALIDITY RULE 1: The encoding cannot contain whitespace 
-		if (cleanEnc.contains(WHITESPACE)) {
-			int indexOfFirstErrorChar = cleanEnc.indexOf(WHITESPACE);
+		if (cleanEnc.contains(ws)) {
+			int indexOfFirstErrorChar = cleanEnc.indexOf(ws);
 			indicesAndMessages[0] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar));
-			indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar) + WHITESPACE.length());
+			indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar) + ws.length());
 			indicesAndMessages[2] = "INVALID ENCODING ERROR -- Remove this whitespace.";
 			indicesAndMessages[3] = "See VALIDITY RULE 1: The encoding cannot contain whitespace.";
 			return indicesAndMessages;
@@ -1318,6 +1380,7 @@ public class Encoding implements Serializable {
 		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
 		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
 		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		String ws = " ";
 		
 		String noEBI = cleanEnc.substring(0, cleanEnc.length() - ebi.length());
 		String[] allSystems = noEBI.split(sbi);
@@ -1450,7 +1513,7 @@ public class Encoding implements Serializable {
 				// Split the event into its individual symbols
 				// NB: The SS cannot be used as the regular expression to split around because a dot is an existing
 				// regular expression in Java. Therefore, all SS are replaced with whitespace before the splitting is done
-				String[] allSymbols = event.replace(ss, WHITESPACE).split(WHITESPACE);
+				String[] allSymbols = event.replace(ss, ws).split(ws);
 				List<Integer> coursesUsed = new ArrayList<Integer>();
 				for (int i = 0; i < allSymbols.length; i++) {
 					String symbol = allSymbols[i];
@@ -1766,7 +1829,7 @@ public class Encoding implements Serializable {
 		List<String> events = getEvents();
 		Collections.reverse(events);
 		return new Encoding(header + "\r\n\r\n" + recombineEvents(events) + 
-			SymbolDictionary.END_BREAK_INDICATOR, getName(), true);
+			SymbolDictionary.END_BREAK_INDICATOR, getPiecename(), SYNTAX_CHECKED);
 	}
 
 
@@ -1843,7 +1906,7 @@ public class Encoding implements Serializable {
 
 		// 2. Recombine
 		return new Encoding(header + "\r\n\r\n" + recombineEvents(events) + 
-			SymbolDictionary.END_BREAK_INDICATOR, getName(), true);
+			SymbolDictionary.END_BREAK_INDICATOR, getPiecename(), SYNTAX_CHECKED);
 	}
 
 
@@ -1907,7 +1970,7 @@ public class Encoding implements Serializable {
 
 		// 3. Recombine
 		return new Encoding(header + "\r\n\r\n" + recombineEvents(events) + 
-			SymbolDictionary.END_BREAK_INDICATOR, getName(), true);
+			SymbolDictionary.END_BREAK_INDICATOR, getPiecename(), SYNTAX_CHECKED);
 	}
 
 
@@ -2258,7 +2321,7 @@ public class Encoding implements Serializable {
 				if (!currFnEnc.contains("/")) {
 					currFnStaffPart = 
 						new Encoding(metadata + "\r\n" + currFnEnc + ebi, "", 
-						true).visualise(argTss, false, false, true);
+						SYNTAX_CHECKED).visualise(argTss, false, false, true);
 				}	
 				// b. Doubled symbols
 				else {
@@ -2278,7 +2341,7 @@ public class Encoding implements Serializable {
 							currFnEventEnc = currFnEventEnc.replace(toRemove, "");
 							currFnEventStaffPart = 
 								new Encoding(metadata + "\r\n" + currFnEventEnc + ebi, "", 
-								true).visualise(argTss, false, false, true);
+								SYNTAX_CHECKED).visualise(argTss, false, false, true);
 	
 							// 2. Split currFnEventStaffPart into lines and adapt them
 							currFnEventStaffPartSplit = currFnEventStaffPart.split("\n");
@@ -2328,7 +2391,7 @@ public class Encoding implements Serializable {
 							// 1. Make currFnEventStaffPart
 							currFnEventStaffPart = 
 								new Encoding(metadata + "\r\n" + currFnEventEnc + ebi, "",
-								true).visualise(argTss, false, false, true);
+								SYNTAX_CHECKED).visualise(argTss, false, false, true);
 							// 2. Split currFnEventStaffPart into lines
 							currFnEventStaffPartSplit = currFnEventStaffPart.split("\n");
 							// 3. Add
@@ -2786,6 +2849,17 @@ public class Encoding implements Serializable {
 			}
 		}
 		return allEvents;
+	}
+
+
+	private String read(File f) {
+		String rawEncoding = "";
+		try {
+			rawEncoding = new String(Files.readAllBytes(Paths.get(f.getAbsolutePath())));
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		return rawEncoding;
 	}
 
 }
