@@ -691,7 +691,7 @@ public class Transcription implements Serializable {
 		Piece pDeorn = deornamentPiece(trans, tab, dur);
 		Encoding eDeorn = null;
 		if (tab != null) {
-			eDeorn = tab.getEncoding().deornamentEncoding(Tablature.rationalToIntDur(dur)); // NB The value of normaliseTuning is irrelevant
+			eDeorn = tab.getEncoding().deornamentEncoding(Tablature.getTabSymbolDur(dur)); // NB The value of normaliseTuning is irrelevant
 		}
 		return new Transcription(pDeorn, eDeorn);
 	}

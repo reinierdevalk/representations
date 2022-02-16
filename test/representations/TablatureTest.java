@@ -19,7 +19,7 @@ import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.utility.math.Rational;
 import junit.framework.TestCase;
 import paths.Paths;
-import representations.Encoding.Tuning;
+import representations.Tablature.Tuning;
 import tbp.RhythmSymbol;
 import tbp.TabSymbol;
 import tbp.TabSymbolSet;
@@ -39,8 +39,6 @@ public class TablatureTest extends TestCase {
 	private static final Rational QUARTER = new Rational(1, 4);
 	private static final Rational HALF = new Rational(1, 2);
 	private static final Rational DOTTED_HALF = new Rational(3, 4);
-	private static final Rational WHOLE = new Rational(1, 1);
-	private static final Rational BREVE = new Rational(2, 1);
 
 
 	protected void setUp() throws Exception {
@@ -50,10 +48,10 @@ public class TablatureTest extends TestCase {
 			new File(root + Paths.getEncodingsPath() + Paths.getTestDir() + "testpiece.tbp");
 		encodingTestGetMeterInfo = 
 			new File(root + Paths.getEncodingsPath() + Paths.getTestDir() + "test_get_meter_info.tbp");
-		midiTestpiece = 
-			new File(root + Paths.getMIDIPath() + Paths.getTestDir() + "testpiece.mid");
 		encodingNewsidler = 
 			new File(root + Paths.getEncodingsPath() + "/tab-int/3vv/" + "newsidler-1544_2-nun_volget" + ".tbp");
+		midiTestpiece = 
+			new File(root + Paths.getMIDIPath() + Paths.getTestDir() + "testpiece.mid");
 	}
 
 
@@ -76,7 +74,7 @@ public class TablatureTest extends TestCase {
 		btp[6] = new Integer[]{72, 2, 8, 96, 18, 24, 1, 4, 2, 5};
 		btp[7] = new Integer[]{69, 1, 0, 96, 18, 72, 1, 4, 3, 5};
 		// Chord 2
-		btp[8] = new Integer[]{48, 6, 3, 114, 6, 6, 2, 1, 0, 6}; /////
+		btp[8] = new Integer[]{48, 6, 3, 114, 6, 6, 2, 1, 0, 6};
 		// Chord 3
 		btp[9] = new Integer[]{47, 6, 2, 120, 12, 12, 3, 4, 0, 7};
 		btp[10] = new Integer[]{50, 5, 0, 120, 12, 24, 3, 4, 1, 7};
@@ -99,10 +97,10 @@ public class TablatureTest extends TestCase {
 		btp[23] = new Integer[]{59, 3, 0, 180, 12, 108, 7, 2, 0, 11};
 		btp[24] = new Integer[]{68, 2, 4, 180, 12, 12, 7, 2, 1, 11};
 		// Chord 8
-		btp[25] = new Integer[]{45, 6, 0, 192, 6, 72, 8, 4, 0, 13}; /////
-		btp[26] = new Integer[]{57, 4, 2, 192, 6, 72, 8, 4, 1, 13}; /////
-		btp[27] = new Integer[]{64, 2, 0, 192, 6, 6, 8, 4, 2, 13}; /////
-		btp[28] = new Integer[]{69, 1, 0, 192, 6, 12, 8, 4, 3, 13}; /////
+		btp[25] = new Integer[]{45, 6, 0, 192, 6, 72, 8, 4, 0, 13};
+		btp[26] = new Integer[]{57, 4, 2, 192, 6, 72, 8, 4, 1, 13};
+		btp[27] = new Integer[]{64, 2, 0, 192, 6, 6, 8, 4, 2, 13};
+		btp[28] = new Integer[]{69, 1, 0, 192, 6, 12, 8, 4, 3, 13};
 		// Chord 9-14
 		btp[29] = new Integer[]{68, 2, 4, 198, 6, 9, 9, 1, 0, 14};
 		btp[30] = new Integer[]{69, 1, 0, 204, 3, 12, 10, 1, 0, 15};
@@ -167,97 +165,385 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	private List<List<Rational[]>> getOnsetTimes() {
-		List<List<Rational[]>> allOnsetTimes = new ArrayList<>();
-		// For testpiece
-		List<Rational[]> onsetTimesTestpiece = new ArrayList<>();
+	private List<List<Integer[]>> getOnsetTimesChords(boolean diminute) {
+		List<List<Integer[]>> allOnsetTimes = new ArrayList<>();
+
+		// For testpiece 
+		// a. Undiminuted = diminuted
+		List<Integer[]> onsetTimesTestpiece = new ArrayList<>();
 		// Rest
-		onsetTimesTestpiece.add(new Rational[]{new Rational(0, 4), Rational.ZERO});
+		onsetTimesTestpiece.add(new Integer[]{0, 0});
 		// Chord 0
-		onsetTimesTestpiece.add(new Rational[]{new Rational(3, 4), Rational.ONE});
+		onsetTimesTestpiece.add(new Integer[]{72, 1});
 		// Chord 1
-		onsetTimesTestpiece.add(new Rational[]{new Rational(1, 1), Rational.ONE});
+		onsetTimesTestpiece.add(new Integer[]{96, 1});
 		// Chord 2
-		onsetTimesTestpiece.add(new Rational[]{new Rational(19, 16), Rational.ONE});
+		onsetTimesTestpiece.add(new Integer[]{114, 1});
 		// Chord 3
-		onsetTimesTestpiece.add(new Rational[]{new Rational(5, 4), Rational.ONE});
+		onsetTimesTestpiece.add(new Integer[]{120, 1});
 		// Chord 4
-		onsetTimesTestpiece.add(new Rational[]{new Rational(11, 8), Rational.ONE});
+		onsetTimesTestpiece.add(new Integer[]{132, 1});
 		// Chord 5
-		onsetTimesTestpiece.add(new Rational[]{new Rational(3, 2), Rational.ONE});
+		onsetTimesTestpiece.add(new Integer[]{144, 1});
 		// Chord 6
-		onsetTimesTestpiece.add(new Rational[]{new Rational(7, 4), Rational.ONE});
+		onsetTimesTestpiece.add(new Integer[]{168, 1});
 		// Chord 7
-		onsetTimesTestpiece.add(new Rational[]{new Rational(15, 8), Rational.ONE});
+		onsetTimesTestpiece.add(new Integer[]{180, 1});
 		// Chord 8
-		onsetTimesTestpiece.add(new Rational[]{new Rational(2, 1), Rational.ONE});
+		onsetTimesTestpiece.add(new Integer[]{192, 1});
 		// Chords 9-14
-		onsetTimesTestpiece.add(new Rational[]{new Rational(33, 16), Rational.ONE});
-		onsetTimesTestpiece.add(new Rational[]{new Rational(17, 8), Rational.ONE});
-		onsetTimesTestpiece.add(new Rational[]{new Rational(69, 32), Rational.ONE});
-		onsetTimesTestpiece.add(new Rational[]{new Rational(35, 16), Rational.ONE});
-		onsetTimesTestpiece.add(new Rational[]{new Rational(71, 32), Rational.ONE});
-		onsetTimesTestpiece.add(new Rational[]{new Rational(9, 4), Rational.ONE});
+		onsetTimesTestpiece.add(new Integer[]{198, 1});
+		onsetTimesTestpiece.add(new Integer[]{204, 1});
+		onsetTimesTestpiece.add(new Integer[]{207, 1});
+		onsetTimesTestpiece.add(new Integer[]{210, 1});
+		onsetTimesTestpiece.add(new Integer[]{213, 1});
+		onsetTimesTestpiece.add(new Integer[]{216, 1});
 		// Rest
-		onsetTimesTestpiece.add(new Rational[]{new Rational(10, 4), Rational.ZERO});
+		onsetTimesTestpiece.add(new Integer[]{240, 0});
 		// Chord 15
-		onsetTimesTestpiece.add(new Rational[]{new Rational(11, 4), Rational.ONE});
+		onsetTimesTestpiece.add(new Integer[]{264, 1});
 		
-		// For encodingTestPiece
-		List<Rational[]> onsetTimesTestGetMeterInfo = new ArrayList<>();
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(0, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(1, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(1, 2), Rational.ONE});
+		// For testGetMeterInfo
+		// a. Undiminuted
+		List<Integer[]> onsetTimesTestGetMeterInfo = new ArrayList<>();
+		onsetTimesTestGetMeterInfo.add(new Integer[]{0, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{12, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{24, 1});
 		//
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(3, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(6, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(7, 4), Rational.ONE});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{36, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{72, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{84, 1});
 		//
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(11, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(13, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(27, 8), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(7, 2), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(57, 16), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(29, 8), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(59, 16), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(15, 4), Rational.ONE});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{132, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{156, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{162, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{168, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{171, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{174, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{177, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{180, 1});
 		//
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(19, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(23, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(25, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(26, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(27, 4), Rational.ONE});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{228, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{252, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{264, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{270, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{276, 1});
 		//
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(31, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(34, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(69, 8), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(35, 4), Rational.ONE});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{300, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{318, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{321, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{324, 1});
 		//
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(43, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(45, 4), Rational.ONE});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{372, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{420, 1});
 		//
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(47, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(95, 8), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(48, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(97, 8), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(49, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(99, 8), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(50, 4), Rational.ONE});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{468, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{480, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{492, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{504, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{516, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{528, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{540, 1});
 		//
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(51, 4), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(103, 8), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(207, 16), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(104, 8), Rational.ONE});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{564, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{576, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{582, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{588, 1});
 		//
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(209, 16), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(213, 16), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(107, 8), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(429, 32), Rational.ONE});
-		onsetTimesTestGetMeterInfo.add(new Rational[]{new Rational(215, 16), Rational.ONE});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{594, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{642, 1}); // 624
+		onsetTimesTestGetMeterInfo.add(new Integer[]{654, 1}); // 636
+		onsetTimesTestGetMeterInfo.add(new Integer[]{660, 1}); // 642
+		onsetTimesTestGetMeterInfo.add(new Integer[]{666, 1}); // 648
+		
+		// b. Diminuted
+		List<Integer[]> onsetTimesTestGetMeterInfoDim = new ArrayList<>();
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{0, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{24, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{48, 1});
+		//
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{72, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{144, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{168, 1});
+		//
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{264, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{312, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{324, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{336, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{342, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{348, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{354, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{360, 1});
+		//
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{456, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{552, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{600, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{624, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{648, 1});
+		//
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{744, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{816, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{828, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{840, 1});
+		//
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1032, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1080, 1});
+		//
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1128, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1140, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1152, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1164, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1176, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1188, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1200, 1});
+		//
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1224, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1236, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1242, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1248, 1});
+		//
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1254, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1278, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1284, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1287, 1});
+		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1290, 1});
+
+		if (!diminute) {
+			allOnsetTimes.add(onsetTimesTestpiece);
+			allOnsetTimes.add(onsetTimesTestGetMeterInfo);
+		}
+		else {
+			allOnsetTimes.add(onsetTimesTestpiece);
+			allOnsetTimes.add(onsetTimesTestGetMeterInfoDim);
+		}	
+		return allOnsetTimes;
+	}
+
+
+	private List<List<Integer[]>> getOnsetTimesNotes(boolean diminute) {
+		List<List<Integer[]>> allOnsetTimes = new ArrayList<>();
+		// For testpiece
+		List<Integer[]> onsetTimesTestpiece = new ArrayList<>();
+		List<Integer[]> ot1 = getOnsetTimesChords(diminute).get(0);
+		// Rest
+		onsetTimesTestpiece.add(ot1.get(0));
+		// Chord 0
+		onsetTimesTestpiece.addAll(Collections.nCopies(4, ot1.get(1)));
+		// Chord 1
+		onsetTimesTestpiece.addAll(Collections.nCopies(4, ot1.get(2)));
+		// Chord 2
+		onsetTimesTestpiece.addAll(Collections.nCopies(1, ot1.get(3)));
+		// Chord 3
+		onsetTimesTestpiece.addAll(Collections.nCopies(4, ot1.get(4)));
+		// Chord 4
+		onsetTimesTestpiece.addAll(Collections.nCopies(1, ot1.get(5)));
+		// Chord 5
+		onsetTimesTestpiece.addAll(Collections.nCopies(5, ot1.get(6)));
+		// Chord 6
+		onsetTimesTestpiece.addAll(Collections.nCopies(4, ot1.get(7)));
+		// Chord 7
+		onsetTimesTestpiece.addAll(Collections.nCopies(2, ot1.get(8)));
+		// Chord 8
+		onsetTimesTestpiece.addAll(Collections.nCopies(4, ot1.get(9)));
+		// Chords 9-14
+		onsetTimesTestpiece.add(ot1.get(10));
+		onsetTimesTestpiece.add(ot1.get(11));
+		onsetTimesTestpiece.add(ot1.get(12));
+		onsetTimesTestpiece.add(ot1.get(13));
+		onsetTimesTestpiece.add(ot1.get(14));
+		onsetTimesTestpiece.add(ot1.get(15));
+		// Rest
+		onsetTimesTestpiece.add(ot1.get(16));
+		// Chord 15
+		onsetTimesTestpiece.addAll(Collections.nCopies(4, ot1.get(17)));
+
+		// For testGetMeterInfo
+		List<Integer[]> onsetTimesTestGetMeterInfo = new ArrayList<>();
+		List<Integer[]> ot2 = getOnsetTimesChords(diminute).get(1);
+		onsetTimesTestGetMeterInfo.add(ot2.get(0));
+		onsetTimesTestGetMeterInfo.add(ot2.get(1));
+		onsetTimesTestGetMeterInfo.add(ot2.get(2));
+		//
+		onsetTimesTestGetMeterInfo.addAll(Collections.nCopies(2, ot2.get(3)));
+		onsetTimesTestGetMeterInfo.add(ot2.get(4));
+		onsetTimesTestGetMeterInfo.addAll(Collections.nCopies(2, ot2.get(5)));
+		//
+		onsetTimesTestGetMeterInfo.addAll(Collections.nCopies(2, ot2.get(6)));
+		onsetTimesTestGetMeterInfo.add(ot2.get(7));
+		onsetTimesTestGetMeterInfo.add(ot2.get(8));
+		onsetTimesTestGetMeterInfo.add(ot2.get(9));
+		onsetTimesTestGetMeterInfo.add(ot2.get(10));
+		onsetTimesTestGetMeterInfo.add(ot2.get(11));
+		onsetTimesTestGetMeterInfo.add(ot2.get(12));
+		onsetTimesTestGetMeterInfo.addAll(Collections.nCopies(2, ot2.get(13)));
+		//
+		onsetTimesTestGetMeterInfo.addAll(Collections.nCopies(2, ot2.get(14)));
+		onsetTimesTestGetMeterInfo.add(ot2.get(15));
+		onsetTimesTestGetMeterInfo.add(ot2.get(16));
+		onsetTimesTestGetMeterInfo.add(ot2.get(17));
+		onsetTimesTestGetMeterInfo.addAll(Collections.nCopies(2, ot2.get(18)));
+		//
+		onsetTimesTestGetMeterInfo.add(ot2.get(19));
+		onsetTimesTestGetMeterInfo.add(ot2.get(20));
+		onsetTimesTestGetMeterInfo.add(ot2.get(21));
+		onsetTimesTestGetMeterInfo.addAll(Collections.nCopies(2, ot2.get(22)));
+		//
+		onsetTimesTestGetMeterInfo.addAll(Collections.nCopies(2, ot2.get(23)));
+		onsetTimesTestGetMeterInfo.addAll(Collections.nCopies(2, ot2.get(24)));
+		//
+		onsetTimesTestGetMeterInfo.add(ot2.get(25));
+		onsetTimesTestGetMeterInfo.add(ot2.get(26));
+		onsetTimesTestGetMeterInfo.add(ot2.get(27));
+		onsetTimesTestGetMeterInfo.add(ot2.get(28));
+		onsetTimesTestGetMeterInfo.add(ot2.get(29));
+		onsetTimesTestGetMeterInfo.add(ot2.get(30));
+		onsetTimesTestGetMeterInfo.addAll(Collections.nCopies(2, ot2.get(31)));
+		//
+		onsetTimesTestGetMeterInfo.add(ot2.get(32));
+		onsetTimesTestGetMeterInfo.add(ot2.get(33));
+		onsetTimesTestGetMeterInfo.add(ot2.get(34));
+		onsetTimesTestGetMeterInfo.add(ot2.get(35));
+		//
+		onsetTimesTestGetMeterInfo.addAll(Collections.nCopies(2, ot2.get(36)));
+		onsetTimesTestGetMeterInfo.add(ot2.get(37));
+		onsetTimesTestGetMeterInfo.add(ot2.get(38));
+		onsetTimesTestGetMeterInfo.add(ot2.get(39));
+		onsetTimesTestGetMeterInfo.addAll(Collections.nCopies(2, ot2.get(40)));
 		
 		allOnsetTimes.add(onsetTimesTestpiece);
 		allOnsetTimes.add(onsetTimesTestGetMeterInfo);
 		return allOnsetTimes;
+	}
+
+
+	private List<List<Integer>> getMinimumDurationsChords(boolean diminute) {
+		List<List<Integer>> allMinDurs = new ArrayList<>();
+		// For testpiece 
+		// a. Undiminuted = diminuted
+		List<Integer> minDursTestpiece = Arrays.asList(new Integer[]{
+			24, 
+			18, 6, 12, 12, 24, 12, 12, 
+			6, 6, 3, 3, 3, 3, 24, 24
+		});
+
+		// For testGetMeterInfo
+		// a. Undiminuted
+		List<Integer> minDursTestGetMeterInfo = Arrays.asList(new Integer[]{
+			12, 12, 12, 
+			36, 12, 48, 
+			24, 6, 6, 3, 3, 3, 3, 48, 
+			24, 12, 6, 6, 24, 
+			18, 3, 3, 48, 
+			48, 48, 
+			12, 12, 12, 12, 12, 12, 24, 
+			12, 6, 6, 6, 
+			48, 12, 6, 6, 24	
+		});
+		// b. Diminuted
+		List<Integer> minDursTestGetMeterInfoDim = Arrays.asList(new Integer[]{
+			24, 24, 24, 
+			72, 24, 96, 
+			48, 12, 12, 6, 6, 6, 6, 96, 
+			96, 48, 24, 24, 96, 
+			72, 12, 12, 192, 
+			48, 48, 
+			12, 12, 12, 12, 12, 12, 24, 
+			12, 6, 6, 6, 
+			24, 6, 3, 3, 12	
+		});
+
+		if (!diminute) { 
+			allMinDurs.add(minDursTestpiece);
+			allMinDurs.add(minDursTestGetMeterInfo);
+		}
+		else {
+			allMinDurs.add(minDursTestpiece);
+			allMinDurs.add(minDursTestGetMeterInfoDim);
+		}
+		return allMinDurs;
+	}
+
+
+	private List<List<Integer>> getMinimumDurationsNotes(boolean diminute) {
+		List<List<Integer>> allMinDurs = new ArrayList<>();
+		// For testpiece
+		List<Integer> minDursTestpiece = new ArrayList<>();
+		List<Integer> md1 = getMinimumDurationsChords(diminute).get(0);
+		minDursTestpiece.addAll(Collections.nCopies(4, md1.get(0)));
+		//
+		minDursTestpiece.addAll(Collections.nCopies(4, md1.get(1)));
+		minDursTestpiece.add(md1.get(2));
+		minDursTestpiece.addAll(Collections.nCopies(4, md1.get(3)));
+		minDursTestpiece.add(md1.get(4));
+		minDursTestpiece.addAll(Collections.nCopies(5, md1.get(5)));
+		minDursTestpiece.addAll(Collections.nCopies(4, md1.get(6)));
+		minDursTestpiece.addAll(Collections.nCopies(2, md1.get(7)));
+		//
+		minDursTestpiece.addAll(Collections.nCopies(4, md1.get(8)));
+		minDursTestpiece.add(md1.get(9));
+		minDursTestpiece.add(md1.get(10));
+		minDursTestpiece.add(md1.get(11));
+		minDursTestpiece.add(md1.get(12));
+		minDursTestpiece.add(md1.get(13));
+		minDursTestpiece.add(md1.get(14));
+		minDursTestpiece.addAll(Collections.nCopies(4, md1.get(15)));
+
+		// For testGetMeterInfo
+		List<Integer> minDursTestGetMeterInfo = new ArrayList<>();
+		List<Integer> md2 = getMinimumDurationsChords(diminute).get(1);
+		minDursTestGetMeterInfo.add(md2.get(0));
+		minDursTestGetMeterInfo.add(md2.get(1));
+		minDursTestGetMeterInfo.add(md2.get(2));
+		//
+		minDursTestGetMeterInfo.addAll(Collections.nCopies(2, md2.get(3)));
+		minDursTestGetMeterInfo.add(md2.get(4));
+		minDursTestGetMeterInfo.addAll(Collections.nCopies(2, md2.get(5)));
+		//
+		minDursTestGetMeterInfo.addAll(Collections.nCopies(2, md2.get(6)));
+		minDursTestGetMeterInfo.add(md2.get(7));
+		minDursTestGetMeterInfo.add(md2.get(8));
+		minDursTestGetMeterInfo.add(md2.get(9));
+		minDursTestGetMeterInfo.add(md2.get(10));
+		minDursTestGetMeterInfo.add(md2.get(11));
+		minDursTestGetMeterInfo.add(md2.get(12));
+		minDursTestGetMeterInfo.addAll(Collections.nCopies(2, md2.get(13)));
+		//
+		minDursTestGetMeterInfo.addAll(Collections.nCopies(2, md2.get(14)));
+		minDursTestGetMeterInfo.add(md2.get(15));
+		minDursTestGetMeterInfo.add(md2.get(16));
+		minDursTestGetMeterInfo.add(md2.get(17));
+		minDursTestGetMeterInfo.addAll(Collections.nCopies(2, md2.get(18)));
+		//
+		minDursTestGetMeterInfo.add(md2.get(19));
+		minDursTestGetMeterInfo.add(md2.get(20));
+		minDursTestGetMeterInfo.add(md2.get(21));
+		minDursTestGetMeterInfo.addAll(Collections.nCopies(2, md2.get(22)));
+		//
+		minDursTestGetMeterInfo.addAll(Collections.nCopies(2, md2.get(23)));
+		minDursTestGetMeterInfo.addAll(Collections.nCopies(2, md2.get(24)));
+		//
+		minDursTestGetMeterInfo.add(md2.get(25));
+		minDursTestGetMeterInfo.add(md2.get(26));
+		minDursTestGetMeterInfo.add(md2.get(27));
+		minDursTestGetMeterInfo.add(md2.get(28));
+		minDursTestGetMeterInfo.add(md2.get(29));
+		minDursTestGetMeterInfo.add(md2.get(30));
+		minDursTestGetMeterInfo.addAll(Collections.nCopies(2, md2.get(31)));
+		//
+		minDursTestGetMeterInfo.add(md2.get(32));
+		minDursTestGetMeterInfo.add(md2.get(33));
+		minDursTestGetMeterInfo.add(md2.get(34));
+		minDursTestGetMeterInfo.add(md2.get(35));
+		//
+		minDursTestGetMeterInfo.addAll(Collections.nCopies(2, md2.get(36)));
+		minDursTestGetMeterInfo.add(md2.get(37));
+		minDursTestGetMeterInfo.add(md2.get(38));
+		minDursTestGetMeterInfo.add(md2.get(39));
+		minDursTestGetMeterInfo.addAll(Collections.nCopies(2, md2.get(40)));
+
+		allMinDurs.add(minDursTestpiece);
+		allMinDurs.add(minDursTestGetMeterInfo);
+		return allMinDurs;
 	}
 
 
@@ -339,13 +625,32 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testMakeBasicTabSymbolProperties() {
+	public void testMakeTunings() {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
+		t.setNormaliseTuning(true);
 		t.setPiecename();
 		t.setTimeline();
 
-		Integer[][] expected = getBtp();
+		Tuning[] expected = new Tuning[]{Tuning.A, Tuning.G};
+		Tuning[] actual = t.makeTunings();
+
+		assertEquals(expected.length, actual.length);
+		for (int i = 0; i < expected.length; i++) {
+			assertEquals(expected[i], actual[i]);
+		}
+	}
+
+
+	public void testMakeBasicTabSymbolProperties() {
+		Tablature t = new Tablature();
+		t.setEncoding(new Encoding(encodingTestpiece));
+		t.setNormaliseTuning(true);
+		t.setPiecename();
+		t.setTimeline();
+		t.setTunings();
+
+		Integer[][] expected = getBtpTransposed();
 		Integer[][] actual = t.makeBasicTabSymbolProperties();
 
 		assertEquals(expected.length, actual.length);
@@ -358,79 +663,26 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testAdaptToDiminutions() {
-		List<Integer[]> unadaptedMeterInfo = Arrays.asList(new Integer[][]{
-			new Integer[]{2, 2, 1, 1},
-			new Integer[]{3, 2, 2, 2},
-			new Integer[]{2, 2, 3, 3}
-		});
+	public void testGetDurationsAndGridX() {
+		Tablature t = new Tablature();
+		t.setEncoding(new Encoding(encodingTestpiece));
+		t.setNormaliseTuning(true);
+		t.setPiecename();
+		t.setTimeline();
+		t.setTunings();
 		
-		// Testpiece1 (anacrusis; diminutions = [2, 1, 2])
-		// 2/2: Q(r) H    Q    | 3/2: H    H    H    | 2/2: H    Q(r) Q    ||	
-		//                4                                           13
-		//           1    3           6         9                     12   
-		//           0    2           5    7    8           10        11
-		List<Integer> diminutions1 = Arrays.asList(new Integer[]{2, 1, 2});
-		List<Integer> durationOfTabSymbols1 = Arrays.asList(new Integer[]{
-			48, 48, 24, 24, 24, 
-			48, 48, 48, 48, 48,
-			48, 24, 24, 24
-		});
-		List<Integer> gridXOfTabSymbols1 = Arrays.asList(new Integer[]{
-			24, 24, 72, 72, 72, 
-			96, 96, 144, 192, 192,
-			240, 312, 312, 312
-		});
-		List<Integer> newDurationOfTabSymbols1 = Arrays.asList(new Integer[]{
-			96, 96, 48, 48, 48,
-			48, 48, 48, 48, 48,
-			96, 48, 48, 48 
-		});
-		List<Integer> newGridXOfTabSymbols1 = Arrays.asList(new Integer[]{
-			48, 48, 144, 144, 144,
-			192, 192, 240, 288, 288,
-			336, 480, 480, 480 
-		});
+		List<List<Integer>> expected = new ArrayList<>(); 
+		expected.add(getMinimumDurationsNotes(false).get(0));
+		List<Integer> gridXNotes = new ArrayList<>();
+		getOnsetTimesNotes(false).get(0).forEach(item -> { if (item[1] != 0) { 
+			gridXNotes.add(item[0]);}});
+		expected.add(gridXNotes);
 
-		// Testpiece2 (no anacrusis; diminutions = [1, -2, 1])
-		// 2/2: Q    H    Q    | 3/2: H    H    H    | 2/2: H    Q(r) Q    ||	
-		//                5                                           14
-		//           2    4           7         10                    13   
-		//      0    1    3           6    8    9           11        12
-		List<Integer> diminutions2 = Arrays.asList(new Integer[]{1, -2, 1});
-		List<Integer> durationOfTabSymbols2 = Arrays.asList(new Integer[]{
-			24, 48, 48, 24, 24, 24,
-			48, 48, 48, 48, 48,
-			48, 24, 24, 24
-		});
-		List<Integer> gridXOfTabSymbols2 = Arrays.asList(new Integer[]{
-			0, 24, 24, 72, 72, 72,
-			96, 96, 144, 192, 192,
-			240, 312, 312, 312
-		});
-		List<Integer> newDurationOfTabSymbols2 = Arrays.asList(new Integer[]{
-			24, 48, 48, 24, 24, 24,
-			24, 24, 24, 24, 24,
-			48, 24, 24, 24	
-		});
-		List<Integer> newGridXOfTabSymbols2 = Arrays.asList(new Integer[]{
-			0, 24, 24, 72, 72, 72,	
-			96, 96, 120, 144, 144,
-			168, 240, 240, 240
-		});
+		List<List<Integer>> actual = Tablature.getDurationsAndGridX(
+			t.getEncoding().getListsOfSymbols().get(Encoding.ALL_EVENTS_IND), 
+			t.getEncoding().getListsOfStatistics().get(Encoding.SIZE_OF_EVENTS_IND),
+			t.getEncoding().getTabSymbolSet());
 
-		List<List<Integer>> expected = new ArrayList<>();
-		expected.add(newDurationOfTabSymbols1);
-		expected.add(newGridXOfTabSymbols1);
-		expected.add(newDurationOfTabSymbols2);
-		expected.add(newGridXOfTabSymbols2);
-		
-		List<List<Integer>> actual = new ArrayList<>(); 
-		actual.addAll(Tablature.adaptToDiminutions(durationOfTabSymbols1, gridXOfTabSymbols1, 
-			diminutions1, unadaptedMeterInfo));
-		actual.addAll(Tablature.adaptToDiminutions(durationOfTabSymbols2, gridXOfTabSymbols2, 
-			diminutions2, unadaptedMeterInfo));
-		
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 		 	assertEquals(expected.get(i).size(), actual.get(i).size());
@@ -441,48 +693,91 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testNormaliseTuning() {
-		Tablature t = new Tablature();
-		t.setEncoding(new Encoding(encodingTestpiece));
-		t.setPiecename();
-		t.setTimeline();
-		t.setBasicTabSymbolProperties();
+	public void testAdaptToDiminutions() {
+		Tablature t1 = new Tablature();
+		t1.setEncoding(new Encoding(encodingTestpiece));
+		t1.setNormaliseTuning(true);
+		t1.setPiecename();
+		t1.setTimeline();
+		t1.setTunings();
+		Tablature t2 = new Tablature();
+		t2.setEncoding(new Encoding(encodingTestGetMeterInfo));
+		t2.setNormaliseTuning(true);
+		t2.setPiecename();
+		t2.setTimeline();
+		t2.setTunings();
 
-		Tuning expectedTuning = Tuning.G;
-		List<Integer> expectedGridYValues = new ArrayList<>();
-		getPitchesInChordTransposed().forEach(expectedGridYValues::addAll); 
-		Integer[][] expectedBtp = getBtpTransposed(); 
-
-		t.normaliseTuning(true);
-
-		Tuning actualTuning = t.getEncoding().getTunings()[Encoding.NEW_TUNING_IND];
-		assertEquals(expectedTuning, actualTuning);
-		//		
-		List<Integer> actualGridYValues = t.getEncoding().getListsOfStatistics().get(Encoding.GRID_Y_IND);
-		assertEquals(expectedGridYValues.size(), actualGridYValues.size());
-		for (int i = 0; i < expectedGridYValues.size(); i++) {
-			assertEquals(expectedGridYValues.get(i), actualGridYValues.get(i));
-		}
+		// For encodingTestPiece
+		List<Integer> minDur1 = getMinimumDurationsNotes(false).get(0);
+		List<Integer> minDur1Exp = getMinimumDurationsNotes(true).get(0);
 		//
-		Integer[][] actualBtp = t.getBasicTabSymbolProperties();
-		assertEquals(expectedBtp.length, actualBtp.length);
-		for (int i = 0; i < expectedBtp.length; i++) {
-			assertEquals(expectedBtp[i].length, actualBtp[i].length);
-			for (int j = 0; j < expectedBtp[i].length; j++) {
-				assertEquals(expectedBtp[i][j], actualBtp[i][j]);
+		List<Integer> gridX1 = new ArrayList<>();
+		getOnsetTimesNotes(false).get(0).forEach(item -> { if (item[1] != 0) { gridX1.add(item[0]);}});
+		List<Integer> gridX1Exp = new ArrayList<>();
+		getOnsetTimesNotes(true).get(0).forEach(item -> { if (item[1] != 0) { gridX1Exp.add(item[0]);}});
+		
+		// For testGetMeterInfo
+		List<Integer> minDur2 = getMinimumDurationsNotes(false).get(1);
+		List<Integer> minDur2Exp = getMinimumDurationsNotes(true).get(1);
+		//
+		List<Integer> gridX2 = new ArrayList<>();
+		getOnsetTimesNotes(false).get(1).forEach(item -> { if (item[1] != 0) { gridX2.add(item[0]);}});
+		List<Integer> gridX2Exp = new ArrayList<>();
+		getOnsetTimesNotes(true).get(1).forEach(item -> { if (item[1] != 0) { gridX2Exp.add(item[0]);}});
+
+		List<List<List<Integer>>> expected = new ArrayList<>();
+		List<List<Integer>> expected1 = new ArrayList<>();
+		expected1.add(minDur1Exp);
+		expected1.add(gridX1Exp);
+		expected.add(expected1);
+		List<List<Integer>> expected2 = new ArrayList<>();
+		expected2.add(minDur2Exp);
+		expected2.add(gridX2Exp);
+		expected.add(expected2);
+
+		List<List<List<Integer>>> actual = new ArrayList<>();
+		actual.add(Tablature.adaptToDiminutions(minDur1, gridX1, 
+			ToolBox.getItemsAtIndex(t1.getTimeline().getMeterInfo(), Timeline.MI_DIM), 
+			t1.getTimeline().getUndiminutedMeterInfo()));
+		actual.add(Tablature.adaptToDiminutions(minDur2, gridX2, 
+			ToolBox.getItemsAtIndex(t2.getTimeline().getMeterInfo(), Timeline.MI_DIM), 
+			t2.getTimeline().getUndiminutedMeterInfo()));
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).size(), actual.get(i).size());
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j).size(), actual.get(i).get(j).size());
+				for (int k = 0; k < expected.get(i).get(j).size(); k++) {
+					assertEquals(expected.get(i).get(j).get(k), actual.get(i).get(j).get(k));
+				}
 			}
 		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testGetMaximumDuration() {
+		Tablature t1 = new Tablature();
+		t1.setEncoding(new Encoding(encodingTestpiece));
+		t1.setNormaliseTuning(true);
+		t1.setPiecename();
+		t1.setTimeline();
+		t1.setTunings();
+
+		
 	}
 
 
 	public void testMakeTablatureChords() {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
+		t.setNormaliseTuning(true);
 		t.setPiecename();
 		t.setTimeline();
+		t.setTunings();
 		t.setBasicTabSymbolProperties();
-		t.setNormaliseTuning(false);
-
+		
 		List<List<TabSymbol>> expected = getTablatureChords();
 		List<List<TabSymbol>> actual = t.makeTablatureChords();
 
@@ -500,14 +795,15 @@ public class TablatureTest extends TestCase {
 	public void testMakeNumberOfNotesPerChord() {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
+		t.setNormaliseTuning(true);
 		t.setPiecename();
 		t.setTimeline();
+		t.setTunings();
 		t.setBasicTabSymbolProperties();
-		t.setNormaliseTuning(false);
 		t.setTablatureChords();
-
-		List<Integer> expected = 
-			Arrays.asList(new Integer[]{4, 4, 1, 4, 1, 5, 4, 2, 4, 1, 1, 1, 1, 1, 1, 4});
+		
+		List<Integer> expected = new ArrayList<>();
+		getTablatureChords().forEach(item -> expected.add(item.size()));
 		List<Integer> actual = t.makeNumberOfNotesPerChord();
 
 		assertEquals(expected.size(), actual.size());
@@ -589,15 +885,15 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testRationalToIntDur() {
+	public void testGetTabSymbolDur() {
 		List<Rational> rs = Arrays.asList(new Rational[]{				
-			new Rational(1, 2), new Rational(3, 4), new Rational(15, 16), new Rational(5, 4)
+			HALF, DOTTED_HALF, new Rational(15, 16), new Rational(5, 4)
 		});
 		List<Integer> expected = Arrays.asList(new Integer[]{48, 72, 90, 120});
 
 		List<Integer> actual = new ArrayList<>();
 		for (Rational r : rs) {
-			actual.add(Tablature.rationalToIntDur(r));
+			actual.add(Tablature.getTabSymbolDur(r));
 		}
 
 		assertEquals(expected.size(), actual.size());
@@ -808,6 +1104,7 @@ public class TablatureTest extends TestCase {
 
 	public void testGetTranspositionInterval() {
 		assertEquals(-2, new Tablature(encodingTestpiece, false).getTranspositionInterval());
+		assertEquals(0, new Tablature(encodingTestGetMeterInfo, true).getTranspositionInterval());
 	}
 
 
@@ -815,20 +1112,21 @@ public class TablatureTest extends TestCase {
 		Tablature t1 = new Tablature(encodingTestpiece, false);
 		Tablature t2 = new Tablature(encodingTestGetMeterInfo, false);
 
-		List<List<Rational[]>> allOnsetTimes = getOnsetTimes();
 		List<Rational[]> expected = new ArrayList<>();
 		// a. Excluding rests
 		// For a piece with no meter changes
-		allOnsetTimes.get(0).forEach(item -> { 
-			if (!item[1].equals(Rational.ZERO)) { expected.add(item);}});
+		getOnsetTimesChords(false).get(0).forEach(item -> { if (item[1] != 0) { expected.add(
+			new Rational[]{new Rational(item[0], Tablature.SRV_DEN), Rational.ONE});}});
 		// For a piece with meter changes
-		allOnsetTimes.get(1).forEach(item -> {
-			if (!item[1].equals(Rational.ZERO)) { expected.add(item);}});
+		getOnsetTimesChords(true).get(1).forEach(item -> { if (item[1] != 0) { expected.add(
+			new Rational[]{new Rational(item[0], Tablature.SRV_DEN), Rational.ONE});}});
 		// b. Including rests
 		// For a piece with no meter changes
-		allOnsetTimes.get(0).forEach(item -> expected.add(item));
+		getOnsetTimesChords(false).get(0).forEach(item -> expected.add(new Rational[]{
+			new Rational(item[0], Tablature.SRV_DEN), new Rational(item[1], 1)})); 
 		// For a piece with meter changes
-		allOnsetTimes.get(1).forEach(item -> expected.add(item));
+		getOnsetTimesChords(true).get(1).forEach(item -> expected.add(new Rational[]{
+			new Rational(item[0], Tablature.SRV_DEN), new Rational(item[1], 1)})); 
 
 		List<Rational[]> actual = new ArrayList<>();
 		actual.addAll(t1.getMetricTimePerChord(false));
@@ -852,47 +1150,15 @@ public class TablatureTest extends TestCase {
 
 		List<Rational> expected = new ArrayList<>();
 		// testpiece
-		expected.add(QUARTER);
-		//
-		expected.add(DOTTED_EIGHTH); expected.add(SIXTEENTH); 
-		expected.addAll(Collections.nCopies(2, EIGHTH));
-		expected.add(QUARTER); 
-		expected.addAll(Collections.nCopies(2, EIGHTH));
-		//
-		expected.addAll(Collections.nCopies(2, SIXTEENTH));
-		expected.addAll(Collections.nCopies(4, THIRTY_SECOND));
-		expected.add(QUARTER); 
-		expected.add(QUARTER);
-		// testGetMeterInfo
-		expected.addAll(Collections.nCopies(3, QUARTER));
-		//
-		expected.add(DOTTED_HALF); expected.add(QUARTER);
-		expected.add(WHOLE);
-		//
-		expected.add(HALF); expected.addAll(Collections.nCopies(2, EIGHTH));
-		expected.addAll(Collections.nCopies(4, SIXTEENTH));
-		expected.add(WHOLE);
-		//
-		expected.add(WHOLE);
-		expected.add(HALF); expected.addAll(Collections.nCopies(2, QUARTER));
-		expected.add(WHOLE);
-		// 
-		expected.add(DOTTED_HALF); expected.addAll(Collections.nCopies(2, EIGHTH));
-		expected.add(BREVE);
-		//
-		expected.add(HALF);
-		expected.add(HALF);
-		//
-		expected.addAll(Collections.nCopies(4, EIGHTH));
-		expected.addAll(Collections.nCopies(2, EIGHTH)); expected.add(QUARTER);
-		//
-		expected.add(EIGHTH);
-		expected.addAll(Collections.nCopies(3, SIXTEENTH));
-		//
-		expected.add(QUARTER);
-		expected.add(SIXTEENTH); expected.addAll(Collections.nCopies(2, THIRTY_SECOND));
-		expected.add(EIGHTH);
+		List<Rational> md1 = new ArrayList<>();
+		getMinimumDurationsChords(false).get(0).forEach(i -> md1.add(new Rational(i, Tablature.SRV_DEN)));
+		expected.addAll(md1);
 		
+		// testGetMeterInfo
+		List<Rational> md2 = new ArrayList<>();
+		getMinimumDurationsChords(true).get(1).forEach(i -> md2.add(new Rational(i, Tablature.SRV_DEN)));
+		expected.addAll(md2);
+
 		List<Rational> actual = t1.getMinimumDurationPerChord();
 		actual.addAll(t2.getMinimumDurationPerChord());
 

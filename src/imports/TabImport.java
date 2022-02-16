@@ -984,7 +984,7 @@ public class TabImport {
 		String tss = null;
 		for (Tuning t : Encoding.Tuning.values()) {	
 			// currTuning lists the tuning for the courses in the sequence (6)-(1)
-			String currTuning = String.join("", t.getCourseString());
+			String currTuning = String.join("", t.getCourses());
 			
 			// It tuningString equals currTuning
 			if (currTuning.equals(tuningString)) {

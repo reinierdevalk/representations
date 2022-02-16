@@ -10,6 +10,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import tbp.ConstantMusicalSymbol;
 import tbp.MensurationSign;
@@ -34,7 +36,6 @@ public class Encoding implements Serializable {
 	private static final String NO_BARLINE_TEXT = "no barline";
 	private static final String MISPLACED_BARLINE_TEXT = "misplaced barline";
 
-	
 	private List<List<String[]>> eventsBarlinesFootnotes;
 	public static final int EVENT_IND = 0;
 	public static final int BAR_IND = 1;
@@ -47,27 +48,24 @@ public class Encoding implements Serializable {
 	public static final int SOURCE_IND = 2;
 	public static final int TABSYMBOLSET_IND = 3;
 	public static final int TUNING_IND = 4;
-	public static final int TUNING_BASS_COURSES_IND = 5;
-	public static final int METER_IND = 6;
-	public static final int DIMINUTION_IND = 7;
+	public static final int METER_IND = 5;
+	public static final int DIMINUTION_IND = 6;
 	
 	public static final String AUTHOR_TAG = "AUTHOR:";
 	public static final String TITLE_TAG = "TITLE:";
 	public static final String SOURCE_TAG = "SOURCE:";
 	public static final String TABSYMBOLSET_TAG = "TABSYMBOLSET:";
 	public static final String TUNING_TAG = "TUNING:";
-	public static final String TUNING_SEVENTH_COURSE_TAG = "TUNING_SEVENTH_COURSE:";
 	public static final String METER_INFO_TAG = "METER_INFO:";
 	public static final String DIMINUTION_TAG = "DIMINUTION:";
 	
 	private static String[] metaDataTags = new String[7];
-	static { metaDataTags = new String[8];
+	static { metaDataTags = new String[7];
 		metaDataTags[AUTHOR_IND] = AUTHOR_TAG;
 		metaDataTags[TITLE_IND] = TITLE_TAG;
-		metaDataTags[SOURCE_IND] = SOURCE_TAG; 
-		metaDataTags[TABSYMBOLSET_IND] = TABSYMBOLSET_TAG; 
-		metaDataTags[TUNING_IND] = TUNING_TAG; 
-		metaDataTags[TUNING_BASS_COURSES_IND] = TUNING_SEVENTH_COURSE_TAG; 
+		metaDataTags[SOURCE_IND] = SOURCE_TAG;
+		metaDataTags[TABSYMBOLSET_IND] = TABSYMBOLSET_TAG;
+		metaDataTags[TUNING_IND] = TUNING_TAG;
 		metaDataTags[METER_IND] = METER_INFO_TAG;
 		metaDataTags[DIMINUTION_IND] = DIMINUTION_TAG;
 	}
@@ -87,70 +85,14 @@ public class Encoding implements Serializable {
 	public static final int IS_MENSURATION_SIGN_EVENT_IND = 3;
 	public static final int IS_BARLINE_EVENT_IND = 4;
 	public static final int SIZE_OF_EVENTS_IND = 5;
-	public static final int DURATION_OF_EVENTS_IND = 6;  
-	public static final int HORIZONTAL_POSITION_IND = 7;
-	public static final int VERTICAL_POSITION_IND = 8;
-	public static final int DURATION_IND = 9;
-	public static final int GRID_X_IND = 10;
-	public static final int GRID_Y_IND = 11;
-	public static final int HORIZONTAL_POS_TAB_SYMBOLS_ONLY_IND = 12;
+	public static final int HORIZONTAL_POS_IND = 6;
+	public static final int VERTICAL_POS_IND = 7;
+	public static final int HORIZONTAL_POS_TAB_SYMBOLS_ONLY_IND = 8;
 
-	private Tuning[] tunings;
-	public static final int ENCODED_TUNING_IND = 0;
-	public static final int NEW_TUNING_IND = 1;
-	
 	private String piecename; 
 	private String rawEncoding;
 	private boolean hasMetadataErrors;
 	private String cleanEncoding;
-	private String[] encodingErrors;
-
-	public static enum Tuning  {
-		C_AVALLEE("C_AVALLEE", -7, true, Arrays.asList(new String[]{"Bb", "F", "Bb", "D", "G", "C"})),
-		C_HIGH("C_HIGH", 5, false, Arrays.asList(new String[]{"C", "F", "Bb", "D", "G", "C"})),
-		D("D", -5, false, Arrays.asList(new String[]{"D", "G", "C", "E", "A", "D"})),
-		F("F", -2, false, Arrays.asList(new String[]{"F", "Bb", "Eb", "G", "C", "F"})),
-		F_ENH("F", -2, false, Arrays.asList(new String[]{"F", "A#", "D#", "G", "C", "F"})),
-		F_SHARP("F_SHARP", -1, false, Arrays.asList(new String[]{"F#", "B", "E", "G#", "C#", "F#"})),
-		G("G", 0, false, Arrays.asList(new String[]{"G", "C", "F", "A", "D", "G"})),
-		G_AVALLEE("G_AVALLEE", 0, true, Arrays.asList(new String[]{"F", "C", "F", "A", "D", "G"})),
-		A("A", 2, false, Arrays.asList(new String[]{"A", "D", "G", "B", "E", "A"})),
-		A_AVALLEE("A_AVALLEE", 2, true, Arrays.asList(new String[]{"G", "D", "G", "B", "E", "A"}));
-		
-		private String name;
-		private int transposition;
-		private boolean isAvallee;
-		private List<String> courseString;
-		Tuning(String s, int t, boolean a, List<String> l) {
-			this.name = s;
-			this.transposition = t;
-			this.isAvallee = a;
-			this.courseString = l;
-		}
-		
-		public String getName() {
-			return name;
-		}
-
-		public int getTransposition() {
-			return transposition;
-		}
-
-		public boolean isAvallee() {
-			return isAvallee;
-		}
-
-		public List<String> getCourseString() {
-			return courseString;
-		}
-	}
-
-	public enum TuningBassCourses {
-		SECOND, FOURTH,
-		P4M2, // 8-course with perfect 5th and major 2nd: G tuning (8) D, (7) F
-		P5P4m3M2, // 10-course with perfect 5th, perfect 4th, minor 3rd, major 2nd: G tuning (10) C, (9) D, (8) E, (7) F  
-		P5P4M3M2, // 10-course with perfect 5th, perfect 4th, major 3rd, major 2nd: G tuning (10) C, (9) D, (8) Eb, (7) F  	
-	};
 
 
 //	public Encoding(String rawEncoding, boolean nothing) {
@@ -247,7 +189,6 @@ public class Encoding implements Serializable {
 			setEventsBarlinesFootnotes();
 		}
 		if (stage == SYNTAX_CHECKED) {
-			setTunings();
 			setListsOfSymbols();
 			setListsOfStatistics();
 		}
@@ -309,14 +250,13 @@ public class Encoding implements Serializable {
 	List<String> makeInfoAndSettings() {
 		List<String> ias = new ArrayList<>(); 
 		List<String> metaData = getAllMetadata(); // needs rawEncoding
-		ias.add(AUTHOR_IND, metaData.get(0).substring(metaData.get(0).indexOf(":") + 1).trim());
-		ias.add(TITLE_IND, metaData.get(1).substring(metaData.get(1).indexOf(":" ) + 1).trim());
-		ias.add(SOURCE_IND, metaData.get(2).substring(metaData.get(2).indexOf(":") + 1).trim());
-		ias.add(TABSYMBOLSET_IND, metaData.get(3).substring(metaData.get(3).indexOf(":") + 1).trim());
-		ias.add(TUNING_IND, metaData.get(4).substring(metaData.get(4).indexOf(":") + 1).trim());
-		ias.add(TUNING_BASS_COURSES_IND, metaData.get(5).substring(metaData.get(5).indexOf(":") + 1).trim());
-		ias.add(METER_IND, metaData.get(6).substring(metaData.get(6).indexOf(":") + 1).trim());
-		ias.add(DIMINUTION_IND, metaData.get(7).substring(metaData.get(7).indexOf(":") + 1).trim());
+		ias.add(AUTHOR_IND, metaData.get(AUTHOR_IND).substring(metaData.get(AUTHOR_IND).indexOf(":") + 1).trim());
+		ias.add(TITLE_IND, metaData.get(TITLE_IND).substring(metaData.get(TITLE_IND).indexOf(":" ) + 1).trim());
+		ias.add(SOURCE_IND, metaData.get(SOURCE_IND).substring(metaData.get(SOURCE_IND).indexOf(":") + 1).trim());
+		ias.add(TABSYMBOLSET_IND, metaData.get(TABSYMBOLSET_IND).substring(metaData.get(TABSYMBOLSET_IND).indexOf(":") + 1).trim());
+		ias.add(TUNING_IND, metaData.get(TUNING_IND).substring(metaData.get(TUNING_IND).indexOf(":") + 1).trim());
+		ias.add(METER_IND, metaData.get(METER_IND).substring(metaData.get(METER_IND).indexOf(":") + 1).trim());
+		ias.add(DIMINUTION_IND, metaData.get(DIMINUTION_IND).substring(metaData.get(DIMINUTION_IND).indexOf(":") + 1).trim());
 		return ias;
 	}
 
@@ -506,51 +446,32 @@ public class Encoding implements Serializable {
 	}
 
 
-	void setTunings() {
-		tunings = makeTunings();
-	}
+//	void setTunings() {
+//		tunings = makeTunings();
+//	}
 
 
-	void setTunings(Tuning[] t) {
-		tunings = t;
-	}
+//	void setTunings(Tuning[] t) {
+//		tunings = t;
+//	}
 
 
-	// TESTED
-	Tuning[] makeTunings() {
-		Tuning[] tun = new Tuning[2];
-		for (Tuning t : Tuning.values()) { 
-			if (t.toString().equals(getInfoAndSettings().get(TUNING_IND))) {
-				tun[ENCODED_TUNING_IND] = t;
-				tun[NEW_TUNING_IND] = t; 
-				break;
-			}
-		}
-		return tun;
-	}
-
-
-	/**
-	 * Gets all information added to the encoding, consisting of:
-	 *   (1) the info and settings items (author, title, source, TabSymbolSet, tuning, tuningSeventhCourse, and meterInfo )
-	 *   (2) a mix of footnotes and other indications such as bar numbers.
-	 */
-	// TESTED
-	List<String> getAllMetadata() {
-		String rawEnc = getRawEncoding();
-		List<String> metaData = new ArrayList<String>();
-		for (int i = 0; i < rawEnc.length(); i++) {
-			char c = rawEnc.charAt(i);
-			String currentChar = Character.toString(c); 
-			if (currentChar.equals(SymbolDictionary.OPEN_INFO_BRACKET)) {
-				int closeInfoIndex = rawEnc.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, i);
-				String info = rawEnc.substring(i + 1, closeInfoIndex);
-				metaData.add(info);
-				i = closeInfoIndex;
-			}
-		}    
-		return metaData;
-	}
+//	// TESTED
+//	Tuning[] makeTunings(boolean normaliseTuning) {
+//		Tuning encodedTun = Tuning.getTuning(getInfoAndSettings().get(TUNING_IND));
+//		Tuning[] tuns = new Tuning[]{encodedTun, encodedTun};
+//		if (normaliseTuning) {
+//			tuns[1] = encodedTun.isDrop() ? Tuning.G6F : Tuning.G;
+//		}
+////		for (Tuning t : Tuning.values()) { 
+////			if (t.toString().equals(getInfoAndSettings().get(TUNING_IND))) {
+////				tun[ENCODED_TUNING_IND] = t;
+////				tun[NEW_TUNING_IND] = t; 
+////				break;
+////			}
+////		}
+//		return tuns;
+//	}
 
 
 	void setListsOfSymbols() {
@@ -644,32 +565,46 @@ public class Encoding implements Serializable {
 	List<List<Integer>> makeListsOfStatistics() { 
 		List<List<Integer>> los = new ArrayList<>();
 		
-		// 0-6. Make the lists that have the same size as listOfAllEvents
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		
+		// 0-5. Lists that have the same size as listOfAllEvents
 		List<Integer> isTabSymbolEvent = new ArrayList<Integer>();
 		List<Integer> isRhythmSymbolEvent = new ArrayList<Integer>();
 		List<Integer> isRestEvent = new ArrayList<Integer>();
 		List<Integer> isMensurationSignEvent = new ArrayList<Integer>();
 		List<Integer> isBarlineEvent = new ArrayList<Integer>();
 		List<Integer> sizeOfEvents = new ArrayList<Integer>();
-		List<Integer> durationOfEvents = new ArrayList<Integer>();
-		int newDuration = 0;
-		int currentDuration = 0;
+//		List<Integer> durationOfEvents = new ArrayList<Integer>();
+		// 6-8. Lists that have the same size as listOfTabSymbols
+		List<Integer> horizontalPositionOfTabSymbols = new ArrayList<Integer>();
+		List<Integer> verticalPositionOfTabSymbols = new ArrayList<Integer>();
+//		List<Integer> durationOfTabSymbols = new ArrayList<Integer>();
+//		List<Integer> gridXOfTabSymbols = new ArrayList<Integer>();
+//		List<Integer> gridYOfTabSymbols = new ArrayList<Integer>();
+		List<Integer> horizontalPositionInTabSymbolEventsOnly = new ArrayList<Integer>();
+//		int currentDuration = 0;
+//		int newDuration = 0;
 		List<List<String>> loss = getListsOfSymbols();
 		TabSymbolSet tss = getTabSymbolSet();
+//		Tuning t = Tuning.getTuning(getInfoAndSettings().get(TUNING_IND));
 		List<String> listOfAllEvents = loss.get(ALL_EVENTS_IND);
 //		boolean tripletActive = false;
 //		List<Integer> triplet = new ArrayList<>();
+		int tabSymbolEventInd = 0;
 		for (int i = 0; i < listOfAllEvents.size(); i++) {
-			String currentEvent = listOfAllEvents.get(i);    		
+			String currentEvent = listOfAllEvents.get(i);
 			// 0-4. isTabSymbolEvent, isRhythmSymbolEvent, isRestEvent, isMensurationSignEvent, and isBarlineEvent
-			isTabSymbolEvent.add(0); isRhythmSymbolEvent.add(0); isRestEvent.add(0); isMensurationSignEvent.add(0);
+			isTabSymbolEvent.add(0); 
+			isRhythmSymbolEvent.add(0); 
+			isRestEvent.add(0); 
+			isMensurationSignEvent.add(0);
 			isBarlineEvent.add(0); 
 			// Add a SS so that the for-loop below also works for events containing only a single symbol
-			currentEvent = currentEvent.concat(".");
+			currentEvent = currentEvent.concat(ss);
 			int numTabSymbolsInEvent = 0;
 			// For each symbol in the event
 			for (int j = 0; j < currentEvent.length() - 1; j++) {
-				int indexOfNextSymbolSeparator = currentEvent.indexOf(SymbolDictionary.SYMBOL_SEPARATOR, j);
+				int indexOfNextSymbolSeparator = currentEvent.indexOf(ss, j);
 				String currentSymbol = currentEvent.substring(j, indexOfNextSymbolSeparator);
 				// If TS
 				if (TabSymbol.getTabSymbol(currentSymbol, tss) != null) {
@@ -681,7 +616,7 @@ public class Encoding implements Serializable {
 				if (RhythmSymbol.getRhythmSymbol(currentSymbol) != null) {
 					isRhythmSymbolEvent.set(i, 1);
 					// If the event contains only one symbol and that symbol is a RS, the event is a restEvent
-					if (currentEvent.indexOf(SymbolDictionary.SYMBOL_SEPARATOR) == (currentEvent.length() - 1)) {
+					if (currentEvent.indexOf(ss) == (currentEvent.length() - 1)) {
 						isRestEvent.set(i, 1);
 					}
 				}
@@ -696,127 +631,136 @@ public class Encoding implements Serializable {
 				j = indexOfNextSymbolSeparator;
 			}
 			// 5. sizeOfEvents
-			sizeOfEvents.add(numTabSymbolsInEvent);     
-			// 6. durationOfEvents
-			// a. If currentEvent is a rhythmSymbolEvent (which can be a restEvent as well): determine 
-			// newDuration, add it to durationOfEvents, and reset currentDuration 
-			if (isRhythmSymbolEvent.get(i) == 1) {
-				// Determine the RS, which is the first (or only) symbol of the event
-				String firstSymbol = currentEvent.substring(0, currentEvent.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));      	
-				// a. If firstSymbol is a regular RS 
-				if (!firstSymbol.equals(RhythmSymbol.rhythmDot.getEncoding())) {
-					RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(firstSymbol);
-					newDuration = rs.getDuration();
-					// First RS of a triplet? Add to triplet 
-//					if (firstSymbol.startsWith(RhythmSymbol.triplet.getEncoding())) {
-//						triplet.add(newDuration);
-//					}
-//					// Second or third RS of a triplet?
-//					// NB Triplets always appear in successive events (i values)
-//					else {
-//						if (triplet.size() != 0) {
-//							// Second RS: add element at index 1; third RS: add element at index 2
-//							// --> general: add element at index triplet.size()
-//							newDuration = rs.getTripletValues().get(triplet.size());
-//							// Add to triplet if i is second triplet event; reset triplet if i is
-//							// third triplet event
-//							if (triplet.size() == 1) {
-//								triplet.add(newDuration);
-//							}
-//							else if (triplet.size() == 2) {
-//								triplet = new ArrayList<>();
-//							}
-//						}
-//					}
-				}
-				// b. If firstSymbol is a rhythmDot
-				else {
-					newDuration = currentDuration/2;
-				}
-				durationOfEvents.add(newDuration);
-				currentDuration = newDuration;
+			sizeOfEvents.add(numTabSymbolsInEvent);
+			
+			// 6-8. horizontalPositionOfTabSymbols, verticalPositionOfTabSymbols, horizontalPositionInTabSymbolEventsOnly
+			if (isTabSymbolEvent.get(i) == 1) {
+				horizontalPositionOfTabSymbols.addAll(Collections.nCopies(numTabSymbolsInEvent, i));
+				verticalPositionOfTabSymbols.addAll(
+					IntStream.rangeClosed(0, numTabSymbolsInEvent-1).boxed().collect(Collectors.toList()));
+				horizontalPositionInTabSymbolEventsOnly.addAll(Collections.nCopies(numTabSymbolsInEvent, tabSymbolEventInd));
+				tabSymbolEventInd++;
 			}
-			// b. If currentEvent is a tabSymbolEvent but not a rhythmSymbolEvent, the value stored in currentDuration
-			// is added to durationOfEvents
-			// NB It is assumed that a triplet is always followed by a rhythmSymbolEvent
-			else if (isTabSymbolEvent.get(i) == 1 && isRhythmSymbolEvent.get(i) == 0) {
-				durationOfEvents.add(currentDuration);
-			}
-			// c. If currentEvent is a MS or a barline, 0 is added to durationOfEvents  
-			else if (isMensurationSignEvent.get(i) == 1 || isBarlineEvent.get(i) == 1) {
-				durationOfEvents.add(0);
-			}
+			
+//			// 6. durationOfEvents
+//			// a. If currentEvent is a rhythmSymbolEvent (which can be a restEvent as well): determine 
+//			// newDuration, add it to durationOfEvents, and reset currentDuration 
+//			if (isRhythmSymbolEvent.get(i) == 1) {
+//				// Determine the RS, which is the first (or only) symbol of the event
+//				String firstSymbol = currentEvent.substring(0, currentEvent.indexOf(ss));      	
+//				// a. If firstSymbol is a regular RS 
+//				if (!firstSymbol.equals(RhythmSymbol.rhythmDot.getEncoding())) {
+//					RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(firstSymbol);
+//					newDuration = rs.getDuration();
+////					// First RS of a triplet? Add to triplet 
+////					if (firstSymbol.startsWith(RhythmSymbol.triplet.getEncoding())) {
+////						triplet.add(newDuration);
+////					}
+////					// Second or third RS of a triplet?
+////					// NB Triplets always appear in successive events (i values)
+////					else {
+////						if (triplet.size() != 0) {
+////							// Second RS: add element at index 1; third RS: add element at index 2
+////							// --> general: add element at index triplet.size()
+////							newDuration = rs.getTripletValues().get(triplet.size());
+////							// Add to triplet if i is second triplet event; reset triplet if i is
+////							// third triplet event
+////							if (triplet.size() == 1) {
+////								triplet.add(newDuration);
+////							}
+////							else if (triplet.size() == 2) {
+////								triplet = new ArrayList<>();
+////							}
+////						}
+////					}
+//				}
+//				// b. If firstSymbol is a rhythmDot
+//				else {
+//					newDuration = currentDuration/2;
+//				}
+//				durationOfEvents.add(newDuration);
+//				currentDuration = newDuration;
+//			}
+//			// b. If currentEvent is a tabSymbolEvent but not a rhythmSymbolEvent, the value stored in currentDuration
+//			// is added to durationOfEvents
+//			// NB It is assumed that a triplet is always followed by a rhythmSymbolEvent
+//			else if (isTabSymbolEvent.get(i) == 1 && isRhythmSymbolEvent.get(i) == 0) {
+//				durationOfEvents.add(currentDuration);
+//			}
+//			// c. If currentEvent is a MS or a barline, 0 is added to durationOfEvents  
+//			else if (isMensurationSignEvent.get(i) == 1 || isBarlineEvent.get(i) == 1) {
+//				durationOfEvents.add(0);
+//			}
 		}
 
-		// 7-12. Make the lists that have the same size as listOfTabSymbols
-		List<Integer> horizontalPositionOfTabSymbols = new ArrayList<Integer>();
-		List<Integer> verticalPositionOfTabSymbols = new ArrayList<Integer>();
-		List<Integer> durationOfTabSymbols = new ArrayList<Integer>();
-		List<Integer> gridXOfTabSymbols = new ArrayList<Integer>();
-		List<Integer> gridYOfTabSymbols = new ArrayList<Integer>();
-		List<Integer> horizontalPositionInTabSymbolEventsOnly = new ArrayList<Integer>();
-		// List the TS indices per event. Events that contain no TS are represented by empty lists
-		List<List<Integer>> indicesPerEvent = new ArrayList<List<Integer>>();
-		int lowestNoteIndex = 0;
-		for (int i = 0; i < sizeOfEvents.size(); i++) {
-			int sizeCurrentEvent = sizeOfEvents.get(i);
-			List<Integer> currentIndices = new ArrayList<Integer>();
-			for (int j = 0; j < sizeCurrentEvent; j++) {
-				currentIndices.add(lowestNoteIndex + j);
-			}
-			indicesPerEvent.add(currentIndices);
-			lowestNoteIndex += sizeCurrentEvent;
-		}
-		// Determine for each TS at index i its horizontal and vertical position
-		List<String> listOfTabSymbols = loss.get(TAB_SYMBOLS_IND);
-		for (int i = 0; i < listOfTabSymbols.size(); i++) {
-			// 7-8. horizontalPositionOfTabSymbols and verticalPositionOfTabSymbols
-			// For each event at index j
-			for (int j = 0; j < indicesPerEvent.size(); j++) {
-				// For each index k in the event
-				List<Integer> indicesCurrentEvent = indicesPerEvent.get(j);
-				for (int k = 0; k < indicesCurrentEvent.size(); k++) {
-					if (indicesCurrentEvent.get(k) == i) {
-						horizontalPositionOfTabSymbols.add(j);
-						verticalPositionOfTabSymbols.add(k);
-						break;
-					}
-				}
-			}      
-			// 9. durationOfTabSymbols
-			int eventIndex = horizontalPositionOfTabSymbols.get(i); 
-			durationOfTabSymbols.add(durationOfEvents.get(eventIndex));
-			// 10. gridXOfTabSymbols
-			int gridX = 0;
-			int numberOfNonTabSymbolEventsPreceding = 0;
-			for (int j = 0; j < eventIndex; j++) {
-				gridX += durationOfEvents.get(j);
-				if (isTabSymbolEvent.get(j) == 0) {
-					numberOfNonTabSymbolEventsPreceding++;
-				}
-			}
-			gridXOfTabSymbols.add(gridX);
-			// 11. gridYOfTabSymbols
-			TabSymbol currentTabSymbol = 
-				TabSymbol.getTabSymbol(listOfTabSymbols.get(i), tss);
-			gridYOfTabSymbols.add(currentTabSymbol.getPitch(getTunings()[NEW_TUNING_IND], getTuningBassCourses()));
-			// 12. horizontalPositionInTabSymbolEventsOnly
-			int horizontalPosition = eventIndex - numberOfNonTabSymbolEventsPreceding;
-			horizontalPositionInTabSymbolEventsOnly.add(horizontalPosition);
-		}
-		// Add the lists to listsOfStatistics
+//		// 7-12. Make the lists that have the same size as listOfTabSymbols
+//		List<Integer> horizontalPositionOfTabSymbols = new ArrayList<Integer>();
+//		List<Integer> verticalPositionOfTabSymbols = new ArrayList<Integer>();
+//		List<Integer> durationOfTabSymbols = new ArrayList<Integer>();
+//		List<Integer> gridXOfTabSymbols = new ArrayList<Integer>();
+//		List<Integer> gridYOfTabSymbols = new ArrayList<Integer>();
+//		List<Integer> horizontalPositionInTabSymbolEventsOnly = new ArrayList<Integer>();
+//		// List the TS indices per event. Events that contain no TS are represented by empty lists
+//		List<List<Integer>> indicesPerEvent = new ArrayList<List<Integer>>();
+//		int lowestNoteIndex = 0;
+//		for (int i = 0; i < sizeOfEvents.size(); i++) {
+//			int sizeCurrentEvent = sizeOfEvents.get(i);
+//			List<Integer> currentIndices = new ArrayList<Integer>();
+//			for (int j = 0; j < sizeCurrentEvent; j++) {
+//				currentIndices.add(lowestNoteIndex + j);
+//			}
+//			indicesPerEvent.add(currentIndices);
+//			lowestNoteIndex += sizeCurrentEvent;
+//		}
+//		// Determine for each TS at index i its horizontal and vertical position
+//		List<String> listOfTabSymbols = loss.get(TAB_SYMBOLS_IND);
+//		for (int i = 0; i < listOfTabSymbols.size(); i++) {
+//			// 7-8. horizontalPositionOfTabSymbols and verticalPositionOfTabSymbols
+//			// For each event at index j
+//			for (int j = 0; j < indicesPerEvent.size(); j++) {
+//				// For each index k in the event
+//				List<Integer> indicesCurrentEvent = indicesPerEvent.get(j);
+//				for (int k = 0; k < indicesCurrentEvent.size(); k++) {
+//					if (indicesCurrentEvent.get(k) == i) {
+//						horizontalPositionOfTabSymbols.add(j);
+//						verticalPositionOfTabSymbols.add(k);
+//						break;
+//					}
+//				}
+//			}      
+//			// 9. durationOfTabSymbols
+//			int eventIndex = horizontalPositionOfTabSymbols.get(i);
+////			durationOfTabSymbols.add(durationOfEvents.get(eventIndex));
+////			// 10. gridXOfTabSymbols
+////			int gridX = 0;
+//			int numberOfNonTabSymbolEventsPreceding = 0;
+//			for (int j = 0; j < eventIndex; j++) {
+////				gridX += durationOfEvents.get(j);
+//				if (isTabSymbolEvent.get(j) == 0) {
+//					numberOfNonTabSymbolEventsPreceding++;
+//				}
+//			}
+////			gridXOfTabSymbols.add(gridX);
+//			// 11. gridYOfTabSymbols
+////			TabSymbol currentTabSymbol = TabSymbol.getTabSymbol(listOfTabSymbols.get(i), tss);
+////			gridYOfTabSymbols.add(currentTabSymbol.getPitch(t));
+////			gridYOfTabSymbols.add(currentTabSymbol.getPitch(getTunings()[NEW_TUNING_IND], getTuningBassCourses()));
+//			// 12. horizontalPositionInTabSymbolEventsOnly
+//			int horizontalPosition = eventIndex - numberOfNonTabSymbolEventsPreceding;
+//			horizontalPositionInTabSymbolEventsOnly.add(horizontalPosition);
+//		}
 		los.add(IS_TAB_SYMBOL_EVENT_IND, isTabSymbolEvent);
 		los.add(IS_RHYTHM_SYMBOL_EVENT_IND, isRhythmSymbolEvent);
 		los.add(IS_REST_EVENT_IND, isRestEvent);
 		los.add(IS_MENSURATION_SIGN_EVENT_IND, isMensurationSignEvent);
 		los.add(IS_BARLINE_EVENT_IND, isBarlineEvent);
 		los.add(SIZE_OF_EVENTS_IND, sizeOfEvents);
-		los.add(DURATION_OF_EVENTS_IND, durationOfEvents);
-		los.add(HORIZONTAL_POSITION_IND, horizontalPositionOfTabSymbols);
-		los.add(VERTICAL_POSITION_IND, verticalPositionOfTabSymbols);
-		los.add(DURATION_IND, durationOfTabSymbols);
-		los.add(GRID_X_IND, gridXOfTabSymbols);
-		los.add(GRID_Y_IND, gridYOfTabSymbols);
+//		los.add(DURATION_OF_EVENTS_IND, durationOfEvents);
+		los.add(HORIZONTAL_POS_IND, horizontalPositionOfTabSymbols);
+		los.add(VERTICAL_POS_IND, verticalPositionOfTabSymbols);
+//		los.add(DURATION_IND, durationOfTabSymbols);
+//		los.add(GRID_X_IND, gridXOfTabSymbols);
+//		los.add(GRID_Y_IND, gridYOfTabSymbols);
 		los.add(HORIZONTAL_POS_TAB_SYMBOLS_ONLY_IND, horizontalPositionInTabSymbolEventsOnly);
 	
 		return los;
@@ -824,19 +768,42 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Gets the tunings for the bass courses required.
-	 * 
-	 * @return The <code>TuningBassCourse</code> required.
+	 * Gets all information added to the encoding, consisting of:
+	 *   (1) the info and settings items (author, title, source, TabSymbolSet, tuning, tuningSeventhCourse, and meterInfo )
+	 *   (2) a mix of footnotes and other indications such as bar numbers.
 	 */
 	// TESTED
-	TuningBassCourses getTuningBassCourses() {
-		for (TuningBassCourses tbc: TuningBassCourses.values()) {
-			if (tbc.toString().equals(getInfoAndSettings().get(TUNING_BASS_COURSES_IND))) {
-				return tbc;
+	List<String> getAllMetadata() {
+		String rawEnc = getRawEncoding();
+		List<String> metaData = new ArrayList<String>();
+		for (int i = 0; i < rawEnc.length(); i++) {
+			char c = rawEnc.charAt(i);
+			String currentChar = Character.toString(c); 
+			if (currentChar.equals(SymbolDictionary.OPEN_INFO_BRACKET)) {
+				int closeInfoIndex = rawEnc.indexOf(SymbolDictionary.CLOSE_INFO_BRACKET, i);
+				String info = rawEnc.substring(i + 1, closeInfoIndex);
+				metaData.add(info);
+				i = closeInfoIndex;
 			}
-		}
-		return null;
+		}    
+		return metaData;
 	}
+
+
+//	/**
+//	 * Gets the tunings for the bass courses required.
+//	 * 
+//	 * @return The <code>TuningBassCourse</code> required.
+//	 */
+//	// TESTED
+//	TuningBassCourses getTuningBassCourses() {
+//		for (TuningBassCourses tbc: TuningBassCourses.values()) {
+//			if (tbc.toString().equals(getInfoAndSettings().get(TUNING_BASS_COURSES_IND))) {
+//				return tbc;
+//			}
+//		}
+//		return null;
+//	}
 
 
 	public static String[] getMetadataTags() {
@@ -925,20 +892,59 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Gets the tunings.
+	 * Asserts whether or not the given event is a RS event (i.e., starts with a RS). A rest
+	 * event is also an RS event.
 	 * 
-	 * @return The tunings, a <code>Tuning[]</code> containing:
-	 * <ul>
-	 * <li>As element 0: the encoded tuning: is set with the tuning specified in the
-	 *                   encoding; retains this initial value.</li>
-	 * <li>As element 1: the new tuning: is set with the tuning specified in the 
-	 *                   encoding; this value may change during further processing.</li>
-	 * </ul>  
+	 * @param e
+	 * @return
 	 */
-	// TESTED (together with setTunings())
-	public Tuning[] getTunings() {
-		return tunings;
+	// TESTED
+	public static boolean isRhythmSymbolEvent(String e) {
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		if (!e.endsWith(ss)) {
+			e += ss;
+		}
+		return RhythmSymbol.getRhythmSymbol(e.substring(0, e.indexOf(ss))) != null;
 	}
+
+
+	/**
+	 * Asserts whether or not the given event is a TS event (i.e., contains TSS).
+	 * 
+	 * @param e
+	 * @return
+	 */
+	// TESTED
+	public static boolean isTabSymbolEvent(String e, TabSymbolSet tss) {
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		if (!e.endsWith(ss)) {
+			e += ss;
+		}
+		String[] split = e.split("\\" + ss);
+		for (String s : split) {
+			if (TabSymbol.getTabSymbol(s, tss) != null) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+
+//	/**
+//	 * Gets the tunings.
+//	 * 
+//	 * @return The tunings, a <code>Tuning[]</code> containing:
+//	 * <ul>
+//	 * <li>As element 0: the encoded tuning. Is set with the tuning specified in the
+//	 *                   encoding; retains this initial value.</li>
+//	 * <li>As element 1: the normalised tuning: Is set with the tuning specified in the 
+//	 *                   encoding; this value may change during further processing.</li>
+//	 * </ul>  
+//	 */
+//	// TESTED (together with setTunings())
+//	public Tuning[] getTunings() {
+//		return tunings;
+//	}
 
 
 	/**
@@ -1035,6 +1041,7 @@ public class Encoding implements Serializable {
 		// Check whether rawEncoding contains all info and settings tags, in the correct order
 		List<Integer> indicesOfTags = new ArrayList<Integer>();
 		String rawEnc = getRawEncoding();
+
 		for (String tag : getMetadataTags()) {
 			if (!rawEnc.contains(tag)) {
 				return true;
@@ -1328,7 +1335,7 @@ public class Encoding implements Serializable {
 				if (nextSymbolSeparatorIndex == symbolSeparatorIndex + 1) {
 					int indexOfFirstErrorChar = indicesTraversed + nextSymbolSeparatorIndex;
 					indicesAndMessages[0] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar));
-					indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar) + SymbolDictionary.SYMBOL_SEPARATOR.length());
+					indicesAndMessages[1] = String.valueOf(getIndexInRawEncoding(indicesRawAndCleanAligned, indexOfFirstErrorChar) + ss.length());
 					indicesAndMessages[2] = "MISSING SYMBOL ERROR -- Remove symbol separator or insert symbol before.";
 					indicesAndMessages[3] = VR5;
 					return indicesAndMessages;
@@ -1594,9 +1601,11 @@ public class Encoding implements Serializable {
 	public static List<String> combineSuccessiveRestEvents(List<String> events) {
 		List<String> res = new ArrayList<>();
 		
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		
 		List<String> successiveRests = new ArrayList<>();
 		for (String t : events) {
-			String[] split = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
+			String[] split = t.split("\\" + ss);
 			// If rest: add to list and continue for loop
 			if (split.length==2 && RhythmSymbol.getRhythmSymbol(split[0]) != null &&
 				split[1].equals(ConstantMusicalSymbol.SPACE.getEncoding())) {
@@ -1640,8 +1649,8 @@ public class Encoding implements Serializable {
 							break;
 						}
 					}
-					res.add(combinedRs.getEncoding() + SymbolDictionary.SYMBOL_SEPARATOR +
-						ConstantMusicalSymbol.SPACE.getEncoding() + SymbolDictionary.SYMBOL_SEPARATOR);
+					res.add(combinedRs.getEncoding() + ss +	
+						ConstantMusicalSymbol.SPACE.getEncoding() + ss);
 					successiveRests.clear();
 				}
 				res.add(t);
@@ -1845,6 +1854,8 @@ public class Encoding implements Serializable {
 	public Encoding deornamentEncoding(int dur) {
 		String header = splitHeaderAndEncoding()[0];
 
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+
 		// 1. Adapt events
 		List<String> events = getEvents();
 		String pre = null;
@@ -1856,7 +1867,7 @@ public class Encoding implements Serializable {
 			String t = events.get(i);
 			// If t is not a barline or a SBI
 			if (!eventIsBarlineOrSBI(t)) {
-				String[] symbols = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
+				String[] symbols = t.split("\\" + ss);
 				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
 				// If the event is an ornamentation (which always consists of only a RS, a TS,
 				// and a space)
@@ -1870,7 +1881,7 @@ public class Encoding implements Serializable {
 							if (!eventIsBarlineOrSBI(tPrev) ) {
 								pre = tPrev;
 								durPre = RhythmSymbol.getRhythmSymbol(tPrev.substring(0, 
-									tPrev.indexOf(SymbolDictionary.SYMBOL_SEPARATOR))).getDuration();
+									tPrev.indexOf(ss))).getDuration();
 								indPre = j;
 								break;
 							}
@@ -1891,8 +1902,7 @@ public class Encoding implements Serializable {
 							break;
 						}
 					}
-					events.set(indPre, newRs + 
-						pre.substring(pre.indexOf(SymbolDictionary.SYMBOL_SEPARATOR), pre.length()));
+					events.set(indPre, newRs + pre.substring(pre.indexOf(ss), pre.length()));
 					// Reset
 					pre = null;
 					indPre = -1;
@@ -1920,6 +1930,8 @@ public class Encoding implements Serializable {
 	// TESTED
 	public Encoding stretchEncoding(List<Integer[]> meterInfo, double factor) {
 		String header = splitHeaderAndEncoding()[0];
+
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 
 		// 1. Adapt header
 		// Reverse meterInfo information 
@@ -1952,7 +1964,7 @@ public class Encoding implements Serializable {
 			String t = events.get(i);
 			// If t is not a barline or a SBI
 			if (!eventIsBarlineOrSBI(t)) {
-				String[] symbols = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
+				String[] symbols = t.split("\\" + ss);
 				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
 				String newRs = "";
 				if (r != null) {
@@ -1962,8 +1974,7 @@ public class Encoding implements Serializable {
 							break;
 						}
 					}
-					events.set(i, 
-						newRs + t.substring(t.indexOf(SymbolDictionary.SYMBOL_SEPARATOR), t.length()));
+					events.set(i, newRs + t.substring(t.indexOf(ss), t.length()));
 				}
 			}
 		}

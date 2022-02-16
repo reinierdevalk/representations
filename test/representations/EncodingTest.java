@@ -1,12 +1,8 @@
 package representations;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,16 +11,21 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import representations.Encoding.TuningBassCourses;
+import junit.framework.TestCase;
+import paths.Paths;
 import tbp.TabSymbolSet;
+import tools.ToolBox;
 
+public class EncodingTest extends TestCase {
 
-public class EncodingTest {
-
-	private File encodingTestpiece1 = new File("F:/research/data/annotated/encodings/test/testpiece.tbp");
+	private File encodingTestpiece;
 
 	@Before
 	public void setUp() throws Exception {
+		super.setUp();
+		String root = Paths.getRootPath() + Paths.getDataDir(); 
+		encodingTestpiece = 
+			new File(root + Paths.getEncodingsPath() + Paths.getTestDir() + "testpiece.tbp");
 	}
 
 	@After
@@ -33,79 +34,55 @@ public class EncodingTest {
 
 
 	@Test
-	public void testSetAndGetPiecename() {		
-		assertEquals("testpiece", new Encoding(encodingTestpiece1).getPiecename());
-	}
-
-
-	@Test
-	public void testSetAndGetRawEncoding() {
+	public void testMakeCleanEncoding() {
 		Encoding encoding = new Encoding();
-		String rawEncoding = "";
-		try {
-			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece1.getAbsolutePath())));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		encoding.setRawEncoding(rawEncoding);
-
-		String expected = 
-			"{AUTHOR: Author }" + "\r\n" + 
-			"{TITLE:Title}" + "\r\n" + 
-			"{SOURCE:Source (year)}" + "\r\n" +	"\r\n" + 
-			"{TABSYMBOLSET:FrenchTab}" + "\r\n" + 
-			"{TUNING:A}" + "\r\n" + 
-			"{TUNING_SEVENTH_COURSE: }" + "\r\n" +
-			"{METER_INFO:2/2 (1-3)}" + "\r\n" + 
-			"{DIMINUTION:1}" + "\r\n" + "\r\n" +
-			"{bar 1}" + "\r\n" +
-			"McC3.>.sb.>.mi.>.mi.a5.c4.b2.a1.>.|{@Footnote 1}." + "\r\n" +
-			"{bar 2}" + "\r\n" +
-			"sm*.a6.c4.i2.a1.>.fu.d6.>.sm.c6.a5.e4.b2.>.a6.>.mi.a6.h5.c4.b3.f2{@'mi.a6.' in source}.>.sm.a6.b3.a2.a1.>.a3.e2.>.|./" + "\r\n" + 
-			"{bar 3}" + "\r\n" +
-			"fu.a6.c4.a2.a1.>.e2.>.sf.a1.>.e2.>.|.c2.>.e2.>.mi.a1.>.mi.>.mi.a6.c4.a2.a1.>.||.//";
-
-		String actual = encoding.getRawEncoding();
-
-		assertEquals(expected, actual);
-	}
-
-
-	@Test
-	public void testSetAndGetCleanEncoding() {
-		Encoding encoding = new Encoding();
-		String rawEncoding = "";
-		try {
-			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece1.getAbsolutePath())));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		encoding.setRawEncoding(rawEncoding);
-		encoding.setCleanEncoding();
+		encoding.setPiecename("testpiece");
+		encoding.setRawEncoding(ToolBox.readTextFile(encodingTestpiece));
 
 		String expected = 
 			"McC3.>.sb.>.mi.>.mi.a5.c4.b2.a1.>.|." + 
 		  "sm*.a6.c4.i2.a1.>.fu.d6.>.sm.c6.a5.e4.b2.>.a6.>.mi.a6.h5.c4.b3.f2.>.sm.a6.b3.a2.a1.>.a3.e2.>.|./" +
 			"fu.a6.c4.a2.a1.>.e2.>.sf.a1.>.e2.>.|.c2.>.e2.>.mi.a1.>.mi.>.mi.a6.c4.a2.a1.>.||.//";
-
-		String actual = encoding.getCleanEncoding();
+		String actual = encoding.makeCleanEncoding();
 
 		assertEquals(expected, actual);
 	}
 
 
 	@Test
-	public void testSetAndGetEventsBarlinesFootnotes() {
+	public void testMakeInfoAndSettings() {
 		Encoding encoding = new Encoding();
-		String rawEncoding = "";
-		try {
-			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece1.getAbsolutePath())));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		encoding.setRawEncoding(rawEncoding);
+		encoding.setPiecename("testpiece");
+		encoding.setRawEncoding(ToolBox.readTextFile(encodingTestpiece));
 		encoding.setCleanEncoding();
-		encoding.setEventsBarlinesFootnotes();
+
+		List<String> expected = 
+			Arrays.asList(new String[]{
+				"Author", 
+				"Title", 
+				"Source (year)", 
+				"FrenchTab", 
+				"A", 
+				"2/2 (1-3)", 
+				"1"
+		}); 
+
+		List<String> actual = encoding.makeInfoAndSettings();
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+	}
+
+
+	@Test
+	public void testMakeEventsBarlinesFootnotes() {
+		Encoding encoding = new Encoding();
+		encoding.setPiecename("testpiece");
+		encoding.setRawEncoding(ToolBox.readTextFile(encodingTestpiece));
+		encoding.setCleanEncoding();
+		encoding.setInfoAndSettings();
 		
 		List<List<String[]>> expected = new ArrayList<>();
 		List<String[]> system1 = new ArrayList<>();
@@ -136,9 +113,9 @@ public class EncodingTest {
 		system2.add(new String[]{"mi.a6.c4.a2.a1.", "4", null, null});
 		system2.add(new String[]{"||.", "4", null, null});
 		expected.add(system2);
-		
-		List<List<String[]>> actual = encoding.getEventsBarlinesFootnotes();
-		
+
+		List<List<String[]>> actual = encoding.makeEventsBarlinesFootnotes();
+
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {			
 			assertEquals(expected.get(i).size(), actual.get(i).size());
@@ -152,46 +129,28 @@ public class EncodingTest {
 	}
 
 
-	@Test
-	public void testSetAndGetInfoAndSettings() {
-		Encoding encoding = new Encoding();
-		String rawEncoding = "";
-		try {
-			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece1.getAbsolutePath())));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		encoding.setRawEncoding(rawEncoding);
-		encoding.setInfoAndSettings();
-
-		List<String> expected = 
-			Arrays.asList(new String[]{"Author", "Title", "Source (year)", "FrenchTab", "A", "", "2/2 (1-3)", "1"}); 
-
-		List<String> actual = encoding.getInfoAndSettings();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		}
-	}
+	
 
 
 	@Test
 	public void testGetAllMetadata() {
 		Encoding encoding = new Encoding();
-		String rawEncoding = "";
-		try {
-			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece1.getAbsolutePath())));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
+		String rawEncoding = ToolBox.readTextFile(encodingTestpiece);
+//		try {
+//			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece.getAbsolutePath())));
+//		} catch (IOException e1) {
+//			e1.printStackTrace();
+//		}
 		encoding.setRawEncoding(rawEncoding);
 		
 		List<String> expected = Arrays.asList(new String[]{
-			Encoding.AUTHOR_TAG + " Author ", Encoding.TITLE_TAG + "Title", 
-			Encoding.SOURCE_TAG + "Source (year)", Encoding.TABSYMBOLSET_TAG + "FrenchTab", 
-			Encoding.TUNING_TAG + "A", Encoding.TUNING_SEVENTH_COURSE_TAG + " ", 
-			Encoding.METER_INFO_TAG + "2/2 (1-3)", Encoding.DIMINUTION_TAG + "1",	
+			Encoding.AUTHOR_TAG + " Author ", 
+			Encoding.TITLE_TAG + "Title", 
+			Encoding.SOURCE_TAG + "Source (year)", 
+			Encoding.TABSYMBOLSET_TAG + "FrenchTab", 
+			Encoding.TUNING_TAG + "A",
+			Encoding.METER_INFO_TAG + "2/2 (1-3)", 
+			Encoding.DIMINUTION_TAG + "1",	
 //			"AUTHOR: Author ", "TITLE:Title", "SOURCE:Source (year)",
 //			"TABSYMBOLSET:FrenchTab", "TUNING:A", "TUNING_SEVENTH_COURSE: ", 
 //			"METER_INFO:2/2 (1-3)", "DIMINUTION:1",
@@ -206,24 +165,24 @@ public class EncodingTest {
 	}
 
 
-	@Test
-	public void testSetAndGetTunings() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
-
-		Encoding.Tuning[] expected = new Encoding.Tuning[]{Encoding.Tuning.A, Encoding.Tuning.A};
-
-		Encoding.Tuning[] actual = encoding.getTunings();
-
-		assertEquals(expected.length, actual.length);
-		for (int i = 0; i < expected.length; i++) {
-			assertEquals(expected[i], actual[i]);
-		}
-	}
+//	@Test
+//	public void testSetAndGetTunings() {
+//		Encoding encoding = new Encoding(encodingTestpiece);
+//
+//		Tuning[] expected = new Tuning[]{Tuning.A, Tuning.A};
+//
+//		Tuning[] actual = encoding.getTunings();
+//
+//		assertEquals(expected.length, actual.length);
+//		for (int i = 0; i < expected.length; i++) {
+//			assertEquals(expected[i], actual[i]);
+//		}
+//	}
 
 
 	@Test
 	public void testSetAndGetListsOfSymbols() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
+		Encoding encoding = new Encoding(encodingTestpiece);
 
 		List<List<String>> expected = new ArrayList<List<String>>();
 		// listOfAllSymbols
@@ -242,8 +201,8 @@ public class EncodingTest {
 			"a6", "c4", "a2", "a1"
 		}));
 		// listOfRhythmSymbols
-		expected.add(Arrays.asList(new String[]{"sb", "mi", "mi",	"sm*", "fu", "sm", "mi", "sm", "fu", "sf", "mi", 
-			"mi", "mi"}));
+		expected.add(Arrays.asList(new String[]{
+			"sb", "mi", "mi", "sm*", "fu", "sm", "mi", "sm", "fu", "sf", "mi", "mi", "mi"}));
 		// listOfMensurationSigns
 		expected.add(Arrays.asList(new String[]{"McC3"}));
 		// listOfBarlines
@@ -270,7 +229,7 @@ public class EncodingTest {
 
 	@Test
 	public void testSetAndGetListsOfStatistics() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
+		Encoding encoding = new Encoding(encodingTestpiece);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		// isTabSymbolEvent
@@ -291,11 +250,9 @@ public class EncodingTest {
 		// sizeOfEvents
 		expected.add(Arrays.asList(new Integer[]{
 			0, 0, 0, 4, 0, 4, 1, 4, 1, 5, 4, 2, 0, 4, 1, 1, 1, 0, 1, 1, 1, 0, 4, 0}));
-		// durationOfEvents
+//		// durationOfEvents
 //		expected.add(Arrays.asList(new Integer[]{
-//			0, 16, 8, 8, 0, 6, 2, 4, 4, 8, 4, 4, 0, 2, 2, 1, 1, 0, 1, 1, 8, 8, 8, 0}));
-		expected.add(Arrays.asList(new Integer[]{
-			0, 48, 24, 24, 0, 18, 6, 12, 12, 24, 12, 12, 0, 6, 6, 3, 3, 0, 3, 3, 24, 24, 24, 0}));
+//			0, 48, 24, 24, 0, 18, 6, 12, 12, 24, 12, 12, 0, 6, 6, 3, 3, 0, 3, 3, 24, 24, 24, 0}));
 		// horizontalPositionOfTabSymbols
 		expected.add(Arrays.asList(new Integer[]{
 			3, 3, 3, 3, 5, 5, 5, 5, 6, 7, 7, 7, 7, 8, 9, 9, 9, 9, 9, 10, 10, 10, 10, 11, 
@@ -304,25 +261,19 @@ public class EncodingTest {
 		expected.add(Arrays.asList(new Integer[]{
 			0, 1, 2, 3, 0, 1, 2, 3, 0, 0, 1, 2, 3, 0, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1,
 			2, 3, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3}));
-		// durationOfTabSymbols
+//		// durationOfTabSymbols
 //		expected.add(Arrays.asList(new Integer[]{
-//			8, 8, 8, 8, 6, 6, 6, 6, 2, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 2, 2,
-//			2, 2, 2, 1, 1, 1, 1, 8, 8, 8, 8, 8}));
-		expected.add(Arrays.asList(new Integer[]{
-			24, 24, 24, 24, 18, 18, 18, 18, 6, 12, 12, 12, 12, 12, 24, 24, 24, 24, 24, 12, 12, 
-			12, 12, 12, 12, 6, 6, 6, 6, 6, 3, 3, 3, 3, 24, 24, 24, 24, 24}));
-		// gridXOfTabSymbols
+//			24, 24, 24, 24, 18, 18, 18, 18, 6, 12, 12, 12, 12, 12, 24, 24, 24, 24, 24, 12, 12, 
+//			12, 12, 12, 12, 6, 6, 6, 6, 6, 3, 3, 3, 3, 24, 24, 24, 24, 24}));
+//		// gridXOfTabSymbols
 //		expected.add(Arrays.asList(new Integer[]{
-//			24, 24, 24, 24, 32, 32, 32, 32, 38, 40, 40, 40, 40, 44, 48, 48, 48, 48, 48, 56,
-//			56, 56, 56, 60, 60, 64, 64, 64, 64, 66, 68, 69, 70, 71, 72, 88, 88,	88, 88}));
-		expected.add(Arrays.asList(new Integer[]{
-			72, 72, 72, 72, 96, 96, 96, 96, 114, 120, 120, 120, 120, 132, 144, 144, 144, 144, 
-			144, 168, 168, 168, 168, 180, 180, 192, 192, 192, 192, 198, 204, 207, 210, 213, 216, 
-			264, 264, 264, 264}));
-		// gridYOfTabSymbols
-		expected.add(Arrays.asList(new Integer[]{
-			50, 57, 65, 69, 45, 57, 72, 69, 48, 47, 50, 59, 65, 45, 45, 57, 57, 60, 69, 45,
-			60, 64, 69, 59, 68, 45, 57, 64, 69, 68, 69, 68, 66, 68, 69, 45, 57, 64, 69}));
+//			72, 72, 72, 72, 96, 96, 96, 96, 114, 120, 120, 120, 120, 132, 144, 144, 144, 144, 
+//			144, 168, 168, 168, 168, 180, 180, 192, 192, 192, 192, 198, 204, 207, 210, 213, 216, 
+//			264, 264, 264, 264}));
+//		// gridYOfTabSymbols
+//		expected.add(Arrays.asList(new Integer[]{
+//			50, 57, 65, 69, 45, 57, 72, 69, 48, 47, 50, 59, 65, 45, 45, 57, 57, 60, 69, 45,
+//			60, 64, 69, 59, 68, 45, 57, 64, 69, 68, 69, 68, 66, 68, 69, 45, 57, 64, 69}));
 		// horizontalPositionInTabSymbolEventsOnly
 		expected.add(Arrays.asList(new Integer[]{
 			0, 0, 0, 0, 1, 1, 1, 1, 2, 3, 3, 3, 3, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 8, 8,
@@ -340,43 +291,43 @@ public class EncodingTest {
 	}
 
 
-	@Test
-	public void testGetTuningBassCourses() {
-		Encoding encoding1 = new Encoding(encodingTestpiece1);
-		Encoding encoding2 = new Encoding(new File("F:/research/data/annotated/encodings/tab-int/5vv/adriansen-1584_6-d_vn_si.tbp"));
-
-		List<TuningBassCourses> expected = 
-			Arrays.asList(new TuningBassCourses[]{null, TuningBassCourses.SECOND});
-
-		List<TuningBassCourses> actual = Arrays.asList(new TuningBassCourses[]{
-			encoding1.getTuningBassCourses(), encoding2.getTuningBassCourses()});
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		}
-		assertEquals(expected, actual);
-	}
+//	@Test
+//	public void testGetTuningBassCourses() {
+//		Encoding encoding1 = new Encoding(encodingTestpiece);
+//		Encoding encoding2 = new Encoding(new File("F:/research/data/annotated/encodings/tab-int/5vv/adriansen-1584_6-d_vn_si.tbp"));
+//
+//		List<TuningBassCourses> expected = 
+//			Arrays.asList(new TuningBassCourses[]{null, TuningBassCourses.SECOND});
+//
+//		List<TuningBassCourses> actual = Arrays.asList(new TuningBassCourses[]{
+//			encoding1.getTuningBassCourses(), encoding2.getTuningBassCourses()});
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i), actual.get(i));
+//		}
+//		assertEquals(expected, actual);
+//	}
 
 
 	@Test
 	public void testCheckForMetaDataErrors() {
 		List<String> rawEncodings = new ArrayList<String>();
 		// Missing tag
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}{DIMINUTION:d}\nencoding");
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TUNING:t}{METER_INFO:m}{DIMINUTION:d}\nencoding");
 		// Wrong sequence of tags
-		rawEncodings.add("{AUTHOR:a}{METER_INFO:m}{SOURCE:s}{TABSYMBOLSET:t}{TUNING_SEVENTH_COURSE:t}{TUNING:t}{TITLE:t}\nencoding");
+		rawEncodings.add("{AUTHOR:a}{METER_INFO:m}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TITLE:t}\nencoding");
 		// OPEN_ or CLOSE_INFO_BRACKET errors
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\nencoding"); // CLOSE_INFO_BRACKET missing in tags
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\nencoding"); // OPEN_INFO_BRACKET missing in tags
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\nencoding"); // Double CLOSE_INFO_BRACKET in tags
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\nencoding"); // Double OPEN_INFO_BRACKET in tags
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m\nencoding"); // CLOSE_INFO_BRACKET missing after last tag
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\ne{n}c{od{i}n{g}"); // CLOSE_INFO_BRACKET missing in remainder 
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\ne{n}c{o}di}n{g}"); // OPEN_INFO_BRACKET missing in remainder 
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}\ne{n}c{o}d{i}n{g"); // CLOSE_INFO_BRACKET missing at end
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t{METER_INFO:m}\nencoding"); // CLOSE_INFO_BRACKET missing in tags
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}METER_INFO:m}\nencoding"); // OPEN_INFO_BRACKET missing in tags
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}}{METER_INFO:m}\nencoding"); // Double CLOSE_INFO_BRACKET in tags
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{{METER_INFO:m}\nencoding"); // Double OPEN_INFO_BRACKET in tags
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{METER_INFO:m\nencoding"); // CLOSE_INFO_BRACKET missing after last tag		
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{METER_INFO:m}\ne{n}c{od{i}n{g}"); // CLOSE_INFO_BRACKET missing in remainder
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{METER_INFO:m}\ne{n}c{o}di}n{g}"); // OPEN_INFO_BRACKET missing in remainder 
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{METER_INFO:m}\ne{n}c{o}d{i}n{g"); // CLOSE_INFO_BRACKET missing at end
 		// Correct encoding
-		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{TUNING_SEVENTH_COURSE:t}{METER_INFO:m}{DIMINUTION:d}\ne{n}c{o}d{i}n{g}");
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{METER_INFO:m}{DIMINUTION:d}\ne{n}c{o}d{i}n{g}");
 
 		List<Boolean> expected = Arrays.asList(new Boolean[]{true, true, true, true, true, true, true, true, true, true, false}); 
 
@@ -398,26 +349,22 @@ public class EncodingTest {
 	public void testCheckForEncodingErrors() {
 		List<String> encodings = new ArrayList<String>();
 		// VR 3 not met (first system starts with SBI)
-		encodings.add("{}{}{}{}{}{}{}{}/MC3.>.sb.>.|.mi.a3.a2.a1.>.b1.>.|./MO4.M33.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./MC3.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//");
+		encodings.add("{}{}{}{}{}{}{}/MC3.>.sb.>.|.mi.a3.a2.a1.>.b1.>.|./MO4.M33.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./MC3.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//");
 		// Unknown symbol (in first system)
-		encodings.add("{}{}{}{FrenchTab}{}{}{}{}MC3.>.sb.>.|.mi.a3.a2.a1.>.bs1.>.|./MO4.M33.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./MC3.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//");
+		encodings.add("{}{}{}{FrenchTab}{}{}{}MC3.>.sb.>.|.mi.a3.a2.a1.>.bs1.>.|./MO4.M33.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./MC3.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//");
 		// LR 7 not met (invalid chord in first system)
-		encodings.add("{}{}{}{FrenchTab}{}{}{}{}MC3.>.sb.>.|.mi.a3.a2.a2.>.b1.>.|./MO4.M33.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./MC3.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//");
+		encodings.add("{}{}{}{FrenchTab}{}{}{}MC3.>.sb.>.|.mi.a3.a2.a2.>.b1.>.|./MO4.M33.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./MC3.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//");
 		// Correct encoding
-		String corrEncoding = "";
-		try {
-			corrEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece1.getAbsolutePath())));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
+		String corrEncoding = ToolBox.readTextFile(encodingTestpiece);
+
 		encodings.add(corrEncoding);
 
 		List<String[]> expected = new ArrayList<String[]>(); 
-		expected.add(new String[]{"16", "17", "INVALID ENCODING ERROR -- Remove this system break indicator.",
+		expected.add(new String[]{"14", "15", "INVALID ENCODING ERROR -- Remove this system break indicator.",
 			"See VALIDITY RULE 3: A system cannot start with a punctuation symbol."});
-		expected.add(new String[]{"52", "55", "UNKNOWN SYMBOL ERROR -- Check for typos or missing symbol separators; check TabSymbolSet.",
+		expected.add(new String[]{"50", "53", "UNKNOWN SYMBOL ERROR -- Check for typos or missing symbol separators; check TabSymbolSet.",
 			"See VALIDITY RULE 5: Each musical symbol must be succeeded directly by a symbol separator."});
-		expected.add(new String[]{"38", "49", "INVALID ENCODING ERROR -- Remove duplicate TabSymbol(s).", 
+		expected.add(new String[]{"36", "47", "INVALID ENCODING ERROR -- Remove duplicate TabSymbol(s).", 
 			"See LAYOUT RULE 7: A vertical sonority can contain only one TabSymbol per course."});
 		expected.add(null);
 
@@ -448,50 +395,45 @@ public class EncodingTest {
 	@Test
 	public void testAlignRawAndCleanEncoding() {
 		Encoding encoding = new Encoding(); 
-		String rawEncoding = "";
-		try {
-			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece1.getAbsolutePath())));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
+		String rawEncoding = ToolBox.readTextFile(encodingTestpiece);
 		encoding.setRawEncoding(rawEncoding);
 		encoding.setCleanEncoding();
 		boolean print = false;
 		if (print) {
-			System.out.println(encoding.getRawEncoding().indexOf("McC3.")); // 176
-			System.out.println(encoding.getRawEncoding().indexOf("sm*.a6.c4.i2.a1.")); // 236
-			System.out.println(encoding.getRawEncoding().indexOf("sm.a6.b3.a2.a1")); // 325
-			System.out.println(encoding.getRawEncoding().indexOf("fu.a6.c4.a2.a1.")); // 364
+			System.out.println(encoding.getRawEncoding().indexOf("McC3.")); // 149
+			System.out.println(encoding.getRawEncoding().indexOf("sm*.a6.c4.i2.a1.")); // 209
+			System.out.println(encoding.getRawEncoding().indexOf("sm.a6.b3.a2.a1")); // 298
+			System.out.println(encoding.getRawEncoding().indexOf("fu.a6.c4.a2.a1.")); // 337
 		}
 		Integer[] expected = new Integer[encoding.getRawEncoding().length()];
 		Arrays.fill(expected, -1);
 		// Section 1 ("McC3." up until "." after "{@Footnote 1}"): 36 chars (in 
 		// rawEncoding split up by footnote into 35 + 1)
-		// indices 0-35 in cleanEncoding (= 176-210 and 224 in rawEncoding)
+		// indices 0-35 in cleanEncoding (= 149-183 and 197 in rawEncoding)
 		for (int i = 0; i < 35; i++) {
-			expected[176 + i] = 0 + i;
+			expected[149 + i] = 0 + i;
 		}
 		for (int i = 0; i < 1; i++) {
-			expected[224 + i] = 0 + 35 + i;
+			expected[197 + i] = 0 + 35 + i;
 		}
 		// Section 2 ("sm*.a6.c4.i2.a1." up until "sm.a6.b3.a2.a1"): 68 chars (in 
 		// rawEncoding split up by footnote into 65 + 3)
-		// indices 36-103 in cleanEncoding (= 236-300 and 322-324 in rawEncoding)
+		// indices 36-103 in cleanEncoding (= 209-273 and 295-297 in rawEncoding)
 		for (int i = 0; i < 65; i++) {
-			expected[236 + i] = 0 + 35 + 1 + i;
+			expected[209 + i] = 0 + 35 + 1 + i;
 		}
 		for (int i = 0; i < 3; i++) {
-			expected[322 + i] = 0 + 35 + 1 + 65 + i;
+			expected[295 + i] = 0 + 35 + 1 + 65 + i;
 		}		
 		// Section 3 ("sm.a6.b3.a2.a1" up until and including SBI): 28 chars
-		// indices 104-131 in cleanEncoding (= 325-352 in rawEncoding)
+		// indices 104-131 in cleanEncoding (= 298-325 in rawEncoding)
 		for (int i = 0; i < 28; i++) {
-			expected[325 + i] = 0 + 35 + 1 + 65 + 3 + i;
+			expected[298 + i] = 0 + 35 + 1 + 65 + 3 + i;
 		}		
 		// Section 4 ("fu.a6.c4.a2.a1." up until and including EBI): 82 chars
-		// indices 132-213 in cleanEncoding (= 364-445 in rawEncoding)
+		// indices 132-213 in cleanEncoding (= 337-418 in rawEncoding)
 		for (int i = 0; i < 82; i++) {
-			expected[364 + i] = 0 + 35 + 1 + 65 + 3 + 28 + i;
+			expected[337 + i] = 0 + 35 + 1 + 65 + 3 + 28 + i;
 		}
 
 		Integer[] actual = encoding.alignRawAndCleanEncoding();
@@ -744,40 +686,35 @@ public class EncodingTest {
 	@Test
 	public void testGetIndexInRawEncoding() {
 		Encoding encoding = new Encoding();
-		String rawEncoding = "";
-		try {
-			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece1.getAbsolutePath())));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
+		String rawEncoding = ToolBox.readTextFile(encodingTestpiece);
 		encoding.setRawEncoding(rawEncoding);
 		encoding.setCleanEncoding();
-		
+
 		List<Integer> expected = new ArrayList<Integer>();
 		// Section 1 (until footnote 1, including SS following it):
-		// indices 0-35 in cleanEncoding (= 176-210 and 224 in rawEncoding)
-		for (int i = 176; i <= 210; i++) {
+		// indices 0-35 in cleanEncoding (= 149-183 and 197 in rawEncoding)
+		for (int i = 149; i <= 183; i++) {
 			expected.add(i);
 		}
-		for (int i = 224; i <= 224; i++) {
+		for (int i = 197; i <= 197; i++) {
 			expected.add(i);
 		}
-		// Section 2 (until footnote 2, including SS+space+SS following it): 
-		// indices 36-103 in cleanEncoding (= 236-300 and 322-324 in rawEncoding)
-		for (int i = 236; i <= 300; i++) {
+		// Section 2 (until footnote 2, including SS+space+SS following it):
+		// indices 36-103 in cleanEncoding (= 209-273 and 295-297 in rawEncoding)
+		for (int i = 209; i <= 273; i++) {
 			expected.add(i);
 		}
-		for (int i = 322; i <= 324; i++) {
+		for (int i = 295; i <= 297; i++) {
 			expected.add(i);
 		}
 		// Section 3 (until SBI, including it):
-		// indices 104-131 in cleanEncoding (= 325-352 in rawEncoding)
-		for (int i = 325; i <= 352; i++) {
+		// indices 104-131 in cleanEncoding (= 298-325 in rawEncoding)
+		for (int i = 298; i <= 325; i++) {
 			expected.add(i);
 		}
 		// Section 4 (until end): 
-		// indices 132-213 in cleanEncoding (= 364-445 in rawEncoding)
-		for (int i = 364; i <= 445; i++) {
+		// indices 132-213 in cleanEncoding (= 337-418 in rawEncoding)
+		for (int i = 337; i <= 418; i++) {
 			expected.add(i);
 		}
 
@@ -796,7 +733,7 @@ public class EncodingTest {
 	@Test
 	public void testGetTabSymbolSet() {
 		assertEquals(TabSymbolSet.FRENCH_TAB, 
-			new Encoding(encodingTestpiece1).getTabSymbolSet());
+			new Encoding(encodingTestpiece).getTabSymbolSet());
 	}
 
 
@@ -830,7 +767,7 @@ public class EncodingTest {
 
 	@Test
 	public void testContainsTriplets() {
-		Encoding encoding1 = new Encoding(encodingTestpiece1);
+		Encoding encoding1 = new Encoding(encodingTestpiece);
 		Encoding encoding2 = new Encoding(new File(
 		"F:/research/data/annotated/josquintab/tab/5254_03_benedicta_es_coelorum_desprez-1.tbp"));
 	
@@ -849,15 +786,15 @@ public class EncodingTest {
 
 	@Test
 	public void testGetEventsBarlinesFootnotesPerBar() {
-//		Encoding encoding = new Encoding(encodingTestpiece1);
+//		Encoding encoding = new Encoding(encodingTestpiece);
 		
 		Encoding encoding = new Encoding();
-		String rawEncoding = "";
-		try {
-			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece1.getAbsolutePath())));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
+		String rawEncoding = ToolBox.readTextFile(encodingTestpiece);
+//		try {
+//			rawEncoding = new String(Files.readAllBytes(Paths.get(encodingTestpiece.getAbsolutePath())));
+//		} catch (IOException e1) {
+//			e1.printStackTrace();
+//		}
 		// Insert decorative opening barlines at the beginning of each system
 		rawEncoding = rawEncoding.replace("McC3.", "|.McC3.");
 		rawEncoding = rawEncoding.replace("fu.a6.c4.a2.a1.", "||.fu.a6.c4.a2.a1.");
@@ -944,7 +881,7 @@ public class EncodingTest {
 
 	@Test
 	public void testGetEvents() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
+		Encoding encoding = new Encoding(encodingTestpiece);
 
 		List<String> expected = Arrays.asList(new String[]{
 			"McC3.>.", 
@@ -981,12 +918,66 @@ public class EncodingTest {
 		}
 		assertEquals(expected, actual);
 	}
-	
-	
+
+
+	@Test
+	public void testIsRhythmSymbolEvent() {
+		Encoding encoding = new Encoding(encodingTestpiece);
+
+		List<Boolean> expected = Arrays.asList(new Boolean[]{
+			false, true, true, true, 
+			false,
+			true, true, true, false, true, true, false, 
+			false, 
+			true, false, true, false,
+			false,
+			false, false, true, true, true,
+			false
+		});
+
+		List<Boolean> actual = new ArrayList<>();
+		encoding.getListsOfSymbols().get(Encoding.ALL_EVENTS_IND).forEach(e -> 
+			actual.add(Encoding.isRhythmSymbolEvent(e)));
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
+	public void testIsTabSymbolEvent() {
+		Encoding encoding = new Encoding(encodingTestpiece);
+
+		List<Boolean> expected = Arrays.asList(new Boolean[]{
+			false, false, false, true, 
+			false,
+			true, true, true, true, true, true, true, 
+			false, 
+			true, true, true, true,
+			false,
+			true, true, true, false, true,
+			false
+		});
+
+		List<Boolean> actual = new ArrayList<>();
+		encoding.getListsOfSymbols().get(Encoding.ALL_EVENTS_IND).forEach(e -> 
+			actual.add(Encoding.isTabSymbolEvent(e, encoding.getTabSymbolSet())));
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
 	@Test
 	public void testReverseEncoding() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
-		Tablature tab = new Tablature(encodingTestpiece1, true);
+		Encoding encoding = new Encoding(encodingTestpiece);
+		Tablature tab = new Tablature(encodingTestpiece, true);
 
 		String expected = 
 			"{AUTHOR: Author }" + "\r\n" +
@@ -995,7 +986,6 @@ public class EncodingTest {
 			"\r\n" +
 			"{TABSYMBOLSET:FrenchTab}" + "\r\n" +
 			"{TUNING:A}" + "\r\n" +
-			"{TUNING_SEVENTH_COURSE: }" + "\r\n" +
 			"{METER_INFO:2/2 (1-3)}" + "\r\n" +
 			"{DIMINUTION:1}" + "\r\n" +
 			"\r\n" +
@@ -1020,7 +1010,7 @@ public class EncodingTest {
 
 	@Test
 	public void testDeornamentEncoding() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
+		Encoding encoding = new Encoding(encodingTestpiece);
 
 		String expected = 
 			"{AUTHOR: Author }" + "\r\n" +
@@ -1029,7 +1019,6 @@ public class EncodingTest {
 			"\r\n" +
 			"{TABSYMBOLSET:FrenchTab}" + "\r\n" +
 			"{TUNING:A}" + "\r\n" +
-			"{TUNING_SEVENTH_COURSE: }" + "\r\n" +
 			"{METER_INFO:2/2 (1-3)}" + "\r\n" +
 			"{DIMINUTION:1}" + "\r\n" +
 			"\r\n" +
@@ -1060,8 +1049,8 @@ public class EncodingTest {
 
 	@Test
 	public void testStretchEncoding() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
-		Tablature tab = new Tablature(encodingTestpiece1, true);
+		Encoding encoding = new Encoding(encodingTestpiece);
+		Tablature tab = new Tablature(encodingTestpiece, true);
 
 		String expected = 
 			"{AUTHOR: Author }" + "\r\n" +
@@ -1070,7 +1059,6 @@ public class EncodingTest {
 			"\r\n" +
 			"{TABSYMBOLSET:FrenchTab}" + "\r\n" +
 			"{TUNING:A}" + "\r\n" +
-			"{TUNING_SEVENTH_COURSE: }" + "\r\n" +
 			"{METER_INFO:2/2 (1-6)}" + "\r\n" +
 			"{DIMINUTION:1}" + "\r\n" +
 			"\r\n" +
@@ -1091,7 +1079,7 @@ public class EncodingTest {
 
 	@Test
 	public void testSplitHeaderAndEncoding() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
+		Encoding encoding = new Encoding(encodingTestpiece);
 
 		String header = 
 			"{AUTHOR: Author }" + "\r\n" +
@@ -1100,7 +1088,6 @@ public class EncodingTest {
 			"\r\n" +
 			"{TABSYMBOLSET:FrenchTab}" + "\r\n" +
 			"{TUNING:A}" + "\r\n" +
-			"{TUNING_SEVENTH_COURSE: }" + "\r\n" +
 			"{METER_INFO:2/2 (1-3)}" + "\r\n" +
 			"{DIMINUTION:1}";
 		String enc =
@@ -1121,7 +1108,7 @@ public class EncodingTest {
 
 	@Test
 	public void testRecombineEvents() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
+		Encoding encoding = new Encoding(encodingTestpiece);
 
 		String expected = 
 			"McC3.>." + "sb.>." + "mi.>." + "mi.a5.c4.b2.a1.>." + 
@@ -1141,7 +1128,7 @@ public class EncodingTest {
 
 	@Test
 	public void testEventIsBarlineOrSBI() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
+		Encoding encoding = new Encoding(encodingTestpiece);
 		
 		List<Boolean> expected = Arrays.asList(new Boolean[]{
 			false, false, false, false, true, 
@@ -1166,7 +1153,7 @@ public class EncodingTest {
 
 	@Test
 	public void testGetStaffSegmentIndices() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
+		Encoding encoding = new Encoding(encodingTestpiece);
 		
 		List<List<Integer>> expected = new ArrayList<>();
 		// Footnotes
@@ -1195,7 +1182,7 @@ public class EncodingTest {
 
 	@Test
 	public void testGetStaffLength() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
+		Encoding encoding = new Encoding(encodingTestpiece);
 		int expected = 24;
 		int actual = encoding.getStaffLength();
 		assertEquals(expected, actual);
@@ -1204,7 +1191,7 @@ public class EncodingTest {
 
 	@Test
 	public void testSystemBarNumber() {
-		Encoding encoding1 = new Encoding(encodingTestpiece1);
+		Encoding encoding1 = new Encoding(encodingTestpiece);
 		Encoding encoding2 = new Encoding(new File("F:/research/data/annotated/encodings/tab-int/3vv/newsidler-1536_7-disant_adiu.tbp"));
 
 		List<List<Integer>> expected = new ArrayList<>();
@@ -1234,7 +1221,7 @@ public class EncodingTest {
 
 	@Test
 	public void testGetMetadata() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
+		Encoding encoding = new Encoding(encodingTestpiece);
 
 		List<String> expected = 
 			Arrays.asList(new String[]{"Author", "Title", "Source (year)"});
@@ -1249,7 +1236,7 @@ public class EncodingTest {
 
 	@Test
 	public void testGetFootnotes() {
-		Encoding encoding = new Encoding(encodingTestpiece1);
+		Encoding encoding = new Encoding(encodingTestpiece);
 
 		List<String[]> expected = new ArrayList<>();
 		expected.add(new String[]{"|.", "1", "@Footnote 1", "#1"});

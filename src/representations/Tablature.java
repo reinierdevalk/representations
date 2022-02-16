@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.utility.math.Rational;
-import representations.Encoding.Tuning;
 import tbp.ConstantMusicalSymbol;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
@@ -40,15 +39,72 @@ public class Tablature implements Serializable {
 	public static final int NOTE_SEQ_NUM = 8;
 	public static final int TAB_EVENT_SEQ_NUM = 9;
 
+	// For tunings
+	private static final int ENCODED_TUNING_IND = 0;
+	private static final int NORMALISED_TUNING_IND = 1;
+	
 	private Encoding encoding;
+	private boolean normaliseTuning;
 	private String piecename;
 	private Timeline timeline;
+	private Tuning[] tunings;
 	private Integer[][] basicTabSymbolProperties;
-	private boolean normaliseTuning;	
 	private List<List<TabSymbol>> tablatureChords;
 	private List<Integer> numberOfNotesPerChord;
 	private List<Integer[]> keyInfo;
 	private File file;
+
+
+	public static enum Tuning  {
+		C_HIGH("C_HIGH", 5, false, Arrays.asList(new String[]{"C", "F", "Bb", "D", "G", "C"})), // 1030_coment_peult_avoir_joye.tbp
+		C6Bb("C6Bb", -7, true, Arrays.asList(new String[]{"Bb", "F", "Bb", "D", "G", "C"})),
+		D("D", -5, false, Arrays.asList(new String[]{"D", "G", "C", "E", "A", "D"})),
+		F("F", -2, false, Arrays.asList(new String[]{"F", "Bb", "Eb", "G", "C", "F"})),
+		F_ENH("F", -2, false, Arrays.asList(new String[]{"F", "A#", "D#", "G", "C", "F"})),
+		Fx("F#", -1, false, Arrays.asList(new String[]{"F#", "B", "E", "G#", "C#", "F#"})), // 5148_51_respice_in_me_deus._F#_lute_T.tbp
+		G("G", 0, false, Arrays.asList(new String[]{"G", "C", "F", "A", "D", "G"})),
+		G6F("G6F", 0, true, Arrays.asList(new String[]{"F", "C", "F", "A", "D", "G"})),
+		G7F("G7F", 0, false, Arrays.asList(new String[]{"F", "G", "C", "F", "A", "D", "G"})),
+		G7D("G7D", 0, false, Arrays.asList(new String[]{"D", "G", "C", "F", "A", "D", "G"})),
+		A("A", 2, false, Arrays.asList(new String[]{"A", "D", "G", "B", "E", "A"})),
+		A6G("A6G", 2, true, Arrays.asList(new String[]{"G", "D", "G", "B", "E", "A"}));
+
+		private String name;
+		private int transposition;
+		private boolean isDrop;
+		private List<String> courses;
+		Tuning(String s, int t, boolean a, List<String> l) {
+			this.name = s;
+			this.transposition = t;
+			this.isDrop = a;
+			this.courses = l;
+		}
+		
+		public String getName() {
+			return name;
+		}
+
+		public int getTransposition() {
+			return transposition;
+		}
+
+		public boolean isDrop() {
+			return isDrop;
+		}
+
+		public List<String> getCourses() {
+			return courses;
+		}
+
+		public static Tuning getTuning(String s) {
+			for (Tuning t : Tuning.values()) { 
+				if (t.toString().equals(s)) {
+					return t;
+				}
+			}
+			return null;
+		}
+	}
 
 
 	///////////////////////////////
@@ -69,13 +125,14 @@ public class Tablature implements Serializable {
 	}
 
 
-	private void init(Encoding encoding, boolean argNormaliseTuning) {
+	private void init(Encoding encoding, boolean normaliseTuning) {
 		// Each of the following methods needs one or more of the preceding ones
 		setEncoding(encoding);
+		setNormaliseTuning(normaliseTuning);
 		setPiecename();
 		setTimeline();
+		setTunings();
 		setBasicTabSymbolProperties();
-		setNormaliseTuning(argNormaliseTuning);
 		setTablatureChords();
 		setNumberOfNotesPerChord();
 	}
@@ -91,6 +148,11 @@ public class Tablature implements Serializable {
 	}
 
 
+	void setNormaliseTuning(boolean arg) {
+		normaliseTuning = arg;
+	}
+
+
 	void setPiecename() {
 		piecename = getEncoding().getPiecename(); 
 	}
@@ -101,107 +163,168 @@ public class Tablature implements Serializable {
 	}
 
 
+	void setTunings() {
+		tunings = makeTunings();
+	}
+
+
+	// TESTED
+	Tuning[] makeTunings() {
+		Tuning encodedTun = 
+			Tuning.getTuning(getEncoding().getInfoAndSettings().get(Encoding.TUNING_IND));
+		Tuning[] tuns = new Tuning[]{encodedTun, encodedTun};
+		if (getNormaliseTuning()) {
+			tuns[1] = encodedTun.isDrop() ? Tuning.G6F : Tuning.G;
+		}
+		return tuns;
+	}
+
+
 	void setBasicTabSymbolProperties() {
 		basicTabSymbolProperties = makeBasicTabSymbolProperties();
 	}
 
 
-	void setBasicTabSymbolProperties(Integer[][] in) {
-		basicTabSymbolProperties = in;
-	}
-
-
 	// TESTED
 	Integer[][] makeBasicTabSymbolProperties() {
-		List<List<String>> symbols = getEncoding().getListsOfSymbols();
-		List<List<Integer>> stats = getEncoding().getListsOfStatistics();
 		TabSymbolSet tss = getEncoding().getTabSymbolSet();
-		List<String> listOfTabSymbols = symbols.get(Encoding.TAB_SYMBOLS_IND);
+
+		List<List<String>> symbols = getEncoding().getListsOfSymbols();
 		List<String> listOfAllEvents = symbols.get(Encoding.ALL_EVENTS_IND);
-		List<Integer> isTabSymbolEvent = stats.get(Encoding.IS_TAB_SYMBOL_EVENT_IND); 
+		List<String> listOfTabSymbols = symbols.get(Encoding.TAB_SYMBOLS_IND);
+		List<List<Integer>> stats = getEncoding().getListsOfStatistics();
+		List<Integer> isTabSymbolEvent = stats.get(Encoding.IS_TAB_SYMBOL_EVENT_IND);
 		List<Integer> sizeOfEvents = stats.get(Encoding.SIZE_OF_EVENTS_IND);
-		List<Integer> horizontalPositionOfTabSymbols = stats.get(Encoding.HORIZONTAL_POSITION_IND);
-		List<Integer> verticalPositionOfTabSymbols = stats.get(Encoding.VERTICAL_POSITION_IND);
-		List<Integer> durationOfTabSymbols = stats.get(Encoding.DURATION_IND);
-		List<Integer> gridXOfTabSymbols = stats.get(Encoding.GRID_X_IND);
-		List<Integer> gridYOfTabSymbols = stats.get(Encoding.GRID_Y_IND);  	
-		List<Integer> horizontalPositionInTabSymbolEventsOnly = 
+		List<Integer> horizontalPosTabSymbols = stats.get(Encoding.HORIZONTAL_POS_IND);
+		List<Integer> verticalPosTabSymbols = stats.get(Encoding.VERTICAL_POS_IND);
+		List<Integer> horizontalPosInTabSymbolEventsOnly = 
 			stats.get(Encoding.HORIZONTAL_POS_TAB_SYMBOLS_ONLY_IND);
+
+		// 1. Make durations and metric times TODO rename gridX to onsets
+		List<List<Integer>> durAndGridX = getDurationsAndGridX(listOfAllEvents, sizeOfEvents, tss);
+		List<Integer> durOfTabSymbols = durAndGridX.get(0);
+		List<Integer> gridXOfTabSymbols = durAndGridX.get(1);
+		// Diminute
 		Timeline tl = getTimeline();
-		List<Integer> diminutions = 
-			ToolBox.getItemsAtIndex(getTimeline().getMeterInfo(), Timeline.MI_DIM);
+		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfo(), Timeline.MI_DIM);
 		List<List<Integer>> scaled = 
-			adaptToDiminutions(durationOfTabSymbols, gridXOfTabSymbols, /*tl.getDiminutions(),*/ 
-			diminutions, tl.getUndiminutedMeterInfo());
-		durationOfTabSymbols = scaled.get(0);
+			adaptToDiminutions(durOfTabSymbols, gridXOfTabSymbols,	diminutions, 
+			tl.getUndiminutedMeterInfo());
+		durOfTabSymbols = scaled.get(0);
 		gridXOfTabSymbols = scaled.get(1);
 
+		// 2. Make pitches
+		List<Integer> gridYOfTabSymbols = new ArrayList<>();
+		Tuning t = getNormaliseTuning() ? tunings[NORMALISED_TUNING_IND] : tunings[ENCODED_TUNING_IND];
+		listOfTabSymbols.forEach(ts -> gridYOfTabSymbols.add(TabSymbol.getTabSymbol(ts, tss).getPitch(t)));
+
+		// 3. Make btp
 		Integer[][] btp = new Integer[listOfTabSymbols.size()][10];
 		for (int i = 0; i < btp.length; i++) {
-			TabSymbol currentTabSymbol = TabSymbol.getTabSymbol(listOfTabSymbols.get(i), tss);
-			// 0. Pitch
+			TabSymbol currTabSymbol = TabSymbol.getTabSymbol(listOfTabSymbols.get(i), tss);
 			btp[i][PITCH] = gridYOfTabSymbols.get(i);
-			// 1. Course
-			btp[i][COURSE] = currentTabSymbol.getCourse();
-			// 2. Fret
-			btp[i][FRET] = currentTabSymbol.getFret();
-			// 3. Onset time
+			btp[i][COURSE] = currTabSymbol.getCourse();
+			btp[i][FRET] = currTabSymbol.getFret();
 			int currentOnsetTime = gridXOfTabSymbols.get(i);
 			btp[i][ONSET_TIME] = currentOnsetTime;
-			// 4. Minimum duration
-			int currentMinDuration = durationOfTabSymbols.get(i);
-			btp[i][MIN_DURATION] = currentMinDuration;
-			// 5. Maximum duration
-			int currentMaxDuration;
-			// a. If currentabSymbol is in the last tabSymbolEvent: set currentMaxDuration to currentMinDuration
+			int currMinDur = durOfTabSymbols.get(i);
+			btp[i][MIN_DURATION] = currMinDur;
+			int currMaxDur;
+			// a. If currTabSymbol is in the last tabSymbolEvent: set currMaxDur to currMinDur
 			// Get the index of the last TabSymbolEvent
-			int numberOfTabSymbolEvents = 0;
+			int numTabSymbolEvents = 0;
 			for (int j = 0; j < listOfAllEvents.size(); j++) {
 				if (isTabSymbolEvent.get(j) == 1) {
-					numberOfTabSymbolEvents++;
+					numTabSymbolEvents++;
 				}
 			}
-			int indexOfLastChord = numberOfTabSymbolEvents - 1;
-			int indexOfCurrentChord = horizontalPositionInTabSymbolEventsOnly.get(i);
-			if (indexOfCurrentChord == indexOfLastChord) {
-				currentMaxDuration = currentMinDuration;
+			int indexOfLastChord = numTabSymbolEvents - 1;
+			int indCurrChord = horizontalPosInTabSymbolEventsOnly.get(i);
+			if (indCurrChord == indexOfLastChord) {
+				currMaxDur = currMinDur;
 			}
-			// b. If not: calculate currentMaxDuration
+			// b. If not: calculate currMaxDuration
 			// Find the next TS in listOfTabSymbols that has the same course and get its 
-			// onset time, then determine currentMaxDuration
+			// onset time, then determine currMaxDur
 			else {
 				int nextOnsetTime = 0;
 				for (int j = i + 1; j < btp.length; j++) {
 					TabSymbol nextTabSymbol = 
 						TabSymbol.getTabSymbol(listOfTabSymbols.get(j), tss);
 					// If there is a next TabSymbol on the same course
-					if (nextTabSymbol.getCourse() == currentTabSymbol.getCourse()) {
+					if (nextTabSymbol.getCourse() == currTabSymbol.getCourse()) {
 						nextOnsetTime = gridXOfTabSymbols.get(j);
 						break;
 					}
 				}
 				// If there is no next TS found: nextOnsetTime is the end of the piece,
-				// i.e., the onset time of the last TabSymbol + its minDuration
+				// i.e., the onset time of the last TabSymbol + its minimum duration
 				if (nextOnsetTime == 0) {  
 					int indLastTabSymbol = listOfTabSymbols.size() - 1;
 					nextOnsetTime = 
 						gridXOfTabSymbols.get(indLastTabSymbol) + 
-						durationOfTabSymbols.get(indLastTabSymbol);
+						durOfTabSymbols.get(indLastTabSymbol);
 				}
-				currentMaxDuration = nextOnsetTime - currentOnsetTime;
+				currMaxDur = nextOnsetTime - currentOnsetTime;
 			}
-			btp[i][MAX_DURATION] = currentMaxDuration;
-			// 6. The sequence number of the chord the TS is in
-			btp[i][CHORD_SEQ_NUM] = indexOfCurrentChord;
-			// 7. The size of the chord the TS is in
-			int indexOfCurrentTablatureEvent = horizontalPositionOfTabSymbols.get(i);
-			btp[i][CHORD_SIZE_AS_NUM_ONSETS] = sizeOfEvents.get(indexOfCurrentTablatureEvent);
-			// 8. The sequence number within the chord of the TS
-			btp[i][NOTE_SEQ_NUM] = verticalPositionOfTabSymbols.get(i);
-			// 9. The sequence number of the tablature event the TS is in, with ALL events considered 
-			btp[i][TAB_EVENT_SEQ_NUM] = horizontalPositionOfTabSymbols.get(i);
+			btp[i][MAX_DURATION] = currMaxDur;
+			btp[i][CHORD_SEQ_NUM] = indCurrChord;
+			btp[i][CHORD_SIZE_AS_NUM_ONSETS] = sizeOfEvents.get(horizontalPosTabSymbols.get(i));
+			btp[i][NOTE_SEQ_NUM] = verticalPosTabSymbols.get(i);
+			btp[i][TAB_EVENT_SEQ_NUM] = horizontalPosTabSymbols.get(i);
 		}
 		return btp;
+	}
+
+
+	// TESTED
+	static List<List<Integer>> getDurationsAndGridX(List<String> listOfAllEvents, List<Integer> 
+		sizeOfEvents, TabSymbolSet tss) {
+		List<Integer> durationOfTabSymbols = new ArrayList<>();
+		List<Integer> gridXOfTabSymbols = new ArrayList<>();	
+
+		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		int currDur = 0;
+		int prevDur = 0;
+		int gridX = 0;
+		// a. Get undiminuted lists from encoding
+		for (int i = 0; i < listOfAllEvents.size(); i++) {
+			String currEvent = listOfAllEvents.get(i);
+			currEvent = currEvent.concat(ss);
+			boolean isRsEvent = Encoding.isRhythmSymbolEvent(currEvent);
+			boolean isTsEvent = Encoding.isTabSymbolEvent(currEvent, tss);
+			// If currEvent is a RS event (which can be a rest event)
+			if (isRsEvent) {
+				String rsStr = currEvent.substring(0, currEvent.indexOf(ss));
+				// a. Regular RS 
+				if (!rsStr.equals(RhythmSymbol.rhythmDot.getEncoding())) {
+					RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(rsStr);
+					currDur = rs.getDuration();
+				}
+				// b. rhythmDot
+				else {
+					currDur = prevDur/2;
+				}
+				prevDur = currDur;
+			}
+			// If currEvent is a not a RS event
+			else {
+				currDur = prevDur;
+			}
+			// If currEvent is a TS event: add to lists
+			if (isTsEvent) {
+				durationOfTabSymbols.addAll(Collections.nCopies(sizeOfEvents.get(i), currDur));
+				gridXOfTabSymbols.addAll(Collections.nCopies(sizeOfEvents.get(i), gridX));
+			}
+			// If currEvent is an RS event or a TS event: increment gridX 
+			if (isRsEvent || isTsEvent) {
+				gridX += currDur;
+			}
+		}
+		List<List<Integer>> durAndGridX = new ArrayList<>();
+		durAndGridX.add(durationOfTabSymbols);
+		durAndGridX.add(gridXOfTabSymbols);
+		return durAndGridX;
 	}
 
 
@@ -246,8 +369,8 @@ public class Tablature implements Serializable {
 			}
 			// Represent Rational r as integer using cross-multiplication
 			// num(r)/den(r) = x/32 --> x * den(r) = num(r) * 32 --> x = (num(r) * 32) / den(r)
-			int beatZeroAsInt = rationalToIntDur(beatZero);
-			int beatZeroAdaptedAsInt = rationalToIntDur(beatZeroAdapted);
+			int beatZeroAsInt = getTabSymbolDur(beatZero);
+			int beatZeroAdaptedAsInt = getTabSymbolDur(beatZeroAdapted);
 
 			metricTimesBeatZero.add(metricTimesBeatZero.get(i-1) + beatZeroAsInt);
 			metricTimesBeatZeroAdapted.add(metricTimesBeatZeroAdapted.get(i-1) + beatZeroAdaptedAsInt);
@@ -272,13 +395,13 @@ public class Tablature implements Serializable {
 				ind++;
 			}
 			// Add current duration and onset to lists
-			if (dim > 0) {
+			if (dim > 0) {					
 				adaptedDurationOfTabSymbols.add(currDur*dim);
-				adaptedGridXOfTabSymbols.add(beatZeroAdapted + (currOnset-beatZero)*dim);
+				adaptedGridXOfTabSymbols.add(beatZeroAdapted + ((currOnset-beatZero)*dim));
 			}
 			else {
 				adaptedDurationOfTabSymbols.add(currDur/Math.abs(dim));
-				adaptedGridXOfTabSymbols.add(beatZeroAdapted + (currOnset-beatZero)/Math.abs(dim));
+				adaptedGridXOfTabSymbols.add(beatZeroAdapted + ((currOnset-beatZero)/Math.abs(dim)));
 			}
 		}
 		res.add(adaptedDurationOfTabSymbols);
@@ -287,45 +410,50 @@ public class Tablature implements Serializable {
 	}
 
 
-	void setNormaliseTuning(boolean arg) {
-		normaliseTuning = normaliseTuning(arg);
-	}
+//	void setNormaliseTuning(boolean arg) {
+//		normaliseTuning = normaliseTuning(arg);
+//	}
 
 
-	// TESTED
-	boolean normaliseTuning(boolean arg) {
-		if (arg) {
-			Encoding enc = getEncoding();
-			// 1. Reset Encoding
-			// a. tunings
-			Tuning[] tunings = enc.getTunings();
-			tunings[Encoding.NEW_TUNING_IND] = 
-				tunings[Encoding.ENCODED_TUNING_IND].isAvallee() ? Tuning.G_AVALLEE : Tuning.G;
-			enc.setTunings(tunings);
+//	// TESTED
+//	void normaliseTuning(boolean arg) {
+//		if (arg) {
+//			Encoding enc = getEncoding();
+////			// 1. Reset Encoding
+////			// a. tunings
+//			Tuning[] tunings = enc.getTunings();
+//			tunings[NORMALISED_TUNING_IND] = 
+//				tunings[ENCODED_TUNING_IND].isAvallee() ? Tuning.G_AVALLEE : Tuning.G;
+//			enc.setTunings(tunings);
+//
+////			// b. listsOfStatistics (list of gridY values only)
+////			int transpositionInterval = getTranspositionInterval();
+////			List<List<Integer>> stats = enc.getListsOfStatistics();
+////			List<Integer> newGridYOfTabSymbols = new ArrayList<Integer>(); 
+////			for (int i : stats.get(Encoding.GRID_Y_IND)) {
+////				newGridYOfTabSymbols.add(i + transpositionInterval);
+////			}
+////			stats.set(Encoding.GRID_Y_IND, newGridYOfTabSymbols);
+////			enc.setListOfStatistics(stats);
+////			setEncoding(enc);
+//
+////			// 2. Reset basicTabSymbolProperties (pitches only)
+////			Integer[][] btp = getBasicTabSymbolProperties();
+////			Integer[][] newBtp = Arrays.copyOfRange(btp, 0, btp.length);
+////			for (int i = 0; i < newBtp.length; i++) {
+////				newBtp[i][PITCH] = newBtp[i][PITCH] + transpositionInterval;
+////			}
+////			setBasicTabSymbolProperties(newBtp);
+////			return true;
+//		}
+////		else {
+////			return false;
+////		}
+//	}
 
-			// b. listsOfStatistics (list of gridY values only)
-			int transpositionInterval = getTranspositionInterval();
-			List<List<Integer>> stats = enc.getListsOfStatistics();
-			List<Integer> newGridYOfTabSymbols = new ArrayList<Integer>(); 
-			for (int i : stats.get(Encoding.GRID_Y_IND)) {
-				newGridYOfTabSymbols.add(i + transpositionInterval);
-			}
-			stats.set(Encoding.GRID_Y_IND, newGridYOfTabSymbols);
-			enc.setListOfStatistics(stats);
-			setEncoding(enc);
 
-			// 2. Reset basicTabSymbolProperties (pitches only)
-			Integer[][] btp = getBasicTabSymbolProperties();
-			Integer[][] newBtp = Arrays.copyOfRange(btp, 0, btp.length);
-			for (int i = 0; i < newBtp.length; i++) {
-				newBtp[i][PITCH] = newBtp[i][PITCH] + transpositionInterval;
-			}
-			setBasicTabSymbolProperties(newBtp);
-			return true;
-		}
-		else {
-			return false;
-		}
+	static int getMaximumDuration() {
+		return -1;
 	}
 
 
@@ -388,7 +516,12 @@ public class Tablature implements Serializable {
 	//
 	public Encoding getEncoding() {
 		return encoding;
-	};
+	}
+
+
+	public boolean getNormaliseTuning() {
+		return normaliseTuning;
+	}
 
 
 	public String getPiecename() {
@@ -398,6 +531,23 @@ public class Tablature implements Serializable {
 
 	public Timeline getTimeline() {
 		return timeline;
+	}
+
+
+	/**
+	 * Gets the tunings.
+	 * 
+	 * @return A <code>Tuning[]</code> containing:
+	 * <ul>
+	 * <li>As element 0: the encoded tuning. Is set to the tuning specified in the
+	 *                   encoding and retains this initial value.</li>
+	 * <li>As element 1: the normalised tuning. Is set to the tuning specified in the 
+	 *                   encoding and retains this value if the tuning is not normalised;
+	 *                   else, is set to a G tuning.</li>
+	 * </ul>  
+	 */
+	public Tuning[] getTunings() {
+		return tunings;
 	}
 
 
@@ -426,11 +576,6 @@ public class Tablature implements Serializable {
 	 */
 	public Integer[][] getBasicTabSymbolProperties() {
 		return basicTabSymbolProperties;
-	}
-
-
-	public boolean getNormaliseTuning() {
-		return normaliseTuning;
 	}
 
 
@@ -512,13 +657,13 @@ public class Tablature implements Serializable {
 
 
 	/**
-	 * Returns the int value of the given duration Rational.
+	 * Returns the TabSymbol duration of the given CMN duration.
 	 *  
 	 * @param dur
 	 * @return
 	 */
 	// TESTED
-	public static int rationalToIntDur(Rational dur) {
+	public static int getTabSymbolDur(Rational dur) {
 		return dur.mul(SRV_DEN).getNumer();
 	}
 
@@ -724,15 +869,7 @@ public class Tablature implements Serializable {
 	 */
 	// TESTED
 	public int getTranspositionInterval() {
-		int transpositionInterval = 0;
-		Tuning originalTuning = getEncoding().getTunings()[Encoding.ENCODED_TUNING_IND];
-		for (Tuning t : Tuning.values()) {
-			if (t.equals(originalTuning)) {
-				transpositionInterval = -(t.getTransposition());
-				break;
-			}
-		}
-		return transpositionInterval;
+		return -(getTunings()[ENCODED_TUNING_IND].getTransposition());
 	}
 
 
@@ -1120,7 +1257,7 @@ public class Tablature implements Serializable {
 	 */
 	// TESTED
 	public void deornament(Rational dur) {
-		this.init(getEncoding().deornamentEncoding(rationalToIntDur(dur)), 
+		this.init(getEncoding().deornamentEncoding(getTabSymbolDur(dur)), 
 			getNormaliseTuning());
 	}
 
@@ -1134,7 +1271,7 @@ public class Tablature implements Serializable {
 	 */
 	public Tablature getDeornamented(Rational dur) {
 		return new Tablature(
-			getEncoding().deornamentEncoding(rationalToIntDur(dur)), 
+			getEncoding().deornamentEncoding(getTabSymbolDur(dur)), 
 			getNormaliseTuning());
 	}
 
@@ -1323,7 +1460,7 @@ public class Tablature implements Serializable {
 	 */
 	private static Tablature deornament(Tablature tab, Rational dur) {
 		return new Tablature(
-			tab.getEncoding().deornamentEncoding(rationalToIntDur(dur)), 
+			tab.getEncoding().deornamentEncoding(getTabSymbolDur(dur)), 
 			tab.getNormaliseTuning());
 	}
 

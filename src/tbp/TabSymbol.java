@@ -3,8 +3,7 @@ package tbp;
 import java.io.Serializable;
 
 import representations.Encoding;
-import representations.Encoding.Tuning;
-import representations.Encoding.TuningBassCourses;
+import representations.Tablature.Tuning;
 
 
 public class TabSymbol implements Serializable {
@@ -73,7 +72,19 @@ public class TabSymbol implements Serializable {
 	public int getCourse() {
 		return course;
 	}
- 
+
+
+	/**
+	 * Returns the TabSymbol's pitch as a MIDI number.
+	 * 
+	 * @param t
+	 * @return 
+	 */
+	// TODO test
+	public int getPitch() {
+		return midiNumber;
+	}
+
 
 	/**
 	 * Returns the TabSymbol's pitch, as a MIDI number, in the specified tunings.
@@ -83,16 +94,16 @@ public class TabSymbol implements Serializable {
 	 * @return 
 	 */
 	// TODO test
-	public int getPitch(Tuning aTuning, TuningBassCourses aTuningBassCourses) {
+	public int getPitch(Tuning t) {
 		int pitch = midiNumber;
 		final int semitone = 1;
 		
-		int avallee = 0;
-		if (getCourse() == 6 && aTuning.isAvallee()) {
-			avallee = 2;
+		int drop = 0;
+		if (getCourse() == 6 && t.isDrop()) {
+			drop = 2;
 		}
 		
-		pitch = pitch + ((aTuning.getTransposition() - avallee) * semitone);
+		pitch = pitch + ((t.getTransposition() - drop) * semitone);
 //		// Upon creation of the TS, each TS is given the MIDI number that goes with the 
 //		// G tuning, where any seventh course is assumed to be a major second below the sixth.
 //		// pitch must thus only be adapted if one of these two settings is changed; else, 
@@ -131,24 +142,25 @@ public class TabSymbol implements Serializable {
 //				}
 //				break;
 //		}
-		if (course > 6) {
-			switch (aTuningBassCourses) {
-				case SECOND:
-					break;	
-				case FOURTH:
-					pitch -= 3*semitone;
-					break;	
-				case P4M2:
-					// TODO
-					break;
-				case P5P4M3M2:
-					// TODO
-					break;
-				case P5P4m3M2:
-					// TODO
-					break;
-			}
-		}
+
+//		if (course > 6) {
+//			switch (aTuningBassCourses) {
+//				case SECOND:
+//					break;	
+//				case FOURTH:
+//					pitch -= 3*semitone;
+//					break;	
+//				case P4M2:
+//					// TODO
+//					break;
+//				case P5P4M3M2:
+//					// TODO
+//					break;
+//				case P5P4m3M2:
+//					// TODO
+//					break;
+//			}
+//		}
 		return pitch;
 	}
 
@@ -160,7 +172,7 @@ public class TabSymbol implements Serializable {
 	 * @param aTuningSeventhCourse
 	 * @return
 	 */
-	public String getPitchAsString (Encoding.Tuning aTuning, Encoding.TuningBassCourses aTuningSeventhCourse) {
+	public String getPitchAsString (Tuning t) {
 		final String[] pitches = {
 			"G1", "G#1", "A1", "Bb1", "B1", "C", "C#", "D", "Eb", "E", "F", "F#", 
 			"G", "G#", "A", "Bb", "B", "c", "c#", "d", "eb", "e", "f", "f#", 
@@ -169,7 +181,7 @@ public class TabSymbol implements Serializable {
 
 		// Correction necessary to set MIDI number equal to index in array
 		final int correction = 31;
-		int pitch = getPitch(aTuning, aTuningSeventhCourse); 
+		int pitch = getPitch(t); 
 		String pitchAsString = pitches[pitch - correction]; 
 		return pitchAsString;    
 	}

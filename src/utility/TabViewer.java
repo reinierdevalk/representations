@@ -343,8 +343,8 @@ public class TabViewer extends JFrame{
 			encPath = prefix;
 			
 			// Test
-			encPath += "test/testpiece.tbp";
-//			encPath += "test/test_get_meter_info.tbp";
+//			encPath += "test/testpiece.tbp";
+			encPath += "test/test_get_meter_info.tbp";
 //			encPath =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/tst/tab/3610_033_inter_natos_mulierum_morales_T-rev.tbp";
 //			encPath =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/tst/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T.tbp";
 //			encPath =  "F:/research/projects/byrd/tst/il_me_souffit-short.tbp";
