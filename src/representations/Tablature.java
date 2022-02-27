@@ -21,11 +21,14 @@ import tools.ToolBox;
 public class Tablature implements Serializable {
 
 	private static final long serialVersionUID = 1L;
-
 	public static final int MAXIMUM_NUMBER_OF_NOTES = 5;
 	public static final Rational SMALLEST_RHYTHMIC_VALUE = 
 		new Rational(RhythmSymbol.semifusa.getDuration()/3, RhythmSymbol.brevis.getDuration());
 	public static final int SRV_DEN = SMALLEST_RHYTHMIC_VALUE.getDenom();
+
+	// For tunings
+	private static final int ENCODED_TUNING_IND = 0;
+	private static final int NORMALISED_TUNING_IND = 1;
 
 	// For basicTabSymbolProperties
 	public static final int PITCH = 0;
@@ -39,10 +42,6 @@ public class Tablature implements Serializable {
 	public static final int NOTE_SEQ_NUM = 8;
 	public static final int TAB_EVENT_SEQ_NUM = 9;
 
-	// For tunings
-	private static final int ENCODED_TUNING_IND = 0;
-	private static final int NORMALISED_TUNING_IND = 1;
-	
 	private Encoding encoding;
 	private boolean normaliseTuning;
 	private String piecename;
@@ -51,9 +50,8 @@ public class Tablature implements Serializable {
 	private Integer[][] basicTabSymbolProperties;
 	private List<List<TabSymbol>> tablatureChords;
 	private List<Integer> numberOfNotesPerChord;
-	private List<Integer[]> keyInfo;
-	private File file;
-
+	private List<Integer[]> keyInfo; // TODO remove
+	private File file; // TODO remove
 
 	public static enum Tuning  {
 		C_HIGH("C_HIGH", 5, false, Arrays.asList(new String[]{"C", "F", "Bb", "D", "G", "C"})), // 1030_coment_peult_avoir_joye.tbp
@@ -171,11 +169,11 @@ public class Tablature implements Serializable {
 	// TESTED
 	Tuning[] makeTunings() {
 		Tuning encodedTun = 
-			Tuning.getTuning(getEncoding().getInfoAndSettings().get(Encoding.TUNING_IND));
-		Tuning[] tuns = new Tuning[]{encodedTun, encodedTun};
-		if (getNormaliseTuning()) {
-			tuns[1] = encodedTun.isDrop() ? Tuning.G6F : Tuning.G;
-		}
+			Tuning.getTuning(getEncoding().getMetadata().get(Encoding.TUNING_IND));
+		Tuning[] tuns = new Tuning[2];
+		tuns[ENCODED_TUNING_IND] = encodedTun;
+		tuns[NORMALISED_TUNING_IND] = 
+			!getNormaliseTuning() ? encodedTun : (encodedTun.isDrop() ? Tuning.G6F : Tuning.G);
 		return tuns;
 	}
 
@@ -190,26 +188,24 @@ public class Tablature implements Serializable {
 		TabSymbolSet tss = getEncoding().getTabSymbolSet();
 
 		List<List<String>> symbols = getEncoding().getListsOfSymbols();
-		List<String> listOfAllEvents = symbols.get(Encoding.ALL_EVENTS_IND);
+//		List<String> listOfAllEvents = symbols.get(Encoding.ALL_EVENTS_IND);
 		List<String> listOfTabSymbols = symbols.get(Encoding.TAB_SYMBOLS_IND);
 		List<List<Integer>> stats = getEncoding().getListsOfStatistics();
-		List<Integer> isTabSymbolEvent = stats.get(Encoding.IS_TAB_SYMBOL_EVENT_IND);
+//		List<Integer> isTabSymbolEvent = stats.get(Encoding.IS_TAB_SYMBOL_EVENT_IND);
 		List<Integer> sizeOfEvents = stats.get(Encoding.SIZE_OF_EVENTS_IND);
-		List<Integer> horizontalPosTabSymbols = stats.get(Encoding.HORIZONTAL_POS_IND);
-		List<Integer> verticalPosTabSymbols = stats.get(Encoding.VERTICAL_POS_IND);
-		List<Integer> horizontalPosInTabSymbolEventsOnly = 
+		List<Integer> horPosTabSymbols = stats.get(Encoding.HORIZONTAL_POS_IND);
+		List<Integer> vertPosTabSymbols = stats.get(Encoding.VERTICAL_POS_IND);
+		List<Integer> horPosInTabSymbolEventsOnly = 
 			stats.get(Encoding.HORIZONTAL_POS_TAB_SYMBOLS_ONLY_IND);
 
 		// 1. Make durations and metric times TODO rename gridX to onsets
-		List<List<Integer>> durAndGridX = getDurationsAndGridX(listOfAllEvents, sizeOfEvents, tss);
+		List<List<Integer>> durAndGridX = getDurationsAndGridX();
 		List<Integer> durOfTabSymbols = durAndGridX.get(0);
 		List<Integer> gridXOfTabSymbols = durAndGridX.get(1);
 		// Diminute
-		Timeline tl = getTimeline();
-		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfo(), Timeline.MI_DIM);
-		List<List<Integer>> scaled = 
-			adaptToDiminutions(durOfTabSymbols, gridXOfTabSymbols,	diminutions, 
-			tl.getUndiminutedMeterInfo());
+//		Timeline tl = getTimeline();
+//		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfo(), Timeline.MI_DIM);
+		List<List<Integer>> scaled = adaptToDiminutions(durOfTabSymbols, gridXOfTabSymbols);
 		durOfTabSymbols = scaled.get(0);
 		gridXOfTabSymbols = scaled.get(1);
 
@@ -225,62 +221,61 @@ public class Tablature implements Serializable {
 			btp[i][PITCH] = gridYOfTabSymbols.get(i);
 			btp[i][COURSE] = currTabSymbol.getCourse();
 			btp[i][FRET] = currTabSymbol.getFret();
-			int currentOnsetTime = gridXOfTabSymbols.get(i);
-			btp[i][ONSET_TIME] = currentOnsetTime;
+			int currOnsetTime = gridXOfTabSymbols.get(i);
+			btp[i][ONSET_TIME] = currOnsetTime;
 			int currMinDur = durOfTabSymbols.get(i);
 			btp[i][MIN_DURATION] = currMinDur;
-			int currMaxDur;
-			// a. If currTabSymbol is in the last tabSymbolEvent: set currMaxDur to currMinDur
-			// Get the index of the last TabSymbolEvent
-			int numTabSymbolEvents = 0;
-			for (int j = 0; j < listOfAllEvents.size(); j++) {
-				if (isTabSymbolEvent.get(j) == 1) {
-					numTabSymbolEvents++;
-				}
-			}
-			int indexOfLastChord = numTabSymbolEvents - 1;
-			int indCurrChord = horizontalPosInTabSymbolEventsOnly.get(i);
-			if (indCurrChord == indexOfLastChord) {
-				currMaxDur = currMinDur;
-			}
-			// b. If not: calculate currMaxDuration
-			// Find the next TS in listOfTabSymbols that has the same course and get its 
-			// onset time, then determine currMaxDur
-			else {
-				int nextOnsetTime = 0;
-				for (int j = i + 1; j < btp.length; j++) {
-					TabSymbol nextTabSymbol = 
-						TabSymbol.getTabSymbol(listOfTabSymbols.get(j), tss);
-					// If there is a next TabSymbol on the same course
-					if (nextTabSymbol.getCourse() == currTabSymbol.getCourse()) {
-						nextOnsetTime = gridXOfTabSymbols.get(j);
-						break;
-					}
-				}
-				// If there is no next TS found: nextOnsetTime is the end of the piece,
-				// i.e., the onset time of the last TabSymbol + its minimum duration
-				if (nextOnsetTime == 0) {  
-					int indLastTabSymbol = listOfTabSymbols.size() - 1;
-					nextOnsetTime = 
-						gridXOfTabSymbols.get(indLastTabSymbol) + 
-						durOfTabSymbols.get(indLastTabSymbol);
-				}
-				currMaxDur = nextOnsetTime - currentOnsetTime;
-			}
-			btp[i][MAX_DURATION] = currMaxDur;
-			btp[i][CHORD_SEQ_NUM] = indCurrChord;
-			btp[i][CHORD_SIZE_AS_NUM_ONSETS] = sizeOfEvents.get(horizontalPosTabSymbols.get(i));
-			btp[i][NOTE_SEQ_NUM] = verticalPosTabSymbols.get(i);
-			btp[i][TAB_EVENT_SEQ_NUM] = horizontalPosTabSymbols.get(i);
+//			int currMaxDur = -1;
+//			// a. If currTabSymbol is in the last tabSymbolEvent: set currMaxDur to currMinDur
+////			// Get the index of the last TabSymbolEvent
+////			int numTabSymbolEvents = 0;
+////			for (int j = 0; j < listOfAllEvents.size(); j++) {	
+////				if (isTabSymbolEvent.get(j) == 1) {
+////					numTabSymbolEvents++;
+////				}
+////			}
+////			int indLastChord = numTabSymbolEvents - 1;
+//			int indLastChord = 
+//				horPosInTabSymbolEventsOnly.get(horPosInTabSymbolEventsOnly.size()-1);
+//			int indCurrChord = horPosInTabSymbolEventsOnly.get(i);
+//			if (indCurrChord == indLastChord) {
+//				currMaxDur = currMinDur;
+//			}
+//			// b. If not: calculate currMaxDuration
+	
+//			// Get the onset time of the next TS that has the same course as currTabSymbol
+//			int nextOnsetTime = 0;
+////			else {			
+//			for (int j = i + 1; j < listOfTabSymbols.size(); j++) {
+//				TabSymbol nextTabSymbol = TabSymbol.getTabSymbol(listOfTabSymbols.get(j), tss);
+//				if (nextTabSymbol.getCourse() == currTabSymbol.getCourse()) {
+//					nextOnsetTime = gridXOfTabSymbols.get(j);
+//					break;
+//				}
+//			}
+//			// If there is no next TS found: nextOnsetTime is the end of the piece, i.e.,
+//			// the onset time of the last TS + its minimum duration
+//			if (nextOnsetTime == 0) {  
+////				int indLastTabSymbol = listOfTabSymbols.size() - 1;
+//				nextOnsetTime = 
+//					gridXOfTabSymbols.get(listOfTabSymbols.size() - 1) + 
+//					durOfTabSymbols.get(listOfTabSymbols.size() - 1);
+//			}
+//			currMaxDur = nextOnsetTime - currOnsetTime;
+////			}
+			btp[i][MAX_DURATION] = getMaximumDuration(durOfTabSymbols, gridXOfTabSymbols, i);
+			btp[i][CHORD_SEQ_NUM] = horPosInTabSymbolEventsOnly.get(i);
+			btp[i][CHORD_SIZE_AS_NUM_ONSETS] = sizeOfEvents.get(horPosTabSymbols.get(i));
+			btp[i][NOTE_SEQ_NUM] = vertPosTabSymbols.get(i);
+			btp[i][TAB_EVENT_SEQ_NUM] = horPosTabSymbols.get(i);
 		}
 		return btp;
 	}
 
 
 	// TESTED
-	static List<List<Integer>> getDurationsAndGridX(List<String> listOfAllEvents, List<Integer> 
-		sizeOfEvents, TabSymbolSet tss) {
-		List<Integer> durationOfTabSymbols = new ArrayList<>();
+	List<List<Integer>> getDurationsAndGridX() {
+		List<Integer> durOfTabSymbols = new ArrayList<>();
 		List<Integer> gridXOfTabSymbols = new ArrayList<>();	
 
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
@@ -288,11 +283,15 @@ public class Tablature implements Serializable {
 		int prevDur = 0;
 		int gridX = 0;
 		// a. Get undiminuted lists from encoding
-		for (int i = 0; i < listOfAllEvents.size(); i++) {
-			String currEvent = listOfAllEvents.get(i);
+		List<String> allEvents = 
+			getEncoding().getListsOfSymbols().get(Encoding.ALL_EVENTS_IND);
+		List<Integer> sizeOfEvents = 
+			getEncoding().getListsOfStatistics().get(Encoding.SIZE_OF_EVENTS_IND);
+		for (int i = 0; i < allEvents.size(); i++) {
+			String currEvent = allEvents.get(i);
 			currEvent = currEvent.concat(ss);
 			boolean isRsEvent = Encoding.isRhythmSymbolEvent(currEvent);
-			boolean isTsEvent = Encoding.isTabSymbolEvent(currEvent, tss);
+			boolean isTsEvent = Encoding.isTabSymbolEvent(currEvent, getEncoding().getTabSymbolSet());
 			// If currEvent is a RS event (which can be a rest event)
 			if (isRsEvent) {
 				String rsStr = currEvent.substring(0, currEvent.indexOf(ss));
@@ -313,7 +312,7 @@ public class Tablature implements Serializable {
 			}
 			// If currEvent is a TS event: add to lists
 			if (isTsEvent) {
-				durationOfTabSymbols.addAll(Collections.nCopies(sizeOfEvents.get(i), currDur));
+				durOfTabSymbols.addAll(Collections.nCopies(sizeOfEvents.get(i), currDur));
 				gridXOfTabSymbols.addAll(Collections.nCopies(sizeOfEvents.get(i), gridX));
 			}
 			// If currEvent is an RS event or a TS event: increment gridX 
@@ -322,27 +321,20 @@ public class Tablature implements Serializable {
 			}
 		}
 		List<List<Integer>> durAndGridX = new ArrayList<>();
-		durAndGridX.add(durationOfTabSymbols);
+		durAndGridX.add(durOfTabSymbols);
 		durAndGridX.add(gridXOfTabSymbols);
 		return durAndGridX;
 	}
 
 
-	/**
-	 * Given the list of diminutions per meter in the given meterInfo, adapts the given 
-	 * lists of durations and onsets.
-	 * 
-	 * @param durationOfTabSymbols
-	 * @param gridXOfTabSymbols
-	 * @param diminutions
-	 * @param undiminutedMeterInfo
-	 * @return
-	 */
 	// TESTED
-	static List<List<Integer>> adaptToDiminutions(List<Integer> durationOfTabSymbols, 
-		List<Integer> gridXOfTabSymbols, List<Integer> diminutions, List<Integer[]> 
-		undiminutedMeterInfo) {
+	List<List<Integer>> adaptToDiminutions(List<Integer> durOfTabSymbols, 
+		List<Integer> gridXOfTabSymbols) {
 		List<List<Integer>> res = new ArrayList<>();
+
+		Timeline tl = getTimeline();
+		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfo(), Timeline.MI_DIM);
+		List<Integer[]> undiminutedMeterInfo = tl.getUndiminutedMeterInfo();
 
 		// Get the metric time and the adapted metric time of beat 0 for all new meters
 		List<Integer> metricTimesBeatZero = new ArrayList<>();
@@ -384,8 +376,8 @@ public class Tablature implements Serializable {
 		int dim = -1;
 		int beatZero = -1; 
 		int beatZeroAdapted = -1; 
-		for (int i = 0; i < durationOfTabSymbols.size(); i++) {
-			int currDur = durationOfTabSymbols.get(i);
+		for (int i = 0; i < durOfTabSymbols.size(); i++) {
+			int currDur = durOfTabSymbols.get(i);
 			int currOnset = gridXOfTabSymbols.get(i);
 			// If currOnset is on or past metric beat zero at index ind: determine new metric beat zeros
 			if (ind < diminutions.size() && currOnset >= metricTimesBeatZero.get(ind)) {
@@ -449,11 +441,35 @@ public class Tablature implements Serializable {
 ////		else {
 ////			return false;
 ////		}
-//	}
+//	} TODO remove
 
 
-	static int getMaximumDuration() {
-		return -1;
+	// TESTED
+	int getMaximumDuration(List<Integer> durOfTabSymbols, List<Integer> gridXOfTabSymbols, 
+		int noteIndex) {
+
+		List<String> listOfTabSymbols = getEncoding().getListsOfSymbols().get(Encoding.TAB_SYMBOLS_IND);
+		TabSymbolSet tss = getEncoding().getTabSymbolSet();
+		TabSymbol currTabSymbol = TabSymbol.getTabSymbol(listOfTabSymbols.get(noteIndex), tss);
+		int currOnsetTime = gridXOfTabSymbols.get(noteIndex);
+
+		// Get the onset time of the next TS that has the same course as currTabSymbol
+		int nextOnsetTime = 0;
+		for (int j = noteIndex + 1; j < listOfTabSymbols.size(); j++) {
+			TabSymbol nextTabSymbol = TabSymbol.getTabSymbol(listOfTabSymbols.get(j), tss);
+			if (nextTabSymbol.getCourse() == currTabSymbol.getCourse()) {
+				nextOnsetTime = gridXOfTabSymbols.get(j);
+				break;
+			}
+		}
+		// If there is no next TS found: nextOnsetTime is the end of the piece, i.e.,
+		// the onset time of the last TS + its minimum duration
+		if (nextOnsetTime == 0) {
+			nextOnsetTime = 
+				gridXOfTabSymbols.get(listOfTabSymbols.size() - 1) + 
+				durOfTabSymbols.get(listOfTabSymbols.size() - 1);
+		}
+		return nextOnsetTime - currOnsetTime;
 	}
 
 

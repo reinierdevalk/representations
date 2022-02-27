@@ -2,7 +2,6 @@ package tbp;
 
 import java.io.Serializable;
 
-import representations.Encoding;
 import representations.Tablature.Tuning;
 
 

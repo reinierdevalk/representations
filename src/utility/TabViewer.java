@@ -343,8 +343,8 @@ public class TabViewer extends JFrame{
 			encPath = prefix;
 			
 			// Test
-//			encPath += "test/testpiece.tbp";
-			encPath += "test/test_get_meter_info.tbp";
+			encPath += "test/testpiece.tbp";
+//			encPath += "test/test_get_meter_info.tbp";
 //			encPath =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/tst/tab/3610_033_inter_natos_mulierum_morales_T-rev.tbp";
 //			encPath =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/tst/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T.tbp";
 //			encPath =  "F:/research/projects/byrd/tst/il_me_souffit-short.tbp";
@@ -484,24 +484,26 @@ public class TabViewer extends JFrame{
 		// compared to what is in the loaded file)
 		Encoding enc = new Encoding(rawEnc, "", Encoding.MINIMAL);
 		// a. If the encoding contains metadata errors: place error message
-		if (enc.checkForMetadataErrors()) {
+		if (Encoding.checkForMetadataErrors(rawEnc)) {
 			getErrorMessageLabel("upper").setText(Encoding.METADATA_ERROR);
 			getErrorMessageLabel("lower").setText("");
 		}
 		// b. If the encoding contains no metadata errors: continue
 		else {
 			enc = new Encoding(rawEnc, "", Encoding.METADATA_CHECKED);
+			String cleanEnc = enc.getCleanEncoding();
 			// 2. Check the encoding
 			// Remove any remaining highlights and error messages
 			getHilit().removeAllHighlights();
 			getErrorMessageLabel("upper").setText("(none)");
 			getErrorMessageLabel("lower").setText(null);
 			// a. If the encoding contains encoding errors: place error messages and highlight
-			if (enc.checkForEncodingErrors() != null) { // needs rawEncoding, cleanEncoding, and infoAndSettings
-				getErrorMessageLabel("upper").setText(enc.checkForEncodingErrors()[errorStringIndex]);
-				getErrorMessageLabel("lower").setText(enc.checkForEncodingErrors()[ruleStringIndex]);
-				int hilitStartIndex = Integer.parseInt(enc.checkForEncodingErrors()[firstErrorCharIndex]);
-				int hilitEndIndex = Integer.parseInt(enc.checkForEncodingErrors()[lastErrorCharIndex]);
+			String[] encErrs = Encoding.checkForEncodingErrors(rawEnc, cleanEnc, enc.getTabSymbolSet());
+			if (encErrs != null) {
+				getErrorMessageLabel("upper").setText(encErrs[errorStringIndex]);
+				getErrorMessageLabel("lower").setText(encErrs[ruleStringIndex]);
+				int hilitStartIndex = Integer.parseInt(encErrs[firstErrorCharIndex]);
+				int hilitEndIndex = Integer.parseInt(encErrs[lastErrorCharIndex]);
 				Highlighter.HighlightPainter painter = 
 					new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
 				try {

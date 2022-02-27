@@ -10,7 +10,7 @@ import java.util.Map;
 
 import representations.Encoding;
 import representations.Tablature;
-import representations.Encoding.Tuning;
+import representations.Tablature.Tuning;
 import tbp.ConstantMusicalSymbol;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
@@ -244,11 +244,11 @@ public class TabImport {
 			rulesMap.get("durScale") != null ? 
 				rulesMap.get("durScale") : "1" // diminution	
 		};
-		StringBuffer metaDataStr = 
-			new StringBuffer(createMetaData(metadata, Encoding.getMetadataTags()));
-//		StringBuffer metaDataStr = new StringBuffer(Encoding.createMetadata(metadata));
+		StringBuffer metadataStr = 
+			new StringBuffer(createMetaData(metadata, Encoding.METADATA_TAGS));
+//		StringBuffer metadataStr = new StringBuffer(Encoding.createMetadata(metadata));
 
-		return metaDataStr.append(tbpEncoding).toString();
+		return metadataStr.append(tbpEncoding).toString();
 	}
 
 
@@ -679,10 +679,10 @@ public class TabImport {
 			"" // diminution
 		};
 
-		StringBuffer metaDataStr = 
-			new StringBuffer(createMetaData(metadata, Encoding.getMetadataTags()));
+		StringBuffer metadataStr = 
+			new StringBuffer(createMetaData(metadata, Encoding.METADATA_TAGS));
 
-		return metaDataStr.append(enc).toString();
+		return metadataStr.append(enc).toString();
 	}
 
 
@@ -838,8 +838,8 @@ public class TabImport {
 //		String [] tags = getMetaDataTags();
 		for (int i = 0; i < tags.length; i++) {
 			String currTag = tags[i];
-			metadataStub += SymbolDictionary.OPEN_INFO_BRACKET + currTag + metadata[i] +
-				SymbolDictionary.CLOSE_INFO_BRACKET + "\r\n";
+			metadataStub += SymbolDictionary.OPEN_METADATA_BRACKET + currTag + metadata[i] +
+				SymbolDictionary.CLOSE_METADATA_BRACKET + "\r\n";
 			if (i == 2 || i == tags.length - 1) {
 				metadataStub += "\r\n";
 			}
@@ -982,7 +982,7 @@ public class TabImport {
 		
 		String tuning = null;
 		String tss = null;
-		for (Tuning t : Encoding.Tuning.values()) {	
+		for (Tuning t : Tuning.values()) {	
 			// currTuning lists the tuning for the courses in the sequence (6)-(1)
 			String currTuning = String.join("", t.getCourses());
 			

@@ -26,8 +26,8 @@ public class ConstantMusicalSymbol {
 	public static final ConstantMusicalSymbol SINGLE_REPEAT_BARLINE_DOUBLE_SIDED_EDITORIAL = new ConstantMusicalSymbol(":¦:", ":¦:");
 	public static final ConstantMusicalSymbol DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED_EDITORIAL = new ConstantMusicalSymbol(":¦¦:", ":¦¦:"); 
 	
-	public static List<ConstantMusicalSymbol> constantMusicalSymbols;
-	static { constantMusicalSymbols = Arrays.asList(new ConstantMusicalSymbol[]{
+	public static final List<ConstantMusicalSymbol> CONSTANT_MUSICAL_SYMBOLS;
+	static { CONSTANT_MUSICAL_SYMBOLS = Arrays.asList(new ConstantMusicalSymbol[]{
 		SPACE,
 		BARLINE,
 		DOUBLE_BARLINE,
@@ -36,15 +36,16 @@ public class ConstantMusicalSymbol {
 		SINGLE_REPEAT_BARLINE_DOUBLE_SIDED,
 		DOUBLE_REPEAT_BARLINE_OPEN,
 		DOUBLE_REPEAT_BARLINE_CLOSE,
-		DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED,
-		BARLINE_EDITORIAL,
-		DOUBLE_BARLINE_EDITORIAL,
-		SINGLE_REPEAT_BARLINE_OPEN_EDITORIAL,
-		SINGLE_REPEAT_BARLINE_CLOSE_EDITORIAL,
-		SINGLE_REPEAT_BARLINE_DOUBLE_SIDED_EDITORIAL,
-		DOUBLE_REPEAT_BARLINE_OPEN_EDITORIAL,
-		DOUBLE_REPEAT_BARLINE_CLOSE_EDITORIAL,
-		DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED_EDITORIAL});
+		DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED
+//		BARLINE_EDITORIAL,
+//		DOUBLE_BARLINE_EDITORIAL,
+//		SINGLE_REPEAT_BARLINE_OPEN_EDITORIAL,
+//		SINGLE_REPEAT_BARLINE_CLOSE_EDITORIAL,
+//		SINGLE_REPEAT_BARLINE_DOUBLE_SIDED_EDITORIAL,
+//		DOUBLE_REPEAT_BARLINE_OPEN_EDITORIAL,
+//		DOUBLE_REPEAT_BARLINE_CLOSE_EDITORIAL,
+//		DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED_EDITORIAL
+		});
 	}
 	
 	
@@ -90,7 +91,7 @@ public class ConstantMusicalSymbol {
 	 */
 	public static boolean isBarline(String encoding) {
 		ConstantMusicalSymbol cms = getConstantMusicalSymbol(encoding);
-		return (cms != null && constantMusicalSymbols.contains(cms) && 
+		return (cms != null && CONSTANT_MUSICAL_SYMBOLS.contains(cms) && 
 			cms != ConstantMusicalSymbol.SPACE);
 	}
 
@@ -105,7 +106,7 @@ public class ConstantMusicalSymbol {
 	 * @return
 	 */
 	public static ConstantMusicalSymbol getConstantMusicalSymbol(String anEncoding) {
-		for (ConstantMusicalSymbol c: constantMusicalSymbols) {
+		for (ConstantMusicalSymbol c: CONSTANT_MUSICAL_SYMBOLS) {
 			if (c.encoding.equals(anEncoding)) {
 				return c;
 			}

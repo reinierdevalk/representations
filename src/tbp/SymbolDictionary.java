@@ -9,8 +9,8 @@ public class SymbolDictionary {
 	public static final String SYMBOL_SEPARATOR = ".";  
 	public static final String SYSTEM_BREAK_INDICATOR = "/";
 	public static final String END_BREAK_INDICATOR = "//";
-	public static final String OPEN_INFO_BRACKET = "{";
-	public static final String CLOSE_INFO_BRACKET = "}";
+	public static final String OPEN_METADATA_BRACKET = "{";
+	public static final String CLOSE_METADATA_BRACKET = "}";
 	
 	// II. Musical symbols
 	// 1. Constant musical symbols

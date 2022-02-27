@@ -60,7 +60,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	private Integer[][] getBtp() {
+	private Integer[][] getBtp(boolean normalise) {
 		// For testpiece
 		Integer[][] btp = new Integer[39][10];
 		// Chord 0
@@ -114,21 +114,18 @@ public class TablatureTest extends TestCase {
 		btp[37] = new Integer[]{64, 2, 0, 264, 24, 24, 15, 4, 2, 22};
 		btp[38] = new Integer[]{69, 1, 0, 264, 24, 24, 15, 4, 3, 22};
 
-		return btp;
-	}
-
-
-	private Integer[][] getBtpTransposed() {
-		// For testpiece
-		Integer[][] btpTransposed = getBtp();
-		for (int i = 0; i < btpTransposed.length; i++) {
-			btpTransposed[i][Tablature.PITCH] = btpTransposed[i][Tablature.PITCH] + TRANSP_INT;
+		Integer[][] btpNormalised = new Integer[btp.length][btp[0].length];
+		for (int i = 0; i < btp.length; i++) {
+			for (int j = 0; j < btp[i].length; j++) {
+				btpNormalised[i][j] = 
+					(j == Tablature.PITCH) ? btp[i][j] + TRANSP_INT : btp[i][j];
+			}
 		}
-		return btpTransposed;
+		return !normalise ? btp : btpNormalised;
 	}
 
 
-	private List<List<Integer>> getPitchesInChord() {
+	private List<List<Integer>> getPitchesInChord(boolean normalise) {
 		// For testpiece
 		List<List<Integer>> pitchesInChord = new ArrayList<List<Integer>>();
 		pitchesInChord.add(Arrays.asList(new Integer[]{50, 57, 65, 69})); 
@@ -147,60 +144,43 @@ public class TablatureTest extends TestCase {
 		pitchesInChord.add(Arrays.asList(new Integer[]{68}));
 		pitchesInChord.add(Arrays.asList(new Integer[]{69}));
 		pitchesInChord.add(Arrays.asList(new Integer[]{45, 57, 64, 69}));
-		return pitchesInChord;
-	}
 
-
-	private List<List<Integer>> getPitchesInChordTransposed() {
-		// For testpiece
-		List<List<Integer>> pitchesInChord = getPitchesInChord();
-		List<List<Integer>> pitchesInChordTransposed = new ArrayList<>();
+		List<List<Integer>> pitchesInChordNormalised = new ArrayList<>();
 		for (int i = 0; i < pitchesInChord.size(); i++) {
-			pitchesInChordTransposed.add(pitchesInChord.get(i).stream().map(p -> 
+			pitchesInChordNormalised.add(pitchesInChord.get(i).stream().map(p -> 
 				p + TRANSP_INT).collect(Collectors.toList()));
 //			pitchesInChord.get(i).forEach(p -> p += TRANSP_INT);
 //			pitchesInChordTransposed.add(pitchesInChord.get(i));
 		}
-		return pitchesInChordTransposed;
+		return !normalise ? pitchesInChord : pitchesInChordNormalised;
 	}
 
 
-	private List<List<Integer[]>> getOnsetTimesChords(boolean diminute) {
+	private List<List<Integer[]>> getOnsetTimesPerChord(boolean diminute) {
 		List<List<Integer[]>> allOnsetTimes = new ArrayList<>();
 
 		// For testpiece 
 		// a. Undiminuted = diminuted
 		List<Integer[]> onsetTimesTestpiece = new ArrayList<>();
-		// Rest
 		onsetTimesTestpiece.add(new Integer[]{0, 0});
-		// Chord 0
 		onsetTimesTestpiece.add(new Integer[]{72, 1});
-		// Chord 1
+		//
 		onsetTimesTestpiece.add(new Integer[]{96, 1});
-		// Chord 2
 		onsetTimesTestpiece.add(new Integer[]{114, 1});
-		// Chord 3
 		onsetTimesTestpiece.add(new Integer[]{120, 1});
-		// Chord 4
 		onsetTimesTestpiece.add(new Integer[]{132, 1});
-		// Chord 5
 		onsetTimesTestpiece.add(new Integer[]{144, 1});
-		// Chord 6
 		onsetTimesTestpiece.add(new Integer[]{168, 1});
-		// Chord 7
 		onsetTimesTestpiece.add(new Integer[]{180, 1});
-		// Chord 8
+		//
 		onsetTimesTestpiece.add(new Integer[]{192, 1});
-		// Chords 9-14
 		onsetTimesTestpiece.add(new Integer[]{198, 1});
 		onsetTimesTestpiece.add(new Integer[]{204, 1});
 		onsetTimesTestpiece.add(new Integer[]{207, 1});
 		onsetTimesTestpiece.add(new Integer[]{210, 1});
 		onsetTimesTestpiece.add(new Integer[]{213, 1});
 		onsetTimesTestpiece.add(new Integer[]{216, 1});
-		// Rest
 		onsetTimesTestpiece.add(new Integer[]{240, 0});
-		// Chord 15
 		onsetTimesTestpiece.add(new Integer[]{264, 1});
 		
 		// For testGetMeterInfo
@@ -251,10 +231,10 @@ public class TablatureTest extends TestCase {
 		onsetTimesTestGetMeterInfo.add(new Integer[]{588, 1});
 		//
 		onsetTimesTestGetMeterInfo.add(new Integer[]{594, 1});
-		onsetTimesTestGetMeterInfo.add(new Integer[]{642, 1}); // 624
-		onsetTimesTestGetMeterInfo.add(new Integer[]{654, 1}); // 636
-		onsetTimesTestGetMeterInfo.add(new Integer[]{660, 1}); // 642
-		onsetTimesTestGetMeterInfo.add(new Integer[]{666, 1}); // 648
+		onsetTimesTestGetMeterInfo.add(new Integer[]{642, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{654, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{660, 1});
+		onsetTimesTestGetMeterInfo.add(new Integer[]{666, 1});
 		
 		// b. Diminuted
 		List<Integer[]> onsetTimesTestGetMeterInfoDim = new ArrayList<>();
@@ -320,46 +300,35 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	private List<List<Integer[]>> getOnsetTimesNotes(boolean diminute) {
+	private List<List<Integer[]>> getOnsetTimesPerNote(boolean diminute) {
 		List<List<Integer[]>> allOnsetTimes = new ArrayList<>();
 		// For testpiece
 		List<Integer[]> onsetTimesTestpiece = new ArrayList<>();
-		List<Integer[]> ot1 = getOnsetTimesChords(diminute).get(0);
-		// Rest
+		List<Integer[]> ot1 = getOnsetTimesPerChord(diminute).get(0);
 		onsetTimesTestpiece.add(ot1.get(0));
-		// Chord 0
 		onsetTimesTestpiece.addAll(Collections.nCopies(4, ot1.get(1)));
-		// Chord 1
+		//
 		onsetTimesTestpiece.addAll(Collections.nCopies(4, ot1.get(2)));
-		// Chord 2
 		onsetTimesTestpiece.addAll(Collections.nCopies(1, ot1.get(3)));
-		// Chord 3
 		onsetTimesTestpiece.addAll(Collections.nCopies(4, ot1.get(4)));
-		// Chord 4
 		onsetTimesTestpiece.addAll(Collections.nCopies(1, ot1.get(5)));
-		// Chord 5
 		onsetTimesTestpiece.addAll(Collections.nCopies(5, ot1.get(6)));
-		// Chord 6
 		onsetTimesTestpiece.addAll(Collections.nCopies(4, ot1.get(7)));
-		// Chord 7
 		onsetTimesTestpiece.addAll(Collections.nCopies(2, ot1.get(8)));
-		// Chord 8
+		// 
 		onsetTimesTestpiece.addAll(Collections.nCopies(4, ot1.get(9)));
-		// Chords 9-14
 		onsetTimesTestpiece.add(ot1.get(10));
 		onsetTimesTestpiece.add(ot1.get(11));
 		onsetTimesTestpiece.add(ot1.get(12));
 		onsetTimesTestpiece.add(ot1.get(13));
 		onsetTimesTestpiece.add(ot1.get(14));
 		onsetTimesTestpiece.add(ot1.get(15));
-		// Rest
 		onsetTimesTestpiece.add(ot1.get(16));
-		// Chord 15
 		onsetTimesTestpiece.addAll(Collections.nCopies(4, ot1.get(17)));
 
 		// For testGetMeterInfo
 		List<Integer[]> onsetTimesTestGetMeterInfo = new ArrayList<>();
-		List<Integer[]> ot2 = getOnsetTimesChords(diminute).get(1);
+		List<Integer[]> ot2 = getOnsetTimesPerChord(diminute).get(1);
 		onsetTimesTestGetMeterInfo.add(ot2.get(0));
 		onsetTimesTestGetMeterInfo.add(ot2.get(1));
 		onsetTimesTestGetMeterInfo.add(ot2.get(2));
@@ -416,7 +385,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	private List<List<Integer>> getMinimumDurationsChords(boolean diminute) {
+	private List<List<Integer>> getMinimumDurationPerChord(boolean diminute) {
 		List<List<Integer>> allMinDurs = new ArrayList<>();
 		// For testpiece 
 		// a. Undiminuted = diminuted
@@ -464,11 +433,11 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	private List<List<Integer>> getMinimumDurationsNotes(boolean diminute) {
+	private List<List<Integer>> getMinimumDurationPerNote(boolean diminute) {
 		List<List<Integer>> allMinDurs = new ArrayList<>();
 		// For testpiece
 		List<Integer> minDursTestpiece = new ArrayList<>();
-		List<Integer> md1 = getMinimumDurationsChords(diminute).get(0);
+		List<Integer> md1 = getMinimumDurationPerChord(diminute).get(0);
 		minDursTestpiece.addAll(Collections.nCopies(4, md1.get(0)));
 		//
 		minDursTestpiece.addAll(Collections.nCopies(4, md1.get(1)));
@@ -490,7 +459,7 @@ public class TablatureTest extends TestCase {
 
 		// For testGetMeterInfo
 		List<Integer> minDursTestGetMeterInfo = new ArrayList<>();
-		List<Integer> md2 = getMinimumDurationsChords(diminute).get(1);
+		List<Integer> md2 = getMinimumDurationPerChord(diminute).get(1);
 		minDursTestGetMeterInfo.add(md2.get(0));
 		minDursTestGetMeterInfo.add(md2.get(1));
 		minDursTestGetMeterInfo.add(md2.get(2));
@@ -551,36 +520,36 @@ public class TablatureTest extends TestCase {
 		// For testpiece
 		TabSymbolSet tss = new Tablature(encodingTestpiece, false).getEncoding().getTabSymbolSet();
 		List<List<TabSymbol>> tablatureChords = new ArrayList<List<TabSymbol>>();
-		// Chord 0
+		//
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a5", tss),
 			TabSymbol.getTabSymbol("c4", tss),
 			TabSymbol.getTabSymbol("b2", tss),
 			TabSymbol.getTabSymbol("a1", tss)
 		}));
-		// Chord 1
+		//
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a6", tss),
 			TabSymbol.getTabSymbol("c4", tss),
 			TabSymbol.getTabSymbol("i2", tss),
 			TabSymbol.getTabSymbol("a1", tss)	
 		}));
-		// Chord 2
+		//
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("d6", tss)
 		})); 
-		// Chord 3
+		//
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("c6", tss),
 			TabSymbol.getTabSymbol("a5", tss),
 			TabSymbol.getTabSymbol("e4", tss),
 			TabSymbol.getTabSymbol("b2", tss)
 		}));
-		// Chord 4
+		//
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a6", tss)
 		}));
-		// Chord 5
+		//
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a6", tss),
 			TabSymbol.getTabSymbol("h5", tss),
@@ -588,33 +557,33 @@ public class TablatureTest extends TestCase {
 			TabSymbol.getTabSymbol("b3", tss),
 			TabSymbol.getTabSymbol("f2", tss)
 		}));
-		// Chord 6
+		//
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a6", tss),
 			TabSymbol.getTabSymbol("b3", tss),
 			TabSymbol.getTabSymbol("a2", tss),
 			TabSymbol.getTabSymbol("a1", tss)
 		}));
-		// Chord 7
+		//
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a3", tss),
 			TabSymbol.getTabSymbol("e2", tss)
 		}));
-		// Chord 8
+		//
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a6", tss),
 			TabSymbol.getTabSymbol("c4", tss),
 			TabSymbol.getTabSymbol("a2", tss),
 			TabSymbol.getTabSymbol("a1", tss)
 		}));
-		// Chord 9-14
+		//
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("a1", tss)}));
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("c2", tss)}));
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("a1", tss)}));
-		// Chord 15
+		//
 		tablatureChords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a6", tss),
 			TabSymbol.getTabSymbol("c4", tss),
@@ -650,7 +619,7 @@ public class TablatureTest extends TestCase {
 		t.setTimeline();
 		t.setTunings();
 
-		Integer[][] expected = getBtpTransposed();
+		Integer[][] expected = getBtp(true);
 		Integer[][] actual = t.makeBasicTabSymbolProperties();
 
 		assertEquals(expected.length, actual.length);
@@ -666,22 +635,19 @@ public class TablatureTest extends TestCase {
 	public void testGetDurationsAndGridX() {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
-		t.setNormaliseTuning(true);
-		t.setPiecename();
-		t.setTimeline();
-		t.setTunings();
+//		t.setNormaliseTuning(true);
+//		t.setPiecename();
+//		t.setTimeline();
+//		t.setTunings();
 		
 		List<List<Integer>> expected = new ArrayList<>(); 
-		expected.add(getMinimumDurationsNotes(false).get(0));
+		expected.add(getMinimumDurationPerNote(false).get(0));
 		List<Integer> gridXNotes = new ArrayList<>();
-		getOnsetTimesNotes(false).get(0).forEach(item -> { if (item[1] != 0) { 
+		getOnsetTimesPerNote(false).get(0).forEach(item -> { if (item[1] != 0) { 
 			gridXNotes.add(item[0]);}});
 		expected.add(gridXNotes);
 
-		List<List<Integer>> actual = Tablature.getDurationsAndGridX(
-			t.getEncoding().getListsOfSymbols().get(Encoding.ALL_EVENTS_IND), 
-			t.getEncoding().getListsOfStatistics().get(Encoding.SIZE_OF_EVENTS_IND),
-			t.getEncoding().getTabSymbolSet());
+		List<List<Integer>> actual = t.getDurationsAndGridX();
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -699,31 +665,31 @@ public class TablatureTest extends TestCase {
 		t1.setNormaliseTuning(true);
 		t1.setPiecename();
 		t1.setTimeline();
-		t1.setTunings();
+//		t1.setTunings();
 		Tablature t2 = new Tablature();
 		t2.setEncoding(new Encoding(encodingTestGetMeterInfo));
 		t2.setNormaliseTuning(true);
 		t2.setPiecename();
 		t2.setTimeline();
-		t2.setTunings();
+//		t2.setTunings();
 
 		// For encodingTestPiece
-		List<Integer> minDur1 = getMinimumDurationsNotes(false).get(0);
-		List<Integer> minDur1Exp = getMinimumDurationsNotes(true).get(0);
+		List<Integer> minDur1 = getMinimumDurationPerNote(false).get(0);
+		List<Integer> minDur1Exp = getMinimumDurationPerNote(true).get(0);
 		//
 		List<Integer> gridX1 = new ArrayList<>();
-		getOnsetTimesNotes(false).get(0).forEach(item -> { if (item[1] != 0) { gridX1.add(item[0]);}});
+		getOnsetTimesPerNote(false).get(0).forEach(item -> { if (item[1] != 0) { gridX1.add(item[0]);}});
 		List<Integer> gridX1Exp = new ArrayList<>();
-		getOnsetTimesNotes(true).get(0).forEach(item -> { if (item[1] != 0) { gridX1Exp.add(item[0]);}});
+		getOnsetTimesPerNote(true).get(0).forEach(item -> { if (item[1] != 0) { gridX1Exp.add(item[0]);}});
 		
 		// For testGetMeterInfo
-		List<Integer> minDur2 = getMinimumDurationsNotes(false).get(1);
-		List<Integer> minDur2Exp = getMinimumDurationsNotes(true).get(1);
+		List<Integer> minDur2 = getMinimumDurationPerNote(false).get(1);
+		List<Integer> minDur2Exp = getMinimumDurationPerNote(true).get(1);
 		//
 		List<Integer> gridX2 = new ArrayList<>();
-		getOnsetTimesNotes(false).get(1).forEach(item -> { if (item[1] != 0) { gridX2.add(item[0]);}});
+		getOnsetTimesPerNote(false).get(1).forEach(item -> { if (item[1] != 0) { gridX2.add(item[0]);}});
 		List<Integer> gridX2Exp = new ArrayList<>();
-		getOnsetTimesNotes(true).get(1).forEach(item -> { if (item[1] != 0) { gridX2Exp.add(item[0]);}});
+		getOnsetTimesPerNote(true).get(1).forEach(item -> { if (item[1] != 0) { gridX2Exp.add(item[0]);}});
 
 		List<List<List<Integer>>> expected = new ArrayList<>();
 		List<List<Integer>> expected1 = new ArrayList<>();
@@ -736,12 +702,14 @@ public class TablatureTest extends TestCase {
 		expected.add(expected2);
 
 		List<List<List<Integer>>> actual = new ArrayList<>();
-		actual.add(Tablature.adaptToDiminutions(minDur1, gridX1, 
-			ToolBox.getItemsAtIndex(t1.getTimeline().getMeterInfo(), Timeline.MI_DIM), 
-			t1.getTimeline().getUndiminutedMeterInfo()));
-		actual.add(Tablature.adaptToDiminutions(minDur2, gridX2, 
-			ToolBox.getItemsAtIndex(t2.getTimeline().getMeterInfo(), Timeline.MI_DIM), 
-			t2.getTimeline().getUndiminutedMeterInfo()));
+		actual.add(t1.adaptToDiminutions(minDur1, gridX1));
+//		actual.add(Tablature.adaptToDiminutions(minDur1, gridX1, 
+//			ToolBox.getItemsAtIndex(t1.getTimeline().getMeterInfo(), Timeline.MI_DIM), 
+//			t1.getTimeline().getUndiminutedMeterInfo()));
+		actual.add(t2.adaptToDiminutions(minDur2, gridX2));
+//		actual.add(Tablature.adaptToDiminutions(minDur2, gridX2, 
+//			ToolBox.getItemsAtIndex(t2.getTimeline().getMeterInfo(), Timeline.MI_DIM), 
+//			t2.getTimeline().getUndiminutedMeterInfo()));
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -760,12 +728,33 @@ public class TablatureTest extends TestCase {
 	public void testGetMaximumDuration() {
 		Tablature t1 = new Tablature();
 		t1.setEncoding(new Encoding(encodingTestpiece));
-		t1.setNormaliseTuning(true);
-		t1.setPiecename();
-		t1.setTimeline();
-		t1.setTunings();
+//		t1.setNormaliseTuning(true);
+//		t1.setPiecename();
+//		t1.setTimeline();
+//		t1.setTunings();
 
-		
+		List<Integer> expected = new ArrayList<>();
+		for (Integer[] in : getBtp(false)) {
+			expected.add(in[Tablature.MAX_DURATION]);
+		}
+
+		List<String> listOfTabSymbols = 
+			t1.getEncoding().getListsOfSymbols().get(Encoding.TAB_SYMBOLS_IND);
+		List<Integer> gridXOfTabSymbols = new ArrayList<>();
+		getOnsetTimesPerNote(false).get(0).forEach(item -> { if (item[1] != 0) { 
+			gridXOfTabSymbols.add(item[0]);}});		
+		List<Integer> durOfTabSymbols = getMinimumDurationPerNote(false).get(0);
+//		TabSymbolSet tss = t1.getEncoding().getTabSymbolSet();
+		List<Integer> actual = new ArrayList<>();
+		for (int i = 0; i < listOfTabSymbols.size(); i++) {
+			actual.add(t1.getMaximumDuration(durOfTabSymbols, gridXOfTabSymbols, i));	
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		} 
+		assertEquals(expected, actual);		
 	}
 
 
@@ -817,7 +806,7 @@ public class TablatureTest extends TestCase {
 	public void testGetPitchesInChordStatic() {
 		Tablature tablature = new Tablature(encodingTestpiece, false);
 
-		List<List<Integer>> expected = getPitchesInChord();
+		List<List<Integer>> expected = getPitchesInChord(false);
 		List<List<Integer>> actual = new ArrayList<List<Integer>>();
 		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
 		Integer[][] btp = tablature.getBasicTabSymbolProperties();
@@ -906,7 +895,7 @@ public class TablatureTest extends TestCase {
 
 	public void testConvertTabSymbolToNote() {		
 		List<Note> expected = new ArrayList<>();
-		Integer[][] btp = getBtp();
+		Integer[][] btp = getBtp(false);
 		for (Integer[] in : btp) {
 			expected.add(new Note(
 				new ScoreNote(
@@ -936,7 +925,7 @@ public class TablatureTest extends TestCase {
 	public void testGetPitchesInChord() {
 		Tablature tablature = new Tablature(encodingTestpiece, false);
 
-		List<List<Integer>> expected = getPitchesInChord();
+		List<List<Integer>> expected = getPitchesInChord(false);
 		List<List<Integer>> actual = new ArrayList<List<Integer>>();
 		for (int i = 0; i < tablature.getTablatureChords().size(); i++) {
 		 	actual.add(tablature.getPitchesInChord(i));
@@ -1084,7 +1073,7 @@ public class TablatureTest extends TestCase {
 	public void testGenerateChordDictionary() {
 		Tablature tablature = new Tablature(encodingTestpiece, true);
 
-		List<List<Integer>> pitchesInChord = getPitchesInChordTransposed();
+		List<List<Integer>> pitchesInChord = getPitchesInChord(true);
 		pitchesInChord = ToolBox.removeDuplicateItems(pitchesInChord);
 		pitchesInChord.forEach(chord -> Collections.sort(chord));
 		
@@ -1115,17 +1104,17 @@ public class TablatureTest extends TestCase {
 		List<Rational[]> expected = new ArrayList<>();
 		// a. Excluding rests
 		// For a piece with no meter changes
-		getOnsetTimesChords(false).get(0).forEach(item -> { if (item[1] != 0) { expected.add(
+		getOnsetTimesPerChord(false).get(0).forEach(item -> { if (item[1] != 0) { expected.add(
 			new Rational[]{new Rational(item[0], Tablature.SRV_DEN), Rational.ONE});}});
 		// For a piece with meter changes
-		getOnsetTimesChords(true).get(1).forEach(item -> { if (item[1] != 0) { expected.add(
+		getOnsetTimesPerChord(true).get(1).forEach(item -> { if (item[1] != 0) { expected.add(
 			new Rational[]{new Rational(item[0], Tablature.SRV_DEN), Rational.ONE});}});
 		// b. Including rests
 		// For a piece with no meter changes
-		getOnsetTimesChords(false).get(0).forEach(item -> expected.add(new Rational[]{
+		getOnsetTimesPerChord(false).get(0).forEach(item -> expected.add(new Rational[]{
 			new Rational(item[0], Tablature.SRV_DEN), new Rational(item[1], 1)})); 
 		// For a piece with meter changes
-		getOnsetTimesChords(true).get(1).forEach(item -> expected.add(new Rational[]{
+		getOnsetTimesPerChord(true).get(1).forEach(item -> expected.add(new Rational[]{
 			new Rational(item[0], Tablature.SRV_DEN), new Rational(item[1], 1)})); 
 
 		List<Rational[]> actual = new ArrayList<>();
@@ -1151,12 +1140,12 @@ public class TablatureTest extends TestCase {
 		List<Rational> expected = new ArrayList<>();
 		// testpiece
 		List<Rational> md1 = new ArrayList<>();
-		getMinimumDurationsChords(false).get(0).forEach(i -> md1.add(new Rational(i, Tablature.SRV_DEN)));
+		getMinimumDurationPerChord(false).get(0).forEach(i -> md1.add(new Rational(i, Tablature.SRV_DEN)));
 		expected.addAll(md1);
 		
 		// testGetMeterInfo
 		List<Rational> md2 = new ArrayList<>();
-		getMinimumDurationsChords(true).get(1).forEach(i -> md2.add(new Rational(i, Tablature.SRV_DEN)));
+		getMinimumDurationPerChord(true).get(1).forEach(i -> md2.add(new Rational(i, Tablature.SRV_DEN)));
 		expected.addAll(md2);
 
 		List<Rational> actual = t1.getMinimumDurationPerChord();
@@ -1286,7 +1275,7 @@ public class TablatureTest extends TestCase {
 
 	public void testGetBasicTabSymbolPropertiesChord() {
 		Tablature tablature = new Tablature(encodingTestpiece, false);
-		Integer[][] btp = getBtp();
+		Integer[][] btp = getBtp(false);
 
 		List<Integer[][]> expected = new ArrayList<Integer[][]>();
 		// Chord 0
@@ -1417,7 +1406,7 @@ public class TablatureTest extends TestCase {
 		
 		// btp
 		Integer[][] expectedBtp = new Integer[0][0];
-		Integer[][] btp = getBtp();
+		Integer[][] btp = getBtp(false);
 		// Chord 0 (15)		
 		Integer[][] chord = Arrays.copyOfRange(btp, 35, 39);
 		for (int i = 0; i < chord.length; i++) {
@@ -1595,7 +1584,7 @@ public class TablatureTest extends TestCase {
 
 		// btp
 		Integer[][] expectedBtp = new Integer[0][0];
-		Integer[][] btp = getBtp();	
+		Integer[][] btp = getBtp(false);	
 		// Chord 0 (0)
 		Integer[][] chord = Arrays.copyOfRange(btp, 0, 4);
 		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
@@ -1704,7 +1693,7 @@ public class TablatureTest extends TestCase {
 	public void testStretch() {
 		Tablature t = new Tablature(encodingTestpiece, false);
 		
-		Integer[][] expectedBtp = getBtp();
+		Integer[][] expectedBtp = getBtp(false);
 		for (Integer[] in : expectedBtp) {
 			in[Tablature.ONSET_TIME] = in[Tablature.ONSET_TIME] * 2;
 			in[Tablature.MIN_DURATION] = in[Tablature.MIN_DURATION] * 2;

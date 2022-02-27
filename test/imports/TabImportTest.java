@@ -73,7 +73,7 @@ public class TabImportTest {
 		for (String s : testPieces) {
 			Encoding enc = new Encoding(new File("F:/research/data/annotated/encodings/" + s));
 			String clean = enc.getCleanEncoding();
-			String tss = enc.getInfoAndSettings().get(Encoding.TABSYMBOLSET_IND);
+			String tss = enc.getMetadata().get(Encoding.TABSYMBOLSET_IND);
 			actual.add(TabImport.createMeterInfoString(clean, tss));
 		}
 
