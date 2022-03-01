@@ -19,16 +19,16 @@ import tbp.TabSymbolSet;
 import tools.ToolBox;
 
 public class Tablature implements Serializable {
-
 	private static final long serialVersionUID = 1L;
+
 	public static final int MAXIMUM_NUMBER_OF_NOTES = 5;
 	public static final Rational SMALLEST_RHYTHMIC_VALUE = 
 		new Rational(RhythmSymbol.semifusa.getDuration()/3, RhythmSymbol.brevis.getDuration());
 	public static final int SRV_DEN = SMALLEST_RHYTHMIC_VALUE.getDenom();
 
 	// For tunings
-	private static final int ENCODED_TUNING_IND = 0;
-	private static final int NORMALISED_TUNING_IND = 1;
+	public static final int ENCODED_TUNING_IND = 0;
+	public static final int NORMALISED_TUNING_IND = 1;
 
 	// For basicTabSymbolProperties
 	public static final int PITCH = 0;

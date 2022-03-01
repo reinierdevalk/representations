@@ -23,17 +23,17 @@ import tbp.TabSymbolSet;
 import tools.ToolBox;
 
 public class Encoding implements Serializable {
-
 	private static final long serialVersionUID = 1L;
+
 	public static final String EXTENSION = ".tbp"; // TODO replace everywhere 
 	public static final String FOOTNOTE_INDICATOR = "@";
 	public static final String METADATA_ERROR = "METADATA ERROR -- Check for missing or misplaced curly brackets.";
-	public static final String ENCODING_ERROR = "ENCODING ERROR -- Run TabViewer to correct.";
+//	public static final String ENCODING_ERROR = "ENCODING ERROR -- Run TabViewer to correct."; // TODO
+	public static final String NO_BARLINE_TEXT = "no barline";
+	public static final String MISPLACED_BARLINE_TEXT = "misplaced barline";
 	public static final int MINIMAL = 0;
 	public static final int METADATA_CHECKED = 1;
 	public static final int SYNTAX_CHECKED = 2;
-	private static final String NO_BARLINE_TEXT = "no barline";
-	private static final String MISPLACED_BARLINE_TEXT = "misplaced barline";
 
 	// For metadata
 	public static final int AUTHOR_IND = 0;
@@ -68,25 +68,17 @@ public class Encoding implements Serializable {
 	public static final int HORIZONTAL_POS_IND = 6;
 	public static final int VERTICAL_POS_IND = 7;
 	public static final int HORIZONTAL_POS_TAB_SYMBOLS_ONLY_IND = 8;
-	
-	// For METADATA_TAGS
-	public static final String AUTHOR_TAG = "AUTHOR:";
-	public static final String TITLE_TAG = "TITLE:";
-	public static final String SOURCE_TAG = "SOURCE:";
-	public static final String TABSYMBOLSET_TAG = "TABSYMBOLSET:";
-	public static final String TUNING_TAG = "TUNING:";
-	public static final String METER_INFO_TAG = "METER_INFO:";
-	public static final String DIMINUTION_TAG = "DIMINUTION:";
 
 	public static final String[] METADATA_TAGS;
+	private static final String METER_INFO_TAG = "METER_INFO:";
 	static { METADATA_TAGS = new String[7]; 
-		METADATA_TAGS[AUTHOR_IND] = AUTHOR_TAG;
-		METADATA_TAGS[TITLE_IND] = TITLE_TAG;
-		METADATA_TAGS[SOURCE_IND] = SOURCE_TAG;
-		METADATA_TAGS[TABSYMBOLSET_IND] = TABSYMBOLSET_TAG;
-		METADATA_TAGS[TUNING_IND] = TUNING_TAG;
+		METADATA_TAGS[AUTHOR_IND] = "AUTHOR:";
+		METADATA_TAGS[TITLE_IND] = "TITLE:";
+		METADATA_TAGS[SOURCE_IND] = "SOURCE:";
+		METADATA_TAGS[TABSYMBOLSET_IND] = "TABSYMBOLSET:";
+		METADATA_TAGS[TUNING_IND] = "TUNING:";
 		METADATA_TAGS[METER_INFO_IND] = METER_INFO_TAG;
-		METADATA_TAGS[DIMINUTION_IND] = DIMINUTION_TAG;		
+		METADATA_TAGS[DIMINUTION_IND] = "DIMINUTION:";		
 	}
 	
 	private String piecename; 
@@ -752,28 +744,28 @@ public class Encoding implements Serializable {
 	 * NB: The encoding must always be checked in the sequence checkValidityRules() - checkSymbols() - 
 	 *     checkLayoutRules().<br><br>
 	 * 
-	 * @param rawEncoding
-	 * @param cleanEncoding
+	 * @param rawEnc
+	 * @param cleanEnc
 	 * @param tss
 	 * @return <ul>
 	 * <li><code>null</code> if and only if all three conditions are <code>true</code>.</li> 
      * <li>A String[] containing the relevant error information if not.</li>
      * </ul>
 	 */
-	public static String[] checkForEncodingErrors(String rawEncoding, String cleanEncoding,
+	public static String[] checkForEncodingErrors(String rawEnc, String cleanEnc, 
 		TabSymbolSet tss) {
-		Integer[] indsAligned = alignRawAndCleanEncoding(rawEncoding, cleanEncoding);
-		String[] checkVR = checkValidityRules(cleanEncoding, indsAligned);
+		Integer[] indsAligned = alignRawAndCleanEncoding(rawEnc, cleanEnc);
+		String[] checkVR = checkValidityRules(cleanEnc, indsAligned);
 		if (checkVR != null) {
 			return checkVR;
 		}
 		else {
-			String[] checkSymbols = checkSymbols(cleanEncoding, tss, indsAligned);
+			String[] checkSymbols = checkSymbols(cleanEnc, tss, indsAligned);
 			if (checkSymbols != null) {
 				return checkSymbols;    
 			}
 			else {
-				String[] checkLR = checkLayoutRules(cleanEncoding, tss, indsAligned);
+				String[] checkLR = checkLayoutRules(cleanEnc, tss, indsAligned);
 				return checkLR != null ? checkLR : null;
 			}
 		}
@@ -784,25 +776,25 @@ public class Encoding implements Serializable {
 	 * Aligns the indices of the raw and the clean encoding, i.e., gets for each char in 
 	 * rawEncoding the index of that character in cleanEncoding. 
 	 * 
-	 * @param rawEncoding
-	 * @param cleanEncoding
+	 * @param rawEnc
+	 * @param cleanEnc
 	 * @return An Integer[] the size of rawEncoding, containing the aligned indices. All 
 	 * indices where rawEncoding contains a char that is not part of cleanEncoding hold -1.
 	 */
 	// TESTED 
-	static Integer[] alignRawAndCleanEncoding(String rawEncoding, String cleanEncoding) {
+	static Integer[] alignRawAndCleanEncoding(String rawEnc, String cleanEnc) {
 		// Initialise with default values of -1
-		Integer[] indsAligned = new Integer[rawEncoding.length()];
+		Integer[] indsAligned = new Integer[rawEnc.length()];
 		Arrays.fill(indsAligned, -1);
 
 		int startInd = 0;
-		for (int i = 0; i < cleanEncoding.length(); i++) {
-			String currentChar = cleanEncoding.substring(i, i + 1);
-			for (int j = startInd; j < rawEncoding.length(); j++) {
-				String s = rawEncoding.substring(j, j + 1); 
+		for (int i = 0; i < cleanEnc.length(); i++) {
+			String currentChar = cleanEnc.substring(i, i + 1);
+			for (int j = startInd; j < rawEnc.length(); j++) {
+				String s = rawEnc.substring(j, j + 1); 
 				// Skip comments
 				if (s.equals(SymbolDictionary.OPEN_METADATA_BRACKET)) {
-					j = rawEncoding.indexOf(SymbolDictionary.CLOSE_METADATA_BRACKET, j);
+					j = rawEnc.indexOf(SymbolDictionary.CLOSE_METADATA_BRACKET, j);
 				}
 				else if (s.equals(currentChar)) {
 					indsAligned[j] = i;
@@ -853,10 +845,6 @@ public class Encoding implements Serializable {
 		// - placed at the end of the last system: always preceded by chars
 		// - placed at the end of the piece: never followed by chars
 		//
-		// For regex see
-		// https://www.vogella.com/tutorials/JavaRegularExpressions/article.html
-		// http://tutorials.jenkov.com/java-regex/index.html
-		//
 		// Finds any SBI followed by a SBI. Matches with cleanEnc if that equals
 		// one or more chars (.+); followed by a SBI + SBI; followed by one or more chars 
 		String regexSbiSbi = ".+//.+";
@@ -893,10 +881,10 @@ public class Encoding implements Serializable {
 		else if (cleanEnc.startsWith(sbi) || cleanEnc.matches(regexSbiSbi) || 
 			cleanEnc.startsWith(ss) || cleanEnc.matches(regexSbiSs)) {
 			boolean sbiCase = cleanEnc.startsWith(sbi) || cleanEnc.matches(regexSbiSbi);
-			String punctSymbol = sbiCase ? sbi : ss;
+			String s = sbiCase ? sbi : ss;
 			int errorInd = 
-				cleanEnc.startsWith(punctSymbol) ? inds.indexOf(cleanEnc.indexOf(punctSymbol)) : 
-				inds.indexOf(cleanEnc.indexOf(sbi + punctSymbol)) + 1;
+				cleanEnc.startsWith(s) ? inds.indexOf(cleanEnc.indexOf(s)) : 
+				inds.indexOf(cleanEnc.indexOf(sbi + s)) + 1;
 			return new String[] {
 				String.valueOf(errorInd), 
 				String.valueOf(errorInd + (sbiCase ? sbi.length() : ss.length())),
@@ -907,6 +895,7 @@ public class Encoding implements Serializable {
 		}
 		// VALIDITY RULE 4: Each system must end with a symbol separator
 		else if (cleanEnc.matches(regexNotSsSbi) || cleanEnc.matches(regexNotSsEbi)) {
+			boolean ebiCase = cleanEnc.matches(regexNotSsEbi);
 			int sbiInd = -1;			
 			for (int i = 0; i < cleanEnc.length(); i++) {
 				sbiInd = cleanEnc.indexOf(sbi, i);
@@ -916,7 +905,6 @@ public class Encoding implements Serializable {
 				i = sbiInd;
 			}
 			int errorInd = inds.indexOf(sbiInd);
-			boolean ebiCase = cleanEnc.matches(regexNotSsEbi);
 			// NB ebiCase must be checked first, because when the EBI is not preceded
 			// by a SS, both regexNotSsSBi and regexNotSsEBi match
 			return new String[]{
@@ -964,28 +952,21 @@ public class Encoding implements Serializable {
 			int ssInd = cleanEnc.indexOf(ss, i);
 			if (ssInd != -1) {
 				// Create symbol; remove any SBI (at index i) directly preceding it
-				String symbol = cleanEnc.substring(i, ssInd).replace(sbi, "");
-				String errorSymbol = null;
-				String mess = null;
-				// a. Missing symbol found if symbol at i is an empty string (ssInd == i)
-				if (symbol.equals("")) {
-					errorSymbol = ss;
-					mess = "MISSING SYMBOL ERROR -- Remove symbol separator or insert symbol before.";
-				}
-				// b. Unknown symbol found if symbol at i is neither a CMS nor a VMS 
-				else if (ConstantMusicalSymbol.getConstantMusicalSymbol(symbol) == null &&
-					TabSymbol.getTabSymbol(symbol, tss) == null && 
-					RhythmSymbol.getRhythmSymbol(symbol) == null && 
-					MensurationSign.getMensurationSign(symbol) == null) {
-					errorSymbol = symbol;
-					mess = "UNKNOWN SYMBOL ERROR -- Check for typos or missing symbol separators; check TabSymbolSet.";
-				}
-				if (mess != null) {
+				String s = cleanEnc.substring(i, ssInd).replace(sbi, "");
+				// Missing symbol found if symbol at i is an empty string (ssInd == i);
+				// unknown symbol found if symbol at i is neither a CMS nor a VMS 
+				if (s.equals("") || 
+					(ConstantMusicalSymbol.getConstantMusicalSymbol(s) == null &&
+					TabSymbol.getTabSymbol(s, tss) == null && 
+					RhythmSymbol.getRhythmSymbol(s) == null && 
+					MensurationSign.getMensurationSign(s) == null)) {
 					int errorInd = inds.indexOf(i);
 					return new String[]{
 						String.valueOf(errorInd),
-						String.valueOf(errorInd + errorSymbol.length()),
-						mess,
+						String.valueOf(errorInd + (s.equals("") ? ss.length() : s.length())),
+						s.equals("") ? 
+							"MISSING SYMBOL ERROR -- Remove symbol separator or insert symbol before." :
+							"UNKNOWN SYMBOL ERROR -- Check for typos or missing symbol separators; check TabSymbolSet.",
 						"See " + VR5
 					};
 				}
@@ -1017,11 +998,10 @@ public class Encoding implements Serializable {
 	// TESTED
 	static String[] checkLayoutRules(String cleanEnc, TabSymbolSet tss, Integer[] indicesRawAndCleanAligned) {
 		List<Integer> inds = Arrays.asList(indicesRawAndCleanAligned);
-		List<ConstantMusicalSymbol> cms = new ArrayList<>(ConstantMusicalSymbol.CONSTANT_MUSICAL_SYMBOLS);
 
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
 		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+		String sp = ConstantMusicalSymbol.SPACE.getEncoding();
 
 		String LR1 = "LAYOUT RULE 1: A system can start with any event but a space.";
 		String LR2 = "LAYOUT RULE 2: A system must end with a space, a barline, or some sort of repeat barline.";
@@ -1033,9 +1013,9 @@ public class Encoding implements Serializable {
 		String LR8 = "LAYOUT RULE 8: A vertical sonority must be encoded in a fixed sequence.";
 
 		// Finds any SBI not preceded by a CMS. Matches with cleanEnc if that equals
-		// one or more chars (.+); followed by not ([^...]) a CMS + SS + SBI; followed by one or more chars (.+)
+		// one or more chars (.+); followed by not ([^...]) a CMS + SS + SBI; followed by one or more chars
 		List<String> allCMSStr = new ArrayList<>();
-		cms.forEach(s -> allCMSStr.add("(" + s.getEncoding() + ")"));
+		ConstantMusicalSymbol.CONSTANT_MUSICAL_SYMBOLS.forEach(s -> allCMSStr.add("(" + s.getEncoding() + ")"));
 		String regexNotCmsSsSbi = ".+[^" + String.join("", allCMSStr) + "]\\./.+";
 		// Finds any CMS succeeded by a space. Matches with cleanEnc if that equals
 		// zero or more chars (.*); followed by a CMS + SS + space; followed by one or more chars (.+)
@@ -1059,13 +1039,13 @@ public class Encoding implements Serializable {
 		else if (cleanEnc.matches(regexNotCmsSsSbi)) {
 			Integer[] indLeftRight = getIndicesOfPrecedingSymbol(sbi, cleanEnc, false);
 			int errorInd = inds.indexOf(indLeftRight[1]);
-			String errorSymbol = cleanEnc.substring(indLeftRight[1], indLeftRight[2]);
+			String s = cleanEnc.substring(indLeftRight[1], indLeftRight[2]);
 			return new String[]{
 				String.valueOf(errorInd),
-				String.valueOf(errorInd + errorSymbol.length()),
+				String.valueOf(errorInd + s.length()),
 				"INVALID ENCODING ERROR -- Insert a space after this " + 
-					(TabSymbol.getTabSymbol(errorSymbol, tss) != null ? "TabSymbol" :
-					(RhythmSymbol.getRhythmSymbol(errorSymbol) != null ? "RhythmSymbol" : 
+					(TabSymbol.getTabSymbol(s, tss) != null ? "TabSymbol" :
+					(RhythmSymbol.getRhythmSymbol(s) != null ? "RhythmSymbol" : 
 					"MensurationSign")) + ".",
 				"See " + LR2
 			};
@@ -1087,49 +1067,42 @@ public class Encoding implements Serializable {
 				int nextSsInd = cleanEnc.indexOf(ss, ssInd+1);
 				if (nextSsInd != -1) {
 					// Create symbols; remove any SBI (at index i) directly preceding them
-					String symbol = cleanEnc.substring(i, ssInd).replace(sbi, "");
-					String nextSymbol = cleanEnc.substring(ssInd + 1, nextSsInd).replace(sbi, "");
-					String mess = null;
-
+					String s = cleanEnc.substring(i, ssInd).replace(sbi, "");
+					String nextS = cleanEnc.substring(ssInd + 1, nextSsInd).replace(sbi, "");
 					// LAYOUT RULE 4: A vertical sonority must be succeeded by a space. I.e., 
 					// a TS can only be succeeded by 
 					// - another TS, in which case both are part of the same chord
 					// - a space, in which case it is the only or last TS of a chord
-					if (TabSymbol.getTabSymbol(symbol, tss) != null) {
-						if (TabSymbol.getTabSymbol(nextSymbol, tss) == null && !nextSymbol.equals(sp)) {
-							mess = "TabSymbol";
-						}
-					}
+					boolean lr4Broken = 
+						TabSymbol.getTabSymbol(s, tss) != null && 
+						TabSymbol.getTabSymbol(nextS, tss) == null && !nextS.equals(sp);
 					// LAYOUT RULE 5: A rest (or a rhythm dot at the beginning of system or 
 					// bar) must be succeeded by a space. I.e., a RS can only be succeeded by 
 					// - a TS, in which case it is the first symbol of a chord
 					// - a space, in which case it denotes a rest or a rhythm dot at the 
 					//   beginning of a bar
-					else if (RhythmSymbol.getRhythmSymbol(symbol) != null) {
-						if (TabSymbol.getTabSymbol(nextSymbol, tss) == null && !nextSymbol.equals(sp)) {
-							mess = "RhythmSymbol";
-						}
-					}
+					boolean lr5Broken = 
+						RhythmSymbol.getRhythmSymbol(s) != null && 
+						TabSymbol.getTabSymbol(nextS, tss) == null && !nextS.equals(sp); 					
 					// LAYOUT RULE 6: A MensurationSign must be succeeded by a space. I.e., 
 					// a MS can only be succeeded by 
 					// - another MS, in which case it is the first encoded MS of a compound MS
 					// - a space, in which case it is either a single MS or the last 
 					//   encoded MS of a compound MS
-					else if (MensurationSign.getMensurationSign(symbol) != null) {
-						if (MensurationSign.getMensurationSign(nextSymbol) == null && !nextSymbol.equals(sp)) {
-							mess = "MensurationSign";
-						}
-					}
-					if (mess != null) {
+					boolean lr6Broken = 
+						MensurationSign.getMensurationSign(s) != null &&
+						MensurationSign.getMensurationSign(nextS) == null && !nextS.equals(sp);
+					if (lr4Broken || lr5Broken || lr6Broken) {
 						int errorInd = 
 							inds.indexOf((cleanEnc.substring(i, i+1).equals(sbi)) ? i+1 : i);
 						return new String[]{
 							String.valueOf(errorInd),
-							String.valueOf(errorInd + symbol.length()),
-							"INVALID ENCODING ERROR -- Insert a space after this " + mess + ".",
-							"See " + (mess.equals("TabSymbol") ? LR4 : 
-								(mess.equals("RhythmSymbol") ? LR5 : LR6))
-						};
+							String.valueOf(errorInd + s.length()),
+							"INVALID ENCODING ERROR -- Insert a space after this " + 
+								(lr4Broken ? "TabSymbol" : 
+								(lr5Broken ? "RhythmSymbol" : "MensurationSign")) + ".",
+							"See " + (lr4Broken ? LR4 : (lr5Broken ? LR5 : LR6))
+						};	
 					}
 					i = ssInd;
 				}
@@ -1146,20 +1119,20 @@ public class Encoding implements Serializable {
 					int leftInd = cleanEnc.lastIndexOf(ss, rightInd - 1);
 					leftInd = leftInd == -1 ? 0 : leftInd + 1;
 					// Create symbol; remove any SBI (at index leftInd) directly preceding it
-					String symbol = cleanEnc.substring(leftInd, rightInd).replace(sbi, "");
-					if (TabSymbol.getTabSymbol(symbol, tss) != null) {
-						// Reconstruct event
-						String event = symbol;
+					String s = cleanEnc.substring(leftInd, rightInd).replace(sbi, "");
+					// If symbol is a TS: reconstruct event and check LRs
+					if (TabSymbol.getTabSymbol(s, tss) != null) {
+						String event = s;
 						int leftIndEvent = -1;
 						for (int newRightInd = cleanEnc.lastIndexOf(ss, leftInd); 
 							newRightInd >= 0; newRightInd--) {
 							int newLeftInd = cleanEnc.lastIndexOf(ss, newRightInd - 1);
 							newLeftInd = newLeftInd == -1 ? 0 : newLeftInd + 1;
 							// Create symbol; remove any SBI (at index newleftInd) directly preceding it
-							String prevSymbol = cleanEnc.substring(newLeftInd, newRightInd).replace(sbi,  ""); 
-							if (TabSymbol.getTabSymbol(prevSymbol, tss) != null ||
-								RhythmSymbol.getRhythmSymbol(prevSymbol) != null) {
-								event = prevSymbol + ss + event;
+							String prevS = cleanEnc.substring(newLeftInd, newRightInd).replace(sbi,  ""); 
+							if (TabSymbol.getTabSymbol(prevS, tss) != null ||
+								RhythmSymbol.getRhythmSymbol(prevS) != null) {
+								event = prevS + ss + event;
 								leftIndEvent = newLeftInd;
 							}
 							else {
@@ -1167,217 +1140,46 @@ public class Encoding implements Serializable {
 							}
 							newRightInd = newLeftInd;
 						}
-						String mess = null;
 						List<String> symbols = Arrays.asList(event.split("\\" + ss));
+						// LAYOUT RULE 7: A vertical sonority can contain only one TabSymbol per course
 						List<Integer> courses = new ArrayList<>();
-						symbols.forEach(s -> { if (TabSymbol.getTabSymbol(s, tss) != null) {
-							courses.add(TabSymbol.getTabSymbol(s, tss).getCourse());}});
+						symbols.forEach(item -> { if (TabSymbol.getTabSymbol(item, tss) != null) {
+							courses.add(TabSymbol.getTabSymbol(item, tss).getCourse());}});
 						List<Integer> uniqueCourses = 
 							courses.stream().distinct().collect(Collectors.toList());
-						List<Integer> orderedReversedCourses = 
-							courses.stream().sorted(Comparator.reverseOrder()).collect(
-							Collectors.toList());
-						List<Boolean> symbolIsRs = new ArrayList<>();
-						symbols.forEach(s -> 
-							symbolIsRs.add(RhythmSymbol.getRhythmSymbol(s) != null));					
-						boolean firstIsNotRs = (symbols.size() > 1 && symbolIsRs.lastIndexOf(true) != 0);
-						// LAYOUT RULE 7: A vertical sonority can contain only one TabSymbol per course
-						if (courses.size() > uniqueCourses.size()) {
-							mess = "Remove duplicate TabSymbol(s)";
-						}
+						boolean lr7Broken = courses.size() > uniqueCourses.size();
 						// LAYOUT RULE 8: A vertical sonority must be encoded in a fixed 
 						// sequence. I.e.,
 						// - Any RS must be encoded first
 						// - Any TS must follow, encoded with the one on the lowest course first 
-						else if (firstIsNotRs || !courses.equals(orderedReversedCourses)) {
-							mess = "This vertical sonority is not encoded in the correct sequence";
-						}
-						if (mess != null) {
+						List<Integer> orderedReversedCourses = 
+							courses.stream().sorted(Comparator.reverseOrder()).collect(
+							Collectors.toList());
+						List<Boolean> symbolIsRs = new ArrayList<>();
+						symbols.forEach(item -> 
+							symbolIsRs.add(RhythmSymbol.getRhythmSymbol(item) != null));					
+						boolean firstIsNotRs = (symbols.size() > 1 && symbolIsRs.contains(true) && 
+							symbolIsRs.indexOf(true) != 0);
+						boolean lr8Broken = firstIsNotRs || !courses.equals(orderedReversedCourses);
+						if (lr7Broken || lr8Broken) {
 							int errorInd = 
 								inds.indexOf((cleanEnc.substring(leftIndEvent, 
 								leftIndEvent+1).equals(sbi)) ? leftIndEvent+1 : leftIndEvent);
 							return new String[]{
 								String.valueOf(errorInd),
 								String.valueOf(errorInd + event.length()),
-								"INVALID ENCODING ERROR -- " + mess + ".",
-								"See " + (mess.startsWith("Remove") ? LR7 : LR8)
+								"INVALID ENCODING ERROR -- " + 
+									(lr7Broken ? "Remove duplicate TabSymbol(s)" + "." : 
+									"This vertical sonority is not encoded in the correct sequence"	+ "."),
+								"See " + (lr7Broken ? LR7 : LR8)
 							};
 						}
 					}
 					i = spInd;
 				}
 			}
+			return null;
 		}
-		return null;
-
-//		String noEBI = cleanEnc.substring(0, cleanEnc.length() - ebi.length());
-//		String[] allSystems = cleanEnc.substring(0, cleanEnc.length() - ebi.length()).split(sbi);
-//		int indicesTraversed = 0;
-//		for (String system : cleanEnc.substring(0, cleanEnc.length() - ebi.length()).split(sbi)) {
-//			// a. Rules 1-6 pertain to individual symbols within the system 
-//			// Get the indices of the first and last two SS indices 
-//			int ssInd = -1;
-//			int nextSsInd = system.indexOf(ss, ssInd + 1);
-//			// VR 4 garuantees that each system ends with a SS
-//			int lastSsInd = system.lastIndexOf(ss); 
-//			int penultimateSsInd = system.lastIndexOf(ss, lastSsInd - 1);
-//			while (nextSsInd != -1) {
-//				// Determine the current and, if the current is not the last symbol in the system, the next encoded symbol
-//				String symbol = system.substring(ssInd + 1, nextSsInd);
-//				String nextSymbol = null;
-//				int nextNextSsInd = -1;
-//				if (ssInd < penultimateSsInd) {
-//					nextNextSsInd = system.indexOf(ss, nextSsInd + 1);
-//					nextSymbol = system.substring(nextSsInd + 1, nextNextSsInd);
-//				}
-////				// LAYOUT RULE 1: A system can start with any event but a space
-////				// Is the first encoded symbol a space?
-////				if (ssInd == -1 && symbol.equals(sp)) {
-////					int errorInd = indicesTraversed + ssInd + 1;
-////					indicesAndMessages[0] = String.valueOf(inds.indexOf(errorInd));
-////					indicesAndMessages[1] = String.valueOf(inds.indexOf(errorInd) + symbol.length());
-////					indicesAndMessages[2] = "INVALID ENCODING ERROR -- Remove this space."; 
-////					indicesAndMessages[3] = "See " + LR1; 
-////					return indicesAndMessages;
-////				}
-////				// LAYOUT RULE 2: A system must end with a space, a barline, or some sort of repeat barline (i.e., with a CMS)
-////				if (ssInd == penultimateSsInd && 
-////					ConstantMusicalSymbol.getConstantMusicalSymbol(symbol) == null) {
-////					int errorInd = indicesTraversed + penultimateSsInd + 1;
-////					indicesAndMessages[0] = String.valueOf(inds.indexOf(errorInd));
-////					indicesAndMessages[1] = String.valueOf(inds.indexOf(errorInd) + symbol.length());
-////					if (TabSymbol.getTabSymbol(symbol, tss) != null) {
-////						indicesAndMessages[2] = "INVALID ENCODING ERROR -- Insert a space after this TabSymbol.";
-////					}
-////					if (RhythmSymbol.getRhythmSymbol(symbol) != null) {
-////						indicesAndMessages[2] = "INVALID ENCODING ERROR -- Insert a space after this RhythmSymbol.";
-////					}
-////					if (MensurationSign.getMensurationSign(symbol) != null) {
-////						indicesAndMessages[2] = "INVALID ENCODING ERROR -- Insert a space after this MensurationSign.";
-////					}
-////					indicesAndMessages[3] = "See " + LR2;
-////					return indicesAndMessages;
-////				}
-////				// LAYOUT RULE 3: A constant musical symbol cannot be succeeded by a space
-////				// Skip the last symbol of the system, which, as guaranteed by LR2 above, is always a CMS         
-////				if (ssInd < penultimateSsInd && 
-////					ConstantMusicalSymbol.getConstantMusicalSymbol(symbol) != null) {        	
-////					if (nextSymbol.equals(sp)) {
-////						int errorInd = indicesTraversed + nextSsInd + 1;
-////						indicesAndMessages[0] = String.valueOf(inds.indexOf(errorInd));
-////						indicesAndMessages[1] = String.valueOf(inds.indexOf(errorInd) + nextSymbol.length());
-////						indicesAndMessages[2] = "INVALID ENCODING ERROR -- Remove this space.";
-////						indicesAndMessages[3] = "See " + LR3;  
-////						return indicesAndMessages;
-////					}
-////				}
-////				// LAYOUT RULE 4: A vertical sonority must be succeeded by a space. Put 
-////				// differently: a TabSymbol can only be succeeded by 
-////				// (i)  another TabSymbol, in which case both are part of the same vertical sonority;
-////				// (ii) a space, in which case it is the only or last TabSymbol of a vertical sonority.
-////				// NB: LR2 above guarantees that the last symbol in the system is a CMS; thus, when symbol is the last
-////				//     symbol, the inner if, then yielding a nullPointerException (nextSymbol will be null), is never called 
-////				if (TabSymbol.getTabSymbol(symbol, tss) != null) {
-////					if (TabSymbol.getTabSymbol(nextSymbol, tss) == null && 
-////						!nextSymbol.equals(sp)) {
-////						int errorInd = indicesTraversed + ssInd + 1;   
-////						indicesAndMessages[0] = String.valueOf(inds.indexOf(errorInd));
-////						indicesAndMessages[1] = String.valueOf(inds.indexOf(errorInd) + symbol.length());
-////						indicesAndMessages[2] = "INVALID ENCODING ERROR -- Insert a space after this TabSymbol.";
-////						indicesAndMessages[3] = "See " + LR4;
-////						return indicesAndMessages;
-////					}
-////				}
-////				// LAYOUT RULE 5: A rest (or a rhythm dot at the beginning of system or bar) must be succeeded by a space.
-////				// Put differently: a RhythmSymbol can only be succeeded by 
-////				// (i)  a TabSymbol, in which case it is the first symbol of a vertical sonority; 
-////				// (ii) a space, in which case it denotes a rest or a rhythmDot at the beginning of a bar.  
-////				// NB: LR2 above guarantees that the last symbol in the system is a CMS; thus, when symbol is the last
-////				//     symbol, the inner if, then yielding a nullPointerException (nextSymbol will be null), is never called 
-////				if (RhythmSymbol.getRhythmSymbol(symbol) != null) {
-////					if (TabSymbol.getTabSymbol(nextSymbol, tss) == null &&
-////						!nextSymbol.equals(sp)) {
-////						int errorInd = indicesTraversed + ssInd + 1;   
-////						indicesAndMessages[0] = String.valueOf(inds.indexOf(errorInd));
-////						indicesAndMessages[1] = String.valueOf(inds.indexOf(errorInd) + symbol.length());
-////						indicesAndMessages[2] = "INVALID ENCODING ERROR -- Insert a space after this RhythmSymbol.";
-////						indicesAndMessages[3] = "See " + LR5;
-////						return indicesAndMessages;          
-////					}
-////				}
-////				// LAYOUT RULE 6: A MensurationSign must be succeeded by a space. Compound mensuration signs, consisting 
-////				// of two separate mensuration signs, exist. Thus, a MensurationSign can only be succeeded by 
-////				// (i)  another MensurationSign, in which case it is the first encoded mensuration sign of
-////				//      a compound mensuration sign;
-////				// (ii) a space, in which case it is either a single mensuration sign or the last encoded
-////				//      mensuration sign of a compound mensuration sign.   
-////				// NB: LR2 above guarantees that the last symbol in the system is a CMS; thus, when symbol is the last
-////				//     symbol, the inner if, then yielding a nullPointerException (nextSymbol will be null), is never called 
-////				if (MensurationSign.getMensurationSign(symbol) != null) {
-////					if (MensurationSign.getMensurationSign(nextSymbol) == null && 
-////						!nextSymbol.equals(sp)) {
-////						int errorInd = indicesTraversed + ssInd + 1;
-////						indicesAndMessages[0] = String.valueOf(inds.indexOf(errorInd));
-////						indicesAndMessages[1] = String.valueOf(inds.indexOf(errorInd) + symbol.length());
-////						indicesAndMessages[2] = "INVALID ENCODING ERROR -- Insert a space after this MensurationSign.";
-////						indicesAndMessages[3] = "See " + LR6;
-////						return indicesAndMessages;
-////					}
-////				}
-//				ssInd = nextSsInd;
-//				nextSsInd = system.indexOf(ss, ssInd + 1);
-//			}
-//
-//			// b. Rules 7 and 8 pertain to individual events within the system 
-//			String[] allEvents = system.split(sp + ss);
-//			for (String event : allEvents) {
-//				// Remove any barlines preceding the event as a result of the splitting
-//				String firstSymbol = event.substring(0, event.indexOf(ss));
-//				if (ConstantMusicalSymbol.getConstantMusicalSymbol(firstSymbol) != null) {
-//					event = event.substring(event.indexOf(ss) + 1, event.length());	
-//				}
-//				// Split the event into its individual symbols
-//				// NB: The SS cannot be used as the regular expression to split around because a dot is an existing
-//				// regular expression in Java. Therefore, all SS are replaced with whitespace before the splitting is done
-//				String[] allSymbols = event.replace(ss, ws).split(ws);
-//				List<Integer> coursesUsed = new ArrayList<Integer>();
-//				for (int i = 0; i < allSymbols.length; i++) {
-//					String symbol = allSymbols[i];
-//					// LAYOUT RULE 7: A vertical sonority can contain only one TabSymbol per course
-////					if (TabSymbol.getTabSymbol(symbol, tss) != null) {
-////						int course = TabSymbol.getTabSymbol(symbol, tss).getCourse();
-////						if (coursesUsed.contains(course)) {
-////							int errorInd = indicesTraversed + system.indexOf(event);
-////							indicesAndMessages[0] = String.valueOf(inds.indexOf(errorInd));
-////							indicesAndMessages[1] = String.valueOf(inds.indexOf(errorInd) + (event.length() - 1));
-////							indicesAndMessages[2] = "INVALID ENCODING ERROR -- Remove duplicate TabSymbol(s).";
-////							indicesAndMessages[3] = "See " + LR7;
-////							return indicesAndMessages;
-////						}
-////						else {
-////							coursesUsed.add(course);
-////						}
-////					}
-//					// LAYOUT RULE 8: A vertical sonority must be encoded in a fixed sequence, i.e.:
-//					// (i)  Any RS must be encoded first
-//					// (ii) Any TS must follow, encoded with the one on the lowest course first 
-//					List<Integer> coursesUsedOrdered = new ArrayList<Integer>(coursesUsed);
-//					Collections.sort(coursesUsedOrdered);
-//					Collections.reverse(coursesUsedOrdered);
-////					if ((i != 0 && RhythmSymbol.getRhythmSymbol(symbol) != null) ||
-////						!coursesUsed.equals(coursesUsedOrdered)	) {
-////						int errorInd = indicesTraversed + system.indexOf(event); 
-////						indicesAndMessages[0] = String.valueOf(inds.indexOf(errorInd));
-////						indicesAndMessages[1] = String.valueOf(inds.indexOf(errorInd) + (event.length() - 1));
-////						indicesAndMessages[2] = "INVALID ENCODING ERROR -- This vertical sonority is not encoded in the correct sequence.";
-////						indicesAndMessages[3] = "See " + LR8;
-////						return indicesAndMessages;
-////					}
-//				}
-//			}      
-//			indicesTraversed += system.length() + sbi.length();
-//		}
-//		return null;
 	}
 
 
@@ -1387,7 +1189,7 @@ public class Encoding implements Serializable {
 	 * preceding symbol is a CMS) holds true.
 	 * 
 	 * @param s
-	 * @param cleanEncoding
+	 * @param cleanEnc
 	 * @param condition Whether or not the preceding symbol should be a CMS.
 	 * @return An Integer[] containing<br>
 	 *         <ul>
@@ -1398,18 +1200,18 @@ public class Encoding implements Serializable {
 	 *         </ul>
 	 */
 	// TODO test
-	static Integer[] getIndicesOfPrecedingSymbol(String s, String cleanEncoding, boolean condition) {
+	static Integer[] getIndicesOfPrecedingSymbol(String s, String cleanEnc, boolean condition) {
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		int ind = -1;
 		int leftInd = -1; 
 		int rightInd = -1;
-		for (int i = 0; i < cleanEncoding.length(); i++) {
-			ind = cleanEncoding.indexOf(s, i);
+		for (int i = 0; i < cleanEnc.length(); i++) {
+			ind = cleanEnc.indexOf(s, i);
 			// s always preceded by at least one SS (one symbol)
-			rightInd = cleanEncoding.lastIndexOf(ss, ind);
-			leftInd = cleanEncoding.lastIndexOf(ss, rightInd - 1);
+			rightInd = cleanEnc.lastIndexOf(ss, ind);
+			leftInd = cleanEnc.lastIndexOf(ss, rightInd - 1);
 			leftInd = leftInd == -1 ? 0 : leftInd + 1;
-			String prevS = cleanEncoding.substring(leftInd, rightInd);
+			String prevS = cleanEnc.substring(leftInd, rightInd);
 			if ((ConstantMusicalSymbol.getConstantMusicalSymbol(prevS) != null) == condition) {
 				break;
 			}
