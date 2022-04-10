@@ -1,10 +1,11 @@
-package representations;
+package structure;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import de.uos.fmt.musitech.utility.math.Rational;
+import tbp.Encoding;
 import tools.ToolBox;
 
 public class Timeline {
@@ -56,7 +57,7 @@ public class Timeline {
 		List<Integer[]> undiminutedMeterInfo = new ArrayList<>();
 
 		String[] undiminutedMeters = 
-			encoding.getMetadata().get(Encoding.METER_INFO_IND).split(";");		
+			encoding.getMetadata().get(Encoding.METADATA_TAGS[Encoding.METER_INFO_IND]).split(";");		
 		Rational prevMeterAsRat = Rational.ZERO;
 		int prevNumBars = 0;
 		Rational prevMt = Rational.ZERO;
@@ -113,7 +114,7 @@ public class Timeline {
 		List<Integer[]> mi = new ArrayList<>();
 
 		List<Integer> diminutions = new ArrayList<>();
-		String dimStr = encoding.getMetadata().get(Encoding.DIMINUTION_IND);
+		String dimStr = encoding.getMetadata().get(Encoding.METADATA_TAGS[Encoding.DIMINUTION_IND]);
 		Arrays.asList(dimStr.split(";")).forEach(d -> diminutions.add(Integer.parseInt(d.trim())));
 		List<Integer[]> undiminutedMeterInfo = getUndiminutedMeterInfo();
 		// For each meter

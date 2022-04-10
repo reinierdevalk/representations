@@ -18,9 +18,11 @@ import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.container.NoteSequence;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
+import imports.MIDIImport;
 import representations.Tablature;
-import representations.Timeline;
 import representations.Transcription;
+import structure.Timeline;
+import tbp.Encoding;
 import tbp.TabSymbol;
 import tools.ToolBox;
 import utility.DataConverter;
@@ -440,7 +442,7 @@ public class Analyser {
 
 		// Create output
 		for (int i = 0; i < pieces.size(); i++) {
-			Transcription trans = new Transcription(new File(path + pieces.get(i) + ".mid"), null);
+			Transcription trans = new Transcription(new File(path + pieces.get(i) + MIDIImport.EXTENSION), null);
 			String shortName = shortPieceNames.get(i);
 
 			outputSpreadsheet += shortName + "\t";
@@ -550,7 +552,7 @@ public class Analyser {
 
 		// Create output
 		for (int i = 0; i < pieces.size(); i++) {
-			Transcription trans = new Transcription(new File(path + pieces.get(i) + ".mid"), null);
+			Transcription trans = new Transcription(new File(path + pieces.get(i) + MIDIImport.EXTENSION), null);
 			String shortName = shortPieceNames.get(i); 
 
 			outputSpreadsheet += shortName + "\t";
@@ -635,7 +637,7 @@ public class Analyser {
 		boolean includeAvg = true;
 		int numVoices = voiceNames.size();
 //		int numVoices = // it is assumed that every piece in the dataset has the same number of voices 
-//			new Transcription(new File(path + pieces.get(0) + ".mid"), null).getNumberOfVoices();
+//			new Transcription(new File(path + pieces.get(0) + MIDIImport.EXTENSION), null).getNumberOfVoices();
 
 		// Spreadsheet output
 		String outputSpreadsheet = 
@@ -676,7 +678,7 @@ public class Analyser {
 
 		// Create output
 		for (int i = 0; i < pieces.size(); i++) {
-			Transcription trans = new Transcription(new File(path + pieces.get(i) + ".mid"), null);
+			Transcription trans = new Transcription(new File(path + pieces.get(i) + MIDIImport.EXTENSION), null);
 			String shortName = shortPieceNames.get(i);
 
 			outputSpreadsheet += shortName + "\t";
@@ -1118,8 +1120,8 @@ public class Analyser {
 
 					int numer = currentDuration.getNumer();
 					int denom = currentDuration.getDenom();
-					if (denom != Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()) {
-						numer *= Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom() / denom;
+					if (denom != Tablature.SRV_DEN) {
+						numer *= Tablature.SRV_DEN / denom;
 					}
 					freqOfAllDurations[numer - 1]++; 	  	
 				}	  
@@ -1238,7 +1240,8 @@ public class Analyser {
 
 		for (int i = 0; i < pieceNames.size(); i++) {
 			String pieceName = pieceNames.get(i);
-			File tablatureEncoding = new File(MEIExport.rootDir + "data/encodings/" + pieceName + ".tbp");
+			File tablatureEncoding = 
+				new File(MEIExport.rootDir + "data/encodings/" + pieceName + Encoding.EXTENSION);
 
 			Tablature tablature = new Tablature(tablatureEncoding, false);
 //			preprocessor.prepareInitialInformation(tablature, null, true);

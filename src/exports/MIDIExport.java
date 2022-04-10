@@ -19,8 +19,10 @@ import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.data.score.ScoreNote;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.Piece;
-import representations.Timeline;
+import imports.MIDIImport;
 import representations.Transcription;
+import structure.Timeline;
+import tbp.Encoding;
 import tools.ToolBox;
 
 
@@ -49,8 +51,9 @@ public class MIDIExport {
 //		String piece = "phalese-1547_7-tant_que-a3";
 		String piece = "newsidler-1544_2-nun_volget";
 		
-		Transcription t = new Transcription(new File(path + piece + ".mid"), 
-			new File("F:/research/data/encodings/intabulations/3vv/" + piece + ".tbp"));
+		Transcription t = new Transcription(new File(path + piece + MIDIImport.EXTENSION), 
+			new File("F:/research/data/encodings/intabulations/3vv/" + piece + 
+			Encoding.EXTENSION));
 		ToolBox.storeObjectBinary(t, new File(path + piece + ".ser"));
 			
 		Transcription stored =	

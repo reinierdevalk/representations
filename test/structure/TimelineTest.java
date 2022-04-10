@@ -1,4 +1,4 @@
-package representations;
+package structure;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -11,6 +11,9 @@ import org.junit.Before;
 import de.uos.fmt.musitech.utility.math.Rational;
 import junit.framework.TestCase;
 import paths.Paths;
+import representations.Tablature;
+import structure.Timeline;
+import tbp.Encoding;
 
 public class TimelineTest extends TestCase {
 	

@@ -8,7 +8,8 @@ import java.util.List;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import junit.framework.TestCase;
-import representations.Encoding;
+import tbp.Encoding;
+import tbp.Event;
 import tbp.SymbolDictionary;
 
 public class MEIExportTest extends TestCase {
@@ -207,12 +208,14 @@ public class MEIExportTest extends TestCase {
 
 		List<Integer[]> actual = new ArrayList<>();
 		List<String> events = new ArrayList<>();
-		List<List<String[]>> ebl = encoding.getEventsBarlinesFootnotesPerBar(true);
-		for (List<String[]> l : ebl) {
-			for (String[] s : l) {
-				events.add(s[0].substring(0, s[0].lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR)));
-			}
+//		List<List<String[]>> ebl = encoding.getExtendedEventsPerBar(true);
+		List<Event> ebl = Encoding.removeDecorativeBarlineEvents(encoding.getEvents());
+//		for (List<String[]> l : ebl) {
+		for (Event e : ebl) {
+			events.add(e.getEncoding().substring(0, 
+				e.getEncoding().lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR)));
 		}
+//		}
 		for (String event : events) {
 			if (!event.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR) &&
 				!event.equals(SymbolDictionary.END_BREAK_INDICATOR)) {

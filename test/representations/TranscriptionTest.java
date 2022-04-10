@@ -25,6 +25,7 @@ import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import imports.MIDIImport;
 import junit.framework.TestCase;
+import tbp.Encoding;
 import tbp.TabSymbol;
 import utility.DataConverter;
 
@@ -1341,7 +1342,7 @@ public class TranscriptionTest extends TestCase {
 		});
 		for (int i = 0; i < fileNames.size(); i++) {
 			System.out.println(fileNames.get(i));
-			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + ".mid"), null);
+			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.EXTENSION), null);
 			actual.add(t.getVoiceEntriesOLDEST(t.getNumberOfVoices(), ns.get(i), useAvgs.get(i)));
 		}
 //		System.out.println(opt);
@@ -1446,7 +1447,7 @@ public class TranscriptionTest extends TestCase {
 		});
 		for (int i = 0; i < fileNames.size(); i++) {
 			System.out.println(fileNames.get(i));
-			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + ".mid"), null);
+			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.EXTENSION), null);
 			actual.add(t.getVoiceEntriesOLD(t.getNumberOfVoices(), ns.get(i), useAvgs.get(i)));
 		}
 //		System.out.println(opt);
@@ -1486,7 +1487,7 @@ public class TranscriptionTest extends TestCase {
 		});
 		
 //		for (String s : pieceNames) {
-//			Transcription t = new Transcription(new File(prefix + s + ".mid"), null);
+//			Transcription t = new Transcription(new File(prefix + s + MIDIImport.EXTENSION), null);
 //			System.out.println(s);
 //			System.out.println(t.determineVoiceEntries(4));
 //		}
@@ -1543,9 +1544,9 @@ public class TranscriptionTest extends TestCase {
 		});
 		
 		for (String s : fileNames) {
-			File encoding = new File(prefixTab + s + ".tbp");
+			File encoding = new File(prefixTab + s + Encoding.EXTENSION);
 			Tablature t = new Tablature(encoding, false);
-			Transcription tr = new Transcription(new File(prefix + s + ".mid"), encoding);
+			Transcription tr = new Transcription(new File(prefix + s + MIDIImport.EXTENSION), encoding);
 			System.out.println("@-@-@-@-@" + s);
 			tr.determineVoiceEntriesHIGHLEVEL(t.getBasicTabSymbolProperties(), 
 				tr.getMinimumDurationLabels(), null, 4, 3);
@@ -2091,7 +2092,7 @@ public class TranscriptionTest extends TestCase {
 		List<List<List<Integer>>> actual = new ArrayList<List<List<Integer>>>();
 		List<Integer> voices = Arrays.asList(new Integer[]{3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4});
 		for (int i = 0; i < fileNames.size(); i++) { 
-			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + ".mid"), null);
+			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.EXTENSION), null);
 			List<List<Double>> res = t.getVoiceEntriesOLDER_EXT(3, 3, false);
 			System.out.println(t.getPieceName());
 			for (List<Double> l : res) {
@@ -2154,9 +2155,9 @@ public class TranscriptionTest extends TestCase {
 		List<Integer> ns = Arrays.asList(new Integer[]{3, 3, 3, 2, 3});
 		for (int i = 0; i < fileNames.size(); i++) {
 			String piece = fileNames.get(i);
-			File enc = new File(prefixTab + piece + ".tbp");
+			File enc = new File(prefixTab + piece + Encoding.EXTENSION);
 			Tablature tab = new Tablature(enc, false);
-			Transcription t = new Transcription(new File(prefix + piece + ".mid"), enc);
+			Transcription t = new Transcription(new File(prefix + piece + MIDIImport.EXTENSION), enc);
 			actual.add(t.getImitativeVoiceEntries(
 				tab.getBasicTabSymbolProperties(), t.getDurationLabels(), null, voices.get(i), 
 				ns.get(i)));
@@ -2282,7 +2283,7 @@ public class TranscriptionTest extends TestCase {
 		List<Integer> voices = Arrays.asList(new Integer[]{3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4});
 		for (int i = 0; i < fileNames.size(); i++) {
 			Transcription t = 
-				new Transcription(new File(prefix + fileNames.get(i) + ".mid"), null);
+				new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.EXTENSION), null);
 			actual.add(t.getImitativeVoiceEntries(null, null, t.getBasicNoteProperties(), 
 				voices.get(i), 3));
 		}
@@ -2463,18 +2464,18 @@ public class TranscriptionTest extends TestCase {
 		// Full durations
 		for (int i = 0; i < fileNames.size(); i++) {
 			String piece = fileNames.get(i);
-			File enc = new File(prefixTab + piece + ".tbp");
+			File enc = new File(prefixTab + piece + Encoding.EXTENSION);
 			Tablature tab = new Tablature(enc, false);
-			Transcription t = new Transcription(new File(prefix + piece + ".mid"), enc);
+			Transcription t = new Transcription(new File(prefix + piece + MIDIImport.EXTENSION), enc);
 			actual.add(t.getNonImitativeVoiceEntries(tab.getBasicTabSymbolProperties(), 
 				t.getDurationLabels(), null, voices.get(i), 3));
 		}
 		// Minimum durations
 		for (int i = 0; i < fileNames.size(); i++) {
 			String piece = fileNames.get(i);
-			File enc = new File(prefixTab + piece + ".tbp");
+			File enc = new File(prefixTab + piece + Encoding.EXTENSION);
 			Tablature tab = new Tablature(enc, false);
-			Transcription t = new Transcription(new File(prefix + piece + ".mid"), enc);
+			Transcription t = new Transcription(new File(prefix + piece + MIDIImport.EXTENSION), enc);
 			actual.add(t.getNonImitativeVoiceEntries(tab.getBasicTabSymbolProperties(), 
 				t.getMinimumDurationLabels(), null, voices.get(i), 3));
 		}
@@ -2695,7 +2696,7 @@ public class TranscriptionTest extends TestCase {
 			if (fileNames.get(i).contains("WTC")) {
 				prefix = "F:/research/data/annotated/MIDI/bach-WTC/thesis/";
 			}
-			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + ".mid"), null);
+			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.EXTENSION), null);
 			actual.add(t.getNonImitativeVoiceEntries(null, null, t.getBasicNoteProperties(), 
 				voices.get(i), 3));
 		}
@@ -5327,7 +5328,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testCreateDurationLabel() {
-		Transcription.DURATION_LABEL_SIZE = (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3);
+		Transcription.DURATION_LABEL_SIZE = (Tablature.SRV_DEN/3);
 		List<List<Double>> expected = new ArrayList<List<Double>>(); 		
 		// 32nd
 		expected.add(Arrays.asList(new Double[]{1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,

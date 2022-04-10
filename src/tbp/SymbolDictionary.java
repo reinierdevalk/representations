@@ -14,10 +14,9 @@ public class SymbolDictionary {
 	
 	// II. Musical symbols
 	// 1. Constant musical symbols
-	// (see ContantMusicalSymbol)
+
 	// 2. Variable musical symbols
-	// a. RhythmSymbols	
-	// (see RhythmSymbol)
+	// a. RhythmSymbols
 	// b. MensurationSigns
 	// (see MensurationSign)
 	// c. TabSymbols and TabSymbolSets

@@ -101,7 +101,6 @@ public class TabSymbol implements Serializable {
 		if (getCourse() == 6 && t.isDrop()) {
 			drop = 2;
 		}
-		
 		pitch = pitch + ((t.getTransposition() - drop) * semitone);
 //		// Upon creation of the TS, each TS is given the MIDI number that goes with the 
 //		// G tuning, where any seventh course is assumed to be a major second below the sixth.

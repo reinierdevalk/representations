@@ -240,14 +240,14 @@ public class DataConverter {
 		int shorterDuration = (durationLabel.indexOf(1.0) + 1)*3; // *3 trp dur
 		int longerDuration = (durationLabel.lastIndexOf(1.0) + 1)*3; // *3 trp dur
 		if (shorterDuration == longerDuration) {
-			Rational dur = new Rational(shorterDuration, Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+			Rational dur = new Rational(shorterDuration, Tablature.SRV_DEN);
 			dur.reduce();
 			return new Rational[]{dur};
 		}
 		else {
-			Rational longerDur = new Rational(longerDuration, Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+			Rational longerDur = new Rational(longerDuration, Tablature.SRV_DEN);
 			longerDur.reduce();
-			Rational shorterDur = new Rational(shorterDuration, Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+			Rational shorterDur = new Rational(shorterDuration, Tablature.SRV_DEN);
 			shorterDur.reduce();
 			return new Rational[]{longerDur, shorterDur};
 		}

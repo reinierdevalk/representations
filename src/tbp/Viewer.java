@@ -1,4 +1,4 @@
-package utility;
+package tbp;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -30,10 +30,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 
-import representations.Encoding;
-import tbp.TabSymbolSet;
-
-public class TabViewer extends JFrame{
+public class Viewer extends JFrame{
 
 	private static final long serialVersionUID = 1L;
 	private Highlighter hilit;
@@ -61,11 +58,11 @@ public class TabViewer extends JFrame{
 			encPath = args[0];
 		}
 //		TabViewer gui = 
-		new TabViewer(encPath);
+		new Viewer(encPath);
 	}
 
 
-	public TabViewer(String encPath) {
+	public Viewer(String encPath) {
 		super();
 		setHilit();
 		setEncodingArea();
@@ -225,7 +222,7 @@ public class TabViewer extends JFrame{
 		this.setSize(FRAME_DIMS[0], FRAME_DIMS[1]);
 		this.setJMenuBar(getEncodingViewerMenubar(encPath));
 		this.setContentPane(getEncodingViewerPanel(encPath));
-		this.setTitle("EncodingViewer");
+		this.setTitle(".tbp");
 		this.setVisible(true);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
@@ -343,7 +340,7 @@ public class TabViewer extends JFrame{
 			encPath = prefix;
 			
 			// Test
-			encPath += "test/testpiece.tbp";
+//			encPath += "test/testpiece.tbp";
 //			encPath += "test/test_get_meter_info.tbp";
 //			encPath =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/tst/tab/3610_033_inter_natos_mulierum_morales_T-rev.tbp";
 //			encPath =  "F:/research/publications/conferences-workshops/2019-ISMIR/paper/tst/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T.tbp";
@@ -406,6 +403,7 @@ public class TabViewer extends JFrame{
 			// JosquIntab
 //			encPath = "F:/research/data/annotated/josquintab/tab/" + "5256_05_inviolata_integra_desprez-2.tbp";
 //			encPath = "F:/research/data/annotated/josquintab/tab/" + "5263_12_in_exitu_israel_de_egipto_desprez-3.tbp";
+			encPath = "F:/research/data/annotated/josquintab/tab/" + "4465_33-34_memor_esto-2XXX.tbp";
 		}
 		File encFile = new File(encPath);
 		setFile(encFile);
@@ -545,7 +543,7 @@ public class TabViewer extends JFrame{
 		tablatureFrame.setSize(FRAME_DIMS[0], FRAME_DIMS[1]);
 		tablatureFrame.setJMenuBar(getTabViewerMenubar(encPath));
 		tablatureFrame.setContentPane(getTabViewerPanel());
-		tablatureFrame.setTitle("TabViewer");
+		tablatureFrame.setTitle(".tab");
 		tablatureFrame.setVisible(true);
 		tablatureFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 	}

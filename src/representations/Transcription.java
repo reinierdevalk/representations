@@ -41,6 +41,8 @@ import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import exports.MIDIExport;
 import imports.MIDIImport;
+import structure.Timeline;
+import tbp.Encoding;
 import tbp.TabSymbol;
 import tools.ToolBox;
 import utility.DataConverter;
@@ -50,7 +52,7 @@ public class Transcription implements Serializable {
 	
 //	private static final long serialVersionUID = -8586909984652950201L;
 	public static int MAXIMUM_NUMBER_OF_VOICES = 5;
-	public static int DURATION_LABEL_SIZE = (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3)*2; // trp dur; *3 for JosquIntab; *2 for Byrd
+	public static int DURATION_LABEL_SIZE = (Tablature.SRV_DEN/3)*2; // trp dur; *3 for JosquIntab; *2 for Byrd
 	public static final int INCORRECT_IND = 0;
 	public static final int ORNAMENTATION_IND = 1;
 	public static final int REPETITION_IND = 2;
@@ -397,8 +399,9 @@ public class Transcription implements Serializable {
 		setUnadaptedGTPiece(pUn);
 		String pName = p.getName();
 		
-//		setPieceName(fName.substring(0, fName.indexOf(".mid")));
-		setPieceName(pName.contains(".mid") ? pName.substring(0, pName.indexOf(".mid")) : pName);		
+//		setPieceName(fName.substring(0, fName.indexOf(MIDIImport.EXTENSION)));
+		setPieceName(pName.contains(MIDIImport.EXTENSION) ? 
+			pName.substring(0, pName.indexOf(MIDIImport.EXTENSION)) : pName);		
 				
 		initialiseNoteSequence(); // needs piece
 		initialiseVoiceLabels(); // needs piece and noteSequence
@@ -671,7 +674,7 @@ public class Transcription implements Serializable {
 
 		Encoding eRev = null;
 		if (tab != null) {
-			eRev = tab.getEncoding().reverseEncoding(tab.getTimeline().getMeterInfo()); // NB The value of normaliseTuning is irrelevant
+			eRev = tab.getEncoding().reverse(tab.getTimeline().getMeterInfo()); // NB The value of normaliseTuning is irrelevant
 		}
 		return new Transcription(pRev, eRev);
 	}
@@ -691,7 +694,7 @@ public class Transcription implements Serializable {
 		Piece pDeorn = deornamentPiece(trans, tab, dur);
 		Encoding eDeorn = null;
 		if (tab != null) {
-			eDeorn = tab.getEncoding().deornamentEncoding(Tablature.getTabSymbolDur(dur)); // NB The value of normaliseTuning is irrelevant
+			eDeorn = tab.getEncoding().deornament(Tablature.getTabSymbolDur(dur)); // NB The value of normaliseTuning is irrelevant
 		}
 		return new Transcription(pDeorn, eDeorn);
 	}
@@ -1075,10 +1078,10 @@ public class Transcription implements Serializable {
 			int numer = durationCurrentNote.getNumer();
 			int denom = durationCurrentNote.getDenom();
 			// Determine the duration in 32nd/3 notes
-			// NB: Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom will always be divisible by denom 
-			// because denom will always be a fraction of Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3: 
+			// NB: Tablature.SRV_DEN/denom will always be divisible by denom because denom 
+			// will always be a fraction of Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3: 
 			// 32, 16, 8, 4, 2, or 1
-			int duration = numer * (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom);
+			int duration = numer * (Tablature.SRV_DEN/denom);
 			// Create the durationLabel for n and add it to initialDurationLabels
 			initialDurationLabels.add(createDurationLabel(duration));
 		}
@@ -1172,8 +1175,9 @@ public class Transcription implements Serializable {
 		for (int i = 0; i < tablatureChords.size(); i++) {
 			// Get the metric position of the chord
 			Integer[][] basicTabSymbolPropertiesChord = tablature.getBasicTabSymbolPropertiesChord(i);
-			Rational onsetTime = new Rational(basicTabSymbolPropertiesChord[0][Tablature.ONSET_TIME], 
-				Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+			Rational onsetTime = 
+				new Rational(basicTabSymbolPropertiesChord[0][Tablature.ONSET_TIME], 
+				Tablature.SRV_DEN);
 			Rational[] metricPosition = 
 				Timeline.getMetricPosition(onsetTime, tablature.getTimeline().getMeterInfo());
 			String bar = String.valueOf(metricPosition[0].getNumer());
@@ -1708,7 +1712,7 @@ public class Transcription implements Serializable {
 			// Get the pitch and onset time of the TS at index i
 			int pitchCurrentTabSymbol = basicTabSymbolProperties[i][Tablature.PITCH];
 			Rational onsetTimeCurrentTabSymbol = 
-				new Rational(basicTabSymbolProperties[i][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+				new Rational(basicTabSymbolProperties[i][Tablature.ONSET_TIME], Tablature.SRV_DEN);
 			onsetTimeCurrentTabSymbol.reduce();
 			// Get the pitch and onset time of the Note at index i in noteSeq
 			Note currentNote = noteSeq.getNoteAt(i);
@@ -2759,8 +2763,7 @@ public class Transcription implements Serializable {
 		if (btp != null) {
 			for (int i = 0; i < btp.length; i++) {
 				int pitchCurr = btp[i][0];
-				Rational onsetCurr = 
-					new Rational(btp[i][3], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+				Rational onsetCurr = new Rational(btp[i][3], Tablature.SRV_DEN);
 //				Rational offsetCurr = onsetCurr.add(
 //					new Rational(btp[i][4], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()));
 				Rational offsetCurr = 
@@ -3984,8 +3987,6 @@ public class Transcription implements Serializable {
 		final int durDen = 2;
 		final int isHMN = 3;
 		
-		int srv = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
-
 //		Integer[][] bnp = getBasicNoteProperties(); // in 2020
 
 		List<Integer> lowestNoteIndicesFirstChords = new ArrayList<Integer>();
@@ -4016,8 +4017,8 @@ public class Transcription implements Serializable {
 			int pitchMvmt;
 			if (btp != null) {
 				ioiHeadMotif.add(
-					new Rational(btp[i+1][Tablature.ONSET_TIME], srv).sub(
-					new Rational(btp[i][Tablature.ONSET_TIME], srv)));
+					new Rational(btp[i+1][Tablature.ONSET_TIME], Tablature.SRV_DEN).sub(
+					new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN)));
 				pitchMvmt = btp[i+1][Tablature.PITCH] - btp[i][Tablature.PITCH];
 			}
 			else {
@@ -4038,7 +4039,7 @@ public class Transcription implements Serializable {
 			if (noteDensities.get(i) > density) {
 				System.out.println("density increase");
 				System.out.println( 
-					((btp != null) ? "onset time " + new Rational(btp[i][Tablature.ONSET_TIME], srv) :
+					((btp != null) ? "onset time " + new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
 					"bar " + ToolBox.getMetricPositionAsString(getAllMetricPositions().get(i))));
 				System.out.println("new density = " + noteDensities.get(i));
 				density = noteDensities.get(i);
@@ -4066,7 +4067,7 @@ public class Transcription implements Serializable {
 				// maximum time window has been covered, or when there are no more notes left
 				if (!firstHMNInFirstChord) {
 					Rational onsetOfInitialI = 
-						(btp != null) ? new Rational(btp[i][Tablature.ONSET_TIME], srv) :	
+						(btp != null) ? new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN) :	
 						new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM]);
 					Rational timeWindowCovered = Rational.ZERO;
 					Rational maxTimeWindow = new Rational(1, 4);
@@ -4086,7 +4087,7 @@ public class Transcription implements Serializable {
 									(btp != null) ? btp[j][Tablature.CHORD_SEQ_NUM] :
 									bnp[j][CHORD_SEQ_NUM];
 								onsetOfNewI = 
-									(btp != null) ? new Rational(btp[j][Tablature.ONSET_TIME], srv) :
+									(btp != null) ? new Rational(btp[j][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
 									new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);
 								// Find the index of the lowest note in the chord at chordInd
 								for (int k = j; k >=0; k--) {
@@ -4116,13 +4117,13 @@ public class Transcription implements Serializable {
 						int ind = 1;
 						List<Boolean> hits = new ArrayList<Boolean>();
 						Rational onsetOfChordAtNewI = 
-							(btp != null) ? new Rational(btp[newI][Tablature.ONSET_TIME], srv) : 
+							(btp != null) ? new Rational(btp[newI][Tablature.ONSET_TIME], Tablature.SRV_DEN) : 
 							new Rational(bnp[newI][ONSET_TIME_NUMER], bnp[newI][ONSET_TIME_DENOM]);
 						Rational nextOns = onsetOfChordAtNewI.add(ioiHeadMotif.get(ind - 1));
 						System.out.println("nextOns = " + nextOns);
 						for (int j = newI; j < ((btp != null) ? btp.length : bnp.length); j++) {
 							Rational currOns = 
-								(btp != null) ? new Rational(btp[j][Tablature.ONSET_TIME], srv) :
+								(btp != null) ? new Rational(btp[j][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
 								new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);
 							if (currOns.equals(nextOns)) {
 								Rational currDur = 
@@ -4167,7 +4168,7 @@ public class Transcription implements Serializable {
 				// a. Determine the onsets of the HMNs
 				List<Rational> onsetsOfHMNChords = new ArrayList<Rational>();	
 				onsetsOfHMNChords.add(
-					(btp != null) ? new Rational(btp[i][Tablature.ONSET_TIME], srv) :	
+					(btp != null) ? new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN) :	
 					new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM]));
 				for (int j = 0; j < ioiHeadMotif.size(); j++) { 
 					Rational lastAdded = onsetsOfHMNChords.get(j);
@@ -4179,7 +4180,7 @@ public class Transcription implements Serializable {
 				List<Integer> indOfMotifNotesChords = new ArrayList<Integer>();
 				for (int j = i; j < ((btp != null) ? btp.length : bnp.length); j++) {
 					Rational currOnset = 
-						(btp != null) ?	new Rational(btp[j][Tablature.ONSET_TIME], srv) :
+						(btp != null) ?	new Rational(btp[j][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
 						new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);	
 					if (onsetsOfHMNChords.contains(currOnset)) {
 						indOfMotifNotesChords.add(j);
@@ -7247,7 +7248,7 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Creates a duration label encoding the given durational value (in Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()).
+	 * Creates a duration label encoding the given durational value (in Tablature.SRV_DEN).
 	 * 
 	 * NB: Tablature case only.
 	 *  
@@ -7376,14 +7377,12 @@ public class Transcription implements Serializable {
 			for (int i = 0; i < btp.length; i++) {
 				// Create a Note from the TabSymbol at index i
 				int pitch = btp[i][Tablature.PITCH];
-				Rational metricTime = 
-					new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+				Rational metricTime = new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN);
 				Rational metricDuration = null;
 				// If durationLabels == null (which is the case when not modelling duration): give notes their 
 				// minimum duration 
 				if (durationLabels == null) {
-					metricDuration = 
-						new Rational(btp[i][Tablature.MIN_DURATION], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+					metricDuration = new Rational(btp[i][Tablature.MIN_DURATION], Tablature.SRV_DEN);
 				}
 				// Else: give notes their predicted duration
 				else {
@@ -7932,7 +7931,7 @@ public class Transcription implements Serializable {
 		// a. In the tablature case
 		if (btp != null) {
 			onsetTimeCurrentNote = new Rational(btp[noteIndex][Tablature.ONSET_TIME],
-				Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+				Tablature.SRV_DEN);
 			lowestNoteIndex = noteIndex - btp[noteIndex][Tablature.NOTE_SEQ_NUM];
 		}
 		// b. In the non-tablature case
@@ -7952,7 +7951,7 @@ public class Transcription implements Serializable {
 			if (btp != null) {
 				// Determine the metric time
 				metricTimeCurrentPreviousNote = new Rational(btp[i][Tablature.ONSET_TIME],	
-					Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+					Tablature.SRV_DEN);
 				// Determine the duration. In the case of a CoD, the longer duration of the CoDnote must be considered:
 				// if this duration does not cause note overlap, the CoDnote will not cause note overlap at all). In 
 				// both cases this is the first element of durationCurrentPreviousNote
@@ -8064,10 +8063,10 @@ public class Transcription implements Serializable {
 						shorter = duration[1];
 					}
 					Rational onsetShorter = 
-						new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+						new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN);
 					Rational offsetShorter = onsetShorter.add(shorter);
 					Rational onsetCurr = 
-						new Rational(btp[lowestNoteIndex][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+						new Rational(btp[lowestNoteIndex][Tablature.ONSET_TIME], Tablature.SRV_DEN);
 					// If offsetShorter exceeds the onset of the currentChord: add both voices
 					if (offsetShorter.isGreater(onsetCurr)) {
 						voicesOfSustainedPreviousNotes.add(currentVoices.get(0));
@@ -8350,8 +8349,8 @@ public class Transcription implements Serializable {
 				meterInfo = tablature.getTimeline().getMeterInfo();
 				for (Integer[] btp : basicTabSymbolProperties) {
 					if (btp[Tablature.CHORD_SEQ_NUM] == i) {
-						onsetCurrNote = new Rational(btp[Tablature.ONSET_TIME], 
-							Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+						onsetCurrNote = 
+							new Rational(btp[Tablature.ONSET_TIME], Tablature.SRV_DEN);
 						break;
 					}
 				}
@@ -8592,7 +8591,7 @@ public class Transcription implements Serializable {
 	 */
   private void initialiseDurationLabelsOLD() {
     List<List<List<Double>>> initialDurationLabels = new ArrayList<List<List<Double>>>();
-    Double[] emptyLabelArray = new Double[Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()];
+    Double[] emptyLabelArray = new Double[Tablature.SRV_DEN];
     Arrays.fill(emptyLabelArray, 0.0);
     List<Double> emptyLabel = Arrays.asList(emptyLabelArray);
 	              
@@ -8607,8 +8606,8 @@ public class Transcription implements Serializable {
 	    int denom = durationCurrentNote.getDenom();
 	    // Set the correct element of durationLabelCurrentNote to 1.0
 	    int indexToSet = numer - 1;
-	    if (denom != Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()) {
-	    	indexToSet = (numer * (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom)) - 1;
+	    if (denom != Tablature.SRV_DEN) {
+	    	indexToSet = (numer * (Tablature.SRV_DEN/denom)) - 1;
 	    }
   	  durationLabelCurrentNote.set(indexToSet, 1.0);
   	  // Add durationLabelCurrentNote to currentDurationLabels; add currentDurationLabels to initialDurationLabels

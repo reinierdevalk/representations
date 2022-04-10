@@ -19,14 +19,15 @@ public class TabSymbolSet extends ArrayList<TabSymbol>{
 
 	private static final long serialVersionUID = 1L;
 	private String name;
+	private String type;
 
-	public static final TabSymbolSet OCHSENKUN_1558 = new TabSymbolSet("Ochsenkun1558", SymbolDictionary.ochsenkun1558Content);
-	public static final TabSymbolSet NEWSIDLER_1536 = new TabSymbolSet("Newsidler1536", SymbolDictionary.newsidler1536Content);
-	public static final TabSymbolSet HECKEL_1562 = new TabSymbolSet("Heckel1562", SymbolDictionary.heckel1562Content);
-	public static final TabSymbolSet JUDENKUENIG_1523 = new TabSymbolSet("Judenkuenig1523", SymbolDictionary.judenkuenig1523Content);
-	public static final TabSymbolSet FRENCH_TAB = new TabSymbolSet("FrenchTab", SymbolDictionary.frenchTabContent);  
-	public static final TabSymbolSet ITALIAN_TAB = new TabSymbolSet("ItalianTab", SymbolDictionary.italianTabContent);  
-	public static final TabSymbolSet SPANISH_TAB = new TabSymbolSet("SpanishTab", SymbolDictionary.spanishTabContent); 
+	public static final TabSymbolSet OCHSENKUN_1558 = new TabSymbolSet("Ochsenkun1558", "German", SymbolDictionary.ochsenkun1558Content);
+	public static final TabSymbolSet NEWSIDLER_1536 = new TabSymbolSet("Newsidler1536", "German", SymbolDictionary.newsidler1536Content);
+	public static final TabSymbolSet HECKEL_1562 = new TabSymbolSet("Heckel1562", "German", SymbolDictionary.heckel1562Content);
+	public static final TabSymbolSet JUDENKUENIG_1523 = new TabSymbolSet("Judenkuenig1523", "German", SymbolDictionary.judenkuenig1523Content);
+	public static final TabSymbolSet FRENCH_TAB = new TabSymbolSet("FrenchTab", "French", SymbolDictionary.frenchTabContent);  
+	public static final TabSymbolSet ITALIAN_TAB = new TabSymbolSet("ItalianTab", "Italian", SymbolDictionary.italianTabContent);  
+	public static final TabSymbolSet SPANISH_TAB = new TabSymbolSet("SpanishTab", "Spanish", SymbolDictionary.spanishTabContent); 
 	
 	private static List<TabSymbolSet> tabSymbolSets;
 	static { tabSymbolSets = Arrays.asList(new TabSymbolSet[]{
@@ -48,9 +49,10 @@ public class TabSymbolSet extends ArrayList<TabSymbol>{
 	 * @param aList
 	 * @return
 	 */
-	public TabSymbolSet(String name, List<TabSymbol> aList) {
+	public TabSymbolSet(String name, String type, List<TabSymbol> aList) {
 		super();
 		this.name = name;
+		this.type = type;
 		for (TabSymbol t : aList) {
 			this.add(t);
 		}
@@ -64,6 +66,11 @@ public class TabSymbolSet extends ArrayList<TabSymbol>{
 
 	public String getName() {
 		return name;
+	}
+
+
+	public String getType() {
+		return type;
 	}
 
 

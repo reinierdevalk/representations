@@ -35,6 +35,8 @@ import representations.Transcription;
 import tools.ToolBox;
 
 public class MIDIImport {
+	
+	public static final String EXTENSION = ".mid";
 
 	public static void main(String[] args) {
 		File dir = new File("F:/research/data/MIDI/tests/testpiece");
@@ -92,7 +94,7 @@ public class MIDIImport {
 	public static Piece importMidiFile(File f) {
 		String fileName = f.getName();
 		URL url;
-		if (!fileName.endsWith(".mid")) {
+		if (!fileName.endsWith(EXTENSION)) {
 			throw new RuntimeException("ERROR: the file is not a MIDI file.");
 		}
 		try {
@@ -138,7 +140,7 @@ public class MIDIImport {
 		Piece p = new MidiReader().getPiece(url);
 		boolean quantiseTriplets = false;
 		if (quantiseTriplets) {
-			int srv = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
+			int srv = Tablature.SRV_DEN;
 			NotationSystem ns = p.getScore(); 
 			for (int i = 0; i < ns.size(); i++) {
 				NotationVoice voice = ns.get(i).get(0);  
@@ -283,7 +285,7 @@ public class MIDIImport {
 		if (f.isDirectory()) {
 			String[] fileNames = f.list();
 			for (String s : fileNames) {
-				if (s.endsWith(".mid")) {
+				if (s.endsWith(EXTENSION)) {
 					midiFileNames.add(s);  
 				}
 			}
@@ -297,7 +299,7 @@ public class MIDIImport {
 		// If f is not a directory, i.e., a MIDI file 
 		else {
 			String s = f.getName();
-			if (s.endsWith(".mid")) {
+			if (s.endsWith(EXTENSION)) {
 				midiFileNames.add(s);  
 			}
 		}
@@ -321,7 +323,7 @@ public class MIDIImport {
 			staff.add(notationVoice);
 			
 			// c. Create a Piece from the MIDI file. The Piece is a single part
-			if (!midiFileName.endsWith(".mid")) {
+			if (!midiFileName.endsWith(EXTENSION)) {
 				continue;
 			}
 			try {
@@ -398,7 +400,7 @@ public class MIDIImport {
 		// Make a list that contains only the MIDI file names in fileNames
 		List<String> midiFileNames = new ArrayList<String>();
 		for (String s : fileNames) {
-			if (s.endsWith(".mid")) {
+			if (s.endsWith(EXTENSION)) {
 				midiFileNames.add(s);  
 			}
 		}
@@ -411,7 +413,7 @@ public class MIDIImport {
 
 		URL url;
 		for (String midiFileName : midiFileNames) {
-			if (!midiFileName.endsWith(".mid")) {
+			if (!midiFileName.endsWith(EXTENSION)) {
 				continue;
 			}
 			try {

@@ -1,117 +1,60 @@
 package tbp;
 
-import java.util.Arrays;
-import java.util.List;
+public class ConstantMusicalSymbol extends Symbol {
 
-public class ConstantMusicalSymbol {
+	public static final String PIPE = "|";
+	public static final String REPEAT_DOTS = ":";
 
-	private String encoding;
-	private String symbol;
 
-	public static final ConstantMusicalSymbol SPACE = new ConstantMusicalSymbol(">", "-");
-	public static final ConstantMusicalSymbol BARLINE = new ConstantMusicalSymbol("|", "|");
-	public static final ConstantMusicalSymbol DOUBLE_BARLINE = new ConstantMusicalSymbol("||", "||");
-	public static final ConstantMusicalSymbol SINGLE_REPEAT_BARLINE_OPEN = new ConstantMusicalSymbol("|:", "|:");
-	public static final ConstantMusicalSymbol SINGLE_REPEAT_BARLINE_CLOSE = new ConstantMusicalSymbol(":|", ":|");
-	public static final ConstantMusicalSymbol DOUBLE_REPEAT_BARLINE_OPEN = new ConstantMusicalSymbol("||:", "||:");
-	public static final ConstantMusicalSymbol DOUBLE_REPEAT_BARLINE_CLOSE = new ConstantMusicalSymbol(":||", ":||");
-	public static final ConstantMusicalSymbol SINGLE_REPEAT_BARLINE_DOUBLE_SIDED = new ConstantMusicalSymbol(":|:", ":|:");
-	public static final ConstantMusicalSymbol DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED = new ConstantMusicalSymbol(":||:", ":||:");
-	public static final ConstantMusicalSymbol BARLINE_EDITORIAL = new ConstantMusicalSymbol("¦", "¦");
-	public static final ConstantMusicalSymbol DOUBLE_BARLINE_EDITORIAL = new ConstantMusicalSymbol("¦¦", "¦¦");
-	public static final ConstantMusicalSymbol SINGLE_REPEAT_BARLINE_OPEN_EDITORIAL = new ConstantMusicalSymbol("¦:", "¦:");
-	public static final ConstantMusicalSymbol SINGLE_REPEAT_BARLINE_CLOSE_EDITORIAL = new ConstantMusicalSymbol(":¦", ":¦");
-	public static final ConstantMusicalSymbol DOUBLE_REPEAT_BARLINE_OPEN_EDITORIAL = new ConstantMusicalSymbol("¦¦:", "¦¦:");
-	public static final ConstantMusicalSymbol DOUBLE_REPEAT_BARLINE_CLOSE_EDITORIAL = new ConstantMusicalSymbol(":¦¦", ":¦¦");
-	public static final ConstantMusicalSymbol SINGLE_REPEAT_BARLINE_DOUBLE_SIDED_EDITORIAL = new ConstantMusicalSymbol(":¦:", ":¦:");
-	public static final ConstantMusicalSymbol DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED_EDITORIAL = new ConstantMusicalSymbol(":¦¦:", ":¦¦:"); 
-	
-	public static final List<ConstantMusicalSymbol> CONSTANT_MUSICAL_SYMBOLS;
-	static { CONSTANT_MUSICAL_SYMBOLS = Arrays.asList(new ConstantMusicalSymbol[]{
-		SPACE,
-		BARLINE,
-		DOUBLE_BARLINE,
-		SINGLE_REPEAT_BARLINE_OPEN,
-		SINGLE_REPEAT_BARLINE_CLOSE,
-		SINGLE_REPEAT_BARLINE_DOUBLE_SIDED,
-		DOUBLE_REPEAT_BARLINE_OPEN,
-		DOUBLE_REPEAT_BARLINE_CLOSE,
-		DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED
-//		BARLINE_EDITORIAL,
-//		DOUBLE_BARLINE_EDITORIAL,
-//		SINGLE_REPEAT_BARLINE_OPEN_EDITORIAL,
-//		SINGLE_REPEAT_BARLINE_CLOSE_EDITORIAL,
-//		SINGLE_REPEAT_BARLINE_DOUBLE_SIDED_EDITORIAL,
-//		DOUBLE_REPEAT_BARLINE_OPEN_EDITORIAL,
-//		DOUBLE_REPEAT_BARLINE_CLOSE_EDITORIAL,
-//		DOUBLE_REPEAT_BARLINE_DOUBLE_SIDED_EDITORIAL
-		});
+	public ConstantMusicalSymbol (String e, String s) {
+		encoding = e;
+		symbol = s;
 	}
-	
-	
+
+
 	/**
-	 * Constructor. Creates a new ConstantMusicalSymbol with the specified 
-	 * attributes and adds this to the specified list.
+	 * Makes a barline variant.
 	 * 
-	 * @param encoding
-	 * @param symbol
+	 * @param numBarlines
+	 * @param repeatDots A String with value "left", "right", "both", or <code>null</code> (if not applicable).
 	 * @return
 	 */
-	public ConstantMusicalSymbol (String encoding, String symbol) {
-		this.encoding = encoding;
-		this.symbol = symbol;
-	}
-
-
-	/**
-	 * Returns the ConstantMusicalSymbol's encoding.
-	 * 
-	 * @return
-	 */  
-	public String getEncoding() {
-		return encoding;
-	}
-
-
-	/**
-	 * Returns the ConstantMusicalSymbol's tablature representation.
-	 * 
-	 * @return
-	 */  
-	public String getSymbol() {
-		return symbol;
-	}
-
-
-	/**
-	 * Determines whether or not the given encoding encodes a barline.
-	 *
-	 * @param encoding
-	 * @return
-	 */
-	public static boolean isBarline(String encoding) {
-		ConstantMusicalSymbol cms = getConstantMusicalSymbol(encoding);
-		return (cms != null && CONSTANT_MUSICAL_SYMBOLS.contains(cms) && 
-			cms != ConstantMusicalSymbol.SPACE);
-	}
-
-
-	/**
-	 * Searches the specified list for the ConstantMusicalSymbol whose attribute
-	 * encoding equals the specified encoding. Returns null if the list
-	 * does not contain such a ConstantMusicalSymbol.
-	 * 
-	 * @param anEncoding
-	 * @param aList
-	 * @return
-	 */
-	public static ConstantMusicalSymbol getConstantMusicalSymbol(String anEncoding) {
-		for (ConstantMusicalSymbol c: CONSTANT_MUSICAL_SYMBOLS) {
-			if (c.encoding.equals(anEncoding)) {
-				return c;
+	// TESTED
+	public ConstantMusicalSymbol makeBarlineVariant(int numBarlines, String repeatDots) {
+		String e = getEncoding();
+		e = e.repeat(numBarlines);
+		if (repeatDots != null) {
+			if (repeatDots.equals("left")) {
+				e = e + REPEAT_DOTS;
+			}
+			else if (repeatDots.equals("right")) {
+				e = REPEAT_DOTS + e;
+			}
+			else {
+				e = REPEAT_DOTS + e + REPEAT_DOTS;
 			}
 		}
-		return null;
+		return new ConstantMusicalSymbol(e, e);
+	}
+
+
+	public static boolean isBarline(String e) {
+		return e.contains(PIPE) ? true : false;
+	}
+
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) {
+			return true;
+		}
+		if (!(o instanceof ConstantMusicalSymbol)) {
+			return false;
+		}
+		ConstantMusicalSymbol c = (ConstantMusicalSymbol) o;
+		return 
+			getEncoding().equals(c.getEncoding()) && 
+			getSymbol().equals(c.getSymbol());
 	}
 
 }

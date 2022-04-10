@@ -11,7 +11,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import representations.Encoding;
+import tbp.Encoding;
 
 public class TabImportTest {
 
@@ -26,7 +26,7 @@ public class TabImportTest {
 	@Test
 	public void testCreateMeterInfoString() {
 		List<String> testPieces = Arrays.asList(new String[]{
-			"tst/testpiece.tbp",
+			"test/testpiece.tbp",
 			//
 			"tab-int/3vv/judenkuenig-1523_2-elslein_liebes.tbp",
 			"tab-int/3vv/newsidler-1536_7-disant_adiu.tbp",
@@ -73,7 +73,7 @@ public class TabImportTest {
 		for (String s : testPieces) {
 			Encoding enc = new Encoding(new File("F:/research/data/annotated/encodings/" + s));
 			String clean = enc.getCleanEncoding();
-			String tss = enc.getMetadata().get(Encoding.TABSYMBOLSET_IND);
+			String tss = enc.getMetadata().get(Encoding.METADATA_TAGS[Encoding.TABSYMBOLSET_IND]);
 			actual.add(TabImport.createMeterInfoString(clean, tss));
 		}
 
