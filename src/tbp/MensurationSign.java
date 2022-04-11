@@ -5,50 +5,58 @@ import java.util.Arrays;
 public class MensurationSign extends Symbol {
 
 	public static final int DEFAULT_STAFFLINE = 3; 
+
 	private Integer[] meter;
 	private int staffLine;
 
 
-	public MensurationSign (String e, String s, Integer[] m) {
+	public MensurationSign() {
+	}
+
+
+	public MensurationSign(String e, String s, Integer[] m) {
 		// The basic type (M2, M3, ..., MC\) has beat unit 4 and staffline 3, and is encoded as  
 		// M<n> or M<n>\ (cut MS), (where <n> is a number or a symbol)
 		// A variant type may have a different beat unit or staffline, and is encoded as 
-		// - M<n>:<b><l> or M<n>\\:<b><l> (cut MS), where <b> is the beat unit and <l> the staffline  
-		encoding = e;
-		symbol = s;
+		// M<n>:<b><l> or M<n>\\:<b><l> (cut MS), where <b> is the beat unit and <l> the staffline  
+		setEncoding(e);
+		setSymbol(s);
+		setMeter(m);
+		setStaffLine();
+	}
+
+
+	void setMeter(Integer[] m) {
 		meter = m;
-		staffLine = setStaffLine();
 	}
 
 
-	public int setStaffLine() {
-		return makeStaffLine();
+	void setStaffLine() {
+		staffLine = makeStaffLine();
 	}
-	
-	
-	// 
+
+
+	// TESTED
 	int makeStaffLine() {
 		String e = getEncoding();
-		String last = e.substring(e.length()-1);
-		int sl = DEFAULT_STAFFLINE;
-		if (!e.contains("\\") && e.length() > 2) {
-			sl = Integer.parseInt(last);
+		// Basic M<n> or M<n>\ type
+		if ((!e.contains("\\") && e.length() == 2) || e.endsWith("\\")) {
+			return DEFAULT_STAFFLINE;
 		}
-		if (e.contains("\\") && !e.endsWith("\\")) {
+		// Variant type
+		else {
+			// Default beat
 			if (!e.contains(":")) {
-				sl = Integer.parseInt(last);
+				return Integer.parseInt(e.substring(e.length()-1));
 			}
+			// Non-default beat
 			else {
-				String beat = String.valueOf(getMeter()[1]);
-				if (e.endsWith(":" + beat)) {
-					sl = DEFAULT_STAFFLINE;
-				}
-				else {
-					sl = Integer.parseInt(e.substring(e.indexOf(":" + beat) + (":" + beat).length()));
-				}
+				String end =  ":" + String.valueOf(getMeter()[1]);
+				return 
+					e.endsWith(end) ? DEFAULT_STAFFLINE : 
+					Integer.parseInt(e.substring(e.indexOf(end) + end.length()));
 			}
 		}
-		return sl;
 	}
 
 

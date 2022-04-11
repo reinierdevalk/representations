@@ -13,24 +13,32 @@ public class RhythmSymbol extends Symbol {
 	private boolean beam;
 
 
-	public RhythmSymbol (String e, String s, int d) {
-		encoding = e;
-		symbol = s;
-		duration = d;
-		numberOfDots = (int) e.chars().filter(c -> c == DOT_ENCODING.charAt(0)).count();
-		beam = e.contains(BEAM);
+	public RhythmSymbol() {
 	}
 
 
-//	void setNumberOfDots() {
-//		numberOfDots = makeNumberOfDots(getEncoding());
-//	}
+	public RhythmSymbol(String e, String s, int d) {
+		setEncoding(e);
+		setSymbol(s);
+		setDuration(d);
+		setNumberOfDots();
+		setBeam();
+	}
 
 
-//	// TESTED
-//	static int makeNumberOfDots(String e) {
-//		return (int) e.chars().filter(c -> c == DOT_ENCODING.charAt(0)).count();
-//	}
+	void setDuration(int d) {
+		duration = d;
+	}
+
+
+	void setNumberOfDots() {
+		numberOfDots = (int) getEncoding().chars().filter(c -> c == DOT_ENCODING.charAt(0)).count();
+	}
+
+
+	void setBeam() {
+		beam = getEncoding().contains(BEAM);
+	}
 
 
 	public int getDuration() {
@@ -124,7 +132,7 @@ public class RhythmSymbol extends Symbol {
 		String onlyRS = anEncoding.substring(indRS);
 		
 		for (RhythmSymbol r: RHYTHM_SYMBOLS) {
-			if (r.encoding.equals(onlyRS)) {	
+			if (r.getEncoding().equals(onlyRS)) {	
 				return r;
 			}
 		}

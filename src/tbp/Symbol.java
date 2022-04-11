@@ -45,12 +45,12 @@ public class Symbol {
 	static {
 		MENSURATION_SIGNS = Arrays.asList(new MensurationSign[]{
 			TWO, THREE,FOUR, SIX, O, C, CUT_C,
-			THREE.makeVariant(-1, 4/*, null*/),
-			THREE.makeVariant(2, -1/*, null*/),
-			FOUR.makeVariant(2, -1/*, null*/),
-			SIX.makeVariant(2, -1/*, null*/),
-			TWO.makeVariant(1, -1/*, "\u00A2"*/),
-			THREE.makeVariant(1, -1/*, null*/)
+			THREE.makeVariant(-1, 4),
+			THREE.makeVariant(2, -1),
+			FOUR.makeVariant(2, -1),
+			SIX.makeVariant(2, -1),
+			TWO.makeVariant(1, -1),
+			THREE.makeVariant(1, -1)
 		});
 	}	
 	public static final Map<String, MensurationSign> MS_MAP;
@@ -174,9 +174,16 @@ public class Symbol {
 
 
 
-	public String encoding;
-	public String symbol;
+	private String encoding;
+	private String symbol;
 
+	void setEncoding(String e) {
+		encoding = e;
+	}
+	
+	void setSymbol(String s) {
+		symbol = s;
+	}
 
 	public String getEncoding() {
 		return encoding;

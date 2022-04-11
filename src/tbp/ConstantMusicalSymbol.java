@@ -6,9 +6,13 @@ public class ConstantMusicalSymbol extends Symbol {
 	public static final String REPEAT_DOTS = ":";
 
 
-	public ConstantMusicalSymbol (String e, String s) {
-		encoding = e;
-		symbol = s;
+	public ConstantMusicalSymbol() {
+	}
+
+
+	public ConstantMusicalSymbol(String e, String s) {
+		setEncoding(e);
+		setSymbol(s);
 	}
 
 
