@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import structure.Timeline;
-import tbp.Symbol.ConstantMusicalSymbolE;
 import tools.ToolBox;
 
 
@@ -225,7 +224,7 @@ public class Encoding implements Serializable {
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String omb = SymbolDictionary.OPEN_METADATA_BRACKET;
 		String cmb = SymbolDictionary.CLOSE_METADATA_BRACKET;
-		String sp = ConstantMusicalSymbolE.SPACE.getEncoding();
+		String sp = Symbol.SPACE.getEncoding();
 		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
 		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
 
@@ -1100,7 +1099,7 @@ public class Encoding implements Serializable {
 			System.out.println(cleanEnc);
 			System.out.println(s);
 			System.out.println(ind);
-			System.exit(0);
+//			System.exit(0);
 			// s always preceded by at least one SS (one symbol)
 			rightInd = cleanEnc.lastIndexOf(ss, ind);
 			leftInd = cleanEnc.lastIndexOf(ss, rightInd - 1);
@@ -1132,7 +1131,7 @@ public class Encoding implements Serializable {
 			String[] split = t.split("\\" + ss);
 			// If rest: add to list and continue for loop
 			if (split.length == 2 && RhythmSymbol.getRhythmSymbol(split[0]) != null &&
-				split[1].equals(ConstantMusicalSymbolE.SPACE.getEncoding())) {
+				split[1].equals(Symbol.SPACE.getEncoding())) {
 				successiveRests.add(split[0]);
 			}
 			// If not rest
@@ -1173,8 +1172,7 @@ public class Encoding implements Serializable {
 							break;
 						}
 					}
-					res.add(combinedRs.getEncoding() + ss +	
-						ConstantMusicalSymbolE.SPACE.getEncoding() + ss);
+					res.add(combinedRs.getEncoding() + ss +	Symbol.SPACE.getEncoding() + ss);
 					successiveRests.clear();
 				}
 				res.add(t);
@@ -1542,7 +1540,7 @@ public class Encoding implements Serializable {
 		String tab = "";
 
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sp = ConstantMusicalSymbolE.SPACE.getEncoding();
+		String sp = Symbol.SPACE.getEncoding();
 		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
 
 		String cleanEnc = getCleanEncoding();
@@ -1715,7 +1713,7 @@ public class Encoding implements Serializable {
 			boolean isBarlineEvent = assertEventType(currEvent, null, "barline");
 			int charsAfterFirstPipe = 0;
 			if (isBarlineEvent) {
-				int indFirstPipe = currEvent.indexOf(ConstantMusicalSymbolE.BARLINE.getEncoding()); 
+				int indFirstPipe = currEvent.indexOf(Symbol.BARLINE.getEncoding()); 
 				currSegmentInd += indFirstPipe;
 				// In case of a multiple-char barline: determine how many chars follow
 				// the first pipe char (the extra -1 is for the SS at the end of currEvent)
@@ -1769,7 +1767,7 @@ public class Encoding implements Serializable {
 		int largestStaffLength = 0;
 
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sp = ConstantMusicalSymbolE.SPACE.getEncoding();
+		String sp = Symbol.SPACE.getEncoding();
 		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
 		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
 
@@ -1846,7 +1844,7 @@ public class Encoding implements Serializable {
 		StringBuffer footnotesStr;
 
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sp = ConstantMusicalSymbolE.SPACE.getEncoding();
+		String sp = Symbol.SPACE.getEncoding();
 		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
 		String sts = Staff.STAFF_SEGMENT;
 		int numTabs = 3;
@@ -2202,7 +2200,7 @@ public class Encoding implements Serializable {
 			}
 			// If event is not a barline: append space
 			if (!isBarline) {
-				e += ConstantMusicalSymbolE.SPACE.getEncoding() + ss;
+				e += Symbol.SPACE.getEncoding() + ss;
 			}
 			// Special case for barline followed by barline (this happens when a 
 			// full-bar note is tied at its left (see end quis_me_statim): these 
@@ -2350,7 +2348,7 @@ public class Encoding implements Serializable {
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String omb = SymbolDictionary.OPEN_METADATA_BRACKET;
 		String cmb = SymbolDictionary.CLOSE_METADATA_BRACKET;
-		String sp = ConstantMusicalSymbolE.SPACE.getEncoding();
+		String sp = Symbol.SPACE.getEncoding();
 		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
 		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
 
@@ -2456,7 +2454,7 @@ public class Encoding implements Serializable {
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
 		String omb = SymbolDictionary.OPEN_METADATA_BRACKET;
 		String cmb = SymbolDictionary.CLOSE_METADATA_BRACKET;
-		String sp = ConstantMusicalSymbolE.SPACE.getEncoding();
+		String sp = Symbol.SPACE.getEncoding();
 		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
 		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
 

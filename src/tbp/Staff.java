@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import tbp.Symbol.ConstantMusicalSymbolE;
 
 public class Staff {
 
@@ -167,10 +166,8 @@ public class Staff {
 
 	void addConstantMusicalSymbol(ConstantMusicalSymbol cms, int segment) {
 		String symbol = cms.getSymbol();
-		String repeatIndicator = 
-			ConstantMusicalSymbolE.REPEAT_BARLINE_RIGHT.getSymbol().substring(0, 1);
 		// Space and non-repeat barline
-		if (!symbol.contains(repeatIndicator)) {
+		if (!symbol.contains(ConstantMusicalSymbol.REPEAT_DOTS)) {
 			for (int staffLine = TOP_LINE; staffLine <= BOTTOM_LINE; staffLine++) {
 				for (int i = 0; i < symbol.length(); i++) {
 					addSymbol(Character.toString(symbol.charAt(i)), staffLine, segment + i);
@@ -182,7 +179,7 @@ public class Staff {
 			for (int staffLine = TOP_LINE; staffLine <= BOTTOM_LINE; staffLine++) {
 				for (int i = 0; i < symbol.length(); i++) {
 					String subSymbol = Character.toString(symbol.charAt(i));
-					if (subSymbol.equals(repeatIndicator)) {
+					if (subSymbol.equals(ConstantMusicalSymbol.REPEAT_DOTS)) {
 						addSymbol((staffLine == UPPER_MIDDLE_LINE || staffLine == LOWER_MIDDLE_LINE ?
 							REPEAT_DOT : STAFF_SEGMENT), staffLine, segment + i);
 					}

@@ -5,7 +5,9 @@ import java.io.Serializable;
 import representations.Tablature.Tuning;
 
 
-public class TabSymbol implements Serializable {
+public class TabSymbol extends Symbol implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	private String encoding;
 	private String symbol;

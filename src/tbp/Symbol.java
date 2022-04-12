@@ -33,7 +33,7 @@ public class Symbol {
 		CONSTANT_MUSICAL_SYMBOLS.forEach(s -> CMS_MAP.put(s.getEncoding(), s));
 	}
 
-
+	// Mensuration signs
 	public static final MensurationSign TWO	= new MensurationSign("M2", "2", new Integer[]{2, 4});
 	public static final MensurationSign THREE = new MensurationSign("M3", "3", new Integer[]{3, 4});
 	public static final MensurationSign FOUR = new MensurationSign("M4", "4", new Integer[]{4, 4});
@@ -58,8 +58,8 @@ public class Symbol {
 		MS_MAP = new LinkedHashMap<String, MensurationSign>();
 		MensurationSign.MENSURATION_SIGNS.forEach(s -> MS_MAP.put(s.getEncoding(), s));
 	}
-	
-	// Rhythm signs
+
+	// Rhythm symbols
 	public static final RhythmSymbol LONGA = new RhythmSymbol("lo", "D", 192);
 	public static final RhythmSymbol BREVIS = new RhythmSymbol("br", "W", 96); 
 	public static final RhythmSymbol SEMIBREVIS = new RhythmSymbol("sb", "H", 48);
@@ -154,7 +154,7 @@ public class Symbol {
 	}
 
 	// Tab symbols
-	
+	// ...
 	
 	public static final List<TabSymbol> TAB_SYMBOLS;
 	static {
@@ -177,135 +177,144 @@ public class Symbol {
 	private String encoding;
 	private String symbol;
 
+
 	void setEncoding(String e) {
 		encoding = e;
 	}
-	
+
+
 	void setSymbol(String s) {
 		symbol = s;
 	}
 
+
 	public String getEncoding() {
 		return encoding;
 	}
-	
+
+
 	public String getSymbol() {
 		return symbol;
 	}
-	
-	public static RhythmSymbol getRhythmSymbolOLD(String e) {
-//		if (!SYMBOLS_MAP.containsKey(e)) {
-//			return null;
-//		}
-//		else {
-			Symbol s = SYMBOLS_MAP.get(e);
-			return s instanceof RhythmSymbol ? (RhythmSymbol) s : null;
-//		}
-	}
-	
+
+
 	public static ConstantMusicalSymbol getConstantMusicalSymbol(String e) {
 		return !CMS_MAP.containsKey(e) ? null : CMS_MAP.get(e);
 	}
 
+
 	public static MensurationSign getMensurationSign(String e) {
 		return !MS_MAP.containsKey(e) ? null : MS_MAP.get(e);
 	}
-	
+
+
 	public static RhythmSymbol getRhythmSymbol(String e) {
 		return !RS_MAP.containsKey(e) ? null : RS_MAP.get(e);
 	}
-	
-	public static <T> Symbol getSymbol(String e, Class<?> c) {
-		if (!SYMBOLS_MAP.containsKey(e)) {
-			return null;
-		}
-		else {
-			Symbol s = SYMBOLS_MAP.get(e);
-			if (c == ConstantMusicalSymbol.class) {
-				return s instanceof ConstantMusicalSymbol ? s : null;
-			}
-			else if (c == RhythmSymbol.class) {
-				return s instanceof RhythmSymbol ? s : null;
-			}
-//			else if (c == TabSymbol.class) {
-//				return s instanceof TabSymbol ? (TabSymbol) s : null;
-//			} 
-			else {
-				return null;
-			}
-		}
-	}
-	
-	
-	
-	public static enum ConstantMusicalSymbolE {
-		SPACE(">", "-"),
-		BARLINE("|", "|"),
-		DOUBLE_BARLINE("||", "||"),
-		REPEAT_BARLINE_LEFT ("|:", "|:"),
-		REPEAT_BARLINE_RIGHT(":|", ":|"),
-		REPEAT_DOUBLE_BARLINE_LEFT("||:", "||:"),
-		REPEAT_DOUBLE_BARLINE_RIGHT(":||", ":||"),
-		REPEAT_BARLINE_BOTH(":|:", ":|:"),
-		REPEAT_DOUBLE_BARLINE_BOTH(":||:", ":||:");
-
-		private String encoding;
-		private String symbol;
-		public static final Map<String, ConstantMusicalSymbolE> CONSTANT_MUSICAL_SYMBOLS;
-		static {
-			CONSTANT_MUSICAL_SYMBOLS = new LinkedHashMap<String, ConstantMusicalSymbolE>();
-			Arrays.asList(ConstantMusicalSymbolE.values()).forEach(c -> CONSTANT_MUSICAL_SYMBOLS.put(c.getEncoding(), c));
-		}
-
-		ConstantMusicalSymbolE(String e, String s) {
-			encoding = e;
-			symbol = s;
-		}
-
-		public String getEncoding() {
-			return encoding;
-		}
-
-		public String getSymbol() {
-			return symbol;
-		}
-
-		public static ConstantMusicalSymbolE getConstantMusicalSymbol(String e) {
-			return !CONSTANT_MUSICAL_SYMBOLS.containsKey(e) ? null : CONSTANT_MUSICAL_SYMBOLS.get(e);
-		}
-
-		public static boolean isBarline(String e) {
-			ConstantMusicalSymbolE c = getConstantMusicalSymbol(e);
-			return (c != null && c != SPACE);
-		}
-	}
 
 
-	public static final List<Symbol> SYMBOLS; 
-	static {
-		SYMBOLS = new ArrayList<>(); 
-		Field[] declaredFields = Symbol.class.getDeclaredFields();
-		for (Field f : declaredFields) {
-			if (Modifier.isStatic(f.getModifiers())) {
-				if (Symbol.class.isAssignableFrom(f.getType())) {
-					try {
-						SYMBOLS.add((Symbol) f.get(null));
-					} catch (IllegalAccessException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-//			if (f.getType().isInstance(RhythmSymbol.class)) {
-//				System.out.println(f.getName());
-//				System.out.println(f.getType());
+//	public static enum ConstantMusicalSymbolE {
+//		SPACE(">", "-"),
+//		BARLINE("|", "|"),
+//		DOUBLE_BARLINE("||", "||"),
+//		REPEAT_BARLINE_LEFT ("|:", "|:"),
+//		REPEAT_BARLINE_RIGHT(":|", ":|"),
+//		REPEAT_DOUBLE_BARLINE_LEFT("||:", "||:"),
+//		REPEAT_DOUBLE_BARLINE_RIGHT(":||", ":||"),
+//		REPEAT_BARLINE_BOTH(":|:", ":|:"),
+//		REPEAT_DOUBLE_BARLINE_BOTH(":||:", ":||:");
+//
+//		private String encoding;
+//		private String symbol;
+//		public static final Map<String, ConstantMusicalSymbolE> CONSTANT_MUSICAL_SYMBOLS;
+//		static {
+//			CONSTANT_MUSICAL_SYMBOLS = new LinkedHashMap<String, ConstantMusicalSymbolE>();
+//			Arrays.asList(ConstantMusicalSymbolE.values()).forEach(c -> CONSTANT_MUSICAL_SYMBOLS.put(c.getEncoding(), c));
+//		}
+//
+//		ConstantMusicalSymbolE(String e, String s) {
+//			encoding = e;
+//			symbol = s;
+//		}
+//
+//		public String getEncoding() {
+//			return encoding;
+//		}
+//
+//		public String getSymbol() {
+//			return symbol;
+//		}
+//
+//		public static ConstantMusicalSymbolE getConstantMusicalSymbol(String e) {
+//			return !CONSTANT_MUSICAL_SYMBOLS.containsKey(e) ? null : CONSTANT_MUSICAL_SYMBOLS.get(e);
+//		}
+//
+//		public static boolean isBarline(String e) {
+//			ConstantMusicalSymbolE c = getConstantMusicalSymbol(e);
+//			return (c != null && c != SPACE);
+//		}
+//	}
+
+
+//	public static final List<Symbol> SYMBOLS; 
+//	static {
+//		SYMBOLS = new ArrayList<>(); 
+//		Field[] declaredFields = Symbol.class.getDeclaredFields();
+//		for (Field f : declaredFields) {
+//			if (Modifier.isStatic(f.getModifiers())) {
+//				if (Symbol.class.isAssignableFrom(f.getType())) {
+//					try {
+//						SYMBOLS.add((Symbol) f.get(null));
+//					} catch (IllegalAccessException e) {
+//						e.printStackTrace();
+//					}
+//				}
 //			}
-		}
-	}
+////			if (f.getType().isInstance(RhythmSymbol.class)) {
+////				System.out.println(f.getName());
+////				System.out.println(f.getType());
+////			}
+//		}
+//	}
 
-	public static final Map<String, Symbol> SYMBOLS_MAP;
-	static {
-		SYMBOLS_MAP = new LinkedHashMap<String, Symbol>();
-		SYMBOLS.forEach(s -> SYMBOLS_MAP.put(s.getEncoding(), s));
-	}
+
+//	public static <T> Symbol getSymbol(String e, Class<?> c) {
+//		if (!SYMBOLS_MAP.containsKey(e)) {
+//			return null;
+//		}
+//		else {
+//			Symbol s = SYMBOLS_MAP.get(e);
+//			if (c == ConstantMusicalSymbol.class) {
+//				return s instanceof ConstantMusicalSymbol ? s : null;
+//			}
+//			else if (c == RhythmSymbol.class) {
+//				return s instanceof RhythmSymbol ? s : null;
+//			}
+////			else if (c == TabSymbol.class) {
+////				return s instanceof TabSymbol ? (TabSymbol) s : null;
+////			} 
+//			else {
+//				return null;
+//			}
+//		}
+//	}
+
+
+//	private static final Map<String, Symbol> SYMBOLS_MAP;
+//	static {
+//		SYMBOLS_MAP = new LinkedHashMap<String, Symbol>();
+//		SYMBOLS.forEach(s -> SYMBOLS_MAP.put(s.getEncoding(), s));
+//	}
+
+
+//	private static RhythmSymbol getRhythmSymbolOLD(String e) {
+//		if (!SYMBOLS_MAP.containsKey(e)) {
+//			return null;
+//		}
+//		else {
+//			Symbol s = SYMBOLS_MAP.get(e);
+//			return s instanceof RhythmSymbol ? (RhythmSymbol) s : null;
+//		}
+//	}
 
 }

@@ -1219,10 +1219,10 @@ public class TablatureTest extends TestCase {
 
 		List<String[]> expected = new ArrayList<>();
 		// t1
-		expected.add(new String[]{"McC3", "1", "1"});
+		expected.add(new String[]{"MC\\", "1", "1"});
 		// t2
-		expected.add(new String[]{"MO3.M34", "42", "42"});
-		expected.add(new String[]{"McC3", "50", "46"});
+		expected.add(new String[]{"MO.M34", "42", "42"});
+		expected.add(new String[]{"MC\\", "50", "46"});
 
 		List<String[]> actual = t1.getMensurationSigns();
 		actual.addAll(t2.getMensurationSigns());

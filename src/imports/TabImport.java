@@ -10,11 +10,11 @@ import java.util.Map;
 
 import representations.Tablature;
 import representations.Tablature.Tuning;
+import tbp.ConstantMusicalSymbol;
 import tbp.Encoding;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
 import tbp.Symbol;
-import tbp.Symbol.ConstantMusicalSymbolE;
 import tbp.SymbolDictionary;
 import tbp.TabSymbol;
 import tbp.TabSymbolSet;
@@ -29,15 +29,15 @@ public class TabImport {
 	private static final String TUNING_VOCAB = "ABCDEFG";
 	private static final Map<String, String> MENSURATION_SIGNS;
 	static { MENSURATION_SIGNS = new LinkedHashMap<String, String>();
-		MENSURATION_SIGNS.put("2/4", MensurationSign.TWO.getEncoding());
-		MENSURATION_SIGNS.put("3/4", MensurationSign.THREE.getEncoding());
-		MENSURATION_SIGNS.put("3/4", MensurationSign.O.getEncoding());
-		MENSURATION_SIGNS.put("2/2", MensurationSign.CUT_C.getEncoding());
-		MENSURATION_SIGNS.put("4/4", MensurationSign.C.getEncoding());
+		MENSURATION_SIGNS.put("2/4", Symbol.TWO.getEncoding());
+		MENSURATION_SIGNS.put("3/4", Symbol.THREE.getEncoding());
+		MENSURATION_SIGNS.put("3/4", Symbol.O.getEncoding());
+		MENSURATION_SIGNS.put("4/4", Symbol.C.getEncoding());
 
-		MENSURATION_SIGNS.put("3/2", MensurationSign.THREE_TWO.getEncoding());
-		MENSURATION_SIGNS.put("4/2", MensurationSign.FOUR_TWO.getEncoding());
-		MENSURATION_SIGNS.put("6/2", MensurationSign.SIX_TWO.getEncoding());		
+		MENSURATION_SIGNS.put("2/2", Symbol.CUT_C.getEncoding());
+		MENSURATION_SIGNS.put("3/2", Symbol.THREE.makeVariant(2, -1).getEncoding());
+		MENSURATION_SIGNS.put("4/2", Symbol.FOUR.makeVariant(2, -1).getEncoding());
+		MENSURATION_SIGNS.put("6/2", Symbol.SIX.makeVariant(2, -1).getEncoding());
 	}
 	
 	private static final String TAB_LETTERS = "abcdefghiklmnopq";
@@ -265,15 +265,14 @@ public class TabImport {
 		StringBuffer tbpEncoding = new StringBuffer("");
 		
 		Map<String, String> mensurationSigns = new LinkedHashMap<String, String>();
-		mensurationSigns.put("C/", MensurationSign.CUT_C.getEncoding());
-		mensurationSigns.put("6:2", MensurationSign.SIX_TWO.getEncoding());
-		mensurationSigns.put("3:2", MensurationSign.THREE_TWO.getEncoding());
-		mensurationSigns.put("3:4", MensurationSign.THREE.getEncoding());
-		mensurationSigns.put("2:4", MensurationSign.TWO.getEncoding());
-		mensurationSigns.put("2:1", MensurationSign.TWO_ONE.getEncoding());
-		mensurationSigns.put("3:1", MensurationSign.THREE_ONE.getEncoding());
-//		mensurationSigns.put("1:2", MensurationSign.ONE_TWO.getEncoding());
-		
+		mensurationSigns.put("2:4", Symbol.TWO.getEncoding());
+		mensurationSigns.put("3:4", Symbol.THREE.getEncoding());
+		mensurationSigns.put("C/", Symbol.CUT_C.getEncoding());
+		mensurationSigns.put("3:2", Symbol.THREE.makeVariant(2, -1).getEncoding());
+		mensurationSigns.put("6:2", Symbol.SIX.makeVariant(2, -1).getEncoding());
+		mensurationSigns.put("2:1", Symbol.TWO.makeVariant(1, -1).getEncoding());
+		mensurationSigns.put("3:1", Symbol.THREE.makeVariant(1, -1).getEncoding());
+
 		String tcSysBreak = "{^}";
 		String tcPageBreak = "{>}{^}";
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
@@ -311,13 +310,13 @@ public class TabImport {
 			if (tabword.startsWith("M")) {
 				asTbp += 
 					mensurationSigns.get(tabword.substring(tabword.indexOf("(") + 1, 
-					tabword.indexOf(")"))) + ss + ConstantMusicalSymbolE.SPACE.getEncoding() + ss;
+					tabword.indexOf(")"))) + ss + Symbol.SPACE.getEncoding() + ss;
 				meters.add(tabword);
 //				onsets.add(totalDur);
 				totalDur = 0;
 			}
 			// Constant musical symbol (barline etc.)
-			else if (ConstantMusicalSymbolE.getConstantMusicalSymbol(tabword) != null) {
+			else if (Symbol.getConstantMusicalSymbol(tabword) != null) {
 				asTbp += tabword + ss + "\r\n";
 //				// In case of a barline following a triplet group
 //				if (ConstantMusicalSymbol.getConstantMusicalSymbol(tabword) != 
@@ -665,7 +664,7 @@ public class TabImport {
 			}
 		}
 		
-		return convertedRS + convertedTabWord + ConstantMusicalSymbolE.SPACE.getEncoding() + ss;
+		return convertedRS + convertedTabWord + Symbol.SPACE.getEncoding() + ss;
 	}
 
 
@@ -715,7 +714,7 @@ public class TabImport {
 		// Remove line breaks and system separators; then split into symbols
 		String[] symbols = argCleanEncoding.replace("\r\n", "").replace("/", "").split("\\"+SymbolDictionary.SYMBOL_SEPARATOR);
 		// Remove any initial barline
-		if (ConstantMusicalSymbolE.getConstantMusicalSymbol(symbols[0]) != null) {
+		if (Symbol.getConstantMusicalSymbol(symbols[0]) != null) {
 			symbols = Arrays.copyOfRange(symbols, 1, symbols.length);
 		}
 
@@ -736,10 +735,10 @@ public class TabImport {
 			MensurationSign ms = MensurationSign.getMensurationSign(s);
 			RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(s);
 			TabSymbol ts = TabSymbol.getTabSymbol(s, TabSymbolSet.getTabSymbolSet(tss));
-			ConstantMusicalSymbolE cms = ConstantMusicalSymbolE.getConstantMusicalSymbol(s);
-			ConstantMusicalSymbolE prevCms = null;
+			ConstantMusicalSymbol cms = Symbol.getConstantMusicalSymbol(s);
+			ConstantMusicalSymbol prevCms = null;
 			if (i > 0) {
-				prevCms = ConstantMusicalSymbolE.getConstantMusicalSymbol(symbols[i-1]);
+				prevCms = Symbol.getConstantMusicalSymbol(symbols[i-1]);
 			}
 
 			// MS
@@ -774,7 +773,7 @@ public class TabImport {
 			if (rs != null) {
 				// Only if previous symbol was no barline and the RS event is not preceded by a MS 
 				// (in both cases posInBar was already updated)
-				if (!(prevCms != null && prevCms != ConstantMusicalSymbolE.SPACE) && 
+				if (!(prevCms != null && prevCms != Symbol.SPACE) && 
 					(i >= 2 && MensurationSign.getMensurationSign(symbols[i-2]) == null)) {
 					posInBar += prevDur;
 //					System.out.println("RS");
@@ -786,7 +785,7 @@ public class TabImport {
 			// TS event without RS (always preceded by space or barline)
 			if (ts != null && prevCms != null) {
 				// Only if previous symbol was no barline (in which case posInBar was already updated)
-				if (!(prevCms != ConstantMusicalSymbolE.SPACE)) {
+				if (!(prevCms != Symbol.SPACE)) {
 					posInBar += prevDur;
 //					System.out.println("TS event w/o RS");
 //					System.out.println("posInBar = " + posInBar);
@@ -794,9 +793,9 @@ public class TabImport {
 			}
 			
 			// Barline
-			if (cms != null && cms != ConstantMusicalSymbolE.SPACE) {
+			if (cms != null && cms != Symbol.SPACE) {
 				// Only if previous symbol was no barline (in which case posInBar was already updated)
-				if (!(prevCms != null && prevCms != ConstantMusicalSymbolE.SPACE)) {
+				if (!(prevCms != null && prevCms != Symbol.SPACE)) {
 					posInBar += prevDur;
 //					System.out.println("barline");
 //					System.out.println("posInBar = " + posInBar);
@@ -1040,7 +1039,7 @@ public class TabImport {
 		
 		StringBuffer tabPlusEncoding = new StringBuffer("");
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String space = ConstantMusicalSymbolE.SPACE.getEncoding(); 
+		String space = Symbol.SPACE.getEncoding(); 
 		// Per system
 		// Remove last element from systemContents (list containing tss and tuning)
 		List<List<String>> systemContentsNoLast = systemContents.subList(0, systemContents.size()-1);
@@ -1124,13 +1123,13 @@ public class TabImport {
 				else {
 					// First barline is not followed by line break 
 					if (currSystem.length() == 0) {
-						currSystem.append(ConstantMusicalSymbolE.BARLINE.getEncoding() + ss);
+						currSystem.append(Symbol.BARLINE.getEncoding() + ss);
 					}
 					else {
 						if (event.equals(BARLINE_EVENT)) {
 							// If single barline
 							if (nextEvent != null && !nextEvent.equals(BARLINE_EVENT) || nextEvent == null) {
-								currSystem.append(ConstantMusicalSymbolE.BARLINE.getEncoding() + ss + "\r\n");
+								currSystem.append(Symbol.BARLINE.getEncoding() + ss + "\r\n");
 							}
 							// If double barline or start repeat double barline
 							if (nextEvent != null && nextEvent.equals(BARLINE_EVENT)) {
@@ -1138,10 +1137,10 @@ public class TabImport {
 								if (j+2 < currSystemContents.size()) {
 									afterNextEvent = currSystemContents.get(j+2);
 								}
-								String toAdd = ConstantMusicalSymbolE.DOUBLE_BARLINE.getEncoding();
+								String toAdd = Symbol.BARLINE.makeBarlineVariant(2, null).getEncoding();
 								j++; // to skip next event
 								if (afterNextEvent != null && afterNextEvent.equals(REPEAT_DOTS_EVENT)) {
-									toAdd = ConstantMusicalSymbolE.REPEAT_DOUBLE_BARLINE_LEFT.getEncoding();
+									toAdd = Symbol.BARLINE.makeBarlineVariant(2, "left").getEncoding();
 									j++; // to skip also event after next event
 								}
 								currSystem.append(toAdd + ss + "\r\n");
@@ -1150,7 +1149,7 @@ public class TabImport {
 						// If end repeat double barline
 						if (event.equals(REPEAT_DOTS_EVENT)) {
 							currSystem.append(
-								ConstantMusicalSymbolE.REPEAT_DOUBLE_BARLINE_RIGHT.getEncoding() + ss + "\r\n");
+								Symbol.BARLINE.makeBarlineVariant(2, "right").getEncoding() + ss + "\r\n");
 							j += 2;
 						}
 					}

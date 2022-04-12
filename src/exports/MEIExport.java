@@ -16,11 +16,12 @@ import imports.MIDIImport;
 import representations.Tablature;
 import representations.Transcription;
 import structure.Timeline;
+import tbp.ConstantMusicalSymbol;
 import tbp.Encoding;
 import tbp.Event;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
-import tbp.Symbol.ConstantMusicalSymbolE;
+import tbp.Symbol;
 import tbp.SymbolDictionary;
 import tbp.TabSymbol;
 import tbp.TabSymbolSet;
@@ -506,7 +507,7 @@ public class MEIExport {
 		String notationtypeStr = getNotationTypeStr(tss);
 
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sp = ConstantMusicalSymbolE.SPACE.getEncoding();
+		String sp = Symbol.SPACE.getEncoding();
 
 		// 1. Make meiHead
 		String[] meiHead = new String[MEI_HEAD.size()];
@@ -618,9 +619,9 @@ public class MEIExport {
 				}
 
 				// Barline? End of bar reached; set barline if not single
-				if (ConstantMusicalSymbolE.isBarline(currEvent)) {
+				if (ConstantMusicalSymbol.isBarline(currEvent)) {
 					// TODO currently only single and double barline possible in MEI
-					if (currEvent.equals(ConstantMusicalSymbolE.DOUBLE_BARLINE.getEncoding())) {
+					if (currEvent.equals(Symbol.BARLINE.makeBarlineVariant(2, null).getEncoding())) {
 						barline = " right='dbl'";
 					}
 					if (i == events.size()-1) {
@@ -1439,7 +1440,7 @@ public class MEIExport {
 		List<List<String>> tabBars = new ArrayList<>();
 		
 		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sp = ConstantMusicalSymbolE.SPACE.getEncoding();
+		String sp = Symbol.SPACE.getEncoding();
 		TabSymbolSet tss = tab.getEncoding().getTabSymbolSet();
 		List<Integer[]> mi = tab.getTimeline().getMeterInfo();
 //		List<String[]> meters = new ArrayList<>();
@@ -1579,7 +1580,7 @@ public class MEIExport {
 //						barline = " right='end'";
 //					}
 //				}
-				if (!ConstantMusicalSymbolE.isBarline(currEvent)) {
+				if (!ConstantMusicalSymbol.isBarline(currEvent)) {
 					// Get XML durations of currEvent, and, if applicable, currEventOrig
 					Integer[] currDurXML = getXMLDur(currEvent);
 
@@ -3893,7 +3894,7 @@ public class MEIExport {
 			String system = cleanEncodingSystems[i];
 			String first = system.substring(0, system.indexOf(ss));
 			// If barline
-			if (ConstantMusicalSymbolE.isBarline(first)) {
+			if (ConstantMusicalSymbol.isBarline(first)) {
 				cleanEncodingSystems[i] = system.substring(system.indexOf(ss) + 1, system.length());
 			}
 		}
@@ -3906,8 +3907,8 @@ public class MEIExport {
 			for (int i = 0; i < system.length(); i++) {
 				if (system.substring(i, i+1).equals(ss)) {
 					String curr = system.substring(start, i);
-					boolean isSpace = curr.equals(ConstantMusicalSymbolE.SPACE.getEncoding());
-					boolean isBarline = ConstantMusicalSymbolE.isBarline(curr);
+					boolean isSpace = curr.equals(Symbol.SPACE.getEncoding());
+					boolean isBarline = ConstantMusicalSymbol.isBarline(curr);
 					if (!isSpace) {
 						event = (event.length() == 0) ? event + curr : event + ss + curr;
 					}

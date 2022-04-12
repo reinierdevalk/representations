@@ -12,11 +12,12 @@ import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import structure.Timeline;
+import tbp.ConstantMusicalSymbol;
 import tbp.Encoding;
 import tbp.Event;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
-import tbp.Symbol.ConstantMusicalSymbolE;
+import tbp.Symbol;
 import tbp.SymbolDictionary;
 import tbp.TabSymbol;
 import tbp.TabSymbolSet;
@@ -911,7 +912,7 @@ public class Tablature implements Serializable {
 			for (String t : events) {
 				String[] split = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
 				// Remove space from split
-				if (split[split.length - 1].equals(ConstantMusicalSymbolE.SPACE.getEncoding())) {
+				if (split[split.length - 1].equals(Symbol.SPACE.getEncoding())) {
 					split = Arrays.copyOf(split, split.length - 1);
 				}
 				// Add event if first element is a RS or last element is a TS
@@ -1009,7 +1010,7 @@ public class Tablature implements Serializable {
 			String firstSymbol = 
 				e.getEncoding().substring(0, 
 				e.getEncoding().lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR));
-			if (ConstantMusicalSymbolE.isBarline(firstSymbol)) {
+			if (ConstantMusicalSymbol.isBarline(firstSymbol)) {
 				numBarlines++;
 			}
 		}

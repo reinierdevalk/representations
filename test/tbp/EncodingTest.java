@@ -20,7 +20,6 @@ import representations.Tablature;
 import tbp.Event;
 import tbp.Encoding;
 import tbp.RhythmSymbol;
-import tbp.Symbol.ConstantMusicalSymbolE;
 import tbp.SymbolDictionary;
 import tbp.TabSymbolSet;
 import tools.ToolBox;
@@ -36,8 +35,8 @@ public class EncodingTest extends TestCase {
 		String root = Paths.getRootPath() + Paths.getDataDir(); 
 		encodingTestpiece = 
 			new File(root + Paths.getEncodingsPath() + Paths.getTestDir() + "testpiece.tbp");
-		miniRawEncoding = "{}{}{}{FrenchTab}{}{}{}MC3.>.sb.>.|.mi.a3.a2.a1.>.b1.>.|./MO4.M33.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./|.MC3.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//";
-		miniRawEncoding = "{}{}{}{FrenchTab}{}{}{}MC\\.>.sb.>.|.mi.a3.a2.a1.>.b1.>.|./MO.M3(4).>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./|.MC\\.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//";
+//		miniRawEncoding = "{}{}{}{FrenchTab}{}{}{}MC3.>.sb.>.|.mi.a3.a2.a1.>.b1.>.|./MO4.M33.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./|.MC3.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//";
+		miniRawEncoding = "{}{}{}{FrenchTab}{}{}{}MC\\.>.sb.>.|.mi.a3.a2.a1.>.b1.>.|./MO.M34.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./|.MC\\.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//";
 	}
 
 	@After
@@ -85,7 +84,7 @@ public class EncodingTest extends TestCase {
 
 	private String getCleanEncoding() {
 		return 	
-			"McC3.>.sb.>.mi.>.mi.a5.c4.b2.a1.>.|." +	
+			"MC\\.>.sb.>.mi.>.mi.a5.c4.b2.a1.>.|." +	
 			"sm*.a6.c4.i2.a1.>.fu.d6.>.sm.c6.a5.e4.b2.>.a6.>.mi.a6.h5.c4.b3.f2.>." + 
 				"sm.a6.b3.a2.a1.>.a3.e2.>.|." + 
 			"/" +
@@ -111,7 +110,7 @@ public class EncodingTest extends TestCase {
 		List<String> l;
 		if (!complementRs) {
 			l = Arrays.asList(new String[]{
-				"McC3.>.", 
+				"MC\\.>.", 
 				"sb.>.", 
 				"mi.>.", 
 				"mi.a5.c4.b2.a1.>.", 
@@ -142,7 +141,7 @@ public class EncodingTest extends TestCase {
 		}
 		else {
 			l = Arrays.asList(new String[]{
-				"McC3.>.", 
+				"MC\\.>.", 
 				"sb.>.", 
 				"mi.>.", 
 				"mi.a5.c4.b2.a1.>.", 
@@ -284,7 +283,7 @@ public class EncodingTest extends TestCase {
 		List<String> allSymbols = new ArrayList<>();
 		for (String system : cleanEnc.split(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
 			for (String symbol : system.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR)) {
-				if (!symbol.equals(ConstantMusicalSymbolE.SPACE.getEncoding())) {
+				if (!symbol.equals(Symbol.SPACE.getEncoding())) {
 					allSymbols.add(symbol);
 				}
 			}
@@ -311,7 +310,7 @@ public class EncodingTest extends TestCase {
 			"fu", "sf", "mi", "mi", "mi"
 		}));
 		// mensurationSigns
-		expected.add(Arrays.asList(new String[]{"McC3"}));
+		expected.add(Arrays.asList(new String[]{"MC\\"}));
 		// barlines
 		expected.add(Arrays.asList(new String[]{"|", "|", "||", "|", "||"}));
 
@@ -577,13 +576,13 @@ public class EncodingTest extends TestCase {
 		String errorMissing = "MISSING SYMBOL ERROR -- Remove symbol separator or insert symbol before.";
 		String rule5 = "See VALIDITY RULE 5: Each musical symbol must be succeeded directly by a symbol separator.";
 		expected.add(new String[]{"50", "51", errorMissing, rule5});
-		expected.add(new String[]{"91", "92", errorMissing, rule5});
-		expected.add(new String[]{"129", "130", errorMissing, rule5});
+		expected.add(new String[]{"90", "91", errorMissing, rule5});
+		expected.add(new String[]{"128", "129", errorMissing, rule5});
 		// Unknown symbol
 		String errorUnknown = "UNKNOWN SYMBOL ERROR -- Check for typos or missing symbol separators; check TabSymbolSet.";
 		expected.add(new String[]{"50", "53", errorUnknown, rule5});
-		expected.add(new String[]{"91", "94", errorUnknown, rule5});
-		expected.add(new String[]{"129", "132", errorUnknown, rule5});
+		expected.add(new String[]{"90", "93", errorUnknown, rule5});
+		expected.add(new String[]{"128", "131", errorUnknown, rule5});
 		// No missing or unknown symbols
 		expected.add(null);
 
@@ -614,20 +613,17 @@ public class EncodingTest extends TestCase {
 	public void testCheckLayoutRules() {
 		List<String> rawEncodings = new ArrayList<String>();
 		// LR 1
-		rawEncodings.add(miniRawEncoding.replace("{}MC\\.>.", "{}>.MC\\.>."));
-//		rawEncodings.add(miniRawEncoding.replace("{}MC3.>.", "{}>.MC3.>."));
-		rawEncodings.add(miniRawEncoding.replace("/MO.M3(4).>.", "/>.MO.M3(4).>."));
-//		rawEncodings.add(miniRawEncoding.replace("/MO4.M33.>.", "/>.MO4.M33.>."));
-		rawEncodings.add(miniRawEncoding.replace("/|.MC\\.>.", "/>.|.MC\\.>."));
-//		rawEncodings.add(miniRawEncoding.replace("/|.MC3.>.", "/>.|.MC3.>."));
+//		rawEncodings.add(miniRawEncoding.replace("{}MC\\.>.", "{}>.MC\\.>."));
+//		rawEncodings.add(miniRawEncoding.replace("/MO.M34.>.", "/>.MO.M34.>."));
+//		rawEncodings.add(miniRawEncoding.replace("/|.MC\\.>.", "/>.|.MC\\.>."));
 		// LR 2
-		rawEncodings.add(miniRawEncoding.replace("b1.>.|./", "b1./"));
-		rawEncodings.add(miniRawEncoding.replace("b2.>./", "b2./"));
-		rawEncodings.add(miniRawEncoding.replace("b3.>.||.//", "b3.//"));
+//		rawEncodings.add(miniRawEncoding.replace("b1.>.|./", "b1./"));
+//		rawEncodings.add(miniRawEncoding.replace("b2.>./", "b2./"));
+//		rawEncodings.add(miniRawEncoding.replace("b3.>.||.//", "b3.//"));
 		// LR 3
-		rawEncodings.add(miniRawEncoding.replace("b1.>.|.", "b1.>.|.>."));
-		rawEncodings.add(miniRawEncoding.replace("b2.>.", "b2.>.>."));
-		rawEncodings.add(miniRawEncoding.replace("||.", "||.>."));
+//		rawEncodings.add(miniRawEncoding.replace("b1.>.|.", "b1.>.|.>."));
+//		rawEncodings.add(miniRawEncoding.replace("b2.>.", "b2.>.>."));
+//		rawEncodings.add(miniRawEncoding.replace("||.", "||.>."));
 		// LR 4
 		rawEncodings.add(miniRawEncoding.replace("b1.>.", "b1."));
 //		rawEncodings.add(miniRawEncoding.replace("mi.a4.a3.a2.>.", "mi.a4.a3.a2."));
@@ -661,21 +657,21 @@ public class EncodingTest extends TestCase {
 		// LR 1
 		String error1 = "INVALID ENCODING ERROR -- Remove this space."; 
 		String rule1 = "See LAYOUT RULE 1: A system can start with any event but a space.";
-		expected.add(new String[]{"23", "24", error1, rule1});
-		expected.add(new String[]{"58", "59", error1, rule1});
-		expected.add(new String[]{"98", "99", error1, rule1});
+//		expected.add(new String[]{"23", "24", error1, rule1});
+//		expected.add(new String[]{"58", "59", error1, rule1});
+//		expected.add(new String[]{"96", "97", error1, rule1});
 		// LR 2
 		String error2 = "INVALID ENCODING ERROR -- Insert a space after this TabSymbol.";
 		String rule2 = "See LAYOUT RULE 2: A system must end with a space, a barline, or some sort of repeat barline.";
-		expected.add(new String[]{"50", "52", error2, rule2});
-		expected.add(new String[]{"92", "94", error2, rule2});
-		expected.add(new String[]{"130", "132", error2, rule2});
+//		expected.add(new String[]{"50", "52", error2, rule2});
+//		expected.add(new String[]{"90", "92", error2, rule2});
+//		expected.add(new String[]{"128", "130", error2, rule2});
 		// LR 3
 		String error3 = "INVALID ENCODING ERROR -- Remove this space.";
 		String rule3 = "See LAYOUT RULE 3: A constant musical symbol cannot be succeeded by a space.";
-		expected.add(new String[]{"57", "58", error3, rule3});
-		expected.add(new String[]{"97", "98", error3, rule3});
-		expected.add(new String[]{"138", "139", error3, rule3});
+//		expected.add(new String[]{"57", "58", error3, rule3});
+//		expected.add(new String[]{"95", "96", error3, rule3});
+//		expected.add(new String[]{"136", "137", error3, rule3});
 		// LR 4
 		String error4 = "INVALID ENCODING ERROR -- Insert a space after this TabSymbol.";
 		String rule4 = "See LAYOUT RULE 4: A vertical sonority must be succeeded by a space."; 
