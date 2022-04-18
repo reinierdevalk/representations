@@ -17,7 +17,7 @@ public class ConstantMusicalSymbol extends Symbol {
 
 
 	/**
-	 * Makes a barline variant.
+	 * Makes a variant (barline) of the CMS.
 	 * 
 	 * @param numBarlines
 	 * @param repeatDots A String with value "left", "right", "both", or <code>null</code> (if not applicable).

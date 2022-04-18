@@ -429,8 +429,8 @@ public class MEIExport {
 
 
 	private static String removeTrailingSymbolSeparator(String s) {
-		if (s.endsWith(SymbolDictionary.SYMBOL_SEPARATOR)) {
-			s = s.substring(0, s.lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR)); 
+		if (s.endsWith(Symbol.SYMBOL_SEPARATOR)) {
+			s = s.substring(0, s.lastIndexOf(Symbol.SYMBOL_SEPARATOR)); 
 		}
 		return s;
 	}
@@ -506,7 +506,7 @@ public class MEIExport {
 		TabSymbolSet tss = tab.getEncoding().getTabSymbolSet();
 		String notationtypeStr = getNotationTypeStr(tss);
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		String sp = Symbol.SPACE.getEncoding();
 
 		// 1. Make meiHead
@@ -844,7 +844,7 @@ public class MEIExport {
 	static Integer[] getXMLDur(String event) {
 		Integer[] XMLDur = null;
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		// To make sure that it always works if the trailing SS has been removed from event
 		RhythmSymbol rs = 
 			(!event.contains(ss)) ?	RhythmSymbol.getRhythmSymbol(event) : 
@@ -901,7 +901,7 @@ public class MEIExport {
 		// one for the <choice> tag, and one for the <sic>/<corr> tag
 		int addedTabs = isCorrected ? 2 : 0;
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		for (int i = 0; i < events.size(); i++) {
 //			System.out.println("i = " + i);
 			String e = events.get(i);
@@ -1439,7 +1439,7 @@ public class MEIExport {
 		int staff) {
 		List<List<String>> tabBars = new ArrayList<>();
 		
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		String sp = Symbol.SPACE.getEncoding();
 		TabSymbolSet tss = tab.getEncoding().getTabSymbolSet();
 		List<Integer[]> mi = tab.getTimeline().getMeterInfo();
@@ -3883,12 +3883,12 @@ public class MEIExport {
 	private static List<List<String>> getTabData(Tablature tab) {
 		List<List<String>> bars = new ArrayList<>();
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		// Split into bars
 		String cleanEncoding = tab.getEncoding().getCleanEncoding();
 		// Remove EBI and split into systems
-		cleanEncoding = cleanEncoding.replace(SymbolDictionary.END_BREAK_INDICATOR, "");
-		String[] cleanEncodingSystems = cleanEncoding.split(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
+		cleanEncoding = cleanEncoding.replace(Symbol.END_BREAK_INDICATOR, "");
+		String[] cleanEncodingSystems = cleanEncoding.split(Symbol.SYSTEM_BREAK_INDICATOR);
 		// Remove leading barline (of any kind) for each system
 		for (int i = 0; i < cleanEncodingSystems.length; i++) {
 			String system = cleanEncodingSystems[i];

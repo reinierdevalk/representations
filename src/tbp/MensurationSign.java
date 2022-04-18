@@ -79,7 +79,7 @@ public class MensurationSign extends Symbol {
 	 * @return
 	 */
 	// TESTED
-	public MensurationSign makeVariant(int beatUnit, int staffLine/*, String customEncoding*/) {
+	public MensurationSign makeVariant(int beatUnit, int staffLine) {
 		String e = getEncoding();
 		Integer[] m = getMeter();
 		Integer[] newM = Arrays.copyOf(m, m.length);

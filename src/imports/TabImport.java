@@ -275,7 +275,7 @@ public class TabImport {
 
 		String tcSysBreak = "{^}";
 		String tcPageBreak = "{>}{^}";
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		
 		// Remove all comments from the TabCode
 		tc = tc.replace(tcSysBreak, "SysBr").replace(tcPageBreak, "PgBr");
@@ -330,7 +330,7 @@ public class TabImport {
 				if (!tbpEncoding.toString().endsWith("\r\n")) {
 					asTbp += "\r\n";
 				}
-				asTbp += SymbolDictionary.SYSTEM_BREAK_INDICATOR + "\r\n";
+				asTbp += Symbol.SYSTEM_BREAK_INDICATOR + "\r\n";
 			}
 			// Tabword starting with RS (non-beamed)
 			else if (RHYTHM_SYMBOLS.containsKey(tabword.substring(0, 1))) {
@@ -454,7 +454,7 @@ public class TabImport {
 
 					// If system break in between
 					if (nextTabword.startsWith(tcSysBreak)) {
-						asTbp += "\r\n" + SymbolDictionary.SYSTEM_BREAK_INDICATOR + "\r\n";
+						asTbp += "\r\n" + Symbol.SYSTEM_BREAK_INDICATOR + "\r\n";
 					}
 					// If last tabword in beaming group
 					if (nextTabword.startsWith("]")) {
@@ -525,7 +525,7 @@ public class TabImport {
 		if (!tbpEncoding.toString().endsWith("\r\n")) {
 			tbpEncoding.append("\r\n"); 
 		}
-		tbpEncoding.append(SymbolDictionary.END_BREAK_INDICATOR);
+		tbpEncoding.append(Symbol.END_BREAK_INDICATOR);
 		
 		return tbpEncoding;
 	}
@@ -541,7 +541,7 @@ public class TabImport {
 	private static String convertTabword(String tabword, boolean rsAdded) {
 		String convertedTabWord = "";
 		
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		int lenTripletUnit = "(Q)".length();
 
 		Map<String, String> beams = new LinkedHashMap<String, String>();
@@ -712,7 +712,7 @@ public class TabImport {
 	static String createMeterInfoString(String argCleanEncoding, String tss) {
 
 		// Remove line breaks and system separators; then split into symbols
-		String[] symbols = argCleanEncoding.replace("\r\n", "").replace("/", "").split("\\"+SymbolDictionary.SYMBOL_SEPARATOR);
+		String[] symbols = argCleanEncoding.replace("\r\n", "").replace("/", "").split("\\"+Symbol.SYMBOL_SEPARATOR);
 		// Remove any initial barline
 		if (Symbol.getConstantMusicalSymbol(symbols[0]) != null) {
 			symbols = Arrays.copyOfRange(symbols, 1, symbols.length);
@@ -848,8 +848,8 @@ public class TabImport {
 //		String [] tags = getMetaDataTags();
 		for (int i = 0; i < tags.length; i++) {
 			String currTag = tags[i];
-			metadataStub += SymbolDictionary.OPEN_METADATA_BRACKET + currTag + ": " +  metadata[i] +
-				SymbolDictionary.CLOSE_METADATA_BRACKET + "\r\n";
+			metadataStub += Symbol.OPEN_METADATA_BRACKET + currTag + ": " +  metadata[i] +
+				Symbol.CLOSE_METADATA_BRACKET + "\r\n";
 			if (i == 2 || i == tags.length - 1) {
 				metadataStub += "\r\n";
 			}
@@ -1038,7 +1038,7 @@ public class TabImport {
 		String tss = systemContents.get(systemContents.size()-1).get(0);
 		
 		StringBuffer tabPlusEncoding = new StringBuffer("");
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		String space = Symbol.SPACE.getEncoding(); 
 		// Per system
 		// Remove last element from systemContents (list containing tss and tuning)
@@ -1156,10 +1156,10 @@ public class TabImport {
 				}
 			}
 			if (i+1 < systemContentsNoLast.size()) {
-				currSystem.append(SymbolDictionary.SYSTEM_BREAK_INDICATOR + "\r\n");
+				currSystem.append(Symbol.SYSTEM_BREAK_INDICATOR + "\r\n");
 			}
 			else {
-				currSystem.append(SymbolDictionary.END_BREAK_INDICATOR);
+				currSystem.append(Symbol.END_BREAK_INDICATOR);
 			}
 			tabPlusEncoding.append(currSystem);
 		}

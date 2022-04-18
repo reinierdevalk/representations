@@ -142,8 +142,8 @@ public class Encoding implements Serializable {
 		String cleanEnc = "";
 		String rawEnc = getRawEncoding();
 
-		String omb = SymbolDictionary.OPEN_METADATA_BRACKET;
-		String cmb = SymbolDictionary.CLOSE_METADATA_BRACKET;
+		String omb = Symbol.OPEN_METADATA_BRACKET;
+		String cmb = Symbol.CLOSE_METADATA_BRACKET;
 
 		// Remove all carriage returns and line breaks; remove leading and trailing whitespace
 		cleanEnc = rawEnc.replaceAll("\r", "").replaceAll("\n", "").trim();
@@ -173,8 +173,8 @@ public class Encoding implements Serializable {
 		// NB Content also contains any comments and footnotes following the last metadata tag 
 		List<String> content = new ArrayList<String>();
 		for (int i = 0; i < rawEncoding.length(); i++) {
-			if (Character.toString(rawEncoding.charAt(i)).equals(SymbolDictionary.OPEN_METADATA_BRACKET)) {
-				int closeInfoInd = rawEncoding.indexOf(SymbolDictionary.CLOSE_METADATA_BRACKET, i);
+			if (Character.toString(rawEncoding.charAt(i)).equals(Symbol.OPEN_METADATA_BRACKET)) {
+				int closeInfoInd = rawEncoding.indexOf(Symbol.CLOSE_METADATA_BRACKET, i);
 				content.add(rawEncoding.substring(i + 1, closeInfoInd));
 				i = closeInfoInd;
 			}
@@ -196,8 +196,8 @@ public class Encoding implements Serializable {
 	String makeHeader() {
 		List<String> elements = new ArrayList<>();
 		getMetadata().entrySet().forEach(e -> elements.add(
-			SymbolDictionary.OPEN_METADATA_BRACKET + e.getKey() + ": " + e.getValue() +
-			SymbolDictionary.CLOSE_METADATA_BRACKET
+			Symbol.OPEN_METADATA_BRACKET + e.getKey() + ": " + e.getValue() +
+			Symbol.CLOSE_METADATA_BRACKET
 		));
 		return String.join("\r\n", elements);
 	}
@@ -221,12 +221,12 @@ public class Encoding implements Serializable {
 
 	// TESTED
 	List<Event> makeEvents() {
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String omb = SymbolDictionary.OPEN_METADATA_BRACKET;
-		String cmb = SymbolDictionary.CLOSE_METADATA_BRACKET;
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String omb = Symbol.OPEN_METADATA_BRACKET;
+		String cmb = Symbol.CLOSE_METADATA_BRACKET;
 		String sp = Symbol.SPACE.getEncoding();
-		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
-		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
+		String ebi = Symbol.END_BREAK_INDICATOR;
 
 		// Remove any line breaks, EBI, and leading and trailing whitespace from rawEnc
 		String rawEnc = getRawEncoding();
@@ -341,7 +341,7 @@ public class Encoding implements Serializable {
 		List<Event> events = getEvents();
 		for (int i = 0; i < events.size(); i++) {
 			for (String currSymbol : 
-				events.get(i).getEncoding().split("\\" + SymbolDictionary.SYMBOL_SEPARATOR)) {
+				events.get(i).getEncoding().split("\\" + Symbol.SYMBOL_SEPARATOR)) {
 				allSymbols.add(currSymbol);
 				if(TabSymbol.getTabSymbol(currSymbol, getTabSymbolSet()) != null) {
 					tabSymbols.add(currSymbol);
@@ -376,7 +376,7 @@ public class Encoding implements Serializable {
 	List<List<Integer>> makeListsOfStatistics() { 
 		List<List<Integer>> los = new ArrayList<>();
 		
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		
 		// 0-5. Lists that have the same size as listOfAllEvents (from listsOfSymbols)
 		List<Integer> isTabSymbolEvent = new ArrayList<Integer>();
@@ -590,8 +590,8 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED
 	public static boolean checkForMetadataErrors(String rawEncoding) {		
-		String oib = SymbolDictionary.OPEN_METADATA_BRACKET;
-		String cib = SymbolDictionary.CLOSE_METADATA_BRACKET;
+		String oib = Symbol.OPEN_METADATA_BRACKET;
+		String cib = Symbol.CLOSE_METADATA_BRACKET;
 
 		// Check for missing tags (list contains -1)or wrongly ordered tags (list is not sorted)
 		List<Integer> inds = new ArrayList<Integer>();
@@ -679,8 +679,8 @@ public class Encoding implements Serializable {
 			for (int j = startInd; j < rawEnc.length(); j++) {
 				String s = rawEnc.substring(j, j + 1); 
 				// Skip comments
-				if (s.equals(SymbolDictionary.OPEN_METADATA_BRACKET)) {
-					j = rawEnc.indexOf(SymbolDictionary.CLOSE_METADATA_BRACKET, j);
+				if (s.equals(Symbol.OPEN_METADATA_BRACKET)) {
+					j = rawEnc.indexOf(Symbol.CLOSE_METADATA_BRACKET, j);
 				}
 				else if (s.equals(currentChar)) {
 					indsAligned[j] = i;
@@ -714,9 +714,9 @@ public class Encoding implements Serializable {
 	static String[] checkValidityRules(String cleanEnc, Integer[] indicesRawAndCleanAligned) {
 		List<Integer> inds = Arrays.asList(indicesRawAndCleanAligned);
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
-		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
+		String ebi = Symbol.END_BREAK_INDICATOR;
 		String ws = " ";
 
 		String VR1 = "VALIDITY RULE 1: The encoding cannot contain whitespace.";
@@ -747,9 +747,15 @@ public class Encoding implements Serializable {
 		// VALIDITY RULE 1: The encoding cannot contain whitespace 
 		if (cleanEnc.contains(ws)) {
 			int errorInd = inds.indexOf(cleanEnc.indexOf(ws));
+			int wsLength = 0;
+			int ind = cleanEnc.indexOf(ws);
+			while (cleanEnc.substring(ind, ind+1).equals(" ")) {
+				wsLength++;
+				ind++;
+			}
 			return new String[]{
 				String.valueOf(errorInd),
-				String.valueOf(errorInd + ws.length()),
+				String.valueOf(errorInd + wsLength),
 				"INVALID ENCODING ERROR -- Remove this whitespace.",
 				"See " + VR1
 			};
@@ -829,8 +835,8 @@ public class Encoding implements Serializable {
 	static String[] checkSymbols(String cleanEnc, TabSymbolSet tss, Integer[] indicesRawAndCleanAligned) {
 		List<Integer> inds = Arrays.asList(indicesRawAndCleanAligned);
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
 
 		String VR5 = "VALIDITY RULE 5: Each musical symbol must be succeeded directly by a symbol separator.";
 
@@ -885,8 +891,8 @@ public class Encoding implements Serializable {
 	static String[] checkLayoutRules(String cleanEnc, TabSymbolSet tss, Integer[] indicesRawAndCleanAligned) {
 		List<Integer> inds = Arrays.asList(indicesRawAndCleanAligned);
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
 		String sp = Symbol.SPACE.getEncoding();
 
 		String LR1 = "LAYOUT RULE 1: A system can start with any event but a space.";
@@ -908,7 +914,6 @@ public class Encoding implements Serializable {
 		// Finds any CMS succeeded by a space. Matches with cleanEnc if that equals
 		// zero or more chars (.*); followed by a CMS + SS + space; followed by one or more chars (.+)
 		String regexCmsSsSp = ".*[" + String.join("", allCMSStr) + "]\\.>.+";
-		System.out.println(regexCmsSsSp);
 
 		// LR 1-3 pertain to CMS exclusively, and can therefore be checked using regexes
 		// LAYOUT RULE 1: A system can start with any event but a space
@@ -1090,16 +1095,12 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED
 	static Integer[] getIndicesOfPrecedingSymbol(String s, String cleanEnc, boolean condition) {
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		int ind = -1;
 		int leftInd = -1; 
 		int rightInd = -1;
 		for (int i = 0; i < cleanEnc.length(); i++) {
 			ind = cleanEnc.indexOf(s, i);
-			System.out.println(cleanEnc);
-			System.out.println(s);
-			System.out.println(ind);
-//			System.exit(0);
 			// s always preceded by at least one SS (one symbol)
 			rightInd = cleanEnc.lastIndexOf(ss, ind);
 			leftInd = cleanEnc.lastIndexOf(ss, rightInd - 1);
@@ -1124,7 +1125,7 @@ public class Encoding implements Serializable {
 	public static List<String> combineSuccessiveRestEvents(List<String> events) {
 		List<String> res = new ArrayList<>();
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 
 		List<String> successiveRests = new ArrayList<>();
 		for (String t : events) {
@@ -1192,7 +1193,7 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED
 	public static boolean assertEventType(String event, TabSymbolSet tss, String type) {
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		if (!event.endsWith(ss)) {
 			event += ss;
 		}
@@ -1232,8 +1233,8 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED
 	public static String removeComment(String s) {
-		String omb = SymbolDictionary.OPEN_METADATA_BRACKET;
-		String cmb = SymbolDictionary.CLOSE_METADATA_BRACKET;
+		String omb = Symbol.OPEN_METADATA_BRACKET;
+		String cmb = Symbol.CLOSE_METADATA_BRACKET;
 		if (!(s.contains(omb) && s.contains(cmb))) {
 			return s;
 		}
@@ -1253,7 +1254,7 @@ public class Encoding implements Serializable {
 	// TESTED
 	public static List<Event> removeDecorativeBarlineEvents(List<Event> events) {
 		List<Event> pruned = new ArrayList<>();
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 
 		for (int i = 0; i < events.size(); i++) {
 			Event currEvent = events.get(i);
@@ -1285,9 +1286,9 @@ public class Encoding implements Serializable {
 	public static String recompose(List<String> events) {
 		String recomposed = "";
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
-		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
+		String ebi = Symbol.END_BREAK_INDICATOR;
 
 		for (String s : events) {
 			recomposed += s;
@@ -1327,7 +1328,7 @@ public class Encoding implements Serializable {
 		int startInd = 
 			header.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length();
 		String origMeterInfo = header.substring(startInd, 
-			header.indexOf(SymbolDictionary.CLOSE_METADATA_BRACKET, startInd));
+			header.indexOf(Symbol.CLOSE_METADATA_BRACKET, startInd));
 		List<Integer[]> copyOfMeterInfo = new ArrayList<>();
 		for (Integer[] in : meterInfo) {
 			copyOfMeterInfo.add(Arrays.copyOf(in, in.length));
@@ -1361,7 +1362,7 @@ public class Encoding implements Serializable {
 		events = events.subList(0, events.size() - 1);
 		Collections.reverse(events);
 		return new Encoding(
-			header + "\r\n\r\n" + recompose(events) + SymbolDictionary.END_BREAK_INDICATOR, 
+			header + "\r\n\r\n" + recompose(events) + Symbol.END_BREAK_INDICATOR, 
 			getPiecename(), 
 			SYNTAX_CHECKED
 		);
@@ -1378,9 +1379,9 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED
 	public Encoding deornament(int dur) {
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
-		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
+		String ebi = Symbol.END_BREAK_INDICATOR;
 
 		// 1. Adapt events
 		List<String> events = decompose(true, true);
@@ -1462,16 +1463,16 @@ public class Encoding implements Serializable {
 	public Encoding stretch(List<Integer[]> meterInfo, double factor) {
 		String header = getHeader();
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
-		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
+		String ebi = Symbol.END_BREAK_INDICATOR;
 
 		// 1. Adapt header
 		// Reverse meterInfo information 
 		int startInd = 
 			header.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length();
 		String origMeterInfo = header.substring(startInd, 
-			header.indexOf(SymbolDictionary.CLOSE_METADATA_BRACKET, startInd));
+			header.indexOf(Symbol.CLOSE_METADATA_BRACKET, startInd));
 		List<Integer[]> copyOfMeterInfo = new ArrayList<>();
 		String stretchedMeterInfo = "";
 		for (int i = 0; i < meterInfo.size(); i++) {
@@ -1539,9 +1540,9 @@ public class Encoding implements Serializable {
 		boolean showHeader, boolean showFootnotes) {
 		String tab = "";
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		String sp = Symbol.SPACE.getEncoding();
-		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
 
 		String cleanEnc = getCleanEncoding();
 		TabSymbolSet currTss = getTabSymbolSet();
@@ -1766,10 +1767,10 @@ public class Encoding implements Serializable {
 	int getStaffLength() {
 		int largestStaffLength = 0;
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		String sp = Symbol.SPACE.getEncoding();
-		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
-		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
+		String ebi = Symbol.END_BREAK_INDICATOR;
 
 		String cleanEncoding = getCleanEncoding();
 		String[] allSystems = cleanEncoding.substring(0, cleanEncoding.indexOf(ebi)).split(sbi);
@@ -1843,9 +1844,9 @@ public class Encoding implements Serializable {
 	StringBuffer visualiseFootnotes(TabSymbolSet argTss) {
 		StringBuffer footnotesStr;
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		String sp = Symbol.SPACE.getEncoding();
-		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		String ebi = Symbol.END_BREAK_INDICATOR;
 		String sts = Staff.STAFF_SEGMENT;
 		int numTabs = 3;
 		String emptyLine = ToolBox.tabify("", numTabs);
@@ -2170,9 +2171,9 @@ public class Encoding implements Serializable {
 	public List<String> decompose(boolean complementRs, boolean includeBreakIndicators) {
 		List<String> decomposed = new ArrayList<>();
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
-		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
+		String ebi = Symbol.END_BREAK_INDICATOR;
 		TabSymbolSet tss = getTabSymbolSet();
 
 		// List all events and barlines for each system
@@ -2267,18 +2268,18 @@ public class Encoding implements Serializable {
 	private List<String> getEventsOLD() {
 		String enc = splitHeaderAndEncodingOLD()[1];
 
-		String[] systems = enc.split(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
+		String[] systems = enc.split(Symbol.SYSTEM_BREAK_INDICATOR);
 
 		List<String> allEvents = new ArrayList<>();
 		for (int i = 0; i < systems.length; i++) {
 			String system = systems[i];
 			// List all events and barlines for the current system
-			String[] symbols = system.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
+			String[] symbols = system.split("\\" + Symbol.SYMBOL_SEPARATOR);
 			List<String> currEvents = new ArrayList<>();
 			String currEvent = "";
 			for (int j = 0; j < symbols.length; j++) {
 				String s = symbols[j];
-				currEvent += s + SymbolDictionary.SYMBOL_SEPARATOR;
+				currEvent += s + Symbol.SYMBOL_SEPARATOR;
 				// Add event after each space or barline (i.e., CMS)
 				if (Symbol.CONSTANT_MUSICAL_SYMBOLS.contains(Symbol.getConstantMusicalSymbol(s))) {				
 //				if (ConstantMusicalSymbol.values().contains(
@@ -2295,7 +2296,7 @@ public class Encoding implements Serializable {
 							Symbol.getConstantMusicalSymbol(nextS)) &&
 							Symbol.CONSTANT_MUSICAL_SYMBOLS.contains(
 							Symbol.getConstantMusicalSymbol(nextNextS))) {
-							currEvent += nextS + SymbolDictionary.SYMBOL_SEPARATOR;
+							currEvent += nextS + Symbol.SYMBOL_SEPARATOR;
 							j++;
 						}
 					}
@@ -2305,7 +2306,7 @@ public class Encoding implements Serializable {
 			}
 			allEvents.addAll(currEvents);
 			if (i != systems.length-1) {
-				allEvents.add(SymbolDictionary.SYSTEM_BREAK_INDICATOR);
+				allEvents.add(Symbol.SYSTEM_BREAK_INDICATOR);
 			}
 		}
 
@@ -2313,8 +2314,8 @@ public class Encoding implements Serializable {
 		String activeRs = "";
 		for (int j = 0; j < allEvents.size(); j++) {
 			String t = allEvents.get(j);
-			if (!t.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
-				String first = t.substring(0, t.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+			if (!t.equals(Symbol.SYSTEM_BREAK_INDICATOR)) {
+				String first = t.substring(0, t.indexOf(Symbol.SYMBOL_SEPARATOR));
 				// RS: set activeRs
 				if (RhythmSymbol.getRhythmSymbol(first) != null) {
 					activeRs = first;
@@ -2324,7 +2325,7 @@ public class Encoding implements Serializable {
 					// Only if event is not a MS or a CMS (barline)
 					if (MensurationSign.getMensurationSign(first) == null && 
 						ConstantMusicalSymbol.getConstantMusicalSymbol(first) == null) {
-						allEvents.set(j, activeRs + SymbolDictionary.SYMBOL_SEPARATOR + t);
+						allEvents.set(j, activeRs + Symbol.SYMBOL_SEPARATOR + t);
 					}
 				}
 			}
@@ -2345,12 +2346,12 @@ public class Encoding implements Serializable {
 
 
 	private List<String[]> makeEventsOLD() {
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String omb = SymbolDictionary.OPEN_METADATA_BRACKET;
-		String cmb = SymbolDictionary.CLOSE_METADATA_BRACKET;
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String omb = Symbol.OPEN_METADATA_BRACKET;
+		String cmb = Symbol.CLOSE_METADATA_BRACKET;
 		String sp = Symbol.SPACE.getEncoding();
-		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
-		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
+		String ebi = Symbol.END_BREAK_INDICATOR;
 
 		// Remove any line breaks, EBI, and leading and trailing whitespace from rawEnc
 		String rawEnc = getRawEncoding();
@@ -2451,12 +2452,12 @@ public class Encoding implements Serializable {
 
 
 	private List<List<String[]>> makeEventsOLDEST() {
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
-		String omb = SymbolDictionary.OPEN_METADATA_BRACKET;
-		String cmb = SymbolDictionary.CLOSE_METADATA_BRACKET;
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String omb = Symbol.OPEN_METADATA_BRACKET;
+		String cmb = Symbol.CLOSE_METADATA_BRACKET;
 		String sp = Symbol.SPACE.getEncoding();
-		String sbi = SymbolDictionary.SYSTEM_BREAK_INDICATOR;
-		String ebi = SymbolDictionary.END_BREAK_INDICATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
+		String ebi = Symbol.END_BREAK_INDICATOR;
 
 		// Remove any line breaks, EBI, and leading and trailing whitespace from rawEnc
 		String rawEnc = getRawEncoding();
@@ -2960,7 +2961,7 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED
 	private static boolean isTabSymbolEvent(String event, TabSymbolSet tss) {
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		if (!event.endsWith(ss)) {
 			event += ss;
 		}
@@ -2983,7 +2984,7 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED
 	private static boolean isRhythmSymbolEvent(String event) {
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		if (!event.endsWith(ss)) {
 			event += ss;
 		}
@@ -2999,7 +3000,7 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED
 	private static boolean isRestEvent(String event) {
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		if (!event.endsWith(ss)) {
 			event += ss;
 		}
@@ -3008,11 +3009,11 @@ public class Encoding implements Serializable {
 
 
 	private static boolean isMensurationSignEvent(String event) {
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		if (!event.endsWith(ss)) {
 			event += ss;
 		}
-		if (event.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
+		if (event.equals(Symbol.SYSTEM_BREAK_INDICATOR)) {
 			return false;
 		}
 		else {
@@ -3029,11 +3030,11 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED
 	private static boolean isBarlineEvent(String event) {
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		if (!event.endsWith(ss)) {
 			event += ss;
 		}
-		if (event.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR)) {
+		if (event.equals(Symbol.SYSTEM_BREAK_INDICATOR)) {
 			return false;
 		}
 		else {
@@ -3061,8 +3062,8 @@ public class Encoding implements Serializable {
 	 * </ul>
 	 */
 	private String[] splitHeaderAndEncodingOLD() {
-		String omb = SymbolDictionary.OPEN_METADATA_BRACKET;
-		String cmb = SymbolDictionary.CLOSE_METADATA_BRACKET;
+		String omb = Symbol.OPEN_METADATA_BRACKET;
+		String cmb = Symbol.CLOSE_METADATA_BRACKET;
 		// Separate header and encoding
 		String raw = getRawEncoding();
 		int endHeader = raw.indexOf(cmb, raw.indexOf(METADATA_TAGS[METADATA_TAGS.length-1]));		
@@ -3075,7 +3076,7 @@ public class Encoding implements Serializable {
 			String comment = enc.substring(openCommentIndex, closeCommentIndex + 1);
 			enc = enc.replace(comment, "");
 		}
-		enc = enc.substring(0, enc.indexOf(SymbolDictionary.END_BREAK_INDICATOR));
+		enc = enc.substring(0, enc.indexOf(Symbol.END_BREAK_INDICATOR));
 
 		return new String[]{header, enc};
 	}

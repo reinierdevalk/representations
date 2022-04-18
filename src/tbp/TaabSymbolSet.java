@@ -15,22 +15,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class TabSymbolSet extends ArrayList<TabSymbol>{
+public class TaabSymbolSet extends ArrayList<TabSymbol>{
 
 	private static final long serialVersionUID = 1L;
 	private String name;
 	private String type;
 
-	public static final TabSymbolSet OCHSENKUN_1558 = new TabSymbolSet("Ochsenkun1558", "German", SymbolDictionary.ochsenkun1558Content);
-	public static final TabSymbolSet NEWSIDLER_1536 = new TabSymbolSet("Newsidler1536", "German", SymbolDictionary.newsidler1536Content);
-	public static final TabSymbolSet HECKEL_1562 = new TabSymbolSet("Heckel1562", "German", SymbolDictionary.heckel1562Content);
-	public static final TabSymbolSet JUDENKUENIG_1523 = new TabSymbolSet("Judenkuenig1523", "German", SymbolDictionary.judenkuenig1523Content);
-	public static final TabSymbolSet FRENCH_TAB = new TabSymbolSet("FrenchTab", "French", SymbolDictionary.frenchTabContent);  
-	public static final TabSymbolSet ITALIAN_TAB = new TabSymbolSet("ItalianTab", "Italian", SymbolDictionary.italianTabContent);  
-	public static final TabSymbolSet SPANISH_TAB = new TabSymbolSet("SpanishTab", "Spanish", SymbolDictionary.spanishTabContent); 
+	public static final TaabSymbolSet OCHSENKUN_1558 = new TaabSymbolSet("Ochsenkun1558", "German", SymbolDictionary.ochsenkun1558Content);
+	public static final TaabSymbolSet NEWSIDLER_1536 = new TaabSymbolSet("Newsidler1536", "German", SymbolDictionary.newsidler1536Content);
+	public static final TaabSymbolSet HECKEL_1562 = new TaabSymbolSet("Heckel1562", "German", SymbolDictionary.heckel1562Content);
+	public static final TaabSymbolSet JUDENKUENIG_1523 = new TaabSymbolSet("Judenkuenig1523", "German", SymbolDictionary.judenkuenig1523Content);
+	public static final TaabSymbolSet FRENCH_TAB = new TaabSymbolSet("FrenchTab", "French", SymbolDictionary.frenchTabContent);  
+	public static final TaabSymbolSet ITALIAN_TAB = new TaabSymbolSet("ItalianTab", "Italian", SymbolDictionary.italianTabContent);  
+	public static final TaabSymbolSet SPANISH_TAB = new TaabSymbolSet("SpanishTab", "Spanish", SymbolDictionary.spanishTabContent); 
 	
-	private static List<TabSymbolSet> tabSymbolSets;
-	static { tabSymbolSets = Arrays.asList(new TabSymbolSet[]{
+	private static List<TaabSymbolSet> tabSymbolSets;
+	static { tabSymbolSets = Arrays.asList(new TaabSymbolSet[]{
 		OCHSENKUN_1558, 
 		NEWSIDLER_1536, 
 		HECKEL_1562, 
@@ -49,7 +49,7 @@ public class TabSymbolSet extends ArrayList<TabSymbol>{
 	 * @param aList
 	 * @return
 	 */
-	public TabSymbolSet(String name, String type, List<TabSymbol> aList) {
+	public TaabSymbolSet(String name, String type, List<TabSymbol> aList) {
 		super();
 		this.name = name;
 		this.type = type;
@@ -59,7 +59,7 @@ public class TabSymbolSet extends ArrayList<TabSymbol>{
 	}
 
 
-	public static List<TabSymbolSet> getTabSymbolSets() {
+	public static List<TaabSymbolSet> getTabSymbolSets() {
 		return tabSymbolSets;
 	}
 
@@ -120,8 +120,8 @@ public class TabSymbolSet extends ArrayList<TabSymbol>{
 	 * @param tabSymbolSets
 	 * @return
 	 */
-	public static TabSymbolSet getTabSymbolSet(String aName) {
-		for (TabSymbolSet tss : getTabSymbolSets()) {
+	public static TaabSymbolSet getTabSymbolSet(String aName) {
+		for (TaabSymbolSet tss : getTabSymbolSets()) {
 			if (tss.getName().equals(aName)) {
 				return tss;
 			}

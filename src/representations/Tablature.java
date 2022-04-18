@@ -18,7 +18,6 @@ import tbp.Event;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
 import tbp.Symbol;
-import tbp.SymbolDictionary;
 import tbp.TabSymbol;
 import tbp.TabSymbolSet;
 import tools.ToolBox;
@@ -59,30 +58,59 @@ public class Tablature implements Serializable {
 	private List<List<TabSymbol>> tablatureChords;
 	private List<Integer> numberOfNotesPerChord;
 
+
 	public static enum Tuning  {
-		C_HIGH("C_HIGH", 5, false, Arrays.asList(new String[]{"C", "F", "Bb", "D", "G", "C"})), // 1030_coment_peult_avoir_joye.tbp
-		C6Bb("C6Bb", -7, true, Arrays.asList(new String[]{"Bb", "F", "Bb", "D", "G", "C"})),
-		D("D", -5, false, Arrays.asList(new String[]{"D", "G", "C", "E", "A", "D"})),
-		F("F", -2, false, Arrays.asList(new String[]{"F", "Bb", "Eb", "G", "C", "F"})),
-		F_ENH("F", -2, false, Arrays.asList(new String[]{"F", "A#", "D#", "G", "C", "F"})),
-		Fx("F#", -1, false, Arrays.asList(new String[]{"F#", "B", "E", "G#", "C#", "F#"})), // 5148_51_respice_in_me_deus._F#_lute_T.tbp
-		G("G", 0, false, Arrays.asList(new String[]{"G", "C", "F", "A", "D", "G"})),
-		G6F("G6F", 0, true, Arrays.asList(new String[]{"F", "C", "F", "A", "D", "G"})),
-		G7F("G7F", 0, false, Arrays.asList(new String[]{"F", "G", "C", "F", "A", "D", "G"})),
-		G7D("G7D", 0, false, Arrays.asList(new String[]{"D", "G", "C", "F", "A", "D", "G"})),
-		A("A", 2, false, Arrays.asList(new String[]{"A", "D", "G", "B", "E", "A"})),
-		A6G("A6G", 2, true, Arrays.asList(new String[]{"G", "D", "G", "B", "E", "A"}));
+		// Six courses, standard tuning
+		D("D", -5, false, Arrays.asList(new String[]{"D", "G", "C", "E", "A", "D"}), 38,
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
+		F("F", -2, false, Arrays.asList(new String[]{"F", "Bb", "Eb", "G", "C", "F"}), 41,
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
+		F_ENH("F", -2, false, Arrays.asList(new String[]{"F", "A#", "D#", "G", "C", "F"}), 41,
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
+		Fx("F#", -1, false, Arrays.asList(new String[]{"F#", "B", "E", "G#", "C#", "F#"}), 42,
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})), // 5148_51_respice_in_me_deus._F#_lute_T.tbp
+		G("G", 0, false, Arrays.asList(new String[]{"G", "C", "F", "A", "D", "G"}), 43,
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
+		A("A", 2, false, Arrays.asList(new String[]{"A", "D", "G", "B", "E", "A"}), 45,
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
+		C_HIGH("C_HIGH", 5, false, Arrays.asList(new String[]{"C", "F", "Bb", "D", "G", "C"}), 48,
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})), // 1030_coment_peult_avoir_joye.tbp
+		// Six courses, drop tuning
+		C6Bb("C6Bb", -7, true, Arrays.asList(new String[]{"Bb", "F", "Bb", "D", "G", "C"}), 34,
+			Arrays.asList(new Integer[]{7, 5, 4, 5, 5})),
+		G6F("G6F", 0, true, Arrays.asList(new String[]{"F", "C", "F", "A", "D", "G"}), 41,
+			Arrays.asList(new Integer[]{7, 5, 4, 5, 5})),
+		A6G("A6G", 2, true, Arrays.asList(new String[]{"G", "D", "G", "B", "E", "A"}), 43,
+			Arrays.asList(new Integer[]{7, 5, 4, 5, 5})),
+		// Seven courses
+		G7F("G7F", 0, false, Arrays.asList(new String[]{"F", "G", "C", "F", "A", "D", "G"}), 41,
+			Arrays.asList(new Integer[]{2, 5, 5, 4, 5, 5})),
+		G7D("G7D", 0, false, Arrays.asList(new String[]{"D", "G", "C", "F", "A", "D", "G"}), 38,
+			Arrays.asList(new Integer[]{5, 5, 5, 4, 5, 5})),
+		A7G("A7G", 2, false, Arrays.asList(new String[]{"G", "A", "D", "G", "B", "E", "A"}), 43,
+			Arrays.asList(new Integer[]{2, 5, 5, 4, 5, 5})),
+		A7E("A7E", 2, false, Arrays.asList(new String[]{"E", "A", "D", "G", "B", "E", "A"}), 40,
+			Arrays.asList(new Integer[]{5, 5, 5, 4, 5, 5})),
+		// Eight courses
+		G8("G8", 0, false, Arrays.asList(new String[]{"D", "F", "G", "C", "F", "A", "D", "G"}), 38,
+			Arrays.asList(new Integer[]{3, 2, 5, 5, 4, 5, 5})),
+		A8("A8", 2, false, Arrays.asList(new String[]{"E", "G", "A", "D", "G", "B", "E", "A"}), 40,
+			Arrays.asList(new Integer[]{3, 2, 5, 5, 4, 5, 5}));
 
 		private String name;
 		private int transposition;
 		private boolean isDrop;
 		private List<String> courses;
+		int pitchLowestCourse;
+		private List<Integer> intervals;
 
-		Tuning(String s, int t, boolean a, List<String> l) {
-			name = s;
+		Tuning(String n, int t, boolean d, List<String> c, int p, List<Integer> i) {
+			name = n;
 			transposition = t;
-			isDrop = a;
-			courses = l;
+			isDrop = d;
+			courses = c;
+			pitchLowestCourse = p;
+			intervals = i;	
 		}
 		
 		public String getName() {
@@ -99,6 +127,21 @@ public class Tablature implements Serializable {
 
 		public List<String> getCourses() {
 			return courses;
+		}
+
+		public int getPitchLowestCourse() {
+			return pitchLowestCourse;
+		}
+
+		public List<Integer> getIntervals() {
+			return intervals;
+		}
+
+		public List<Integer> getPitches() {
+			List<Integer> pitches = new ArrayList<>();
+			pitches.add(getPitchLowestCourse());
+			getIntervals().forEach(i -> pitches.add(pitches.get(pitches.size() - 1) + i));
+			return pitches;
 		}
 
 		public static Tuning getTuning(String s) {
@@ -246,7 +289,7 @@ public class Tablature implements Serializable {
 		List<Integer> durOfTabSymbols = new ArrayList<>();
 		List<Integer> onsetOfTabSymbols = new ArrayList<>();	
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		int currDur = 0;
 		int prevDur = 0;
 		int onset = 0;
@@ -910,7 +953,7 @@ public class Tablature implements Serializable {
 			// Remove all events that are neither a chord nor a rest
 			List<String> tmp = new ArrayList<>();
 			for (String t : events) {
-				String[] split = t.split("\\" + SymbolDictionary.SYMBOL_SEPARATOR);
+				String[] split = t.split("\\" + Symbol.SYMBOL_SEPARATOR);
 				// Remove space from split
 				if (split[split.length - 1].equals(Symbol.SPACE.getEncoding())) {
 					split = Arrays.copyOf(split, split.length - 1);
@@ -931,7 +974,7 @@ public class Tablature implements Serializable {
 				Rational ons = onsetTimes.get(i)[0];
 				ons.reduce();
 				if (curr.startsWith(RhythmSymbol.TRIPLET_INDICATOR)) {
-					String rs = curr.substring(0, curr.indexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+					String rs = curr.substring(0, curr.indexOf(Symbol.SYMBOL_SEPARATOR));
 //					RhythmSymbol nonTripletVar = RhythmSymbol.getNonTripletVariant(rs);
 					dur += MEIExport.TRIPLETISER.mul(RhythmSymbol.getRhythmSymbol(rs).getDuration()).toDouble();
 //					dur += nonTripletVar.getDuration();
@@ -971,7 +1014,7 @@ public class Tablature implements Serializable {
 	// TESTED
 	public List<String[]> getMensurationSigns() {
 		List<String[]> tabMeters = new ArrayList<>();
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		List<Integer[]> tabBarsToMetricBars = mapTabBarsToMetricBars();
 		List<Event> events = 
 			Encoding.removeDecorativeBarlineEvents(getEncoding().getEvents());
@@ -1009,7 +1052,7 @@ public class Tablature implements Serializable {
 		for (Event e : Encoding.removeDecorativeBarlineEvents(getEncoding().getEvents())) {
 			String firstSymbol = 
 				e.getEncoding().substring(0, 
-				e.getEncoding().lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR));
+				e.getEncoding().lastIndexOf(Symbol.SYMBOL_SEPARATOR));
 			if (ConstantMusicalSymbol.isBarline(firstSymbol)) {
 				numBarlines++;
 			}
@@ -1038,7 +1081,7 @@ public class Tablature implements Serializable {
 	public List<Integer[]> mapTabBarsToMetricBars() {
 		List<Integer[]> mapped = new ArrayList<>();
 
-		String ss = SymbolDictionary.SYMBOL_SEPARATOR;
+		String ss = Symbol.SYMBOL_SEPARATOR;
 		
 		// Get metric bar lengths in SMALLEST_RHYTHMIC_VALUE
 		List<Integer> metricBarLengths = new ArrayList<>();

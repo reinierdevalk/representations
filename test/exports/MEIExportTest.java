@@ -10,6 +10,7 @@ import exports.MEIExport;
 import junit.framework.TestCase;
 import tbp.Encoding;
 import tbp.Event;
+import tbp.Symbol;
 import tbp.SymbolDictionary;
 
 public class MEIExportTest extends TestCase {
@@ -213,12 +214,12 @@ public class MEIExportTest extends TestCase {
 //		for (List<String[]> l : ebl) {
 		for (Event e : ebl) {
 			events.add(e.getEncoding().substring(0, 
-				e.getEncoding().lastIndexOf(SymbolDictionary.SYMBOL_SEPARATOR)));
+				e.getEncoding().lastIndexOf(Symbol.SYMBOL_SEPARATOR)));
 		}
 //		}
 		for (String event : events) {
-			if (!event.equals(SymbolDictionary.SYSTEM_BREAK_INDICATOR) &&
-				!event.equals(SymbolDictionary.END_BREAK_INDICATOR)) {
+			if (!event.equals(Symbol.SYSTEM_BREAK_INDICATOR) &&
+				!event.equals(Symbol.END_BREAK_INDICATOR)) {
 				actual.add(MEIExport.getXMLDur(event));
 			}
 		}

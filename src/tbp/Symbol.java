@@ -1,22 +1,30 @@
 package tbp;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
+import tbp.TabSymbol.TabSymbolSet;
 
 public class Symbol {
 
-	// Contant musical symbols
+	// I. Punctuation symbols
+	public static final String SYMBOL_SEPARATOR = ".";  
+	public static final String SYSTEM_BREAK_INDICATOR = "/";
+	public static final String END_BREAK_INDICATOR = "//";
+	public static final String OPEN_METADATA_BRACKET = "{";
+	public static final String CLOSE_METADATA_BRACKET = "}";
+		
+	// II. Musical symbols
+	// 1. Contant musical symbols
 	public static final ConstantMusicalSymbol SPACE = new ConstantMusicalSymbol(">", ">");
 	public static final ConstantMusicalSymbol BARLINE = new ConstantMusicalSymbol(ConstantMusicalSymbol.PIPE, ConstantMusicalSymbol.PIPE);
-	public static final List<ConstantMusicalSymbol> CONSTANT_MUSICAL_SYMBOLS;
+	public static final Map<String, ConstantMusicalSymbol> CONSTANT_MUSICAL_SYMBOLS;
 	static {
-		CONSTANT_MUSICAL_SYMBOLS = Arrays.asList(new ConstantMusicalSymbol[]{
+		List<ConstantMusicalSymbol> cmss = Arrays.asList(new ConstantMusicalSymbol[]{
 			SPACE, BARLINE,
 			BARLINE.makeBarlineVariant(1, "left"),
 			BARLINE.makeBarlineVariant(1, "right"),
@@ -26,14 +34,11 @@ public class Symbol {
 			BARLINE.makeBarlineVariant(2, "right"),
 			BARLINE.makeBarlineVariant(2, "both"),
 		});
-	}
-	public static final Map<String, ConstantMusicalSymbol> CMS_MAP;
-	static {
-		CMS_MAP = new LinkedHashMap<String, ConstantMusicalSymbol>();
-		CONSTANT_MUSICAL_SYMBOLS.forEach(s -> CMS_MAP.put(s.getEncoding(), s));
+		CONSTANT_MUSICAL_SYMBOLS = new LinkedHashMap<String, ConstantMusicalSymbol>();
+		cmss.forEach(cms -> CONSTANT_MUSICAL_SYMBOLS.put(cms.getEncoding(), cms));
 	}
 
-	// Mensuration signs
+	// 2. Mensuration signs
 	public static final MensurationSign TWO	= new MensurationSign("M2", "2", new Integer[]{2, 4});
 	public static final MensurationSign THREE = new MensurationSign("M3", "3", new Integer[]{3, 4});
 	public static final MensurationSign FOUR = new MensurationSign("M4", "4", new Integer[]{4, 4});
@@ -41,9 +46,9 @@ public class Symbol {
 	public static final MensurationSign O = new MensurationSign("MO", "O", new Integer[]{3, 4});
 	public static final MensurationSign C = new MensurationSign("MC", "C", new Integer[]{4, 4});
 	public static final MensurationSign CUT_C = new MensurationSign("MC\\", "\u00A2", new Integer[]{2, 2});	
-	public static final List<MensurationSign> MENSURATION_SIGNS;
+	public static final Map<String, MensurationSign> MENSURATION_SIGNS;
 	static {
-		MENSURATION_SIGNS = Arrays.asList(new MensurationSign[]{
+		List<MensurationSign> mss = Arrays.asList(new MensurationSign[]{
 			TWO, THREE,FOUR, SIX, O, C, CUT_C,
 			THREE.makeVariant(-1, 4),
 			THREE.makeVariant(2, -1),
@@ -51,15 +56,12 @@ public class Symbol {
 			SIX.makeVariant(2, -1),
 			TWO.makeVariant(1, -1),
 			THREE.makeVariant(1, -1)
-		});
-	}	
-	public static final Map<String, MensurationSign> MS_MAP;
-	static {
-		MS_MAP = new LinkedHashMap<String, MensurationSign>();
-		MensurationSign.MENSURATION_SIGNS.forEach(s -> MS_MAP.put(s.getEncoding(), s));
+		}); 
+		MENSURATION_SIGNS = new LinkedHashMap<String, MensurationSign>();
+		mss.forEach(ms -> MENSURATION_SIGNS.put(ms.getEncoding(), ms));
 	}
 
-	// Rhythm symbols
+	// 3. Rhythm symbols
 	public static final RhythmSymbol LONGA = new RhythmSymbol("lo", "D", 192);
 	public static final RhythmSymbol BREVIS = new RhythmSymbol("br", "W", 96); 
 	public static final RhythmSymbol SEMIBREVIS = new RhythmSymbol("sb", "H", 48);
@@ -70,30 +72,38 @@ public class Symbol {
 	public static final RhythmSymbol CORONA_BREVIS = new RhythmSymbol("cobr", "C", 96);
 	public static final RhythmSymbol CORONA_SEMIBREVIS = new RhythmSymbol("cosb", "C", 48);
 	public static final RhythmSymbol RHYTHM_DOT = new RhythmSymbol(RhythmSymbol.DOT_ENCODING, ".", -1);
-	public static final List<RhythmSymbol> RHYTHM_SYMBOLS;
+	public static final Map<String, RhythmSymbol> RHYTHM_SYMBOLS;
 	static {
-		RHYTHM_SYMBOLS = Arrays.asList(new RhythmSymbol[]{
-			// Basic (lo-sf)
+		// Basic (lo-sf)
+		List<RhythmSymbol> rss = Arrays.asList(new RhythmSymbol[]{
 			LONGA, BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, SEMIFUSA, CORONA_BREVIS,
-			CORONA_SEMIBREVIS, RHYTHM_DOT,
-			// Dotted (lo-fu)
-			LONGA.makeVariant(true, false, false, 1, null),
-			BREVIS.makeVariant(true, false, false, 1, null),
-			SEMIBREVIS.makeVariant(true, false, false, 1, null),
-			MINIM.makeVariant(true, false, false, 1, null),
-			MINIM.makeVariant(true, false, false, 2, null),
-			SEMIMINIM.makeVariant(true, false, false, 1, null),
-			FUSA.makeVariant(true, false, false, 1, null),
-			CORONA_BREVIS.makeVariant(true, false, false, 1, null),
-			CORONA_SEMIBREVIS.makeVariant(true, false, false, 1, null),
-			// Beamed (sm-sf)
-			SEMIMINIM.makeVariant(false, true, false, 0, null),
-			FUSA.makeVariant(false, true, false, 0, null),
-			SEMIFUSA.makeVariant(false, true, false, 0, null),
-			// Dotted and beamed (sm-fu)
-			SEMIMINIM.makeVariant(true, true, false, 1, null),
-			FUSA.makeVariant(true, true, false, 1, null),
-			// Triplets, basic (br-sf)
+			CORONA_SEMIBREVIS, RHYTHM_DOT});
+		// Dotted (lo-fu)
+		Arrays.asList(new RhythmSymbol[]{LONGA, BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, CORONA_BREVIS, CORONA_SEMIBREVIS}).
+			forEach(rs -> rss.add(rs.makeVariant(true, false, false, 1, null)));
+		rss.add(MINIM.makeVariant(true, false, false, 2, null));
+//			LONGA.makeVariant(true, false, false, 1, null),
+//			BREVIS.makeVariant(true, false, false, 1, null),
+//			SEMIBREVIS.makeVariant(true, false, false, 1, null),
+//			MINIM.makeVariant(true, false, false, 1, null),
+//			MINIM.makeVariant(true, false, false, 2, null),
+//			SEMIMINIM.makeVariant(true, false, false, 1, null),
+//			FUSA.makeVariant(true, false, false, 1, null),
+//			CORONA_BREVIS.makeVariant(true, false, false, 1, null),
+//			CORONA_SEMIBREVIS.makeVariant(true, false, false, 1, null),
+		// Beamed (sm-sf)
+		Arrays.asList(new RhythmSymbol[]{SEMIMINIM, FUSA, SEMIFUSA}).
+			forEach(rs -> rss.add(rs.makeVariant(false, true, false, 0, null)));
+//			SEMIMINIM.makeVariant(false, true, false, 0, null),
+//			FUSA.makeVariant(false, true, false, 0, null),
+//			SEMIFUSA.makeVariant(false, true, false, 0, null),
+		// Dotted and beamed (sm-fu)
+		Arrays.asList(new RhythmSymbol[]{SEMIMINIM, FUSA}).
+			forEach(rs -> rss.add(rs.makeVariant(true, true, false, 1, null)));
+//			SEMIMINIM.makeVariant(true, true, false, 1, null),
+//			FUSA.makeVariant(true, true, false, 1, null),
+			
+		// Triplets, basic (br-sf)
 			BREVIS.makeVariant(false, false, true, 0, ""),
 			BREVIS.makeVariant(false, false, true, 0, "open"),
 			BREVIS.makeVariant(false, false, true, 0, "close"),
@@ -144,34 +154,37 @@ public class Symbol {
 			SEMIMINIM.makeVariant(true, true, true, 1, "close"),
 			FUSA.makeVariant(true, true, true, 1, ""),
 			FUSA.makeVariant(true, true, true, 1, "open"),
-			FUSA.makeVariant(true, true, true, 1, "close")
+			FUSA.makeVariant(true, true, true, 1, "close")		
 		});
+		RHYTHM_SYMBOLS = new LinkedHashMap<String, RhythmSymbol>();
+		rss.forEach(s -> RHYTHM_SYMBOLS.put(s.getEncoding(), s));
 	}
-	public static final Map<String, RhythmSymbol> RS_MAP;
-	static {
-		RS_MAP = new LinkedHashMap<String, RhythmSymbol>();
-		RHYTHM_SYMBOLS.forEach(s -> RS_MAP.put(s.getEncoding(), s));
-	}
-
-	// Tab symbols
-	// ...
 	
-	public static final List<TabSymbol> TAB_SYMBOLS;
+	// 4. Tab symbols
+	public static final List<TabSymbol> FRENCH = TabSymbol.listTabSymbols(TabSymbol.TabSymbolSet.FRENCH);
+	public static final List<TabSymbol> ITALIAN = TabSymbol.listTabSymbols(TabSymbol.TabSymbolSet.ITALIAN);
+	public static final List<TabSymbol> SPANISH = TabSymbol.listTabSymbols(TabSymbol.TabSymbolSet.SPANISH);
+	public static final List<TabSymbol> JUDENKUENIG_1523 = TabSymbol.listTabSymbols(TabSymbol.TabSymbolSet.JUDENKUENIG_1523);
+	public static final List<TabSymbol> NEWSIDLER_1536 = TabSymbol.listTabSymbols(TabSymbol.TabSymbolSet.NEWSIDLER_1536);
+	public static final List<TabSymbol> OCHSENKUN_1558 = TabSymbol.listTabSymbols(TabSymbol.TabSymbolSet.OCHSENKUN_1558);
+	public static final List<TabSymbol> HECKEL_1562 = TabSymbol.listTabSymbols(TabSymbol.TabSymbolSet.HECKEL_1562);	
+	public static final Map<String, Map<String, TabSymbol>> TAB_SYMBOLS;
 	static {
-		TAB_SYMBOLS = Arrays.asList(new TabSymbol[]{
-		});
-	}	
-	public static final Map<String, TabSymbol> TS_MAP;
-	static {
-		TS_MAP = new LinkedHashMap<String, TabSymbol>();
-		TAB_SYMBOLS.forEach(s -> TS_MAP.put(s.getEncoding(), s));
+		Map<String, List<TabSymbol>> tss = new LinkedHashMap<String, List<TabSymbol>>();
+		tss.put(TabSymbolSet.FRENCH.getName(), FRENCH);
+		tss.put(TabSymbolSet.ITALIAN.getName(), ITALIAN);
+		tss.put(TabSymbolSet.SPANISH.getName(), SPANISH);
+		tss.put(TabSymbolSet.JUDENKUENIG_1523.getName(), JUDENKUENIG_1523);
+		tss.put(TabSymbolSet.NEWSIDLER_1536.getName(), NEWSIDLER_1536);
+		tss.put(TabSymbolSet.OCHSENKUN_1558.getName(), OCHSENKUN_1558);
+		tss.put(TabSymbolSet.HECKEL_1562.getName(), HECKEL_1562);
+		TAB_SYMBOLS = new LinkedHashMap<String, Map<String, TabSymbol>>();
+		for (Entry<String, List<TabSymbol>> e : tss.entrySet()) {
+			Map<String, TabSymbol> curr = new LinkedHashMap<String, TabSymbol>();
+			e.getValue().forEach(s -> curr.put(s.getEncoding(), s));
+			TAB_SYMBOLS.put(e.getKey(), curr);
+		}
 	}
-
-	
-
-
-
-
 
 
 	private String encoding;
@@ -199,122 +212,28 @@ public class Symbol {
 
 
 	public static ConstantMusicalSymbol getConstantMusicalSymbol(String e) {
-		return !CMS_MAP.containsKey(e) ? null : CMS_MAP.get(e);
+		return !CONSTANT_MUSICAL_SYMBOLS.containsKey(e) ? null : CONSTANT_MUSICAL_SYMBOLS.get(e);
 	}
 
 
 	public static MensurationSign getMensurationSign(String e) {
-		return !MS_MAP.containsKey(e) ? null : MS_MAP.get(e);
+		return !MENSURATION_SIGNS.containsKey(e) ? null : MENSURATION_SIGNS.get(e);
 	}
 
 
 	public static RhythmSymbol getRhythmSymbol(String e) {
-		return !RS_MAP.containsKey(e) ? null : RS_MAP.get(e);
+		return !RHYTHM_SYMBOLS.containsKey(e) ? null : RHYTHM_SYMBOLS.get(e);
 	}
 
 
-//	public static enum ConstantMusicalSymbolE {
-//		SPACE(">", "-"),
-//		BARLINE("|", "|"),
-//		DOUBLE_BARLINE("||", "||"),
-//		REPEAT_BARLINE_LEFT ("|:", "|:"),
-//		REPEAT_BARLINE_RIGHT(":|", ":|"),
-//		REPEAT_DOUBLE_BARLINE_LEFT("||:", "||:"),
-//		REPEAT_DOUBLE_BARLINE_RIGHT(":||", ":||"),
-//		REPEAT_BARLINE_BOTH(":|:", ":|:"),
-//		REPEAT_DOUBLE_BARLINE_BOTH(":||:", ":||:");
-//
-//		private String encoding;
-//		private String symbol;
-//		public static final Map<String, ConstantMusicalSymbolE> CONSTANT_MUSICAL_SYMBOLS;
-//		static {
-//			CONSTANT_MUSICAL_SYMBOLS = new LinkedHashMap<String, ConstantMusicalSymbolE>();
-//			Arrays.asList(ConstantMusicalSymbolE.values()).forEach(c -> CONSTANT_MUSICAL_SYMBOLS.put(c.getEncoding(), c));
-//		}
-//
-//		ConstantMusicalSymbolE(String e, String s) {
-//			encoding = e;
-//			symbol = s;
-//		}
-//
-//		public String getEncoding() {
-//			return encoding;
-//		}
-//
-//		public String getSymbol() {
-//			return symbol;
-//		}
-//
-//		public static ConstantMusicalSymbolE getConstantMusicalSymbol(String e) {
-//			return !CONSTANT_MUSICAL_SYMBOLS.containsKey(e) ? null : CONSTANT_MUSICAL_SYMBOLS.get(e);
-//		}
-//
-//		public static boolean isBarline(String e) {
-//			ConstantMusicalSymbolE c = getConstantMusicalSymbol(e);
-//			return (c != null && c != SPACE);
-//		}
-//	}
-
-
-//	public static final List<Symbol> SYMBOLS; 
-//	static {
-//		SYMBOLS = new ArrayList<>(); 
-//		Field[] declaredFields = Symbol.class.getDeclaredFields();
-//		for (Field f : declaredFields) {
-//			if (Modifier.isStatic(f.getModifiers())) {
-//				if (Symbol.class.isAssignableFrom(f.getType())) {
-//					try {
-//						SYMBOLS.add((Symbol) f.get(null));
-//					} catch (IllegalAccessException e) {
-//						e.printStackTrace();
-//					}
-//				}
-//			}
-////			if (f.getType().isInstance(RhythmSymbol.class)) {
-////				System.out.println(f.getName());
-////				System.out.println(f.getType());
-////			}
-//		}
-//	}
-
-
-//	public static <T> Symbol getSymbol(String e, Class<?> c) {
-//		if (!SYMBOLS_MAP.containsKey(e)) {
-//			return null;
-//		}
-//		else {
-//			Symbol s = SYMBOLS_MAP.get(e);
-//			if (c == ConstantMusicalSymbol.class) {
-//				return s instanceof ConstantMusicalSymbol ? s : null;
-//			}
-//			else if (c == RhythmSymbol.class) {
-//				return s instanceof RhythmSymbol ? s : null;
-//			}
-////			else if (c == TabSymbol.class) {
-////				return s instanceof TabSymbol ? (TabSymbol) s : null;
-////			} 
-//			else {
-//				return null;
-//			}
-//		}
-//	}
-
-
-//	private static final Map<String, Symbol> SYMBOLS_MAP;
-//	static {
-//		SYMBOLS_MAP = new LinkedHashMap<String, Symbol>();
-//		SYMBOLS.forEach(s -> SYMBOLS_MAP.put(s.getEncoding(), s));
-//	}
-
-
-//	private static RhythmSymbol getRhythmSymbolOLD(String e) {
-//		if (!SYMBOLS_MAP.containsKey(e)) {
-//			return null;
-//		}
-//		else {
-//			Symbol s = SYMBOLS_MAP.get(e);
-//			return s instanceof RhythmSymbol ? (RhythmSymbol) s : null;
-//		}
-//	}
+	public static TabSymbol getTabSymbol(String e, TabSymbolSet tss) {
+		if (!TAB_SYMBOLS.containsKey(tss.getName())) {
+			return null;
+		}
+		else {
+			Map<String, TabSymbol> m = TAB_SYMBOLS.get(tss.getName());
+			return !m.containsKey(e) ? null : m.get(e);
+		}
+	}
 
 }
