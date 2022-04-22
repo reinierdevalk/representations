@@ -11,7 +11,6 @@ import junit.framework.TestCase;
 import tbp.Encoding;
 import tbp.Event;
 import tbp.Symbol;
-import tbp.SymbolDictionary;
 
 public class MEIExportTest extends TestCase {
 

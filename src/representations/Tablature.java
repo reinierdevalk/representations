@@ -19,7 +19,7 @@ import tbp.MensurationSign;
 import tbp.RhythmSymbol;
 import tbp.Symbol;
 import tbp.TabSymbol;
-import tbp.TabSymbolSet;
+import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 
 public class Tablature implements Serializable {

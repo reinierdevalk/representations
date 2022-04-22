@@ -15,9 +15,8 @@ import tbp.Encoding;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
 import tbp.Symbol;
-import tbp.SymbolDictionary;
 import tbp.TabSymbol;
-import tbp.TabSymbolSet;
+import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 
 public class TabImport {
@@ -1137,10 +1136,10 @@ public class TabImport {
 								if (j+2 < currSystemContents.size()) {
 									afterNextEvent = currSystemContents.get(j+2);
 								}
-								String toAdd = Symbol.BARLINE.makeBarlineVariant(2, null).getEncoding();
+								String toAdd = Symbol.BARLINE.makeVariant(2, null).getEncoding();
 								j++; // to skip next event
 								if (afterNextEvent != null && afterNextEvent.equals(REPEAT_DOTS_EVENT)) {
-									toAdd = Symbol.BARLINE.makeBarlineVariant(2, "left").getEncoding();
+									toAdd = Symbol.BARLINE.makeVariant(2, "left").getEncoding();
 									j++; // to skip also event after next event
 								}
 								currSystem.append(toAdd + ss + "\r\n");
@@ -1149,7 +1148,7 @@ public class TabImport {
 						// If end repeat double barline
 						if (event.equals(REPEAT_DOTS_EVENT)) {
 							currSystem.append(
-								Symbol.BARLINE.makeBarlineVariant(2, "right").getEncoding() + ss + "\r\n");
+								Symbol.BARLINE.makeVariant(2, "right").getEncoding() + ss + "\r\n");
 							j += 2;
 						}
 					}

@@ -30,6 +30,8 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 
+import tbp.TabSymbol.TabSymbolSet;
+
 public class Viewer extends JFrame{
 
 	private static final long serialVersionUID = 1L;

@@ -16,9 +16,11 @@ public class ConstantMusicalSymbolTest {
 	public void setUp() throws Exception {
 	}
 
+
 	@After
 	public void tearDown() throws Exception {
 	}
+
 
 	@Test
 	public void testMakeBarlineVariant() {
@@ -30,10 +32,10 @@ public class ConstantMusicalSymbolTest {
 		});
 
 		List<ConstantMusicalSymbol> actual = new ArrayList<>();
-		actual.add(Symbol.BARLINE.makeBarlineVariant(2, null));
-		actual.add(Symbol.BARLINE.makeBarlineVariant(2, "left"));
-		actual.add(Symbol.BARLINE.makeBarlineVariant(2, "right"));
-		actual.add(Symbol.BARLINE.makeBarlineVariant(1, "both"));
+		actual.add(Symbol.BARLINE.makeVariant(2, null));
+		actual.add(Symbol.BARLINE.makeVariant(2, "left"));
+		actual.add(Symbol.BARLINE.makeVariant(2, "right"));
+		actual.add(Symbol.BARLINE.makeVariant(1, "both"));
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {

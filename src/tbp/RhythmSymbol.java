@@ -1,5 +1,8 @@
 package tbp;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class RhythmSymbol extends Symbol {
 
 	public static final String BEAM = "-";
@@ -11,10 +14,6 @@ public class RhythmSymbol extends Symbol {
 	private int duration;
 	private int numberOfDots;
 	private boolean beam;
-
-
-	public RhythmSymbol() {
-	}
 
 
 	public RhythmSymbol(String e, String s, int d) {
@@ -57,23 +56,17 @@ public class RhythmSymbol extends Symbol {
 
 
 	/**
-	 * Makes a variant (dotted, beamed, tripletised or any of these combined) of the RS.
+	 * Makes a variant (dotted, beamed, tripletised, or any of these combined) of the RS.
 	 * 
 	 * @param dot
 	 * @param beam
 	 * @param tripletise
 	 * @param numDots
-	 * @param openMidClose A String with value "open", "", "close", or <code>null</code> (if not applicable).
 	 * @return
 	 */
 	// TESTED
-	public RhythmSymbol makeVariant(boolean dot, boolean beam, boolean tripletise, int numDots, String openMidClose) {
-		String prefix = "";
-		if (tripletise) {
-			String omc = openMidClose.equals("") ? "" : 
-				(openMidClose.equals("open") ? TRIPLET_OPEN : TRIPLET_CLOSE);
-			prefix = TRIPLET_INDICATOR + omc;
-		}
+	public List<RhythmSymbol> makeVariant(boolean dot, boolean beam, boolean tripletise, int numDots) {
+		List<RhythmSymbol> rss = new ArrayList<>();
 		String suffix = "";
 		if (dot) {
 			suffix = RHYTHM_DOT.getEncoding().repeat(numDots);
@@ -81,7 +74,7 @@ public class RhythmSymbol extends Symbol {
 		if (beam) {
 			suffix += BEAM;
 		}
-		String enc = prefix + getEncoding() + suffix;
+		String enc = getEncoding() + suffix;
 
 		int dur = getDuration();
 		if (tripletise) {
@@ -94,7 +87,17 @@ public class RhythmSymbol extends Symbol {
 			}
 			dur = dottedDur;
 		}
-		return new RhythmSymbol(enc, getSymbol(), dur);
+		// In case of triplet, return the open, mid, and close variant
+		String s = getSymbol();
+		if (tripletise) {
+			rss.add(new RhythmSymbol(TRIPLET_INDICATOR + TRIPLET_OPEN + enc, s, dur));
+			rss.add(new RhythmSymbol(TRIPLET_INDICATOR + enc, s, dur));
+			rss.add(new RhythmSymbol(TRIPLET_INDICATOR + TRIPLET_CLOSE + enc, s, dur));
+		}
+		else {
+			rss.add(new RhythmSymbol(enc, s, dur));
+		}
+		return rss;
 	}
 
 
@@ -110,46 +113,9 @@ public class RhythmSymbol extends Symbol {
 		return 
 			getEncoding().equals(r.getEncoding()) &&
 			getSymbol().equals(r.getSymbol()) &&
-			getDuration() == r.getDuration();
-	}
-
-
-	private static RhythmSymbol getTripletVariant(String e) {
-		for (RhythmSymbol r: RHYTHM_SYMBOLS) {
-			if (r.getEncoding().endsWith(e) && r.getEncoding().startsWith(TRIPLET_INDICATOR)) {
-				return r;
-			}
-		}
-		return null;
-	}
-
-
-	private static RhythmSymbol getNonTripletVariant(String anEncoding) {
-		int indRS = TRIPLET_INDICATOR.length(); 
-		if (anEncoding.contains(TRIPLET_OPEN) || anEncoding.contains(TRIPLET_CLOSE)) {
-			indRS += 1;
-		}
-		String onlyRS = anEncoding.substring(indRS);
-		
-		for (RhythmSymbol r: RHYTHM_SYMBOLS) {
-			if (r.getEncoding().equals(onlyRS)) {	
-				return r;
-			}
-		}
-		return null;
-	}
-
-
-	/**
-	 * Returns the undotted version of a dotted RS. If the RS is undotted, returns itself.  
-	 * @return
-	 */
-	private RhythmSymbol getUndotted() {
-		String encoding = getEncoding();
-		String encodingUndotted = 
-			getNumberOfDots() == 0 ? encoding : 	
-			encoding.substring(0, encoding.indexOf(RHYTHM_DOT.getEncoding()));
-		return getRhythmSymbol(encodingUndotted);
+			getDuration() == r.getDuration() &
+			getNumberOfDots() == r.getNumberOfDots() &&
+			getBeam() == r.getBeam();
 	}
 
 }

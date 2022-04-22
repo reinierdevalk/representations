@@ -19,20 +19,20 @@ public class Symbol {
 	public static final String CLOSE_METADATA_BRACKET = "}";
 		
 	// II. Musical symbols
-	// 1. Contant musical symbols
+	// 1. Constant musical symbols
 	public static final ConstantMusicalSymbol SPACE = new ConstantMusicalSymbol(">", ">");
 	public static final ConstantMusicalSymbol BARLINE = new ConstantMusicalSymbol(ConstantMusicalSymbol.PIPE, ConstantMusicalSymbol.PIPE);
 	public static final Map<String, ConstantMusicalSymbol> CONSTANT_MUSICAL_SYMBOLS;
 	static {
 		List<ConstantMusicalSymbol> cmss = Arrays.asList(new ConstantMusicalSymbol[]{
 			SPACE, BARLINE,
-			BARLINE.makeBarlineVariant(1, "left"),
-			BARLINE.makeBarlineVariant(1, "right"),
-			BARLINE.makeBarlineVariant(1, "both"),
-			BARLINE.makeBarlineVariant(2, null),
-			BARLINE.makeBarlineVariant(2, "left"),
-			BARLINE.makeBarlineVariant(2, "right"),
-			BARLINE.makeBarlineVariant(2, "both"),
+			BARLINE.makeVariant(1, "left"),
+			BARLINE.makeVariant(1, "right"),
+			BARLINE.makeVariant(1, "both"),
+			BARLINE.makeVariant(2, null),
+			BARLINE.makeVariant(2, "left"),
+			BARLINE.makeVariant(2, "right"),
+			BARLINE.makeVariant(2, "both"),
 		});
 		CONSTANT_MUSICAL_SYMBOLS = new LinkedHashMap<String, ConstantMusicalSymbol>();
 		cmss.forEach(cms -> CONSTANT_MUSICAL_SYMBOLS.put(cms.getEncoding(), cms));
@@ -73,91 +73,35 @@ public class Symbol {
 	public static final RhythmSymbol CORONA_SEMIBREVIS = new RhythmSymbol("cosb", "C", 48);
 	public static final RhythmSymbol RHYTHM_DOT = new RhythmSymbol(RhythmSymbol.DOT_ENCODING, ".", -1);
 	public static final Map<String, RhythmSymbol> RHYTHM_SYMBOLS;
-	static {
+	static {	
+		List<RhythmSymbol> rss = new ArrayList<RhythmSymbol>();
 		// Basic (lo-sf)
-		List<RhythmSymbol> rss = Arrays.asList(new RhythmSymbol[]{
-			LONGA, BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, SEMIFUSA, CORONA_BREVIS,
-			CORONA_SEMIBREVIS, RHYTHM_DOT});
+		Arrays.asList(new RhythmSymbol[]{LONGA, BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, SEMIFUSA, 
+			CORONA_BREVIS, CORONA_SEMIBREVIS, RHYTHM_DOT}).forEach(rs -> rss.add(rs));
 		// Dotted (lo-fu)
-		Arrays.asList(new RhythmSymbol[]{LONGA, BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, CORONA_BREVIS, CORONA_SEMIBREVIS}).
-			forEach(rs -> rss.add(rs.makeVariant(true, false, false, 1, null)));
-		rss.add(MINIM.makeVariant(true, false, false, 2, null));
-//			LONGA.makeVariant(true, false, false, 1, null),
-//			BREVIS.makeVariant(true, false, false, 1, null),
-//			SEMIBREVIS.makeVariant(true, false, false, 1, null),
-//			MINIM.makeVariant(true, false, false, 1, null),
-//			MINIM.makeVariant(true, false, false, 2, null),
-//			SEMIMINIM.makeVariant(true, false, false, 1, null),
-//			FUSA.makeVariant(true, false, false, 1, null),
-//			CORONA_BREVIS.makeVariant(true, false, false, 1, null),
-//			CORONA_SEMIBREVIS.makeVariant(true, false, false, 1, null),
+		Arrays.asList(new RhythmSymbol[]{LONGA, BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, CORONA_BREVIS, 
+			CORONA_SEMIBREVIS}).forEach(rs -> rss.addAll(rs.makeVariant(true, false, false, 1)));
+		rss.addAll(MINIM.makeVariant(true, false, false, 2));
 		// Beamed (sm-sf)
 		Arrays.asList(new RhythmSymbol[]{SEMIMINIM, FUSA, SEMIFUSA}).
-			forEach(rs -> rss.add(rs.makeVariant(false, true, false, 0, null)));
-//			SEMIMINIM.makeVariant(false, true, false, 0, null),
-//			FUSA.makeVariant(false, true, false, 0, null),
-//			SEMIFUSA.makeVariant(false, true, false, 0, null),
+			forEach(rs -> rss.addAll(rs.makeVariant(false, true, false, 0)));
 		// Dotted and beamed (sm-fu)
 		Arrays.asList(new RhythmSymbol[]{SEMIMINIM, FUSA}).
-			forEach(rs -> rss.add(rs.makeVariant(true, true, false, 1, null)));
-//			SEMIMINIM.makeVariant(true, true, false, 1, null),
-//			FUSA.makeVariant(true, true, false, 1, null),
-			
+			forEach(rs -> rss.addAll(rs.makeVariant(true, true, false, 1)));
 		// Triplets, basic (br-sf)
-			BREVIS.makeVariant(false, false, true, 0, ""),
-			BREVIS.makeVariant(false, false, true, 0, "open"),
-			BREVIS.makeVariant(false, false, true, 0, "close"),
-			SEMIBREVIS.makeVariant(false, false, true, 0, ""),
-			SEMIBREVIS.makeVariant(false, false, true, 0, "open"),
-			SEMIBREVIS.makeVariant(false, false, true, 0, "close"),
-			MINIM.makeVariant(false, false, true, 0, ""),
-			MINIM.makeVariant(false, false, true, 0, "open"),
-			MINIM.makeVariant(false, false, true, 0, "close"),
-			SEMIMINIM.makeVariant(false, false, true, 0, ""),
-			SEMIMINIM.makeVariant(false, false, true, 0, "open"),
-			SEMIMINIM.makeVariant(false, false, true, 0, "close"),
-			FUSA.makeVariant(false, false, true, 0, ""),
-			FUSA.makeVariant(false, false, true, 0, "open"),
-			FUSA.makeVariant(false, false, true, 0, "close"),
-			SEMIFUSA.makeVariant(false, false, true, 0, ""),
-			SEMIFUSA.makeVariant(false, false, true, 0, "open"),
-			SEMIFUSA.makeVariant(false, false, true, 0, "close"),
-			// Triplets, dotted (br-fu)
-			BREVIS.makeVariant(true, false, true, 1, ""),
-			BREVIS.makeVariant(true, false, true, 1, "open"),
-			BREVIS.makeVariant(true, false, true, 1, "close"),
-			SEMIBREVIS.makeVariant(true, false, true, 1, ""),
-			SEMIBREVIS.makeVariant(true, false, true, 1, "open"),
-			SEMIBREVIS.makeVariant(true, false, true, 1, "close"),
-			MINIM.makeVariant(true, false, true, 1, ""),
-			MINIM.makeVariant(true, false, true, 1, "open"),
-			MINIM.makeVariant(true, false, true, 1, "close"),
-			SEMIMINIM.makeVariant(true, false, true, 1, ""),
-			SEMIMINIM.makeVariant(true, false, true, 1, "open"),
-			SEMIMINIM.makeVariant(true, false, true, 1, "close"),
-			FUSA.makeVariant(true, false, true, 1, ""),
-			FUSA.makeVariant(true, false, true, 1, "open"),
-			FUSA.makeVariant(true, false, true, 1, "close"),
-			// Triplets, beamed (sm-sf)
-			SEMIMINIM.makeVariant(false, true, true, 0, ""),
-			SEMIMINIM.makeVariant(false, true, true, 0, "open"),
-			SEMIMINIM.makeVariant(false, true, true, 0, "close"),
-			FUSA.makeVariant(false, true, true, 0, ""),
-			FUSA.makeVariant(false, true, true, 0, "open"),
-			FUSA.makeVariant(false, true, true, 0, "close"),
-			SEMIFUSA.makeVariant(false, true, true, 0, ""),
-			SEMIFUSA.makeVariant(false, true, true, 0, "open"),
-			SEMIFUSA.makeVariant(false, true, true, 0, "close"),
-			// Triplets, dotted and beamed (sm-fu)
-			SEMIMINIM.makeVariant(true, true, true, 1, ""),
-			SEMIMINIM.makeVariant(true, true, true, 1, "open"),
-			SEMIMINIM.makeVariant(true, true, true, 1, "close"),
-			FUSA.makeVariant(true, true, true, 1, ""),
-			FUSA.makeVariant(true, true, true, 1, "open"),
-			FUSA.makeVariant(true, true, true, 1, "close")		
-		});
+		Arrays.asList(new RhythmSymbol[]{BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, SEMIFUSA}).
+			forEach(rs -> rss.addAll(rs.makeVariant(false, false, true, 0)));
+		// Triplets, dotted (br-fu)
+		Arrays.asList(new RhythmSymbol[]{BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA}).
+			forEach(rs -> rss.addAll(rs.makeVariant(true, false, true, 1)));
+		// Triplets, beamed (sm-sf)
+		Arrays.asList(new RhythmSymbol[]{SEMIMINIM, FUSA, SEMIFUSA}).
+			forEach(rs -> rss.addAll(rs.makeVariant(false, true, true, 0)));
+		// Triplets, dotted and beamed (sm-fu)
+		Arrays.asList(new RhythmSymbol[]{SEMIMINIM, FUSA}).
+			forEach(rs -> rss.addAll(rs.makeVariant(true, true, true, 1)));
 		RHYTHM_SYMBOLS = new LinkedHashMap<String, RhythmSymbol>();
-		rss.forEach(s -> RHYTHM_SYMBOLS.put(s.getEncoding(), s));
+		rss.forEach(rs -> RHYTHM_SYMBOLS.put(rs.getEncoding(), rs));
 	}
 	
 	// 4. Tab symbols
@@ -181,7 +125,7 @@ public class Symbol {
 		TAB_SYMBOLS = new LinkedHashMap<String, Map<String, TabSymbol>>();
 		for (Entry<String, List<TabSymbol>> e : tss.entrySet()) {
 			Map<String, TabSymbol> curr = new LinkedHashMap<String, TabSymbol>();
-			e.getValue().forEach(s -> curr.put(s.getEncoding(), s));
+			e.getValue().forEach(ts -> curr.put(ts.getEncoding(), ts));
 			TAB_SYMBOLS.put(e.getKey(), curr);
 		}
 	}
@@ -227,13 +171,39 @@ public class Symbol {
 
 
 	public static TabSymbol getTabSymbol(String e, TabSymbolSet tss) {
-		if (!TAB_SYMBOLS.containsKey(tss.getName())) {
-			return null;
+		String n = tss.getName(); 
+		return !TAB_SYMBOLS.containsKey(n) ? null :
+			(!TAB_SYMBOLS.get(n).containsKey(e) ? null : TAB_SYMBOLS.get(n).get(e));
+	}
+
+
+	/**
+	 * Gets the equivalent of the given TabSymbol in the given TabSymbolSet. 
+	 * 
+	 * @param ts
+	 * @param tss
+	 * @return
+	 */
+	public static TabSymbol getTabSymbolEquivalent(TabSymbol ts, TabSymbolSet tss) {
+		// Get new encoding
+		int course = ts.getCourse();
+		int fret = ts.getFret();
+		if (tss == TabSymbolSet.FRENCH) {
+			String e = Character.toString("abcdefghikl".charAt(fret)) + String.valueOf(course);
+		}
+		else if (tss == TabSymbolSet.ITALIAN || tss == TabSymbolSet.SPANISH) {
+			String e = String.valueOf(fret) + String.valueOf(course);
 		}
 		else {
-			Map<String, TabSymbol> m = TAB_SYMBOLS.get(tss.getName());
-			return !m.containsKey(e) ? null : m.get(e);
+			
 		}
+		return TAB_SYMBOLS.get(tss.getName()).get(e);
+		for (TabSymbol newTs : TAB_SYMBOLS.get(tss.getName()).values()) {
+			if (newTs.getCourse() == ts.getCourse() && newTs.getFret() == ts.getFret()) {
+				return newTs;
+			}
+		}
+		return null;
 	}
 
 }

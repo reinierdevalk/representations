@@ -16,8 +16,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import structure.Timeline;
+import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
-
 
 public class Encoding implements Serializable {
 
@@ -907,8 +907,8 @@ public class Encoding implements Serializable {
 		// Finds any SBI not preceded by a CMS. Matches with cleanEnc if that equals
 		// one or more chars (.+); followed by not ([^...]) a CMS + SS + SBI; followed by one or more chars
 		List<String> allCMSStr = new ArrayList<>();
-		Symbol.CONSTANT_MUSICAL_SYMBOLS.forEach(s -> allCMSStr.add("(" + s.getEncoding() + ")"));
-//		ConstantMusicalSymbol.CONSTANT_MUSICAL_SYMBOLS.keySet().forEach(s -> allCMSStr.add("(" + s + ")"));
+		Symbol.CONSTANT_MUSICAL_SYMBOLS.entrySet().forEach(e -> allCMSStr.add("(" + e.getValue().getEncoding() + ")"));
+//		Symbol.CONSTANT_MUSICAL_SYMBOLS.forEach(s -> allCMSStr.add("(" + s.getEncoding() + ")")); // HIE
 		
 		String regexNotCmsSsSbi = ".+[^" + String.join("", allCMSStr) + "]\\./.+";
 		// Finds any CMS succeeded by a space. Matches with cleanEnc if that equals
@@ -1148,7 +1148,8 @@ public class Encoding implements Serializable {
 						totalDur += RhythmSymbol.getRhythmSymbol(s).getDuration();
 					}
 					RhythmSymbol combinedRs = null;
-					for (RhythmSymbol rs : RhythmSymbol.RHYTHM_SYMBOLS) {
+					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
+//					for (RhythmSymbol rs : RhythmSymbol.RHYTHM_SYMBOLS) { // HIE
 						// Do not consider coronas
 						if (rs.getDuration() == totalDur && 
 							!rs.getEncoding().startsWith(RhythmSymbol.CORONA_BREVIS.getEncoding().substring(0, 2))) {
@@ -1424,7 +1425,8 @@ public class Encoding implements Serializable {
 				else if (pre != null) {
 					// Determine the new Rs for pre, and adapt and set it
 					String newRs = "";
-					for (RhythmSymbol rs : RhythmSymbol.RHYTHM_SYMBOLS) {
+					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
+//					for (RhythmSymbol rs : RhythmSymbol.RHYTHM_SYMBOLS) { // HIE
 						if (rs.getDuration() == durPre) {
 							newRs = rs.getEncoding();
 							break;
@@ -1500,7 +1502,8 @@ public class Encoding implements Serializable {
 				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
 				String newRs = "";
 				if (r != null) {
-					for (RhythmSymbol rs : RhythmSymbol.RHYTHM_SYMBOLS) {
+					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
+//					for (RhythmSymbol rs : RhythmSymbol.RHYTHM_SYMBOLS) { // HIE
 						if (rs.getDuration() == r.getDuration() * factor) {
 							newRs = rs.getEncoding();
 							break;
@@ -1837,10 +1840,6 @@ public class Encoding implements Serializable {
 	}
 
 
-	/**
-	 * 
-	 * @return
-	 */
 	StringBuffer visualiseFootnotes(TabSymbolSet argTss) {
 		StringBuffer footnotesStr;
 
@@ -1948,10 +1947,10 @@ public class Encoding implements Serializable {
 							String fret = tsInArgTss.getSymbol();
 							int course = tsInArgTss.getCourse();
 							int changeLine = -1;
-							if (argTss == TabSymbolSet.FRENCH_TAB || argTss == TabSymbolSet.SPANISH_TAB) {
+							if (argTss == TabSymbolSet.FRENCH || argTss == TabSymbolSet.SPANISH) {
 								changeLine = Staff.TOP_LINE + (course - 1);
 							}
-							else if (argTss == TabSymbolSet.ITALIAN_TAB) {
+							else if (argTss == TabSymbolSet.ITALIAN) {
 								changeLine = Staff.BOTTOM_LINE - (course - 1);
 							}
 							for (int i = 0; i < currFnEventStaffPartSplit.length; i++) {
@@ -2281,21 +2280,20 @@ public class Encoding implements Serializable {
 				String s = symbols[j];
 				currEvent += s + Symbol.SYMBOL_SEPARATOR;
 				// Add event after each space or barline (i.e., CMS)
-				if (Symbol.CONSTANT_MUSICAL_SYMBOLS.contains(Symbol.getConstantMusicalSymbol(s))) {				
-//				if (ConstantMusicalSymbol.values().contains(
-//					ConstantMusicalSymbol.getConstantMusicalSymbol(s))) {
+				if (Symbol.CONSTANT_MUSICAL_SYMBOLS.values().contains(Symbol.getConstantMusicalSymbol(s))) {
+//				if (Symbol.CONSTANT_MUSICAL_SYMBOLS.contains(Symbol.getConstantMusicalSymbol(s))) {	// HIE
 					// Special case for barline followed by barline (this happens when a 
 					// full-bar note is tied at its left (see end quis_me_statim): these two bars
 					// must be seen as a single event, so the second barline must be added too
 					if (j < symbols.length - 2) { 						
 						String nextS = symbols[j+1];
 						String nextNextS = symbols[j+2];
-//						if (ConstantMusicalSymbol.CONSTANT_MUSICAL_SYMBOLS.keySet().contains(nextS) &&
-//							ConstantMusicalSymbol.CONSTANT_MUSICAL_SYMBOLS.keySet().contains(nextNextS)) {
-						if (Symbol.CONSTANT_MUSICAL_SYMBOLS.contains(
-							Symbol.getConstantMusicalSymbol(nextS)) &&
-							Symbol.CONSTANT_MUSICAL_SYMBOLS.contains(
-							Symbol.getConstantMusicalSymbol(nextNextS))) {
+						if (Symbol.CONSTANT_MUSICAL_SYMBOLS.keySet().contains(nextS) &&
+							Symbol.CONSTANT_MUSICAL_SYMBOLS.keySet().contains(nextNextS)) {
+//						if (Symbol.CONSTANT_MUSICAL_SYMBOLS.contains( // HIE
+//							Symbol.getConstantMusicalSymbol(nextS)) &&
+//							Symbol.CONSTANT_MUSICAL_SYMBOLS.contains(
+//							Symbol.getConstantMusicalSymbol(nextNextS))) {
 							currEvent += nextS + Symbol.SYMBOL_SEPARATOR;
 							j++;
 						}
@@ -2959,7 +2957,6 @@ public class Encoding implements Serializable {
 	 * @param tss
 	 * @return
 	 */
-	// TESTED
 	private static boolean isTabSymbolEvent(String event, TabSymbolSet tss) {
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		if (!event.endsWith(ss)) {
@@ -2982,7 +2979,6 @@ public class Encoding implements Serializable {
 	 * @param event
 	 * @return
 	 */
-	// TESTED
 	private static boolean isRhythmSymbolEvent(String event) {
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		if (!event.endsWith(ss)) {
@@ -2998,7 +2994,6 @@ public class Encoding implements Serializable {
 	 * @param event
 	 * @return
 	 */
-	// TESTED
 	private static boolean isRestEvent(String event) {
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		if (!event.endsWith(ss)) {
@@ -3028,7 +3023,6 @@ public class Encoding implements Serializable {
 	 * @param event
 	 * @return
 	 */
-	// TESTED
 	private static boolean isBarlineEvent(String event) {
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		if (!event.endsWith(ss)) {
@@ -3038,10 +3032,9 @@ public class Encoding implements Serializable {
 			return false;
 		}
 		else {
-//			if (ConstantMusicalSymbol.CONSTANT_MUSICAL_SYMBOLS.keySet().contains(
-//				event.substring(0, event.indexOf(ss)))) {
-			if (Symbol.CONSTANT_MUSICAL_SYMBOLS.contains(
-				Symbol.getConstantMusicalSymbol(event.substring(0, event.indexOf(ss))))) {
+			if (Symbol.CONSTANT_MUSICAL_SYMBOLS.keySet().contains(event.substring(0, event.indexOf(ss)))) {
+//			if (Symbol.CONSTANT_MUSICAL_SYMBOLS.contains(
+//				Symbol.getConstantMusicalSymbol(event.substring(0, event.indexOf(ss))))) {
 				return true;
 			}
 			else {

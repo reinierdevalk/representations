@@ -23,7 +23,7 @@ import representations.Tablature.Tuning;
 import tbp.Encoding;
 import tbp.RhythmSymbol;
 import tbp.TabSymbol;
-import tbp.TabSymbolSet;
+import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 
 public class TablatureTest extends TestCase {

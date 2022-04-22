@@ -22,9 +22,8 @@ import tbp.Event;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
 import tbp.Symbol;
-import tbp.SymbolDictionary;
 import tbp.TabSymbol;
-import tbp.TabSymbolSet;
+import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 import utility.DataConverter;
 
@@ -437,13 +436,13 @@ public class MEIExport {
 
 
 	private static String getNotationTypeStr(TabSymbolSet tss) {
-		if (tss == TabSymbolSet.FRENCH_TAB) {
+		if (tss == TabSymbolSet.FRENCH) {
 			return "tab.lute.french";
 		}
-		else if (tss == TabSymbolSet.ITALIAN_TAB) {
+		else if (tss == TabSymbolSet.ITALIAN) {
 			return "tab.lute.italian";
 		}
-		else if (tss == TabSymbolSet.SPANISH_TAB) {
+		else if (tss == TabSymbolSet.SPANISH) {
 			return "tab.lute.spanish";
 		} 
 		else {
@@ -621,7 +620,7 @@ public class MEIExport {
 				// Barline? End of bar reached; set barline if not single
 				if (ConstantMusicalSymbol.isBarline(currEvent)) {
 					// TODO currently only single and double barline possible in MEI
-					if (currEvent.equals(Symbol.BARLINE.makeBarlineVariant(2, null).getEncoding())) {
+					if (currEvent.equals(Symbol.BARLINE.makeVariant(2, null).getEncoding())) {
 						barline = " right='dbl'";
 					}
 					if (i == events.size()-1) {

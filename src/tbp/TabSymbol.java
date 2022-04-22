@@ -10,13 +10,13 @@ import java.util.Map;
 
 import representations.Tablature.Tuning;
 
-
 public class TabSymbol extends Symbol implements Serializable {
 
 	private static final long serialVersionUID = 1L;
+
 	public static final int MAX_NUMBER_OF_COURSES = 8;
 	public static final String FINGERING_DOT_ENCODING = "'";
-	
+
 	private int fret;
 	private int course;
 	private int fingeringDots;
@@ -50,6 +50,15 @@ public class TabSymbol extends Symbol implements Serializable {
 
 		public int getMaxNumberOfCourses() {
 			return maxNumberOfCourses;
+		}
+
+		public static TabSymbolSet getTabSymbolSet(String s) {
+			for (TabSymbolSet t : TabSymbolSet.values()) { 
+				if (t.getName().equals(s)) {
+					return t;
+				}
+			}
+			return null;
 		}
 	}
 
@@ -168,25 +177,6 @@ public class TabSymbol extends Symbol implements Serializable {
 	}
 
 
-//	/**
-//	 * Searches the specified TabSymbolSet for the TabSymbol whose attribute encoding
-//	 * equals the specified encoding. Returns null if the TabSymbolSet does not contain
-//	 * such a TabSymbol.
-//	 * 
-//	 * @param anEncoding
-//	 * @param aTabSymbolSet
-//	 * @return
-//	 */
-//	public static TabSymbol getTabSymbol(String anEncoding, TabSymbolSet aTabSymbolSet) {
-//		for (TabSymbol t: aTabSymbolSet) {
-//			if (t.getEncoding().equals(anEncoding)) {
-//				return t;
-//			}
-//		}
-//		return null;
-//	}
-
-
 	@Override
 	public boolean equals(Object o) {
 		if (o == this) {
@@ -203,136 +193,5 @@ public class TabSymbol extends Symbol implements Serializable {
 			getCourse() == t.getCourse() &&
 			getFingeringDots() == t.getFingeringDots();
 	}
-
-
-	/**
-	 * Returns the TabSymbol's pitch, as a String, in the specified tuning.
-	 * 
-	 * @param t
-	 * @return
-	 */
-	private String getPitchAsString (Tuning t) {
-		final String[] pitches = {
-			"G1", "G#1", "A1", "Bb1", "B1", "C", "C#", "D", "Eb", "E", "F", "F#", 
-			"G", "G#", "A", "Bb", "B", "c", "c#", "d", "eb", "e", "f", "f#", 
-			"g", "g#", "a", "bb", "b", "c1", "c#1", "d1", "eb1", "e1", "f1", "f#1", 
-			"g1", "g#1", "a1", "bb1", "b1", "c2", "c#2", "d2", "eb2", "e2"}; 
-
-		// Correction necessary to set MIDI number equal to index in array
-		final int correction = 31;
-		int pitch = getPitch(t); 
-		String pitchAsString = pitches[pitch - correction]; 
-		return pitchAsString;    
-	}
-
-
-//	private static final List<Integer> OPEN_COURSES_G;
-//	static {
-//		// In case of seven courses, (7) is assumed to be a major second lower than (6)
-//		// In case of eight courses, (7) is assumed to be a major second lower than (6), and (8) a perfect fourth
-//		OPEN_COURSES_G = Arrays.asList(new Integer[]{67, 62, 57, 53, 48, 43, 41, 38});
-//	}
-
-
-//	private static final Map<String, List<String>> GERMAN_SIXTH_COURSE;
-//	static {
-//		GERMAN_SIXTH_COURSE = new LinkedHashMap<String, List<String>>();
-//		GERMAN_SIXTH_COURSE.put("Ochsenkun1558", 
-//			Arrays.asList(new String[]{"+", "2-", "3-", "4-", "5-", "6-", "7-", "8-", "9-", "10-", "11-"}));
-//		GERMAN_SIXTH_COURSE.put("Judenkuenig1523", 
-//			Arrays.asList(new String[]{"A", "B", "C", "D", "E", "F", "G", "H"}));
-//		GERMAN_SIXTH_COURSE.put("Newsidler1536", 
-//			Arrays.asList(new String[]{"+", "A", "B", "C", "D", "E", "F", "G", "H"}));
-//		GERMAN_SIXTH_COURSE.put("Heckel1562", 
-//			Arrays.asList(new String[]{"+", "A-", "F-", "L-", "Q-", "X-"}));
-//	}
-
-
-//	private static final List<List<String>> GERMAN_OTHER_COURSES;
-//	static {
-//		GERMAN_OTHER_COURSES = new ArrayList<List<String>>();
-//		GERMAN_OTHER_COURSES.add(Arrays.asList(new String[]{"5", "e", "k", "p", "v", "9", "e-", "k-", "p-", "v-", "9-"}));
-//		GERMAN_OTHER_COURSES.add(Arrays.asList(new String[]{"4", "d", "i", "o", "t", "7", "d-", "i-", "o-", "t-", "7-"}));
-//		GERMAN_OTHER_COURSES.add(Arrays.asList(new String[]{"3", "c", "h", "n", "s", "z", "c-", "h-", "n-", "s-", "z-"}));
-//		GERMAN_OTHER_COURSES.add(Arrays.asList(new String[]{"2", "b", "g", "m", "r", "y", "b-", "g-", "m-", "r-", "y-"}));
-//		GERMAN_OTHER_COURSES.add(Arrays.asList(new String[]{"1", "a", "f", "l", "q", "x", "a-", "f-", "l-", "q-", "x-"}));
-//	}
-
-
-//	/**
-//	 * Returns the TabSymbol's pitch, as a MIDI number, in the specified tunings.
-//	 * 
-//	 * @param t
-//	 * @return 
-//	 */
-//	public int getPitchOLD(Tuning t) {
-//		
-//		int pitch = getPitch();
-//		int semitone = 1;
-//		
-//		int drop = 0;
-//		if (getCourse() == 6 && t.isDrop()) {
-//			drop = 2;
-//		}
-//		pitch = pitch + ((t.getTransposition() - drop) * semitone);
-////		// Upon creation of the TS, each TS is given the MIDI number that goes with the 
-////		// G tuning, where any seventh course is assumed to be a major second below the sixth.
-////		// pitch must thus only be adapted if one of these two settings is changed; else, 
-////		// it retain its initial value (midiNumber)
-////		switch (aTuning) {
-////			case G:
-////				break;
-////			case G_AVALLEE:
-////				if (getCourse() == 6) {
-////					pitch -= 2*semitone;
-////				}
-////				break;
-////			case F:
-////				pitch -= 2*semitone;
-////				break;
-////			case A:
-////				pitch += 2*semitone;
-////				break;
-////			case D:
-////				pitch -= 5*semitone;
-////				break;
-////			case A_AVALLEE:
-////				if (getCourse() == 6) {
-////					pitch -= 0*semitone;
-////				}
-////				else {
-////					pitch += 2*semitone;
-////				}
-////				break;
-////			case C_AVALLEE:
-////				if (getCourse() == 6) {
-////					pitch -= 9*semitone;
-////				}
-////				else {
-////					pitch -= 7*semitone;
-////				}
-////				break;
-////		}
-//
-////		if (course > 6) {
-////			switch (aTuningBassCourses) {
-////				case SECOND:
-////					break;	
-////				case FOURTH:
-////					pitch -= 3*semitone;
-////					break;	
-////				case P4M2:
-////					// 
-////					break;
-////				case P5P4M3M2:
-////					// 
-////					break;
-////				case P5P4m3M2:
-////					// 
-////					break;
-////			}
-////		}
-//		return pitch;
-//	}
 
 }

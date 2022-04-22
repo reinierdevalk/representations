@@ -19,6 +19,7 @@ public class TabSymbolTest {
 	public void setUp() throws Exception {
 	}
 
+
 	@After
 	public void tearDown() throws Exception {
 	}
@@ -87,6 +88,7 @@ public class TabSymbolTest {
 			new TabSymbol("x-", "x-", 10, 5)
 		});
 	}
+
 
 	@Test
 	public void testListTabSymbols() {

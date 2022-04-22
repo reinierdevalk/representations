@@ -20,8 +20,7 @@ import representations.Tablature;
 import tbp.Event;
 import tbp.Encoding;
 import tbp.RhythmSymbol;
-import tbp.SymbolDictionary;
-import tbp.TabSymbolSet;
+import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 
 public class EncodingTest extends TestCase {
@@ -35,7 +34,7 @@ public class EncodingTest extends TestCase {
 		String root = Paths.getRootPath() + Paths.getDataDir(); 
 		encodingTestpiece = 
 			new File(root + Paths.getEncodingsPath() + Paths.getTestDir() + "testpiece.tbp");
-		miniRawEncoding = "{}{}{}{FrenchTab}{}{}{}MC\\.>.sb.>.|.mi.a3.a2.a1.>.b1.>.|./MO.M34.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./|.MC\\.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//";
+		miniRawEncoding = "{}{}{}{French}{}{}{}MC\\.>.sb.>.|.mi.a3.a2.a1.>.b1.>.|./MO.M34.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./|.MC\\.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//";
 	}
 
 	@After
@@ -98,7 +97,7 @@ public class EncodingTest extends TestCase {
 			"{AUTHOR: Author}" + "\r\n" +
 			"{TITLE: Title}" + "\r\n" +
 			"{SOURCE: Source (year)}" + "\r\n" + 
-			"{TABSYMBOLSET: FrenchTab}" + "\r\n" +
+			"{TABSYMBOLSET: French}" + "\r\n" +
 			"{TUNING: A}" + "\r\n" +
 			"{METER_INFO: 2/2 (1-3)}" + "\r\n" +
 			"{DIMINUTION: 1}";
@@ -238,7 +237,7 @@ public class EncodingTest extends TestCase {
 		encoding.setMetadata();
 		encoding.setHeader();
 
-		TabSymbolSet expected = TabSymbolSet.FRENCH_TAB;
+		TabSymbolSet expected = TabSymbolSet.FRENCH;
 		TabSymbolSet actual = encoding.makeTabSymbolSet();
 
 		assertEquals(expected, actual);
@@ -438,42 +437,42 @@ public class EncodingTest extends TestCase {
 		Encoding encoding = new Encoding(new Encoding(encodingTestpiece).getRawEncoding(), 
 			"", Encoding.METADATA_CHECKED);
 
-		boolean print = false;
+		boolean print = true;
 		if (print) {
-			System.out.println(encoding.getRawEncoding().indexOf("MC\\.")); // 149
-			System.out.println(encoding.getRawEncoding().indexOf("sm*.a6.c4.i2.a1.")); // 208
-			System.out.println(encoding.getRawEncoding().indexOf("sm.a6.b3.a2.a1")); // 297
-			System.out.println(encoding.getRawEncoding().indexOf("||.fu.a6.c4.a2.a1.")); // 336
+			System.out.println(encoding.getRawEncoding().indexOf("MC\\.")); // 146
+			System.out.println(encoding.getRawEncoding().indexOf("sm*.a6.c4.i2.a1.")); // 205
+			System.out.println(encoding.getRawEncoding().indexOf("sm.a6.b3.a2.a1")); // 294
+			System.out.println(encoding.getRawEncoding().indexOf("||.fu.a6.c4.a2.a1.")); // 333
 		}
 		Integer[] expected = new Integer[encoding.getRawEncoding().length()];
 		Arrays.fill(expected, -1);
 		// Section 1 ("MC\." up until "." after "{@Footnote 1}"): 35 chars (in 
 		// rawEncoding split up by footnote into 34 + 1)
-		// indices 0-34 in cleanEncoding (= 149-182 and 196 in rawEncoding)
+		// indices 0-34 in cleanEncoding (= 146-179 and 193 in rawEncoding)
 		for (int i = 0; i < 34; i++) {
-			expected[149 + i] = 0 + i;
+			expected[146 + i] = 0 + i;
 		}
 		for (int i = 0; i < 1; i++) {
-			expected[196 + i] = 0 + 34 + i;
+			expected[193 + i] = 0 + 34 + i;
 		}
 		// Section 2 ("sm*.a6.c4.i2.a1." up until "sm.a6.b3.a2.a1"): 68 chars (in 
 		// rawEncoding split up by footnote into 65 + 3)
-		// indices 35-102 in cleanEncoding (= 208-272 and 294-296 in rawEncoding)
+		// indices 35-102 in cleanEncoding (= 205-269 and 291-293 in rawEncoding)
 		for (int i = 0; i < 65; i++) {
-			expected[208 + i] = 0 + 34 + 1 + i;
+			expected[205 + i] = 0 + 34 + 1 + i;
 		}
 		for (int i = 0; i < 3; i++) {
-			expected[294 + i] = 0 + 34 + 1 + 65 + i;
+			expected[291 + i] = 0 + 34 + 1 + 65 + i;
 		}		
 		// Section 3 ("sm.a6.b3.a2.a1" up until and including SBI): 28 chars
-		// indices 103-130 in cleanEncoding (= 297-324 in rawEncoding)
+		// indices 103-130 in cleanEncoding (= 294-321 in rawEncoding)
 		for (int i = 0; i < 28; i++) {
-			expected[297 + i] = 0 + 34 + 1 + 65 + 3 + i;
+			expected[294 + i] = 0 + 34 + 1 + 65 + 3 + i;
 		}		
 		// Section 4 ("||.fu.a6.c4.a2.a1." up until and including EBI): 85 chars
-		// indices 131-215 in cleanEncoding (= 336-420 in rawEncoding)
+		// indices 131-215 in cleanEncoding (= 333-417 in rawEncoding)
 		for (int i = 0; i < 85; i++) {
-			expected[336 + i] = 0 + 34 + 1 + 65 + 3 + 28 + i;
+			expected[333 + i] = 0 + 34 + 1 + 65 + 3 + 28 + i;
 		}
 
 		Integer[] actual = 
@@ -509,7 +508,7 @@ public class EncodingTest extends TestCase {
 
 		List<String[]> expected = new ArrayList<String[]>();
 		// VR 1
-		expected.add(new String[]{"68", "70", "INVALID ENCODING ERROR -- Remove this whitespace.", 
+		expected.add(new String[]{"65", "67", "INVALID ENCODING ERROR -- Remove this whitespace.", 
 			"See VALIDITY RULE 1: The encoding cannot contain whitespace."});
 		// VR 2
 		expected.add(new String[]{"-1", "-1", "INVALID ENCODING ERROR -- The encoding does not end with an end break indicator.",	
@@ -518,19 +517,19 @@ public class EncodingTest extends TestCase {
 		String error3a = "INVALID ENCODING ERROR -- Remove this system break indicator.";
 		String error3b = "INVALID ENCODING ERROR -- Remove this symbol separator.";
 		String rule3 = "See VALIDITY RULE 3: A system cannot start with a punctuation symbol.";
-		expected.add(new String[]{"23", "24", error3a, rule3});
-		expected.add(new String[]{"58", "59", error3a, rule3});
-		expected.add(new String[]{"96", "97", error3a, rule3});
-		expected.add(new String[]{"23", "24", error3b, rule3});
-		expected.add(new String[]{"58", "59", error3b, rule3});
-		expected.add(new String[]{"96", "97", error3b, rule3});
+		expected.add(new String[]{"20", "21", error3a, rule3});
+		expected.add(new String[]{"55", "56", error3a, rule3});
+		expected.add(new String[]{"93", "94", error3a, rule3});
+		expected.add(new String[]{"20", "21", error3b, rule3});
+		expected.add(new String[]{"55", "56", error3b, rule3});
+		expected.add(new String[]{"93", "94", error3b, rule3});
 		// VR 4
 		String error4a = "INVALID ENCODING ERROR -- Insert a symbol separator before this system break indicator.";
 		String error4b = "INVALID ENCODING ERROR -- Insert a symbol separator before this end break indicator.";
 		String rule4 = "See VALIDITY RULE 4: Each system must end with a symbol separator."; 		
-		expected.add(new String[]{"56", "57", error4a, rule4});
-		expected.add(new String[]{"94", "95", error4a, rule4});
-		expected.add(new String[]{"135", "137", error4b, rule4});
+		expected.add(new String[]{"53", "54", error4a, rule4});
+		expected.add(new String[]{"91", "92", error4a, rule4});
+		expected.add(new String[]{"132", "134", error4b, rule4});
 		// All VR met
 		expected.add(null);
 
@@ -574,14 +573,14 @@ public class EncodingTest extends TestCase {
 		// Missing symbol
 		String errorMissing = "MISSING SYMBOL ERROR -- Remove symbol separator or insert symbol before.";
 		String rule5 = "See VALIDITY RULE 5: Each musical symbol must be succeeded directly by a symbol separator.";
-		expected.add(new String[]{"50", "51", errorMissing, rule5});
-		expected.add(new String[]{"90", "91", errorMissing, rule5});
-		expected.add(new String[]{"128", "129", errorMissing, rule5});
+		expected.add(new String[]{"47", "48", errorMissing, rule5});
+		expected.add(new String[]{"87", "88", errorMissing, rule5});
+		expected.add(new String[]{"125", "126", errorMissing, rule5});
 		// Unknown symbol
 		String errorUnknown = "UNKNOWN SYMBOL ERROR -- Check for typos or missing symbol separators; check TabSymbolSet.";
-		expected.add(new String[]{"50", "53", errorUnknown, rule5});
-		expected.add(new String[]{"90", "93", errorUnknown, rule5});
-		expected.add(new String[]{"128", "131", errorUnknown, rule5});
+		expected.add(new String[]{"47", "50", errorUnknown, rule5});
+		expected.add(new String[]{"87", "90", errorUnknown, rule5});
+		expected.add(new String[]{"125", "128", errorUnknown, rule5});
 		// No missing or unknown symbols
 		expected.add(null);
 
@@ -650,51 +649,51 @@ public class EncodingTest extends TestCase {
 		// LR 1
 		String error1 = "INVALID ENCODING ERROR -- Remove this space."; 
 		String rule1 = "See LAYOUT RULE 1: A system can start with any event but a space.";
-		expected.add(new String[]{"23", "24", error1, rule1});
-		expected.add(new String[]{"58", "59", error1, rule1});
-		expected.add(new String[]{"96", "97", error1, rule1});
+		expected.add(new String[]{"20", "21", error1, rule1});
+		expected.add(new String[]{"55", "56", error1, rule1});
+		expected.add(new String[]{"93", "94", error1, rule1});
 		// LR 2
 		String error2 = "INVALID ENCODING ERROR -- Insert a space after this TabSymbol.";
 		String rule2 = "See LAYOUT RULE 2: A system must end with a space, a barline, or some sort of repeat barline.";
-		expected.add(new String[]{"50", "52", error2, rule2});
-		expected.add(new String[]{"90", "92", error2, rule2});
-		expected.add(new String[]{"128", "130", error2, rule2});
+		expected.add(new String[]{"47", "49", error2, rule2});
+		expected.add(new String[]{"87", "89", error2, rule2});
+		expected.add(new String[]{"125", "127", error2, rule2});
 		// LR 3
 		String error3 = "INVALID ENCODING ERROR -- Remove this space.";
 		String rule3 = "See LAYOUT RULE 3: A constant musical symbol cannot be succeeded by a space.";
-		expected.add(new String[]{"57", "58", error3, rule3});
-		expected.add(new String[]{"95", "96", error3, rule3});
-		expected.add(new String[]{"136", "137", error3, rule3});
+		expected.add(new String[]{"54", "55", error3, rule3});
+		expected.add(new String[]{"92", "93", error3, rule3});
+		expected.add(new String[]{"133", "134", error3, rule3});
 		// LR 4
 		String error4 = "INVALID ENCODING ERROR -- Insert a space after this TabSymbol.";
 		String rule4 = "See LAYOUT RULE 4: A vertical sonority must be succeeded by a space."; 
-		expected.add(new String[]{"50", "52", error4, rule4});
-		expected.add(new String[]{"83", "85", error4, rule4});
-		expected.add(new String[]{"128", "130", error4, rule4});
+		expected.add(new String[]{"47", "49", error4, rule4});
+		expected.add(new String[]{"80", "82", error4, rule4});
+		expected.add(new String[]{"125", "127", error4, rule4});
 		// LR 5
 		String error5 = "INVALID ENCODING ERROR -- Insert a space after this RhythmSymbol.";
 		String rule5 = "See LAYOUT RULE 5: A rest (or rhythm dot at the beginning of a system or bar) must be succeeded by a space."; 
-		expected.add(new String[]{"29", "31", error5, rule5});
-		expected.add(new String[]{"67", "69", error5, rule5});
-		expected.add(new String[]{"104", "105", error5, rule5});
+		expected.add(new String[]{"26", "28", error5, rule5});
+		expected.add(new String[]{"64", "66", error5, rule5});
+		expected.add(new String[]{"101", "102", error5, rule5});
 		// LR 6
 		String error6 = "INVALID ENCODING ERROR -- Insert a space after this MensurationSign.";
 		String rule6 = "See LAYOUT RULE 6: A mensuration sign must be succeeded by a space.";
-		expected.add(new String[]{"23", "26", error6, rule6});
-		expected.add(new String[]{"61", "64", error6, rule6});
-		expected.add(new String[]{"98", "101", error6, rule6});
+		expected.add(new String[]{"20", "23", error6, rule6});
+		expected.add(new String[]{"58", "61", error6, rule6});
+		expected.add(new String[]{"95", "98", error6, rule6});
 		// LR 7
 		String error7 = "INVALID ENCODING ERROR -- Remove duplicate TabSymbol(s).";
 		String rule7 = "See LAYOUT RULE 7: A vertical sonority can contain only one TabSymbol per course.";
-		expected.add(new String[]{"36", "47", error7, rule7});
-		expected.add(new String[]{"74", "85", error7, rule7});
-		expected.add(new String[]{"114", "125", error7, rule7});
+		expected.add(new String[]{"33", "44", error7, rule7});
+		expected.add(new String[]{"71", "82", error7, rule7});
+		expected.add(new String[]{"111", "122", error7, rule7});
 		// LR 8
 		String error8 = "INVALID ENCODING ERROR -- This vertical sonority is not encoded in the correct sequence."; 
 		String rule8 = "See LAYOUT RULE 8: A vertical sonority must be encoded in a fixed sequence.";
-		expected.add(new String[]{"36", "47", error8, rule8});
-		expected.add(new String[]{"74", "85", error8, rule8});
-		expected.add(new String[]{"114", "125", error8, rule8});
+		expected.add(new String[]{"33", "44", error8, rule8});
+		expected.add(new String[]{"71", "82", error8, rule8});
+		expected.add(new String[]{"111", "122", error8, rule8});
 		// All LR met
 		expected.add(null);
 

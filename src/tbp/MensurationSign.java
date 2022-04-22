@@ -18,7 +18,7 @@ public class MensurationSign extends Symbol {
 		// The basic type (M2, M3, ..., MC\) has beat unit 4 and staffline 3, and is encoded as  
 		// M<n> or M<n>\ (cut MS), (where <n> is a number or a symbol)
 		// A variant type may have a different beat unit or staffline, and is encoded as 
-		// M<n>:<b><l> or M<n>\\:<b><l> (cut MS), where <b> is the beat unit and <l> the staffline  
+		// M<n>:<b><l> or M<n>\\:<b><l> (cut MS), where <b> is the beat unit and <l> the staffline
 		setEncoding(e);
 		setSymbol(s);
 		setMeter(m);
@@ -71,11 +71,10 @@ public class MensurationSign extends Symbol {
 
 
 	/**
-	 * Makes a variant (beat unit, staffline, or both) of the MS.
+	 * Makes a variant (beat unit, staffline, or combined) of the MS.
 	 * 
 	 * @param beatUnit
 	 * @param staffLine
-	 * @param customEncoding If <code>null</code>, the default encoding convention is used. 
 	 * @return
 	 */
 	// TESTED
@@ -108,8 +107,8 @@ public class MensurationSign extends Symbol {
 		return 
 			getEncoding().equals(m.getEncoding()) &&
 			getSymbol().equals(m.getSymbol()) &&
-			getStaffLine() == m.getStaffLine() &&
-			Arrays.equals(getMeter(), m.getMeter());
+			Arrays.equals(getMeter(), m.getMeter()) &&
+			getStaffLine() == m.getStaffLine();
 	}
 
 }

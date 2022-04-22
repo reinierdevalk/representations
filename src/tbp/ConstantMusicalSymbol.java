@@ -6,13 +6,14 @@ public class ConstantMusicalSymbol extends Symbol {
 	public static final String REPEAT_DOTS = ":";
 
 
-	public ConstantMusicalSymbol() {
-	}
-
-
 	public ConstantMusicalSymbol(String e, String s) {
 		setEncoding(e);
 		setSymbol(s);
+	}
+
+
+	public static boolean isBarline(String e) {
+		return e.contains(PIPE) ? true : false;
 	}
 
 
@@ -24,7 +25,7 @@ public class ConstantMusicalSymbol extends Symbol {
 	 * @return
 	 */
 	// TESTED
-	public ConstantMusicalSymbol makeBarlineVariant(int numBarlines, String repeatDots) {
+	public ConstantMusicalSymbol makeVariant(int numBarlines, String repeatDots) {
 		String e = getEncoding();
 		e = e.repeat(numBarlines);
 		if (repeatDots != null) {
@@ -39,11 +40,6 @@ public class ConstantMusicalSymbol extends Symbol {
 			}
 		}
 		return new ConstantMusicalSymbol(e, e);
-	}
-
-
-	public static boolean isBarline(String e) {
-		return e.contains(PIPE) ? true : false;
 	}
 
 
