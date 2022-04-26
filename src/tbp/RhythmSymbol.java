@@ -69,7 +69,7 @@ public class RhythmSymbol extends Symbol {
 		List<RhythmSymbol> rss = new ArrayList<>();
 		String suffix = "";
 		if (dot) {
-			suffix = RHYTHM_DOT.getEncoding().repeat(numDots);
+			suffix = DOT_ENCODING.repeat(numDots);
 		}
 		if (beam) {
 			suffix += BEAM;

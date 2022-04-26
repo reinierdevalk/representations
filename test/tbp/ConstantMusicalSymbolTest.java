@@ -23,7 +23,7 @@ public class ConstantMusicalSymbolTest {
 
 
 	@Test
-	public void testMakeBarlineVariant() {
+	public void testMakeVariant() {
 		List<ConstantMusicalSymbol> expected = Arrays.asList(new ConstantMusicalSymbol[]{
 			new ConstantMusicalSymbol("||", "||"),
 			new ConstantMusicalSymbol("||:", "||:"),

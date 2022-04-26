@@ -1942,8 +1942,7 @@ public class Encoding implements Serializable {
 							String dbld = 
 								toRemove.substring(toRemove.indexOf("/") + 1, toRemove.indexOf(ss));
 							TabSymbol tsInArgTss = 
-								argTss.getTabSymbolEquivalent(TabSymbol.getTabSymbol(dbld,
-								getTabSymbolSet()));
+								argTss.getTabSymbolEquivalent(TabSymbol.getTabSymbol(dbld, getTabSymbolSet()));
 							String fret = tsInArgTss.getSymbol();
 							int course = tsInArgTss.getCourse();
 							int changeLine = -1;

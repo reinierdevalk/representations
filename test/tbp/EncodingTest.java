@@ -28,6 +28,7 @@ public class EncodingTest extends TestCase {
 	private File encodingTestpiece;
 	private String miniRawEncoding;
 
+
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -36,6 +37,7 @@ public class EncodingTest extends TestCase {
 			new File(root + Paths.getEncodingsPath() + Paths.getTestDir() + "testpiece.tbp");
 		miniRawEncoding = "{}{}{}{French}{}{}{}MC\\.>.sb.>.|.mi.a3.a2.a1.>.b1.>.|./MO.M34.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./|.MC\\.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//";
 	}
+
 
 	@After
 	public void tearDown() throws Exception {

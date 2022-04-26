@@ -105,15 +105,16 @@ public class Symbol {
 	}
 	
 	// 4. Tab symbols
-	public static final List<TabSymbol> FRENCH = TabSymbol.listTabSymbols(TabSymbol.TabSymbolSet.FRENCH);
-	public static final List<TabSymbol> ITALIAN = TabSymbol.listTabSymbols(TabSymbol.TabSymbolSet.ITALIAN);
-	public static final List<TabSymbol> SPANISH = TabSymbol.listTabSymbols(TabSymbol.TabSymbolSet.SPANISH);
-	public static final List<TabSymbol> JUDENKUENIG_1523 = TabSymbol.listTabSymbols(TabSymbol.TabSymbolSet.JUDENKUENIG_1523);
-	public static final List<TabSymbol> NEWSIDLER_1536 = TabSymbol.listTabSymbols(TabSymbol.TabSymbolSet.NEWSIDLER_1536);
-	public static final List<TabSymbol> OCHSENKUN_1558 = TabSymbol.listTabSymbols(TabSymbol.TabSymbolSet.OCHSENKUN_1558);
-	public static final List<TabSymbol> HECKEL_1562 = TabSymbol.listTabSymbols(TabSymbol.TabSymbolSet.HECKEL_1562);	
+	public static final List<TabSymbol> FRENCH = getTabSymbols(TabSymbolSet.FRENCH);
+	public static final List<TabSymbol> ITALIAN = getTabSymbols(TabSymbolSet.ITALIAN);
+	public static final List<TabSymbol> SPANISH = getTabSymbols(TabSymbolSet.SPANISH);
+	public static final List<TabSymbol> JUDENKUENIG_1523 = getTabSymbols(TabSymbolSet.JUDENKUENIG_1523);
+	public static final List<TabSymbol> NEWSIDLER_1536 = getTabSymbols(TabSymbolSet.NEWSIDLER_1536);
+	public static final List<TabSymbol> OCHSENKUN_1558 = getTabSymbols(TabSymbolSet.OCHSENKUN_1558);
+	public static final List<TabSymbol> HECKEL_1562 = getTabSymbols(TabSymbolSet.HECKEL_1562);
 	public static final Map<String, Map<String, TabSymbol>> TAB_SYMBOLS;
 	static {
+		for (TabSymbol ts : FRENCH)
 		Map<String, List<TabSymbol>> tss = new LinkedHashMap<String, List<TabSymbol>>();
 		tss.put(TabSymbolSet.FRENCH.getName(), FRENCH);
 		tss.put(TabSymbolSet.ITALIAN.getName(), ITALIAN);
@@ -155,25 +156,65 @@ public class Symbol {
 	}
 
 
+	// TODO test
 	public static ConstantMusicalSymbol getConstantMusicalSymbol(String e) {
 		return !CONSTANT_MUSICAL_SYMBOLS.containsKey(e) ? null : CONSTANT_MUSICAL_SYMBOLS.get(e);
 	}
 
 
+	// TODO test
 	public static MensurationSign getMensurationSign(String e) {
 		return !MENSURATION_SIGNS.containsKey(e) ? null : MENSURATION_SIGNS.get(e);
 	}
 
 
+	// TODO test
 	public static RhythmSymbol getRhythmSymbol(String e) {
 		return !RHYTHM_SYMBOLS.containsKey(e) ? null : RHYTHM_SYMBOLS.get(e);
 	}
 
 
+	// TODO test
 	public static TabSymbol getTabSymbol(String e, TabSymbolSet tss) {
 		String n = tss.getName(); 
 		return !TAB_SYMBOLS.containsKey(n) ? null :
 			(!TAB_SYMBOLS.get(n).containsKey(e) ? null : TAB_SYMBOLS.get(n).get(e));
+	}
+
+
+	// TESTED
+	public static List<TabSymbol> getTabSymbols(TabSymbolSet tss, List<Integer> dots) { check makevariants for superfl dots
+		List<TabSymbol> allTs = new ArrayList<TabSymbol>();
+
+		boolean isGerman = tss.getType().equals("German");
+		String[][] frets = 
+			!isGerman ? TabSymbolSet.FRETS.get(TabSymbolSet.FRETS_FRENCH) : 
+			TabSymbolSet.FRETS.get(TabSymbolSet.FRETS_GERMAN);
+		// For each course
+		for (int c = 0; c < tss.getMaxNumberOfCourses(); c++) {
+			String courseStr = String.valueOf(c + 1);
+			// For each fret
+			for (int f = 0; f < frets[0].length; f++) {
+				if (!isGerman) {
+					String fretStr = tss == TabSymbolSet.FRENCH ? frets[0][f] : String.valueOf(f);
+					allTs.add(new TabSymbol(fretStr + courseStr, fretStr, f, c + 1));
+				}
+				else {
+					if (c + 1 == 6) {
+						// Only if the course has enough frets encoded
+						if (f < tss.getFretsSixthCourse().length) {
+							String e = tss.getFretsSixthCourse()[f];
+							allTs.add(new TabSymbol(e, e, f, c + 1));
+						}
+					}
+					else {
+						String e = frets[c][f];
+						allTs.add(new TabSymbol(e, e, f, c + 1));
+					}
+				}
+			}
+		}
+		return allTs;
 	}
 
 
@@ -184,26 +225,22 @@ public class Symbol {
 	 * @param tss
 	 * @return
 	 */
+	// TESTED
 	public static TabSymbol getTabSymbolEquivalent(TabSymbol ts, TabSymbolSet tss) {
-		// Get new encoding
-		int course = ts.getCourse();
-		int fret = ts.getFret();
+		int c = ts.getCourse();
+		int f = ts.getFret();
+		String e;
 		if (tss == TabSymbolSet.FRENCH) {
-			String e = Character.toString("abcdefghikl".charAt(fret)) + String.valueOf(course);
+			e = TabSymbolSet.FRETS.get(TabSymbolSet.FRETS_FRENCH)[0][f] + String.valueOf(c);
 		}
 		else if (tss == TabSymbolSet.ITALIAN || tss == TabSymbolSet.SPANISH) {
-			String e = String.valueOf(fret) + String.valueOf(course);
+			e = String.valueOf(f) + String.valueOf(c);
 		}
 		else {
-			
+			e = c == 6 ? tss.getFretsSixthCourse()[f] :
+				TabSymbolSet.FRETS.get(TabSymbolSet.FRETS_GERMAN)[c - 1][f];
 		}
-		return TAB_SYMBOLS.get(tss.getName()).get(e);
-		for (TabSymbol newTs : TAB_SYMBOLS.get(tss.getName()).values()) {
-			if (newTs.getCourse() == ts.getCourse() && newTs.getFret() == ts.getFret()) {
-				return newTs;
-			}
-		}
-		return null;
+		return getTabSymbol(e, tss);
 	}
 
 }

@@ -121,7 +121,7 @@ public class Tablature implements Serializable {
 			return transposition;
 		}
 
-		public boolean isDrop() {
+		public boolean getIsDrop() {
 			return isDrop;
 		}
 
@@ -227,7 +227,7 @@ public class Tablature implements Serializable {
 		Tuning[] tuns = new Tuning[2];
 		tuns[ENCODED_TUNING_IND] = encodedTun;
 		tuns[NORMALISED_TUNING_IND] = 
-			!getNormaliseTuning() ? encodedTun : (encodedTun.isDrop() ? Tuning.G6F : Tuning.G);
+			!getNormaliseTuning() ? encodedTun : (encodedTun.getIsDrop() ? Tuning.G6F : Tuning.G);
 		return tuns;
 	}
 

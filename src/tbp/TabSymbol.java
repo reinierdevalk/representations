@@ -2,11 +2,8 @@ package tbp;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import representations.Tablature.Tuning;
 
@@ -14,7 +11,6 @@ public class TabSymbol extends Symbol implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	public static final int MAX_NUMBER_OF_COURSES = 8;
 	public static final String FINGERING_DOT_ENCODING = "'";
 
 	private int fret;
@@ -22,22 +18,45 @@ public class TabSymbol extends Symbol implements Serializable {
 	private int fingeringDots;
 
 	public static enum TabSymbolSet  {
-		FRENCH("French", "French", MAX_NUMBER_OF_COURSES),
-		ITALIAN("Italian", "Italian", MAX_NUMBER_OF_COURSES),
-		SPANISH("Spanish", "Spanish", MAX_NUMBER_OF_COURSES),
-		JUDENKUENIG_1523("Judenkuenig1523", "German", 6),
-		NEWSIDLER_1536("Newsidler1536", "German", 6),
-		OCHSENKUN_1558("Ochsenkun1558", "German", 6),
-		HECKEL_1562("Heckel1562", "German", 6);
+		FRENCH("French", "French", 8, null),
+		ITALIAN("Italian", "Italian", 8, null),
+		SPANISH("Spanish", "Spanish", 8, null),
+		JUDENKUENIG_1523("Judenkuenig1523", "German", 6, 
+			new String[]{"A", "B", "C", "D", "E", "F", "G", "H"}),
+		NEWSIDLER_1536("Newsidler1536", "German", 6, 
+			new String[]{"+", "A", "B", "C", "D", "E", "F", "G", "H"}),
+		OCHSENKUN_1558("Ochsenkun1558", "German", 6, 
+			new String[]{"+", "2-", "3-", "4-", "5-", "6-", "7-", "8-", "9-", "10-", "11-"}),
+		HECKEL_1562("Heckel1562", "German", 6, 
+			new String[]{"+", "A-", "F-", "L-", "Q-", "X-"});
+
+		public static final List<String[][]> FRETS;
+		public static final int FRETS_FRENCH = 0;
+		public static final int FRETS_GERMAN = 1;
+		static {
+			FRETS = new ArrayList<>();
+			FRETS.add(new String[][] {
+				{"a", "b", "c", "d", "e", "f", "g", "h", "i", "k", "l"} // 11 frets per course
+			});
+			FRETS.add(new String[][] {
+				{"5", "e", "k", "p", "v", "9", "e-", "k-", "p-", "v-", "9-"}, // 11 frets per course
+				{"4", "d", "i", "o", "t", "7", "d-", "i-", "o-", "t-", "7-"},
+				{"3", "c", "h", "n", "s", "z", "c-", "h-", "n-", "s-", "z-"},
+				{"2", "b", "g", "m", "r", "y", "b-", "g-", "m-", "r-", "y-"},
+				{"1", "a", "f", "l", "q", "x", "a-", "f-", "l-", "q-", "x-"}
+			});
+		}
 
 		private String name;
 		private String type;
 		private int maxNumberOfCourses;
+		private String[] fretsSixthCourse;
 
-		TabSymbolSet(String s, String t, int m) {
+		TabSymbolSet(String s, String t, int m, String[] sc) {
 			name = s;
 			type = t;
 			maxNumberOfCourses = m;
+			fretsSixthCourse = sc;
 		}
 
 		public String getName() {
@@ -50,6 +69,10 @@ public class TabSymbol extends Symbol implements Serializable {
 
 		public int getMaxNumberOfCourses() {
 			return maxNumberOfCourses;
+		}
+
+		public String[] getFretsSixthCourse() {
+			return fretsSixthCourse; 
 		}
 
 		public static TabSymbolSet getTabSymbolSet(String s) {
@@ -99,54 +122,6 @@ public class TabSymbol extends Symbol implements Serializable {
 
 	public int getFingeringDots() {
 		return fingeringDots;
-	}
-
-
-	// TESTED
-	public static List<TabSymbol> listTabSymbols(TabSymbolSet tss) {
-		List<TabSymbol> allTs = new ArrayList<TabSymbol>();
-
-		List<String> frets = Arrays.asList(new String[]{"a", "b", "c", "d", "e", "f", "g", "h", "i", "k", "l"});
-		Map<String, List<String>> sixthCourseGerman = new LinkedHashMap<String, List<String>>();
-		sixthCourseGerman.put(TabSymbolSet.JUDENKUENIG_1523.getName(), 
-			Arrays.asList(new String[]{"A", "B", "C", "D", "E", "F", "G", "H"}));
-		sixthCourseGerman.put(TabSymbolSet.NEWSIDLER_1536.getName(), 
-			Arrays.asList(new String[]{"+", "A", "B", "C", "D", "E", "F", "G", "H"}));
-		sixthCourseGerman.put(TabSymbolSet.OCHSENKUN_1558.getName(), 
-			Arrays.asList(new String[]{"+", "2-", "3-", "4-", "5-", "6-", "7-", "8-", "9-", "10-", "11-"}));
-		sixthCourseGerman.put(TabSymbolSet.HECKEL_1562.getName(), 
-			Arrays.asList(new String[]{"+", "A-", "F-", "L-", "Q-", "X-"}));
-		List<List<String>> otherCoursesGerman = new ArrayList<List<String>>();
-		otherCoursesGerman.add(Arrays.asList(new String[]{"5", "e", "k", "p", "v", "9", "e-", "k-", "p-", "v-", "9-"}));
-		otherCoursesGerman.add(Arrays.asList(new String[]{"4", "d", "i", "o", "t", "7", "d-", "i-", "o-", "t-", "7-"}));
-		otherCoursesGerman.add(Arrays.asList(new String[]{"3", "c", "h", "n", "s", "z", "c-", "h-", "n-", "s-", "z-"}));
-		otherCoursesGerman.add(Arrays.asList(new String[]{"2", "b", "g", "m", "r", "y", "b-", "g-", "m-", "r-", "y-"}));
-		otherCoursesGerman.add(Arrays.asList(new String[]{"1", "a", "f", "l", "q", "x", "a-", "f-", "l-", "q-", "x-"}));
-
-		// For each course
-		for (int c = 0; c < tss.getMaxNumberOfCourses(); c++) {
-			String courseStr = String.valueOf(c + 1);
-			// For each fret
-			for (int f = 0; f < frets.size(); f++) {
-				if (!tss.getType().equals("German")) {
-					String fretStr = tss == TabSymbolSet.FRENCH ? frets.get(f) : String.valueOf(f);
-					allTs.add(new TabSymbol(fretStr + courseStr, fretStr, f, c + 1));
-				}
-				else {
-					// Not all frets are always encoded (for course (6))
-					int numFretsEncoded = 
-						c + 1 == 6 ? sixthCourseGerman.get(tss.getName()).size() :
-						otherCoursesGerman.get(c).size();	
-					if (f < numFretsEncoded) {
-						String encoding = 
-							c + 1 == 6 ? sixthCourseGerman.get(tss.getName()).get(f) :
-							otherCoursesGerman.get(c).get(f);
-						allTs.add(new TabSymbol(encoding, encoding, f, c + 1));	
-					}
-				}
-			}
-		}
-		return allTs;
 	}
 
 

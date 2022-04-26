@@ -16,7 +16,7 @@ public class MensurationSign extends Symbol {
 
 	public MensurationSign(String e, String s, Integer[] m) {
 		// The basic type (M2, M3, ..., MC\) has beat unit 4 and staffline 3, and is encoded as  
-		// M<n> or M<n>\ (cut MS), (where <n> is a number or a symbol)
+		// M<n> or M<n>\ (cut MS), where <n> is a number or a symbol
 		// A variant type may have a different beat unit or staffline, and is encoded as 
 		// M<n>:<b><l> or M<n>\\:<b><l> (cut MS), where <b> is the beat unit and <l> the staffline
 		setEncoding(e);
