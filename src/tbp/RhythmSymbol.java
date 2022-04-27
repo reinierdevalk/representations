@@ -10,6 +10,9 @@ public class RhythmSymbol extends Symbol {
 	public static final String TRIPLET_INDICATOR = "tr";
 	public static final String TRIPLET_OPEN = "[";
 	public static final String TRIPLET_CLOSE = "]";
+	public static final int TRIPLET_OPEN_IND = 0;
+	public static final int TRIPLET_MID_IND = 1;
+	public static final int TRIPLET_CLOSE_IND = 2;
 
 	private int duration;
 	private int numberOfDots;
@@ -58,17 +61,16 @@ public class RhythmSymbol extends Symbol {
 	/**
 	 * Makes a variant (dotted, beamed, tripletised, or any of these combined) of the RS.
 	 * 
-	 * @param dot
+	 * @param numDots
 	 * @param beam
 	 * @param tripletise
-	 * @param numDots
 	 * @return
 	 */
 	// TESTED
-	public List<RhythmSymbol> makeVariant(boolean dot, boolean beam, boolean tripletise, int numDots) {
+	public List<RhythmSymbol> makeVariant(int numDots, boolean beam, boolean tripletise) {
 		List<RhythmSymbol> rss = new ArrayList<>();
 		String suffix = "";
-		if (dot) {
+		if (numDots > 0) {
 			suffix = DOT_ENCODING.repeat(numDots);
 		}
 		if (beam) {
@@ -80,7 +82,7 @@ public class RhythmSymbol extends Symbol {
 		if (tripletise) {
 			dur -= dur / 3.0; 
 		}
-		if (dot) {
+		if (numDots > 0) {
 			int dottedDur = dur;
 			for (int i = 0; i < numDots; i++) {
 				dottedDur += (1.0 / (2 * (i+1))) * dur;

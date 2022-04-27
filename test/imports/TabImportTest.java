@@ -28,23 +28,23 @@ public class TabImportTest {
 		List<String> testPieces = Arrays.asList(new String[]{
 			"test/testpiece.tbp",
 			//
-			"tab-int/3vv/judenkuenig-1523_2-elslein_liebes.tbp",
-			"tab-int/3vv/newsidler-1536_7-disant_adiu.tbp",
-			"tab-int/3vv/newsidler-1536_7-mess_pensees.tbp",
-			"tab-int/3vv/newsidler-1544_2-nun_volget.tbp",
-			"tab-int/3vv/phalese-1547_7-tant_que-3vv.tbp",
-			"tab-int/3vv/pisador-1552_7-pleni_de.tbp",
+			"thesis-int/3vv/judenkuenig-1523_2-elslein_liebes.tbp",
+			"thesis-int/3vv/newsidler-1536_7-disant_adiu.tbp",
+			"thesis-int/3vv/newsidler-1536_7-mess_pensees.tbp",
+			"thesis-int/3vv/newsidler-1544_2-nun_volget.tbp",
+			"thesis-int/3vv/phalese-1547_7-tant_que-3vv.tbp",
+			"thesis-int/3vv/pisador-1552_7-pleni_de.tbp",
 			//
-			"tab-int/4vv/abondante-1548_1-mais_mamignone.tbp",
-			"tab-int/4vv/barbetta-1582_1-il_nest.tbp",
-			"tab-int/4vv/ochsenkun-1558_5-absolon_fili.tbp",
-			"tab-int/4vv/ochsenkun-1558_5-herr_gott.tbp",
-			"tab-int/4vv/ochsenkun-1558_5-in_exitu.tbp",
-			"tab-int/4vv/ochsenkun-1558_5-qui_habitat.tbp",
-			"tab-int/4vv/phalese-1547_7-tant_que-4vv.tbp",
-			"tab-int/4vv/phalese-1563_12-il_estoit.tbp",
-			"tab-int/4vv/phalese-1563_12-las_on.tbp",
-			"tab-int/4vv/rotta-1546_15-bramo_morir.tbp"
+			"thesis-int/4vv/abondante-1548_1-mais_mamignone.tbp",
+			"thesis-int/4vv/barbetta-1582_1-il_nest.tbp",
+			"thesis-int/4vv/ochsenkun-1558_5-absolon_fili.tbp",
+			"thesis-int/4vv/ochsenkun-1558_5-herr_gott.tbp",
+			"thesis-int/4vv/ochsenkun-1558_5-in_exitu.tbp",
+			"thesis-int/4vv/ochsenkun-1558_5-qui_habitat.tbp",
+			"thesis-int/4vv/phalese-1547_7-tant_que-4vv.tbp",
+			"thesis-int/4vv/phalese-1563_12-il_estoit.tbp",
+			"thesis-int/4vv/phalese-1563_12-las_on.tbp",
+			"thesis-int/4vv/rotta-1546_15-bramo_morir.tbp"
 		});
 
 		List<String> expected = Arrays.asList(new String[]{

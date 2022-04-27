@@ -12,7 +12,6 @@ import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import structure.Timeline;
-import tbp.ConstantMusicalSymbol;
 import tbp.Encoding;
 import tbp.Event;
 import tbp.MensurationSign;
@@ -57,7 +56,6 @@ public class Tablature implements Serializable {
 	private Integer[][] basicTabSymbolProperties;
 	private List<List<TabSymbol>> tablatureChords;
 	private List<Integer> numberOfNotesPerChord;
-
 
 	public static enum Tuning  {
 		// Six courses, standard tuning
@@ -112,7 +110,7 @@ public class Tablature implements Serializable {
 			pitchLowestCourse = p;
 			intervals = i;	
 		}
-		
+
 		public String getName() {
 			return name;
 		}
@@ -137,13 +135,6 @@ public class Tablature implements Serializable {
 			return intervals;
 		}
 
-		public List<Integer> getPitches() {
-			List<Integer> pitches = new ArrayList<>();
-			pitches.add(getPitchLowestCourse());
-			getIntervals().forEach(i -> pitches.add(pitches.get(pitches.size() - 1) + i));
-			return pitches;
-		}
-
 		public static Tuning getTuning(String s) {
 			for (Tuning t : Tuning.values()) { 
 				if (t.toString().equals(s)) {
@@ -151,6 +142,13 @@ public class Tablature implements Serializable {
 				}
 			}
 			return null;
+		}
+
+		public List<Integer> getPitches() {
+			List<Integer> pitches = new ArrayList<>();
+			pitches.add(getPitchLowestCourse());
+			getIntervals().forEach(i -> pitches.add(pitches.get(pitches.size() - 1) + i));
+			return pitches;
 		}
 	}
 
@@ -1053,7 +1051,8 @@ public class Tablature implements Serializable {
 			String firstSymbol = 
 				e.getEncoding().substring(0, 
 				e.getEncoding().lastIndexOf(Symbol.SYMBOL_SEPARATOR));
-			if (ConstantMusicalSymbol.isBarline(firstSymbol)) {
+			if (Symbol.getConstantMusicalSymbol(firstSymbol) != null && 
+				Symbol.getConstantMusicalSymbol(firstSymbol).isBarline()) {
 				numBarlines++;
 			}
 		}

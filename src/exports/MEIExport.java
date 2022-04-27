@@ -104,7 +104,7 @@ public class MEIExport {
 		testTabFile = "4vv/rotta-1546_15-bramo_morir";
 		
 		Tablature testTab = new Tablature(new File(
-			"F:/research/data/annotated/encodings/tab-int/" + testTabFile + 
+			"F:/research/data/annotated/encodings/thesis-int/" + testTabFile + 
 			Encoding.EXTENSION), false);
 		
 		testTab = new Tablature(new File(
@@ -120,7 +120,7 @@ public class MEIExport {
 		String path = "C:/Users/Reinier/Desktop/MEI/";
 		path = "C:/Users/Reinier/Desktop/IMS-tours/example/MIDI/";
 		
-		String tabFile = "tab-int/3vv/newsidler-1544_2-nun_volget";
+		String tabFile = "thesis-int/3vv/newsidler-1544_2-nun_volget";
 		tabFile = "1132_13_o_sio_potessi_donna_berchem_solo";
 		
 		String pieceName = "capirola-1520-et_in_terra_pax";
@@ -128,8 +128,8 @@ public class MEIExport {
 		// This must be a created Transcription and the second argument must be null
 		Transcription trans = 
 			new Transcription(
-//			new File("F:/research/data/MIDI/tab-int/4vv/rotta-1546_15-bramo_morir.mid"),
-//			new File("F:/research/data/annotated/MIDI/tab-int/3vv/newsidler-1544_2-nun_volget.mid"),
+//			new File("F:/research/data/MIDI/thesis-int/4vv/rotta-1546_15-bramo_morir.mid"),
+//			new File("F:/research/data/annotated/MIDI/thesis-int/3vv/newsidler-1544_2-nun_volget.mid"),
 //			new File("F:/research/data/MIDI/" + tabFile + MIDIImport.EXTENSION),
 //			new File("C:/Users/Reinier/Desktop/MEI/newsidler-1544_2-nun_volget-test.mid"),
 //			new File("C:/Users/Reinier/Desktop/2019-ISMIR/test/mapped/3610_033_inter_natos_mulierum_morales_T-rev-mapped.mid"),
@@ -145,7 +145,7 @@ public class MEIExport {
 			new Tablature(new File("C:/Users/Reinier/Desktop/test-capirola/tab/" + 
 			pieceName + Encoding.EXTENSION), false);
 //		Tablature tab = 
-//			new Tablature(new File("F:/research/data/annotated/encodings/tab-int/" + 
+//			new Tablature(new File("F:/research/data/annotated/encodings/thesis-int/" + 
 //			"3vv/newsidler-1544_2-nun_volget" + 
 //			"4vv/rotta-1546_15-bramo_morir" +
 //			Encoding.EXTENSION), false);
@@ -618,7 +618,8 @@ public class MEIExport {
 				}
 
 				// Barline? End of bar reached; set barline if not single
-				if (ConstantMusicalSymbol.isBarline(currEvent)) {
+				if (Symbol.getConstantMusicalSymbol(currEvent) != null && Symbol.getConstantMusicalSymbol(currEvent).isBarline()) {
+//				if (ConstantMusicalSymbol.isBarline(currEvent)) {
 					// TODO currently only single and double barline possible in MEI
 					if (currEvent.equals(Symbol.BARLINE.makeVariant(2, null).getEncoding())) {
 						barline = " right='dbl'";
@@ -1579,7 +1580,8 @@ public class MEIExport {
 //						barline = " right='end'";
 //					}
 //				}
-				if (!ConstantMusicalSymbol.isBarline(currEvent)) {
+				if (Symbol.getConstantMusicalSymbol(currEvent) != null && Symbol.getConstantMusicalSymbol(currEvent).isBarline()) {
+//				if (!ConstantMusicalSymbol.isBarline(currEvent)) {
 					// Get XML durations of currEvent, and, if applicable, currEventOrig
 					Integer[] currDurXML = getXMLDur(currEvent);
 
@@ -3893,7 +3895,8 @@ public class MEIExport {
 			String system = cleanEncodingSystems[i];
 			String first = system.substring(0, system.indexOf(ss));
 			// If barline
-			if (ConstantMusicalSymbol.isBarline(first)) {
+			if (Symbol.getConstantMusicalSymbol(first) != null && Symbol.getConstantMusicalSymbol(first).isBarline()) {
+//			if (ConstantMusicalSymbol.isBarline(first)) {
 				cleanEncodingSystems[i] = system.substring(system.indexOf(ss) + 1, system.length());
 			}
 		}
@@ -3907,7 +3910,9 @@ public class MEIExport {
 				if (system.substring(i, i+1).equals(ss)) {
 					String curr = system.substring(start, i);
 					boolean isSpace = curr.equals(Symbol.SPACE.getEncoding());
-					boolean isBarline = ConstantMusicalSymbol.isBarline(curr);
+					boolean isBarline = 
+						Symbol.getConstantMusicalSymbol(curr) != null && Symbol.getConstantMusicalSymbol(curr).isBarline();
+//					boolean isBarline = ConstantMusicalSymbol.isBarline(curr);
 					if (!isSpace) {
 						event = (event.length() == 0) ? event + curr : event + ss + curr;
 					}

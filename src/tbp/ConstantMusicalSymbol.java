@@ -12,11 +12,6 @@ public class ConstantMusicalSymbol extends Symbol {
 	}
 
 
-	public static boolean isBarline(String e) {
-		return e.contains(PIPE) ? true : false;
-	}
-
-
 	/**
 	 * Makes a variant (barline) of the CMS.
 	 * 
@@ -40,6 +35,11 @@ public class ConstantMusicalSymbol extends Symbol {
 			}
 		}
 		return new ConstantMusicalSymbol(e, e);
+	}
+
+
+	public boolean isBarline() {
+		return getEncoding().contains(PIPE) ? true : false;
 	}
 
 

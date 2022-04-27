@@ -90,6 +90,99 @@ public class SymbolTest {
 
 
 	@Test
+	public void testGetConstantMusicalSymbol() {
+		List<ConstantMusicalSymbol> expected = Arrays.asList(new ConstantMusicalSymbol[]{
+			Symbol.SPACE,
+			Symbol.BARLINE,
+			Symbol.BARLINE.makeVariant(2, "both"),
+			null
+		});
+
+		List<ConstantMusicalSymbol> actual = new ArrayList<>();
+		for (String s : Arrays.asList(new String[]{">", "|", ":||:", "not"})) {
+			actual.add(Symbol.getConstantMusicalSymbol(s));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
+	public void testGetMensurationSign() {
+		List<MensurationSign> expected = Arrays.asList(new MensurationSign[]{
+			Symbol.TWO,
+			Symbol.CUT_C,
+			Symbol.THREE.makeVariant(-1, 4),
+			null
+		});
+
+		List<MensurationSign> actual = new ArrayList<>();
+		for (String s : Arrays.asList(new String[]{"M2", "MC\\", "M34", "not"})) {
+			actual.add(Symbol.getMensurationSign(s));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
+	public void testGetRhythmSymbol() {
+		List<RhythmSymbol> expected = Arrays.asList(new RhythmSymbol[]{
+			Symbol.SEMIMINIM,
+			Symbol.CORONA_BREVIS,
+			Symbol.SEMIMINIM.makeVariant(0, true, true).get(0),
+			null
+		});
+
+		List<RhythmSymbol> actual = new ArrayList<>();
+		for (String s : Arrays.asList(new String[]{"sm", "cobr", "tr[sm-", "not"})) {
+			actual.add(Symbol.getRhythmSymbol(s));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
+	public void testGetTabSymbol() {
+		List<TabSymbol> expected = Arrays.asList(new TabSymbol[]{
+			Symbol.FRENCH.get(5), // first course, fifth fret
+			Symbol.ITALIAN.get(5), // first course, fifth fret
+			Symbol.NEWSIDLER_1536.get(5), // first course, fifth fret
+			Symbol.NEWSIDLER_1536.get(5).makeVariant(1),
+			null
+		});
+
+		List<TabSymbol> actual = new ArrayList<>();
+		List<String> es = Arrays.asList(new String[]{"f1", "51", "9", "9'", "not"});
+		List<TabSymbolSet> tsss = Arrays.asList(new TabSymbolSet[]{
+			TabSymbolSet.FRENCH, TabSymbolSet.ITALIAN, TabSymbolSet.NEWSIDLER_1536, 
+			TabSymbolSet.NEWSIDLER_1536, TabSymbolSet.FRENCH});
+		for (int i = 0; i < es.size(); i++) {
+			actual.add(Symbol.getTabSymbol(es.get(i), tsss.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
 	public void testGetTabSymbols() {
 		List<TabSymbol> expected = new ArrayList<>();
 		List<TabSymbol> expectedFrench = Arrays.asList(new TabSymbol[]{
@@ -387,11 +480,11 @@ public class SymbolTest {
 			new TabSymbol("26", "2", 2, 6), // Italian
 			new TabSymbol("26", "2", 2, 6), // Spanish
 			// French with fingering dot
-//			new TabSymbol("51" + TabSymbol.FINGERING_DOT_ENCODING, "5", 5, 1), // Italian
-//			new TabSymbol("51" + TabSymbol.FINGERING_DOT_ENCODING, "5", 5, 1), // Spanish
-//			new TabSymbol("9" + TabSymbol.FINGERING_DOT_ENCODING, "9", 5, 1), // Newsidler1536
+			new TabSymbol("51" + TabSymbol.FINGERING_DOT_ENCODING, "5", 5, 1), // Italian
+			new TabSymbol("51" + TabSymbol.FINGERING_DOT_ENCODING, "5", 5, 1), // Spanish
+			new TabSymbol("9" + TabSymbol.FINGERING_DOT_ENCODING, "9", 5, 1), // Newsidler1536
 		});
-		
+
 		List<TabSymbol> actual = new ArrayList<>();
 		actual.add(Symbol.getTabSymbolEquivalent(french, TabSymbolSet.ITALIAN));
 		actual.add(Symbol.getTabSymbolEquivalent(french, TabSymbolSet.SPANISH));
@@ -409,10 +502,10 @@ public class SymbolTest {
 		actual.add(Symbol.getTabSymbolEquivalent(newsidler, TabSymbolSet.ITALIAN));
 		actual.add(Symbol.getTabSymbolEquivalent(newsidler, TabSymbolSet.SPANISH));
 		//
-//		actual.add(Symbol.getTabSymbolEquivalent(frenchFing, TabSymbolSet.ITALIAN));
-//		actual.add(Symbol.getTabSymbolEquivalent(frenchFing, TabSymbolSet.SPANISH));
-//		actual.add(Symbol.getTabSymbolEquivalent(frenchFing, TabSymbolSet.NEWSIDLER_1536));
-		
+		actual.add(Symbol.getTabSymbolEquivalent(frenchFing, TabSymbolSet.ITALIAN));
+		actual.add(Symbol.getTabSymbolEquivalent(frenchFing, TabSymbolSet.SPANISH));
+		actual.add(Symbol.getTabSymbolEquivalent(frenchFing, TabSymbolSet.NEWSIDLER_1536));
+
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));

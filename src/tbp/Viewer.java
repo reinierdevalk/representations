@@ -35,6 +35,7 @@ import tbp.TabSymbol.TabSymbolSet;
 public class Viewer extends JFrame{
 
 	private static final long serialVersionUID = 1L;
+
 	private Highlighter hilit;
 	private JTextArea encodingArea;
 	private JTextArea tabArea;
@@ -374,30 +375,30 @@ public class Viewer extends JFrame{
 			
 			// Checked and ready for processing
 			// 3vv
-//			encPath += "tab-int/3vv/" + "newsidler-1536_7-disant_adiu.tbp";
-//			encPath += "tab-int/3vv/" + "newsidler-1536_7-mess_pensees.tbp";
-//			encPath += "tab-int/3vv/" + "pisador-1552_7-pleni_de.tbp"; // TODO remove every second barline
-//			encPath += "tab-int/3vv/" + "judenkuenig-1523_2-elslein_liebes.tbp";
-//			encPath += "tab-int/3vv/" + "newsidler-1544_2-nun_volget.tbp"; // TODO remove every second barline in ternary part
-//			encPath += "tab-int/3vv/" + "phalese-1547_7-tant_que-3vv.tbp";
+//			encPath += "thesis-int/3vv/" + "newsidler-1536_7-disant_adiu.tbp";
+//			encPath += "thesis-int/3vv/" + "newsidler-1536_7-mess_pensees.tbp";
+//			encPath += "thesis-int/3vv/" + "pisador-1552_7-pleni_de.tbp"; // TODO remove every second barline
+//			encPath += "thesis-int/3vv/" + "judenkuenig-1523_2-elslein_liebes.tbp";
+//			encPath += "thesis-int/3vv/" + "newsidler-1544_2-nun_volget.tbp"; // TODO remove every second barline in ternary part
+			encPath += "thesis-int/3vv/" + "phalese-1547_7-tant_que-3vv.tbp";
 
 			// 4vv
-//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-absolon_fili.tbp";
-//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-in_exitu.tbp";
-//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-qui_habitat.tbp";
-//			encPath += "tab-int/4vv/" + "rotta-1546_15-bramo_morir.tbp";
-//			encPath += "tab-int/4vv/" + "phalese-1547_7-tant_que-4vv.tbp";
-//			encPath += "tab-int/4vv/" + "ochsenkun-1558_5-herr_gott.tbp";
-//			encPath += "tab-int/4vv/" + "abondante-1548_1-mais_mamignone.tbp";
-//			encPath += "tab-int/4vv/" + "phalese-1563_12-las_on.tbp";
-//			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest.tbp"; // TODO remove every second barline
-//			encPath += "tab-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp"; // TODO remove every second barline
-//			encPath += "tab-int/4vv/" + "phalese-1563_12-il_estoit.tbp";
-//			encPath += "tab-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
+//			encPath += "thesis-int/4vv/" + "ochsenkun-1558_5-absolon_fili.tbp";
+//			encPath += "thesis-int/4vv/" + "ochsenkun-1558_5-in_exitu.tbp";
+//			encPath += "thesis-int/4vv/" + "ochsenkun-1558_5-qui_habitat.tbp";
+//			encPath += "thesis-int/4vv/" + "rotta-1546_15-bramo_morir.tbp";
+//			encPath += "thesis-int/4vv/" + "phalese-1547_7-tant_que-4vv.tbp";
+//			encPath += "thesis-int/4vv/" + "ochsenkun-1558_5-herr_gott.tbp";
+//			encPath += "thesis-int/4vv/" + "abondante-1548_1-mais_mamignone.tbp";
+//			encPath += "thesis-int/4vv/" + "phalese-1563_12-las_on.tbp";
+//			encPath += "thesis-int/4vv/" + "barbetta-1582_1-il_nest.tbp"; // TODO remove every second barline
+//			encPath += "thesis-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp"; // TODO remove every second barline
+//			encPath += "thesis-int/4vv/" + "phalese-1563_12-il_estoit.tbp";
+//			encPath += "thesis-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
 
 			// 5vv
-//			encPath += "tab-int/5vv/" + "adriansen-1584_6-d_vn_si.tbp";
-//			encPath += "tab-int/5vv/" + "ochsenkun-1558_5-inuiolata_integra.tbp";
+//			encPath += "thesis-int/5vv/" + "adriansen-1584_6-d_vn_si.tbp";
+//			encPath += "thesis-int/5vv/" + "ochsenkun-1558_5-inuiolata_integra.tbp";
 
 			// Byrd
 //			encPath += "byrd-int/4vv/ah_golden_hairs-NEW.tbp";
@@ -405,7 +406,7 @@ public class Viewer extends JFrame{
 			// JosquIntab
 //			encPath = "F:/research/data/annotated/josquintab/tab/" + "5256_05_inviolata_integra_desprez-2.tbp";
 //			encPath = "F:/research/data/annotated/josquintab/tab/" + "5263_12_in_exitu_israel_de_egipto_desprez-3.tbp";
-			encPath = "F:/research/data/annotated/josquintab/tab/" + "4465_33-34_memor_esto-2XXX.tbp";
+//			encPath = "F:/research/data/annotated/josquintab/tab/" + "4465_33-34_memor_esto-2XXX.tbp";
 		}
 		File encFile = new File(encPath);
 		setFile(encFile);
@@ -518,8 +519,8 @@ public class Viewer extends JFrame{
 				// Determine TabSymbolSet
 				TabSymbolSet tss = null;
 				outerLoop: for (String type : getTabTypes()) {
-					if (getTabRadioButton(type).isSelected()) {   
-						for (TabSymbolSet t : TabSymbolSet.getTabSymbolSets()) {
+					if (getTabRadioButton(type).isSelected()) {
+						for (TabSymbolSet t : TabSymbolSet.values()) {
 							if (t.getName().toLowerCase().startsWith(type)) {
 								tss = t;
 								break outerLoop;

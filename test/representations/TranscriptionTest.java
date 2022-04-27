@@ -1505,8 +1505,8 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testBla() {
-		String prefixTab = "F:/research/data/encodings/tab-int/";
-		String prefix = "F:/research/data/MIDI/tab-int/";
+		String prefixTab = "F:/research/data/encodings/thesis-int/";
+		String prefix = "F:/research/data/MIDI/thesis-int/";
 		prefixTab = "F:/research/data/encodings/byrd-int/4vv/";
 		prefix = "F:/research/data/MIDI/byrd-int/4vv/";
 
@@ -2104,8 +2104,8 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetImitativeVoiceEntries() {
-		String prefixTab = "F:/research/data/annotated/encodings/tab-int/";
-		String prefix = "F:/research/data/annotated/MIDI/tab-int/";
+		String prefixTab = "F:/research/data/annotated/encodings/thesis-int/";
+		String prefix = "F:/research/data/annotated/MIDI/thesis-int/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			// 3vv (using full durations)
 			"3vv/newsidler-1536_7-mess_pensees", // correct
@@ -2330,8 +2330,8 @@ public class TranscriptionTest extends TestCase {
 	//						no motif is found at density 2, 3 (non-literal motif repetition)
 	// WTC 4vv --> n=3: all imitative (all correct)
 	public void testGetNonImitativeVoiceEntries() {
-		String prefixTab = "F:/research/data/annotated/encodings/tab-int/";
-		String prefix = "F:/research/data/annotated/MIDI/tab-int/";
+		String prefixTab = "F:/research/data/annotated/encodings/thesis-int/";
+		String prefix = "F:/research/data/annotated/MIDI/thesis-int/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			// 3vv
 			"3vv/newsidler-1536_7-disant_adiu", // correct (full & minimum) TODO fix SNU
@@ -4159,9 +4159,9 @@ public class TranscriptionTest extends TestCase {
 //		File midi2 = 
 //			new File(Runner.midiPath + DatasetID.INT_4vv.getName() + "/4vv/phalese-1563_12-las_on.mid");
 		File encoding2 = 
-			new File(MEIExport.rootDir + "data/annotated/encodings/" + "tab-int" + "/4vv/phalese-1563_12-las_on.tbp");
+			new File(MEIExport.rootDir + "data/annotated/encodings/" + "thesis-int" + "/4vv/phalese-1563_12-las_on.tbp");
 		File midi2 = 
-			new File(MEIExport.rootDir + "data/annotated/MIDI/" + "tab-int" + "/4vv/phalese-1563_12-las_on.mid");
+			new File(MEIExport.rootDir + "data/annotated/MIDI/" + "thesis-int" + "/4vv/phalese-1563_12-las_on.mid");
 		
 		Tablature tablature2 = new Tablature(encoding2, true);
 		Transcription transcription2 = new Transcription(midi2, encoding2);
@@ -5020,7 +5020,7 @@ public class TranscriptionTest extends TestCase {
 	
 	public void testGetNumberOfVoices() {
 		List<Transcription> transcriptions = new ArrayList<Transcription>(); 
-		String set = "tab-int"; //DatasetID.INT_4vv.getName();
+		String set = "thesis-int"; //DatasetID.INT_4vv.getName();
 //		Transcription transcription0 = new Transcription(
 //			new File(Runner.midiPath + set + "/3vv/judenkuenig-1523_2-elslein_liebes.mid"), 
 //			new File(Runner.encodingsPath + set + "/3vv/judenkuenig-1523_2-elslein_liebes.tbp"));
@@ -5055,7 +5055,7 @@ public class TranscriptionTest extends TestCase {
 
 	public void testGetNumberOfVoicesNonTab() {
 		List<Transcription> transcriptions = new ArrayList<Transcription>(); 
-		String set = "tab-int"; // DatasetID.INT_4vv.getName();
+		String set = "thesis-int"; // DatasetID.INT_4vv.getName();
 //		Transcription transcription0 = new Transcription(
 //			new File(Runner.midiPath + set + "/3vv/judenkuenig-1523_2-elslein_liebes.mid"), null);
 //		Transcription transcription1 = new Transcription(

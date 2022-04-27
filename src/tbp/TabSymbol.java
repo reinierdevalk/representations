@@ -21,18 +21,14 @@ public class TabSymbol extends Symbol implements Serializable {
 		FRENCH("French", "French", 8, null),
 		ITALIAN("Italian", "Italian", 8, null),
 		SPANISH("Spanish", "Spanish", 8, null),
-		JUDENKUENIG_1523("Judenkuenig1523", "German", 6, 
-			new String[]{"A", "B", "C", "D", "E", "F", "G", "H"}),
-		NEWSIDLER_1536("Newsidler1536", "German", 6, 
-			new String[]{"+", "A", "B", "C", "D", "E", "F", "G", "H"}),
-		OCHSENKUN_1558("Ochsenkun1558", "German", 6, 
-			new String[]{"+", "2-", "3-", "4-", "5-", "6-", "7-", "8-", "9-", "10-", "11-"}),
-		HECKEL_1562("Heckel1562", "German", 6, 
-			new String[]{"+", "A-", "F-", "L-", "Q-", "X-"});
+		JUDENKUENIG_1523("Judenkuenig1523", "German", 6, new String[]{"A", "B", "C", "D", "E", "F", "G", "H"}),
+		NEWSIDLER_1536("Newsidler1536", "German", 6, new String[]{"+", "A", "B", "C", "D", "E", "F", "G", "H"}),
+		OCHSENKUN_1558("Ochsenkun1558", "German", 6, new String[]{"+", "2-", "3-", "4-", "5-", "6-", "7-", "8-", "9-", "10-", "11-"}),
+		HECKEL_1562("Heckel1562", "German", 6, new String[]{"+", "A-", "F-", "L-", "Q-", "X-"});
 
-		public static final List<String[][]> FRETS;
 		public static final int FRETS_FRENCH = 0;
 		public static final int FRETS_GERMAN = 1;
+		public static final List<String[][]> FRETS;
 		static {
 			FRETS = new ArrayList<>();
 			FRETS.add(new String[][] {

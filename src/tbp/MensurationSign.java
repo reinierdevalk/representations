@@ -71,7 +71,7 @@ public class MensurationSign extends Symbol {
 
 
 	/**
-	 * Makes a variant (beat unit, staffline, or combined) of the MS.
+	 * Makes a variant (beat unit, staff line, or combined) of the MS.
 	 * 
 	 * @param beatUnit
 	 * @param staffLine

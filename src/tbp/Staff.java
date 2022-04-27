@@ -417,7 +417,10 @@ public class Staff {
 			flAsList).trim().substring(0, 1).equals(OPEN_FOOTNOTE_PAR) ? true : 
 			false;
 
-		boolean hasDecOpenBarline = ConstantMusicalSymbol.isBarline(sd[TOP_LINE][0]);
+		boolean hasDecOpenBarline = 
+			Symbol.getConstantMusicalSymbol(sd[TOP_LINE][0]) != null &&
+			Symbol.getConstantMusicalSymbol(sd[TOP_LINE][0]).isBarline();			
+//			ConstantMusicalSymbol.isBarline(sd[TOP_LINE][0]);
 
 		for (int i = 0; i < sd.length; i++) {
 			String[] staffLine = sd[i];

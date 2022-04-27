@@ -52,11 +52,11 @@ public class TabImport {
 		RHYTHM_SYMBOLS.put("E", Symbol.SEMIMINIM.getEncoding());
 		RHYTHM_SYMBOLS.put("S", Symbol.FUSA.getEncoding());
 		RHYTHM_SYMBOLS.put("T", Symbol.SEMIFUSA.getEncoding());
-		RHYTHM_SYMBOLS.put("W.", Symbol.BREVIS.makeVariant(true, false, false, 1, null).getEncoding());
-		RHYTHM_SYMBOLS.put("H.", Symbol.SEMIBREVIS.makeVariant(true, false, false, 1, null).getEncoding());
-		RHYTHM_SYMBOLS.put("Q.", Symbol.MINIM.makeVariant(true, false, false, 1, null).getEncoding());
-		RHYTHM_SYMBOLS.put("E.", Symbol.SEMIMINIM.makeVariant(true, false, false, 1, null).getEncoding());
-		RHYTHM_SYMBOLS.put("S.", Symbol.FUSA.makeVariant(true, false, false, 1, null).getEncoding());
+		RHYTHM_SYMBOLS.put("W.", Symbol.BREVIS.makeVariant(1, false, false).get(0).getEncoding());
+		RHYTHM_SYMBOLS.put("H.", Symbol.SEMIBREVIS.makeVariant(1, false, false).get(0).getEncoding());
+		RHYTHM_SYMBOLS.put("Q.", Symbol.MINIM.makeVariant(1, false, false).get(0).getEncoding());
+		RHYTHM_SYMBOLS.put("E.", Symbol.SEMIMINIM.makeVariant(1, false, false).get(0).getEncoding());
+		RHYTHM_SYMBOLS.put("S.", Symbol.FUSA.makeVariant(1, false, false).get(0).getEncoding());
 		RHYTHM_SYMBOLS.put("3", RhythmSymbol.TRIPLET_INDICATOR);
 	}
 
@@ -172,26 +172,20 @@ public class TabImport {
 		path = "F:/research/data/annotated/josquintab/tab/";
 //		path = "F:/research/projects/byrd/";
 //		path = "C:/Users/Reinier/Desktop/test-capirola/";
+		
+		// From TabCode
+		for (String s : pieces) {
+			tbp = tc2tbp(new File(path + s + ".tc"));
+			ToolBox.storeTextFile(tbp, new File(path + s + "XXX" + Encoding.EXTENSION));
+		}
+		System.exit(0);
 
 		// From ASCII
 		for (String s : pieces) {
 			tbp = ascii2tbp(new File(path + s + ".tab"));
 			ToolBox.storeTextFile(tbp, new File(path + s + "XXX" + Encoding.EXTENSION));
 		}
-		System.exit(0);
-		
-		// From TabCode
-		for (String s : pieces) {
-			tbp = tc2tbp(new File(path + s + ".tc"));
-			ToolBox.storeTextFile(tbp, new File(path + s + Encoding.EXTENSION));
-		}
-		
 
-
-
-		
-
-		
 	}
 
 
@@ -212,8 +206,8 @@ public class TabImport {
 		tunings.put(69, "A");
 
 		Map<String, String> notations = new LinkedHashMap<String, String>();
-		notations.put("French", "FrenchTab");
-		notations.put("Italian", "ItalianTab");		
+		notations.put("French", TabSymbolSet.FRENCH.getType());
+		notations.put("Italian", TabSymbolSet.ITALIAN.getType());		
 
 		// Get rules. Rules looks like
 		// {<rules>
@@ -369,7 +363,8 @@ public class TabImport {
 				// Use the triplet variant if the tabword is the second or higher tabword in a 
 				// triplet group (in which case the rs will not start with the tripletIndicator)
 				if (!rs.startsWith(RhythmSymbol.TRIPLET_INDICATOR) && tripletActive) {
-					rs = RhythmSymbol.getRhythmSymbol(rs).makeVariant(false, false, true, -1, "").getEncoding();
+					// Assume mid triplet RS
+					rs = Symbol.getRhythmSymbol(rs).makeVariant(0, false, true).get(1).getEncoding(); // DJUU
 //					rs = RhythmSymbol.getTripletVariant(rs).getEncoding();
 					tripletLength -= RhythmSymbol.getRhythmSymbol(rs).getDuration();
 					System.out.println("TL 2 --> " + tripletLength);
@@ -421,7 +416,8 @@ public class TabImport {
 						converted.substring(rs.length());
 				}
 				if (!rs.startsWith(RhythmSymbol.TRIPLET_INDICATOR) && tripletActive) {
-					rs = RhythmSymbol.getRhythmSymbol(rs).makeVariant(false, false, true, -1, "").getEncoding();
+					// Assume mid triplet RS; beam == false (any beam is already in rs)
+					rs = Symbol.getRhythmSymbol(rs).makeVariant(0, false, true).get(1).getEncoding(); // DJUU
 //					rs = RhythmSymbol.getTripletVariant(rs).getEncoding();
 					tripletLength -= RhythmSymbol.getRhythmSymbol(rs).getDuration();
 					System.out.println("TL 4 --> " + tripletLength);
@@ -463,7 +459,8 @@ public class TabImport {
 						// triplet group
 						if (tripletActive) {
 							System.out.println("triplet LAST in non-final BG");
-							rsNext = RhythmSymbol.getRhythmSymbol(rsNext).makeVariant(false, false, true, -1, "").getEncoding();
+							// Assume mid triplet RS; beam == false (any beam is already in rs)
+							rsNext = Symbol.getRhythmSymbol(rsNext).makeVariant(0, false, true).get(1).getEncoding(); // DJUU
 //							rsNext = RhythmSymbol.getTripletVariant(rsNext).getEncoding();
 							tripletLength -= RhythmSymbol.getRhythmSymbol(rsNext).getDuration();
 							System.out.println("TL 5 --> " + tripletLength);
@@ -492,7 +489,8 @@ public class TabImport {
 						// rsNext never starts with a tripletIndicator, but can be part of a
 						// triplet group
 						if (tripletActive) {
-							rsNext = RhythmSymbol.getRhythmSymbol(rsNext).makeVariant(false, false, true, -1, "").getEncoding();
+							// Assume mid triplet RS; beam == false (any beam is already in rs)
+							rsNext = Symbol.getRhythmSymbol(rsNext).makeVariant(0, false, true).get(1).getEncoding(); // DJUU
 //							rsNext = RhythmSymbol.getTripletVariant(rsNext).getEncoding();
 							tripletLength -= RhythmSymbol.getRhythmSymbol(rsNext).getDuration();
 							System.out.println("TL 6 --> " + tripletLength);
@@ -544,9 +542,9 @@ public class TabImport {
 		int lenTripletUnit = "(Q)".length();
 
 		Map<String, String> beams = new LinkedHashMap<String, String>();
-		beams.put("[[", Symbol.SEMIMINIM.makeVariant(false, true, false, 0, null).getEncoding());
-		beams.put("[[[", Symbol.FUSA.makeVariant(false, true, false, 0, null).getEncoding());
-		beams.put("[[[[", Symbol.SEMIFUSA.makeVariant(false, true, false, 0, null).getEncoding());
+		beams.put("[[", Symbol.SEMIMINIM.makeVariant(0, true, false).get(0).getEncoding());
+		beams.put("[[[", Symbol.FUSA.makeVariant(0, true, false).get(0).getEncoding());
+		beams.put("[[[[", Symbol.SEMIFUSA.makeVariant(0, true, false).get(0).getEncoding());
 		beams.put("]]", Symbol.SEMIMINIM.getEncoding());
 		beams.put("]]]", Symbol.FUSA.getEncoding());
 		beams.put("]]]]", Symbol.SEMIFUSA.getEncoding());
@@ -998,7 +996,7 @@ public class TabImport {
 			// It tuningString equals currTuning
 			if (currTuning.equals(tuningString)) {
 				tuning = t.getName();
-				tss = TabSymbolSet.ITALIAN_TAB.toString();
+				tss = TabSymbolSet.ITALIAN.toString();
 				break;
 			}
 			// If tuningString equals the reverse of currTuning
@@ -1008,11 +1006,11 @@ public class TabImport {
 					String symb = firstChord.substring(i, i+1);
 					if (!symb.equals("-")) {
 						if (COURSE_NUMBERS.contains(symb)) {
-							tss = TabSymbolSet.SPANISH_TAB.toString(); 
+							tss = TabSymbolSet.SPANISH.toString(); 
 							break;
 						}
 						else if (TAB_LETTERS.contains(symb)) {
-							tss = TabSymbolSet.FRENCH_TAB.toString();
+							tss = TabSymbolSet.FRENCH.toString();
 							break;
 						}			
 					}
@@ -1078,11 +1076,12 @@ public class TabImport {
 									}
 								}
 								// Set rs to RS corresponding to sum rs and nextRs
-								for (RhythmSymbol r : RhythmSymbol.RHYTHM_SYMBOLS) {
-									if (r.getDuration() == RhythmSymbol.getRhythmSymbol(rs).getDuration() +
-										RhythmSymbol.getRhythmSymbol(nextRs).getDuration()) {
+								for (RhythmSymbol r : Symbol.RHYTHM_SYMBOLS.values()) {
+//								for (RhythmSymbol r : RhythmSymbol.RHYTHM_SYMBOLS) {	
+									if (r.getDuration() == Symbol.getRhythmSymbol(rs).getDuration() +
+										Symbol.getRhythmSymbol(nextRs).getDuration()) {
 										// Do not consider coronas/fermate
-										if (!r.getSymbol().equals(RhythmSymbol.CORONA_BREVIS.getSymbol()) 
+										if (!r.getSymbol().equals(Symbol.CORONA_BREVIS.getSymbol()) 
 //											&& !r.getSymbol().equals(RhythmSymbol.FERMATA_DOTTED.getSymbol())
 											) {
 											rs = r.getEncoding();
@@ -1100,7 +1099,7 @@ public class TabImport {
 							}
 							// Start from lowest course
 							String chordOnly = event.substring(1);
-							if (tss.equals(TabSymbolSet.ITALIAN_TAB.toString())) {
+							if (tss.equals(TabSymbolSet.ITALIAN.toString())) {
 								chordOnly = new StringBuilder(chordOnly).reverse().toString();
 							}				
 							char[] chordAsArr = chordOnly.toCharArray();

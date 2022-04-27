@@ -71,9 +71,9 @@ public class Encoding implements Serializable {
 
 	private String piecename; 
 	private String rawEncoding;
+	private String cleanEncoding;
 	private Map<String, String> metadata;
 	private String header;
-	private String cleanEncoding;
 	private TabSymbolSet tabSymbolSet;
 	private List<Event> events;
 	private List<List<String>> listsOfSymbols;
@@ -291,8 +291,10 @@ public class Encoding implements Serializable {
 				currEvent = "";
 			}
 			// Barline: add to events
-			else if (!symbolContainsComment && ConstantMusicalSymbol.isBarline(symbol) ||
-				symbolContainsComment && ConstantMusicalSymbol.isBarline(removeComment(symbol))) {
+			else if (!symbolContainsComment && (Symbol.getConstantMusicalSymbol(symbol) != null && 
+				Symbol.getConstantMusicalSymbol(symbol).isBarline()) ||
+				symbolContainsComment && Symbol.getConstantMusicalSymbol(removeComment(symbol)) != null &&
+				Symbol.getConstantMusicalSymbol(removeComment(symbol)).isBarline()) {
 				// Decorative opening barline: increment system
 				if (firstInSystem && i > 0) {
 					systemCounter++;
@@ -352,7 +354,8 @@ public class Encoding implements Serializable {
 				else if (MensurationSign.getMensurationSign(currSymbol) != null) {
 					mensurationSigns.add(currSymbol);
 				}
-				else if (ConstantMusicalSymbol.isBarline(currSymbol)) {
+				else if (Symbol.getConstantMusicalSymbol(currSymbol) != null && 
+					Symbol.getConstantMusicalSymbol(currSymbol).isBarline()) {
 					barlines.add(currSymbol);
 				}
 			}
@@ -908,8 +911,7 @@ public class Encoding implements Serializable {
 		// one or more chars (.+); followed by not ([^...]) a CMS + SS + SBI; followed by one or more chars
 		List<String> allCMSStr = new ArrayList<>();
 		Symbol.CONSTANT_MUSICAL_SYMBOLS.entrySet().forEach(e -> allCMSStr.add("(" + e.getValue().getEncoding() + ")"));
-//		Symbol.CONSTANT_MUSICAL_SYMBOLS.forEach(s -> allCMSStr.add("(" + s.getEncoding() + ")")); // HIE
-		
+
 		String regexNotCmsSsSbi = ".+[^" + String.join("", allCMSStr) + "]\\./.+";
 		// Finds any CMS succeeded by a space. Matches with cleanEnc if that equals
 		// zero or more chars (.*); followed by a CMS + SS + space; followed by one or more chars (.+)
@@ -1149,7 +1151,6 @@ public class Encoding implements Serializable {
 					}
 					RhythmSymbol combinedRs = null;
 					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
-//					for (RhythmSymbol rs : RhythmSymbol.RHYTHM_SYMBOLS) { // HIE
 						// Do not consider coronas
 						if (rs.getDuration() == totalDur && 
 							!rs.getEncoding().startsWith(RhythmSymbol.CORONA_BREVIS.getEncoding().substring(0, 2))) {
@@ -1217,7 +1218,8 @@ public class Encoding implements Serializable {
 			return MensurationSign.getMensurationSign(event.substring(0, event.indexOf(ss))) != null;
 		}
 		else if (type.equals("barline")) {
-			return ConstantMusicalSymbol.isBarline(event.substring(0, event.indexOf(ss)));
+			return Symbol.getConstantMusicalSymbol(event.substring(0, event.indexOf(ss))) != null &&
+				Symbol.getConstantMusicalSymbol(event.substring(0, event.indexOf(ss))).isBarline();
 		} 
 		else {
 			return false;
@@ -1262,7 +1264,8 @@ public class Encoding implements Serializable {
 			String firstSymbol = 
 				currEvent.getEncoding().substring(0, currEvent.getEncoding().lastIndexOf(ss));
 			int currBar = currEvent.getBar();
-			if (!ConstantMusicalSymbol.isBarline(firstSymbol)) {
+			if (!(Symbol.getConstantMusicalSymbol(firstSymbol) != null && 
+				Symbol.getConstantMusicalSymbol(firstSymbol).isBarline())) {
 				pruned.add(currEvent);
 			}
 			else {
@@ -1426,7 +1429,6 @@ public class Encoding implements Serializable {
 					// Determine the new Rs for pre, and adapt and set it
 					String newRs = "";
 					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
-//					for (RhythmSymbol rs : RhythmSymbol.RHYTHM_SYMBOLS) { // HIE
 						if (rs.getDuration() == durPre) {
 							newRs = rs.getEncoding();
 							break;
@@ -1503,7 +1505,6 @@ public class Encoding implements Serializable {
 				String newRs = "";
 				if (r != null) {
 					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
-//					for (RhythmSymbol rs : RhythmSymbol.RHYTHM_SYMBOLS) { // HIE
 						if (rs.getDuration() == r.getDuration() * factor) {
 							newRs = rs.getEncoding();
 							break;
@@ -1656,10 +1657,14 @@ public class Encoding implements Serializable {
 //				}
 //			}
 
-			boolean startsWithBarline = ConstantMusicalSymbol.isBarline(firstEncSymbol);
-			boolean endsWithBarline = ConstantMusicalSymbol.isBarline(lastEncSymbol);
+
+			boolean startsWithBarline = 
+				Symbol.getConstantMusicalSymbol(firstEncSymbol) != null && 
+				Symbol.getConstantMusicalSymbol(firstEncSymbol).isBarline();
+			boolean endsWithBarline = 
+				Symbol.getConstantMusicalSymbol(lastEncSymbol) != null && 
+				Symbol.getConstantMusicalSymbol(lastEncSymbol).isBarline();
 			if (barlineSegmentInds.get(staffInd).size() > 0) {
-//			if (containsBarLines) {
 				staff.addBarNumbers(barlineSegmentInds.get(staffInd), firstBar, 
 					startsWithUnfinishedBar, startsWithBarline,	endsWithBarline);
 			}
@@ -1926,6 +1931,7 @@ public class Encoding implements Serializable {
 						String[] currFnEventStaffPartSplit;
 						// If the event contains a doubled symbol 
 						if (currFnEventEnc.contains("/")) {
+							System.out.println(currFnEventEnc);
 							// 1. Make currFnEventStaffPart
 							// Remove doubled symbol from currFnEventEnc
 							String toRemove = 
@@ -1935,14 +1941,19 @@ public class Encoding implements Serializable {
 							currFnEventStaffPart = 
 								new Encoding(hdr + "\r\n" + currFnEventEnc + ebi, "", 
 								SYNTAX_CHECKED).visualise(argTss, false, false, true);
+							System.out.println(toRemove);
+							System.out.println(currFnEventEnc);
+							System.out.println(currFnEventStaffPart);
 	
 							// 2. Split currFnEventStaffPart into lines and adapt them
 							currFnEventStaffPartSplit = currFnEventStaffPart.split("\n");
+							System.out.println(Arrays.asList(currFnEventStaffPartSplit));
 							// Get doubled symbol and changeLine for doubled symbol
 							String dbld = 
 								toRemove.substring(toRemove.indexOf("/") + 1, toRemove.indexOf(ss));
 							TabSymbol tsInArgTss = 
-								argTss.getTabSymbolEquivalent(TabSymbol.getTabSymbol(dbld, getTabSymbolSet()));
+								Symbol.getTabSymbolEquivalent(TabSymbol.getTabSymbol(dbld, getTabSymbolSet()),
+								argTss);
 							String fret = tsInArgTss.getSymbol();
 							int course = tsInArgTss.getCourse();
 							int changeLine = -1;
@@ -2183,7 +2194,9 @@ public class Encoding implements Serializable {
 			int currSystem = curr.getSystem();
 			int currBar = curr.getBar();
 			String firstSymbol = e.substring(0, e.indexOf(ss));
-			boolean isBarline = ConstantMusicalSymbol.isBarline(firstSymbol);
+			boolean isBarline = 
+				Symbol.getConstantMusicalSymbol(firstSymbol) != null && 
+				Symbol.getConstantMusicalSymbol(firstSymbol).isBarline();
 			RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(firstSymbol);
 
 			// If event is a TS event with no RS: prepend RS
@@ -2210,7 +2223,8 @@ public class Encoding implements Serializable {
 					String nextE = events.get(i + 1).getEncoding();
 					int nextBar = events.get(i + 1).getBar();
 					boolean nextIsBarline = 
-						ConstantMusicalSymbol.isBarline(nextE.substring(0, nextE.lastIndexOf(ss)));
+						Symbol.getConstantMusicalSymbol(nextE.substring(0, nextE.lastIndexOf(ss))) != null &&
+						Symbol.getConstantMusicalSymbol(nextE.substring(0, nextE.lastIndexOf(ss))).isBarline();
 					if (isBarline && (nextIsBarline && currBar == nextBar)) {
 						// Append first barline to event added last
 						int lastInd = decomposed.size()-1;
@@ -2280,7 +2294,6 @@ public class Encoding implements Serializable {
 				currEvent += s + Symbol.SYMBOL_SEPARATOR;
 				// Add event after each space or barline (i.e., CMS)
 				if (Symbol.CONSTANT_MUSICAL_SYMBOLS.values().contains(Symbol.getConstantMusicalSymbol(s))) {
-//				if (Symbol.CONSTANT_MUSICAL_SYMBOLS.contains(Symbol.getConstantMusicalSymbol(s))) {	// HIE
 					// Special case for barline followed by barline (this happens when a 
 					// full-bar note is tied at its left (see end quis_me_statim): these two bars
 					// must be seen as a single event, so the second barline must be added too
@@ -2289,10 +2302,6 @@ public class Encoding implements Serializable {
 						String nextNextS = symbols[j+2];
 						if (Symbol.CONSTANT_MUSICAL_SYMBOLS.keySet().contains(nextS) &&
 							Symbol.CONSTANT_MUSICAL_SYMBOLS.keySet().contains(nextNextS)) {
-//						if (Symbol.CONSTANT_MUSICAL_SYMBOLS.contains( // HIE
-//							Symbol.getConstantMusicalSymbol(nextS)) &&
-//							Symbol.CONSTANT_MUSICAL_SYMBOLS.contains(
-//							Symbol.getConstantMusicalSymbol(nextNextS))) {
 							currEvent += nextS + Symbol.SYMBOL_SEPARATOR;
 							j++;
 						}
@@ -2414,8 +2423,9 @@ public class Encoding implements Serializable {
 				currEvent = "";
 			}
 			// Barline: add to events
-			else if (!symbolContainsComment && ConstantMusicalSymbol.isBarline(symbol) ||
-				symbolContainsComment && ConstantMusicalSymbol.isBarline(removeComment(symbol))) {
+			else if (true) {
+//			else if (!symbolContainsComment && ConstantMusicalSymbol.isBarline(symbol) ||
+//				symbolContainsComment && ConstantMusicalSymbol.isBarline(removeComment(symbol))) {
 				// Decorative opening barline: increment system
 				if (firstInSystem && i > 0) {
 					systemCounter++;
@@ -2529,8 +2539,9 @@ public class Encoding implements Serializable {
 				currEvent = "";
 			}
 			// Barline
-			else if (!symbolContainsComment && ConstantMusicalSymbol.isBarline(symbol) ||
-				symbolContainsComment && ConstantMusicalSymbol.isBarline(removeComment(symbol))) {
+			else if (true) {
+//			else if (!symbolContainsComment && ConstantMusicalSymbol.isBarline(symbol) ||
+//				symbolContainsComment && ConstantMusicalSymbol.isBarline(removeComment(symbol))) {
 				// Decorative opening barline
 				if (firstInSystem && i > 0) {
 					systemCounter++;

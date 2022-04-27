@@ -50,7 +50,7 @@ public class TablatureTest extends TestCase {
 		encodingTestGetMeterInfo = 
 			new File(root + Paths.getEncodingsPath() + Paths.getTestDir() + "test_get_meter_info.tbp");
 		encodingNewsidler = 
-			new File(root + Paths.getEncodingsPath() + "/tab-int/3vv/" + "newsidler-1544_2-nun_volget.tbp");
+			new File(root + Paths.getEncodingsPath() + "/thesis-int/3vv/" + "newsidler-1544_2-nun_volget.tbp");
 		midiTestpiece = 
 			new File(root + Paths.getMIDIPath() + Paths.getTestDir() + "testpiece.mid");
 	}

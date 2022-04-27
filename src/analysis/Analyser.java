@@ -369,7 +369,7 @@ public class Analyser {
 		List<String> bla = new ArrayList<String>();
 		bla.add("Abondante 1548 - mais mamignone");
 
-		folderName = MEIExport.rootDir + "data/MIDI/tab-int/4vv/"; 
+		folderName = MEIExport.rootDir + "data/MIDI/thesis-int/4vv/"; 
 
 		for (String s : threeVoiceFuguesPieceNames) {
 			getNumberOfVoiceCrossingPairs(folderName, s, 0);

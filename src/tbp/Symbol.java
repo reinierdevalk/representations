@@ -20,7 +20,7 @@ public class Symbol {
 		
 	// II. Musical symbols
 	// 1. Constant musical symbols
-	public static final ConstantMusicalSymbol SPACE = new ConstantMusicalSymbol(">", ">");
+	public static final ConstantMusicalSymbol SPACE = new ConstantMusicalSymbol(">", "-");
 	public static final ConstantMusicalSymbol BARLINE = new ConstantMusicalSymbol(ConstantMusicalSymbol.PIPE, ConstantMusicalSymbol.PIPE);
 	public static final Map<String, ConstantMusicalSymbol> CONSTANT_MUSICAL_SYMBOLS;
 	static {
@@ -80,26 +80,26 @@ public class Symbol {
 			CORONA_BREVIS, CORONA_SEMIBREVIS, RHYTHM_DOT}).forEach(rs -> rss.add(rs));
 		// Dotted (lo-fu)
 		Arrays.asList(new RhythmSymbol[]{LONGA, BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, CORONA_BREVIS, 
-			CORONA_SEMIBREVIS}).forEach(rs -> rss.addAll(rs.makeVariant(true, false, false, 1)));
-		rss.addAll(MINIM.makeVariant(true, false, false, 2));
+			CORONA_SEMIBREVIS}).forEach(rs -> rss.addAll(rs.makeVariant(1, false, false)));
+		rss.addAll(MINIM.makeVariant(2, false, false));
 		// Beamed (sm-sf)
 		Arrays.asList(new RhythmSymbol[]{SEMIMINIM, FUSA, SEMIFUSA}).
-			forEach(rs -> rss.addAll(rs.makeVariant(false, true, false, 0)));
+			forEach(rs -> rss.addAll(rs.makeVariant(0, true, false)));
 		// Dotted and beamed (sm-fu)
 		Arrays.asList(new RhythmSymbol[]{SEMIMINIM, FUSA}).
-			forEach(rs -> rss.addAll(rs.makeVariant(true, true, false, 1)));
+			forEach(rs -> rss.addAll(rs.makeVariant(1, true, false)));
 		// Triplets, basic (br-sf)
 		Arrays.asList(new RhythmSymbol[]{BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, SEMIFUSA}).
-			forEach(rs -> rss.addAll(rs.makeVariant(false, false, true, 0)));
+			forEach(rs -> rss.addAll(rs.makeVariant(0, false, true)));
 		// Triplets, dotted (br-fu)
 		Arrays.asList(new RhythmSymbol[]{BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA}).
-			forEach(rs -> rss.addAll(rs.makeVariant(true, false, true, 1)));
+			forEach(rs -> rss.addAll(rs.makeVariant(1, false, true)));
 		// Triplets, beamed (sm-sf)
 		Arrays.asList(new RhythmSymbol[]{SEMIMINIM, FUSA, SEMIFUSA}).
-			forEach(rs -> rss.addAll(rs.makeVariant(false, true, true, 0)));
+			forEach(rs -> rss.addAll(rs.makeVariant(0, true, true)));
 		// Triplets, dotted and beamed (sm-fu)
 		Arrays.asList(new RhythmSymbol[]{SEMIMINIM, FUSA}).
-			forEach(rs -> rss.addAll(rs.makeVariant(true, true, true, 1)));
+			forEach(rs -> rss.addAll(rs.makeVariant(1, true, true)));
 		RHYTHM_SYMBOLS = new LinkedHashMap<String, RhythmSymbol>();
 		rss.forEach(rs -> RHYTHM_SYMBOLS.put(rs.getEncoding(), rs));
 	}
@@ -114,7 +114,11 @@ public class Symbol {
 	public static final List<TabSymbol> HECKEL_1562 = getTabSymbols(TabSymbolSet.HECKEL_1562);
 	public static final Map<String, Map<String, TabSymbol>> TAB_SYMBOLS;
 	static {
-		for (TabSymbol ts : FRENCH)
+		// RH index finger 
+		for (List<TabSymbol> l : Arrays.asList(FRENCH, ITALIAN, SPANISH, 
+			JUDENKUENIG_1523, NEWSIDLER_1536, OCHSENKUN_1558, HECKEL_1562)) {
+			new ArrayList<>(l).forEach(ts -> l.add(ts.makeVariant(1)));
+		}		
 		Map<String, List<TabSymbol>> tss = new LinkedHashMap<String, List<TabSymbol>>();
 		tss.put(TabSymbolSet.FRENCH.getName(), FRENCH);
 		tss.put(TabSymbolSet.ITALIAN.getName(), ITALIAN);
@@ -130,7 +134,6 @@ public class Symbol {
 			TAB_SYMBOLS.put(e.getKey(), curr);
 		}
 	}
-
 
 	private String encoding;
 	private String symbol;
@@ -156,26 +159,27 @@ public class Symbol {
 	}
 
 
-	// TODO test
+	// TESTED
 	public static ConstantMusicalSymbol getConstantMusicalSymbol(String e) {
 		return !CONSTANT_MUSICAL_SYMBOLS.containsKey(e) ? null : CONSTANT_MUSICAL_SYMBOLS.get(e);
 	}
 
 
-	// TODO test
+	// TESTED
 	public static MensurationSign getMensurationSign(String e) {
 		return !MENSURATION_SIGNS.containsKey(e) ? null : MENSURATION_SIGNS.get(e);
 	}
 
 
-	// TODO test
+	// TESTED
 	public static RhythmSymbol getRhythmSymbol(String e) {
 		return !RHYTHM_SYMBOLS.containsKey(e) ? null : RHYTHM_SYMBOLS.get(e);
 	}
 
 
-	// TODO test
+	// TESTED
 	public static TabSymbol getTabSymbol(String e, TabSymbolSet tss) {
+		System.out.println(tss);
 		String n = tss.getName(); 
 		return !TAB_SYMBOLS.containsKey(n) ? null :
 			(!TAB_SYMBOLS.get(n).containsKey(e) ? null : TAB_SYMBOLS.get(n).get(e));
@@ -183,7 +187,7 @@ public class Symbol {
 
 
 	// TESTED
-	public static List<TabSymbol> getTabSymbols(TabSymbolSet tss, List<Integer> dots) { check makevariants for superfl dots
+	public static List<TabSymbol> getTabSymbols(TabSymbolSet tss) {
 		List<TabSymbol> allTs = new ArrayList<TabSymbol>();
 
 		boolean isGerman = tss.getType().equals("German");
@@ -218,13 +222,6 @@ public class Symbol {
 	}
 
 
-	/**
-	 * Gets the equivalent of the given TabSymbol in the given TabSymbolSet. 
-	 * 
-	 * @param ts
-	 * @param tss
-	 * @return
-	 */
 	// TESTED
 	public static TabSymbol getTabSymbolEquivalent(TabSymbol ts, TabSymbolSet tss) {
 		int c = ts.getCourse();
@@ -240,7 +237,7 @@ public class Symbol {
 			e = c == 6 ? tss.getFretsSixthCourse()[f] :
 				TabSymbolSet.FRETS.get(TabSymbolSet.FRETS_GERMAN)[c - 1][f];
 		}
-		return getTabSymbol(e, tss);
+		return getTabSymbol(e + TabSymbol.FINGERING_DOT_ENCODING.repeat(ts.getFingeringDots()), tss);
 	}
 
 }

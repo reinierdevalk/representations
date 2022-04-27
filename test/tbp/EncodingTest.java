@@ -439,7 +439,7 @@ public class EncodingTest extends TestCase {
 		Encoding encoding = new Encoding(new Encoding(encodingTestpiece).getRawEncoding(), 
 			"", Encoding.METADATA_CHECKED);
 
-		boolean print = true;
+		boolean print = false;
 		if (print) {
 			System.out.println(encoding.getRawEncoding().indexOf("MC\\.")); // 146
 			System.out.println(encoding.getRawEncoding().indexOf("sm*.a6.c4.i2.a1.")); // 205
@@ -894,8 +894,8 @@ public class EncodingTest extends TestCase {
 			expected += s;
 			if (s.equals(Symbol.SYSTEM_BREAK_INDICATOR) ||
 				(!s.equals(Symbol.END_BREAK_INDICATOR) &&
-				ConstantMusicalSymbol.isBarline(s.substring(0, 
-				s.indexOf(Symbol.SYMBOL_SEPARATOR))))) {
+				(Symbol.getConstantMusicalSymbol(s.substring(0, s.indexOf(Symbol.SYMBOL_SEPARATOR))) != null &&
+				Symbol.getConstantMusicalSymbol(s.substring(0, s.indexOf(Symbol.SYMBOL_SEPARATOR))).isBarline()))) {
 				expected += "\r\n"; 
 			}				
 		}
@@ -917,9 +917,9 @@ public class EncodingTest extends TestCase {
 		for (String e : expEvents) {
 			expected += e;
 			if (e.contains(Symbol.SYMBOL_SEPARATOR) && 
-				ConstantMusicalSymbol.isBarline(e.substring(0, 
-				e.indexOf(Symbol.SYMBOL_SEPARATOR))) 
-				|| e.equals(Symbol.SYSTEM_BREAK_INDICATOR)) {
+				(Symbol.getConstantMusicalSymbol(e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))) != null &&
+				Symbol.getConstantMusicalSymbol(e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))).isBarline()) || 
+				e.equals(Symbol.SYSTEM_BREAK_INDICATOR)) {
 				expected += "\r\n";
 			}
 		}
@@ -949,9 +949,9 @@ public class EncodingTest extends TestCase {
 		for (String e : expEvents) {
 			expected += e;
 			if (e.contains(Symbol.SYMBOL_SEPARATOR) && 
-				ConstantMusicalSymbol.isBarline(e.substring(0, 
-				e.indexOf(Symbol.SYMBOL_SEPARATOR))) 
-				|| e.equals(Symbol.SYSTEM_BREAK_INDICATOR)) {
+				(Symbol.getConstantMusicalSymbol(e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))) != null &&
+				Symbol.getConstantMusicalSymbol(e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))).isBarline()) ||
+				e.equals(Symbol.SYSTEM_BREAK_INDICATOR)) {
 				expected += "\r\n";
 			}
 		}
@@ -994,9 +994,9 @@ public class EncodingTest extends TestCase {
 		for (String e : expEvents) {
 			expected += e;
 			if (e.contains(Symbol.SYMBOL_SEPARATOR) && 
-				ConstantMusicalSymbol.isBarline(e.substring(0, 
-				e.indexOf(Symbol.SYMBOL_SEPARATOR))) 
-				|| e.equals(Symbol.SYSTEM_BREAK_INDICATOR)) {
+				(Symbol.getConstantMusicalSymbol(e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))) != null &&
+				Symbol.getConstantMusicalSymbol(e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))).isBarline()) ||	
+				e.equals(Symbol.SYSTEM_BREAK_INDICATOR)) {
 				expected += "\r\n";
 			}
 		}
@@ -1049,7 +1049,7 @@ public class EncodingTest extends TestCase {
 	@Test
 	public void testSystemBarNumbers() {
 		Encoding encoding1 = new Encoding(encodingTestpiece);
-		Encoding encoding2 = new Encoding(new File("F:/research/data/annotated/encodings/tab-int/3vv/newsidler-1536_7-disant_adiu.tbp"));
+		Encoding encoding2 = new Encoding(new File("F:/research/data/annotated/encodings/thesis-int/3vv/newsidler-1536_7-disant_adiu.tbp"));
 
 		List<List<Integer>> expected = new ArrayList<>();
 		// encoding1

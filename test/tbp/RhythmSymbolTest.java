@@ -47,15 +47,15 @@ public class RhythmSymbolTest {
 		});
 
 		List<RhythmSymbol> actual = new ArrayList<>();
-		actual.addAll(Symbol.SEMIBREVIS.makeVariant(true, false, false, 1));
-		actual.addAll(Symbol.MINIM.makeVariant(true, false,  false, 2));
-		actual.addAll(Symbol.SEMIMINIM.makeVariant(false, true, false, 0));
-		actual.addAll(Symbol.FUSA.makeVariant(true, true, false, 1));
-		actual.addAll(Symbol.SEMIBREVIS.makeVariant(false, false, true, 0));
-		actual.addAll(Symbol.MINIM.makeVariant(true, false, true, 1));
-		actual.addAll(Symbol.SEMIMINIM.makeVariant(false, true, true, 0));
-		actual.addAll(Symbol.FUSA.makeVariant(true, true, true, 1));
-		actual.addAll(new RhythmSymbol("sb*", "H", 72).makeVariant(false, false, true, 1));
+		actual.addAll(Symbol.SEMIBREVIS.makeVariant(1, false, false));
+		actual.addAll(Symbol.MINIM.makeVariant(2, false,  false));
+		actual.addAll(Symbol.SEMIMINIM.makeVariant(0, true, false));
+		actual.addAll(Symbol.FUSA.makeVariant(1, true, false));
+		actual.addAll(Symbol.SEMIBREVIS.makeVariant(0, false, true));
+		actual.addAll(Symbol.MINIM.makeVariant(1, false, true));
+		actual.addAll(Symbol.SEMIMINIM.makeVariant(0, true, true));
+		actual.addAll(Symbol.FUSA.makeVariant(1, true, true));
+		actual.addAll(new RhythmSymbol("sb*", "H", 72).makeVariant(0, false, true));
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
