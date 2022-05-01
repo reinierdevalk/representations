@@ -148,7 +148,7 @@ public class Staff {
 			ConstantMusicalSymbol cms = ConstantMusicalSymbol.getConstantMusicalSymbol(encoding);
 			TabSymbol ts = 
 				tssName == null ? null :
-				TabSymbol.getTabSymbol(encoding, TabSymbolSet.getTabSymbolSet(tssName));
+				TabSymbol.getTabSymbol(encoding, TabSymbolSet.getTabSymbolSet(tssName, null));
 			RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(encoding);
 			if (cms != null) {
 				addConstantMusicalSymbol(cms, segment);

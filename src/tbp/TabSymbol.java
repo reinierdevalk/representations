@@ -71,11 +71,16 @@ public class TabSymbol extends Symbol implements Serializable {
 			return fretsSixthCourse; 
 		}
 
-		public static TabSymbolSet getTabSymbolSet(String s) {
-			for (TabSymbolSet t : TabSymbolSet.values()) { 
-				if (t.getName().equals(s)) {
-					return t;
+		public static TabSymbolSet getTabSymbolSet(String n, String t) {
+			if (n != null) {
+				for (TabSymbolSet tss : TabSymbolSet.values()) { 
+					if (tss.getName().equals(n)) {
+						return tss;
+					}
 				}
+			}
+			if (t != null) {
+				return t.equals("German") ? TabSymbolSet.NEWSIDLER_1536 : getTabSymbolSet(t, null);
 			}
 			return null;
 		}

@@ -18,7 +18,7 @@ import de.uos.fmt.musitech.data.score.ScorePitch;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.utility.math.Rational;
 import junit.framework.TestCase;
-import paths.Paths;
+import path.Path;
 import representations.Tablature.Tuning;
 import tbp.Encoding;
 import tbp.RhythmSymbol;
@@ -44,15 +44,15 @@ public class TablatureTest extends TestCase {
 
 	protected void setUp() throws Exception {
 		super.setUp();
-		String root = Paths.getRootPath() + Paths.getDataDir(); 
+		String root = Path.getRootPath() + Path.getDataDir(); 
 		encodingTestpiece = 
-			new File(root + Paths.getEncodingsPath() + Paths.getTestDir() + "testpiece.tbp");
+			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "testpiece.tbp");
 		encodingTestGetMeterInfo = 
-			new File(root + Paths.getEncodingsPath() + Paths.getTestDir() + "test_get_meter_info.tbp");
+			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "test_get_meter_info.tbp");
 		encodingNewsidler = 
-			new File(root + Paths.getEncodingsPath() + "/thesis-int/3vv/" + "newsidler-1544_2-nun_volget.tbp");
+			new File(root + Path.getEncodingsPath() + "/thesis-int/3vv/" + "newsidler-1544_2-nun_volget.tbp");
 		midiTestpiece = 
-			new File(root + Paths.getMIDIPath() + Paths.getTestDir() + "testpiece.mid");
+			new File(root + Path.getMIDIPath() + Path.getTestDir() + "testpiece.mid");
 	}
 
 

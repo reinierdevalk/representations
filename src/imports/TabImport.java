@@ -731,7 +731,7 @@ public class TabImport {
 //			System.out.println("symbol = " + s);
 			MensurationSign ms = MensurationSign.getMensurationSign(s);
 			RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(s);
-			TabSymbol ts = TabSymbol.getTabSymbol(s, TabSymbolSet.getTabSymbolSet(tss));
+			TabSymbol ts = TabSymbol.getTabSymbol(s, TabSymbolSet.getTabSymbolSet(tss, null));
 			ConstantMusicalSymbol cms = Symbol.getConstantMusicalSymbol(s);
 			ConstantMusicalSymbol prevCms = null;
 			if (i > 0) {

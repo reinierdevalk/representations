@@ -15,7 +15,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import junit.framework.TestCase;
-import paths.Paths;
+import path.Path;
 import representations.Tablature;
 import tbp.Event;
 import tbp.Encoding;
@@ -32,9 +32,9 @@ public class EncodingTest extends TestCase {
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
-		String root = Paths.getRootPath() + Paths.getDataDir(); 
+		String root = Path.getRootPath() + Path.getDataDir(); 
 		encodingTestpiece = 
-			new File(root + Paths.getEncodingsPath() + Paths.getTestDir() + "testpiece.tbp");
+			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "testpiece.tbp");
 		miniRawEncoding = "{}{}{}{French}{}{}{}MC\\.>.sb.>.|.mi.a3.a2.a1.>.b1.>.|./MO.M34.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./|.MC\\.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//";
 	}
 

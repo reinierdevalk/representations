@@ -10,7 +10,7 @@ import org.junit.Before;
 
 import de.uos.fmt.musitech.utility.math.Rational;
 import junit.framework.TestCase;
-import paths.Paths;
+import path.Path;
 import representations.Tablature;
 import structure.Timeline;
 import tbp.Encoding;
@@ -24,13 +24,13 @@ public class TimelineTest extends TestCase {
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
-		String root = Paths.getRootPath() + Paths.getDataDir(); 
+		String root = Path.getRootPath() + Path.getDataDir(); 
 		encodingTestpiece = 
-			new File(root + Paths.getEncodingsPath() + Paths.getTestDir() + "testpiece.tbp");
+			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "testpiece.tbp");
 		encodingTestGetMeterInfo = 
-			new File(root + Paths.getEncodingsPath() + Paths.getTestDir() + "test_get_meter_info.tbp");
+			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "test_get_meter_info.tbp");
 		midiTestpiece = 
-			new File(root + Paths.getMIDIPath() + Paths.getTestDir() + "testpiece.mid");
+			new File(root + Path.getMIDIPath() + Path.getTestDir() + "testpiece.mid");
 	}
 
 

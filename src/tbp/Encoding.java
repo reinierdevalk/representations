@@ -210,7 +210,7 @@ public class Encoding implements Serializable {
 
 	// TESTED
 	TabSymbolSet makeTabSymbolSet() {
-		return TabSymbolSet.getTabSymbolSet(getMetadata().get(METADATA_TAGS[TABSYMBOLSET_IND]));
+		return TabSymbolSet.getTabSymbolSet(getMetadata().get(METADATA_TAGS[TABSYMBOLSET_IND]), null);
 	}
 
 

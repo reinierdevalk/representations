@@ -16,7 +16,6 @@ import imports.MIDIImport;
 import representations.Tablature;
 import representations.Transcription;
 import structure.Timeline;
-import tbp.ConstantMusicalSymbol;
 import tbp.Encoding;
 import tbp.Event;
 import tbp.MensurationSign;

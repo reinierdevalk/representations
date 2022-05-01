@@ -179,7 +179,6 @@ public class Symbol {
 
 	// TESTED
 	public static TabSymbol getTabSymbol(String e, TabSymbolSet tss) {
-		System.out.println(tss);
 		String n = tss.getName(); 
 		return !TAB_SYMBOLS.containsKey(n) ? null :
 			(!TAB_SYMBOLS.get(n).containsKey(e) ? null : TAB_SYMBOLS.get(n).get(e));
