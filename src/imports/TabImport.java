@@ -845,8 +845,8 @@ public class TabImport {
 //		String [] tags = getMetaDataTags();
 		for (int i = 0; i < tags.length; i++) {
 			String currTag = tags[i];
-			metadataStub += Symbol.OPEN_METADATA_BRACKET + currTag + ": " +  metadata[i] +
-				Symbol.CLOSE_METADATA_BRACKET + "\r\n";
+			metadataStub += Encoding.OPEN_METADATA_BRACKET + currTag + ": " +  metadata[i] +
+				Encoding.CLOSE_METADATA_BRACKET + "\r\n";
 			if (i == 2 || i == tags.length - 1) {
 				metadataStub += "\r\n";
 			}

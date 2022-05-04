@@ -41,6 +41,8 @@ public class Encoding implements Serializable {
 		METER_INFO_TAG,
 		"DIMINUTION"
 	};
+	public static final String OPEN_METADATA_BRACKET = "{";
+	public static final String CLOSE_METADATA_BRACKET = "}";
 
 	// For metadata
 	public static final int AUTHOR_IND = 0;
@@ -142,8 +144,8 @@ public class Encoding implements Serializable {
 		String cleanEnc = "";
 		String rawEnc = getRawEncoding();
 
-		String omb = Symbol.OPEN_METADATA_BRACKET;
-		String cmb = Symbol.CLOSE_METADATA_BRACKET;
+		String omb = OPEN_METADATA_BRACKET;
+		String cmb = CLOSE_METADATA_BRACKET;
 
 		// Remove all carriage returns and line breaks; remove leading and trailing whitespace
 		cleanEnc = rawEnc.replaceAll("\r", "").replaceAll("\n", "").trim();
@@ -173,8 +175,8 @@ public class Encoding implements Serializable {
 		// NB Content also contains any comments and footnotes following the last metadata tag 
 		List<String> content = new ArrayList<String>();
 		for (int i = 0; i < rawEncoding.length(); i++) {
-			if (Character.toString(rawEncoding.charAt(i)).equals(Symbol.OPEN_METADATA_BRACKET)) {
-				int closeInfoInd = rawEncoding.indexOf(Symbol.CLOSE_METADATA_BRACKET, i);
+			if (Character.toString(rawEncoding.charAt(i)).equals(OPEN_METADATA_BRACKET)) {
+				int closeInfoInd = rawEncoding.indexOf(CLOSE_METADATA_BRACKET, i);
 				content.add(rawEncoding.substring(i + 1, closeInfoInd));
 				i = closeInfoInd;
 			}
@@ -196,8 +198,8 @@ public class Encoding implements Serializable {
 	String makeHeader() {
 		List<String> elements = new ArrayList<>();
 		getMetadata().entrySet().forEach(e -> elements.add(
-			Symbol.OPEN_METADATA_BRACKET + e.getKey() + ": " + e.getValue() +
-			Symbol.CLOSE_METADATA_BRACKET
+			OPEN_METADATA_BRACKET + e.getKey() + ": " + e.getValue() +
+			CLOSE_METADATA_BRACKET
 		));
 		return String.join("\r\n", elements);
 	}
@@ -222,8 +224,8 @@ public class Encoding implements Serializable {
 	// TESTED
 	List<Event> makeEvents() {
 		String ss = Symbol.SYMBOL_SEPARATOR;
-		String omb = Symbol.OPEN_METADATA_BRACKET;
-		String cmb = Symbol.CLOSE_METADATA_BRACKET;
+		String omb = OPEN_METADATA_BRACKET;
+		String cmb = CLOSE_METADATA_BRACKET;
 		String sp = Symbol.SPACE.getEncoding();
 		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
 		String ebi = Symbol.END_BREAK_INDICATOR;
@@ -593,8 +595,8 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED
 	public static boolean checkForMetadataErrors(String rawEncoding) {		
-		String oib = Symbol.OPEN_METADATA_BRACKET;
-		String cib = Symbol.CLOSE_METADATA_BRACKET;
+		String oib = OPEN_METADATA_BRACKET;
+		String cib = CLOSE_METADATA_BRACKET;
 
 		// Check for missing tags (list contains -1)or wrongly ordered tags (list is not sorted)
 		List<Integer> inds = new ArrayList<Integer>();
@@ -682,8 +684,8 @@ public class Encoding implements Serializable {
 			for (int j = startInd; j < rawEnc.length(); j++) {
 				String s = rawEnc.substring(j, j + 1); 
 				// Skip comments
-				if (s.equals(Symbol.OPEN_METADATA_BRACKET)) {
-					j = rawEnc.indexOf(Symbol.CLOSE_METADATA_BRACKET, j);
+				if (s.equals(OPEN_METADATA_BRACKET)) {
+					j = rawEnc.indexOf(CLOSE_METADATA_BRACKET, j);
 				}
 				else if (s.equals(currentChar)) {
 					indsAligned[j] = i;
@@ -1236,8 +1238,8 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED
 	public static String removeComment(String s) {
-		String omb = Symbol.OPEN_METADATA_BRACKET;
-		String cmb = Symbol.CLOSE_METADATA_BRACKET;
+		String omb = OPEN_METADATA_BRACKET;
+		String cmb = CLOSE_METADATA_BRACKET;
 		if (!(s.contains(omb) && s.contains(cmb))) {
 			return s;
 		}
@@ -1332,7 +1334,7 @@ public class Encoding implements Serializable {
 		int startInd = 
 			header.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length();
 		String origMeterInfo = header.substring(startInd, 
-			header.indexOf(Symbol.CLOSE_METADATA_BRACKET, startInd));
+			header.indexOf(CLOSE_METADATA_BRACKET, startInd));
 		List<Integer[]> copyOfMeterInfo = new ArrayList<>();
 		for (Integer[] in : meterInfo) {
 			copyOfMeterInfo.add(Arrays.copyOf(in, in.length));
@@ -1476,7 +1478,7 @@ public class Encoding implements Serializable {
 		int startInd = 
 			header.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length();
 		String origMeterInfo = header.substring(startInd, 
-			header.indexOf(Symbol.CLOSE_METADATA_BRACKET, startInd));
+			header.indexOf(CLOSE_METADATA_BRACKET, startInd));
 		List<Integer[]> copyOfMeterInfo = new ArrayList<>();
 		String stretchedMeterInfo = "";
 		for (int i = 0; i < meterInfo.size(); i++) {
@@ -2353,8 +2355,8 @@ public class Encoding implements Serializable {
 
 	private List<String[]> makeEventsOLD() {
 		String ss = Symbol.SYMBOL_SEPARATOR;
-		String omb = Symbol.OPEN_METADATA_BRACKET;
-		String cmb = Symbol.CLOSE_METADATA_BRACKET;
+		String omb = OPEN_METADATA_BRACKET;
+		String cmb = CLOSE_METADATA_BRACKET;
 		String sp = Symbol.SPACE.getEncoding();
 		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
 		String ebi = Symbol.END_BREAK_INDICATOR;
@@ -2460,8 +2462,8 @@ public class Encoding implements Serializable {
 
 	private List<List<String[]>> makeEventsOLDEST() {
 		String ss = Symbol.SYMBOL_SEPARATOR;
-		String omb = Symbol.OPEN_METADATA_BRACKET;
-		String cmb = Symbol.CLOSE_METADATA_BRACKET;
+		String omb = OPEN_METADATA_BRACKET;
+		String cmb = CLOSE_METADATA_BRACKET;
 		String sp = Symbol.SPACE.getEncoding();
 		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
 		String ebi = Symbol.END_BREAK_INDICATOR;
@@ -3065,8 +3067,8 @@ public class Encoding implements Serializable {
 	 * </ul>
 	 */
 	private String[] splitHeaderAndEncodingOLD() {
-		String omb = Symbol.OPEN_METADATA_BRACKET;
-		String cmb = Symbol.CLOSE_METADATA_BRACKET;
+		String omb = OPEN_METADATA_BRACKET;
+		String cmb = CLOSE_METADATA_BRACKET;
 		// Separate header and encoding
 		String raw = getRawEncoding();
 		int endHeader = raw.indexOf(cmb, raw.indexOf(METADATA_TAGS[METADATA_TAGS.length-1]));		

@@ -6,9 +6,9 @@ import java.awt.Font;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -47,6 +47,9 @@ public class Viewer extends JFrame{
 	private static final Integer[] FRAME_DIMS = new Integer[]{717, 672};
 	private static final Integer[] PANEL_DIMS = new Integer[]{586, 413};
 	private static final Font FONT = new Font("Courier New", Font.PLAIN, 12);
+	private static final String NAME = "TabViewer";
+	private static final String EXTENSION = ".tab";
+	private static final String[] TITLE = new String[]{"untitled", Encoding.EXTENSION, " - " + NAME};
 
 	private Highlighter highlighter;
 	private JLabel pieceLabel;
@@ -59,14 +62,15 @@ public class Viewer extends JFrame{
 	private JPanel encodingPanel;
 	private JMenuBar encodingMenuBar;
 	private JFileChooser fileChooser;
-	
+	private File file;
+
 	private JTextArea tabTextArea;
 	private JPanel tabPanel;
 	private JMenuBar tabMenuBar;
 
 
 	public static void main(String[] args) {
-		new Viewer(args.length == 0 ? null : args[0], true, "");
+		new Viewer(null, "", true);
 	}
 
 
@@ -74,13 +78,13 @@ public class Viewer extends JFrame{
 	//
 	//  C O N S T R U C T O R S
 	//
-	public Viewer(String encPath, boolean encodingFrame, String content) {
+	public Viewer(File file, String content, boolean encodingFrame) {
 		super();
-		init(encPath, encodingFrame, content);
+		init(file, content, encodingFrame);
 	}
 
 
-	private void init(String encPath, boolean encodingFrame, String content) {
+	private void init(File file, String content, boolean encodingFrame) {
 		if (encodingFrame) {
 			setHighlighter();
 			setPieceLabel();
@@ -89,23 +93,24 @@ public class Viewer extends JFrame{
 			setLowerErrorLabel();
 			setEncodingTextArea();
 			setRhythmSymbolsCheckBox();
-			setViewButton(encPath);
+			setViewButton();
 			//
-			setEncodingPanel(encPath);
-			setEncodingMenuBar(encPath);
-			setFileChooser();
+			setEncodingPanel();
+			setEncodingMenuBar();
 		}
 		else {
 			setTabTextArea(content);
 			//
 			setTabPanel();
-			setTabMenuBar(encPath);
+			setTabMenuBar();
 		}
 		setJMenuBar(encodingFrame ? getEncodingMenuBar() : getTabMenuBar());
 		setContentPane(encodingFrame ? getEncodingPanel() : getTabPanel());
+		setFileChooser();
+		setFile(file);
 		setSize(FRAME_DIMS[0], FRAME_DIMS[1]);		
 		setVisible(true);
-		setTitle(encodingFrame ? ".tbp" : ".tab");
+		setTitle(encodingFrame ? TITLE[0] + TITLE[1] + TITLE[2] : file.getName() + TITLE[2]);
 		setDefaultCloseOperation(encodingFrame ? JFrame.EXIT_ON_CLOSE : JFrame.HIDE_ON_CLOSE);
 	}
 
@@ -181,32 +186,32 @@ public class Viewer extends JFrame{
 
 	private void setRhythmSymbolsCheckBox() {
 		JCheckBox cb = new JCheckBox();
-		cb.setBounds(new Rectangle(15, 559, 211, 16));
+		cb.setBounds(new Rectangle(15, 559, 261, 16));
 //		cb.setActionCommand("Show all rhythm symbols");
 		cb.setText("Do not show repeated rhythm symbols");
 		rhythmSymbolsCheckBox = cb;
 	}
 
 
-	private void setViewButton(String encPath) {
+	private void setViewButton() {
 		JButton b = new JButton();
 		b.setBounds(new Rectangle(600, 559, 91, 31));
 		b.setText("View");
 		b.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				viewButtonAction(getEncodingTextArea().getText(), encPath);
+				viewButtonAction();
 			}
 		});
 		viewButton = b;
 	}
 
 
-	private void setEncodingPanel(String encPath) {
-		encodingPanel = makePanel(encPath, true);
+	private void setEncodingPanel() {
+		encodingPanel = makePanel(true);
 	}
 
 
-	private JPanel makePanel(String encPath, boolean encodingFrame) {
+	private JPanel makePanel(boolean encodingFrame) {
 		JPanel p = new JPanel();
 		p.setLayout(null);
 		p.setSize(new Dimension(PANEL_DIMS[0], PANEL_DIMS[1]));
@@ -245,41 +250,92 @@ public class Viewer extends JFrame{
 	}
 
 
-	private void setEncodingMenuBar(String encPath) {
-		encodingMenuBar = makeMenuBar(encPath, true);
+	private void setEncodingMenuBar() {
+		encodingMenuBar = makeMenuBar(true);
 	}
 
 
-	private JMenuBar makeMenuBar(String encPath, boolean encodingFrame) {
+	private JMenuBar makeMenuBar(boolean encodingFrame) {
 		JMenuBar mb = new JMenuBar();
-		JTextArea ta = encodingFrame ? getEncodingTextArea() : getTabTextArea();
+//		JTextArea ta = encodingFrame ? getEncodingTextArea() : getTabTextArea();
 
 		JMenu m = new JMenu("File");
 		mb.add(m);
 		if (encodingFrame) {
+			JMenuItem newMenuItem = new JMenuItem("New");
+			newMenuItem.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					newFileAction();
+				}
+			});
+			m.add(newMenuItem);
 			JMenuItem openMenuItem = new JMenuItem("Open");
 			openMenuItem.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					openFileAction(encPath);
+					openFileAction();
 				}
 			});
 			m.add(openMenuItem);
+			JMenuItem saveMenuItem = new JMenuItem("Save");
+			saveMenuItem.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					saveFileAction(encodingFrame ? Encoding.EXTENSION : EXTENSION);
+				}
+			});
+			m.add(saveMenuItem);
+			
 		}
-		JMenuItem saveMenuItem = new JMenuItem("Save");
-		saveMenuItem.addActionListener(new ActionListener() {
+		JMenuItem saveAsMenuItem = new JMenuItem("Save as");
+		saveAsMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				saveFileAction(ta.getText(), encPath);
+				saveAsFileAction(/*ta.getText(),*/ encodingFrame ? Encoding.EXTENSION : EXTENSION);
 			}
 		});
-		m.add(saveMenuItem);
+		m.add(saveAsMenuItem);
+		
+		JMenu sm = new JMenu("Import");
+		JMenuItem asciiImportSubmenuItem = new JMenuItem("ASCII tab");
+		asciiImportSubmenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				importFileAction();
+			}
+		});
+		sm.add(asciiImportSubmenuItem);
+		JMenuItem tabCodeSubmenuItem = new JMenuItem("TabCode");
+		tabCodeSubmenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				importFileAction();
+			}
+		});
+		sm.add(tabCodeSubmenuItem);
+		m.add(sm);
+		
+		sm = new JMenu("Export");
+		JMenuItem asciiSubmenuItem = new JMenuItem("ASCII tab");
+		asciiSubmenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				exportFileAction();
+			}
+		});
+		sm.add(asciiSubmenuItem);
+		JMenuItem tabMEISubmenuItem = new JMenuItem("MEI tab");
+		tabMEISubmenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				exportFileAction();
+			}
+		});
+		sm.add(tabMEISubmenuItem);
+		m.add(sm);
+		
 		//
 		m = new JMenu("Edit");
-		if (!encodingFrame) {
+		if (encodingFrame) {
 			mb.add(m);
 			JMenuItem selectAllMenuItem = new JMenuItem("Select all");
 			selectAllMenuItem.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					ta.selectAll();
+					getEncodingTextArea().requestFocus();
+					getEncodingTextArea().selectAll();
 				}
 			});
 			m.add(selectAllMenuItem);
@@ -292,9 +348,12 @@ public class Viewer extends JFrame{
 	private void setFileChooser() {
 		JFileChooser fc = new JFileChooser();
 		fc.setCurrentDirectory(new File(Path.ROOT_PATH_USER + Path.ENCODINGS_PATH));
-		fc.setFileFilter(new FileNameExtensionFilter(null, 
-			Encoding.EXTENSION.substring(Encoding.EXTENSION.indexOf(".") + 1)));
 		fileChooser = fc;
+	}
+
+
+	private void setFile(File f) {
+		file = f;
 	}
 
 
@@ -304,12 +363,12 @@ public class Viewer extends JFrame{
 
 
 	private void setTabPanel() {
-		tabPanel = makePanel("", false);
+		tabPanel = makePanel(false);
 	}
 
 
-	private void setTabMenuBar(String encPath) {
-		tabMenuBar = makeMenuBar(encPath, false);
+	private void setTabMenuBar() {
+		tabMenuBar = makeMenuBar(false);
 	}
 
 
@@ -373,6 +432,11 @@ public class Viewer extends JFrame{
 	}
 
 
+	private File getFile() {
+		return file;
+	}
+
+
 	private JTextArea getTabTextArea() {
 		return tabTextArea;
 	}
@@ -392,40 +456,56 @@ public class Viewer extends JFrame{
 	//
 	//  I N S T A N C E  M E T H O D S
 	//
-	/**
-	 * Loads the content of a file into <code>encodingArea</code>. 
-	 * 
-	 * This is the action performed when clicking File > Open from the EncodingViewer menu.
-	 * 
-	 * @param encPath The path from which to open the file.
-	 */
-	private void openFileAction(String encPath) {
-		File encFile = null;
-		int returnValue = getFileChooser().showOpenDialog(this);
-		if (returnValue == JFileChooser.APPROVE_OPTION) {
+	private void newFileAction() {
+		setTitle(TITLE[0] + TITLE[1] + TITLE[2]);
+		setFile(null);
+		String s = "";
+		for (String t : Encoding.METADATA_TAGS) {
+			s += Encoding.OPEN_METADATA_BRACKET + t + ":" + Encoding.CLOSE_METADATA_BRACKET + "\r\n";
+		}
+		s += Symbol.END_BREAK_INDICATOR;
+		getEncodingTextArea().setText(s);
+	}
+
+
+	private void openFileAction() {
+		getFileChooser().setDialogType(JFileChooser.OPEN_DIALOG);
+		// Set file type filter
+		getFileChooser().setFileFilter(new FileNameExtensionFilter("tab+ (.tbp)", 
+			Encoding.EXTENSION.substring(1)));
+//		int returnValue = getFileChooser().showOpenDialog(this);
+		if (getFileChooser().showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+			File f = null;
 			try {
-				encFile = getFileChooser().getSelectedFile();
+//				getFileChooser().setDialogType(JFileChooser.OPEN_DIALOG);
+				System.out.println(Encoding.EXTENSION.substring(1));
+				System.out.println("jeeee");
+
+				f = getFileChooser().getSelectedFile();
 				BufferedReader br = new BufferedReader(new FileReader(getFileChooser().getSelectedFile()));						
-			} catch (IOException ieo) {
+			} catch (IOException e) {
 				// 11:11
 				// https://www.youtube.com/watch?v=Z8p_BtqPk78
-				
+				e.printStackTrace();
 			}
-				
+			setFile(f);
+			setTitle(f.getName() + " - " + NAME);
+			getPieceLabel().setText("TODO");
+//			fileName = f.getName();
+//			String rawEnc = ToolBox.readTextFile(encFile);
+			String rawEncoding = "";
+			try {
+				rawEncoding = ToolBox.readTextFile(f);
+				rawEncoding = new String(Files.readAllBytes(Paths.get(f.getAbsolutePath())));
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+			getEncodingTextArea().setText(rawEncoding);
 		}
-		getPieceLabel().setText(encFile.getName());
-//		String rawEnc = ToolBox.readTextFile(encFile);
-		String rawEncoding = "";
-		try {
-			rawEncoding = ToolBox.readTextFile(encFile);
-			rawEncoding = new String(Files.readAllBytes(Paths.get(encFile.getAbsolutePath())));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		getEncodingTextArea().setText(rawEncoding);
 
 		boolean doThis = false;
 		if (doThis) {
+			String encPath = null; // was method arg
 			if (encPath == null) {
 				String prefix = "F:/research/data/annotated/encodings/";
 				encPath = prefix;
@@ -497,14 +577,11 @@ public class Viewer extends JFrame{
 //				encPath = "F:/research/data/annotated/josquintab/tab/" + "4465_33-34_memor_esto-2XXX.tbp";
 			}
 		
-		
-			encFile = new File(encPath);
-//			File encFile = new File(encPath);
+			File encFile = new File(encPath);
 //			setFile(encFile);
 		
 			getPieceLabel().setText(encFile.getName());
-			rawEncoding = "";
-//			String rawEncoding = "";
+			String rawEncoding = "";
 			try {
 				rawEncoding = new String(Files.readAllBytes(Paths.get(encFile.getAbsolutePath())));
 			} catch (IOException e1) {
@@ -515,42 +592,104 @@ public class Viewer extends JFrame{
 	}
 
 
-	/**
-	 * Saves the encoding in the <code>encodingArea</code> in a file.
-	 * 
-	 * This is the action performed when clicking File > Save from the EncodingViewer and 
-	 * TabViewer menu.
-	 * 
-	 * @param enc The encoding
-	 * @param encPath The path to save the encoding to.
-	 * 
-	 */
-	private void saveFileAction(String enc, String encPath) {
-		// Handle any returns added to encoding (which will be "\n" and not "\r\n") by 
-		// replacing them with "\r\n"
-		// 1. List all indices of the \ns not preceded by \rs
-		List<Integer> indicesOfLineBreaks = new ArrayList<Integer>(); 
-		for (int i = 0; i < enc.length(); i++) {
-			String currentChar = enc.substring(i, i + 1);
-			if (currentChar.equals("\n")) {
-				// NB: previousChar always exists as the char at index 0 in encoding will
-				// never be a \n
-				String previousChar = enc.substring(i - 1, i);	
-				if (!previousChar.equals("\r")) {
-					indicesOfLineBreaks.add(i);
+	private void saveFileAction(String extension) {
+		String content = 
+			extension.equals(Encoding.EXTENSION) ? getEncodingTextArea().getText() : 
+			getTabTextArea().getText();
+		// New file: treat as Save As
+		if (getFile() == null) {
+			saveAsFileAction(extension);
+		}
+		// Existing file
+		else {
+			ToolBox.storeTextFile(content, getFile());
+		}
+	}
+
+
+	private void saveAsFileAction(String extension) {
+		String content = 
+			extension.equals(Encoding.EXTENSION) ? getEncodingTextArea().getText() : 
+			getTabTextArea().getText();
+
+		getFileChooser().setDialogType(JFileChooser.SAVE_DIALOG);
+		// Set file type filter and suggested file name 
+		if (extension.equals(Encoding.EXTENSION)) {
+			getFileChooser().setFileFilter(new FileNameExtensionFilter("tab+ (.tbp)", extension.substring(1)));
+			getFileChooser().setSelectedFile(getFile() == null ? new File("untitled" + extension): getFile());
+		}
+		else {
+			getFileChooser().setFileFilter(new FileNameExtensionFilter("ASCII (.tab)", extension.substring(1)));			
+			getFileChooser().setSelectedFile(new File(getFile().getAbsolutePath().replace(Encoding.EXTENSION, extension)));
+		}
+		// https://stackoverflow.com/questions/17010647/set-default-saving-extension-with-jfilechooser
+		if (getFileChooser().showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+			File f = null;
+//			String extension = encodingFrame ? Encoding.EXTENSION.substring(1) : ".tab";
+//			try {
+			
+//				getFileChooser().setDialogType(JFileChooser.SAVE_DIALOG);
+//				getFileChooser().setFileFilter(new FileNameExtensionFilter(null, 
+//					Encoding.EXTENSION.substring(1)));
+				
+				
+				f = getFileChooser().getSelectedFile();
+				System.out.println(f);
+//				System.out.println(f);
+//				System.out.println(extension);
+//				BufferedReader br = new BufferedReader(new FileReader(getFileChooser().getSelectedFile()));
+//				BufferedReader br = new BufferedReader(new FileReader(new File("")));
+
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+				
+			if (getFile() == null) {
+				setFile(f);
+				setTitle(f.getName());
+				System.out.println("rrr");
+				System.out.println(file);
+			}
+
+			// Handle any returns added to encoding (which will be "\n" and not "\r\n") by 
+			// replacing them with "\r\n"
+			// 1. List all indices of the \ns not preceded by \rs
+			List<Integer> indicesOfLineBreaks = new ArrayList<Integer>(); 
+			for (int i = 0; i < content.length(); i++) {
+				String currentChar = content.substring(i, i + 1);
+				if (currentChar.equals("\n")) {
+					// NB: previousChar always exists as the char at index 0 in encoding will
+					// never be a \n
+					String previousChar = content.substring(i - 1, i);	
+					if (!previousChar.equals("\r")) {
+						indicesOfLineBreaks.add(i);
+					}
 				}
 			}
-		}  	
-		// 2. Replace all \ns not preceded by \rs in the encoding by \n\rs and store the file
-		for (int i = indicesOfLineBreaks.size() - 1; i >= 0; i--) {
-			int currentIndex = indicesOfLineBreaks.get(i);
-			enc = enc.substring(0, currentIndex) + "\r" + enc.substring(currentIndex);
+			// 2. Replace all \ns not preceded by \rs in the encoding by \n\rs and store the file
+			for (int i = indicesOfLineBreaks.size() - 1; i >= 0; i--) {
+				int currentIndex = indicesOfLineBreaks.get(i);
+				content = content.substring(0, currentIndex) + "\r" + content.substring(currentIndex);
+			}
+//			try {
+			
+			ToolBox.storeTextFile(content, f);
+//				Files.write(Paths.get("C:/Users/Reinier/Desktop/test_save" + extension), content.getBytes());
+//				Files.write(Paths.get(encPath), enc.getBytes());
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
 		}
-		try {
-			Files.write(Paths.get(encPath), enc.getBytes());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	}
+
+
+	private void importFileAction() {
+		System.out.println("click import");
+	}
+
+
+	private void exportFileAction() {
+		System.out.println("click export");
 	}
 
 
@@ -562,13 +701,14 @@ public class Viewer extends JFrame{
 	 * This is the action performed when clicking the View button in the EncodingViewer.
 	 * 
 	 * @param rawEnc
-	 * @param encPath
 	 */ 
-	private void viewButtonAction(String rawEnc, String encPath) { 
+	private void viewButtonAction() {
 		final int firstErrorCharIndex = 0;
 		final int lastErrorCharIndex = 1;
 		final int errorStringIndex = 2;
 		final int ruleStringIndex = 3;
+		
+		String rawEnc = getEncodingTextArea().getText();
 
 		// 1. Create an unchecked encoding
 		// Every time the viewbutton is clicked, a new rawEnc is made. The first time the 
@@ -615,12 +755,12 @@ public class Viewer extends JFrame{
 			// b. If the encoding contains no encoding errors: show the tablature in a new window 
 			else {
 				enc = new Encoding(rawEnc, "", Encoding.SYNTAX_CHECKED);
-				List<String> types = new ArrayList<>();
-				Arrays.asList(TabSymbolSet.values()).forEach(tss -> {
-					if (!types.contains(tss.getType())) {
-						types.add(tss.getType());
-					}
-				});
+//				List<String> types = new ArrayList<>();
+//				Arrays.asList(TabSymbolSet.values()).forEach(tss -> {
+//					if (!types.contains(tss.getType())) {
+//						types.add(tss.getType());
+//					}
+//				});
 
 				// Determine TabSymbolSet
 				TabSymbolSet tss = null;
@@ -645,10 +785,15 @@ public class Viewer extends JFrame{
 //				getTabFrameTextArea().setText(enc.visualise(tss, 
 //					getRhythmSymbolsCheckBox().isSelected(), true, true));
 //				initializeTabViewer(encPath);
-				new Viewer(encPath, false, 
-					enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected(), true, true));
+
+				new Viewer(/*getFileName(Encoding.EXTENSION)*/getFile(), enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected(), true, true), false);
 			} 
 		}
+	}
+
+
+	private String getFileName(String extension) {
+		return getTitle().substring(0, getTitle().indexOf(extension));
 	}
 
 
