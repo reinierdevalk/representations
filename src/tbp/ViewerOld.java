@@ -20,14 +20,12 @@ import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
@@ -41,36 +39,36 @@ import path.Path;
 import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 
-public class Viewer extends JFrame{
-
+public class ViewerOld extends JFrame {
 	private static final long serialVersionUID = 1L;
 
-	private static final Integer[] FRAME_DIMS = new Integer[]{1360, 680}; // 1345 + 15
-	private static final Integer[] PANEL_DIMS = new Integer[]{1345, 413}; // 15 + 650 (scroll pane width) + 15 + 650 + 15
+	private static final Integer[] FRAME_DIMS = new Integer[]{717, 672};
+	private static final Integer[] PANEL_DIMS = new Integer[]{586, 413};
 	private static final Font FONT = new Font("Courier New", Font.PLAIN, 12);
-	private static final String TOOL_NAME = "tab+Editor";
-	private static final String ASCII_EXTENSION = ".tab";
-	private static final String TABCODE_EXTENSION = ".tc";
-	private static final String MEI_EXTENSION = ".xml";
-	private static final String[] TITLE = new String[]{"untitled", Encoding.EXTENSION, " - " + TOOL_NAME};
+	private static final String NAME = "TabViewer";
+	private static final String EXTENSION = ".tab";
+	private static final String[] TITLE = new String[]{"untitled", Encoding.EXTENSION, " - " + NAME};
 
 	private Highlighter highlighter;
-//	private JLabel pieceLabel;
+	private JLabel pieceLabel;
 	private ButtonGroup tabTypeButtonGroup;
 	private JLabel upperErrorLabel;
 	private JLabel lowerErrorLabel;
 	private JTextArea encodingTextArea;
-	private JTextArea tabTextArea;
 	private JCheckBox rhythmSymbolsCheckBox;
 	private JButton viewButton;	
-	private JMenuBar editorMenuBar;
-	private JPanel editorPanel;
-	private JFileChooser editorFileChooser;
-	private File editorFile;
+	private JPanel encodingPanel;
+	private JMenuBar encodingMenuBar;
+	private JFileChooser fileChooser;
+	private File file;
+
+	private JTextArea tabTextArea;
+	private JPanel tabPanel;
+	private JMenuBar tabMenuBar;
 
 
 	public static void main(String[] args) {
-		new Viewer();
+		new Viewer(null, "", true);
 	}
 
 
@@ -78,33 +76,40 @@ public class Viewer extends JFrame{
 	//
 	//  C O N S T R U C T O R S
 	//
-	public Viewer() {
+	public ViewerOld(File file, String content, boolean encodingFrame) {
 		super();
-		init();
+		init(file, content, encodingFrame);
 	}
 
 
-	private void init() {
-		setHighlighter();
-//		setPieceLabel();
-		setTabTypeButtonGroup();
-		setUpperErrorLabel();
-		setLowerErrorLabel();
-		setEncodingTextArea();
-		setTabTextArea("");
-		setRhythmSymbolsCheckBox();
-		setViewButton();
-		setEditorMenuBar();
-		setEditorPanel();
-		//
-		setJMenuBar(getEditorMenuBar());
-		setContentPane(getEditorPanel());
-		setEditorFileChooser();
-		setEditorFile(null);
+	private void init(File file, String content, boolean encodingFrame) {
+		if (encodingFrame) {
+			setHighlighter();
+			setPieceLabel();
+			setTabTypeButtonGroup();
+			setUpperErrorLabel();
+			setLowerErrorLabel();
+			setEncodingTextArea();
+			setRhythmSymbolsCheckBox();
+			setViewButton();
+			//
+			setEncodingPanel();
+			setEncodingMenuBar();
+		}
+		else {
+			setTabTextArea(content);
+			//
+			setTabPanel();
+			setTabMenuBar();
+		}
+		setJMenuBar(encodingFrame ? getEncodingMenuBar() : getTabMenuBar());
+		setContentPane(encodingFrame ? getEncodingPanel() : getTabPanel());
+		setFileChooser();
+		setFile(file);
 		setSize(FRAME_DIMS[0], FRAME_DIMS[1]);		
 		setVisible(true);
-		setTitle(TITLE[0] + TITLE[1] + TITLE[2]);
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setTitle(encodingFrame ? TITLE[0] + TITLE[1] + TITLE[2] : file.getName() + TITLE[2]);
+		setDefaultCloseOperation(encodingFrame ? JFrame.EXIT_ON_CLOSE : JFrame.HIDE_ON_CLOSE);
 	}
 
 
@@ -118,35 +123,27 @@ public class Viewer extends JFrame{
 	}
 
 
-//	private void setPieceLabel() {
-//		JLabel l = new JLabel();
-//		l.setBounds(99, 17, 592, 14);
-//		pieceLabel = l;
-//	}
+	private void setPieceLabel() {
+		JLabel l = new JLabel();
+		l.setBounds(99, 17, 592, 14);
+		pieceLabel = l;
+	}
 
 
 	private void setTabTypeButtonGroup() {
 		ButtonGroup bg = new ButtonGroup();
 		JRadioButton rb = new JRadioButton(TabSymbolSet.FRENCH.getType());
-		rb.setBounds(new Rectangle(99, 559, 106, 16));
-//		rb.setBounds(new Rectangle(99, 15, 106, 16));
-//		rb.setBounds(new Rectangle(99, 42, 106, 16));
+		rb.setBounds(new Rectangle(99, 42, 106, 16));
 		rb.setSelected(true);
 		bg.add(rb);
 		rb = new JRadioButton(TabSymbolSet.ITALIAN.getType());
-		rb.setBounds(new Rectangle(207, 559, 106, 16));
-//		rb.setBounds(new Rectangle(207, 15, 106, 16));
-//		rb.setBounds(new Rectangle(207, 42, 106, 16));
+		rb.setBounds(new Rectangle(207, 42, 106, 16));
 		bg.add(rb);
 		rb = new JRadioButton(TabSymbolSet.SPANISH.getType());
-		rb.setBounds(new Rectangle(315, 559, 106, 16));
-//		rb.setBounds(new Rectangle(315, 15, 106, 16));
-//		rb.setBounds(new Rectangle(315, 42, 106, 16));
+		rb.setBounds(new Rectangle(315, 42, 106, 16));
 		bg.add(rb);
 		rb = new JRadioButton(TabSymbolSet.NEWSIDLER_1536.getType());
-		rb.setBounds(new Rectangle(423, 559, 106, 16));
-//		rb.setBounds(new Rectangle(423, 15, 106, 16));
-//		rb.setBounds(new Rectangle(423, 42, 106, 16));
+		rb.setBounds(new Rectangle(423, 42, 106, 16));
 		bg.add(rb);
 		tabTypeButtonGroup = bg;
 	}
@@ -173,32 +170,21 @@ public class Viewer extends JFrame{
 	}
 
 
-	private JTextArea makeTextArea(boolean encoding, String content) {
+	private JTextArea makeTextArea(boolean encodingFrame, String content) {
 		JTextArea ta = new JTextArea();
-		// TODO these bounds are overridden by those of the scrollpanes in the JPanels
-		ta.setBounds(encoding ? new Rectangle(15, 105, 571, 76) : 
-			new Rectangle(15 + 571 + 15, 105, 571, 76));
-//		ta.setBounds(encodingFrame ? new Rectangle(15, 105, 571, 76) : new Rectangle(15, 240, 571, 136));
-		ta.setLineWrap(true); // necessary because of JScrollPane
-		ta.setEditable(true);
+		ta.setBounds(encodingFrame ? new Rectangle(15, 105, 571, 76) : new Rectangle(15, 240, 571, 136));
+		ta.setLineWrap(encodingFrame ? true : false); // necessary because of JScrollPane
+		ta.setEditable(encodingFrame ? true : false);
 		ta.setFont(FONT);
 		ta.setText(content);
-		ta.setHighlighter(encoding ? getHighlighter() : null);
+		ta.setHighlighter(encodingFrame ? getHighlighter() : null);
 		return ta;
-	}
-
-
-	private void setTabTextArea(String content) {
-		tabTextArea = makeTextArea(false, content);
 	}
 
 
 	private void setRhythmSymbolsCheckBox() {
 		JCheckBox cb = new JCheckBox();
-		cb.setBounds(new Rectangle(15, 586, 261, 16));
-//		cb.setBounds(new Rectangle(15, 559, 261, 16));
-//		cb.setBounds(new Rectangle(15, 42, 261, 16));
-//		cb.setBounds(new Rectangle(15, 559, 261, 16));
+		cb.setBounds(new Rectangle(15, 559, 261, 16));
 //		cb.setActionCommand("Show all rhythm symbols");
 		cb.setText("Do not show repeated rhythm symbols");
 		rhythmSymbolsCheckBox = cb;
@@ -207,8 +193,7 @@ public class Viewer extends JFrame{
 
 	private void setViewButton() {
 		JButton b = new JButton();
-		b.setBounds(new Rectangle(574, 559, 91, 31));
-//		b.setBounds(new Rectangle(600, 559, 91, 31));
+		b.setBounds(new Rectangle(600, 559, 91, 31));
 		b.setText("View");
 		b.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -219,165 +204,170 @@ public class Viewer extends JFrame{
 	}
 
 
-	private void setEditorMenuBar() {
-		editorMenuBar = makeEditorMenuBar();
+	private void setEncodingPanel() {
+		encodingPanel = makePanel(true);
 	}
 
 
-	private JMenuBar makeEditorMenuBar() {
-		JMenuBar mb = new JMenuBar();
-//		JTextArea ta = encodingFrame ? getEncodingTextArea() : getTabTextArea();
-
-		JMenu m = new JMenu("File");
-		mb.add(m);
-
-		JMenuItem newMenuItem = new JMenuItem("New");
-		newMenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				newFileAction();
-			}
-		});
-		m.add(newMenuItem);
-		JMenuItem openMenuItem = new JMenuItem("Open");
-		openMenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				openFileAction();
-			}
-		});
-		m.add(openMenuItem);
-		JMenuItem saveMenuItem = new JMenuItem("Save");
-		saveMenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				saveFileAction(Encoding.EXTENSION);
-			}
-		});
-		m.add(saveMenuItem);
-		JMenuItem saveAsMenuItem = new JMenuItem("Save as");
-		saveAsMenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				saveAsFileAction(Encoding.EXTENSION);
-			}
-		});
-		m.add(saveAsMenuItem);
-		JMenu sm = new JMenu("Import");
-		JMenuItem asciiImportSubmenuItem = new JMenuItem("ASCII tab");
-		asciiImportSubmenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				importFileAction(ASCII_EXTENSION);
-			}
-		});
-		sm.add(asciiImportSubmenuItem);
-		JMenuItem tabCodeSubmenuItem = new JMenuItem("TabCode");
-		tabCodeSubmenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				importFileAction(TABCODE_EXTENSION);
-			}
-		});
-		sm.add(tabCodeSubmenuItem);
-		m.add(sm);
-		sm = new JMenu("Export");
-		JMenuItem asciiSubmenuItem = new JMenuItem("ASCII tab");
-		asciiSubmenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				exportFileAction(ASCII_EXTENSION);
-			}
-		});
-		sm.add(asciiSubmenuItem);
-		JMenuItem tabMEISubmenuItem = new JMenuItem("MEI");
-		tabMEISubmenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				exportFileAction(MEI_EXTENSION);
-			}
-		});
-		sm.add(tabMEISubmenuItem);
-		m.add(sm);
-		
-		m = new JMenu("Edit");
-		mb.add(m);
-		JMenuItem selectAllMenuItem = new JMenuItem("Select all");
-		selectAllMenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				getEncodingTextArea().requestFocus();
-				getEncodingTextArea().selectAll();
-			}
-		});
-		m.add(selectAllMenuItem);
-
-		return mb;
-	}
-
-
-	private void setEditorPanel() {
-		editorPanel = makeEditorPanel();
-	}
-
-
-	private JPanel makeEditorPanel() {
+	private JPanel makePanel(boolean encodingFrame) {
 		JPanel p = new JPanel();
 		p.setLayout(null);
 		p.setSize(new Dimension(PANEL_DIMS[0], PANEL_DIMS[1]));
 
-//		JLabel l = new JLabel("Piece:");
-//		l.setBounds(new Rectangle(15, 15, 81, 16));
-//		p.add(l, null);
-//		p.add(getPieceLabel());
-		//
-		JLabel l = new JLabel("View as:");
-		l.setBounds(new Rectangle(15, 559, 81, 16));
-//		l.setBounds(new Rectangle(15, 15, 81, 16));
-//		l.setBounds(new Rectangle(15, 42, 81, 16));
-		p.add(l, null);
-		for (AbstractButton b : Collections.list(getTabTypeButtonGroup().getElements())) {
-			p.add(b, null);
+		if (encodingFrame) {
+			JLabel l = new JLabel("Piece:");
+			l.setBounds(new Rectangle(15, 15, 81, 16));
+			p.add(l, null);
+			p.add(getPieceLabel());
+			//
+			l = new JLabel("View as:");
+			l.setBounds(new Rectangle(15, 42, 81, 16));
+			p.add(l, null);
+			for (AbstractButton b : Collections.list(getTabTypeButtonGroup().getElements())) {
+				p.add(b, null);
+			}
+			//
+			l = new JLabel("Error:");
+			l.setBounds(15, 69, 81, 16);
+			p.add(l, null);
+			p.add(getUpperErrorLabel(), null);
+			p.add(getLowerErrorLabel(), null);
+			//
+			p.add(getRhythmSymbolsCheckBox(), null);
+			//
+			p.add(getViewButton(), null);
 		}
-		//
-		l = new JLabel("Error:");
-		l.setBounds(15, 69, 81, 16);
-		p.add(l, null);
-		p.add(getUpperErrorLabel(), null);
-		p.add(getLowerErrorLabel(), null);
-		//
-		p.add(getRhythmSymbolsCheckBox(), null);
-		//
-		p.add(getViewButton(), null);
-
 		JScrollPane sp = 
-			new JScrollPane(getEncodingTextArea(), 
+			new JScrollPane(encodingFrame ? getEncodingTextArea() : getTabTextArea(), 
 			JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
 			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		sp.setBounds(new Rectangle(15, 115, 650, 430));
-		p.add(sp, null);
-		sp = 
-			new JScrollPane(getTabTextArea(), 
-			JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
-			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		sp.setBounds(new Rectangle(15 + 15 + 650, 115, 650, 430));
+		sp.setBounds(encodingFrame ? new Rectangle(15, 115, 676, 430) : new Rectangle(15, 115-100, 676, 430+100));
 		p.add(sp, null);
 
 		return p;
 	}
 
 
-	private void setEditorFileChooser() {
+	private void setEncodingMenuBar() {
+		encodingMenuBar = makeMenuBar(true);
+	}
+
+
+	private JMenuBar makeMenuBar(boolean encodingFrame) {
+		JMenuBar mb = new JMenuBar();
+//		JTextArea ta = encodingFrame ? getEncodingTextArea() : getTabTextArea();
+
+		JMenu m = new JMenu("File");
+		mb.add(m);
+		if (encodingFrame) {
+			JMenuItem newMenuItem = new JMenuItem("New");
+			newMenuItem.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					newFileAction();
+				}
+			});
+			m.add(newMenuItem);
+			JMenuItem openMenuItem = new JMenuItem("Open");
+			openMenuItem.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					openFileAction();
+				}
+			});
+			m.add(openMenuItem);
+			JMenuItem saveMenuItem = new JMenuItem("Save");
+			saveMenuItem.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					saveFileAction(encodingFrame ? Encoding.EXTENSION : EXTENSION);
+				}
+			});
+			m.add(saveMenuItem);
+			
+		}
+		JMenuItem saveAsMenuItem = new JMenuItem("Save as");
+		saveAsMenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				saveAsFileAction(/*ta.getText(),*/ encodingFrame ? Encoding.EXTENSION : EXTENSION);
+			}
+		});
+		m.add(saveAsMenuItem);
+		
+		JMenu sm = new JMenu("Import");
+		JMenuItem asciiImportSubmenuItem = new JMenuItem("ASCII tab");
+		asciiImportSubmenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				importFileAction();
+			}
+		});
+		sm.add(asciiImportSubmenuItem);
+		JMenuItem tabCodeSubmenuItem = new JMenuItem("TabCode");
+		tabCodeSubmenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				importFileAction();
+			}
+		});
+		sm.add(tabCodeSubmenuItem);
+		m.add(sm);
+		
+		sm = new JMenu("Export");
+		JMenuItem asciiSubmenuItem = new JMenuItem("ASCII tab");
+		asciiSubmenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				exportFileAction();
+			}
+		});
+		sm.add(asciiSubmenuItem);
+		JMenuItem tabMEISubmenuItem = new JMenuItem("MEI tab");
+		tabMEISubmenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				exportFileAction();
+			}
+		});
+		sm.add(tabMEISubmenuItem);
+		m.add(sm);
+		
+		//
+		m = new JMenu("Edit");
+		if (encodingFrame) {
+			mb.add(m);
+			JMenuItem selectAllMenuItem = new JMenuItem("Select all");
+			selectAllMenuItem.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					getEncodingTextArea().requestFocus();
+					getEncodingTextArea().selectAll();
+				}
+			});
+			m.add(selectAllMenuItem);
+		}
+
+		return mb;
+	}
+
+
+	private void setFileChooser() {
 		JFileChooser fc = new JFileChooser();
 		fc.setCurrentDirectory(new File(Path.ROOT_PATH_USER + Path.ENCODINGS_PATH));
-		editorFileChooser = fc;
+		fileChooser = fc;
 	}
 
 
-	private void setEditorFile(File f) {
-		editorFile = f;
+	private void setFile(File f) {
+		file = f;
 	}
 
 
-//	private void setTabPanel() {
-//		tabPanel = makePanel(false);
-//	}
+	private void setTabTextArea(String content) {
+		tabTextArea = makeTextArea(false, content);
+	}
 
 
-//	private void setTabMenuBar() {
-//		tabMenuBar = makeMenuBar(false);
-//	}
+	private void setTabPanel() {
+		tabPanel = makePanel(false);
+	}
+
+
+	private void setTabMenuBar() {
+		tabMenuBar = makeMenuBar(false);
+	}
 
 
 	//////////////////////////////
@@ -390,9 +380,9 @@ public class Viewer extends JFrame{
 	}
 
 
-//	private JLabel getPieceLabel() {
-//		return pieceLabel;
-//	}
+	private JLabel getPieceLabel() {
+		return pieceLabel;
+	}
 
 
 	private ButtonGroup getTabTypeButtonGroup() {
@@ -415,11 +405,6 @@ public class Viewer extends JFrame{
 	}
 
 
-	private JTextArea getTabTextArea() {
-		return tabTextArea;
-	}
-
-
 	private JCheckBox getRhythmSymbolsCheckBox() {
 		return rhythmSymbolsCheckBox; 
 	}
@@ -430,23 +415,38 @@ public class Viewer extends JFrame{
 	}
 
 
-	private JMenuBar getEditorMenuBar() {
-		return editorMenuBar;
+	private JPanel getEncodingPanel() {
+		return encodingPanel;
 	}
 
 
-	private JPanel getEditorPanel() {
-		return editorPanel;
+	private JMenuBar getEncodingMenuBar() {
+		return encodingMenuBar;
 	}
 
 
-	private JFileChooser getEditorFileChooser() {
-		return editorFileChooser;
+	private JFileChooser getFileChooser() {
+		return fileChooser;
 	}
 
 
-	private File getEditorFile() {
-		return editorFile;
+	private File getFile() {
+		return file;
+	}
+
+
+	private JTextArea getTabTextArea() {
+		return tabTextArea;
+	}
+
+
+	private JPanel getTabPanel() {
+		return tabPanel;
+	}
+
+
+	private JMenuBar getTabMenuBar() {
+		return tabMenuBar;
 	}
 
 
@@ -456,42 +456,39 @@ public class Viewer extends JFrame{
 	//
 	private void newFileAction() {
 		setTitle(TITLE[0] + TITLE[1] + TITLE[2]);
-		setEditorFile(null);
+		setFile(null);
 		String s = "";
 		for (String t : Encoding.METADATA_TAGS) {
 			s += Encoding.OPEN_METADATA_BRACKET + t + ":" + Encoding.CLOSE_METADATA_BRACKET + "\r\n";
 		}
 		s += Symbol.END_BREAK_INDICATOR;
-		setTextAreaContent(s, true);
-//		getEncodingTextArea().setText(s);
-//		getEncodingTextArea().setCaretPosition(0);
-		setTextAreaContent("", false);
-//		getTabTextArea().setText("");
-//		getTabTextArea().setCaretPosition(0);
+		getEncodingTextArea().setText(s);
 	}
 
 
 	private void openFileAction() {
-		setTextAreaContent("", false);
-		getEditorFileChooser().setDialogType(JFileChooser.OPEN_DIALOG);
-		getEditorFileChooser().setDialogTitle("Open");
+		getFileChooser().setDialogType(JFileChooser.OPEN_DIALOG);
 		// Set file type filter
-		getEditorFileChooser().setFileFilter(new FileNameExtensionFilter("tab+ (.tbp)", 
+		getFileChooser().setFileFilter(new FileNameExtensionFilter("tab+ (.tbp)", 
 			Encoding.EXTENSION.substring(1)));
-		// Remove any previous selection
-		getEditorFileChooser().setSelectedFile(new File(""));
-		if (getEditorFileChooser().showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+//		int returnValue = getFileChooser().showOpenDialog(this);
+		if (getFileChooser().showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
 			File f = null;
 			try {
-				f = getEditorFileChooser().getSelectedFile();
-				BufferedReader br = new BufferedReader(new FileReader(getEditorFileChooser().getSelectedFile()));						
+//				getFileChooser().setDialogType(JFileChooser.OPEN_DIALOG);
+				System.out.println(Encoding.EXTENSION.substring(1));
+				System.out.println("jeeee");
+
+				f = getFileChooser().getSelectedFile();
+				BufferedReader br = new BufferedReader(new FileReader(getFileChooser().getSelectedFile()));						
 			} catch (IOException e) {
 				// 11:11
 				// https://www.youtube.com/watch?v=Z8p_BtqPk78
 				e.printStackTrace();
 			}
-			setEditorFile(f);
-			setTitle(f.getName() + " - " + TOOL_NAME);
+			setFile(f);
+			setTitle(f.getName() + " - " + NAME);
+			getPieceLabel().setText("TODO");
 //			fileName = f.getName();
 //			String rawEnc = ToolBox.readTextFile(encFile);
 			String rawEncoding = "";
@@ -501,9 +498,7 @@ public class Viewer extends JFrame{
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
-			setTextAreaContent(rawEncoding, true);
-//			getEncodingTextArea().setText(rawEncoding);
-//			getEncodingTextArea().setCaretPosition(0);
+			getEncodingTextArea().setText(rawEncoding);
 		}
 
 		boolean doThis = false;
@@ -583,7 +578,7 @@ public class Viewer extends JFrame{
 			File encFile = new File(encPath);
 //			setFile(encFile);
 		
-//			getPieceLabel().setText(encFile.getName());
+			getPieceLabel().setText(encFile.getName());
 			String rawEncoding = "";
 			try {
 				rawEncoding = new String(Files.readAllBytes(Paths.get(encFile.getAbsolutePath())));
@@ -600,12 +595,12 @@ public class Viewer extends JFrame{
 			extension.equals(Encoding.EXTENSION) ? getEncodingTextArea().getText() : 
 			getTabTextArea().getText();
 		// New file: treat as Save As
-		if (getEditorFile() == null) {
+		if (getFile() == null) {
 			saveAsFileAction(extension);
 		}
 		// Existing file
 		else {
-			ToolBox.storeTextFile(content, getEditorFile());
+			ToolBox.storeTextFile(content, getFile());
 		}
 	}
 
@@ -615,19 +610,18 @@ public class Viewer extends JFrame{
 			extension.equals(Encoding.EXTENSION) ? getEncodingTextArea().getText() : 
 			getTabTextArea().getText();
 
-		getEditorFileChooser().setDialogType(JFileChooser.SAVE_DIALOG);
-		getEditorFileChooser().setDialogTitle("Save as");
+		getFileChooser().setDialogType(JFileChooser.SAVE_DIALOG);
 		// Set file type filter and suggested file name 
 		if (extension.equals(Encoding.EXTENSION)) {
-			getEditorFileChooser().setFileFilter(new FileNameExtensionFilter("tab+ (.tbp)", extension.substring(1)));
-			getEditorFileChooser().setSelectedFile(getEditorFile() == null ? new File("untitled" + extension): getEditorFile());
+			getFileChooser().setFileFilter(new FileNameExtensionFilter("tab+ (.tbp)", extension.substring(1)));
+			getFileChooser().setSelectedFile(getFile() == null ? new File("untitled" + extension): getFile());
 		}
 		else {
-			getEditorFileChooser().setFileFilter(new FileNameExtensionFilter("ASCII (" + ASCII_EXTENSION +")", extension.substring(1)));			
-			getEditorFileChooser().setSelectedFile(new File(getEditorFile().getAbsolutePath().replace(Encoding.EXTENSION, extension)));
+			getFileChooser().setFileFilter(new FileNameExtensionFilter("ASCII (.tab)", extension.substring(1)));			
+			getFileChooser().setSelectedFile(new File(getFile().getAbsolutePath().replace(Encoding.EXTENSION, extension)));
 		}
 		// https://stackoverflow.com/questions/17010647/set-default-saving-extension-with-jfilechooser
-		if (getEditorFileChooser().showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+		if (getFileChooser().showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
 			File f = null;
 //			String extension = encodingFrame ? Encoding.EXTENSION.substring(1) : ".tab";
 //			try {
@@ -637,7 +631,10 @@ public class Viewer extends JFrame{
 //					Encoding.EXTENSION.substring(1)));
 				
 				
-				f = getEditorFileChooser().getSelectedFile();;
+				f = getFileChooser().getSelectedFile();
+				System.out.println(f);
+//				System.out.println(f);
+//				System.out.println(extension);
 //				BufferedReader br = new BufferedReader(new FileReader(getFileChooser().getSelectedFile()));
 //				BufferedReader br = new BufferedReader(new FileReader(new File("")));
 
@@ -645,9 +642,11 @@ public class Viewer extends JFrame{
 //				e.printStackTrace();
 //			}
 				
-			if (getEditorFile() == null) {
-				setEditorFile(f);
+			if (getFile() == null) {
+				setFile(f);
 				setTitle(f.getName());
+				System.out.println("rrr");
+				System.out.println(file);
 			}
 
 			// Handle any returns added to encoding (which will be "\n" and not "\r\n") by 
@@ -682,47 +681,13 @@ public class Viewer extends JFrame{
 	}
 
 
-	private void importFileAction(String extension) {
-		setTextAreaContent("", false);
-		getEditorFileChooser().setDialogType(JFileChooser.OPEN_DIALOG);
-		getEditorFileChooser().setDialogTitle("Import");
-		// Set file type filter
-		if (extension.equals(TABCODE_EXTENSION)) {
-			getEditorFileChooser().setFileFilter(new FileNameExtensionFilter("TabCode (" + TABCODE_EXTENSION + ")", extension.substring(1)));
-		}
-		else if (extension.equals(ASCII_EXTENSION)) {
-			getEditorFileChooser().setFileFilter(new FileNameExtensionFilter("ASCII (" + ASCII_EXTENSION + ")", extension.substring(1)));
-		}
-		// Remove any previous selection
-		getEditorFileChooser().setSelectedFile(new File(""));
-		if (getEditorFileChooser().showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-			File f = null;
-			try {
-				f = getEditorFileChooser().getSelectedFile();
-				BufferedReader br = new BufferedReader(new FileReader(getEditorFileChooser().getSelectedFile()));						
-			} catch (IOException e) {
-				// 11:11
-				// https://www.youtube.com/watch?v=Z8p_BtqPk78
-				e.printStackTrace();
-			}
-		}
+	private void importFileAction() {
+		System.out.println("click import");
 	}
 
 
-	private void exportFileAction(String extension) {
-		getEditorFileChooser().setDialogType(JFileChooser.SAVE_DIALOG);
-		getEditorFileChooser().setDialogTitle("Export");
-		// Set file type filter
-		if (extension.equals(".mei") || extension.equals(MEI_EXTENSION)) {
-			getEditorFileChooser().setFileFilter(new FileNameExtensionFilter("MEI (.mei, " + MEI_EXTENSION + ")", extension.substring(1)));
-		}
-		else if (extension.equals(ASCII_EXTENSION)) {
-			getEditorFileChooser().setFileFilter(new FileNameExtensionFilter("ASCII (" + ASCII_EXTENSION + ")", extension.substring(1)));
-		}
-		getEditorFileChooser().setSelectedFile(new File(getEditorFile().getAbsolutePath().replace(Encoding.EXTENSION, extension)));
-		if (getEditorFileChooser().showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-			System.out.println("Clicked export");
-		}
+	private void exportFileAction() {
+		System.out.println("click export");
 	}
 
 
@@ -784,11 +749,6 @@ public class Viewer extends JFrame{
 				} catch (BadLocationException e) {  
 					System.err.println("BadLocationException: " + e.getMessage());
 				}
-				// https://stackoverflow.com/questions/8852560/how-to-make-popup-window-in-java
-				JOptionPane optionPane = new JOptionPane("ErrorMsg", JOptionPane.ERROR_MESSAGE);    
-				JDialog dialog = optionPane.createDialog("Failure");
-				dialog.setAlwaysOnTop(true);
-				dialog.setVisible(true);
 			}
 			// b. If the encoding contains no encoding errors: show the tablature in a new window 
 			else {
@@ -823,18 +783,289 @@ public class Viewer extends JFrame{
 //				getTabFrameTextArea().setText(enc.visualise(tss, 
 //					getRhythmSymbolsCheckBox().isSelected(), true, true));
 //				initializeTabViewer(encPath);
-				
-				setTextAreaContent(enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected(), true, true), false);
-//				new Viewer(/*getFileName(Encoding.EXTENSION)*/getFile(), enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected(), true, true), false);
+
+				new Viewer(/*getFileName(Encoding.EXTENSION)*/getFile(), enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected(), true, true), false);
 			} 
 		}
 	}
 
 
-	private void setTextAreaContent(String content, boolean encoding) {
-		JTextArea ta = encoding ? getEncodingTextArea() : getTabTextArea(); 
-		ta.setText(content);
-		ta.setCaretPosition(0);
+	private String getFileName(String extension) {
+		return getTitle().substring(0, getTitle().indexOf(extension));
 	}
 
+
+	private JScrollPane getTabViewerPane() { // alternative for getTabViewerPanel()
+		return new JScrollPane(getTabTextArea(), JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
+			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+	}
+
+
+	private JScrollPane getEncodingAreaScrollPane() {
+//		if (encodingAreaScrollPane == null) {
+//			encodingAreaScrollPane = 
+		JScrollPane encodingAreaScrollPane = 		
+			new JScrollPane(getEncodingTextArea(), JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		encodingAreaScrollPane.setBounds(new Rectangle(15, 115, 676, 430));
+//		}
+		return encodingAreaScrollPane;
+	}
+
+
+//	private void setTabPanel() {			
+//	JPanel p = new JPanel();
+//	p.setLayout(null);
+//	p.setSize(new Dimension(PANEL_DIMS[0], PANEL_DIMS[1]));
+
+//	// Tab area with scroll pane
+//	JScrollPane tabAreaScrollPane = 
+//		new JScrollPane(getTabTextArea(), JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
+//		JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+//	// See encodingAreaScrollPane.setBounds() for coordinates
+//	tabAreaScrollPane.setBounds(new Rectangle(15, 115-100, 676, 430+100));
+//	p.add(tabAreaScrollPane, null);
+//	tabPanel = p;
+//}	
+	
+	
+//	private void ssetEncodingFrameTextArea() {
+//		JTextArea ta = new JTextArea();
+//		ta.setBounds(new Rectangle(15, 105, 571, 76));
+//		ta.setLineWrap(true); // necessary because of JScrollPane
+//		ta.setEditable(true);
+//		ta.setFont(FONT);
+//		ta.setHighlighter(getHighlighter());
+//		encodingFrameTextArea = ta;
+//	}
+
+
+//	private void ssetTabFrameTextArea(String text) {
+//		JTextArea ta = new JTextArea();
+//		ta.setBounds(new Rectangle(15, 240, 571, 136));
+//		ta.setEditable(false);
+//		ta.setFont(FONT);
+//		ta.setText(text);
+//		tabFrameTextArea = ta;
+//	}
+	
+	
+//	/**
+//	 * Opens the TabViewer window.
+//	 * 
+//	 * @param encPath
+//	 */
+//	private void initializeTabViewer(String encPath) {
+//		JFrame tablatureFrame = new JFrame();
+//		tablatureFrame.setSize(FRAME_DIMS[0], FRAME_DIMS[1]);
+//		tablatureFrame.setJMenuBar(getTabFrameMenubar(encPath));
+//		tablatureFrame.setContentPane(createTabViewerPanel());
+//		tablatureFrame.setTitle(".tab");
+//		tablatureFrame.setVisible(true);
+//		tablatureFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+//	}
+
+
+//	private JRadioButton getTabRadioButton(String type) {
+//	switch (type) {
+//		case "French":
+//			return frenchTabRadioButton;
+//		case "Italian":
+//			return italianTabRadioButton;
+//		case "Spanish":
+//			return spanishTabRadioButton;
+//		case "German":
+//			return germanTabRadioButton;
+////		case "tabCode":
+////			return tabCodeRadioButton;
+//		default:
+//			return null;
+//	}
+//}
+	
+	
+//	private JLabel getErrorMessageLabel(String type) {
+//		if (type.equals("upper")) {
+//			return upperErrorLabel; 
+//		}
+//		else if (type.equals("lower")) {
+//			return lowerErrorLabel; 
+//		}
+//		else { 
+//			return null;
+//		}
+//	}
+
+
+//	private void prepareTabViewer() {
+//		getEncodingArea().setHighlighter(getHighlighter());
+////		getEncodingArea().setHighlighter(hilit);
+////		encodingArea.setHighlighter(hilit);
+//		ButtonGroup tabButtons = new ButtonGroup();
+//		tabButtons.add(frenchTabRadioButton);
+//		tabButtons.add(italianTabRadioButton);
+//		tabButtons.add(spanishTabRadioButton);
+//		tabButtons.add(germanTabRadioButton);
+////		tabButtons.add(tabCodeRadioButton);
+//		frenchTabRadioButton.setSelected(true);
+//	}
+
+
+//	private JRadioButton getFrenchTabRadioButton() {
+////		if (frenchTabRadioButton == null) {
+//		frenchTabRadioButton = new JRadioButton("French tablature");
+//		frenchTabRadioButton.setBounds(new Rectangle(99, 42, 106, 16));
+////		frenchTabRadioButton.addActionListener(new ActionListener() {
+////			public void actionPerformed(ActionEvent e) {
+////				// TODO Auto-generated Event stub actionPerformed()
+////			}
+////		});
+////		}
+//		return frenchTabRadioButton;
+//	}
+
+
+//	private JRadioButton getItalianTabRadioButton() {
+////		if (italianTabRadioButton == null) {
+//		italianTabRadioButton = new JRadioButton("Italian tablature");
+//		italianTabRadioButton.setBounds(new Rectangle(207, 42, 106, 16));
+////		italianTabRadioButton.addActionListener(new ActionListener() {
+////	    	public void actionPerformed(ActionEvent e) {
+////	    		// TODO Auto-generated Event stub actionPerformed()
+////	    	}
+////	    });
+////		}
+//	    return italianTabRadioButton;
+//	}
+
+
+//	private JRadioButton getSpanishTabRadioButton() {
+////		if (spanishTabRadioButton == null) {
+//		spanishTabRadioButton = new JRadioButton("Spanish tablature");
+//		spanishTabRadioButton.setBounds(new Rectangle(315, 42, 106, 16));
+////		spanishTabRadioButton.addActionListener(new ActionListener() {
+////			public void actionPerformed(ActionEvent e) {
+////				// TODO Auto-generated Event stub actionPerformed()
+////			}
+////		});
+////		}
+//		return spanishTabRadioButton;
+//	}
+
+
+//	private JRadioButton getGermanTabRadioButton() {
+////		if (germanTabRadioButton == null) {
+//		germanTabRadioButton = new JRadioButton("German tablature");
+//		germanTabRadioButton.setBounds(new Rectangle(423, 42, 106, 16));
+////		germanTabRadioButton.addActionListener(new ActionListener() {
+////			public void actionPerformed(ActionEvent e) {
+////				// TODO Auto-generated Event stub actionPerformed()
+////			}
+////		});
+////		}
+//		return germanTabRadioButton;
+//	}
+
+
+//	private JRadioButton getTabCodeRadioButton() {
+////		if (tabCodeRadioButton == null) {
+//		tabCodeRadioButton = new JRadioButton("TabCode");
+//		tabCodeRadioButton.setBounds(new Rectangle(531, 42, 106, 16));
+////		tabCodeRadioButton.addActionListener(new ActionListener() {
+////			public void actionPerformed(ActionEvent e) {
+////				// TODO Auto-generated Event stub actionPerformed()
+////			}
+////		});
+////		}
+//		return tabCodeRadioButton;
+//	}
+
+
+//	private JCheckBox getRhythmSymbolsCheckBox() {
+//		if (rhythmSymbolsCheckBox == null) {
+//		rhythmSymbolsCheckBox = new JCheckBox();
+//		rhythmSymbolsCheckBox.setBounds(new Rectangle(15, 559, 211, 16));
+//		rhythmSymbolsCheckBox.setActionCommand("Show all rhythm symbols");
+//		rhythmSymbolsCheckBox.setText("Ignore repeated rhythm symbols");
+//		rhythmSymbolsCheckBox.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent e) {
+//				// TODO Auto-generated Event stub actionPerformed()
+//			}
+//		});
+//		}
+//		return rhythmSymbolsCheckBox;
+//	}
+
+
+//	private void setTabFrameMenuBarOLD(String encPath) {
+//		JMenuBar mb = new JMenuBar();
+//	
+//		// File
+//		JMenu fileMenu = new JMenu("File");
+//		mb.add(fileMenu);   
+//	
+//		// Menu item File > Save
+//		JMenuItem saveMenuItem = new JMenuItem("Save");
+//		saveMenuItem.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent e) {
+//				saveFileAction(getTabFrameTextArea().getText(), encPath);
+//			}
+//		});
+//		fileMenu.add(saveMenuItem);
+//
+//		// Edit
+//		fileMenu = new JMenu("Edit");
+//		mb.add(fileMenu);
+//		// Menu item Edit > Select all
+//		JMenuItem selectAllMenuItem = new JMenuItem("Select all");
+//		selectAllMenuItem.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent e) {
+//				getTabFrameTextArea().selectAll();
+//			}
+//		});
+//		fileMenu.add(selectAllMenuItem);
+//		tabFrameMenuBar = mb;
+//	}
+
+
+//	private void setEncodingFrameMenuBarOLD(String encPath) {
+//		JMenuBar mb = new JMenuBar();
+//
+//		// File menu
+//		JMenu fileMenu = new JMenu("File");
+//		mb.add(fileMenu);
+//	
+//		// Menu item File > Open
+//		JMenuItem openMenuItem = new JMenuItem("Open");
+//		openMenuItem.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent e) {
+//				openFileAction(encPath);
+//			}
+//		});
+//		fileMenu.add(openMenuItem);
+//	
+//		// Menu item File > Save
+//		JMenuItem saveMenuItem = new JMenuItem("Save");
+//		saveMenuItem.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent e) {
+//				saveFileAction(getEncodingFrameTextArea().getText(), encPath);
+//			}
+//		});
+//		fileMenu.add(saveMenuItem);
+//		encodingFrameMenuBar = mb;
+//	}
+
+
+//	private JButton getViewButton(String encPath) {
+//		JButton viewButton = new JButton();
+//		viewButton.setBounds(new Rectangle(600, 559, 91, 31));
+//		viewButton.setText("View");
+//		viewButton.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent e) {
+//				viewButtonAction(getEncodingTextArea().getText(), encPath);
+////				viewButtonAction(encPath);
+//			}
+//		});
+//		return viewButton;
+//	}
 }
