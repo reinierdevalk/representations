@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -39,15 +40,64 @@ public class MIDIImport {
 	public static final String EXTENSION = ".mid";
 
 	public static void main(String[] args) {
-		File dir = new File("F:/research/data/MIDI/tests/testpiece");
-//		MidiImport midiImport = new MidiImport();
-		Piece fullScore = importMidiFile(dir);
-		ScoreEditor scoreEditor = new ScoreEditor(fullScore.getScore());
-		JFrame fullScoreFrame = new JFrame(dir.toString());
-		fullScoreFrame.add(new JScrollPane(scoreEditor));
-		fullScoreFrame.setSize(800, 600);
-		fullScoreFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		fullScoreFrame.setVisible(true);    
+		List<String> pieces = Arrays.asList(new String[]{
+				"bach-WTC1-fuga_4-BWV_849",
+				"bach-WTC1-fuga_4-BWV_849-split_at_44-65-86_1", 
+				"bach-WTC1-fuga_4-BWV_849-split_at_44-65-86_2",
+				"bach-WTC1-fuga_4-BWV_849-split_at_44-65-86_3",
+				"bach-WTC1-fuga_4-BWV_849-split_at_44-65-86_4",
+				"bach-WTC1-fuga_22-BWV_867",
+				"bach-WTC1-fuga_22-BWV_867-split_at_37_1",
+				"bach-WTC1-fuga_22-BWV_867-split_at_37_2",
+			});
+		
+		for (String s : pieces) {
+			String piece = s + ".mid";
+			File curr = new File("F:/research/data/annotated/MIDI/bach-WTC/thesis/5vv/" + piece);
+			File gith = new File("I:/removed_from_research-software-github/data-old/ISMIR-2018/" + piece);
+		
+//			MidiImport midiImport = new MidiImport();
+			String currStr = "";
+			int count = 1;
+			currStr += Arrays.asList(importMidiFile(curr).getHarmonyTrack().getContentsRecursive()) + "\r\n";
+			currStr += importMidiFile(curr).getMetricalTimeLine() + "\r\n";
+			for (NotationStaff ns : importMidiFile(curr).getScore()) {
+				currStr += "staff " + count + "\r\n";
+				count++;
+				for (NotationVoice nss : ns) {
+					for (NotationChord nc : nss) {
+						for (Note n : nc) {
+							currStr += n + "\r\n";
+						}
+					}
+				}
+			}
+//			System.out.println(currStr);
+			String githStr = "";
+			count = 1;
+			githStr += Arrays.asList(importMidiFile(gith).getHarmonyTrack().getContentsRecursive()) + "\r\n";
+			githStr += importMidiFile(gith).getMetricalTimeLine() + "\r\n";
+			for (NotationStaff ns : importMidiFile(gith).getScore()) {
+				githStr += "staff " + count + "\r\n";
+				count++;
+				for (NotationVoice nss : ns) {
+					for (NotationChord nc : nss) {
+						for (Note n : nc) {
+							githStr += n + "\r\n";
+						}
+					}
+				}
+			}
+//			System.out.println(githStr);
+			System.out.println(currStr.equals(githStr));
+		}
+		System.exit(0);
+//		ScoreEditor scoreEditor = new ScoreEditor(fullScore.getScore());
+//		JFrame fullScoreFrame = new JFrame(dir.toString());
+//		fullScoreFrame.add(new JScrollPane(scoreEditor));
+//		fullScoreFrame.setSize(800, 600);
+//		fullScoreFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//		fullScoreFrame.setVisible(true);    
 	}
 
 

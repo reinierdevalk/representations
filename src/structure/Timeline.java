@@ -1,5 +1,6 @@
 package structure;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -8,7 +9,10 @@ import de.uos.fmt.musitech.utility.math.Rational;
 import tbp.Encoding;
 import tools.ToolBox;
 
-public class Timeline {
+public class Timeline implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
 	// From Transcription
 	public static final int MI_NUM = 0;
 	public static final int MI_DEN = 1;
