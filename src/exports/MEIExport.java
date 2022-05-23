@@ -80,7 +80,7 @@ public class MEIExport {
 	private static final int XML_DUR_IND = 0;
 	private static final int XML_DOTS_IND = 1;
 	
-	static boolean adaptCMNDur = true; // TODO remove once tab.dur.sym.ratio is in MEI schema
+	static boolean reduceCMNDur = true; // TODO remove once tab.dur.sym.ratio is in MEI schema
 	
 	public static void main(String[] args) {
 		
@@ -1030,7 +1030,7 @@ public class MEIExport {
 		int diminution = 0;
 		int count = currMi[Timeline.MI_NUM];
 		int unit = currMi[Timeline.MI_DEN];
-		if (adaptCMNDur) {
+		if (reduceCMNDur) {
 			if (ONLY_TAB || TAB_AND_TRANS) {
 				diminution = currMi[Timeline.MI_DIM];
 				Rational undiminutedMeter = 
@@ -1059,7 +1059,7 @@ public class MEIExport {
 			String tuningStr = "lute.renaissance.6"; // TODO parameterise
 			int staff = getStaffNum(true, grandStaff, tabOnTop, numVoices, -1);
 			staffGrpTab.add("<staffDef n='" + staff + "' lines='6' notationtype='" + notationtypeStr + 
-				"' tab.dur.sym.ratio='" + diminution + "' xml:id='s1'>"); 
+				"' tab.dur.sym.ratio='" + (reduceCMNDur ? 1 : diminution) + "' xml:id='s1'>"); 
 			// Add tuning (assumed not to change throughout the piece)
 			if (bar == 1) {
 				staffGrpTab.add(TAB + "<tuning tuning.standard='" + tuningStr + "'/>");
@@ -1188,7 +1188,7 @@ public class MEIExport {
 //		System.exit(0);
 		
 		if (tab != null) {
-			if (trans == null) ONLY_TAB = true ; else TAB_AND_TRANS = true;
+			if (trans == null) ONLY_TAB = true; else TAB_AND_TRANS = true;
 		}
 		else {
 			ONLY_TRANS = true;
@@ -1338,6 +1338,8 @@ public class MEIExport {
 //			}
 //			System.exit(0);			
 		}
+//		System.out.println(tabBarsAsStr);
+//		System.exit(0);
 		// b. Trans bars
 		List<String> transBarsAsStr = new ArrayList<>();
 		if (ONLY_TRANS || TAB_AND_TRANS) {
@@ -1507,6 +1509,7 @@ public class MEIExport {
 		// Get events; remove any decorative opening barlines (affecting XML bar numbering)
 		List<Event> events = 
 			Encoding.removeDecorativeBarlineEvents(tab.getEncoding().getEvents());
+		
 		// Organise events per bar
 		List<List<Event>> eventsPerBar = new ArrayList<>();
 		int currBar = events.get(0).getBar();
@@ -1579,7 +1582,10 @@ public class MEIExport {
 //						barline = " right='end'";
 //					}
 //				}
-				if (Symbol.getConstantMusicalSymbol(currEvent) != null && Symbol.getConstantMusicalSymbol(currEvent).isBarline()) {
+				boolean isBarline = 
+					Symbol.getConstantMusicalSymbol(currEvent) != null && Symbol.getConstantMusicalSymbol(currEvent).isBarline();
+				if (!isBarline) {
+//				if (Symbol.getConstantMusicalSymbol(currEvent) != null && !Symbol.getConstantMusicalSymbol(currEvent).isBarline()) {
 //				if (!ConstantMusicalSymbol.isBarline(currEvent)) {
 					// Get XML durations of currEvent, and, if applicable, currEventOrig
 					Integer[] currDurXML = getXMLDur(currEvent);
@@ -2479,7 +2485,7 @@ public class MEIExport {
 //		}
 
 		// Undiminute bnp
-		if (TAB_AND_TRANS && adaptCMNDur) {
+		if (TAB_AND_TRANS && reduceCMNDur) {
 //			System.out.println("mi:");
 //			for (Integer [] in : mi) {
 //				System.out.println(Arrays.toString(in));
@@ -2499,7 +2505,7 @@ public class MEIExport {
 //			int initialDiminution = 0;
 //			Rational initialMeterChangeOnset = Rational.ZERO;
 			
-			// Adapt complete bnp if any of the meters has a dimunition other than 1
+			// Adapt complete bnp if any of the meters has a diminution other than 1
 			List<Integer> diminutions = ToolBox.getItemsAtIndex(mi, Timeline.MI_DIM);
 			if (Collections.frequency(diminutions, 1) != diminutions.size()) {
 				// Undiminute bnp using diminuted mi
@@ -2661,7 +2667,7 @@ public class MEIExport {
 //\\				Tablature.getMetricPosition(onset, mi)[0].getNumer() + "; pitch = " + bnp[i][0]);
 
 //			Rational[] barMetPos = 
-//				!adaptCMNDur ? Tablature.getMetricPosition(onset, mi) :
+//				!reduceCMNDur ? Tablature.getMetricPosition(onset, mi) :
 //				Tablature.getMetricPosition(onset, tab.getUndiminutedMeterInfo());		
 			Rational[] barMetPos = Timeline.getMetricPosition(onset, mi);	
 				
@@ -2676,8 +2682,8 @@ public class MEIExport {
 //				System.exit(0);
 //			}
 			
-			// If adaptCMNDur, diminution has been made undone in bnp
-			int diminution = adaptCMNDur ? 1 : Timeline.getDiminution(onset, mi);
+			// If reduceCMNDur, diminution has been made undone in bnp
+			int diminution = reduceCMNDur ? 1 : Timeline.getDiminution(onset, mi);
 
 			// Increment barEnd and clear lists when new bar is reached
 			if (onset.isGreaterOrEqual(barEnd)) {
