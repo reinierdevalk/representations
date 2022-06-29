@@ -80,7 +80,15 @@ public class MEIExport {
 	private static final int XML_DUR_IND = 0;
 	private static final int XML_DOTS_IND = 1;
 	
-	static boolean reduceCMNDur = true; // TODO remove once tab.dur.sym.ratio is in MEI schema
+	// reduceCMNDur adapts the Transcription durations to those of the tablature; what we want 
+	// is the reverse
+	// a. Adapt the metric times and onsets in the transcription to fit those resulting from the 
+	//    fixed rhythm symbol values in the tab
+	// b. Adapt the values of the rhythm signs in the tab to fit the trans
+	// Thesis MIDI: already made the MIDI to follow the RS values in the tab
+	// JosquinTab MIDI: existing MIDI must be adapted (not tab) as to keep consistency in 
+	// the meaning of the RS
+	static boolean adaptTransDur = true; // TODO remove once tab.dur.sym.ratio is in MEI schema
 	
 	public static void main(String[] args) {
 		
@@ -121,9 +129,10 @@ public class MEIExport {
 		
 		String tabFile = "thesis-int/3vv/newsidler-1544_2-nun_volget";
 		tabFile = "1132_13_o_sio_potessi_donna_berchem_solo";
-		
+
 		String pieceName = "capirola-1520-et_in_terra_pax";
-		
+		pieceName = "1025_adieu_mes_amours";
+
 		// This must be a created Transcription and the second argument must be null
 		Transcription trans = 
 			new Transcription(
@@ -134,21 +143,23 @@ public class MEIExport {
 //			new File("C:/Users/Reinier/Desktop/2019-ISMIR/test/mapped/3610_033_inter_natos_mulierum_morales_T-rev-mapped.mid"),
 //			new File("C:/Users/Reinier/Desktop/IMS-tours/fold_06-1025_adieu_mes_amours.mid"),
 //			new File("C:/Users/Reinier/Desktop/IMS-tours/example/MIDI/Berchem_-_O_s'io_potessi_donna.mid"),
-			new File("C:/Users/Reinier/Desktop/test-capirola/mapped/" + pieceName + MIDIImport.EXTENSION),
+//			new File("C:/Users/Reinier/Desktop/test-capirola/mapped/" + pieceName + MIDIImport.EXTENSION),
+			new File("C:/Users/Reinier/Desktop/beaming/mapped/" + pieceName + MIDIImport.EXTENSION),
 			null);
 //		trans = null;
-		
+
 //		Tablature tab = 
 //			new Tablature(new File("F:/research/data/encodings/" + tabFile + Encoding.EXTENSION), false);
 		Tablature tab = 
-			new Tablature(new File("C:/Users/Reinier/Desktop/test-capirola/tab/" + 
+//			new Tablature(new File("C:/Users/Reinier/Desktop/test-capirola/tab/" +
+			new Tablature(new File("C:/Users/Reinier/Desktop/beaming/tab/" +
 			pieceName + Encoding.EXTENSION), false);
 //		Tablature tab = 
 //			new Tablature(new File("F:/research/data/annotated/encodings/thesis-int/" + 
 //			"3vv/newsidler-1544_2-nun_volget" + 
 //			"4vv/rotta-1546_15-bramo_morir" +
 //			Encoding.EXTENSION), false);
-//		tab = null;
+		tab = null;
 		
 //		List<List<String[]>> data = getData(t);
 //		List<Object> data = getData(t);
@@ -170,6 +181,8 @@ public class MEIExport {
 		s = path + "fold_06-1025_adieu_mes_amours";
 		s = path + "Berchem_-_O_s'io_potessi_donna";
 		s = "C:/Users/Reinier/Desktop/test-capirola/" + pieceName;
+		s = "C:/Users/Reinier/Desktop/beaming/" + pieceName;
+		
 //		List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
 		
 		exportMEIFile(trans, tab, /*tab.getBasicTabSymbolProperties(), trans.getKeyInfo(), 
@@ -1030,7 +1043,7 @@ public class MEIExport {
 		int diminution = 0;
 		int count = currMi[Timeline.MI_NUM];
 		int unit = currMi[Timeline.MI_DEN];
-		if (reduceCMNDur) {
+		if (adaptTransDur) {
 			if (ONLY_TAB || TAB_AND_TRANS) {
 				diminution = currMi[Timeline.MI_DIM];
 				Rational undiminutedMeter = 
@@ -1059,7 +1072,7 @@ public class MEIExport {
 			String tuningStr = "lute.renaissance.6"; // TODO parameterise
 			int staff = getStaffNum(true, grandStaff, tabOnTop, numVoices, -1);
 			staffGrpTab.add("<staffDef n='" + staff + "' lines='6' notationtype='" + notationtypeStr + 
-				"' tab.dur.sym.ratio='" + (reduceCMNDur ? 1 : diminution) + "' xml:id='s1'>"); 
+				"' tab.dur.sym.ratio='" + (adaptTransDur ? 1 : diminution) + "' xml:id='s1'>"); 
 			// Add tuning (assumed not to change throughout the piece)
 			if (bar == 1) {
 				staffGrpTab.add(TAB + "<tuning tuning.standard='" + tuningStr + "'/>");
@@ -1346,7 +1359,7 @@ public class MEIExport {
 			List<Object> data = getData(tab, trans, mi, ki, tripletOnsetPairs);
 			List<List<String>> transBars =
 				getTransBars(data, tab, mi, tripletOnsetPairs, mismatchInds, grandStaff, tabOnTop,
-				numVoices);	
+				numVoices, path);
 			for (int i = 0; i < numMetricBars; i++) {
 				StringBuilder currTransBarAsStr = new StringBuilder();
 				for (String s : transBars.get(i)) {
@@ -1393,7 +1406,7 @@ public class MEIExport {
 			String barline = 
 				lastBarInSection ? (currBar == numBars ? " right='end'" : " right='dbl'") : "";
 			currSection.append(INDENT_TWO + "<measure n='" + (i+1) + "'" + barline + ">" + "\r\n");
-			String tabBar = tabBarsAsStr.get(i);
+			String tabBar = tab != null ? tabBarsAsStr.get(i) : null;
 			String transBar = transBarsAsStr.get(i);
 			if (ONLY_TAB) {
 				currSection.append(tabBar);
@@ -1867,7 +1880,7 @@ public class MEIExport {
 
 	private static List<List<String>> getTransBars(List<Object> data, Tablature tab, List<Integer[]> mi,
 		List<Rational[]> tripletOnsetPairs, List<List<Integer>> mismatchInds, 
-		boolean grandStaff, boolean tabOnTop, int numVoices) {			
+		boolean grandStaff, boolean tabOnTop, int numVoices, String path) {			
 
 		List<List<String>> transBars = new ArrayList<>();
 		
@@ -1878,35 +1891,40 @@ public class MEIExport {
 		List<List<List<Integer[]>>> dataInt = (List<List<List<Integer[]>>>) data.get(0);
 		List<List<List<String[]>>> dataStr = (List<List<List<String[]>>>) data.get(1);
 		
-		System.out.println("------------");
-		for (List<Integer[]> l : dataInt.get(2)) {
-			for (Integer[] in : l) {
-				System.out.println(Arrays.toString(in));
-			}
+//		System.out.println("------------");
+//		for (List<Integer[]> l : dataInt.get(2)) {
+//			for (Integer[] in : l) {
+//				System.out.println(Arrays.toString(in));
+//			}
+//		}
+//		System.out.println("------------");
+//		for (List<String[]> l : dataStr.get(2)) {
+//			for (String[] in : l) {
+//				System.out.println(Arrays.toString(in));
+//			}
+//		}
+		
+		List<String[]> b61v2 = dataStr.get(61).get(2); 
+		System.out.println("XXXXXX");
+		for (String[] s : b61v2) {
+			System.out.println(Arrays.toString(s));
 		}
-		System.out.println("------------");
-		for (List<String[]> l : dataStr.get(2)) {
-			for (String[] in : l) {
-				System.out.println(Arrays.toString(in));
-			}
-		}
-//		System.exit(0);
+		System.exit(0);
 		
 		// Apply beaming: set beamOpen and beamClose in dataInt
-		dataInt = beam(dataInt, dataStr, tab, mi, tripletOnsetPairs, mismatchInds, numVoices);
+		dataInt = beam(dataInt, dataStr, tab, mi, tripletOnsetPairs, mismatchInds, numVoices, path);
 		
-		for (List<Integer[]> l : dataInt.get(2)) {
-			for (Integer[] in : l) {
-				System.out.println(Arrays.toString(in));
-			}
-		}
-		System.out.println("------------");
-		for (List<String[]> l : dataStr.get(2)) {
-			for (String[] in : l) {
-				System.out.println(Arrays.toString(in));
-			}
-		}
-//		System.exit(0);
+//		for (List<Integer[]> l : dataInt.get(2)) {
+//			for (Integer[] in : l) {
+//				System.out.println(Arrays.toString(in));
+//			}
+//		}
+//		System.out.println("------------");
+//		for (List<String[]> l : dataStr.get(2)) {
+//			for (String[] in : l) {
+//				System.out.println(Arrays.toString(in));
+//			}
+//		}
 
 		// For each bar
 		for (int i = 0; i < dataStr.size(); i++) {
@@ -1991,7 +2009,7 @@ public class MEIExport {
 
 	private static List<List<List<Integer[]>>> beam(List<List<List<Integer[]>>> dataInt, 
 		List<List<List<String[]>>> dataStr, Tablature tab, List<Integer[]> mi, 
-		List<Rational[]> tripletOnsetPairs, List<List<Integer>> mismatchInds, int numVoices) {
+		List<Rational[]> tripletOnsetPairs, List<List<Integer>> mismatchInds, int numVoices, String path) {
 		
 		// Organise the information (i) per voice, (ii) per bar for the python beaming script
 		List<List<String>> unbeamedBarsPerVoice = new ArrayList<>();
@@ -2021,6 +2039,7 @@ public class MEIExport {
 				List<String> barList = 
 					getBar(currBarCurrVoiceInt, currBarCurrVoiceStr, tripletOnsetPairs,
 					mismatchInds, j, diminution);
+
 				String barListAsStr = "";
 				Rational currMeter = Transcription.getMeter(bar, mi); 
 				barListAsStr += 
@@ -2044,8 +2063,8 @@ public class MEIExport {
 				strb.append(s);
 			}
 		}
-		String filePath = scriptPathPythonMEI;
-		File notesFile = new File(filePath + "notes.txt");
+		String filePath = path; // scriptPathPythonMEI;
+		File notesFile = new File(filePath + "-notes.txt");
 		ToolBox.storeTextFile(strb.toString(), notesFile);
 		
 		// Call the beaming script and get output; delete
@@ -2054,11 +2073,11 @@ public class MEIExport {
 		String beamed = "";
 		try {
 			beamed = PythonInterface.getScriptOutput(new String[]{
-				"python", filePath + "beam.py", filePath + "notes.txt"});
+				"python", scriptPathPythonMEI + "beam.py", filePath + "-notes.txt"});
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		notesFile.delete();
+		notesFile.delete(); // TODO find different solution?
 
 		// Re-organise the information (i) per bar, (ii) per voice so that it is the same
 		// again as dataStr and dataInt
@@ -2098,7 +2117,7 @@ public class MEIExport {
 					if (noteCurrBarCurrVoice.startsWith("<beam>")) {
 						dataInt.get(bar).get(voice).get(note)[INTS.indexOf("beamOpen")] = 1;
 					}
-					if (noteCurrBarCurrVoice.startsWith("</beam>")) {
+					if (noteCurrBarCurrVoice.endsWith("</beam>")) {
 						dataInt.get(bar).get(voice).get(note)[INTS.indexOf("beamClose")] = 1;
 					}
 				}
@@ -2125,6 +2144,8 @@ public class MEIExport {
 		List<List<Integer>> mismatchInds, int argVoice, int diminution) {
 		List<String> barList = new ArrayList<>();
 //		int bar = currBarCurrVoiceInt.get(0)[INTS.indexOf("bar")];
+		System.out.println(Arrays.toString(currBarCurrVoiceInt.get(0)));
+		System.out.println(INTS.indexOf("bar"));
 		String barRestStr = 
 			TAB.repeat(2) + "<mRest " + "xml:id='" + argVoice + "." + 
 			currBarCurrVoiceInt.get(0)[INTS.indexOf("bar")] + "." + "0.r.0'" + "/>";
@@ -2473,10 +2494,9 @@ public class MEIExport {
 
 		Piece p = trans.getPiece();
 		int numVoices = p.getScore().size();
-		Integer[][] btp = tab.getBasicTabSymbolProperties();
+		Integer[][] btp = tab == null ? null : tab.getBasicTabSymbolProperties();
 		Rational gridVal = 
-			(btp != null) ? Tablature.SMALLEST_RHYTHMIC_VALUE : // new Rational(1, 96);
-			new Rational(1, 128); // // 14.03.2020 was 1/64
+			(btp != null) ? Tablature.SMALLEST_RHYTHMIC_VALUE : new Rational(1, 128); // 14.03.2020 was 1/64
 		Integer[][] bnp = trans.getBasicNoteProperties();
 		// pitch, metric time num, metric time den, metric dur num, metric dur den, chord seq no, chord size, note seq num in chord
 //		System.out.println("bnp:");
@@ -2484,8 +2504,8 @@ public class MEIExport {
 //			System.out.println(Arrays.toString(bnp[i]));
 //		}
 
-		// Undiminute bnp
-		if (TAB_AND_TRANS && reduceCMNDur) {
+		// Undiminute bnp and Piece
+		if (TAB_AND_TRANS && adaptTransDur) {
 //			System.out.println("mi:");
 //			for (Integer [] in : mi) {
 //				System.out.println(Arrays.toString(in));
@@ -2512,8 +2532,20 @@ public class MEIExport {
 				for (Integer[] in : mi) {
 					System.out.println(Arrays.toString(in));
 				}
-//				System.exit(0);
+				System.out.println(Tablature.SRV_DEN);
+				System.out.println(Arrays.toString(btp[0]));
+				System.out.println(Arrays.toString(btp[1]));
+				System.out.println(Arrays.toString(btp[2]));
+				System.exit(0);
+				System.out.println(Arrays.toString(bnp[0]));
+				System.out.println(Arrays.toString(bnp[1]));
+				System.out.println(Arrays.toString(bnp[2]));
 				bnp = Transcription.undiminuteBasicNoteProperties(bnp, mi);
+//				p = Transcription.createPiece(btp, bnp mi);
+				System.out.println(Arrays.toString(bnp[0]));
+				System.out.println(Arrays.toString(bnp[1]));
+				System.out.println(Arrays.toString(bnp[2]));
+				System.exit(0);
 				// Reset mi to undiminuted 
 				mi = tab.getTimeline().getUndiminutedMeterInfo();
 //				Integer[][] undiminutedBnp = new Integer[bnp.length][bnp[0].length];
@@ -2667,7 +2699,7 @@ public class MEIExport {
 //\\				Tablature.getMetricPosition(onset, mi)[0].getNumer() + "; pitch = " + bnp[i][0]);
 
 //			Rational[] barMetPos = 
-//				!reduceCMNDur ? Tablature.getMetricPosition(onset, mi) :
+//				!adaptTransDur ? Tablature.getMetricPosition(onset, mi) :
 //				Tablature.getMetricPosition(onset, tab.getUndiminutedMeterInfo());		
 			Rational[] barMetPos = Timeline.getMetricPosition(onset, mi);	
 				
@@ -2682,8 +2714,8 @@ public class MEIExport {
 //				System.exit(0);
 //			}
 			
-			// If reduceCMNDur, diminution has been made undone in bnp
-			int diminution = reduceCMNDur ? 1 : Timeline.getDiminution(onset, mi);
+			// If adaptTransDur, diminution has been made undone in bnp
+			int diminution = adaptTransDur ? 1 : Timeline.getDiminution(onset, mi);
 
 			// Increment barEnd and clear lists when new bar is reached
 			if (onset.isGreaterOrEqual(barEnd)) {
@@ -3104,8 +3136,19 @@ public class MEIExport {
 
 			// If the note is the voice's last and its offset does not equal the piece end
 			NotationVoice nv = p.getScore().get(voice).get(0);
+			if (voice == 2) {
+				System.out.println("voice 2, onset " + onset);
+				System.out.println(nv.get(nv.size()-1).toString());
+				if (nv.get(nv.size()-1).getMetricTime().equals(onset)) {
+					System.out.println(onset);
+					System.out.println(nv.get(nv.size()-1));
+					System.exit(0);
+				}
+			}
 			// If last note
 			if ((nv.get(nv.size()-1).getMetricTime().equals(onset)) && !offset.equals(endOffset)) {
+				System.out.println("oeeeeeeeeeeeeeeee");
+				System.exit(0);
 				// Add rest to fill up current bar (if applicable) 
 				Rational restCurrentBar = barEnd.sub(offset);
 				if (restCurrentBar.isGreater(Rational.ZERO)) {

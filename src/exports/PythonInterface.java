@@ -40,6 +40,7 @@ public class PythonInterface {
 			String line = "";
 			while((line = bfr.readLine()) != null) {
 				outp += line + "\r\n";
+//				System.out.println(line);
 			}
 		} catch (Throwable t) {
 			t.printStackTrace();

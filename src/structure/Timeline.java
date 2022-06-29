@@ -264,17 +264,15 @@ public class Timeline implements Serializable {
 	 */
 	// TESTED
 	public static Rational diminuteMeter(Rational meter, int diminution) {
-		Rational newMeter;
 		if (diminution == 1) {
-			newMeter = new Rational(meter.getNumer(), meter.getDenom());
+			return new Rational(meter.getNumer(), meter.getDenom());
 		}
 		else if (diminution > 0) {
-			newMeter = new Rational(meter.getNumer(), (int) (meter.getDenom() / diminution)); 
+			return new Rational(meter.getNumer(), (int) (meter.getDenom() / diminution)); 
 		}
 		else {
-			newMeter = new Rational(meter.getNumer(), (meter.getDenom() * Math.abs(diminution)));
+			return new Rational(meter.getNumer(), (meter.getDenom() * Math.abs(diminution)));
 		}
-		return newMeter;
 	}
 
 
@@ -312,6 +310,132 @@ public class Timeline implements Serializable {
 			newMeter = new Rational(meter.getNumer(), (int) (meter.getDenom() / Math.abs(diminution)));
 		}
 		return newMeter;
+	}
+
+
+	/**
+	 * Given a Rational and a diminution, calculates the diminuted Rational.
+	 * 
+	 * @param r
+	 * @param diminution
+	 * @return
+	 */
+	// TODO test
+	public static Rational diminute(Rational r, int diminution) {
+		if (diminution == 1) {
+			return r;
+		}
+		else if (diminution > 0) {
+			return r.div(diminution); 
+		}
+		else {
+			return r.mul(Math.abs(diminution));
+		}
+	}
+
+
+	/**
+	 * Gets the meter section for the given (undiminuted) metric position.
+	 * 
+	 * @param mp
+	 * @param meterSectionOnsets
+	 * @return
+	 */
+	// TODO test
+	public static int getMeterSection(Rational mp, List<Rational> meterSectionOnsets) {
+		int numSections = meterSectionOnsets.size();
+		for (int i = 0; i < numSections; i++) {
+			// If there is a next section: check if mp is in section at i
+			if (i < numSections - 1) {
+				if (mp.isGreaterOrEqual(meterSectionOnsets.get(i)) && mp.isLess(meterSectionOnsets.get(i+1))) {
+					return i;
+				}
+			}
+			// If not: mp is in last section
+			else {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+
+	/**
+	 * Gets the meter section for the given (undiminuted) time.
+	 * 
+	 * @param time
+	 * @param meterSectionTimes
+	 * @return
+	 */
+	// TODO test
+	public static int getMeterSection(long time, List<Long> meterSectionTimes) {
+		int numSections = meterSectionTimes.size();
+		for (int i = 0; i < numSections; i++) {
+			// If there is a next section: check if time is in section at i
+			if (i < numSections - 1) {
+				if (time >= meterSectionTimes.get(i) && time < meterSectionTimes.get(i+1)) {
+					return i;
+				}
+			}
+			// If not: time is in last section
+			else {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+
+	/**
+	 * Given an undiminuted metric position, gets the diminuted metric position. 
+	 * 
+	 * @param mp The undiminuted metric position.
+	 * @param meterSectionOnsets The meter section onsets (undiminuted). 
+	 * @param meterSectionOnsetsDim The meter section onsets (diminuted).
+	 * @param diminutions The meter section diminutions.
+	 * @return
+	 */
+	// TODO test
+	public static Rational getDiminutedMetricPosition(Rational mp, List<Rational> meterSectionOnsets, 
+		List<Rational> meterSectionOnsetsDim, List<Integer> diminutions) {
+
+		int section = getMeterSection(mp, meterSectionOnsets);
+
+		// Set mp relative to undiminuted meter section onset
+		mp = mp.sub(meterSectionOnsets.get(section));
+		// Diminute mp
+		mp = diminute(mp, diminutions.get(section));
+		// Set mp relative to diminuted meter section onset 
+		mp = meterSectionOnsetsDim.get(section).add(mp);
+
+		return mp;
+	}
+
+
+	/**
+	 * Given an undiminuted time, gets the diminuted time.
+	 * 
+	 * @param mp The undiminuted time.
+	 * @param meterSectionTimes The meter section times (undiminuted). 
+	 * @param meterSectionTimesDim The meter section times (diminuted).
+	 * @param diminutions The meter section diminutions.
+	 * @return
+	 */
+	// TODO test
+	public static long getDiminutedTime(long time, List<Long> meterSectionTimes, 
+		List<Long> meterSectionTimesDim, List<Integer> diminutions) {
+		
+		int section = getMeterSection(time, meterSectionTimes);
+
+		// Set time relative to undiminuted meter section time
+		time -= meterSectionTimes.get(section);
+		// Diminute time
+		int dim = diminutions.get(section);
+		time = dim > 0 ? time / dim : time * Math.abs(dim);   
+		// Set time relative to diminuted meter section time
+		time += meterSectionTimesDim.get(section);
+
+		return time; 
 	}
 
 

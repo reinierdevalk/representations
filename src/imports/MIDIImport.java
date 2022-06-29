@@ -274,7 +274,7 @@ public class MIDIImport {
 //				System.out.println(i + "  is leeg" );
 //			}
 //		}
-	
+
 		Rational mltpl = null;
 //		Rational mltpl = new Rational(27, 32);
 		if (mltpl != null) {

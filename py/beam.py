@@ -24,10 +24,10 @@ with open(file_) as file:
 #with open('notes.txt') as file:  
 #    data = file.read().split('\n')
 
-# remove last (empty) line caused by final line break on notes.txt
+# Remove last (empty) line caused by final line break on notes.txt
 data = data[:-1]
 
-# split per voice
+# Split per voice
 data_per_voice = []
 curr_voice = []
 for i in range(1, len(data)): # skip first line ("voice=0")
@@ -45,7 +45,7 @@ for i in range(1, len(data)): # skip first line ("voice=0")
 #print(data_per_voice[3][-1])
 
 
-# call compute_beams on each element of all_voices
+# Call compute_beams() on each element of all_voices
 
 # each element of all_voices is a voice, i.e., a list of bars 
 # each element of a bar is a list of strings, containing 
@@ -65,13 +65,13 @@ for data in data_per_voice:
 
 def compute_beams(bars_curr_voice):
     beams_output = []
-    # for each bar
+    # For each bar
     for i in range(len(bars_curr_voice)):
         mei_bar = bars_curr_voice[i]
-        # determine time_sig and remove from mei_bar
+        # Determine time_sig and remove from mei_bar
         time_sig = mei_bar[0][mei_bar[0].index('\''):mei_bar[0].rfind('\'')+1]
         mei_bar = mei_bar[1:]
-        # for each item in mei_bar: add to new music21 measure   
+        # For each item in mei_bar: add to new music21 measure   
         m21_bar = music21.stream.Measure()
         m21_bar.timeSignature = music21.meter.TimeSignature(time_sig)
         for j in range(len(mei_bar)):
@@ -86,7 +86,7 @@ def compute_beams(bars_curr_voice):
                         dur = 0.5
                     else:
                         dur = 0.25
-                # durations in music21 are counted in quarter notes
+                # Durations in music21 are counted in quarter notes
                 note_length = 4/float(dur)
                 if 'note' in xml_note:
                     m21_bar.append(music21.note.Note('C', quarterLength=note_length))                    
@@ -97,40 +97,41 @@ def compute_beams(bars_curr_voice):
                 note_length = int(int(split[0]) / int(split[1]))
                 m21_bar.append(music21.note.Rest('rest', quarterLength=4))
 
-        # make beams
+        # Make beams
         m21_bar.makeBeams(inPlace=True)
-        # remove time_signature from m21_bar
+        # Remove time_signature from m21_bar
         m21_bar = [item for item in m21_bar if type(item) is music21.note.Note or type(item) is music21.note.Rest]    
         beamed_mei = ''
         # mei_bar and m21_bar have corresponding elements and can be indexed concurrently
         for j in range(len(m21_bar)):
             m21_note = m21_bar[j]
             mei_note = mei_bar[j]
-            # in case of bar rest
+            mei_note = mei_note.strip()
+            # In case of bar rest
             if len(m21_bar) == 1 and (type(m21_bar[0]) is music21.note.Rest):
                 beamed_mei = beamed_mei + mei_note + lb 
-            # in case of note or rest
+            # In case of note or rest
             else: # beams = m21_note.beams.beamsList 
-                # rest: add 
+                # Rest: add 
                 if m21_note.isRest: # if len(beams) == 0: # if type(m21_bar[j]) is music21.note.Rest:
                     beamed_mei = beamed_mei + mei_note + lb
-                # note: only the beginning and end of the topmost beam (beams[0]) are relevant
+                # Note: only the beginning and end of the topmost beam (beams[0]) are relevant
                 else:
                     beams = m21_note.beams.beamsList
                     if len(beams) == 0:                        
                         beamed_mei = beamed_mei + mei_note + lb
                     if len(beams) > 0:
-                        # start of beaming group
+                        # Start of beaming group
                         if '1/start' in str(beams[0]):
 #                            beamed_mei = beamed_mei + '<beam>' + lb
 #                            beamed_mei = beamed_mei + '    ' + mei_note + lb
                             beamed_mei = beamed_mei + '<beam>' + mei_note + lb
-                        # end of beaming group beam 
+                        # End of beaming group beam 
                         elif '1/stop' in str(beams[0]):
 #                            beamed_mei = beamed_mei + '    ' + mei_note + lb
 #                            beamed_mei = beamed_mei + '</beam>' + lb
-                            beamed_mei = beamed_mei + '</beam>' + mei_note + lb
-                        # middle beam of beaming group
+                            beamed_mei = beamed_mei + mei_note + '</beam>' + lb
+                        # Middle beam of beaming group
                         else:
 #                            beamed_mei = beamed_mei + '    ' + mei_note + lb
                             beamed_mei = beamed_mei + mei_note + lb
@@ -142,7 +143,7 @@ def compute_beams(bars_curr_voice):
 as_string = ''
 for i in range(0, len(all_voices)):
     bars_curr_voice = all_voices[i]
-#    print('voice', i)
+#    as_string += 'voice ' + str(i) + lb
     for item in compute_beams(bars_curr_voice):
         as_string += item + 'end of bar' + lb
     as_string += 'end of voice' 
