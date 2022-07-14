@@ -35,7 +35,7 @@ public class TranscriptionTest extends TestCase {
 	private File midiTestpiece;
 	private File encodingTestGetMeterInfo;
 	private File midiTestGetMeterKeyInfo;
-	private File midiTestGetMeterKeyInfoNoAnacrusis;
+	private File midiTestGetMeterKeyInfoDiminutedNoAnacrusis;
 	private File midiTestGetMeterKeyInfoDiminuted;
 
 	public TranscriptionTest(String name) {
@@ -49,8 +49,8 @@ public class TranscriptionTest extends TestCase {
 ////		testPaths = new String[]{Runner.encodingsPathTest, Runner.midiPathTest, Runner.midiPathTest};
 //		encodingTestpiece1 = new File(Runner.encodingsPathTest + "testpiece.tbp");
 //		midiTestpiece1 = new File(Runner.midiPathTest + "testpiece.mid");
-//		midiTestGetMeterInfo = new File(Runner.midiPathTest + "test_get_meter_key_info.mid");
-//		midiTestGetMeterInfoNoAna = new File(Runner.midiPathTest + "test_get_meter_key_info_no_anacrusis.mid");
+//		midiTestGetMeterInfoDim = new File(Runner.midiPathTest + "test_get_meter_key_info_diminuted.mid");
+//		midiTestGetMeterInfoDimNoAna = new File(Runner.midiPathTest + "test_get_meter_key_info_diminuted_no_anacrusis.mid");
 		
 		String s = MEIExport.rootDir;
 		encodingTestpiece = new File(s + "data/annotated/encodings/test/" + "testpiece.tbp");
@@ -58,8 +58,8 @@ public class TranscriptionTest extends TestCase {
 		
 		midiTestpiece = new File(s + "data/annotated/MIDI/test/" + "testpiece.mid");
 		midiTestGetMeterKeyInfo = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info.mid");
-		midiTestGetMeterKeyInfoNoAnacrusis = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info_no_anacrusis.mid");
 		midiTestGetMeterKeyInfoDiminuted = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info_diminuted.mid");
+		midiTestGetMeterKeyInfoDiminutedNoAnacrusis = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info_diminuted_no_anacrusis.mid");
 	}
 
 
@@ -1504,54 +1504,54 @@ public class TranscriptionTest extends TestCase {
 	}
 	
 	
-	public void testBla() {
-		String prefixTab = "F:/research/data/encodings/thesis-int/";
-		String prefix = "F:/research/data/MIDI/thesis-int/";
-		prefixTab = "F:/research/data/encodings/byrd-int/4vv/";
-		prefix = "F:/research/data/MIDI/byrd-int/4vv/";
-
-		List<String> fileNames = Arrays.asList(new String[]{ 
-//			"3vv/newsidler-1536_7-disant_adiu", // non
-//			"3vv/newsidler-1536_7-mess_pensees", // imi
-//			"3vv/pisador-1552_7-pleni_de", // imi
-//			"3vv/judenkuenig-1523_2-elslein_liebes", // non
-//			"3vv/newsidler-1544_2-nun_volget", // imi
-//			"3vv/phalese-1547_7-tant_que-3vv" // non
-				
-//			"4vv/ochsenkun-1558_5-absolon_fili", // n=2: imi
-//			"4vv/ochsenkun-1558_5-in_exitu", // n=2: imi
-//			"4vv/ochsenkun-1558_5-qui_habitat", // imi 
-//			"4vv/rotta-1546_15-bramo_morir", // non
-//			"4vv/phalese-1547_7-tant_que-4vv", // non
-//			"4vv/ochsenkun-1558_5-herr_gott", // non
-//			"4vv/abondante-1548_1-mais_mamignone", // non
-//			"4vv/phalese-1563_12-las_on", // non
-//			"4vv/barbetta-1582_1-il_nest", // non
-				
-//			"ah_golden_hairs-NEW",
-//			"an_aged_dame-II", //
-//			"as_caesar_wept-II",
-			"blame_i_confess-II", //
-//			"in_angels_weed-II",
-//			"o_lord_bow_down-II", //
-//			"o_that_we_woeful_wretches-NEW", //
-//			"quis_me_statim-II", //
-//			"rejoyce_unto_the_lord-NEW", // 
-//			"sith_death-NEW", //
-//			"the_lord_is_only_my_support-NEW", //
-//			"the_man_is_blest-NEW", //
-//			"while_phoebus-II" //	
-		});
-		
-		for (String s : fileNames) {
-			File encoding = new File(prefixTab + s + Encoding.EXTENSION);
-			Tablature t = new Tablature(encoding, false);
-			Transcription tr = new Transcription(new File(prefix + s + MIDIImport.EXTENSION), encoding);
-			System.out.println("@-@-@-@-@" + s);
-			tr.determineVoiceEntriesHIGHLEVEL(t.getBasicTabSymbolProperties(), 
-				tr.getMinimumDurationLabels(), null, 4, 3);
-		}
-	}
+//	public void testBla() {
+//		String prefixTab = "F:/research/data/encodings/thesis-int/";
+//		String prefix = "F:/research/data/MIDI/thesis-int/";
+//		prefixTab = "F:/research/data/encodings/byrd-int/4vv/";
+//		prefix = "F:/research/data/MIDI/byrd-int/4vv/";
+//
+//		List<String> fileNames = Arrays.asList(new String[]{ 
+////			"3vv/newsidler-1536_7-disant_adiu", // non
+////			"3vv/newsidler-1536_7-mess_pensees", // imi
+////			"3vv/pisador-1552_7-pleni_de", // imi
+////			"3vv/judenkuenig-1523_2-elslein_liebes", // non
+////			"3vv/newsidler-1544_2-nun_volget", // imi
+////			"3vv/phalese-1547_7-tant_que-3vv" // non
+//				
+////			"4vv/ochsenkun-1558_5-absolon_fili", // n=2: imi
+////			"4vv/ochsenkun-1558_5-in_exitu", // n=2: imi
+////			"4vv/ochsenkun-1558_5-qui_habitat", // imi 
+////			"4vv/rotta-1546_15-bramo_morir", // non
+////			"4vv/phalese-1547_7-tant_que-4vv", // non
+////			"4vv/ochsenkun-1558_5-herr_gott", // non
+////			"4vv/abondante-1548_1-mais_mamignone", // non
+////			"4vv/phalese-1563_12-las_on", // non
+////			"4vv/barbetta-1582_1-il_nest", // non
+//				
+////			"ah_golden_hairs-NEW",
+////			"an_aged_dame-II", //
+////			"as_caesar_wept-II",
+//			"blame_i_confess-II", //
+////			"in_angels_weed-II",
+////			"o_lord_bow_down-II", //
+////			"o_that_we_woeful_wretches-NEW", //
+////			"quis_me_statim-II", //
+////			"rejoyce_unto_the_lord-NEW", // 
+////			"sith_death-NEW", //
+////			"the_lord_is_only_my_support-NEW", //
+////			"the_man_is_blest-NEW", //
+////			"while_phoebus-II" //	
+//		});
+//		
+//		for (String s : fileNames) {
+//			File encoding = new File(prefixTab + s + Encoding.EXTENSION);
+//			Tablature t = new Tablature(encoding, false);
+//			Transcription tr = new Transcription(new File(prefix + s + MIDIImport.EXTENSION), encoding);
+//			System.out.println("@-@-@-@-@" + s);
+//			tr.determineVoiceEntriesHIGHLEVEL(t.getBasicTabSymbolProperties(), 
+//				tr.getMinimumDurationLabels(), null, 4, 3);
+//		}
+//	}
 
 
 	public void testCalculateConfigCost() {
@@ -3404,7 +3404,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetMeter() {
-		Transcription tr = new Transcription(midiTestGetMeterKeyInfo, null);
+		Transcription tr = new Transcription(midiTestGetMeterKeyInfoDiminuted, null);
 		
 		List<Rational> all = Arrays.asList(new Rational[]{
 			new Rational(2, 8), // b0
@@ -3444,7 +3444,7 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testGetMeterBar() {
-		Transcription tr = new Transcription(midiTestGetMeterKeyInfo, null);
+		Transcription tr = new Transcription(midiTestGetMeterKeyInfoDiminuted, null);
 		
 		List<Rational> expected = Arrays.asList(new Rational[]{
 			new Rational(3, 8), // b0
@@ -3472,8 +3472,8 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testCreateMeterInfo() {
-		Transcription tr = new Transcription(midiTestGetMeterKeyInfo, null);
-		Transcription tr2 = new Transcription(midiTestGetMeterKeyInfoNoAnacrusis, null);
+		Transcription tr = new Transcription(midiTestGetMeterKeyInfoDiminuted, null);
+		Transcription tr2 = new Transcription(midiTestGetMeterKeyInfoDiminutedNoAnacrusis, null);
 
 		List<Integer[]> expected = new ArrayList<Integer[]>();
 		// With anacrusis
@@ -3504,8 +3504,8 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testCreateKeyInfo() {
-		Transcription tr = new Transcription(midiTestGetMeterKeyInfo, null);
-		Transcription tr2 = new Transcription(midiTestGetMeterKeyInfoNoAnacrusis, null);
+		Transcription tr = new Transcription(midiTestGetMeterKeyInfoDiminuted, null);
+		Transcription tr2 = new Transcription(midiTestGetMeterKeyInfoDiminutedNoAnacrusis, null);
 		
 		List<Integer[]> expected = new ArrayList<Integer[]>();
 		// With anacrusis
@@ -3526,6 +3526,7 @@ public class TranscriptionTest extends TestCase {
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i).length, actual.get(i).length);
 			for (int j = 0; j < expected.get(i).length; j++) {
+				System.out.println(i + " " + j);
 				assertEquals(expected.get(i)[j], actual.get(i)[j]);
 			}
 		}
@@ -4067,12 +4068,13 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
-	public void testUndiminuteBasicNoteProperties() {
+	public void testUndiminuteBasicNotePropertiesOBS() {
 		Tablature tab = new Tablature(encodingTestGetMeterInfo, false);
-		Transcription trans = new Transcription(midiTestGetMeterKeyInfoDiminuted, null);
+		Transcription trans = new Transcription(midiTestGetMeterKeyInfo, null);
 
 		Integer[][] expected = 
-			new Integer[trans.getBasicNoteProperties().length][trans.getBasicNoteProperties()[0].length];
+			new Integer[trans.getBasicNoteProperties().length]
+			[trans.getBasicNoteProperties()[0].length];
 		// Anacrusis
 		expected[0] = new Integer[]{69, 0, 1024, 1, 8, 0, 1, 0};
 		expected[1] = new Integer[]{69, 1, 8, 1, 8, 1, 1, 0};
@@ -4137,13 +4139,18 @@ public class TranscriptionTest extends TestCase {
 		expected[52] = new Integer[]{69, 111, 16, 1, 8, 40, 2, 1};
 		
 		Integer[][] actual = 
-			Transcription.undiminuteBasicNoteProperties(trans.getBasicNoteProperties(), 
+			Transcription.undiminuteBasicNotePropertiesOBS(trans.getBasicNoteProperties(), 
+//			tab.getTimeline().getMeterInfoOBS());
 			tab.getTimeline().getMeterInfo());
+		for (Integer[] in : actual) {
+			System.out.println(Arrays.asList(in));
+		}
 		
 		assertEquals(expected.length, actual.length);
 		for (int i = 0; i < expected.length; i++) {
 			assertEquals(expected[i].length, actual[i].length);
 			for (int j = 0; j < expected[i].length; j++) {
+				System.out.println(i + " " + j);
 				assertEquals(expected[i][j], actual[i][j]);
 			}
 		}
@@ -5201,7 +5208,7 @@ public class TranscriptionTest extends TestCase {
 	
 	public void testGetAllMetricPositions() {
 		// a. For a piece with meter changes
-		Transcription transcription = new Transcription(midiTestGetMeterKeyInfo, null);
+		Transcription transcription = new Transcription(midiTestGetMeterKeyInfoDiminuted, null);
 
 		List<Rational[]> expected = new ArrayList<Rational[]>();
 		
@@ -5314,7 +5321,6 @@ public class TranscriptionTest extends TestCase {
 
 		actual.addAll(transcription.getAllMetricPositions());
 
-		// Assert equality
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i).length, actual.get(i).length);

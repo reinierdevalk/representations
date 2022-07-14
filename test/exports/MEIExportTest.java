@@ -279,6 +279,7 @@ public class MEIExportTest extends TestCase {
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));
 		}
+		assertEquals(expected, actual);
 	}
 	
 	
@@ -352,6 +353,45 @@ public class MEIExportTest extends TestCase {
 					assertEquals(expected.get(i).get(j).get(k), actual.get(i).get(j).get(k));
 				}
 			}
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testGetDottedNoteLength() {
+		List<Rational> expected = Arrays.asList(new Rational[]{
+			// 1/1
+			new Rational(1, 1), // 0 dots
+			new Rational(3, 2), // 1 dot
+			new Rational(7, 4), // 2 dots
+			new Rational(15, 8), // 3 dots
+			// 1/2
+			new Rational(1, 2), // 0 dots
+			new Rational(3, 4), // 1 dot
+			new Rational(7, 8), // 2 dots
+			new Rational(15, 16), // 3 dots
+			// 1/4
+			new Rational(1, 4), // 0 dots
+			new Rational(3, 8), // 1 dot
+			new Rational(7, 16), // 2 dots
+			new Rational(15, 32), // 3 dots
+
+		});
+
+		List<Rational> undotted = Arrays.asList(new Rational[]{
+			new Rational(1, 1), new Rational(1, 1), new Rational(1, 1), new Rational(1, 1),
+			new Rational(1, 2), new Rational(1, 2), new Rational(1, 2), new Rational(1, 2),
+			new Rational(1, 4), new Rational(1, 4), new Rational(1, 4), new Rational(1, 4)
+		});
+		List<Integer> dots = Arrays.asList(new Integer[]{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3});
+		List<Rational> actual = new ArrayList<>();
+		for (int i = 0; i < undotted.size(); i++) {
+			actual.add(MEIExport.getDottedNoteLength(undotted.get(i), dots.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
 		}
 		assertEquals(expected, actual);
 	}

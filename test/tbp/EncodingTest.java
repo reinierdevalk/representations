@@ -926,6 +926,7 @@ public class EncodingTest extends TestCase {
 		expected += Symbol.END_BREAK_INDICATOR;
 
 		String actual = 
+//			encoding.reverse(tab.getTimeline().getMeterInfoOBS()).getRawEncoding();
 			encoding.reverse(tab.getTimeline().getMeterInfo()).getRawEncoding();
 
 		assertEquals(expected, actual);		
@@ -1002,6 +1003,7 @@ public class EncodingTest extends TestCase {
 		}
 
 		String actual = 
+//			encoding.stretch(tab.getTimeline().getMeterInfoOBS(), 2).getRawEncoding();
 			encoding.stretch(tab.getTimeline().getMeterInfo(), 2).getRawEncoding();
 
 		assertEquals(expected, actual);		

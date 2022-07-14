@@ -16,6 +16,8 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 
+import com.sun.org.apache.bcel.internal.generic.NEW;
+
 import de.uos.fmt.musitech.data.performance.MidiNote;
 import de.uos.fmt.musitech.data.performance.PerformanceNote;
 import de.uos.fmt.musitech.data.score.NotationChord;
@@ -222,300 +224,262 @@ public class Transcription implements Serializable {
 //	}
 
 
+	/**
+	 * Diminutes the given Piece according to the given meterInfo from the tablature.
+	 * 
+	 * @param groundTruthPiece
+	 * @param meterInfoTab
+	 * @return
+	 */
+	// TODO test
+	Piece diminutePiece(Piece groundTruthPiece, List<Integer[]> meterInfoTab) {
+		Piece groundTruthPieceDim = new Piece();
+		List<Integer> diminutions = ToolBox.getItemsAtIndex(meterInfoTab, Timeline.MI_DIM);
+
+//		System.out.println("B E F O R E");
+		NotationSystem ns = groundTruthPiece.getScore();
+//		for (int i = 0; i < ns.size(); i++) {
+//			NotationStaff nst = ns.get(i);
+//			System.out.println("voice " + i + " -->");
+//			for (NotationVoice nv : nst) {
+//				for (NotationChord nc : nv) {
+//					for (Note n : nc) {
+//						System.out.println(n);
+//					}
+//				}
+//			}
+//		}
+
+		// Meters and meter section onsets (from MIDI/groundTruthPiece)
+		// a. Undiminuted 
+		MetricalTimeLine mtl = groundTruthPiece.getMetricalTimeLine();
+		List<Rational> meters = new ArrayList<>();
+		List<Rational> meterSectionOnsets = new ArrayList<>();
+		System.out.println("***************************************");
+		for (int i = 0; i < mtl.size(); i++) {
+			Marker m = mtl.get(i);
+			if (m instanceof TimeSignatureMarker) {
+				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
+				System.out.println(tsm);
+				TimeSignature ts = tsm.getTimeSignature();
+				Rational mt = tsm.getMetricTime();
+				// Add if time signature at the current onset is not yet in list
+				if (!meterSectionOnsets.contains(mt)) {
+					meters.add(new Rational(ts.getNumerator(), ts.getDenominator()));
+					meterSectionOnsets.add(mt);
+				}
+			}
+		}
+		System.out.println("***************************************");
+		// b. Diminuted
+		List<Rational> metersDim = new ArrayList<>();
+//		System.out.println(meters);
+//		System.out.println(diminutions);
+		
+		for (int i = 0; i < meters.size(); i++) {
+			metersDim.add(Timeline.diminuteMeter(meters.get(i), diminutions.get(i)));
+		}
+		List<Rational> meterSectionOnsetsDim = new ArrayList<>();
+		meterSectionOnsetsDim.add(Rational.ZERO);
+		for (int i = 1; i < meterInfoTab.size(); i++) {
+			Integer[] curr = meterInfoTab.get(i-1);
+			Rational currMeter = Timeline.diminute(meters.get(i-1), curr[Timeline.MI_DIM]); 
+			int currNumBars = (curr[Timeline.MI_LAST_BAR] - curr[Timeline.MI_FIRST_BAR]) + 1; 
+			meterSectionOnsetsDim.add(meterSectionOnsetsDim.get(i-1).add(currMeter.mul(currNumBars)));
+		}
+
+		// Meter section times (from MIDI/groundTruthPiece)
+		// a. Undiminuted
+		List<Long> meterSectionTimes = new ArrayList<>();
+		meterSectionTimes.add((long)0);
+		for (Rational r : meterSectionOnsets.subList(1, meterSectionOnsets.size())) {
+			outer: for (int i = 0; i < ns.size(); i++) {
+				for (NotationVoice nv : ns.get(i)) {
+					for (NotationChord nc : nv) {
+						if (nc.getMetricTime().isEqual(r)) {
+							meterSectionTimes.add(nc.get(0).getTime());
+							break outer;
+						}
+					}
+				}
+			}
+		}
+		// b. Diminuted
+		List<Long> meterSectionTimesDim = new ArrayList<>();
+		meterSectionTimesDim.add((long) 0);
+		for (int i = 1; i < meterSectionTimes.size(); i++) {
+			long secLen = meterSectionTimes.get(i) - meterSectionTimes.get(i-1);
+			int dim = diminutions.get(i-1);
+			secLen = dim > 0 ? secLen / dim : secLen * Math.abs(dim);
+//			secLen += meterSectionTimesDim.get(i-1);
+			meterSectionTimesDim.add(meterSectionTimesDim.get(i-1) + secLen);
+		}
+
+		// Check equality of diminuted meters and meter section onsets for groudTruthPieceDim 
+		// and meterInfoTab
+//		List<Rational[]> timeSigAndOnsetsTab = new ArrayList<>();
+		List<Rational> metersTab = new ArrayList<>(); //.getItemsAtIndex(timeSigAndOnsetsTab, 0);
+		List<Rational> meterSectionOnsetsTab = new ArrayList<>(); // .getItemsAtIndex(timeSigAndOnsetsTab, 1);
+		for (Integer[] in : meterInfoTab) {
+//			Rational ts = new Rational(in[Timeline.MI_NUM], in[Timeline.MI_DEN]);
+//			Rational mt = new Rational(in[Timeline.MI_NUM_MT_FIRST_BAR], in[Timeline.MI_DEN_MT_FIRST_BAR]);
+//			timeSigAndOnsetsTab.add(new Rational[]{ts, mt});
+			metersTab.add(new Rational(in[Timeline.MI_NUM], in[Timeline.MI_DEN]));
+			meterSectionOnsetsTab.add(new Rational(in[Timeline.MI_NUM_MT_FIRST_BAR], 
+				in[Timeline.MI_DEN_MT_FIRST_BAR]));
+		}
+
+		System.out.println("UNDIMINUTED from groundTruthPiece");
+		System.out.println("meters");
+		System.out.println(meters);
+		System.out.println("meterSectionOnsets");
+		System.out.println(meterSectionOnsets);
+		System.out.println("meterSectionTimes");
+		System.out.println(meterSectionTimes);
+		System.out.println();
+		System.out.println("DIMINUTED for groundTruthPieceDim");
+		System.out.println("metersDim");
+		System.out.println(metersDim);
+		System.out.println("meterSectionOnsetsDim");
+		System.out.println(meterSectionOnsetsDim);
+		System.out.println("meterSectionTimesDim");
+		System.out.println(meterSectionTimesDim);
+		System.out.println();
+		System.out.println("SHOULD BE equal to");
+		System.out.println("metersTab");
+		System.out.println(metersTab);
+		System.out.println("meterSectionOnsetsTab");
+		System.out.println(meterSectionOnsetsTab);
+		System.out.println();
+		System.out.println("meterInfoTab");
+		for (Integer[] in : meterInfoTab) {
+			System.out.println(Arrays.asList(in));
+		}
+
+		if (!metersTab.equals(metersDim) || !meterSectionOnsetsTab.equals(meterSectionOnsetsDim)) {
+			throw new RuntimeException("ERROR: meters do not match.");
+		}
+
+		// Get, per voice, the NotationChords for each meter section
+		// a. Initialise meterSectionsPerVoice with empty lists  
+		List<List<List<NotationChord>>> meterSectionsPerVoice = new ArrayList<>();
+		for (int i = 0; i < ns.size(); i++) {
+			List<List<NotationChord>> currVoice = new ArrayList<>();
+			for (int j = 0; j < meterInfoTab.size(); j++) {
+				currVoice.add(new ArrayList<>());
+			}
+			meterSectionsPerVoice.add(currVoice);
+		}
+		// b. Fill meterSectionsPerVoice
+		// meterSectionsPerVoice.get(v)       : the sections for voice v
+		// meterSectionsPerVoice.get(v).get(s): the notes for section s in voice v
+		for (int v = 0; v < ns.size(); v++) {
+			NotationStaff nst = ns.get(v);
+			NotationVoice nv = nst.get(0);
+			for (NotationChord nc : nv) {
+				// All notes in a NotationChord have the same metric time
+				Rational mt = nc.getMetricTime();
+				long time = nc.getTime();
+				int sec = Timeline.getMeterSection(mt, meterSectionOnsets);
+				int dim = diminutions.get(sec);
+				// Diminute the nc and add to the appropriate section
+				for (Note n : nc) {
+					// 1. Set ScoreNote
+					Rational onsDim = 
+						Timeline.getDiminutedMetricPosition(mt, meterSectionOnsets, 
+						meterSectionOnsetsDim, diminutions);
+					Rational durDim = Timeline.diminute(n.getMetricDuration(), dim);
+					n.setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), onsDim, durDim));
+					// 2. Set PerformanceNote
+					long timeDim = 
+						Timeline.getDiminutedTime(time, meterSectionTimes, meterSectionTimesDim, 
+						diminutions);
+					long durationDim = dim > 0 ? n.getDuration() / dim : n.getDuration() * Math.abs(dim);   
+					PerformanceNote pn = n.getPerformanceNote();
+					pn.setTime(timeDim);
+					pn.setDuration(durationDim);
+					n.setPerformanceNote(pn);
+				}
+				meterSectionsPerVoice.get(v).get(sec).add(nc);
+			}
+		}
+
+//		System.out.println("voice 0, diminuted");
+//		int count = 0;
+//		for (List<NotationChord> l : meterSectionsPerVoice.get(0)) {
+//			System.out.println("Section " + count );
+//			for (NotationChord nc : l) {
+//				System.out.println(nc.get(0));
+//			}
+//			count++;
+//			System.out.println("* * * * * * * * * * * * * ");
+//		}
+		
+		// Recombine into a new Piece
+		// For each voice
+		NotationSystem nsDim = new NotationSystem();
+		for (int i = 0; i < meterSectionsPerVoice.size(); i++) {
+			NotationStaff nstDim = new NotationStaff();
+			NotationVoice nvDim = new NotationVoice();
+			// For each section
+			for (List<NotationChord> l : meterSectionsPerVoice.get(i)) {
+				for (NotationChord nc : l) {
+					nvDim.add(nc);
+				}
+			}
+			nstDim.add(nvDim);
+			nsDim.add(nstDim);
+		}
+
+		// Adapt meters and onset times in MetricalTimeLine and Harmonytrack
+		for (Marker m : mtl) {
+			if (m instanceof TimeSignatureMarker) {
+				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
+				// Set metric time
+				Rational mt = tsm.getMetricTime();
+				tsm.setMetricTime(Timeline.getDiminutedMetricPosition(mt, meterSectionOnsets, 
+					meterSectionOnsetsDim, diminutions));
+				// Set TimeSignature
+				TimeSignature ts = tsm.getTimeSignature();
+				TimeSignature tsDim = 
+					new TimeSignature(Timeline.diminuteMeter(
+					new Rational(ts.getNumerator(), ts.getDenominator()),
+					diminutions.get(meterSectionOnsets.indexOf(mt))));
+				tsm.setTimeSignature(tsDim);
+			}
+		}
+		groundTruthPieceDim.setMetricalTimeLine(mtl);
+		SortedContainer<Marker> ht = groundTruthPiece.getHarmonyTrack();
+		for (Marker m : ht) {
+			if (m instanceof KeyMarker) {
+				KeyMarker km = (KeyMarker) m;
+				// Set metric time
+				km.setMetricTime(Timeline.getDiminutedMetricPosition(km.getMetricTime(), meterSectionOnsets, 
+					meterSectionOnsetsDim, diminutions));
+//				System.out.println(m);
+			}
+		}
+		groundTruthPieceDim.setHarmonyTrack(ht);
+
+		// Set score and name
+		groundTruthPieceDim.setScore(nsDim);
+		groundTruthPieceDim.setName(groundTruthPiece.getName());		
+		return groundTruthPieceDim;
+	}
+
+
+	// TODO integrate with main constructor (below)
 	public Transcription(File argMidiFile, File argEncodingFile, List<Integer[]> meterInfoTab) {
 		setFiles(Arrays.asList(new File[]{argMidiFile, argEncodingFile}));
 
 		Piece groundTruthPiece = MIDIImport.importMidiFile(argMidiFile);
+		if (meterInfoTab != null) {
+			groundTruthPiece = diminutePiece(groundTruthPiece, meterInfoTab);
+		}
+
 		Encoding encoding = null;
 		if (argEncodingFile != null) {
 			encoding = new Encoding(argEncodingFile);
-		}
-
-		if (meterInfoTab != null) {
-			Piece groundTruthPieceDim = new Piece();
-			
-			System.out.println("meterInfo tab:");
-			for (Integer[] in : meterInfoTab) {
-				System.out.println(Arrays.asList(in));
-			}
-			List<Integer> diminutions = ToolBox.getItemsAtIndex(meterInfoTab, Timeline.MI_DIM);
-//			List<Rational[]> tiameSigAndOnsetsTab = new ArrayList<>();
-//			for (Integer[] in : meterInfoTab) {
-//				Rational ts = new Rational(in[Timeline.MI_NUM], in[Timeline.MI_DEN]);
-//				Rational mt = new Rational(in[Timeline.MI_NUM_MT_FIRST_BAR], in[Timeline.MI_DEN_MT_FIRST_BAR]);
-//				timeSigAndOnsetsTab.add(new Rational[]{ts, mt});
-//			}
-			
-//			System.out.println("B E F O R E");
-			NotationSystem ns = groundTruthPiece.getScore();
-			for (int i = 0; i < ns.size(); i++) {
-				NotationStaff nst = ns.get(i);
-//				System.out.println("voice " + i + " -->");
-				for (NotationVoice nv : nst) {
-					for (NotationChord nc : nv) {
-						for (Note n : nc) {
-//							System.out.println(n);
-						}
-					}
-				}
-			}
-
-			// Retrieve meters and meter section onsets from MIDI
-			MetricalTimeLine mtl = groundTruthPiece.getMetricalTimeLine(); 
-			List<Rational[]> timeSigAndOnsets = new ArrayList<>(); 
-			for (int i = 0; i < mtl.size(); i++) {
-				Marker mk = mtl.get(i);
-				if (mk instanceof TimeSignatureMarker) {
-					TimeSignatureMarker tsm = (TimeSignatureMarker) mk;
-					TimeSignature ts = tsm.getTimeSignature();
-					Rational mtRat = mk.getMetricTime();
-					// Add if time signature at the current onset is not yet in list
-					if (!ToolBox.getItemsAtIndex(timeSigAndOnsets, 1).contains(mtRat)) {
-						timeSigAndOnsets.add(new Rational[]{new Rational(ts.getNumerator(), ts.getDenominator()), mtRat});
-					}
-				}
-			}
-			System.out.println("timeSigAndOnsets");
-			for (Rational[] r : timeSigAndOnsets) {
-				System.out.println(Arrays.asList(r));
-			}
-			
-			// Get the undiminuted meter section onsets (i.e., as in the MIDI file)			
-			List<Rational> meterSectionOnsets = ToolBox.getItemsAtIndex(timeSigAndOnsets, 1);
-			System.out.println("meterSectionOnsets");
-			System.out.println(meterSectionOnsets);
-			
-			// Get the diminuted meter section onsets
-			List<Rational> meterSectionOnsetsDim = new ArrayList<>();
-			meterSectionOnsetsDim.add(Rational.ZERO);
-			for (int i = 1; i < meterInfoTab.size(); i++) {
-				Integer[] curr = meterInfoTab.get(i-1);
-				Rational currMeter = new Rational(curr[Timeline.MI_NUM], curr[Timeline.MI_DEN]);
-				int currNumBars = (curr[Timeline.MI_LAST_BAR] - curr[Timeline.MI_FIRST_BAR]) + 1; 
-				int currDim = curr[Timeline.MI_DIM];
-				currMeter = Timeline.diminute(currMeter, currDim); 
-				meterSectionOnsetsDim.add(meterSectionOnsetsDim.get(i-1).add(currMeter.mul(currNumBars)));
-			}
-			System.out.println("meterSectionOnsetsDim");
-			System.out.println(meterSectionOnsetsDim);
-			
-			// Get the undiminuted meter section times (i.e., as in the MIDI file)
-			List<Long> meterSectionTimes = new ArrayList<>();
-			meterSectionTimes.add((long)0);
-			for (Rational r : meterSectionOnsets.subList(1, meterSectionOnsets.size())) {
-				outer: for (int i = 0; i < ns.size(); i++) {
-					for (NotationVoice nv : ns.get(i)) {
-						for (NotationChord nc : nv) {
-							if (nc.getMetricTime().isEqual(r)) {
-								meterSectionTimes.add(nc.get(0).getTime());
-								break outer;
-							}
-						}
-					}
-				}
-			}
-			System.out.println("meterSectionTimes");
-			System.out.println(meterSectionTimes);
-			
-			// Get the diminuted meter section times
-			List<Long> meterSectionTimesDim = new ArrayList<>();
-			meterSectionTimesDim.add((long) 0);
-			for (int i = 1; i < meterSectionTimes.size(); i++) { 
-				// Get length of section ending at current time and diminute
-				long secLen = meterSectionTimes.get(i) - meterSectionTimes.get(i-1); 
-				int dim = diminutions.get(i-1);
-				secLen = dim > 0 ? secLen / dim : secLen * Math.abs(dim); 
-				// Increment with previous diminuted meter section time 
-				secLen += meterSectionTimesDim.get(i-1);
-				meterSectionTimesDim.add(secLen);
-			}
-			System.out.println("meterSectionTimesDim");
-			System.out.println(meterSectionTimesDim);
-			
-			// Get the undiminuted meter section boundaries (opening and closing metric times of each meter section)
-//			// a. Add offset of final bar to meterSectionOnsets
-//			Integer[] lastSec = meterInfoTab.get(meterInfoTab.size()-1);
-//			int numBarsLastMeterSection = (lastSec[Timeline.MI_LAST_BAR] - lastSec[Timeline.MI_FIRST_BAR]) + 1; 
-//			Rational onsetLastSec = meterSectionOnsets.get(meterSectionOnsets.size()-1);
-//			List<Rational> meters = ToolBox.getItemsAtIndex(timeSigAndOnsets, 0);
-//			Rational meterLastSec = meters.get(meters.size()-1);
-//			Rational lenLastSec = meterLastSec.mul(numBarsLastMeterSection);
-//			Rational offSetFinalBar = onsetLastSec.add(lenLastSec); 
-//			meterSectionOnsets.add(offSetFinalBar);
-//			// b. Construct meter section boundaries
-//			List<Rational[]> meterSectionBoundaries = new ArrayList<>();
-//			for (int i = 0; i < meterSectionOnsets.size() - 1; i++) {
-//				meterSectionBoundaries.add(new Rational[]{meterSectionOnsets.get(i), meterSectionOnsets.get(i + 1)});
-//			}
-//			System.out.println("sectionBoundaries");
-//			for (Rational[] r : meterSectionBoundaries) {
-//				System.out.println(Arrays.asList(r));
-//			}
-
-			// Get, per voice, the NotationChords belonging to each meter section
-			// a. Initialise meterSectionsPerVoice with empty lists. It contains for each voice, for each section, 
-			// the list of notes (wrapped in NotationChords) for that section 
-			// meterSectionsPerVoice.get(v)        : the sections for voice v
-			// meterSectionsPerVoice.get(v).get(s) : the notes for section s in voice v 
-			List<List<List<NotationChord>>> meterSectionsPerVoice = new ArrayList<>();
-			int numVoices = ns.size();
-			int numSections = meterInfoTab.size();
-//			int numSections = meterSectionBoundaries.size();
-			// For each voice
-			for (int i = 0; i < numVoices; i++) {
-				// For each section
-				List<List<NotationChord>> currVoice = new ArrayList<>();
-				for (int j = 0; j < numSections; j++) {
-					currVoice.add(new ArrayList<>());
-				}
-				meterSectionsPerVoice.add(currVoice);
-			}
-			// b. Fill meterSectionsPerVoice
-			for (int v = 0; v < ns.size(); v++) {
-				NotationStaff nst = ns.get(v);
-				NotationVoice nv = nst.get(0);
-				for (NotationChord nc : nv) {
-					Rational ons = nc.getMetricTime(); // all notes in a NotationChord have the same metric time
-					long time = nc.getTime();
-					int sec = Timeline.getMeterSection(ons, meterSectionOnsets);
-					int dim = diminutions.get(sec);
-//					// Determine the diminution
-//					int sec = Timeline.getMeterSection(ons, meterSectionOnsets);
-//					int dim = diminutions.get(sec);
-					// Diminute the nc and add to the appropriate section
-					for (Note n : nc) {
-						// 1. Set ScoreNote
-						Rational onsDim = 
-							Timeline.getDiminutedMetricPosition(ons, meterSectionOnsets, 
-							meterSectionOnsetsDim, diminutions);
-//						Rational onsDim = onsDimAndSec[0];
-//						sec = onsDimAndSec[1].getNumer();
-//						int dim = diminutions.get(sec);
-						Rational durDim = Timeline.diminute(n.getMetricDuration(), dim);
-						n.setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), onsDim, durDim));
-						// 2. Set PerformanceNote
-//						long time = n.getTime();
-//						// Set time relative to undiminuted meter change time; diminute; set relative 
-//						// to diminuted meter change time
-//						time -= meterSectionTimes.get(sec);
-//						long timeDim = dim > 0 ? time / dim : time * Math.abs(dim);   
-//						timeDim += meterSectionTimesDim.get(sec);
-						long timeDim = 
-							Timeline.getDiminutedTime(time, meterSectionTimes, meterSectionTimesDim, 
-							diminutions);
-//						long timeDim = timeDimAndSec[0];
-//						long duration = n.getDuration();
-						long durationDim = dim > 0 ? n.getDuration() / dim : n.getDuration() * Math.abs(dim);   
-						PerformanceNote pn = n.getPerformanceNote();
-						pn.setTime(timeDim);
-						pn.setDuration(durationDim);
-						n.setPerformanceNote(pn);
-					}
-					meterSectionsPerVoice.get(v).get(sec).add(nc);
-				}
-			}
-
-//			System.out.println("voice 0, diminuted");
-			int count = 0;
-			for (List<NotationChord> l : meterSectionsPerVoice.get(0)) {
-//				System.out.println("Section " + count );
-				for (NotationChord nc : l) {
-//					System.out.println(nc.get(0));
-				}
-				count++;
-//				System.out.println("* * * * * * * * * * * * * ");
-			}
-			
-			// Recombine into a new Piece
-			// For each voice
-			NotationSystem nsDim = new NotationSystem();
-			for (int i = 0; i < meterSectionsPerVoice.size(); i++) {
-				NotationStaff nstDim = new NotationStaff();
-				NotationVoice nvDim = new NotationVoice();
-				// For each section in the current voice
-				for (List<NotationChord> l : meterSectionsPerVoice.get(i)) {
-					for (NotationChord nc : l) {
-						nvDim.add(nc);
-					}
-				}
-				nstDim.add(nvDim);
-				nsDim.add(nstDim);
-			}
-			// Adapt meters and onset times in MetricaltimeLine and Harmonytrack
-			SortedContainer<Marker> ht = groundTruthPiece.getHarmonyTrack();
-			for (Marker m : ht) {
-				System.out.println(m);
-			}
-			System.out.println("---------");
-//			MetricalTimeLine mtl = groundTruthPiece.getMetricalTimeLine();
-			for (Marker m : mtl) {
-				System.out.println(m);
-			}
-			System.exit(0);
-//			groundTruthPieceDim.setMetricalTimeLine(mtl);
-			groundTruthPieceDim.setHarmonyTrack(ht);
-			groundTruthPieceDim.setScore(nsDim);
-			groundTruthPieceDim.setName(groundTruthPiece.getName());
-			
-			System.exit(0);
-
-//			int dim = diminutions.get(0);
-//			Rational meterChangeOnset = timeSigAndOnsets.get(0)[0]; 
-//			for (int i = 0; i < ns.size(); i++) {
-//				NotationStaff nst = ns.get(i);
-//				NotationStaff nstAdapted = new NotationStaff();
-//				System.out.println("STAFF " + i + " -->");
-//				System.out.println(dim);
-//				System.out.println(meterChangeOnset);
-//				for (NotationVoice nv : nst) {
-//					Rational onsPrev = Rational.ZERO;
-//					NotationVoice nvAdapted = new NotationVoice();	
-//					for (NotationChord nc : nv) {
-//						NotationChord ncAdapted = (NotationChord) nc.clone();
-//						Rational ons = ncAdapted.getMetricTime();
-////						System.exit(0);
-//						Rational onsAdapted;
-//						for (Note n : ncAdapted) {
-//							System.out.println(n);
-//							System.out.println(n.getPerformanceNote());
-//							Rational dur = n.getMetricDuration();
-//							Rational durAdapted;
-//							long timeAdapted; 
-//							long durationAdapted;
-//							if (dim > 0) {
-//								durAdapted = dur.div(dim);
-//								onsAdapted = onsPrev.add(ons.div(dim));
-//								timeAdapted = n.getTime() / dim;
-//								durationAdapted = n.getDuration() / dim;
-//							}
-//							else {
-//								durAdapted = dur.mul(Math.abs(dim));
-//								onsAdapted = onsPrev.add(ons.div(Math.abs(dim)));
-//								timeAdapted = n.getTime() * dim;
-//								durationAdapted = n.getDuration() * dim;
-//							}
-//							System.out.println(timeAdapted);
-//							PerformanceNote pn = n.getPerformanceNote();
-//							pn.setTime(timeAdapted);
-//							pn.setDuration(durationAdapted);
-//							n.setPerformanceNote(pn);
-//							n.setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), onsAdapted, durAdapted));
-//							
-//							System.out.println(onsAdapted + " " + durAdapted);
-//							System.out.println(n);
-//							System.out.println("----");
-//							if (ons.equals(new Rational(2, 1))) {
-//								System.exit(0);
-//							}
-//
-//						}
-//						nvAdapted.add(ncAdapted);
-//					}
-//					nstAdapted.add(nvAdapted);
-//				}
-//				nst = nstAdapted;
-//			}
-//			System.exit(0);
 		}
 
 		// Create the Transcription based on the ground truth Piece
@@ -710,6 +674,7 @@ public class Transcription implements Serializable {
 				transpose(tab.getTranspositionInterval());
 			}
 			setMeterInfo(tab.getTimeline().getMeterInfo());
+//			setMeterInfo(tab.getTimeline().getMeterInfoOBS());
 			setKeyInfo(/*tab.getMeterInfo()*/); // must be done after possible transpose()
 			setTranscriptionChordsFinal(); // sets the final version of the transcription chords
 			setMinimumDurationLabels(tab);
@@ -979,6 +944,7 @@ public class Transcription implements Serializable {
 
 		Encoding eRev = null;
 		if (tab != null) {
+//			eRev = tab.getEncoding().reverse(tab.getTimeline().getMeterInfoOBS()); // NB The value of normaliseTuning is irrelevant
 			eRev = tab.getEncoding().reverse(tab.getTimeline().getMeterInfo()); // NB The value of normaliseTuning is irrelevant
 		}
 		return new Transcription(pRev, eRev);
@@ -1484,6 +1450,7 @@ public class Transcription implements Serializable {
 				new Rational(basicTabSymbolPropertiesChord[0][Tablature.ONSET_TIME], 
 				Tablature.SRV_DEN);
 			Rational[] metricPosition = 
+//				Timeline.getMetricPosition(onsetTime, tablature.getTimeline().getMeterInfoOBS());
 				Timeline.getMetricPosition(onsetTime, tablature.getTimeline().getMeterInfo());
 			String bar = String.valueOf(metricPosition[0].getNumer());
 			String positionWithinBar = " " + String.valueOf(metricPosition[1]);
@@ -2707,7 +2674,7 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED
-	public static Integer[][] undiminuteBasicNoteProperties(Integer[][] bnp, List<Integer[]> mi) {
+	static Integer[][] undiminuteBasicNotePropertiesOBS(Integer[][] bnp, List<Integer[]> mi) {
 		Integer[][] undiminutedBnp = new Integer[bnp.length][bnp[0].length];
 		Rational prevMt = null;
 		Rational prevMtDim = null;
@@ -2776,7 +2743,7 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	static Piece undiminutePiece(Piece p, List<Integer[]> mi) {
-
+		// TODO remove
 		
 		return null;
 	}
@@ -8667,6 +8634,7 @@ public class Transcription implements Serializable {
 			if (tablature != null) {
 				currentChordSize = tablature.getTablatureChords().get(i).size();
 				meterInfo = tablature.getTimeline().getMeterInfo();
+//				meterInfo = tablature.getTimeline().getMeterInfoOBS();
 				for (Integer[] btp : basicTabSymbolProperties) {
 					if (btp[Tablature.CHORD_SEQ_NUM] == i) {
 						onsetCurrNote = 

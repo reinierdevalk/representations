@@ -435,6 +435,12 @@ public class MEIExport {
 			staffAndLayer[2] = new Integer[]{2, 1};
 			staffAndLayer[3] = new Integer[]{2, 2};
 		}
+		if (numVoices == 5) {
+			// TODO	
+		}
+		if (numVoices == 6) {
+			// TODO
+		}
 		return staffAndLayer;
 	}
 
@@ -526,6 +532,7 @@ public class MEIExport {
 		res = res.replace("title_placeholder", meiHead[MEI_HEAD.indexOf("title")]);
 
 		List<Integer[]> mi = tab.getTimeline().getMeterInfo();
+//		List<Integer[]> mi = tab.getTimeline().getMeterInfoOBS();
 		List<String[]> meters = new ArrayList<>();
 		for (Integer[] in : mi) {
 			String sym = "";
@@ -969,6 +976,7 @@ public class MEIExport {
 
 	private static int getStaffNum(boolean tablatureCase, boolean grandStaff, boolean tabOnTop, 
 		int numVoices, int voice) {
+		System.out.println("\r\n>>> getStaffNum() called");
 		int staff;
 		// Options: ONLY_TAB, TAB_AND_TRANS && tabOnTop, TAB_AND_TRANS && !tabOnTop
 		if (tablatureCase) {
@@ -1006,6 +1014,7 @@ public class MEIExport {
 	 */
 	private static List<String> makeScoreDef(Integer[] currMi, Integer[] currKi, TabSymbolSet 
 		tss, String tabMs, boolean grandStaff, boolean tabOnTop, int bar, int numVoices) {
+		System.out.println("\r\n>>> makeScoreDef() called");
 		// The <scoreDef> contains a <staffGrp>, which contains one (TAB_ONLY case) or more 
 		// (other cases) multiple <staffDef>s. In the TAB_AND_TRANS case, the <staffDef>s for 
 		// the CMN are wrapped in another <staffGrp> as to enable across-staff barlines
@@ -1047,7 +1056,7 @@ public class MEIExport {
 			if (ONLY_TAB || TAB_AND_TRANS) {
 				diminution = currMi[Timeline.MI_DIM];
 				Rational undiminutedMeter = 
-					Timeline.undiminuteMeter(new Rational(count, unit), diminution);
+					Timeline.diminuteMeter(new Rational(count, unit), diminution);
 				count = undiminutedMeter.getNumer();
 				unit = undiminutedMeter.getDenom();
 			}
@@ -1190,7 +1199,7 @@ public class MEIExport {
 	public static void exportMEIFile(Transcription trans, Tablature tab, List<List<Integer>> 
 		mismatchInds, boolean grandStaff, boolean tabOnTop, boolean alignWithMetricBarring, 
 		String path) {
-//\\		System.out.println("\r\n>>> MEIExport.exportMEIFile() called");
+		System.out.println("\r\n>>> MEIExport.exportMEIFile() called");
 
 		String res = ToolBox.readTextFile(new File(MEITemplatePath + "template-MEI.xml"));
 
@@ -1207,8 +1216,9 @@ public class MEIExport {
 			ONLY_TRANS = true;
 		}
 		List<Integer[]> tabBarsToMetricBars = (tab != null) ? tab.mapTabBarsToMetricBars() : null;
-		// mi from tab is the same as mi from trans in TAB_AND_TRANS case
+		// mi from tab is the same as mi from trans in TAB_AND_TRANS case // TODO still true?
 		List<Integer[]> mi = (tab != null) ? tab.getTimeline().getMeterInfo() : trans.getMeterInfo();
+//		List<Integer[]> mi = (tab != null) ? tab.getTimeline().getMeterInfoOBS() : trans.getMeterInfo();
 		int numMetricBars = mi.get(mi.size()-1)[Timeline.MI_LAST_BAR];
 		int numTabBars = (tab != null) ? tabBarsToMetricBars.size() : -1;
 		int numBars = !alignWithMetricBarring ? numTabBars : numMetricBars;
@@ -1332,6 +1342,11 @@ public class MEIExport {
 			List<List<String>> tabBars = 
 				getTabBars(tab, alignWithMetricBarring, getStaffNum(true, grandStaff, 
 				tabOnTop, numVoices, -1));
+			for (List<String> l : tabBars) {
+				for (String s : l) {
+					System.out.println(s);
+				}
+			}
 			for (int i = 0; i < numBars; i++) {
 				StringBuilder currTabBarAsStr = new StringBuilder();
 				for (String s : tabBars.get(i)) {
@@ -1449,17 +1464,51 @@ public class MEIExport {
 	}
 
 
+	/**
+	 * Gets the duration, as a Rational, of the given undotted not when it is dotted with 
+	 * the given number of dots.
+	 * 
+	 * @param undotted
+	 * @param dots
+	 * @return
+	 */
+	// TESTED
+	public static Rational getDottedNoteLength(Rational undotted, int dots) {
+		if (dots == 0) {
+			return undotted;
+		}
+		else {
+			// Each dot d adds 1/(2^d) * the undotted length to the undotted note
+			// One dot adds 1/(2^1), e.g., H.  = 1/2 + (1/2 * 1/2)
+			// Two dots add 1/(2^2), e.g., H.. = 1/2 + (1/2 * 1/2) + (1/2 * 1/4)
+			Rational dotted = undotted;
+			for (int i = 1; i <= dots; i++) {
+				Rational factor = new Rational(1, (int) Math.pow(2, i));
+				Rational increment = undotted.mul(factor);
+				dotted = dotted.add(increment);
+			}
+			return dotted;
+		}
+	}
+
+
 	private static List<List<String>> getTabBars(Tablature tab, boolean alignWithMetricBarring,
 		int staff) {
+		System.out.println("\r\n>>> getTabBars() called");
 		List<List<String>> tabBars = new ArrayList<>();
 		
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		String sp = Symbol.SPACE.getEncoding();
 		TabSymbolSet tss = tab.getEncoding().getTabSymbolSet();
 		List<Integer[]> mi = tab.getTimeline().getMeterInfo();
+//		List<Integer[]> mi = tab.getTimeline().getMeterInfoOBS();
 //		List<String[]> meters = new ArrayList<>();
 //		int meterIndex = 0;
 		List<Integer[]> tabBarsToMetricBars = tab.mapTabBarsToMetricBars();
+		for (Integer[] in : tabBarsToMetricBars) {
+			System.out.println(Arrays.toString(in));
+		}
+		System.exit(0);
 
 //		List<Integer> xmlDurPerBar = new ArrayList<>();
 //		Rational prevDur = null;
@@ -1523,6 +1572,13 @@ public class MEIExport {
 		List<Event> events = 
 			Encoding.removeDecorativeBarlineEvents(tab.getEncoding().getEvents());
 		
+//		System.out.println(events.size());
+//		for (Event e : events) {
+//			System.out.println(e.getBar());
+//			System.out.println(e.getEncoding());
+//		}
+//		System.exit(0);
+		
 		// Organise events per bar
 		List<List<Event>> eventsPerBar = new ArrayList<>();
 		int currBar = events.get(0).getBar();
@@ -1536,7 +1592,8 @@ public class MEIExport {
 			}
 			eventsBar.add(events.get(i));		
 		}
-//		for (Event l : eventsPerBar.get(0)) {
+//		System.out.println(eventsPerBar.size());
+//		for (Event l : eventsPerBar.get(1)) {
 //			System.out.println(l.getEncoding());
 //		}
 //		System.exit(0);
@@ -1560,7 +1617,8 @@ public class MEIExport {
 			int currMetricBar = tabBarsToMetricBars.get(currTabBar-1)[Tablature.METRIC_BAR_IND];
 			int currDim = tab.getTimeline().getDiminution(currMetricBar);
 
-			// For each event		
+			// For each event
+			Rational barLen = Rational.ZERO;
 			for (int j = 0; j < currBarEvents.size(); j++) {
 				Event currEventFull = currBarEvents.get(j);
 //				String[] currEventFull = currBarEvents.get(j);
@@ -1602,6 +1660,18 @@ public class MEIExport {
 //				if (!ConstantMusicalSymbol.isBarline(currEvent)) {
 					// Get XML durations of currEvent, and, if applicable, currEventOrig
 					Integer[] currDurXML = getXMLDur(currEvent);
+					
+
+					if (currDurXML == null) {
+						Rational currDurRat = new Rational(1, prevDurXML[0]);
+						if (prevDurXML[1] != 0) {
+							currDurRat = currDurRat.mul(prevDurXML[1]);
+						}
+//						barLen = barLen.add(prevDurXML);
+					}
+					else {
+//						barLen = barLen.add();
+					}
 
 					String sicEvent = !isCorrected ? currEvent : currEventOrig;
 					String corrEvent = !isCorrected ? null : currEvent;
@@ -1712,7 +1782,7 @@ public class MEIExport {
 						currEventAsXML.add(TAB.repeat(2) + "</choice>");
 					}
 					currBarAsXML.addAll(currEventAsXML);
-					
+
 //					// Add duration
 //					if (eventAsXML.contains("dur='")) {
 //						// Remove any <sic> part 
@@ -1766,7 +1836,15 @@ public class MEIExport {
 							}
 						}
 					}
-				}
+				} // if (!isBarline)
+			} // loop over currBarEvents
+			for (String s : currBarAsXML) {
+				System.out.println(s);
+			}
+			System.exit(0);
+			
+			if (alignWithMetricBarring) {
+				
 			}
 
 			if (alignWithMetricBarring) {
@@ -1824,7 +1902,8 @@ public class MEIExport {
 //					}
 //				}
 //			}
-		}
+
+		} // loop over eventsPerBar
 
 //		// tabBars follows tablature 'barring'; combine any tab bars to follow metric barring
 //		if (alignWithMetricBarring) {
@@ -1881,7 +1960,7 @@ public class MEIExport {
 	private static List<List<String>> getTransBars(List<Object> data, Tablature tab, List<Integer[]> mi,
 		List<Rational[]> tripletOnsetPairs, List<List<Integer>> mismatchInds, 
 		boolean grandStaff, boolean tabOnTop, int numVoices, String path) {			
-
+		System.out.println("\r\n>>> getTransBars() called");
 		List<List<String>> transBars = new ArrayList<>();
 		
 		// Composition of dataStr (and dataInt):
@@ -1904,12 +1983,12 @@ public class MEIExport {
 //			}
 //		}
 		
-		List<String[]> b61v2 = dataStr.get(61).get(2); 
-		System.out.println("XXXXXX");
-		for (String[] s : b61v2) {
-			System.out.println(Arrays.toString(s));
-		}
-		System.exit(0);
+//		List<String[]> b61v2 = dataStr.get(61).get(2); 
+//		System.out.println("XXXXXX");
+//		for (String[] s : b61v2) {
+//			System.out.println(Arrays.toString(s));
+//		}
+//		System.exit(0);
 		
 		// Apply beaming: set beamOpen and beamClose in dataInt
 		dataInt = beam(dataInt, dataStr, tab, mi, tripletOnsetPairs, mismatchInds, numVoices, path);
@@ -2144,8 +2223,8 @@ public class MEIExport {
 		List<List<Integer>> mismatchInds, int argVoice, int diminution) {
 		List<String> barList = new ArrayList<>();
 //		int bar = currBarCurrVoiceInt.get(0)[INTS.indexOf("bar")];
-		System.out.println(Arrays.toString(currBarCurrVoiceInt.get(0)));
-		System.out.println(INTS.indexOf("bar"));
+//		System.out.println(Arrays.toString(currBarCurrVoiceInt.get(0)));
+//		System.out.println(INTS.indexOf("bar"));
 		String barRestStr = 
 			TAB.repeat(2) + "<mRest " + "xml:id='" + argVoice + "." + 
 			currBarCurrVoiceInt.get(0)[INTS.indexOf("bar")] + "." + "0.r.0'" + "/>";
@@ -2491,6 +2570,7 @@ public class MEIExport {
 	@SuppressWarnings("unchecked")
 	private static List<Object> getData(Tablature tab, Transcription trans,
 		List<Integer[]> mi, List<Integer[]> ki, List<Rational[]> tripletOnsetPairs) {
+		System.out.println("\r\n>>> getData() called");
 
 		Piece p = trans.getPiece();
 		int numVoices = p.getScore().size();
@@ -2528,26 +2608,13 @@ public class MEIExport {
 			// Adapt complete bnp if any of the meters has a diminution other than 1
 			List<Integer> diminutions = ToolBox.getItemsAtIndex(mi, Timeline.MI_DIM);
 			if (Collections.frequency(diminutions, 1) != diminutions.size()) {
-				// Undiminute bnp using diminuted mi
-				for (Integer[] in : mi) {
-					System.out.println(Arrays.toString(in));
-				}
-				System.out.println(Tablature.SRV_DEN);
-				System.out.println(Arrays.toString(btp[0]));
-				System.out.println(Arrays.toString(btp[1]));
-				System.out.println(Arrays.toString(btp[2]));
-				System.exit(0);
-				System.out.println(Arrays.toString(bnp[0]));
-				System.out.println(Arrays.toString(bnp[1]));
-				System.out.println(Arrays.toString(bnp[2]));
-				bnp = Transcription.undiminuteBasicNoteProperties(bnp, mi);
+//				// Undiminute bnp using diminuted mi
+
+//				bnp = Transcription.undiminuteBasicNotePropertiesOBS(bnp, mi);
 //				p = Transcription.createPiece(btp, bnp mi);
-				System.out.println(Arrays.toString(bnp[0]));
-				System.out.println(Arrays.toString(bnp[1]));
-				System.out.println(Arrays.toString(bnp[2]));
-				System.exit(0);
+
 				// Reset mi to undiminuted 
-				mi = tab.getTimeline().getUndiminutedMeterInfo();
+//				mi = tab.getTimeline().getUndiminutedMeterInfoOBS();
 //				Integer[][] undiminutedBnp = new Integer[bnp.length][bnp[0].length];
 //				Rational prevMt = null;
 //				Rational prevMtDim = null;
@@ -3136,19 +3203,19 @@ public class MEIExport {
 
 			// If the note is the voice's last and its offset does not equal the piece end
 			NotationVoice nv = p.getScore().get(voice).get(0);
-			if (voice == 2) {
-				System.out.println("voice 2, onset " + onset);
-				System.out.println(nv.get(nv.size()-1).toString());
-				if (nv.get(nv.size()-1).getMetricTime().equals(onset)) {
-					System.out.println(onset);
-					System.out.println(nv.get(nv.size()-1));
-					System.exit(0);
-				}
-			}
+//			if (voice == 2) {
+//				System.out.println("voice 2, onset " + onset);
+//				System.out.println(nv.get(nv.size()-1).toString());
+//				if (nv.get(nv.size()-1).getMetricTime().equals(onset)) {
+//					System.out.println(onset);
+//					System.out.println(nv.get(nv.size()-1));
+//					System.exit(0);
+//				}
+//			}
 			// If last note
 			if ((nv.get(nv.size()-1).getMetricTime().equals(onset)) && !offset.equals(endOffset)) {
-				System.out.println("oeeeeeeeeeeeeeeee");
-				System.exit(0);
+//				System.out.println("oeeeeeeeeeeeeeeee");
+//				System.exit(0);
 				// Add rest to fill up current bar (if applicable) 
 				Rational restCurrentBar = barEnd.sub(offset);
 				if (restCurrentBar.isGreater(Rational.ZERO)) {
