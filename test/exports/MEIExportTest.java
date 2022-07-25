@@ -173,6 +173,33 @@ public class MEIExportTest extends TestCase {
 	}
 
 
+	public void testGetDur() {
+		List<Integer> expected = Arrays.asList(new Integer[]{
+			96, 144, 168, // brevis; 0, 1, 2 dots
+			48, 72, 84, // semibrevis; 0, 1, 2 dots 
+			24, 36, 42, // minim; 0, 1, 2 dots
+			12, 18, 21 // semiminim; 0, 1, 2 dots
+		});
+
+		List<Integer> XMLDurs = Arrays.asList(new Integer[]{
+			1, 1, 1, 2, 2, 2, 4, 4, 4, 8, 8, 8});
+		
+		List<Integer> dots = Arrays.asList(new Integer[]{
+			0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2
+		});
+		List<Integer> actual = new ArrayList<>();
+		for (int i = 0; i < XMLDurs.size(); i++) {
+			actual.add(MEIExport.getDur(XMLDurs.get(i), dots.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+		 	assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
 	public void testGetXMLDur() {
 		Encoding encoding = new Encoding(encodingTestpiece);
 		
@@ -385,6 +412,33 @@ public class MEIExportTest extends TestCase {
 		});
 		List<Integer> dots = Arrays.asList(new Integer[]{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3});
 		List<Rational> actual = new ArrayList<>();
+		for (int i = 0; i < undotted.size(); i++) {
+			actual.add(MEIExport.getDottedNoteLength(undotted.get(i), dots.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testGetDottedNoteLengthAlt() {
+		List<Integer> expected = Arrays.asList(new Integer[]{
+			// 1/1
+			96, 144, 168, 180, // 0, 1, 2, 3 dots
+			// 1/2
+			48, 72, 84, 90, // 0, 1, 2, 3 dots
+			// 1/4
+			24, 36, 42, 45 // 0, 1, 2, 3 dots
+		});
+
+		List<Integer> undotted = Arrays.asList(new Integer[]{
+			96, 96, 96, 96, 48, 48, 48, 48, 24, 24, 24, 24
+		});
+		List<Integer> dots = Arrays.asList(new Integer[]{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3});
+		List<Integer> actual = new ArrayList<>();
 		for (int i = 0; i < undotted.size(); i++) {
 			actual.add(MEIExport.getDottedNoteLength(undotted.get(i), dots.get(i)));
 		}

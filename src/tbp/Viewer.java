@@ -183,7 +183,7 @@ public class Viewer extends JFrame{
 		ta.setEditable(true);
 		ta.setFont(FONT);
 		ta.setText(content);
-		ta.setHighlighter(encoding ? getHighlighter() : null);
+		ta.setHighlighter(encoding ? getHighlighter() : null); // highligher also makes it copyable
 		return ta;
 	}
 

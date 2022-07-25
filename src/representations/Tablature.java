@@ -8,8 +8,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
@@ -33,6 +31,9 @@ public class Tablature implements Serializable {
 	public static final int SRV_DEN = SMALLEST_RHYTHMIC_VALUE.getDenom();
 	public static final int TAB_BAR_IND = 0;
 	public static final int METRIC_BAR_IND = 1;
+	public static final int SECOND_METRIC_BAR_IND = 2;
+	public static final int TAB_BAR_REL_ONSET_IND = 3;
+	public static final int METRIC_BAR_REMAINDER_IND = 4;
 	private static final boolean ADAPT_TAB = false;
 
 	// For tunings
@@ -1072,7 +1073,7 @@ public class Tablature implements Serializable {
 	 * Cases:<br>
 	 * tab bar:metric bar = 1:1<br>
 	 * tab bar:metric bar = n:1<br>
-	 * tab bar:metric bar = 3:n<br><br>
+	 * tab bar:metric bar = 3:2<br><br>
 	 * 
 	 * Examples:<br>
 	 * tab bar:metric bar = n:1<br> 
@@ -1080,7 +1081,7 @@ public class Tablature implements Serializable {
 	 * tab bars   : 2/2 H | H | H | H | H | H | H | H |<br> 
  	 * returns [[1, 1, -1], [2, 1, -1], [3, 2, -1], [4, 2, -1], [5, 3, -1], [6, 3, -1], [7, 4, -1], [8, 4, -1]]<br><br>
  	 * 
- 	 * tab bar:metric bar = 3:n<br>  
+ 	 * tab bar:metric bar = 3:2<br>  
 	 * metric bars: 3/2 H H   H | H   H H | H H   H | H   H H |<br>
 	 * tab bars   : 3/2 H H | H   H | H H | H H | H   H | H H |<br> 
  	 * returns [[1, 1, -1], [2, 1, 2], [3, 2, -1], [4, 3, -1], [5, 3, 4], [6, 4, -1]]<br><br>
@@ -1092,9 +1093,11 @@ public class Tablature implements Serializable {
 	 *         <ul>
 	 *         <li>as element 0: the tab bar</li>
 	 *         <li>as element 1: the metric bar the tab bar belongs to</li>
-	 *         <li>as element 2: any second metric bar the tab bar belongs to (3:n case) or -1 (other cases)</li>
+	 *         <li>as element 2: any second metric bar the tab bar belongs to (3:2 case) or -1 (other cases)</li>
 	 *         <li>as element 3: the relative onset (in multiples of SMALLEST_RHYTHMIC_VALUE) of the tab bar 
 	 *                           in the metric bar</li>
+	 *         <li>as element 4: the remainder of the metric bar (in multiples of SMALLEST_RHYTHMIC_VALUE) at the
+	 *                           end of the tab bar</li>                  
 	 *         </ul>
 	 */
 	// TESTED
@@ -1149,9 +1152,9 @@ public class Tablature implements Serializable {
 		int remainderOfMetricBarLen = metricBarLengths.get(0);
 		for (int i = 0; i < tabBarLengths.size(); i++) {
 			int bar = i + 1;
-			Integer[] barMetricBarsOnsetTabInMetricBar = new Integer[]{bar, -1, -1, -1};
+			Integer[] barMetricBarsOnsetTabInMetricBar = new Integer[]{bar, -1, -1, -1, -1};
 			int currTabBarLen = tabBarLengths.get(i);
-			int currMetricBarLen = metricBarLengths.get(metricBar -1);
+//			int currMetricBarLen = metricBarLengths.get(metricBar -1);
 
 			// There are three possible cases
 			// a. tab:metric = 1:1, i.e., each tab bar corresponds to one metric bar
@@ -1165,8 +1168,11 @@ public class Tablature implements Serializable {
 				barMetricBarsOnsetTabInMetricBar[1] = metricBar;
 				barMetricBarsOnsetTabInMetricBar[3] = onsetTabInMetric;
 				// Set for next tab bar
-				onsetTabInMetric = currMetricBarLen - (currMetricBarLen - currTabBarLen);	 
+//				onsetTabInMetric = currMetricBarLen - (currMetricBarLen - currTabBarLen);
+				onsetTabInMetric += currTabBarLen;
 				remainderOfMetricBarLen -= currTabBarLen;
+				// Set metricBar remainder
+				barMetricBarsOnsetTabInMetricBar[4] = remainderOfMetricBarLen;
  			}
 			// Case c
 			// tab:metric = 3:2, middle tab bar: covers end of first metric bar and beginning of second
@@ -1179,6 +1185,8 @@ public class Tablature implements Serializable {
 				onsetTabInMetric = Math.abs(metricBarLengths.get(metricBar - 1) - (onsetTabInMetric + currTabBarLen));
 				remainderOfMetricBarLen = 
 					metricBarLengths.get(metricBar - 1) - (currTabBarLen - remainderOfMetricBarLen);
+				// Set metricBar remainder
+				barMetricBarsOnsetTabInMetricBar[4] = remainderOfMetricBarLen;
 			}
 			// Cases a, b, and c
 			// tab:metric 1:1
@@ -1193,7 +1201,9 @@ public class Tablature implements Serializable {
 				// If not last metric bar
 				if (metricBar <= metricBarLengths.size()) {
 					remainderOfMetricBarLen = metricBarLengths.get(metricBar-1);
-				}		
+				}
+				// Set metricBar remainder
+				barMetricBarsOnsetTabInMetricBar[4] = 0;
 			}
 			mapped.add(barMetricBarsOnsetTabInMetricBar);
 		}

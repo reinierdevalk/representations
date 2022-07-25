@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.apache.commons.lang3.StringUtils;
+
+import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.data.structure.Piece;
 import de.uos.fmt.musitech.utility.math.Rational;
@@ -16,6 +19,7 @@ import imports.MIDIImport;
 import representations.Tablature;
 import representations.Transcription;
 import structure.Timeline;
+import tbp.ConstantMusicalSymbol;
 import tbp.Encoding;
 import tbp.Event;
 import tbp.MensurationSign;
@@ -330,62 +334,6 @@ public class MEIExport {
 
 
 	/**
-	 * Returns the duration of the given Rational. Returns an Integer[] with as element 0 the 
-	 * duration as the smallest denominator, and as element the number of dots.  
-	 *  
-	 * @param dur
-	 * @return
-	 */
-	private Integer[] getDuration(Rational durRat) {
-		Integer[] dur = null;
-		durRat.reduce();
-		System.out.println("BLA");
-		List<Rational> all = new ArrayList<Rational>();
-		for (int i = 1; i <= 128; i++) {
-			all.add(new Rational(i, 128));
-		}
-		
-		// Quantize
-		if (!all.contains(durRat)) {
-			dur = null;
-		}
-		else {	
-			// Quadruple dotted = 1.9375
-			Rational basicNoteValQdrD = durRat.div(new Rational(31, 16));
-			basicNoteValQdrD.reduce();
-			if (all.contains(basicNoteValQdrD)) {
-				dur = new Integer[]{basicNoteValQdrD.getDenom(), 4};
-			}
-			// Triple dotted = 1.875 * basic note value
-			Rational basicNoteValTrpD = durRat.div(new Rational(15, 8));
-			basicNoteValTrpD.reduce();
-			if (all.contains(basicNoteValTrpD)) {
-				dur = new Integer[]{basicNoteValTrpD.getDenom(), 3};
-			}
-			// Double dotted = 1.75 * basic note value
-			Rational basicNoteValDblD = durRat.div(new Rational(7, 4));
-			basicNoteValDblD.reduce();
-			if (all.contains(basicNoteValDblD)) {
-				dur = new Integer[]{basicNoteValDblD.getDenom(), 2};
-			}
-			// Dotted = 1.5 * basic note value 
-			Rational basicNoteValD = durRat.div(new Rational(3, 2));
-			basicNoteValD.reduce();
-			if (all.contains(basicNoteValD)) {
-				dur = new Integer[]{basicNoteValD.getDenom(), 1};
-			}
-			// Undotted
-			Rational basicNoteVal = durRat.div(new Rational(1, 1));
-			basicNoteVal.reduce();
-			if (dur != null && all.contains(basicNoteVal)) {
-				dur = new Integer[]{basicNoteVal.getDenom(), 0};
-			}
-		}
-		return dur;
-	}
-
-
-	/**
 	 * Returns from the given list of unit fractions the sublists of unit fractions that 
 	 * represent dotted notes.
 	 * 
@@ -436,7 +384,11 @@ public class MEIExport {
 			staffAndLayer[3] = new Integer[]{2, 2};
 		}
 		if (numVoices == 5) {
-			// TODO	
+			staffAndLayer[0] = new Integer[]{1, 1};
+			staffAndLayer[1] = new Integer[]{1, 2};
+			staffAndLayer[2] = new Integer[]{2, 1};
+			staffAndLayer[3] = new Integer[]{2, 2};
+			staffAndLayer[4] = new Integer[]{2, 3};
 		}
 		if (numVoices == 6) {
 			// TODO
@@ -511,339 +463,32 @@ public class MEIExport {
 
 
 	/**
-	 * Exports the given tablature as a TabMEI file, saved at the given path.
+	 * Gets the duration (in Tablature.SMALLEST_RHYTHMIC_VALUE) of the given XML duration with 
+	 * the given number of dots.
 	 * 
-	 * @param tab
-	 * @param path
+	 * @param XMLDur
+	 * @param dots
+	 * @return
 	 */
-	private static void exportTabMEIFile(Tablature tab, String path) {
-
-		String res = ToolBox.readTextFile(new File(MEITemplatePath + "template-MEI.xml"));		
-		String tuningStr = "lute.renaissance.6";
-		TabSymbolSet tss = tab.getEncoding().getTabSymbolSet();
-		String notationtypeStr = getNotationTypeStr(tss);
-
-		String ss = Symbol.SYMBOL_SEPARATOR;
-		String sp = Symbol.SPACE.getEncoding();
-
-		// 1. Make meiHead
-		String[] meiHead = new String[MEI_HEAD.size()];
-		meiHead[MEI_HEAD.indexOf("title")] = tab.getPiecename();
-		res = res.replace("title_placeholder", meiHead[MEI_HEAD.indexOf("title")]);
-
-		List<Integer[]> mi = tab.getTimeline().getMeterInfo();
-//		List<Integer[]> mi = tab.getTimeline().getMeterInfoOBS();
-		List<String[]> meters = new ArrayList<>();
-		for (Integer[] in : mi) {
-			String sym = "";
-			if (in[Timeline.MI_NUM] == 4 && in[Timeline.MI_DEN] == 4) {
-				sym = " meter.sym='common'";
-			}
-			else if (in[Timeline.MI_NUM] == 2 && in[Timeline.MI_DEN] == 2) {
-				sym = " meter.sym='cut'";
-			}
-			meters.add(new String[]{
-				"meter.count='" + in[Timeline.MI_NUM] + "'", 
-				"meter.unit='" + in[Timeline.MI_DEN] + "'",
-				sym}
-			);
-		}
-
-		// 2. Make music
-		// a. Make scoreDef. The scoreDef contains the initial meter (if any); any additional 
-		// ones are stored in nonInitMeters
-		String[] initMeter = meters.get(0); 
-		String scoreDefStr = initMeter[0] + " " + initMeter[1] + initMeter[2];
-		res = res.replace("scoreDef_placeholder", scoreDefStr.trim());
-		int meterIndex = 0;
-
-		// b. Make staffGrp (goes inside scoreDef)
-		String staffGrpAtt = "";
-		res = res.replace(" staffGrp_placeholder", staffGrpAtt);
-		String staffGrpStr = 
-			"<staffDef n='1'" + " xml:id='s1'" + " lines='6'" + " " + "notationtype='" + 
-			notationtypeStr + "'" + ">" + "\r\n"; 
-		staffGrpStr += INDENT_TWO + TAB + TAB + "<tuning tuning.standard='" + tuningStr + "'" + "/>" + "\r\n";		
-		staffGrpStr += INDENT_TWO + TAB + "</staffDef>";
-
-		res = res.replace("staffGrp_content_placeholder", staffGrpStr);
+	// TESTED
+	static int getDur(int XMLDur, int dots) {
+		int dur;
 		
-		// Get events; remove any decorative opening barlines (which affect the XML bar numbering)
-		List<Event> events = 
-			Encoding.removeDecorativeBarlineEvents(tab.getEncoding().getEvents());
-//		List<List<String[]>> ebf = tab.getEncoding().getExtendedEventsPerBar(true);
-
-//		List<List<String[]>> ebfPruned = new ArrayList<>();
-//		for (int i = 0; i < ebf.size(); i++) {
-//			List<String[]> bar = ebf.get(i);
-//			// Add bar only if it is not one containing only one element that is a barline
-//			String f = removeTrailingSymbolSeparator(bar.get(0)[Encoding.EVENT_IND]);
-//			if (!(bar.size() == 1 && ConstantMusicalSymbol.isBarline(f))) {
-//				ebfPruned.add(bar);
-//			}
-//		}
-//		ebf = ebfPruned;
-
-		// 3. Make bars
-		// Organise the information per bar
-		StringBuilder sb = new StringBuilder();
-		List<String> measuresTab = new ArrayList<>();
-		Integer[] prevDurXML = new Integer[]{0, 0};
-		for (int i = 0; i < events.size(); i++) {
-//			List<String[]> currBar = events.get(i);
-			
-			int currTabBar = events.get(i).getBar();
-//			int currTabBar = currBarEvents.get(0).getBar();
-			List<Event> currBar = new ArrayList<>();
-			for (int j = i; j < events.size(); j++) {
-				if (events.get(j).getBar() == currTabBar + 1) {
-					i = j - 1;
-					break;
-				}
-				currBar.add(events.get(j));
-			}
-			System.out.println("bar  : " + (i+1));
-
-			StringBuilder sbBar = new StringBuilder();
-			
-			// Make XML content for currBar
-			String currBarXMLAsString = "";
-			String barline = "";
-			// For each event
-			for (int j = 0; j < currBar.size(); j++) {
-				Event currEventFull = currBar.get(j);
-//				String[] currEventFull = currBar.get(j);
-				String currEvent = 
-					removeTrailingSymbolSeparator(currEventFull.getEncoding());
-//				String currEvent = 
-//					removeTrailingSymbolSeparator(currEventFull[Encoding.EVENT_IND]);
-				String currEventOrig = currEventFull.getFootnote();
-//				String currEventOrig = currEventFull[Encoding.FOOTNOTE_IND];
-				System.out.println(currEventFull);
-				System.out.println("event: " + currEvent);
-				// Extract correction
-				boolean isCorrected = false;
-				if (currEventOrig != null) {
-					if (currEventOrig.contains("'")) {
-						currEventOrig = currEventOrig.substring(currEventOrig.indexOf("'")+1,
-							currEventOrig.lastIndexOf("'"));
-						isCorrected = true;
-					}
-					else {
-						currEventOrig = 
-							currEventOrig.substring(currEventOrig.indexOf(Encoding.FOOTNOTE_INDICATOR) + 1);
-					}
-					currEventOrig = removeTrailingSymbolSeparator(currEventOrig);
-				}
-
-				// Barline? End of bar reached; set barline if not single
-				if (Symbol.getConstantMusicalSymbol(currEvent) != null && Symbol.getConstantMusicalSymbol(currEvent).isBarline()) {
-//				if (ConstantMusicalSymbol.isBarline(currEvent)) {
-					// TODO currently only single and double barline possible in MEI
-					if (currEvent.equals(Symbol.BARLINE.makeVariant(2, null).getEncoding())) {
-						barline = " right='dbl'";
-					}
-					if (i == events.size()-1) {
-						barline = " right='end'";
-					}
-				}
-				// Not a barline?
-				else {
-					// Get XML durations of currEvent, and, if applicable, currEventOrig
-					Integer[] currDurXML = getXMLDur(currEvent);
-
-					String sicEvent = !isCorrected ? currEvent : currEventOrig;
-					String corrEvent = !isCorrected ? null : currEvent;
-
-					boolean defaultCase = !isCorrected; 
-					boolean oneReplacedByMultiple = isCorrected && sicEvent.endsWith(sp);
-					boolean multipleReplacedByOne = 
-						isCorrected && sicEvent.contains(sp) && !sicEvent.endsWith(sp);
-					boolean defaultCorrectedCase = 
-						isCorrected && !oneReplacedByMultiple && !multipleReplacedByOne;
-
-					List<String> sicList = new ArrayList<>();
-					List<String> corrList = new ArrayList<>();
-					// No <sic> and <corr>
-					if (defaultCase) {
-						sicList.add(sicEvent);
-					}
-					// Both <sic> and <corr> contain one <tabGrp>
-					if (defaultCorrectedCase) {
-						sicList.add(sicEvent);
-						corrList.add(corrEvent);
-					}
-					// <sic> contains multiple <tabGrp>s, <corr> one 
-					if (multipleReplacedByOne) {
-						for (String s : sicEvent.split(sp + ss)) {
-							sicList.add(removeTrailingSymbolSeparator(s));
-						}
-						corrList.add(corrEvent);
-					}
-					// <sic> contains one <tabGrp>, <corr> multiple 
-					// --> corrList contains corrEvent plus all events following that 
-					// together have the same duration as durSic
-					// NB It is assumed that the replacement is within the bar
-					if (oneReplacedByMultiple) {
-						sicEvent = sicEvent.substring(0, sicEvent.indexOf(sp));
-						sicList.add(removeTrailingSymbolSeparator(sicEvent));
-						corrList.add(corrEvent);
-						RhythmSymbol rsSic = 
-							RhythmSymbol.getRhythmSymbol(sicEvent.substring(0, sicEvent.indexOf(ss)));
-						int durSic; 
-						if (rsSic != null) {
-							durSic = rsSic.getDuration();
-						}
-						else {
-							durSic = -1; // TODO get last specified duration before currEvent
-						}
-						RhythmSymbol rsCorr = 
-							RhythmSymbol.getRhythmSymbol(corrEvent.substring(0, corrEvent.indexOf(ss)));
-						int durCorr;
-						if (rsCorr != null) {
-							durCorr = rsCorr.getDuration();
-						}
-						else {
-							durCorr = -1; // TODO get last specified duration before currEvent
-						}
-						int durCorrToTrack = durCorr;
-						// Iterate through next events until durCorr equals durSic
-						for (int l = j+1; l < currBar.size(); l++) {
-							Event nextEventFull = currBar.get(l);
-//							String[] nextEventFull = currBar.get(l);
-							String nextEvent = 
-								removeTrailingSymbolSeparator(nextEventFull.getEncoding());
-//							String nextEvent = 
-//								removeTrailingSymbolSeparator(nextEventFull[Encoding.EVENT_IND]);
-							String nextEventOrig = nextEventFull.getFootnote();
-//							String nextEventOrig = nextEventFull[Encoding.FOOTNOTE_IND];
-							// If the next element has a footnote
-							if (nextEventOrig != null) {
-								nextEventOrig = removeTrailingSymbolSeparator(nextEventOrig);
-								corrList.add(nextEvent);
-								// Determine duration of corrected event, increment durCorr,
-								// and update durrCorrToTrack
-								RhythmSymbol nextEventRS = 
-									RhythmSymbol.getRhythmSymbol(nextEvent.substring(0, 
-									nextEvent.indexOf(ss)));
-								int durCorrNext;
-								if (nextEventRS != null) {
-									durCorrNext = nextEventRS.getDuration();
-									durCorrToTrack = durCorrNext;
-								}
-								else {
-									durCorrNext = durCorrToTrack;
-								}
-								durCorr += durCorrNext;		
-							}
-							if (durCorr == durSic) {
-								int eventsToSkip = corrList.size() - 1;
-								j += eventsToSkip;
-								break;
-							}
-						}
-					}
-
-					String eventAsXML = "";
-					if (isCorrected) {
-						eventAsXML += INDENT_TWO + TAB.repeat(3) + "<choice>" + "\r\n";
-						eventAsXML += INDENT_TWO + TAB.repeat(4) + "<sic>" + "\r\n";
-					}
-					eventAsXML += getTabGrps(sicList, prevDurXML, isCorrected, tss);
-					if (isCorrected) {
-						eventAsXML += INDENT_TWO + TAB.repeat(4) + "</sic>" + "\r\n";
-					}
-					if (isCorrected) {
-						eventAsXML += INDENT_TWO + TAB.repeat(4) + "<corr>" + "\r\n";
-						eventAsXML += getTabGrps(corrList, prevDurXML, isCorrected, tss);
-						eventAsXML += INDENT_TWO + TAB.repeat(4) + "</corr>" + "\r\n";
-					}
-					if (isCorrected) {
-						eventAsXML += INDENT_TWO + TAB.repeat(3) + "</choice>" + "\r\n";
-					}
-					currBarXMLAsString += eventAsXML;
-					
-					// Update prevDurXML
-					// a. Set prevDurXML to currDurXML (or, if it is null, to the last 
-					// XML duration)
-					if (defaultCase || defaultCorrectedCase || multipleReplacedByOne) {
-						if (currDurXML != null) {
-							prevDurXML = currDurXML;
-						}
-					}
-					// b. Set prevDurXML to the last specified duration in corrList  
-					if (oneReplacedByMultiple) {
-						List<String> corrListRev = new ArrayList<>(corrList);
-						Collections.reverse(corrListRev);
-						for (String event : corrListRev) {
-							Integer[] lastDurXML = getXMLDur(event);
-							if (lastDurXML != null) {
-								prevDurXML = lastDurXML;
-								break;
-							}
-						}
-					}
-				}
-			}
-			// Wrap currBar in measure-staff-layer elements
-//			// First bar: no indentation required because of section_content_placeholder placement
-//			if (i > 0) {
-			sbBar.append(INDENT_TWO);
-//			}
-			sbBar.append("<measure n='" + (i+1) + "'" + barline + ">" + "\r\n");
-			sbBar.append(INDENT_TWO + TAB + "<staff n='1'" + ">" + "\r\n");
-			sbBar.append(INDENT_TWO + TAB.repeat(2) + "<layer n='1'" + ">" + "\r\n");
-			sbBar.append(currBarXMLAsString);
-			sbBar.append(INDENT_TWO + TAB.repeat(2) + "</layer>" + "\r\n");
-			sbBar.append(INDENT_TWO + TAB + "</staff>" + "\r\n");
-			sbBar.append(INDENT_TWO + "</measure>");
-//			System.out.println(sb.toString());
-			if (i < events.size()-1) {
-				sbBar.append("\r\n");
-			}
-			
-			sb.append(sbBar);
-			measuresTab.add(sbBar.toString());
-
-			// Append meter change (if applicable)
-			if (i < events.size()-1) {
-				// Check for meter change in first event of next bar
-				List<Event> nextBar = null; //events.get(i+1);
-//				List<String[]> nextBar = events.get(i+1);
-				Event firstEventNextFull = nextBar.get(0);
-//				String[] firstEventNextFull = nextBar.get(0);
-				String firstEventNext = firstEventNextFull.getEncoding();
-//				String firstEventNext = firstEventNextFull[Encoding.EVENT_IND];
-				// Remove final ss
-				firstEventNext = firstEventNext.substring(0, firstEventNext.lastIndexOf(ss));
-				String[] firstEventNextSplit = 
-					(!firstEventNext.contains(ss)) ? new String[]{firstEventNext} : 
-					firstEventNext.split("\\" + ss);
-				// Meter change found? Add scoreDef after bar
-				if (MensurationSign.getMensurationSign(firstEventNextSplit[0]) != null) {
-					String meterStr = "";
-					for (String s : meters.get(meterIndex+1)) {
-						if (!s.equals("")) {
-							meterStr += s + " ";
-						}
-					}
-					meterStr = meterStr.trim();
-					String scoreDef = INDENT_TWO + "<scoreDef" + " " + meterStr + "/>" + "\r\n";
-					sb.append(scoreDef);
-					measuresTab.add(scoreDef);
-					meterIndex++;
-				}
-			}
+		// Get undotted duration
+		// Breve (-1)
+		if (XMLDur == -1) {
+			dur = Symbol.LONGA.getDuration();
 		}
-
-//		System.out.println("= = = = = = = = = = = = = =");
-//		for (String s : measures) {
-//			System.out.println(s);
-//		}
-//		System.out.println("= = = = = = = = = = = = = =");
-//		System.exit(0);
-		res = res.replace(INDENT_TWO + "section_content_placeholder", sb.toString());
-		ToolBox.storeTextFile(res, new File(path + ".xml"));
+		// W (1), H (2), Q (4), E (8), S (16), T (32)
+		else {
+			dur = Symbol.BREVIS.getDuration() / XMLDur;
+		}
+		
+		// Get dotted duration
+		if (dots > 0) {
+			dur = getDottedNoteLength(dur,  dots);
+		}	
+		return dur;
 	}
 
 
@@ -866,8 +511,8 @@ public class MEIExport {
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		// To make sure that it always works if the trailing SS has been removed from event
 		RhythmSymbol rs = 
-			(!event.contains(ss)) ?	RhythmSymbol.getRhythmSymbol(event) : 
-			RhythmSymbol.getRhythmSymbol(event.substring(0, event.indexOf(ss)));
+			(!event.contains(ss)) ?	Symbol.getRhythmSymbol(event) : 
+			Symbol.getRhythmSymbol(event.substring(0, event.indexOf(ss)));
 
 		if (rs != null) {
 			int dots = rs.getNumberOfDots();
@@ -1053,13 +698,13 @@ public class MEIExport {
 		int count = currMi[Timeline.MI_NUM];
 		int unit = currMi[Timeline.MI_DEN];
 		if (adaptTransDur) {
-			if (ONLY_TAB || TAB_AND_TRANS) {
-				diminution = currMi[Timeline.MI_DIM];
-				Rational undiminutedMeter = 
-					Timeline.diminuteMeter(new Rational(count, unit), diminution);
-				count = undiminutedMeter.getNumer();
-				unit = undiminutedMeter.getDenom();
-			}
+//			if (ONLY_TAB || TAB_AND_TRANS) {
+//				diminution = currMi[Timeline.MI_DIM];
+//				Rational undiminutedMeter = 
+//					Timeline.diminuteMeter(new Rational(count, unit), diminution);
+//				count = undiminutedMeter.getNumer();
+//				unit = undiminutedMeter.getDenom();
+//			}
 		}
 		String sym = "";
 		if (includeMeter) {
@@ -1112,7 +757,7 @@ public class MEIExport {
 			String keySig = null;
 			if (includeKey) {
 				int ks = currKi[Transcription.KI_KEY];
-				String ksStr = String.valueOf(ks) + (ks == 0 ? "" : ((ks < 0) ? "f" : "s"));
+				String ksStr = String.valueOf(Math.abs(ks)) + (ks == 0 ? "" : ((ks < 0) ? "f" : "s"));
 				keySig = 
 					"<keySig " + "sig='" + ksStr + "'" + " " + "mode='" + 
 					(currKi[Transcription.KI_MODE] == 0 ? "major" : "minor") + "'" + "/>";
@@ -1342,11 +987,11 @@ public class MEIExport {
 			List<List<String>> tabBars = 
 				getTabBars(tab, alignWithMetricBarring, getStaffNum(true, grandStaff, 
 				tabOnTop, numVoices, -1));
-			for (List<String> l : tabBars) {
-				for (String s : l) {
-					System.out.println(s);
-				}
-			}
+//			for (List<String> l : tabBars) {
+//				for (String s : l) {
+//					System.out.println(s);
+//				}
+//			}
 			for (int i = 0; i < numBars; i++) {
 				StringBuilder currTabBarAsStr = new StringBuilder();
 				for (String s : tabBars.get(i)) {
@@ -1465,7 +1110,7 @@ public class MEIExport {
 
 
 	/**
-	 * Gets the duration, as a Rational, of the given undotted not when it is dotted with 
+	 * Gets the duration, as a Rational, of the given undotted note when it is dotted with 
 	 * the given number of dots.
 	 * 
 	 * @param undotted
@@ -1492,6 +1137,34 @@ public class MEIExport {
 	}
 
 
+	/**
+	 * Gets the duration, as an int, of the given undotted note when it is dotted with 
+	 * the given number of dots.
+	 * 
+	 * @param undotted
+	 * @param dots
+	 * @return
+	 */
+	// TESTED
+	public static int getDottedNoteLength(int undotted, int dots) {
+		if (dots == 0) {
+			return undotted;
+		}
+		else {
+			// Each dot d adds 1/(2^d) * the undotted length to the undotted note
+			// One dot adds 1/(2^1), e.g., H.  = 1/2 + (1/2 * 1/2)
+			// Two dots add 1/(2^2), e.g., H.. = 1/2 + (1/2 * 1/2) + (1/2 * 1/4)
+			int dotted = undotted;
+			for (int i = 1; i <= dots; i++) {
+				int factor = (int) Math.pow(2, i);
+				int increment = undotted / factor;
+				dotted += increment;
+			}
+			return dotted;
+		}
+	}
+
+
 	private static List<List<String>> getTabBars(Tablature tab, boolean alignWithMetricBarring,
 		int staff) {
 		System.out.println("\r\n>>> getTabBars() called");
@@ -1505,10 +1178,10 @@ public class MEIExport {
 //		List<String[]> meters = new ArrayList<>();
 //		int meterIndex = 0;
 		List<Integer[]> tabBarsToMetricBars = tab.mapTabBarsToMetricBars();
-		for (Integer[] in : tabBarsToMetricBars) {
-			System.out.println(Arrays.toString(in));
-		}
-		System.exit(0);
+//		for (Integer[] in : tabBarsToMetricBars) {
+//			System.out.println(Arrays.toString(in));
+//		}
+//		System.exit(0);
 
 //		List<Integer> xmlDurPerBar = new ArrayList<>();
 //		Rational prevDur = null;
@@ -1597,6 +1270,7 @@ public class MEIExport {
 //			System.out.println(l.getEncoding());
 //		}
 //		System.exit(0);
+		int prevDur = -1;
 		for (int i = 0; i < eventsPerBar.size(); i++) {
 			if (startNewBar) {
 				currBarAsXML = new ArrayList<>();
@@ -1604,6 +1278,26 @@ public class MEIExport {
 				currBarAsXML.add(TAB + "<layer n='1'>");
 			}
 			List<Event> currBarEvents = eventsPerBar.get(i);
+			List<Integer> currBarDurs = new ArrayList<>();
+//			System.out.println(("i = " + i));
+			for (Event e : currBarEvents) {
+//				System.out.println(e.getEncoding());
+				if (Encoding.assertEventType(e.getEncoding(), tss, "RhythmSymbol") ||
+					Encoding.assertEventType(e.getEncoding(), tss, "rest")) {
+					RhythmSymbol rs = 
+						Symbol.getRhythmSymbol(e.getEncoding().substring(0, 
+						e.getEncoding().indexOf(ConstantMusicalSymbol.SYMBOL_SEPARATOR))); 
+					currBarDurs.add(rs.getDuration());
+					prevDur = rs.getDuration();
+				}
+				else if (Encoding.assertEventType(e.getEncoding(), tss, "TabSymbol") &&
+					!(Encoding.assertEventType(e.getEncoding(), tss, "RhythmSymbol"))) {
+					currBarDurs.add(prevDur);
+				}
+			}
+//			System.out.println("currBarDurs:");
+//			System.out.println(currBarDurs);
+
 //			int currTabBar = events.get(i).getBar();
 			int currTabBar = currBarEvents.get(0).getBar();
 //			List<Event> currBarEvents = new ArrayList<>();
@@ -1614,7 +1308,7 @@ public class MEIExport {
 //				}
 //				currBarEvents.add(events.get(j));
 //			}
-			int currMetricBar = tabBarsToMetricBars.get(currTabBar-1)[Tablature.METRIC_BAR_IND];
+			int currMetricBar = tabBarsToMetricBars.get(currTabBar - 1)[Tablature.METRIC_BAR_IND];
 			int currDim = tab.getTimeline().getDiminution(currMetricBar);
 
 			// For each event
@@ -1660,12 +1354,10 @@ public class MEIExport {
 //				if (!ConstantMusicalSymbol.isBarline(currEvent)) {
 					// Get XML durations of currEvent, and, if applicable, currEventOrig
 					Integer[] currDurXML = getXMLDur(currEvent);
-					
-
 					if (currDurXML == null) {
-						Rational currDurRat = new Rational(1, prevDurXML[0]);
+//						Rational currDurRat = new Rational(1, prevDurXML[0]);
 						if (prevDurXML[1] != 0) {
-							currDurRat = currDurRat.mul(prevDurXML[1]);
+//							currDurRat = currDurRat.mul(prevDurXML[1]);
 						}
 //						barLen = barLen.add(prevDurXML);
 					}
@@ -1838,32 +1530,172 @@ public class MEIExport {
 					}
 				} // if (!isBarline)
 			} // loop over currBarEvents
-			for (String s : currBarAsXML) {
-				System.out.println(s);
-			}
-			System.exit(0);
-			
-			if (alignWithMetricBarring) {
-				
-			}
 
 			if (alignWithMetricBarring) {
-				boolean combineTabBars = 
-					i < eventsPerBar.size() - 1 && 
-					tabBarsToMetricBars.get(i+1)[Tablature.METRIC_BAR_IND] == currMetricBar;
-				// tabBars follows tablature 'barring'; combine any tab bars to follow metric barring
-				// In case of (i) last tab bar or (ii) where there is a next tab bar that does not 
-				// have currMetricBar
-				if (i == eventsPerBar.size() - 1 || !combineTabBars) {
+//				if (i < eventsPerBar.size() - 1) {
+				Integer[] tbtmb = tabBarsToMetricBars.get(i);
+				// Tab and metric bar overlap fully (tab bar:metric bar = 1:1 case)
+				boolean equalToMetric = 
+					tbtmb[Tablature.SECOND_METRIC_BAR_IND] == -1 &&	
+					tbtmb[Tablature.TAB_BAR_REL_ONSET_IND] == 0 && 
+					tbtmb[Tablature.METRIC_BAR_REMAINDER_IND] == 0;
+				// Tab bar overlaps start of metric bar (tab bar:metric bar n:1 and 3:2 case)
+				boolean overlapsStartMetric = 
+					tbtmb[Tablature.SECOND_METRIC_BAR_IND] == -1 &&	
+					tbtmb[Tablature.TAB_BAR_REL_ONSET_IND] == 0 && 
+					tbtmb[Tablature.METRIC_BAR_REMAINDER_IND] > 0;
+				// Tab bar overlaps middle of metric bar (tab bar:metric bar n:1 case)
+				boolean overlapsMiddleMetric = 
+					tbtmb[Tablature.SECOND_METRIC_BAR_IND] == -1 &&
+					tbtmb[Tablature.TAB_BAR_REL_ONSET_IND] > 0 && 
+					tbtmb[Tablature.METRIC_BAR_REMAINDER_IND] > 0;	
+				// Tab bar overlaps end of current and start of next metric bar (tab bar:metric bar 3:2 case)
+				boolean overlapsEndAndStartMetric = 
+					tbtmb[Tablature.SECOND_METRIC_BAR_IND] != -1;
+				// Tab bar overlaps end of metric bar (tab bar:metric bar n:1 and 3:2 case)
+				boolean overlapsEndMetric = 
+					tbtmb[Tablature.SECOND_METRIC_BAR_IND] == -1 &&
+					tbtmb[Tablature.TAB_BAR_REL_ONSET_IND] > 0 && 
+					tbtmb[Tablature.METRIC_BAR_REMAINDER_IND] == 0;
+					
+				// Place metric barline and tab barline
+				if (equalToMetric || overlapsEndMetric) {
+					System.out.println("equalToMetric || overlapsEndMetric");
 					currBarAsXML.add(TAB + "</layer>");
 					currBarAsXML.add("</staff>");
 					tabBars.add(currBarAsXML);
 					startNewBar = true;
 				}
-				// In case where there is a next tab bar that has currMetricBar
-				else if (combineTabBars) {				
+				// Place only tab barline 					
+				else if (overlapsStartMetric || overlapsMiddleMetric) {
+					System.out.println("overlapsStartMetric || overlapsMiddleMetric");
 					currBarAsXML.add(TAB.repeat(2) + "<barLine/>");
 					startNewBar = false;
+				}
+//				else if (overlapsMiddleMetric) {
+////				System.out.println("i = " + i + ", overlapsMiddleMetric");
+//					currBarAsXML.add(TAB.repeat(2) + "<barLine/>");
+//					startNewBar = false;
+//				}
+				// Place only metric barline
+				else if (overlapsEndAndStartMetric) {
+					System.out.println("overlapsEndAndStartMetric");
+					// Get the duration of the end part of the tab bar (belonging to the next metric bar) 
+					int toNextMetricBarDur = tabBarsToMetricBars.get(i+1)[Tablature.TAB_BAR_REL_ONSET_IND];
+//					System.out.println(toNextMetricBarDur);
+					// Get the durations of the tabGrps that fall into the end part
+					List<Integer> tabGrpDurs = new ArrayList<>();
+					for (int k = currBarDurs.size() - 1; k > 0; k--) {
+						tabGrpDurs.add(currBarDurs.get(k));
+						if (ToolBox.sumListInteger(tabGrpDurs) == toNextMetricBarDur) {
+							break;
+						}
+					}
+//					System.out.println("numTabGroupsToNextMetricBar:");
+//					System.out.println(tabGrpDurs.size());
+					// Move the tabGrps that fall into the end part from currBarAsXML to nextCurrBarAsXML
+					List<String> nextCurrBarAsXML = new ArrayList<>();
+					for (int k = currBarAsXML.size() - 1; k > 0; k--) {
+						nextCurrBarAsXML.add(0, currBarAsXML.get(k));
+						if (StringUtils.countMatches(String.join(",", nextCurrBarAsXML), 
+							"<tabGrp") == tabGrpDurs.size()) {
+							break;
+						}
+					}
+					currBarAsXML = currBarAsXML.subList(0, currBarAsXML.size() - nextCurrBarAsXML.size());
+					// Complete currBarAsXML with staff and layer elements and add
+					currBarAsXML.add(TAB + "</layer>");
+					currBarAsXML.add("</staff>");
+					tabBars.add(currBarAsXML);
+						
+//					for (String s : currBarAsXML) {
+//						System.out.println(s);
+//					}
+//					System.out.println("-------");
+						
+					// Complete nextCurrBarAsXML with staff and layer elements and set currBarAsXML
+					nextCurrBarAsXML.add(0, "<staff n='" + staff + "'>");
+					nextCurrBarAsXML.add(1, TAB + "<layer n='1'>");
+					nextCurrBarAsXML.add(TAB.repeat(2) + "<barLine/>");
+					currBarAsXML = nextCurrBarAsXML;
+					startNewBar = false;
+						
+//					for (String s : currBarAsXML) {
+//						System.out.println(s);
+//					}
+						
+//					for (int k = currBarAsXML.size() - 1; k > 0; k--) {
+//						String s = currBarAsXML.get(k);
+//						toNextMetricBar.add(0, s);
+//						if (s.contains("<tabGrp")) {
+//							int start = s.indexOf("dur='") + "dur='".length();
+//							int XMLDurInt = Integer.parseInt(s.substring(start, s.indexOf("'", start)));
+//							int dotsInt = 0;
+//							if (s.contains("dots='")) {
+//								start = s.indexOf("dots='") + "dots='".length();
+//								dotsInt = Integer.parseInt(s.substring(start, s.indexOf("'", start)));
+//							}
+//							cumulativeDur += getDur(XMLDurInt, dotsInt);
+//							if (cumulativeDur == toNextMetricBarDur) {
+//								break;
+//							}
+//						}
+//					}
+				}
+				
+//				// Place metric barline and tab barline
+//				else if (overlapsEndMetric) {
+////					System.out.println("i = " + i + ", overlapsEndMetric");
+//					currBarAsXML.add(TAB + "</layer>");
+//					currBarAsXML.add("</staff>");
+//					tabBars.add(currBarAsXML);
+//					startNewBar = true;
+//				}
+
+//				if (i == 41) {
+//					System.out.println(tabBars.size());
+//					for (List<String> l : tabBars) {
+//						System.out.println("TAB BARRRRRRRRRR");
+//						for (String s : l) { 
+//							System.out.println(s);
+//						}
+//					}
+//					System.exit(0);
+//				}
+
+//				boolean combineTabBars = 			
+////				tabBarsToMetricBars.get(i + 1)[Tablature.METRIC_BAR_IND] == currMetricBar;
+//				tabBarsToMetricBars.get(i)[Tablature.METRIC_BAR_REMAINDER_IND] != 0;
+
+//				}
+				
+//				else {
+//					currBarAsXML.add(TAB + "</layer>");
+//					currBarAsXML.add("</staff>");
+//					tabBars.add(currBarAsXML);
+//					startNewBar = true;
+//				}
+				
+				boolean old = false;
+				if (old) {
+					boolean combineTabBars = 
+						i < eventsPerBar.size() - 1 && 
+//						tabBarsToMetricBars.get(i + 1)[Tablature.METRIC_BAR_IND] == currMetricBar;
+						tabBarsToMetricBars.get(i)[Tablature.METRIC_BAR_REMAINDER_IND] != 0;
+					// tabBars follows tablature 'barring'; combine any tab bars to follow metric barring
+					// In case of (i) last tab bar or (ii) where there is a next tab bar that does not 
+					// have currMetricBar
+					if (i == eventsPerBar.size() - 1 || !combineTabBars) {
+						currBarAsXML.add(TAB + "</layer>");
+						currBarAsXML.add("</staff>");
+						tabBars.add(currBarAsXML);
+						startNewBar = true;
+					}
+					// In case where there is a next tab bar that has currMetricBar
+					else if (combineTabBars) {				
+						currBarAsXML.add(TAB.repeat(2) + "<barLine/>");
+						startNewBar = false;
+					}
 				}
 			}
 			else {
@@ -1969,6 +1801,14 @@ public class MEIExport {
 		// dataStr.get(b).get(v).size() = notes in bar b in voice v 
 		List<List<List<Integer[]>>> dataInt = (List<List<List<Integer[]>>>) data.get(0);
 		List<List<List<String[]>>> dataStr = (List<List<List<String[]>>>) data.get(1);
+		
+//		for (List<String[]> voice : dataStr.get(29)) {
+//			for (String[] note : voice) {
+//				System.out.println(Arrays.asList(note));
+//			}
+//			System.out.println("- - - - - - ");
+//		}
+//		System.exit(0);
 		
 //		System.out.println("------------");
 //		for (List<Integer[]> l : dataInt.get(2)) {
@@ -2089,7 +1929,7 @@ public class MEIExport {
 	private static List<List<List<Integer[]>>> beam(List<List<List<Integer[]>>> dataInt, 
 		List<List<List<String[]>>> dataStr, Tablature tab, List<Integer[]> mi, 
 		List<Rational[]> tripletOnsetPairs, List<List<Integer>> mismatchInds, int numVoices, String path) {
-		
+		System.out.println(">>> beam() called");
 		// Organise the information (i) per voice, (ii) per bar for the python beaming script
 		List<List<String>> unbeamedBarsPerVoice = new ArrayList<>();
 		for (int j = 0; j < numVoices; j++) {
@@ -2115,6 +1955,9 @@ public class MEIExport {
 					diminution = tab.getTimeline().getDiminution(bar);
 //					diminution = Tablature.getDiminution(bar, mi);
 				}
+//				System.out.println("-->");
+//				System.out.println("bar i = " + i);
+//				System.out.println("voice j = " + j);
 				List<String> barList = 
 					getBar(currBarCurrVoiceInt, currBarCurrVoiceStr, tripletOnsetPairs,
 					mismatchInds, j, diminution);
@@ -2145,7 +1988,8 @@ public class MEIExport {
 		String filePath = path; // scriptPathPythonMEI;
 		File notesFile = new File(filePath + "-notes.txt");
 		ToolBox.storeTextFile(strb.toString(), notesFile);
-		
+//		System.out.println(strb.toString());
+
 		// Call the beaming script and get output; delete
 		// NB: the output of the beaming script does not end with a line break, but 
 		// PythonInterface.getScriptOutput() adds one to the end of it
@@ -2156,7 +2000,10 @@ public class MEIExport {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+//		System.out.println(notesFile);
+//		System.out.println(beamed);
 		notesFile.delete(); // TODO find different solution?
+//		System.exit(0);
 
 		// Re-organise the information (i) per bar, (ii) per voice so that it is the same
 		// again as dataStr and dataInt
@@ -2168,6 +2015,10 @@ public class MEIExport {
 		for (String currVoice : voices) {
 			barsPerVoice.add(Arrays.asList(currVoice.split("end of bar" + "\r\n")));
 		}
+//		for (List<String> l : barsPerVoice) {
+//			System.out.println(l);
+//		}
+//		System.exit(0);
 		// Make, per bar, the empty voices
 		int numBars = barsPerVoice.get(0).size();
 		for (int i = 0; i < numBars; i++) {
@@ -2301,6 +2152,7 @@ public class MEIExport {
 				for (int i = 0; i < currBarCurrVoiceStr.size(); i++) {
 					String[] note = currBarCurrVoiceStr.get(i);
 					Integer[] noteInt = currBarCurrVoiceInt.get(i);
+
 //					Rational mp = new Rational(noteInt[INTS.indexOf("metPosNum")], 
 //						noteInt[)INTS.indexOf("metPosDen")]);
 //					Rational durRat = new Rational(Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom(),
@@ -2308,7 +2160,7 @@ public class MEIExport {
 //					int dur = (int) durRat.toDouble();
 					int currOnsNum = currBarCurrVoiceInt.get(i)[INTS.indexOf("onsetNum")];
 					int currOnsDen = currBarCurrVoiceInt.get(i)[INTS.indexOf("onsetDen")];
-					
+
 //					// Close previous/open next beaming group if metPos is on the quarter note grid
 //					if (mp.toDouble() == 0.25 || mp.toDouble() == 0.5 || mp.toDouble() == 0.75) { 
 //						// Only if the note at index k is not the last note in the bar
@@ -2318,12 +2170,12 @@ public class MEIExport {
 
 					// Check for any tripletOpen to be added before noteStr
 					if (noteInt[INTS.indexOf("tripletOpen")] == 1) {
-						System.out.println("diminution = " + diminution);
+//						System.out.println("diminution = " + diminution);
 						int tupletDur = -1;
 //						Rational tupletDur = null;
-						Rational onset = new Rational(currOnsNum, 
-							currBarCurrVoiceInt.get(i)[INTS.indexOf("onsetDen")]);
-						System.out.println("onset = " + onset);
+						Rational onset = new Rational(currOnsNum, currOnsDen);
+//							currBarCurrVoiceInt.get(i)[INTS.indexOf("onsetDen")]);
+//						System.out.println("onset = " + onset);
 						for (Rational[] r : tripletOnsetPairs) {
 							if (onset.equals(r[0])) {
 //								tupletDur = r[2].getNumer();
@@ -2348,12 +2200,16 @@ public class MEIExport {
 
 					// Check for any chord to be added before noteStr
 					if (i < currBarCurrVoiceStr.size()-1) {
-						if (currOnsNum == currBarCurrVoiceInt.get(i+1)[INTS.indexOf("onsetNum")]) {
+						Integer[] nextNoteInt = currBarCurrVoiceInt.get(i+1);
+						if (new Rational(currOnsNum, currOnsDen).equals(new Rational(
+							nextNoteInt[INTS.indexOf("onsetNum")], nextNoteInt[INTS.indexOf("onsetDen")]))) {
+//						if (currOnsNum == currBarCurrVoiceInt.get(i+1)[INTS.indexOf("onsetNum")]) {
 							barList.add("<chord dur='" + noteInt[INTS.indexOf("dur")] + "'>");
 							chordActive = true;
-							System.out.println(Arrays.toString(currBarCurrVoiceInt.get(i+1)));
-							System.out.println(currOnsNum);
-							System.out.println("chordActive");
+//							System.out.println("currBarCurrVoiceInt.get(i+1):");
+//							System.out.println(Arrays.toString(currBarCurrVoiceInt.get(i+1)));
+//							System.out.println(currOnsNum);
+//							System.out.println("chordActive");
 						}
 					}
 					// Check for any beams to be added before noteStr
@@ -2440,7 +2296,7 @@ public class MEIExport {
 					// If there is an active in-voice chord: check if it must be closed
 					if (chordActive) {
 						Rational currOnset = new Rational(currOnsNum, currOnsDen);
-						System.out.println(currOnset);
+//						System.out.println(currOnset);
 						// pitch oct acc tie dur dots ID
 						// 
 						Rational nextOnset = new Rational(
@@ -2450,6 +2306,7 @@ public class MEIExport {
 //							currBarCurrVoiceInt.get(k+1)[INTS.indexOf("onsetNum")] > currOnsNum) 
 							nextOnset.isGreater(currOnset))
 							|| i == currBarCurrVoiceStr.size()-1) {
+//							System.out.println("CLOSE CHORD");
 							barList.add("</chord>");
 							chordActive = false;
 						}
@@ -2578,11 +2435,6 @@ public class MEIExport {
 		Rational gridVal = 
 			(btp != null) ? Tablature.SMALLEST_RHYTHMIC_VALUE : new Rational(1, 128); // 14.03.2020 was 1/64
 		Integer[][] bnp = trans.getBasicNoteProperties();
-		// pitch, metric time num, metric time den, metric dur num, metric dur den, chord seq no, chord size, note seq num in chord
-//		System.out.println("bnp:");
-//		for (int i = 0; i < 10; i++) {
-//			System.out.println(Arrays.toString(bnp[i]));
-//		}
 
 		// Undiminute bnp and Piece
 		if (TAB_AND_TRANS && adaptTransDur) {
@@ -2756,8 +2608,6 @@ public class MEIExport {
 				bnp[i][Transcription.ONSET_TIME_DENOM]);
 			System.out.println("iTab = " + iTab);
 			System.out.println("onset = " + onset);
-//			if (i == 10)
-//				System.exit(0);
 			if (ONLY_TAB) {
 //			if (btp != null) {
 				onset = new Rational(btp[iTab][Tablature.ONSET_TIME], Tablature.SRV_DEN);
@@ -2774,13 +2624,7 @@ public class MEIExport {
 			int bar = barMetPos[0].getNumer();
 //			System.out.println("i = " + i + "; bar = " + bar);
 			Rational metPos = barMetPos[1];
-//			System.out.println(bar);
-//			System.out.println(metPos);
-//			if (i == 10) {
-//				System.out.println("blaaaa");
-//				System.exit(0);
-//			}
-			
+
 			// If adaptTransDur, diminution has been made undone in bnp
 			int diminution = adaptTransDur ? 1 : Timeline.getDiminution(onset, mi);
 
@@ -2823,9 +2667,7 @@ public class MEIExport {
 				System.out.println("currPcg                  " + Arrays.asList(currPcg));
 				System.out.println("------------------");
 			}
-//			if (bar == 3) {
-//				System.exit(0);
-//			}
+
 			// Check for preceding rests
 			List<String[]> pitchOctAccTie = new ArrayList<String[]>();
 			List<Integer[]> indBarOnsMpDurDots = new ArrayList<Integer[]>();
@@ -2847,7 +2689,8 @@ public class MEIExport {
 				Rational onsetPrev = null;
 				for (int j = currVoiceInts.size()-1; j >= 0; j--) {
 					prevNote = currVoiceInts.get(j);
-					onsetPrev = new Rational(prevNote[INTS.indexOf("onsetNum")], 
+					onsetPrev = 
+						new Rational(prevNote[INTS.indexOf("onsetNum")], 
 						prevNote[INTS.indexOf("onsetDen")]);
 					// If previous onset is less than current (but is not a rest (onset = -1/-1))
 					if (onsetPrev.getNumer() != -1 && onsetPrev.isLess(onset)) {
@@ -2875,7 +2718,7 @@ public class MEIExport {
 				// actual value by multiplying it with TRIPLETISER (3/2). 
 				// Example for a half note:
 				// tripletised = 1/2, 1/2, 1/2
-				// tripletised = 1/3, 1/3, 1/3
+				// tripletised = 1/3, 1/3, 1/3 TODO should this be 'untripletised'?
 				// E.g., 1/3 * 3/2 = 1/2; 1/6 * 32 = 1/4; etc.
 				// Untripletised variables calculated from prevNote: onsetPrev, metPosPrev
 				// Tripletised variables calculated from prevNote: durPrev, dotsPrev, offsetPrev
@@ -3201,48 +3044,45 @@ public class MEIExport {
 				}
 			}
 
-			// If the note is the voice's last and its offset does not equal the piece end
+			// If the note is the voice's last and its offset does not equal the piece end: complete with rests
 			NotationVoice nv = p.getScore().get(voice).get(0);
-//			if (voice == 2) {
-//				System.out.println("voice 2, onset " + onset);
-//				System.out.println(nv.get(nv.size()-1).toString());
-//				if (nv.get(nv.size()-1).getMetricTime().equals(onset)) {
-//					System.out.println(onset);
-//					System.out.println(nv.get(nv.size()-1));
-//					System.exit(0);
-//				}
-//			}
-			// If last note
-			if ((nv.get(nv.size()-1).getMetricTime().equals(onset)) && !offset.equals(endOffset)) {
-//				System.out.println("oeeeeeeeeeeeeeeee");
-//				System.exit(0);
-				// Add rest to fill up current bar (if applicable) 
-				Rational restCurrentBar = barEnd.sub(offset);
-				if (restCurrentBar.isGreater(Rational.ZERO)) {
-					Rational metPosRestCurrentBar = metPos.add(durRounded);
-//					Rational restCurrentBarTripletised = restCurrentBar;
-					List<Boolean> tripletInfo = (tripletOnsetPairs == null) ? null : 
-						isTripletOnset(tripletOnsetPairs, offset);
-					List<Object> noteData = 
-						getNoteData(-1, -1, diminution, new String[STRINGS.size()], restCurrentBar, gridVal,
-						/*bar,*/ offset, metPosRestCurrentBar, mi, tripletInfo, tripletOnsetPairs);
-					pitchOctAccTie.addAll((List<String[]>) noteData.get(0));
-					indBarOnsMpDurDots.addAll((List<Integer[]>) noteData.get(1));
+			NotationChord lastNc = nv.get(nv.size()-1);
+			if ((lastNc.getMetricTime().equals(onset)) && !offset.equals(endOffset)) {
+//			if ((nv.get(nv.size()-1).getMetricTime().equals(onset)) && !offset.equals(endOffset)) {
+				// Take into acount any chords: add rest only after the highest-pitched note in lastNc 
+				int pitchHighestChordNote = lastNc.get(lastNc.size() - 1).getMidiPitch();
+				if (lastNc.size() == 1 || (lastNc.size() > 1 && pitchHighestChordNote == pitch)) {
+					// Add rest to fill up current bar (if applicable) 
+					Rational restCurrentBar = barEnd.sub(offset);
+					if (restCurrentBar.isGreater(Rational.ZERO)) {
+//						System.out.println("oeeeeeeeeeeeeeeee");
+//						System.out.println(voice);
+						Rational metPosRestCurrentBar = metPos.add(durRounded);
+//						Rational restCurrentBarTripletised = restCurrentBar;
+
+						List<Boolean> tripletInfo = (tripletOnsetPairs == null) ? null : 
+							isTripletOnset(tripletOnsetPairs, offset);
+						List<Object> noteData = 
+							getNoteData(-1, -1, diminution, new String[STRINGS.size()], restCurrentBar, gridVal,
+							/*bar,*/ offset, metPosRestCurrentBar, mi, tripletInfo, tripletOnsetPairs);
+						pitchOctAccTie.addAll((List<String[]>) noteData.get(0));
+						indBarOnsMpDurDots.addAll((List<Integer[]>) noteData.get(1));
+					}
+					// Add bar rests for all remaining bars
+					for (int b = bar+1; b <= numBars; b++) {
+						String[] restStr = new String[STRINGS.size()];
+						restStr[STRINGS.indexOf("dur")] = "dur='bar'";
+						pitchOctAccTie.add(restStr);
+						Integer[] restInt = new Integer[INTS.size()];
+						Arrays.fill(restInt, -1);
+						restInt[INTS.indexOf("bar")] = b;
+						restInt[INTS.indexOf("metPosNum")] = 0;
+						restInt[INTS.indexOf("metPosDen")] = 1;
+						restInt[INTS.indexOf("dur")] = -1; // n/a (bar rest)
+						restInt[INTS.indexOf("dots")] = -1; // n/a (bar rest)
+						indBarOnsMpDurDots.add(restInt);
+					}
 				}
-				// Add bar rests for all remaining bars
-				for (int b = bar+1; b <= numBars; b++) {
-					String[] restStr = new String[STRINGS.size()];
-					restStr[STRINGS.indexOf("dur")] = "dur='bar'";
-					pitchOctAccTie.add(restStr);
-					Integer[] restInt = new Integer[INTS.size()];
-					Arrays.fill(restInt, -1);
-					restInt[INTS.indexOf("bar")] = b;
-					restInt[INTS.indexOf("metPosNum")] = 0;
-					restInt[INTS.indexOf("metPosDen")] = 1;
-					restInt[INTS.indexOf("dur")] = -1; // n/a (bar rest)
-					restInt[INTS.indexOf("dots")] = -1; // n/a (bar rest)
-					indBarOnsMpDurDots.add(restInt);
-				}	
 			}
 			noteAttribPerVoiceStrings.get(voice).addAll(pitchOctAccTie);
 			noteAttribPerVoiceInts.get(voice).addAll(indBarOnsMpDurDots);
@@ -3825,22 +3665,6 @@ public class MEIExport {
 			Arrays.asList(new String[][]{last, secondCopyOfCurr}),
 			Arrays.asList(new Integer[][]{in, secondIn})}
 		);
-	}
-
-
-	private List<String[][]> combine() {
-		List<String[][]> combined = new ArrayList<String[][]>();
-		Integer[][] mpcg = makeMIDIPitchClassGrid();
-		String[][] ag = makeAlterationGrid(mpcg);
-		String[][] pcg = makePitchClassGrid();
-		
-		for (int i = 0; i < keys.size(); i++) {
-			String[][] curr = new String[3][7];
-			// MIDI pitch classes
-			 
-		}
-		
-		return combined;
 	}
 
 
@@ -4466,6 +4290,415 @@ public class MEIExport {
 			}
 		}
 		return Arrays.asList(new Object[]{currPitchOctAccTie, currIndBarOnsMpDurDots});
+	}
+
+
+	/**
+	 * Returns the duration of the given Rational. Returns an Integer[] with as element 0 the 
+	 * duration as the smallest denominator, and as element the number of dots.  
+	 *  
+	 * @param dur
+	 * @return
+	 */
+	private Integer[] getDuration(Rational durRat) {
+		Integer[] dur = null;
+		durRat.reduce();
+		System.out.println("BLA");
+		List<Rational> all = new ArrayList<Rational>();
+		for (int i = 1; i <= 128; i++) {
+			all.add(new Rational(i, 128));
+		}
+		
+		// Quantize
+		if (!all.contains(durRat)) {
+			dur = null;
+		}
+		else {	
+			// Quadruple dotted = 1.9375
+			Rational basicNoteValQdrD = durRat.div(new Rational(31, 16));
+			basicNoteValQdrD.reduce();
+			if (all.contains(basicNoteValQdrD)) {
+				dur = new Integer[]{basicNoteValQdrD.getDenom(), 4};
+			}
+			// Triple dotted = 1.875 * basic note value
+			Rational basicNoteValTrpD = durRat.div(new Rational(15, 8));
+			basicNoteValTrpD.reduce();
+			if (all.contains(basicNoteValTrpD)) {
+				dur = new Integer[]{basicNoteValTrpD.getDenom(), 3};
+			}
+			// Double dotted = 1.75 * basic note value
+			Rational basicNoteValDblD = durRat.div(new Rational(7, 4));
+			basicNoteValDblD.reduce();
+			if (all.contains(basicNoteValDblD)) {
+				dur = new Integer[]{basicNoteValDblD.getDenom(), 2};
+			}
+			// Dotted = 1.5 * basic note value 
+			Rational basicNoteValD = durRat.div(new Rational(3, 2));
+			basicNoteValD.reduce();
+			if (all.contains(basicNoteValD)) {
+				dur = new Integer[]{basicNoteValD.getDenom(), 1};
+			}
+			// Undotted
+			Rational basicNoteVal = durRat.div(new Rational(1, 1));
+			basicNoteVal.reduce();
+			if (dur != null && all.contains(basicNoteVal)) {
+				dur = new Integer[]{basicNoteVal.getDenom(), 0};
+			}
+		}
+		return dur;
+	}
+
+
+	/**
+	 * Exports the given tablature as a TabMEI file, saved at the given path.
+	 * 
+	 * @param tab
+	 * @param path
+	 */
+	private static void exportTabMEIFile(Tablature tab, String path) {
+
+		String res = ToolBox.readTextFile(new File(MEITemplatePath + "template-MEI.xml"));		
+		String tuningStr = "lute.renaissance.6";
+		TabSymbolSet tss = tab.getEncoding().getTabSymbolSet();
+		String notationtypeStr = getNotationTypeStr(tss);
+
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String sp = Symbol.SPACE.getEncoding();
+
+		// 1. Make meiHead
+		String[] meiHead = new String[MEI_HEAD.size()];
+		meiHead[MEI_HEAD.indexOf("title")] = tab.getPiecename();
+		res = res.replace("title_placeholder", meiHead[MEI_HEAD.indexOf("title")]);
+
+		List<Integer[]> mi = tab.getTimeline().getMeterInfo();
+//		List<Integer[]> mi = tab.getTimeline().getMeterInfoOBS();
+		List<String[]> meters = new ArrayList<>();
+		for (Integer[] in : mi) {
+			String sym = "";
+			if (in[Timeline.MI_NUM] == 4 && in[Timeline.MI_DEN] == 4) {
+				sym = " meter.sym='common'";
+			}
+			else if (in[Timeline.MI_NUM] == 2 && in[Timeline.MI_DEN] == 2) {
+				sym = " meter.sym='cut'";
+			}
+			meters.add(new String[]{
+				"meter.count='" + in[Timeline.MI_NUM] + "'", 
+				"meter.unit='" + in[Timeline.MI_DEN] + "'",
+				sym}
+			);
+		}
+
+		// 2. Make music
+		// a. Make scoreDef. The scoreDef contains the initial meter (if any); any additional 
+		// ones are stored in nonInitMeters
+		String[] initMeter = meters.get(0); 
+		String scoreDefStr = initMeter[0] + " " + initMeter[1] + initMeter[2];
+		res = res.replace("scoreDef_placeholder", scoreDefStr.trim());
+		int meterIndex = 0;
+
+		// b. Make staffGrp (goes inside scoreDef)
+		String staffGrpAtt = "";
+		res = res.replace(" staffGrp_placeholder", staffGrpAtt);
+		String staffGrpStr = 
+			"<staffDef n='1'" + " xml:id='s1'" + " lines='6'" + " " + "notationtype='" + 
+			notationtypeStr + "'" + ">" + "\r\n"; 
+		staffGrpStr += INDENT_TWO + TAB + TAB + "<tuning tuning.standard='" + tuningStr + "'" + "/>" + "\r\n";		
+		staffGrpStr += INDENT_TWO + TAB + "</staffDef>";
+
+		res = res.replace("staffGrp_content_placeholder", staffGrpStr);
+		
+		// Get events; remove any decorative opening barlines (which affect the XML bar numbering)
+		List<Event> events = 
+			Encoding.removeDecorativeBarlineEvents(tab.getEncoding().getEvents());
+//		List<List<String[]>> ebf = tab.getEncoding().getExtendedEventsPerBar(true);
+
+//		List<List<String[]>> ebfPruned = new ArrayList<>();
+//		for (int i = 0; i < ebf.size(); i++) {
+//			List<String[]> bar = ebf.get(i);
+//			// Add bar only if it is not one containing only one element that is a barline
+//			String f = removeTrailingSymbolSeparator(bar.get(0)[Encoding.EVENT_IND]);
+//			if (!(bar.size() == 1 && ConstantMusicalSymbol.isBarline(f))) {
+//				ebfPruned.add(bar);
+//			}
+//		}
+//		ebf = ebfPruned;
+
+		// 3. Make bars
+		// Organise the information per bar
+		StringBuilder sb = new StringBuilder();
+		List<String> measuresTab = new ArrayList<>();
+		Integer[] prevDurXML = new Integer[]{0, 0};
+		for (int i = 0; i < events.size(); i++) {
+//			List<String[]> currBar = events.get(i);
+			
+			int currTabBar = events.get(i).getBar();
+//			int currTabBar = currBarEvents.get(0).getBar();
+			List<Event> currBar = new ArrayList<>();
+			for (int j = i; j < events.size(); j++) {
+				if (events.get(j).getBar() == currTabBar + 1) {
+					i = j - 1;
+					break;
+				}
+				currBar.add(events.get(j));
+			}
+			System.out.println("bar  : " + (i+1));
+
+			StringBuilder sbBar = new StringBuilder();
+			
+			// Make XML content for currBar
+			String currBarXMLAsString = "";
+			String barline = "";
+			// For each event
+			for (int j = 0; j < currBar.size(); j++) {
+				Event currEventFull = currBar.get(j);
+//				String[] currEventFull = currBar.get(j);
+				String currEvent = 
+					removeTrailingSymbolSeparator(currEventFull.getEncoding());
+//				String currEvent = 
+//					removeTrailingSymbolSeparator(currEventFull[Encoding.EVENT_IND]);
+				String currEventOrig = currEventFull.getFootnote();
+//				String currEventOrig = currEventFull[Encoding.FOOTNOTE_IND];
+				System.out.println(currEventFull);
+				System.out.println("event: " + currEvent);
+				// Extract correction
+				boolean isCorrected = false;
+				if (currEventOrig != null) {
+					if (currEventOrig.contains("'")) {
+						currEventOrig = currEventOrig.substring(currEventOrig.indexOf("'")+1,
+							currEventOrig.lastIndexOf("'"));
+						isCorrected = true;
+					}
+					else {
+						currEventOrig = 
+							currEventOrig.substring(currEventOrig.indexOf(Encoding.FOOTNOTE_INDICATOR) + 1);
+					}
+					currEventOrig = removeTrailingSymbolSeparator(currEventOrig);
+				}
+
+				// Barline? End of bar reached; set barline if not single
+				if (Symbol.getConstantMusicalSymbol(currEvent) != null && Symbol.getConstantMusicalSymbol(currEvent).isBarline()) {
+//				if (ConstantMusicalSymbol.isBarline(currEvent)) {
+					// TODO currently only single and double barline possible in MEI
+					if (currEvent.equals(Symbol.BARLINE.makeVariant(2, null).getEncoding())) {
+						barline = " right='dbl'";
+					}
+					if (i == events.size()-1) {
+						barline = " right='end'";
+					}
+				}
+				// Not a barline?
+				else {
+					// Get XML durations of currEvent, and, if applicable, currEventOrig
+					Integer[] currDurXML = getXMLDur(currEvent);
+
+					String sicEvent = !isCorrected ? currEvent : currEventOrig;
+					String corrEvent = !isCorrected ? null : currEvent;
+
+					boolean defaultCase = !isCorrected; 
+					boolean oneReplacedByMultiple = isCorrected && sicEvent.endsWith(sp);
+					boolean multipleReplacedByOne = 
+						isCorrected && sicEvent.contains(sp) && !sicEvent.endsWith(sp);
+					boolean defaultCorrectedCase = 
+						isCorrected && !oneReplacedByMultiple && !multipleReplacedByOne;
+
+					List<String> sicList = new ArrayList<>();
+					List<String> corrList = new ArrayList<>();
+					// No <sic> and <corr>
+					if (defaultCase) {
+						sicList.add(sicEvent);
+					}
+					// Both <sic> and <corr> contain one <tabGrp>
+					if (defaultCorrectedCase) {
+						sicList.add(sicEvent);
+						corrList.add(corrEvent);
+					}
+					// <sic> contains multiple <tabGrp>s, <corr> one 
+					if (multipleReplacedByOne) {
+						for (String s : sicEvent.split(sp + ss)) {
+							sicList.add(removeTrailingSymbolSeparator(s));
+						}
+						corrList.add(corrEvent);
+					}
+					// <sic> contains one <tabGrp>, <corr> multiple 
+					// --> corrList contains corrEvent plus all events following that 
+					// together have the same duration as durSic
+					// NB It is assumed that the replacement is within the bar
+					if (oneReplacedByMultiple) {
+						sicEvent = sicEvent.substring(0, sicEvent.indexOf(sp));
+						sicList.add(removeTrailingSymbolSeparator(sicEvent));
+						corrList.add(corrEvent);
+						RhythmSymbol rsSic = 
+							RhythmSymbol.getRhythmSymbol(sicEvent.substring(0, sicEvent.indexOf(ss)));
+						int durSic; 
+						if (rsSic != null) {
+							durSic = rsSic.getDuration();
+						}
+						else {
+							durSic = -1; // TODO get last specified duration before currEvent
+						}
+						RhythmSymbol rsCorr = 
+							RhythmSymbol.getRhythmSymbol(corrEvent.substring(0, corrEvent.indexOf(ss)));
+						int durCorr;
+						if (rsCorr != null) {
+							durCorr = rsCorr.getDuration();
+						}
+						else {
+							durCorr = -1; // TODO get last specified duration before currEvent
+						}
+						int durCorrToTrack = durCorr;
+						// Iterate through next events until durCorr equals durSic
+						for (int l = j+1; l < currBar.size(); l++) {
+							Event nextEventFull = currBar.get(l);
+//							String[] nextEventFull = currBar.get(l);
+							String nextEvent = 
+								removeTrailingSymbolSeparator(nextEventFull.getEncoding());
+//							String nextEvent = 
+//								removeTrailingSymbolSeparator(nextEventFull[Encoding.EVENT_IND]);
+							String nextEventOrig = nextEventFull.getFootnote();
+//							String nextEventOrig = nextEventFull[Encoding.FOOTNOTE_IND];
+							// If the next element has a footnote
+							if (nextEventOrig != null) {
+								nextEventOrig = removeTrailingSymbolSeparator(nextEventOrig);
+								corrList.add(nextEvent);
+								// Determine duration of corrected event, increment durCorr,
+								// and update durrCorrToTrack
+								RhythmSymbol nextEventRS = 
+									RhythmSymbol.getRhythmSymbol(nextEvent.substring(0, 
+									nextEvent.indexOf(ss)));
+								int durCorrNext;
+								if (nextEventRS != null) {
+									durCorrNext = nextEventRS.getDuration();
+									durCorrToTrack = durCorrNext;
+								}
+								else {
+									durCorrNext = durCorrToTrack;
+								}
+								durCorr += durCorrNext;		
+							}
+							if (durCorr == durSic) {
+								int eventsToSkip = corrList.size() - 1;
+								j += eventsToSkip;
+								break;
+							}
+						}
+					}
+
+					String eventAsXML = "";
+					if (isCorrected) {
+						eventAsXML += INDENT_TWO + TAB.repeat(3) + "<choice>" + "\r\n";
+						eventAsXML += INDENT_TWO + TAB.repeat(4) + "<sic>" + "\r\n";
+					}
+					eventAsXML += getTabGrps(sicList, prevDurXML, isCorrected, tss);
+					if (isCorrected) {
+						eventAsXML += INDENT_TWO + TAB.repeat(4) + "</sic>" + "\r\n";
+					}
+					if (isCorrected) {
+						eventAsXML += INDENT_TWO + TAB.repeat(4) + "<corr>" + "\r\n";
+						eventAsXML += getTabGrps(corrList, prevDurXML, isCorrected, tss);
+						eventAsXML += INDENT_TWO + TAB.repeat(4) + "</corr>" + "\r\n";
+					}
+					if (isCorrected) {
+						eventAsXML += INDENT_TWO + TAB.repeat(3) + "</choice>" + "\r\n";
+					}
+					currBarXMLAsString += eventAsXML;
+					
+					// Update prevDurXML
+					// a. Set prevDurXML to currDurXML (or, if it is null, to the last 
+					// XML duration)
+					if (defaultCase || defaultCorrectedCase || multipleReplacedByOne) {
+						if (currDurXML != null) {
+							prevDurXML = currDurXML;
+						}
+					}
+					// b. Set prevDurXML to the last specified duration in corrList  
+					if (oneReplacedByMultiple) {
+						List<String> corrListRev = new ArrayList<>(corrList);
+						Collections.reverse(corrListRev);
+						for (String event : corrListRev) {
+							Integer[] lastDurXML = getXMLDur(event);
+							if (lastDurXML != null) {
+								prevDurXML = lastDurXML;
+								break;
+							}
+						}
+					}
+				}
+			}
+			// Wrap currBar in measure-staff-layer elements
+//			// First bar: no indentation required because of section_content_placeholder placement
+//			if (i > 0) {
+			sbBar.append(INDENT_TWO);
+//			}
+			sbBar.append("<measure n='" + (i+1) + "'" + barline + ">" + "\r\n");
+			sbBar.append(INDENT_TWO + TAB + "<staff n='1'" + ">" + "\r\n");
+			sbBar.append(INDENT_TWO + TAB.repeat(2) + "<layer n='1'" + ">" + "\r\n");
+			sbBar.append(currBarXMLAsString);
+			sbBar.append(INDENT_TWO + TAB.repeat(2) + "</layer>" + "\r\n");
+			sbBar.append(INDENT_TWO + TAB + "</staff>" + "\r\n");
+			sbBar.append(INDENT_TWO + "</measure>");
+//			System.out.println(sb.toString());
+			if (i < events.size()-1) {
+				sbBar.append("\r\n");
+			}
+			
+			sb.append(sbBar);
+			measuresTab.add(sbBar.toString());
+
+			// Append meter change (if applicable)
+			if (i < events.size()-1) {
+				// Check for meter change in first event of next bar
+				List<Event> nextBar = null; //events.get(i+1);
+//				List<String[]> nextBar = events.get(i+1);
+				Event firstEventNextFull = nextBar.get(0);
+//				String[] firstEventNextFull = nextBar.get(0);
+				String firstEventNext = firstEventNextFull.getEncoding();
+//				String firstEventNext = firstEventNextFull[Encoding.EVENT_IND];
+				// Remove final ss
+				firstEventNext = firstEventNext.substring(0, firstEventNext.lastIndexOf(ss));
+				String[] firstEventNextSplit = 
+					(!firstEventNext.contains(ss)) ? new String[]{firstEventNext} : 
+					firstEventNext.split("\\" + ss);
+				// Meter change found? Add scoreDef after bar
+				if (MensurationSign.getMensurationSign(firstEventNextSplit[0]) != null) {
+					String meterStr = "";
+					for (String s : meters.get(meterIndex+1)) {
+						if (!s.equals("")) {
+							meterStr += s + " ";
+						}
+					}
+					meterStr = meterStr.trim();
+					String scoreDef = INDENT_TWO + "<scoreDef" + " " + meterStr + "/>" + "\r\n";
+					sb.append(scoreDef);
+					measuresTab.add(scoreDef);
+					meterIndex++;
+				}
+			}
+		}
+
+//		System.out.println("= = = = = = = = = = = = = =");
+//		for (String s : measures) {
+//			System.out.println(s);
+//		}
+//		System.out.println("= = = = = = = = = = = = = =");
+//		System.exit(0);
+		res = res.replace(INDENT_TWO + "section_content_placeholder", sb.toString());
+		ToolBox.storeTextFile(res, new File(path + ".xml"));
+	}
+
+
+	private List<String[][]> combine() {
+		List<String[][]> combined = new ArrayList<String[][]>();
+		Integer[][] mpcg = makeMIDIPitchClassGrid();
+		String[][] ag = makeAlterationGrid(mpcg);
+		String[][] pcg = makePitchClassGrid();
+		
+		for (int i = 0; i < keys.size(); i++) {
+			String[][] curr = new String[3][7];
+			// MIDI pitch classes
+			 
+		}
+		
+		return combined;
 	}
 
 }

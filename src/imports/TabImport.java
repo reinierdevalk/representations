@@ -92,7 +92,7 @@ public class TabImport {
 //			"3585_002_benedictus_de_missa_pange_lingua_josquin",
 //			"3643_066_credo_de_beata_virgine_jospuin_T-1",
 //			"3643_066_credo_de_beata_virgine_jospuin_T-2",
-//			"4471_40_cum_sancto_spiritu",
+			"4471_40_cum_sancto_spiritu",
 //			"5106_10_misa_de_faysan_regres_2_gloria",
 //			"5107_11_misa_de_faysan_regres_pleni",
 //			"5188_15_sanctus_and_hosanna_from_missa_hercules-1",
@@ -123,7 +123,7 @@ public class TabImport {
 //			"5256_05_inviolata_integra_desprez-3",
 //			"4465_33-34_memor_esto-1", 
 //trrr			
-			"4465_33-34_memor_esto-2"
+//			"4465_33-34_memor_esto-2"
 //			"932_milano_108_pater_noster_josquin-1",
 //			"932_milano_108_pater_noster_josquin-2"
 //			"5252_01_pater_noster_desprez-1",
@@ -176,7 +176,7 @@ public class TabImport {
 		// From TabCode
 		for (String s : pieces) {
 			tbp = tc2tbp(new File(path + s + ".tc"));
-			ToolBox.storeTextFile(tbp, new File(path + s + "XXX" + Encoding.EXTENSION));
+			ToolBox.storeTextFile(tbp, new File(path + s + Encoding.EXTENSION));
 		}
 		System.exit(0);
 

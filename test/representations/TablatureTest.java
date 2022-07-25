@@ -32,6 +32,7 @@ public class TablatureTest extends TestCase {
 	private File encodingTestGetMeterInfo;
 	private File encodingNewsidler;
 	private File encodingNewsidlerCumSancto;
+	private File encodingNarvaez;
 	private File encodingBarbetta;
 	private File midiTestpiece;
 	private static final int TRANSP_INT = -2;
@@ -54,9 +55,11 @@ public class TablatureTest extends TestCase {
 		encodingNewsidler = 
 			new File(root + Path.getEncodingsPath() + "/thesis-int/3vv/" + "newsidler-1544_2-nun_volget.tbp");
 		encodingNewsidlerCumSancto =
-			new File(root + "/annotated/josquintab/tab/" + "4471_40_cum_sancto_spiritu.tbp");	
+			new File(root + "/annotated/josquintab/tab/" + "4471_40_cum_sancto_spiritu.tbp");
 		encodingBarbetta = 
 			new File(root + Path.getEncodingsPath() + "/thesis-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp");
+		encodingNarvaez =
+			new File(root + "/annotated/josquintab/tab/" + "5190_17_cum_spiritu_sanctu_from_missa_sine_nomine.tbp");
 		midiTestpiece = 
 			new File(root + Path.getMIDIPath() + Path.getTestDir() + "testpiece.mid");
 	}
@@ -1262,76 +1265,93 @@ public class TablatureTest extends TestCase {
 
 
 	public void testMapTabBarsToMetricBars() {
-		// Two tab bars in one metric bar
+		// One tab bar in one metric bar (tab bar:metric bar 1:1)
 		Tablature t1 = new Tablature(encodingTestpiece, true);
-		// Two tab bars in one metric bar
+		// Two tab bars in one metric bar (tab bar:metric bar n:1, n=2)
 		Tablature t2 = new Tablature(encodingBarbetta, true);
-		// Three tab bars in two metric bars
-		Tablature t3 = new Tablature(encodingNewsidlerCumSancto, true);
+		// Three tab bars in one metric bar (tab bar:metric bar n:1, n=3)
+		Tablature t3 = new Tablature(encodingNarvaez, true);
+		// Three tab bars in two metric bars (tab bar:metric bar 3:2)
+		Tablature t4 = new Tablature(encodingNewsidlerCumSancto, true);
 
 		List<Integer[]> expected = new ArrayList<>();
 		// For encodingTestPiece
-		expected.add(new Integer[]{1, 1, -1, 0});
-		expected.add(new Integer[]{2, 2, -1, 0});
-		expected.add(new Integer[]{3, 3, -1, 0});
-		expected.add(new Integer[]{4, 3, -1, 18});
+		expected.add(new Integer[]{1, 1, -1, 0, 0});
+		expected.add(new Integer[]{2, 2, -1, 0, 0});
+		expected.add(new Integer[]{3, 3, -1, 0, 78});
+		expected.add(new Integer[]{4, 3, -1, 18, 0});
 
 		// For encodingBarbetta
 		int tabBar = 1;
 		for (int i = 1; i <= 30; i++) {
-			expected.add(new Integer[]{tabBar, i, -1, 0});
+			expected.add(new Integer[]{tabBar, i, -1, 0, 48});
 			tabBar++;
-			expected.add(new Integer[]{tabBar, i, -1, 48});
+			expected.add(new Integer[]{tabBar, i, -1, 48, 0});
+			tabBar++;
+		}
+		
+		// For encodingNarvaez
+		tabBar = 1;
+		for (int i = 1; i <= 30; i++) {
+			expected.add(new Integer[]{tabBar, i, -1, 0, 192});
+			tabBar++;
+			expected.add(new Integer[]{tabBar, i, -1, 96, 96});
+			tabBar++;
+			expected.add(new Integer[]{tabBar, i, -1, 192, 0});
 			tabBar++;
 		}
 
 		// For encodingNewsidlerCumSancto
-		expected.add(new Integer[]{1, 1, -1, 0});
-		expected.add(new Integer[]{2, 1, 2, 96});
-		expected.add(new Integer[]{3, 2, -1, 48});
-		expected.add(new Integer[]{4, 3, -1, 0});
-		expected.add(new Integer[]{5, 3, 4, 96});
-		expected.add(new Integer[]{6, 4, -1, 48});
-		expected.add(new Integer[]{7, 5, -1, 0});
-		expected.add(new Integer[]{8, 5, 6, 96});
-		expected.add(new Integer[]{9, 6, -1, 48});
-		expected.add(new Integer[]{10, 7, -1, 0});
-		expected.add(new Integer[]{11, 7, 8, 96});
-		expected.add(new Integer[]{12, 8, -1, 48});
-		expected.add(new Integer[]{13, 9, -1, 0});
-		expected.add(new Integer[]{14, 9, 10, 96});
-		expected.add(new Integer[]{15, 10, -1, 48});
-		expected.add(new Integer[]{16, 11, -1, 0});
-		expected.add(new Integer[]{17, 11, 12, 96});
-		expected.add(new Integer[]{18, 12, -1, 48});
-		expected.add(new Integer[]{19, 13, -1, 0});
-		expected.add(new Integer[]{20, 13, 14, 96});
-		expected.add(new Integer[]{21, 14, -1, 48});
-		expected.add(new Integer[]{22, 15, -1, 0});
-		expected.add(new Integer[]{23, 15, 16, 96});
-		expected.add(new Integer[]{24, 16, -1, 48});
-		expected.add(new Integer[]{25, 17, -1, 0});
-		expected.add(new Integer[]{26, 17, 18, 96});
-		expected.add(new Integer[]{27, 18, -1, 48});
-		expected.add(new Integer[]{28, 19, -1, 0});
-		expected.add(new Integer[]{29, 19, 20, 96});
-		expected.add(new Integer[]{30, 20, -1, 48});
-		expected.add(new Integer[]{31, 21, -1, 0});
-		expected.add(new Integer[]{32, 21, 22, 96});
-		expected.add(new Integer[]{33, 22, -1, 48});
-		expected.add(new Integer[]{34, 23, -1, 0});
-		expected.add(new Integer[]{35, 23, 24, 96});
-		expected.add(new Integer[]{36, 24, -1, 48});
-		expected.add(new Integer[]{37, 25, -1, 0});
-		expected.add(new Integer[]{38, 25, 26, 96});
-		expected.add(new Integer[]{39, 26, -1, 48});
-		expected.add(new Integer[]{40, 27, -1, 0});
-		expected.add(new Integer[]{41, 27, 28, 72});
+		expected.add(new Integer[]{1, 1, -1, 0, 48});
+		expected.add(new Integer[]{2, 1, 2, 96, 96});
+		expected.add(new Integer[]{3, 2, -1, 48, 0});
+		expected.add(new Integer[]{4, 3, -1, 0, 48});
+		expected.add(new Integer[]{5, 3, 4, 96, 96});
+		expected.add(new Integer[]{6, 4, -1, 48, 0});
+		expected.add(new Integer[]{7, 5, -1, 0, 48});
+		expected.add(new Integer[]{8, 5, 6, 96, 96});
+		expected.add(new Integer[]{9, 6, -1, 48, 0});
+		expected.add(new Integer[]{10, 7, -1, 0, 48});
+		expected.add(new Integer[]{11, 7, 8, 96, 96});
+		expected.add(new Integer[]{12, 8, -1, 48, 0});
+		expected.add(new Integer[]{13, 9, -1, 0, 48});
+		expected.add(new Integer[]{14, 9, 10, 96, 96});
+		expected.add(new Integer[]{15, 10, -1, 48, 0});
+		expected.add(new Integer[]{16, 11, -1, 0, 48});
+		expected.add(new Integer[]{17, 11, 12, 96, 96});
+		expected.add(new Integer[]{18, 12, -1, 48, 0});
+		expected.add(new Integer[]{19, 13, -1, 0, 48});
+		expected.add(new Integer[]{20, 13, 14, 96, 96});
+		expected.add(new Integer[]{21, 14, -1, 48, 0});
+		expected.add(new Integer[]{22, 15, -1, 0, 48});
+		expected.add(new Integer[]{23, 15, 16, 96, 96});
+		expected.add(new Integer[]{24, 16, -1, 48, 0});
+		expected.add(new Integer[]{25, 17, -1, 0, 48});
+		expected.add(new Integer[]{26, 17, 18, 96, 96});
+		expected.add(new Integer[]{27, 18, -1, 48, 0});
+		expected.add(new Integer[]{28, 19, -1, 0, 48});
+		expected.add(new Integer[]{29, 19, 20, 96, 96});
+		expected.add(new Integer[]{30, 20, -1, 48, 0});
+		expected.add(new Integer[]{31, 21, -1, 0, 48});
+		expected.add(new Integer[]{32, 21, 22, 96, 96});
+		expected.add(new Integer[]{33, 22, -1, 48, 0});
+		expected.add(new Integer[]{34, 23, -1, 0, 48});
+		expected.add(new Integer[]{35, 23, 24, 96, 96});
+		expected.add(new Integer[]{36, 24, -1, 48, 0});
+		
+		expected.add(new Integer[]{37, 25, -1, 0, 48});
+		expected.add(new Integer[]{38, 25, 26, 96, 96});
+		expected.add(new Integer[]{39, 26, -1, 48, 0});
+		
+		expected.add(new Integer[]{40, 27, -1, 0, 72});
+		expected.add(new Integer[]{41, 27, 28, 72, 96});
+		expected.add(new Integer[]{42, 28, -1, 48, 0});
 
 		List<Integer[]> actual = new ArrayList<>();
 		actual.addAll(t1.mapTabBarsToMetricBars());
 		actual.addAll(t2.mapTabBarsToMetricBars());
 		actual.addAll(t3.mapTabBarsToMetricBars());
+		actual.addAll(t4.mapTabBarsToMetricBars());
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
