@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
@@ -301,6 +303,81 @@ public class MEIExportTest extends TestCase {
 		List<Rational> actual = new ArrayList<Rational>();
 		for (Rational r : all) {
 			actual.add(MEIExport.round(r, new Rational(1, 64)));
+		}
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testRoundAlt() {
+		Rational two = new Rational(2, 1);
+		List<Rational> all = Arrays.asList(new Rational[]{
+			// On grid
+			new Rational(0, 96),
+			new Rational(48, 96),
+			new Rational(96, 96),
+			// Between 0/96 and 1/96
+			new Rational(1, 4*96), // closest to 0/96
+			new Rational(2, 4*96), // equally close to both
+			new Rational(3, 4*96), // closest to 1/96
+			// Between 47/96 and 48/96
+			new Rational(47, 96).add(new Rational(1, 4*96)), // closest to 47/96
+			new Rational(47, 96).add(new Rational(2, 4*96)), // equally close to both
+			new Rational(47, 96).add(new Rational(3, 4*96)), // closest to 48/96
+			// Between 95/96 and 96/96
+			new Rational(95, 96).add(new Rational(1, 4*96)), // closest to 95/96
+			new Rational(95, 96).add(new Rational(2, 4*96)), // equally close to both
+			new Rational(95, 96).add(new Rational(3, 4*96)), // closest to 96/96
+			
+			// Between 2 and 2 1/96
+			two.add(new Rational(1, 4*96)), // closest to 2
+			two.add(new Rational(2, 4*96)), // equally close to both
+			two.add(new Rational(3, 4*96)), // closest to 2 1/96
+			// Between 2 47/96 and 2 48/96
+			two.add(new Rational(47, 96).add(new Rational(1, 4*96))), // closest to 2 47/96
+			two.add(new Rational(47, 96).add(new Rational(2, 4*96))), // equally close to both
+			two.add(new Rational(47, 96).add(new Rational(3, 4*96))), // closest to 2 48/96
+			// Between 2 95/96 and 3
+			two.add(new Rational(95, 96).add(new Rational(1, 4*96))), // closest to 2 95/96
+			two.add(new Rational(95, 96).add(new Rational(2, 4*96))), // equally close to both
+			two.add(new Rational(95, 96).add(new Rational(3, 4*96))), // closest to 3
+		});
+		List<Rational> expected = Arrays.asList(new Rational[]{
+			new Rational(0, 96),
+			new Rational(1, 2),
+			new Rational(1, 1),
+			//
+			new Rational(0, 96), 
+			new Rational(1, 96), 
+			new Rational(1, 96),
+			//
+			new Rational(47, 96), 
+			new Rational(48, 96), 
+			new Rational(48, 96),
+			//
+			new Rational(95, 96), 
+			new Rational(96, 96), 
+			new Rational(96, 96),
+			//
+			two.add(new Rational(0, 96)), 
+			two.add(new Rational(1, 96)), 
+			two.add(new Rational(1, 96)),
+			//
+			two.add(new Rational(47, 96)), 
+			two.add(new Rational(48, 96)), 
+			two.add(new Rational(48, 96)),
+			//
+			two.add(new Rational(95, 96)), 
+			two.add(new Rational(96, 96)), 
+			two.add(new Rational(96, 96)),
+		});
+		List<Integer> gridNums = IntStream.rangeClosed(0, 96).boxed().collect(Collectors.toList());
+		List<Rational> actual = new ArrayList<Rational>();
+		for (Rational r : all) {
+			actual.add(MEIExport.round(r, gridNums));
 		}
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {

@@ -140,7 +140,7 @@ public class Tablature implements Serializable {
 		}
 
 		public static Tuning getTuning(String s) {
-			for (Tuning t : Tuning.values()) { 
+			for (Tuning t : Tuning.values()) {
 				if (t.toString().equals(s)) {
 					return t;
 				}
@@ -890,19 +890,22 @@ public class Tablature implements Serializable {
 		if (includeRestEvents && btp[0][ONSET_TIME] > 0) {
 			allMetricTimes.add(new Rational[]{Rational.ZERO, Rational.ZERO});
 		}
+		int lastChordSeqNum = btp[btp.length-1][CHORD_SEQ_NUM];
 		for (int i = 0; i < btp.length; i++) {
 			Integer[] in = btp[i];
+			int chordSize = in[CHORD_SIZE_AS_NUM_ONSETS];
+			int chordSeqNum = in[CHORD_SEQ_NUM];
 			Rational currOnsetTime = new Rational(in[ONSET_TIME], SRV_DEN);
 			Rational currMinDur = new Rational(in[MIN_DURATION], SRV_DEN);
 			Rational currOffsetTime = currOnsetTime.add(currMinDur);
 			Rational nextOnsetTime = 
-				(i < btp.length-1) ? new Rational(btp[i+1][ONSET_TIME], SRV_DEN) :
+				(chordSeqNum < lastChordSeqNum) ? new Rational(btp[i+chordSize][ONSET_TIME], SRV_DEN) :
 				currOffsetTime;
 			allMetricTimes.add(new Rational[]{currOnsetTime, Rational.ONE});
 			if (includeRestEvents && currOffsetTime.isLess(nextOnsetTime)) {
 				allMetricTimes.add(new Rational[]{currOffsetTime, Rational.ZERO});
 			}
-			i += in[CHORD_SIZE_AS_NUM_ONSETS]-1;
+			i += chordSize-1;
 		}
 		return allMetricTimes;
 	}
@@ -954,7 +957,7 @@ public class Tablature implements Serializable {
 
 			// 1. Align events and onsetTimes
 			// Combine all successive rest events
-			events = Encoding.combineSuccessiveRestEvents(events);
+			events = Encoding.combineSuccessiveRestEvents(events, getEncoding().getTabSymbolSet());
 			// Remove all events that are neither a chord nor a rest
 			List<String> tmp = new ArrayList<>();
 			for (String t : events) {
@@ -970,12 +973,26 @@ public class Tablature implements Serializable {
 				}
 			}
 			events = tmp;
+			System.out.println("@@@@@@@@@@@@@@@@@@@@@@@");
+			System.out.println(events.size());
+//			for (int i = 0; i < events.size(); i++) {
+//				System.out.println("event no " + i);
+//				System.out.println(events.get(i));
+//			}
+			System.out.println("@@@@@@@@@@@@@@@@@@@@@@@");
+			System.out.println(onsetTimes.size());
+			for (int i = 0; i < onsetTimes.size(); i++) {
+				System.out.println("onset no " + i);
+				System.out.println(Arrays.asList(onsetTimes.get(i)));
+			}
+//			System.exit(0);
 
 			// 2. Get the start and end onset times of triplet events
 			Rational[] pair = new Rational[]{null, null, null};
 			int dur = 0;
 			for (int i = 0; i < events.size(); i++) {
 				String curr = events.get(i);
+				System.out.println(i);
 				Rational ons = onsetTimes.get(i)[0];
 				ons.reduce();
 				if (curr.startsWith(RhythmSymbol.TRIPLET_INDICATOR)) {

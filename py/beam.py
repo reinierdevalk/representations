@@ -77,7 +77,7 @@ def compute_beams(bars_curr_voice):
 		m21_bar.timeSignature = music21.meter.TimeSignature(time_sig)
 		for j in range(len(mei_bar)):
 			xml_note = mei_bar[j]
-			if not 'chord' in xml_note:
+			if not 'chord' in xml_note and not 'tuplet' in xml_note:
 				if not 'mRest' in xml_note:
 					begin = xml_note.index('dur=\'') + len('dur=\'')
 					dur_str = xml_note[begin:xml_note.index('\'', begin)]

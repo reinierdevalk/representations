@@ -430,6 +430,34 @@ public class TimelineTest extends TestCase {
 	}
 
 
+	public void testUndiminuteMeter() {
+		List<Rational> expected = new ArrayList<>();
+		expected.add(new Rational(2, 1)); // 2/2, dim = 2
+		expected.add(new Rational(4, 2)); // 4/4, dim = 2
+		expected.add(new Rational(4, 1)); // 4/4, dim = 4
+		expected.add(new Rational(2, 4)); // 2/2, dim = -2
+		expected.add(new Rational(4, 8)); // 4/4, dim = -2
+		expected.add(new Rational(4, 16)); // 4/4, dim = -4
+
+		Rational twoTwo = new Rational(2, 2);
+		Rational fourFour = new Rational(4, 4);
+		List<Rational> meters = Arrays.asList(new Rational[]{
+			twoTwo, fourFour, fourFour, twoTwo, fourFour, fourFour
+		});
+		List<Integer> dims = Arrays.asList(new Integer[]{2, 2, 4, -2, -2, -4});
+		List<Rational> actual = new ArrayList<>();
+		for (int i = 0; i < meters.size(); i++) {
+			actual.add(Timeline.undiminuteMeter(meters.get(i), dims.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		} 
+		assertEquals(expected, actual);
+	}
+
+
 	public void testDiminute() {
 		List<Rational> expected = Arrays.asList(new Rational[]{
 			new Rational(3, 2),
@@ -827,34 +855,6 @@ public class TimelineTest extends TestCase {
 	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
 	  		}
 		}
-	}
-
-
-	public void testDiminuteMeterOBS() {
-		List<Rational> expected = new ArrayList<>();
-		expected.add(new Rational(2, 1)); // 2/2, dim = 2
-		expected.add(new Rational(4, 2)); // 4/4, dim = 2
-		expected.add(new Rational(4, 1)); // 4/4, dim = 4
-		expected.add(new Rational(2, 4)); // 2/2, dim = -2
-		expected.add(new Rational(4, 8)); // 4/4, dim = -2
-		expected.add(new Rational(4, 16)); // 4/4, dim = -4
-
-		Rational twoTwo = new Rational(2, 2);
-		Rational fourFour = new Rational(4, 4);
-		List<Rational> meters = Arrays.asList(new Rational[]{
-			twoTwo, fourFour, fourFour, twoTwo, fourFour, fourFour
-		});
-		List<Integer> dims = Arrays.asList(new Integer[]{2, 2, 4, -2, -2, -4});
-		List<Rational> actual = new ArrayList<>();
-		for (int i = 0; i < meters.size(); i++) {
-			actual.add(Timeline.diminuteMeterOBS(meters.get(i), dims.get(i)));
-		}
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		} 
-		assertEquals(expected, actual);
 	}
 
 }

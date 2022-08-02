@@ -1122,27 +1122,54 @@ public class Encoding implements Serializable {
 	/**
 	 * Combines any successive rest events in the given list of events.
 	 * 
+	 * NB: Successive rest events separated by a barline event are not considered successive, and 
+	 *     are split up by the barline.
+	 * 
 	 * @param events
 	 * @return
 	 */
 	// TESTED
-	public static List<String> combineSuccessiveRestEvents(List<String> events) {
+	public static List<String> combineSuccessiveRestEvents(List<String> events, TabSymbolSet tss) {
 		List<String> res = new ArrayList<>();
 
 		String ss = Symbol.SYMBOL_SEPARATOR;
 
 		List<String> successiveRests = new ArrayList<>();
-		for (String t : events) {
+		for (int i = 0; i < events.size(); i++) {
+			String t = events.get(i);
 			String[] split = t.split("\\" + ss);
-			// If rest: add to list and continue for loop
-			if (split.length == 2 && RhythmSymbol.getRhythmSymbol(split[0]) != null &&
-				split[1].equals(Symbol.SPACE.getEncoding())) {
+			System.out.println(t);
+			// If rest event: add to temporary list and continue for loop
+			if (assertEventType(t, tss, "rest") == true) {
+//			if (split.length == 2 && RhythmSymbol.getRhythmSymbol(split[0]) != null &&
+//				split[1].equals(Symbol.SPACE.getEncoding())) {
 				successiveRests.add(split[0]);
+				System.out.println("IS REST: " + t);
 			}
-			// If not rest
+//			// If barline event: ignore if any event after is a rest event; add to final list if not
+//			else if (assertEventType(t, tss, "barline") == true) {
+//				// It temporary list contains rests
+//				// a. If any next event is also a rest, skip barline and continue temporary list
+//				// b. If not, add combined rest from temporary list, add barline, and clear temporary list 
+//				if (!successiveRests.isEmpty()) {
+//					if (i + 1 != events.size() - 1) {
+//						String nextT = events.get(i+1);
+//						if (assertEventType(nextT, tss, "rest") == false) {
+//							res.add(t);
+//						}
+//					}
+//				}
+//				
+//				else {
+//					res.add(t);
+//				}
+//			}
+			// If not rest event
 			else {
-				// If successive rests still need to be added
+				// If the temporary list contains (successive) rests, which still need to be added
 				if (!successiveRests.isEmpty()) {
+					System.out.println("IS NOT: " + t);
+					System.out.println(successiveRests);
 					boolean combinedIsOpen = 
 						successiveRests.get(0).contains(RhythmSymbol.TRIPLET_OPEN);
 					boolean combinedIsClose = 
@@ -1151,32 +1178,54 @@ public class Encoding implements Serializable {
 					for (String s : successiveRests) {
 						totalDur += RhythmSymbol.getRhythmSymbol(s).getDuration();
 					}
+//					System.out.println(combinedIsOpen);
+//					System.out.println(combinedIsClose);
+					System.out.println(totalDur);
 					RhythmSymbol combinedRs = null;
 					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
 						// Do not consider coronas
 						if (rs.getDuration() == totalDur && 
 							!rs.getEncoding().startsWith(RhythmSymbol.CORONA_BREVIS.getEncoding().substring(0, 2))) {
-							// In case of triplets beginning/ending: make sure the RS containing 
-							// the open/close indicator is chosen
-							if (combinedIsOpen || combinedIsClose) {
-								String openClose = "";
-								if (combinedIsOpen && !rs.getEncoding().contains(RhythmSymbol.TRIPLET_OPEN)) {
-									openClose = RhythmSymbol.TRIPLET_OPEN;
-								}
-								else if (combinedIsClose && !rs.getEncoding().contains(RhythmSymbol.TRIPLET_CLOSE)){
-									openClose = RhythmSymbol.TRIPLET_CLOSE;
-								}
-								combinedRs = RhythmSymbol.getRhythmSymbol(
-									RhythmSymbol.TRIPLET_INDICATOR + 
-									openClose +
-									rs.getEncoding().substring(RhythmSymbol.TRIPLET_INDICATOR.length()));
+							// In case of triplets beginning/ending: make sure the RS's encoding contains the 
+							// correct indicator (open/close) (necessary because tr[<RS> and tr]<RS> have the 
+							// same duration)
+							String enc = rs.getEncoding();
+							if (combinedIsOpen && enc.contains(RhythmSymbol.TRIPLET_CLOSE)) {
+//								enc = enc.replace(RhythmSymbol.TRIPLET_CLOSE, RhythmSymbol.TRIPLET_OPEN);
+								combinedRs = 
+									Symbol.getRhythmSymbol(enc.replace(RhythmSymbol.TRIPLET_CLOSE, 
+									RhythmSymbol.TRIPLET_OPEN));
 							}
+							else if (combinedIsClose && enc.contains(RhythmSymbol.TRIPLET_OPEN)) {
+//								enc = enc.replace(RhythmSymbol.TRIPLET_OPEN, RhythmSymbol.TRIPLET_CLOSE);
+								combinedRs = 
+									Symbol.getRhythmSymbol(enc.replace(RhythmSymbol.TRIPLET_OPEN, 
+									RhythmSymbol.TRIPLET_CLOSE));
+							}
+//							if (combinedIsOpen || combinedIsClose) {
+//								String openClose = "";
+//								if (combinedIsOpen && !rs.getEncoding().contains(RhythmSymbol.TRIPLET_OPEN)) {
+//									openClose = RhythmSymbol.TRIPLET_OPEN;
+//								}
+//								else if (combinedIsClose && !rs.getEncoding().contains(RhythmSymbol.TRIPLET_CLOSE)){
+//									openClose = RhythmSymbol.TRIPLET_CLOSE;
+//								}
+//								combinedRs = RhythmSymbol.getRhythmSymbol(
+//									RhythmSymbol.TRIPLET_INDICATOR + 
+//									openClose +
+//									rs.getEncoding().substring(RhythmSymbol.TRIPLET_INDICATOR.length()));
+//								combinedRs = Symbol.getRhythmSymbol(rs.getEncoding());
+//							}
 							else {
 								combinedRs = rs;
 							}
 							break;
 						}
 					}
+					System.out.println("gaaaaah " + combinedRs.getEncoding());
+//					System.out.println(combinedRs.getSymbol());
+//					System.out.println(combinedRs.getDuration());
+//					System.out.println(combinedRs.getNumberOfDots());
 					res.add(combinedRs.getEncoding() + ss +	Symbol.SPACE.getEncoding() + ss);
 					successiveRests.clear();
 				}
@@ -1188,7 +1237,7 @@ public class Encoding implements Serializable {
 
 
 	/**
-	 * Asserts whether the given event is of the given type.
+	 * Asserts whether the given event is of the given type. 
 	 * 
 	 * @param event
 	 * @param tss
@@ -1198,10 +1247,16 @@ public class Encoding implements Serializable {
 	// TESTED
 	public static boolean assertEventType(String event, TabSymbolSet tss, String type) {
 		String ss = Symbol.SYMBOL_SEPARATOR;
+		String space = Symbol.SPACE.getEncoding();
+
+		// Add SS to end and remove any space
 		if (!event.endsWith(ss)) {
 			event += ss;
 		}
-		
+		if (event.endsWith(space + ss)) {
+			event = event.substring(0, event.indexOf(space));
+		}
+
 		if (type.equals("TabSymbol")) {
 			for (String s : event.split("\\" + ss)) {
 				if (TabSymbol.getTabSymbol(s, tss) != null) {

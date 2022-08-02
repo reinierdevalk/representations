@@ -220,6 +220,42 @@ public class Timeline implements Serializable {
 
 
 	/**
+	 * Given a diminuted meter and a diminution, calculates the undiminuted meter. 
+	 * This method does the opposite of diminuteMeter().
+	 * 
+	 * <ul>
+	 * <li>diminution > 0: meter count stays the same; meter unit doubles</li>
+	 * <ul>
+	 * <li>diminution = 2:	2/2 --> 2/(2/2) = 2/1</li>
+	 * <li>diminution = 2:	4/4 --> 4/(4/2) = 4/2</li>
+	 * <li>diminution = 4:	4/4 --> 4/(4/4) = 4/1</li>
+	 * </ul>
+	 * <li>diminution < 0: meter count stays the same; meter unit halves</li>
+	 * <ul>
+	 * <li>diminution = -2: 2/2 --> 2/(2*|-2|) = 2/4</li>
+	 * <li>diminution = -2: 4/4 --> 4/(4*|-2|) = 4/8</li>                    
+	 * <li>diminution = -4: 4/4 --> 4/(4*|-4|) = 4/16</li>
+	 * </ul>
+	 * </ul>
+	 * @param meter
+	 * @param diminution
+	 * @return
+	 */
+	// TESTED
+	public static Rational undiminuteMeter(Rational meter, int diminution) {
+		if (diminution == 1) {
+			return new Rational(meter.getNumer(), meter.getDenom());
+		}
+		else if (diminution > 0) {
+			return new Rational(meter.getNumer(), (int) (meter.getDenom() / diminution)); 
+		}
+		else {
+			return new Rational(meter.getNumer(), (meter.getDenom() * Math.abs(diminution)));
+		}
+	}
+
+
+	/**
 	 * Given a Rational and a diminution, calculates the diminuted Rational.
 	 * 
 	 * @param r
@@ -626,7 +662,7 @@ public class Timeline implements Serializable {
 				currMeterInfo[MI_FIRST_BAR]) + 1;
 			int currDim = diminutions.get(i);
 			// 1. Meter
-			Rational newMeter = diminuteMeterOBS(new Rational(currNum, currDen), currDim);
+			Rational newMeter = undiminuteMeter(new Rational(currNum, currDen), currDim);
 			currMeterInfo[MI_NUM] = newMeter.getNumer();
 			currMeterInfo[MI_DEN] = newMeter.getDenom();
 			// 2. Metric time
@@ -682,41 +718,6 @@ public class Timeline implements Serializable {
 	 */
 	private List<Integer[]> getMeterInfoOBS() {
 		return meterInfoOBS;
-	}
-
-
-	/**
-	 * Given a meter and a diminution, calculates the diminuted meter.
-	 * 
-	 * <ul>
-	 * <li>diminution > 0: meter count stays the same; meter unit doubles</li>
-	 * <ul>
-	 * <li>diminution = 2:	2/2 --> 2/(2/2) = 2/1</li>
-	 * <li>diminution = 2:	4/4 --> 4/(4/2) = 4/2</li>
-	 * <li>diminution = 4:	4/4 --> 4/(4/4) = 4/1</li>
-	 * </ul>
-	 * <li>diminution < 0: meter count stays the same; meter unit halves</li>
-	 * <ul>
-	 * <li>diminution = -2: 2/2 --> 2/(2*|-2|) = 2/4</li>
-	 * <li>diminution = -2: 4/4 --> 4/(4*|-2|) = 4/8</li>                    
-	 * <li>diminution = -4: 4/4 --> 4/(4*|-4|) = 4/16</li>
-	 * </ul>
-	 * </ul>
-	 * @param meter
-	 * @param diminution
-	 * @return
-	 */
-	// TESTED
-	static Rational diminuteMeterOBS(Rational meter, int diminution) {
-		if (diminution == 1) {
-			return new Rational(meter.getNumer(), meter.getDenom());
-		}
-		else if (diminution > 0) {
-			return new Rational(meter.getNumer(), (int) (meter.getDenom() / diminution)); 
-		}
-		else {
-			return new Rational(meter.getNumer(), (meter.getDenom() * Math.abs(diminution)));
-		}
 	}
 
 }

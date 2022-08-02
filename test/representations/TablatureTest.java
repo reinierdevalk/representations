@@ -247,65 +247,65 @@ public class TablatureTest extends TestCase {
 		onsetTimesTestGetMeterInfo.add(new Integer[]{666, 1});
 		
 		// b. Diminuted
-		List<Integer[]> onsetTimesTestGetMeterInfoDim = new ArrayList<>();
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{0, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{24, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{48, 1});
-		//
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{72, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{144, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{168, 1});
-		//
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{264, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{312, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{324, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{336, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{342, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{348, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{354, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{360, 1});
-		//
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{456, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{552, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{600, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{624, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{648, 1});
-		//
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{744, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{816, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{828, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{840, 1});
-		//
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1032, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1080, 1});
-		//
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1128, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1140, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1152, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1164, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1176, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1188, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1200, 1});
-		//
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1224, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1236, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1242, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1248, 1});
-		//
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1254, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1278, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1284, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1287, 1});
-		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1290, 1});
+//		List<Integer[]> onsetTimesTestGetMeterInfoDim = new ArrayList<>();
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{0, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{24, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{48, 1});
+//		//
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{72, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{144, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{168, 1});
+//		//
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{264, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{312, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{324, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{336, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{342, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{348, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{354, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{360, 1});
+//		//
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{456, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{552, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{600, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{624, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{648, 1});
+//		//
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{744, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{816, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{828, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{840, 1});
+//		//
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1032, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1080, 1});
+//		//
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1128, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1140, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1152, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1164, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1176, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1188, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1200, 1});
+//		//
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1224, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1236, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1242, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1248, 1});
+//		//
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1254, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1278, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1284, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1287, 1});
+//		onsetTimesTestGetMeterInfoDim.add(new Integer[]{1290, 1});
 
 		if (!diminute) {
 			allOnsetTimes.add(onsetTimesTestpiece);
 			allOnsetTimes.add(onsetTimesTestGetMeterInfo);
 		}
-		else {
-			allOnsetTimes.add(onsetTimesTestpiece);
-			allOnsetTimes.add(onsetTimesTestGetMeterInfoDim);
-		}	
+//		else {
+//			allOnsetTimes.add(onsetTimesTestpiece);
+//			allOnsetTimes.add(onsetTimesTestGetMeterInfoDim);
+//		}
 		return allOnsetTimes;
 	}
 
@@ -1118,14 +1118,14 @@ public class TablatureTest extends TestCase {
 		getOnsetTimesPerChord(false).get(0).forEach(item -> { if (item[1] != 0) { expected.add(
 			new Rational[]{new Rational(item[0], Tablature.SRV_DEN), Rational.ONE});}});
 		// For a piece with meter changes
-		getOnsetTimesPerChord(true).get(1).forEach(item -> { if (item[1] != 0) { expected.add(
+		getOnsetTimesPerChord(false).get(1).forEach(item -> { if (item[1] != 0) { expected.add(
 			new Rational[]{new Rational(item[0], Tablature.SRV_DEN), Rational.ONE});}});
 		// b. Including rests
 		// For a piece with no meter changes
 		getOnsetTimesPerChord(false).get(0).forEach(item -> expected.add(new Rational[]{
 			new Rational(item[0], Tablature.SRV_DEN), new Rational(item[1], 1)})); 
 		// For a piece with meter changes
-		getOnsetTimesPerChord(true).get(1).forEach(item -> expected.add(new Rational[]{
+		getOnsetTimesPerChord(false).get(1).forEach(item -> expected.add(new Rational[]{
 			new Rational(item[0], Tablature.SRV_DEN), new Rational(item[1], 1)})); 
 
 		List<Rational[]> actual = new ArrayList<>();

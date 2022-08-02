@@ -754,22 +754,18 @@ public class EncodingTest extends TestCase {
 	@Test
 	public void testCombineSuccessiveRestEvents() {
 		List<String> events = Arrays.asList(new String[]{
-			"sb.c4.>.", 
-			"mi.>.",	
-			"mi.c4.>.",
-			"mi.>.", "sm.>.", "sm.>.", "mi.>.",
-			"mi.c4.>.",	
+			"sb.c4.>.", "mi.>.", "mi.c4.>.", "|.",
+			"mi.>.", "sm.>.", "sm.>.", "mi.>.", "mi.c4.>.", "|.",
+			"mi.>.", "sm.>.", "sm.>.", "|.", "mi.>.", "mi.c4.>.", "||."
 		});
 		
 		List<String> expected = Arrays.asList(new String[]{
-			"sb.c4.>.", 
-			"mi.>.",	
-			"mi.c4.>.",
-			"sb*.>.",
-			"mi.c4.>."
+			"sb.c4.>.", "mi.>.", "mi.c4.>.", "|.",
+			"sb*.>.", "mi.c4.>.", "|.",
+			"sb.>.", "|.", "mi.>.", "mi.c4.>.", "||."
 		});
 		
-		List<String> actual = Encoding.combineSuccessiveRestEvents(events);
+		List<String> actual = Encoding.combineSuccessiveRestEvents(events, TabSymbolSet.FRENCH);
 		
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
