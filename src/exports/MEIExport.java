@@ -1231,9 +1231,9 @@ public class MEIExport {
 //		List<String[]> meters = new ArrayList<>();
 //		int meterIndex = 0;
 		List<Integer[]> tabBarsToMetricBars = tab.mapTabBarsToMetricBars();
-//		for (Integer[] in : tabBarsToMetricBars) {
-//			System.out.println(Arrays.toString(in));
-//		}
+		for (Integer[] in : tabBarsToMetricBars) {
+			System.out.println(Arrays.toString(in));
+		}
 //		System.exit(0);
 
 //		List<Integer> xmlDurPerBar = new ArrayList<>();

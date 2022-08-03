@@ -973,18 +973,18 @@ public class Tablature implements Serializable {
 				}
 			}
 			events = tmp;
-			System.out.println("@@@@@@@@@@@@@@@@@@@@@@@");
-			System.out.println(events.size());
+//			System.out.println("@@@@@@@@@@@@@@@@@@@@@@@");
+//			System.out.println(events.size());
 //			for (int i = 0; i < events.size(); i++) {
 //				System.out.println("event no " + i);
 //				System.out.println(events.get(i));
 //			}
-			System.out.println("@@@@@@@@@@@@@@@@@@@@@@@");
-			System.out.println(onsetTimes.size());
-			for (int i = 0; i < onsetTimes.size(); i++) {
-				System.out.println("onset no " + i);
-				System.out.println(Arrays.asList(onsetTimes.get(i)));
-			}
+//			System.out.println("@@@@@@@@@@@@@@@@@@@@@@@");
+//			System.out.println(onsetTimes.size());
+//			for (int i = 0; i < onsetTimes.size(); i++) {
+//				System.out.println("onset no " + i);
+//				System.out.println(Arrays.asList(onsetTimes.get(i)));
+//			}
 //			System.exit(0);
 
 			// 2. Get the start and end onset times of triplet events
@@ -992,7 +992,6 @@ public class Tablature implements Serializable {
 			int dur = 0;
 			for (int i = 0; i < events.size(); i++) {
 				String curr = events.get(i);
-				System.out.println(i);
 				Rational ons = onsetTimes.get(i)[0];
 				ons.reduce();
 				if (curr.startsWith(RhythmSymbol.TRIPLET_INDICATOR)) {

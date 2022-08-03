@@ -17,9 +17,6 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 
-import com.sun.org.apache.bcel.internal.generic.NEW;
-
-import de.uos.fmt.musitech.data.performance.MidiNote;
 import de.uos.fmt.musitech.data.performance.PerformanceNote;
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationStaff;
@@ -251,11 +248,31 @@ public class Transcription implements Serializable {
 //			}
 //		}
 		
+		// Align the meters and meterSectionOnsets (both undiminuted) from the Tablature and 
+		// the Piece. If they are not aligned, in the Tablature different diminutions are used
+		// for a section that is in one meter in the Piece. Examples:
+		// 4465_33-34_memor_esto-2.tbp / Jos1714-Memor_esto_verbi_tui-166-325.mid
+		// meters      2/2, 2/4, 2/2, 2/4, 2/2, 2/4, 2/2 
+		// diminutions 2,   4,   2,   4,   2,   4,   2
+		// =           2/1, 2/1, 2/1, 2/1, 2/1, 2/1, 2/1 
+		// in Piece    2/1 
+		// 5263_12_in_exitu_israel_de_egipto_desprez-3.tbp / Jos1704-In_exitu_Israel_de_Egypto-281-401.mid
+		// meters      2/2, 3/4, 2/2, 3/4, 2/2, 2/4, 2/2, 3/4, 2/2
+		// diminutions 2,   4,   2,   4,   2,   4,   2,   4,   2
+		// =           2/1, 3/1, 2/1, 3/1, 2/1, 2/1, 2/1, 3/1, 2/1
+		// in Piece    2/1, 3/1, 2/1, 3/1, 2/1,           3/1, 2/1
+		
+		// MetricalTimeline
+		MetricalTimeLine mtl = groundTruthPiece.getMetricalTimeLine();
+		
 		// In some cases, the meters from meterInfoTab are all the same when undiminuted, 
-		// meaning that the Transcription's MetricalTimeline will only have this meter. In 
-		// such cases, the duplicate occurrences of the meter need to be added to the 
-		// MetricalTimeline explicitly
+		// meaning that the Transcription's MetricalTimeLine will only have this meter. In 
+		// such cases, all needed duplicate occurrences of the meter need to be added to 
+		// the MetricalTimeLine explicitly
 		// Example: 4465_33-34_memor_esto-2.tbp / Jos1714-Memor_esto_verbi_tui-166-325.mid
+		// 2/2, 2/4, 2/2, 2/4, 2/2, 2/4, 2/2 with diminutions 2, 4, 2, 4, 2, 4, 2 = 2/1 throughout 
+		//
+		// Get the undiminished meters and meter onset times from meterInfoTab
 		List<Rational> metersTabUndim = new ArrayList<>();
 		List<Rational> onsetsTabUndim = new ArrayList<>();
 		List<Long> timesTabUndim = new ArrayList<>();
@@ -269,57 +286,54 @@ public class Transcription implements Serializable {
 				timesTabUndim.add((long) 0);
 			}
 			else {
-				Integer[] prev = meterInfoTab.get(i-1);
+				Integer[] prevIn = meterInfoTab.get(i-1);
 				Rational prevMeterUndim = metersTabUndim.get(i-1);
-				int numBarsPrevMeter = (prev[Timeline.MI_LAST_BAR] - prev[Timeline.MI_FIRST_BAR]) + 1; 
-				int quarterNotesPerBar = (int) prevMeterUndim.div(new Rational(1, 4)).toDouble();
+				int numBarsPrevMeter = (prevIn[Timeline.MI_LAST_BAR] - prevIn[Timeline.MI_FIRST_BAR]) + 1; 
 				onsetsTabUndim.add(onsetsTabUndim.get(i-1).add(prevMeterUndim.mul(numBarsPrevMeter)));
+				int quarterNotesPerBar = (int) prevMeterUndim.div(new Rational(1, 4)).toDouble();
 				timesTabUndim.add(timesTabUndim.get(i-1) + ((quarterNotesPerBar * quarter) * numBarsPrevMeter));
 			}	
 		}
+		System.out.println("metersTabUndim:");
 		System.out.println(metersTabUndim);
+		System.out.println("onsetsTabUndim:");
 		System.out.println(onsetsTabUndim);
-		System.out.println(timesTabUndim);
-		
-		List<Rational> uniqueMetersUndim = metersTabUndim.stream().distinct().collect(Collectors.toList());
-		System.out.println(uniqueMetersUndim);
 
-		// Meters and meter section onsets (from MIDI/groundTruthPiece)
-		// a. Undiminuted 
-		MetricalTimeLine mtl = groundTruthPiece.getMetricalTimeLine();
-		
-		// If there are multiple meters in the tab, but undiminuted they are all the same:
-		// make TimeSignatureMarkers and add them to mtl
-		if (metersTabUndim.size() > 1 && uniqueMetersUndim.size() == 1) {
-//			List<TimeSignatureMarker> tsms = new ArrayList<>();
+		// Check if the elements of metersTabUndim are all the same; if so and if the tablature has
+		// multiple meters, add any duplicate occurrences of meter as TimeSignatureMarkers to mtl
+		boolean singleUndimMeter = 
+			metersTabUndim.stream().distinct().collect(Collectors.toList()).size() == 1;
+		if (metersTabUndim.size() > 1 && singleUndimMeter) {
 			for (int i = 0; i < metersTabUndim.size(); i++) {
-//				tsms.add(new TimeSignatureMarker(new TimeSignature(metersTabUndim.get(i)), onsetsTabUndim.get(i)));
 				mtl.add(new TimeSignatureMarker(new TimeSignature(metersTabUndim.get(i)), onsetsTabUndim.get(i)));
 			}
-//			for (TimeSignatureMarker tsm : tsms) {
-//				System.out.println(tsm);
-//			}
 		}
-		
+
+		// Meters and meter section onsets (from MIDI/groundTruthPiece)
+		// a. Undiminuted 		
 		List<Rational> meters = new ArrayList<>();
 		List<Rational> meterSectionOnsets = new ArrayList<>();
-		System.out.println("***************************************");
+//		System.out.println("***************************************");
 		for (int i = 0; i < mtl.size(); i++) {
 			Marker m = mtl.get(i);
 			if (m instanceof TimeSignatureMarker) {
 				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
-				System.out.println(tsm);
+//				System.out.println(tsm);
 				TimeSignature ts = tsm.getTimeSignature();
 				Rational mt = tsm.getMetricTime();
 				// Add if time signature at the current onset is not yet in list
 				if (!meterSectionOnsets.contains(mt)) {
-					System.out.println("added");
+//					System.out.println("added");
 					meters.add(new Rational(ts.getNumerator(), ts.getDenominator()));
 					meterSectionOnsets.add(mt);
 				}
 			}
 		}
-		System.out.println("***************************************");
+//		System.out.println("***************************************");
+		
+		System.out.println(meters);
+		System.out.println(meterSectionOnsets);
+		System.exit(0);
 		// b. Diminuted
 		List<Rational> metersDim = new ArrayList<>();
 //		System.out.println(meters);
