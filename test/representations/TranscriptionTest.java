@@ -21,10 +21,17 @@ import de.uos.fmt.musitech.data.score.ScorePitch;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.Piece;
 import de.uos.fmt.musitech.data.structure.container.NoteSequence;
+import de.uos.fmt.musitech.data.time.Marker;
+import de.uos.fmt.musitech.data.time.MetricalTimeLine;
+import de.uos.fmt.musitech.data.time.TempoMarker;
+import de.uos.fmt.musitech.data.time.TimeSignature;
+import de.uos.fmt.musitech.data.time.TimeSignatureMarker;
+import de.uos.fmt.musitech.data.time.TimedMetrical;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import imports.MIDIImport;
 import junit.framework.TestCase;
+import path.Path;
 import tbp.Encoding;
 import tbp.TabSymbol;
 import utility.DataConverter;
@@ -52,7 +59,8 @@ public class TranscriptionTest extends TestCase {
 //		midiTestGetMeterInfoDim = new File(Runner.midiPathTest + "test_get_meter_key_info_diminuted.mid");
 //		midiTestGetMeterInfoDimNoAna = new File(Runner.midiPathTest + "test_get_meter_key_info_diminuted_no_anacrusis.mid");
 		
-		String s = MEIExport.rootDir;
+//		String s = MEIExport.rootDir;
+		String s = Path.ROOT_PATH;
 		encodingTestpiece = new File(s + "data/annotated/encodings/test/" + "testpiece.tbp");
 		encodingTestGetMeterInfo = new File(s + "data/annotated/encodings/test/" + "test_get_meter_info.tbp");
 		
@@ -109,6 +117,107 @@ public class TranscriptionTest extends TestCase {
 		voiceAssignments.add(Arrays.asList(new Integer[]{0, -1, -1, -1, -1}));
 		voiceAssignments.add(Arrays.asList(new Integer[]{3, 2, 1, 0, -1}));	 
 		return voiceAssignments;
+	}
+
+
+	public void testCleanMetricalTimeLine() {
+		
+		String path = Path.ROOT_PATH + Path.DATA_DIR + Path.MIDI_PATH_JOSQUINTAB;
+
+		File midiMemorEsto = new File(path + "Jos1714-Memor_esto_verbi_tui-166-325.mid"); // one meter
+		File midiQuiHabitat = new File(path + "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282.mid"); // two meters
+		File midiPreterRerum = new File(path + "Jos2411-Preter_rerum_seriem-88-185.mid"); // three meters
+		File midiInExitu = new File(path + "Jos1704-In_exitu_Israel_de_Egypto-281-401.mid"); // seven meters
+		
+		
+		Transcription testPieceTrans = new Transcription(midiTestpiece, null);
+		Transcription inExituTrans = new Transcription(midiInExitu, null);
+
+		Rational twoTwo = new Rational(2, 2);
+		Rational twoOne = new Rational(2, 1);
+		Rational threeOne = new Rational(3, 1);
+		
+		for (Marker m : new Transcription(midiMemorEsto, null).getPiece().getMetricalTimeLine()) {
+			System.out.println(m);
+		}
+		System.exit(0);
+		
+		// Calculation of the the endMarker time at tempo = 289 BPM (memorEsto case)
+		// 289 BPM = 289/60 beats/s --> whole note (4 beats) every 240/289s (289/60 * x = 4 --> x = 240/289)
+		//                          --> 10 whole notes notes every 2400/289s --> time = 20000000
+		
+		List<MetricalTimeLine> expected = new ArrayList<>();
+		// Add TimeSignatureMarker(s), TempoMarker(s), and the TimedMetricals 
+		// MetricalTimeLine.zeroMarker and MetricalTimeLine.endMarker. 
+		// NB: The endMarker is placed 10/1 after the last TempoMarker (if there are TempoMarkers) 
+		// or 10/1 after the zeroMarker (if there are no TempoMarkers). It must be added manually 
+		// to the clear()ed MetricalTimeLine if no TempoMarkers are added to it, but is added
+		// (and shifted) automatically every time a TempoMarker is added to it.
+		// Calculation of the the endMarker time at tempo = 120 BPM (default case; see MetricalTimeLine)
+		// 120 BPM = 120/60 = 2 beats/s --> whole note (4 beats) every 2s (2 * x = 4 --> x = 2)
+		//                              --> 10 whole notes notes every 20s --> time = 20000000		 
+		MetricalTimeLine expected1 = new MetricalTimeLine();
+		expected1.clear();
+		expected1.add(new TimeSignatureMarker(new TimeSignature(twoTwo), Rational.ZERO));
+		expected1.add((Marker) new TimedMetrical(0, Rational.ZERO));
+		// Calculation of the endMarker time at tempo = 100 BPM (testPiece case)
+		// 100 BPM = 100/60 = 5/3 beats/s --> whole note (4 beats) every 2.4s (5/3 * x = 4 --> x = 2.4) 
+		//                                --> 10 whole notes notes every 24s --> time = 24000000
+		expected1.add(new TimedMetrical(24000000, new Rational(10, 1)));
+		expected.add(expected1);
+
+		MetricalTimeLine expected2 = new MetricalTimeLine();
+		expected2.clear();
+		expected2.add(new TimeSignatureMarker(new TimeSignature(twoOne), Rational.ZERO));
+		expected2.add((Marker) new TimedMetrical(0, Rational.ZERO));
+		expected2.add(new TimeSignatureMarker(new TimeSignature(threeOne), new Rational(28, 1)));
+		expected2.add(new TempoMarker(67200000, new Rational(28, 1)));
+		expected2.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(76, 1)));
+		expected2.add(new TempoMarker(93441408, new Rational(76, 1)));
+		expected2.add(new TimeSignatureMarker(new TimeSignature(threeOne), new Rational(90, 1)));
+		expected2.add(new TempoMarker(105027640, new Rational(90, 1)));
+		expected2.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(180, 1)));
+		expected2.add(new TempoMarker(154230280, new Rational(180, 1)));
+		expected2.add(new TimeSignatureMarker(new TimeSignature(threeOne), new Rational(230, 1)));
+		expected2.add(new TempoMarker(195609680, new Rational(230, 1)));
+		expected2.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(248, 1)));
+		expected2.add(new TempoMarker(205450208, new Rational(248, 1)));
+		// Correct endMarker time (why is this necessary?)
+		expected2.getEndMarker().setTime(213726088);
+		expected.add(expected2);
+
+		List<MetricalTimeLine> actual = new ArrayList<>();
+		actual.add(Transcription.cleanMetricalTimeLine(testPieceTrans.getPiece().getMetricalTimeLine()));
+		actual.add(Transcription.cleanMetricalTimeLine(inExituTrans.getPiece().getMetricalTimeLine()));
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			MetricalTimeLine e = expected.get(i);
+			MetricalTimeLine a = actual.get(i);
+			assertEquals(e.size(), a.size());
+			for (int j = 0; j < e.size(); j++) {
+				Marker m = e.get(j);
+				if (m instanceof TimeSignatureMarker) {
+					TimeSignatureMarker mExp = (TimeSignatureMarker) e.get(j);
+					TimeSignatureMarker mAct = (TimeSignatureMarker) a.get(j);
+					assertEquals(mExp.getTimeSignature(), mAct.getTimeSignature());
+					assertEquals(mExp.getMetricTime(), mAct.getMetricTime());
+				}
+				if (m instanceof TempoMarker) {
+					TempoMarker mExp = (TempoMarker) e.get(j);
+					TempoMarker mAct = (TempoMarker) a.get(j);
+					assertEquals(mExp.getTime(), mAct.getTime());
+					assertEquals(mExp.getMetricTime(), mAct.getMetricTime());
+				}
+				if (m instanceof TimedMetrical && !(m instanceof TempoMarker)) {
+					TimedMetrical mExp = (TimedMetrical) e.get(j);
+					TimedMetrical mAct = (TimedMetrical) a.get(j);
+					assertEquals(mExp.getTime(), mAct.getTime());
+					assertEquals(mExp.getMetricTime(), mAct.getMetricTime());
+				}
+			}
+			
+		}
 	}
 
 
