@@ -232,18 +232,30 @@ public class Transcription implements Serializable {
 	 * @param mtl
 	 * @return The cleaned MetricalTimeLine. 
 	 */
-	// TODO test
+	// TESTED
 	static MetricalTimeLine cleanMetricalTimeLine(MetricalTimeLine mtl) {
 		MetricalTimeLine mtlClean = new MetricalTimeLine();
 		// Clear default added TimedMetricals (MetricalTimeLine.zeroMarker and MetricalTimeLine.endMarker)
 		mtlClean.clear();
-//		System.out.println("clean");
-//		for (Marker m : mtlClean) {
-//			System.out.println("--> " + m);
-//		}
-//		System.exit(0);
-
-		System.out.println("joe!");
+		
+		// The endMarker in a MetricalTimeLine is placed 10/1 (10 whole notes) after the last TimedMetrical, 
+		// at this TimedMetrical's time + the time that 10/1 takes in this TimedMetrical's tempo. 
+		// This last TimedMetrical is 
+		// - the zeroMarker, if the MetricalTimeLine contains no TempoMarkers
+		// - the last TempoMarker, if the MetricalTimeLine contains TempoMarkers
+		//
+		// Examples of endMarker time calculation 
+		// a. meter = 4/4; tempo = 120 (default settings; see MetricalTimeLine))
+		// Last TimedMetrical is zeroMarker at 0/1 (time 0), to which is added
+		// 120 BPM = 120/60 = 2 beats/s --> whole note (4 beats) every 2s (2 * x = 4 --> x = 2)
+		//                              --> 10 whole notes notes every 20s --> time = 20000000
+		// --> endMarker time = 0 + 20000000
+		// b. meter = 4/4 (20 bars), 4/4 (20 bars), tempo = 120, 80 
+		// Last TimedMetrical is TempoMarker at 20/1 (time 40000000), to which is added
+		// 80 BPM = 80/60 =  8/6 beats/s --> whole note (4 beats) every 3s (8/6 * x = 4 --> x = 3)
+		//                              --> 10 whole notes notes every 30s --> time = 30000000
+		// --> endMarker time = 20000000 + 30000000
+		
 		// Get Marker onsets
 		List<Rational> timeSignatureMarkerOnsets = new ArrayList<>();
 		List<Rational> tempoMarkerOnsets = new ArrayList<>();
@@ -267,14 +279,7 @@ public class Transcription implements Serializable {
 			}
 			// Other TimedMetrical: MetricalTimeLine.zeroMarker and MetricalTimeLine.endMarker
 			else if (m instanceof TimedMetrical && !(m instanceof TempoMarker)) {
-				System.out.println(m);
-				System.out.println("zzz " + m.getMetricTime());
-				System.out.println(mtl.getTimedMetrical(m.getMetricTime()).getClass());
-		        System.out.println(m.getClass());
 				if (!otherTimedMetricalOnsets.contains(mt)) {
-					System.out.println("no");
-					System.out.println(mtlClean.size());
-					System.out.println(mtlClean.get(0)); 
 					mtlClean.add(m);
 					otherTimedMetricalOnsets.add(mt);
 				}
@@ -287,11 +292,6 @@ public class Transcription implements Serializable {
 				}
 			}
 		}
-		System.out.println("%%%%%%%%%%");
-		for (Marker m : mtlClean) {
-			System.out.println(m);
-		}
-//		System.exit(0);
 		return mtlClean;
 	}
 
@@ -314,9 +314,11 @@ public class Transcription implements Serializable {
 	 * @param tl
 	 * @return The aligned MetricalTimeline.
 	 */
-	// TODO test
-	MetricalTimeLine alignMetricalTimeLine(MetricalTimeLine mtl, Timeline tl) {
+	// TESTED
+	static MetricalTimeLine alignMetricalTimeLine(MetricalTimeLine mtl, Timeline tl) {
 		List<Integer[]> meterInfoTab = tl.getMeterInfo();
+		
+		System.out.println(mtl.getTempo(0));
 
 		// Align mtl with tl. Examples where this is necessary:
 		// 4465_33-34_memor_esto-2.tbp / Jos1714-Memor_esto_verbi_tui-166-325.mid
@@ -352,6 +354,7 @@ public class Transcription implements Serializable {
 
 		// 2. Align
 		int ind = 0;
+		boolean timeSigsInserted = false;
 		for (int i = 0; i < mtl.size(); i++) {
 			Marker m = mtl.get(i);
 			if (m instanceof TimeSignatureMarker) {
@@ -366,6 +369,7 @@ public class Transcription implements Serializable {
 				if (!isAligned) {
 					mtl.add(new TimeSignatureMarker(new TimeSignature(meterTabUndim), msoTabUndim));
 					mtl.add(new TempoMarker(mtl.getTime(msoTabUndim), msoTabUndim));
+					timeSigsInserted = true;
 				}
 				ind++;
 			}
@@ -379,10 +383,67 @@ public class Transcription implements Serializable {
 				Rational msoTabUndim = msosTabUndim.get(i);
 				mtl.add(new TimeSignatureMarker(new TimeSignature(lastTs), msoTabUndim));
 				mtl.add(new TempoMarker(mtl.getTime(msoTabUndim), msoTabUndim));
+				timeSigsInserted = true;
 			}
 		}
 
+		// 3. Clean up TimedMetricals. Inserting new TempoMarkers as done above can mess up the 
+		// TimedMetricals, of which there should be only two: at metric times 0 and 10/1 after 
+		// the last TempoMarker (or, if there are none, 10/1 after the zeroMarker)		
+		if (timeSigsInserted) {
+			// a. Determine the correct endMarker (this must be done before any TimedMetricals are removed)
+			// Determine the metric time of the endMarker
+			Rational mtLastTimedMetrical = Rational.ZERO;
+			for (int i = 0; i < mtl.size(); i++) {
+				Marker m = mtl.get(i);
+				if (m instanceof TempoMarker) {
+					if (m.getMetricTime().isGreater(mtLastTimedMetrical)) {
+						mtLastTimedMetrical = m.getMetricTime();
+					}
+				}
+			}
+			Rational mtEndMarker = mtLastTimedMetrical.add(new Rational(10, 1));
+			// Determine the time of the endMarker, which is the time of the last TimedMetrical +
+			// the time ten whole notes take in the tempo at the last TimedMetrical
+			// NB: mtl.getTime(mtEndMarker) is not reliable here, and cannot be used when declaring end
+			long timeLastTimedMetrical = mtl.getTime(mtLastTimedMetrical);
+			long timeTenWholeNotes = calculateTime(new Rational(10, 1), mtl.getTempo(timeLastTimedMetrical));
+			TimedMetrical end = new TimedMetrical(timeLastTimedMetrical+(long) timeTenWholeNotes, mtEndMarker);
+//			TimedMetrical end = new TimedMetrical(mtl.getTime(mtEndMarker), mtEndMarker);
+			// b. Remove all TimedMetricals but the zeroMarker
+			List<Integer> indsToRemove = new ArrayList<>();
+			for (int i = 0; i < mtl.size(); i++) {
+				Marker m = mtl.get(i);
+				if (m instanceof TimedMetrical && !(m instanceof TempoMarker)) {
+					if (!m.getMetricTime().equals(Rational.ZERO)) {
+						indsToRemove.add(i);
+					}
+				}
+			}
+			for (int i = 0; i < indsToRemove.size(); i++) {
+				mtl.remove(indsToRemove.get(i) - i);
+			}
+			// c. Add endMarker
+			mtl.add((Marker) end);
+		}
 		return mtl;
+	}
+
+
+	/**
+	 * Calculates the time the given metric duration takes in the given tempo. 
+	 * 
+	 * Formula:
+	 * tmp BPM = tmp/60 beats/s --> one whole note (four beats) every 240/tmp s (tmp/60 * x = 4 --> x = 240/tmp)
+	 * 							--> ten whole notes every 2400/tmp s
+	 * 							--> n whole notes every (n*240)/tmp s 
+	 */
+	// TESTED
+	static long calculateTime(Rational dur, double tempo) {
+		double time = (dur.toDouble() * 240) / tempo;
+		// Multiply by 1000000 to get time in microseconds, round
+		time = Math.round(time * 1000000);
+		return (long) time;
 	}
 
 
