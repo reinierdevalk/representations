@@ -39,11 +39,19 @@ import utility.DataConverter;
 public class TranscriptionTest extends TestCase {
 
 	private File encodingTestpiece;
-	private File midiTestpiece;
 	private File encodingTestGetMeterInfo;
+	private File encodingMemorEsto;
+	private File encodingQuiHabitat;
+	private File encodingInExitu;
+	private File midiTestpiece;
 	private File midiTestGetMeterKeyInfo;
-	private File midiTestGetMeterKeyInfoDiminutedNoAnacrusis;
 	private File midiTestGetMeterKeyInfoDiminuted;
+	private File midiTestGetMeterKeyInfoDiminutedNoAnacrusis;
+	private File midiMemorEsto;
+	private File midiQuiHabitat;
+	private File midiPreterRerum;
+	private File midiInExitu;
+
 
 	public TranscriptionTest(String name) {
 		super(name);
@@ -61,13 +69,23 @@ public class TranscriptionTest extends TestCase {
 		
 //		String s = MEIExport.rootDir;
 		String s = Path.ROOT_PATH;
+		String jtp = Path.ROOT_PATH + Path.DATA_DIR + Path.MIDI_PATH_JOSQUINTAB;
+		String jtpTab = Path.ROOT_PATH + Path.DATA_DIR + Path.ENCODINGS_PATH_JOSQUINTAB;
+		
 		encodingTestpiece = new File(s + "data/annotated/encodings/test/" + "testpiece.tbp");
 		encodingTestGetMeterInfo = new File(s + "data/annotated/encodings/test/" + "test_get_meter_info.tbp");
-		
+		encodingMemorEsto = new File(jtpTab + "4465_33-34_memor_esto-2.tbp");
+		encodingQuiHabitat = new File(jtpTab + "5264_13_qui_habitat_in_adjutorio_desprez-2.tbp");
+		encodingInExitu = new File(jtpTab + "5263_12_in_exitu_israel_de_egipto_desprez-3.tbp");
+	
 		midiTestpiece = new File(s + "data/annotated/MIDI/test/" + "testpiece.mid");
 		midiTestGetMeterKeyInfo = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info.mid");
 		midiTestGetMeterKeyInfoDiminuted = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info_diminuted.mid");
 		midiTestGetMeterKeyInfoDiminutedNoAnacrusis = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info_diminuted_no_anacrusis.mid");
+		midiMemorEsto = new File(jtp + "Jos1714-Memor_esto_verbi_tui-166-325.mid");
+		midiQuiHabitat = new File(jtp + "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282.mid");
+		midiPreterRerum = new File(jtp + "Jos2411-Preter_rerum_seriem-88-185.mid");
+		midiInExitu = new File(jtp + "Jos1704-In_exitu_Israel_de_Egypto-281-401.mid");	
 	}
 
 
@@ -120,22 +138,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
-	public void testCleanMetricalTimeLine() {
-		String jtp = Path.ROOT_PATH + Path.DATA_DIR + Path.MIDI_PATH_JOSQUINTAB;
-		// One meter
-		Transcription testPiece = new Transcription(midiTestpiece, null);
-		Transcription memorEsto = 
-			new Transcription(new File(jtp + "Jos1714-Memor_esto_verbi_tui-166-325.mid"), null);
-		// Two meters
-		Transcription quiHabitat = 
-			new Transcription(new File(jtp + "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282.mid"), null);
-		// Three meters
-		Transcription preterRerum = 
-			new Transcription(new File(jtp + "Jos2411-Preter_rerum_seriem-88-185.mid"), null);
-		// Seven meters
-		Transcription inExitu = 
-			new Transcription(new File(jtp + "Jos1704-In_exitu_Israel_de_Egypto-281-401.mid"), null);
-
+	private MetricalTimeLine getCleanMetricalTimeLine(String piece) {
 		Rational twoTwo = new Rational(2, 2);
 		Rational twoOne = new Rational(2, 1);
 		Rational threeOne = new Rational(3, 1);
@@ -144,82 +147,100 @@ public class TranscriptionTest extends TestCase {
 		double t289 = 289.99937166802806;
 		double t439 = 439.0008341015848;
 
-		// Uncomment to retrieve Marker times in JosquIntab MIDI pieces
+		// Uncomment to retrieve Marker times
+//		Transcription testpiece = new Transcription(midiTestpiece, null);
+//		Transcription memorEsto = new Transcription(midiMemorEsto, null);
+//		Transcription quiHabitat = new Transcription(midiQuiHabitat, null);
+//		Transcription preterRerum = new Transcription(midiPreterRerum, null);
+//		Transcription inExitu = new Transcription(midiInExitu, null);
 //		Transcription t = inExitu;
-//		for (Marker m : t.getPiece().getMetricalTimeLine()) {
+//		for (Marker m : Transcription.cleanMetricalTimeLine(t.getPiece().getMetricalTimeLine())) {
 //			System.out.println(m);
 //		}
 //		System.exit(0);
 
+		MetricalTimeLine mtl = new MetricalTimeLine();
+		mtl.clear();
+		if (piece.equals("testpiece")) {
+			// meter = 2/2; tempo = t100
+			// Add TimeSignatureMarker + zeroMarker; add endMarker
+			mtl.add(new TimeSignatureMarker(new TimeSignature(twoTwo), Rational.ZERO));
+			mtl.add((Marker) new TimedMetrical(0, Rational.ZERO));
+			mtl.add(new TimedMetrical(0+Transcription.calculateTime(new Rational(10, 1), t100), new Rational(10, 1)));
+		}
+		else if (piece.equals("memor esto")) {
+			// meter = 2/1; tempo = t289
+			// Add TimeSignatureMarker + zeroMarker; add endMarker
+			mtl.add(new TimeSignatureMarker(new TimeSignature(twoOne), Rational.ZERO));
+			mtl.add((Marker) new TimedMetrical(0, Rational.ZERO));
+			mtl.add(new TimedMetrical(0+Transcription.calculateTime(new Rational(10, 1), t289), new Rational(10, 1)));
+		}
+		else if (piece.equals("qui habitat")) {
+			// meter = 3/1, 2/1; tempo = t439, t289
+			// Add TimeSignatureMarker + zeroMarker/TempoMarker (2*); adapt endMarker (added through last TempoMarker)
+			mtl.add(new TimeSignatureMarker(new TimeSignature(threeOne), Rational.ZERO));
+			mtl.add((Marker) new TimedMetrical(0, Rational.ZERO));
+			mtl.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(75, 1)));
+			mtl.add(new TempoMarker(0+Transcription.calculateTime(new Rational(75, 1), t439), new Rational(75, 1)));
+			mtl.getEndMarker().setMetricTime(new Rational(85, 1));
+			mtl.getEndMarker().setTime(41002200+Transcription.calculateTime(new Rational(10, 1), t289));
+		}
+		else if (piece.equals("preter rerum")) {
+			// meter = 2/1, 3/1, 2/1; tempo = t289, t439, t289
+			// Add TimeSignatureMarker + zeroMarker/TempoMarker (3*); adapt endMarker (added through last TempoMarker)
+			mtl.add(new TimeSignatureMarker(new TimeSignature(twoOne), Rational.ZERO));
+			mtl.add((Marker) new TimedMetrical(0, Rational.ZERO));
+			mtl.add(new TimeSignatureMarker(new TimeSignature(threeOne), new Rational(104, 1)));
+			mtl.add(new TempoMarker(0+Transcription.calculateTime(new Rational(104, 1), t289), new Rational(104, 1)));
+			mtl.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(212, 1)));
+			mtl.add(new TempoMarker(86069152+Transcription.calculateTime(new Rational(108, 1), t439), new Rational(212, 1)));
+			mtl.getEndMarker().setMetricTime(new Rational(222, 1));
+			mtl.getEndMarker().setTime(145112320+Transcription.calculateTime(new Rational(10, 1), t289));
+		}
+		else if (piece.equals("in exitu")) {
+			// meter = 2/1, 3/1, 2/1, 3/1, 2/1, 3/1, 2/1; tempo = t99, t439, t289, t439, t289, t439, t289
+			// Add TimeSignatureMarker + zeroMarker/TempoMarker (7*); adapt endMarker (added through last TempoMarker)
+			mtl.add(new TimeSignatureMarker(new TimeSignature(twoOne), Rational.ZERO));
+			mtl.add((Marker) new TimedMetrical(0, Rational.ZERO));
+			mtl.add(new TimeSignatureMarker(new TimeSignature(threeOne), new Rational(28, 1)));
+			mtl.add(new TempoMarker(0+Transcription.calculateTime(new Rational(28, 1), t99), new Rational(28, 1)));
+			mtl.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(76, 1)));
+			mtl.add(new TempoMarker(67200000+Transcription.calculateTime(new Rational(48, 1), t439), new Rational(76, 1)));
+			mtl.add(new TimeSignatureMarker(new TimeSignature(threeOne), new Rational(90, 1)));
+			mtl.add(new TempoMarker(93441408+Transcription.calculateTime(new Rational(14, 1), t289), new Rational(90, 1)));
+			mtl.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(180, 1)));
+			mtl.add(new TempoMarker(105027640+Transcription.calculateTime(new Rational(90, 1), t439), new Rational(180, 1)));
+			mtl.add(new TimeSignatureMarker(new TimeSignature(threeOne), new Rational(230, 1)));
+			mtl.add(new TempoMarker(174092392+Transcription.calculateTime(new Rational(26, 1), t289), new Rational(230, 1)));
+			mtl.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(248, 1)));
+			mtl.add(new TempoMarker(195609680+Transcription.calculateTime(new Rational(18, 1), t439), new Rational(248, 1)));
+			mtl.getEndMarker().setMetricTime(new Rational(258, 1));
+			mtl.getEndMarker().setTime(205450208+Transcription.calculateTime(new Rational(10, 1), t289));
+		}
+		return mtl;
+	}
+
+
+	public void testCleanMetricalTimeLine() {
+		// One meter
+		Transcription testpiece = new Transcription(midiTestpiece, null);
+		Transcription memorEsto = new Transcription(midiMemorEsto, null);
+		// Two meters
+		Transcription quiHabitat = new Transcription(midiQuiHabitat, null);
+		// Three meters
+		Transcription preterRerum = new Transcription(midiPreterRerum, null);
+		// Seven meters
+		Transcription inExitu = new Transcription(midiInExitu, null);
+
 		List<MetricalTimeLine> expected = new ArrayList<>();
-		// testPiece (meter = 2/2; tempo = t100)
-		MetricalTimeLine expected1 = new MetricalTimeLine();
-		expected1.clear();
-		// Add TimeSignatureMarker + zeroMarker; add endMarker
-		expected1.add(new TimeSignatureMarker(new TimeSignature(twoTwo), Rational.ZERO));
-		expected1.add((Marker) new TimedMetrical(0, Rational.ZERO));
-		expected1.add(new TimedMetrical(0+Transcription.calculateTime(new Rational(10, 1), t100), new Rational(10, 1)));
-		expected.add(expected1);
-
-		// memorEsto (meter = 2/1; tempo = t289)
-		MetricalTimeLine expected2 = new MetricalTimeLine();
-		expected2.clear();
-		// Add TimeSignatureMarker + zeroMarker; add endMarker
-		expected2.add(new TimeSignatureMarker(new TimeSignature(twoOne), Rational.ZERO));
-		expected2.add((Marker) new TimedMetrical(0, Rational.ZERO));
-		expected2.add(new TimedMetrical(0+Transcription.calculateTime(new Rational(10, 1), t289), new Rational(10, 1)));
-		expected.add(expected2);
-
-		// quiHabitat (meter = 3/1, 2/1; tempo = t439, t289)
-		MetricalTimeLine expected3 = new MetricalTimeLine();
-		expected3.clear();
-		// Add TimeSignatureMarker + zeroMarker/TempoMarker (2*); adapt endMarker (added through last TempoMarker)
-		expected3.add(new TimeSignatureMarker(new TimeSignature(threeOne), Rational.ZERO));
-		expected3.add((Marker) new TimedMetrical(0, Rational.ZERO));
-		expected3.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(75, 1)));
-		expected3.add(new TempoMarker(0+Transcription.calculateTime(new Rational(75, 1), t439), new Rational(75, 1)));
-		expected3.getEndMarker().setMetricTime(new Rational(85, 1)); // actually not needed
-		expected3.getEndMarker().setTime(41002200+Transcription.calculateTime(new Rational(10, 1), t289));
-		expected.add(expected3);
-
-		// preterRerum (meter = 2/1, 3/1, 2/1; tempo = t289, t439, t289)
-		MetricalTimeLine expected4 = new MetricalTimeLine();
-		expected4.clear();
-		// Add TimeSignatureMarker + zeroMarker/TempoMarker (3*); adapt endMarker (added through last TempoMarker)
-		expected4.add(new TimeSignatureMarker(new TimeSignature(twoOne), Rational.ZERO));
-		expected4.add((Marker) new TimedMetrical(0, Rational.ZERO));
-		expected4.add(new TimeSignatureMarker(new TimeSignature(threeOne), new Rational(104, 1)));
-		expected4.add(new TempoMarker(0+Transcription.calculateTime(new Rational(104, 1), t289), new Rational(104, 1)));
-		expected4.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(212, 1)));
-		expected4.add(new TempoMarker(86069152+Transcription.calculateTime(new Rational(108, 1), t439), new Rational(212, 1)));
-		expected4.getEndMarker().setMetricTime(new Rational(222, 1)); // actually not needed
-		expected4.getEndMarker().setTime(145112320+Transcription.calculateTime(new Rational(10, 1), t289));
-		expected.add(expected4);
-
-		// in exitu (meter = 2/1, 3/1, 2/1, 3/1, 2/1, 3/1, 2/1; tempo = t99, t439, t289, t439, t289, t439, t289)
-		MetricalTimeLine expected5 = new MetricalTimeLine();
-		expected5.clear();
-		// Add TimeSignatureMarker + zeroMarker/TempoMarker (7*); adapt endMarker (added through last TempoMarker)
-		expected5.add(new TimeSignatureMarker(new TimeSignature(twoOne), Rational.ZERO));
-		expected5.add((Marker) new TimedMetrical(0, Rational.ZERO));
-		expected5.add(new TimeSignatureMarker(new TimeSignature(threeOne), new Rational(28, 1)));
-		expected5.add(new TempoMarker(0+Transcription.calculateTime(new Rational(28, 1), t99), new Rational(28, 1)));
-		expected5.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(76, 1)));
-		expected5.add(new TempoMarker(67200000+Transcription.calculateTime(new Rational(48, 1), t439), new Rational(76, 1)));
-		expected5.add(new TimeSignatureMarker(new TimeSignature(threeOne), new Rational(90, 1)));
-		expected5.add(new TempoMarker(93441408+Transcription.calculateTime(new Rational(14, 1), t289), new Rational(90, 1)));
-		expected5.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(180, 1)));
-		expected5.add(new TempoMarker(105027640+Transcription.calculateTime(new Rational(90, 1), t439), new Rational(180, 1)));
-		expected5.add(new TimeSignatureMarker(new TimeSignature(threeOne), new Rational(230, 1)));
-		expected5.add(new TempoMarker(174092392+Transcription.calculateTime(new Rational(26, 1), t289), new Rational(230, 1)));
-		expected5.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(248, 1)));
-		expected5.add(new TempoMarker(195609680+Transcription.calculateTime(new Rational(18, 1), t439), new Rational(248, 1)));
-		expected5.getEndMarker().setMetricTime(new Rational(258, 1)); // actually not needed
-		expected5.getEndMarker().setTime(205450208+Transcription.calculateTime(new Rational(10, 1), t289));
-		expected.add(expected5);
+		expected.add(getCleanMetricalTimeLine("testpiece"));
+		expected.add(getCleanMetricalTimeLine("memor esto"));
+		expected.add(getCleanMetricalTimeLine("qui habitat"));
+		expected.add(getCleanMetricalTimeLine("preter rerum"));
+		expected.add(getCleanMetricalTimeLine("in exitu"));
 
 		List<MetricalTimeLine> actual = new ArrayList<>();
-		actual.add(Transcription.cleanMetricalTimeLine(testPiece.getPiece().getMetricalTimeLine()));
+		actual.add(Transcription.cleanMetricalTimeLine(testpiece.getPiece().getMetricalTimeLine()));
 		actual.add(Transcription.cleanMetricalTimeLine(memorEsto.getPiece().getMetricalTimeLine()));
 		actual.add(Transcription.cleanMetricalTimeLine(quiHabitat.getPiece().getMetricalTimeLine()));
 		actual.add(Transcription.cleanMetricalTimeLine(preterRerum.getPiece().getMetricalTimeLine()));
@@ -321,97 +342,54 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testAlignMetricalTimeLine() {
-		String jtp = Path.ROOT_PATH + Path.DATA_DIR + Path.MIDI_PATH_JOSQUINTAB;
-		String jtpTab = Path.ROOT_PATH + Path.DATA_DIR + Path.ENCODINGS_PATH_JOSQUINTAB;
-		// One meter (none added)
-		Transcription testPiece = new Transcription(midiTestpiece, null);
+		// One meter, none added
+		Transcription testpiece = new Transcription(midiTestpiece, null);
 		Tablature testPieceTab = new Tablature(encodingTestpiece, true);
-		// One meter (six added)
-		Transcription memorEsto = 
-			new Transcription(new File(jtp + "Jos1714-Memor_esto_verbi_tui-166-325.mid"), null); 
-		Tablature memorEstoTab = 
-			new Tablature(new File(jtpTab + "4465_33-34_memor_esto-2.tbp"), true);
-		// Seven meters (two added)
-		Transcription inExitu = 
-			new Transcription(new File(jtp + "Jos1704-In_exitu_Israel_de_Egypto-281-401.mid"), null);
-		Tablature inExituTab = 
-			new Tablature(new File(jtpTab + "5263_12_in_exitu_israel_de_egipto_desprez-3.tbp"), true);
+		// One meter, six added
+		Transcription memorEsto = new Transcription(midiMemorEsto, null); 
+		Tablature memorEstoTab = new Tablature(encodingMemorEsto, true);
+		// Seven meters, two added
+		Transcription inExitu = new Transcription(midiInExitu, null);
+		Tablature inExituTab = new Tablature(encodingInExitu, true);
 
-		Rational twoTwo = new Rational(2, 2);
 		Rational twoOne = new Rational(2, 1);
-		Rational threeOne = new Rational(3, 1);
-		double t99 = 99.99999999999999;
-		double t100 = 100.0;
 		double t289 = 289.99937166802806;
-		double t439 = 439.0008341015848;
 
-		// Uncomment to retrieve Marker times in JosquIntab MIDI pieces
-//		Transcription t = inExitu;
-//		for (Marker m : Transcription.cleanMetricalTimeLine(t.getPiece().getMetricalTimeLine())) {
-//			System.out.println(m);
-//		}
-//		System.exit(0);
-		
 		List<MetricalTimeLine> expected = new ArrayList<>();
-		// testPiece (meter = 2/2; tempo = t100)
-		MetricalTimeLine expected1 = new MetricalTimeLine();
-		expected1.clear();
-		// Add TimeSignatureMarker + zeroMarker; add endMarker
-		expected1.add(new TimeSignatureMarker(new TimeSignature(twoTwo), Rational.ZERO));
-		expected1.add((Marker) new TimedMetrical(0, Rational.ZERO));
-		expected1.add(new TimedMetrical(0+Transcription.calculateTime(new Rational(10, 1), t100), new Rational(10, 1)));
-		expected.add(expected1);
-		
-		// memorEsto (meter = 2/1; tempo = t289)
-		MetricalTimeLine expected2 = new MetricalTimeLine();
-		expected2.clear();
-		// Add TimeSignatureMarker + zeroMarker/TempoMarker (7*); adapt endMarker (added through last TempoMarker)
-		expected2.add(new TimeSignatureMarker(new TimeSignature(twoOne), Rational.ZERO));
-		expected2.add((Marker) new TimedMetrical(0, Rational.ZERO));
-		expected2.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(126, 1)));
-		expected2.add(new TempoMarker(0+Transcription.calculateTime(new Rational(126, 1), t289), new Rational(126, 1)));
-		expected2.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(148, 1)));
-		expected2.add(new TempoMarker(104276088+Transcription.calculateTime(new Rational(22, 1), t289), new Rational(148, 1)));
-		expected2.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(198, 1)));
-		expected2.add(new TempoMarker(122483024+Transcription.calculateTime(new Rational(50, 1), t289), new Rational(198, 1)));
-		expected2.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(204, 1)));
-		expected2.add(new TempoMarker(163862424+Transcription.calculateTime(new Rational(6, 1), t289), new Rational(204, 1)));
-		expected2.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(216, 1)));
-		expected2.add(new TempoMarker(168827952+Transcription.calculateTime(new Rational(12, 1), t289), new Rational(216, 1)));
-		expected2.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(226, 1)));
-		expected2.add(new TempoMarker(178759008+Transcription.calculateTime(new Rational(10, 1), t289), new Rational(226, 1)));
-		expected2.getEndMarker().setMetricTime(new Rational(236, 1));
-		expected2.getEndMarker().setTime(187034888+Transcription.calculateTime(new Rational(10, 1), t289));
-		expected.add(expected2);
-
-		// in exitu (meter = 2/1, 3/1, 2/1, 3/1, 2/1, 3/1, 2/1; tempo = t99, t439, t289, t439, t289, t439, t289)
-		MetricalTimeLine expected3 = new MetricalTimeLine();
-		expected3.clear();
-		// Add TimeSignatureMarker + zeroMarker/TempoMarker (9*); adapt endMarker (added through last TempoMarker) 
-		expected3.add(new TimeSignatureMarker(new TimeSignature(twoOne), Rational.ZERO));
-		expected3.add((Marker) new TimedMetrical(0, Rational.ZERO));
-		expected3.add(new TimeSignatureMarker(new TimeSignature(threeOne), new Rational(28, 1)));
-		expected3.add(new TempoMarker(0+Transcription.calculateTime(new Rational(28, 1), t99), new Rational(28, 1)));
-		expected3.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(76, 1)));
-		expected3.add(new TempoMarker(67200000+Transcription.calculateTime(new Rational(48, 1), t439), new Rational(76, 1)));
-		expected3.add(new TimeSignatureMarker(new TimeSignature(threeOne), new Rational(90, 1)));
-		expected3.add(new TempoMarker(93441408+Transcription.calculateTime(new Rational(14, 1), t289), new Rational(90, 1)));
-		expected3.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(180, 1)));
-		expected3.add(new TempoMarker(105027640+Transcription.calculateTime(new Rational(90, 1), t439), new Rational(180, 1)));
-		expected3.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(192, 1))); // added
-		expected3.add(new TempoMarker(154230280+Transcription.calculateTime(new Rational(12, 1), t289), new Rational(192, 1)));
-		expected3.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(204, 1))); // added
-		expected3.add(new TempoMarker(164161336+Transcription.calculateTime(new Rational(12, 1), t289), new Rational(204, 1)));
-		expected3.add(new TimeSignatureMarker(new TimeSignature(threeOne), new Rational(230, 1)));
-		expected3.add(new TempoMarker(174092392+Transcription.calculateTime(new Rational(26, 1), t289), new Rational(230, 1)));
-		expected3.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(248, 1)));
-		expected3.add(new TempoMarker(195609680+Transcription.calculateTime(new Rational(18, 1), t439), new Rational(248, 1)));
-		expected3.getEndMarker().setMetricTime(new Rational(258, 1));
-		expected3.getEndMarker().setTime(205450208+Transcription.calculateTime(new Rational(10, 1), t289));
-		expected.add(expected3);
+		expected.add(getCleanMetricalTimeLine("testpiece"));
+		//
+		MetricalTimeLine mtlMemorEsto = getCleanMetricalTimeLine("memor esto");
+		// Remove original endMarker: a TempoMarker is added *to the end* of the mtl, and through it 
+		// a new endMarker, replacing the original endMarker
+		mtlMemorEsto.remove(mtlMemorEsto.size()-1);
+		// Add TimeSignatureMarker + TempoMarker (6*); adapt endMarker (added through last TempoMarker)
+		mtlMemorEsto.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(126, 1)));
+		mtlMemorEsto.add(new TempoMarker(0+Transcription.calculateTime(new Rational(126, 1), t289), new Rational(126, 1)));
+		mtlMemorEsto.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(148, 1)));
+		mtlMemorEsto.add(new TempoMarker(104276088+Transcription.calculateTime(new Rational(22, 1), t289), new Rational(148, 1)));
+		mtlMemorEsto.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(198, 1)));
+		mtlMemorEsto.add(new TempoMarker(122483024+Transcription.calculateTime(new Rational(50, 1), t289), new Rational(198, 1)));
+		mtlMemorEsto.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(204, 1)));
+		mtlMemorEsto.add(new TempoMarker(163862424+Transcription.calculateTime(new Rational(6, 1), t289), new Rational(204, 1)));
+		mtlMemorEsto.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(216, 1)));
+		mtlMemorEsto.add(new TempoMarker(168827952+Transcription.calculateTime(new Rational(12, 1), t289), new Rational(216, 1)));
+		mtlMemorEsto.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(226, 1)));
+		mtlMemorEsto.add(new TempoMarker(178759008+Transcription.calculateTime(new Rational(10, 1), t289), new Rational(226, 1)));
+		mtlMemorEsto.getEndMarker().setMetricTime(new Rational(236, 1));
+		mtlMemorEsto.getEndMarker().setTime(187034888+Transcription.calculateTime(new Rational(10, 1), t289));
+		expected.add(mtlMemorEsto);
+		//
+		MetricalTimeLine mtlInExitu = getCleanMetricalTimeLine("in exitu");
+		// Do not remove original endMarker: no TempoMarker is added *to the end* of the mtl
+		// Add (insert) TimeSignatureMarker + TempoMarker (2*); do not adapt endMarker
+		mtlInExitu.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(192, 1)));
+		mtlInExitu.add(new TempoMarker(154230280+Transcription.calculateTime(new Rational(12, 1), t289), new Rational(192, 1)));
+		mtlInExitu.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(204, 1)));
+		mtlInExitu.add(new TempoMarker(164161336+Transcription.calculateTime(new Rational(12, 1), t289), new Rational(204, 1)));
+		expected.add(mtlInExitu);
 
 		List<MetricalTimeLine> actual = new ArrayList<>();
-		MetricalTimeLine mtl = Transcription.cleanMetricalTimeLine(testPiece.getPiece().getMetricalTimeLine());
+		MetricalTimeLine mtl = Transcription.cleanMetricalTimeLine(testpiece.getPiece().getMetricalTimeLine());
 		actual.add(Transcription.alignMetricalTimeLine(mtl, testPieceTab.getTimeline()));
 		mtl = Transcription.cleanMetricalTimeLine(memorEsto.getPiece().getMetricalTimeLine());
 		actual.add(Transcription.alignMetricalTimeLine(mtl, memorEstoTab.getTimeline()));
@@ -475,8 +453,124 @@ public class TranscriptionTest extends TestCase {
 			}
 		}
 	}
-	
-	
+
+
+	public void testDiminuteMetricalTimeLine() {
+		// One meter, diminution = 1
+		Transcription testpiece = new Transcription(midiTestpiece, null);
+		Tablature testPieceTab = new Tablature(encodingTestpiece, true);
+		// Two meters, diminution = 4, 2
+		Transcription quiHabitat = new Transcription(midiQuiHabitat, null);
+		Tablature quiHabitatTab = new Tablature(encodingQuiHabitat, true);
+		// Seven meter, diminutions = 2, 4, 2, 4, 2, 4, 2
+		Transcription memorEsto = new Transcription(midiMemorEsto, null); 
+		Tablature memorEstoTab = new Tablature(encodingMemorEsto, true);
+		// Nine meters, diminutions = 2, 4, 2, 4, 2, 4, 2, 4, 2
+		Transcription inExitu = new Transcription(midiInExitu, null);
+		Tablature inExituTab = new Tablature(encodingInExitu, true);
+
+		Rational twoOne = new Rational(2, 1);
+		double t289 = 289.99937166802806;
+
+		List<MetricalTimeLine> expected = new ArrayList<>();
+		expected.add(getCleanMetricalTimeLine("testpiece"));
+		//
+		MetricalTimeLine mtlMemorEsto = getCleanMetricalTimeLine("memor esto");
+		// Remove original endMarker: a TempoMarker is added *to the end* of the mtl, and through it 
+		// a new endMarker, replacing the original endMarker
+		mtlMemorEsto.remove(mtlMemorEsto.size()-1);
+		// Add TimeSignatureMarker + TempoMarker (6*); adapt endMarker (added through last TempoMarker)
+		mtlMemorEsto.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(126, 1)));
+		mtlMemorEsto.add(new TempoMarker(0+Transcription.calculateTime(new Rational(126, 1), t289), new Rational(126, 1)));
+		mtlMemorEsto.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(148, 1)));
+		mtlMemorEsto.add(new TempoMarker(104276088+Transcription.calculateTime(new Rational(22, 1), t289), new Rational(148, 1)));
+		mtlMemorEsto.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(198, 1)));
+		mtlMemorEsto.add(new TempoMarker(122483024+Transcription.calculateTime(new Rational(50, 1), t289), new Rational(198, 1)));
+		mtlMemorEsto.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(204, 1)));
+		mtlMemorEsto.add(new TempoMarker(163862424+Transcription.calculateTime(new Rational(6, 1), t289), new Rational(204, 1)));
+		mtlMemorEsto.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(216, 1)));
+		mtlMemorEsto.add(new TempoMarker(168827952+Transcription.calculateTime(new Rational(12, 1), t289), new Rational(216, 1)));
+		mtlMemorEsto.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(226, 1)));
+		mtlMemorEsto.add(new TempoMarker(178759008+Transcription.calculateTime(new Rational(10, 1), t289), new Rational(226, 1)));
+		mtlMemorEsto.getEndMarker().setMetricTime(new Rational(236, 1));
+		mtlMemorEsto.getEndMarker().setTime(187034888+Transcription.calculateTime(new Rational(10, 1), t289));
+//		expected.add(mtlMemorEsto);
+		//
+		MetricalTimeLine mtlInExitu = getCleanMetricalTimeLine("in exitu");
+		// Do not remove original endMarker: no TempoMarker is added *to the end* of the mtl
+		// Add (insert) TimeSignatureMarker + TempoMarker (2*); do not adapt endMarker
+		mtlInExitu.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(192, 1)));
+		mtlInExitu.add(new TempoMarker(154230280+Transcription.calculateTime(new Rational(12, 1), t289), new Rational(192, 1)));
+		mtlInExitu.add(new TimeSignatureMarker(new TimeSignature(twoOne), new Rational(204, 1)));
+		mtlInExitu.add(new TempoMarker(164161336+Transcription.calculateTime(new Rational(12, 1), t289), new Rational(204, 1)));
+//		expected.add(mtlInExitu);
+
+		List<MetricalTimeLine> actual = new ArrayList<>();
+		MetricalTimeLine mtl = Transcription.cleanMetricalTimeLine(testpiece.getPiece().getMetricalTimeLine());
+		mtl = Transcription.alignMetricalTimeLine(mtl, testPieceTab.getTimeline());
+		actual.add(Transcription.diminuteMetricalTimeLine(mtl, testPieceTab.getTimeline()));
+//		mtl = Transcription.cleanMetricalTimeLine(memorEsto.getPiece().getMetricalTimeLine());
+//		actual.add(Transcription.alignMetricalTimeLine(mtl, memorEstoTab.getTimeline()));
+//		mtl = Transcription.cleanMetricalTimeLine(inExitu.getPiece().getMetricalTimeLine());
+//		actual.add(Transcription.alignMetricalTimeLine(mtl, inExituTab.getTimeline()));
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			MetricalTimeLine e = expected.get(i);
+			List<TimeSignatureMarker> tsmE = new ArrayList<>();
+			List<TempoMarker> temE = new ArrayList<>();
+			List<TimedMetrical> timE = new ArrayList<>();
+			for (int j = 0; j < e.size(); j++) {
+				Marker m = e.get(j);
+				if (m instanceof TimeSignatureMarker) {
+					tsmE.add((TimeSignatureMarker) m);
+				}
+				if (m instanceof TempoMarker) {
+					temE.add((TempoMarker) m);
+				}
+				if (m instanceof TimedMetrical && !(m instanceof TempoMarker)) {
+					timE.add((TimedMetrical) m);
+				}
+			}
+			MetricalTimeLine a = actual.get(i);
+			List<TimeSignatureMarker> tsmA = new ArrayList<>();
+			List<TempoMarker> temA = new ArrayList<>();
+			List<TimedMetrical> timA = new ArrayList<>();
+			for (int j = 0; j < a.size(); j++) {
+				Marker m = a.get(j);
+				if (m instanceof TimeSignatureMarker) {
+					tsmA.add((TimeSignatureMarker) m);
+				}
+				if (m instanceof TempoMarker) {
+					temA.add((TempoMarker) m);
+				}
+				if (m instanceof TimedMetrical && !(m instanceof TempoMarker)) {
+					timA.add((TimedMetrical) m);
+				}
+			}
+			assertEquals(tsmE.size(), tsmA.size());
+			for (int j = 0; j < tsmE.size(); j++) {
+				TimeSignatureMarker exp = (TimeSignatureMarker) tsmE.get(j);
+				TimeSignatureMarker act = (TimeSignatureMarker) tsmA.get(j);
+				assertEquals(exp.getTimeSignature(), act.getTimeSignature());
+				assertEquals(exp.getMetricTime(), act.getMetricTime());
+			}
+			assertEquals(temE.size(), temA.size());
+			for (int j = 0; j < temE.size(); j++) {
+				TempoMarker exp = (TempoMarker) temE.get(j);
+				TempoMarker act = (TempoMarker) temA.get(j);
+				assertEquals(exp.getTime(), act.getTime());
+				assertEquals(exp.getMetricTime(), act.getMetricTime());
+			}
+			assertEquals(timE.size(), timA.size());
+			for (int j = 0; j < timE.size(); j++) {
+				TimedMetrical exp = (TimedMetrical) timE.get(j);
+				TimedMetrical act = (TimedMetrical) timA.get(j);
+				assertEquals(exp.getTime(), act.getTime());
+				assertEquals(exp.getMetricTime(), act.getMetricTime());
+			}
+		}
+	}
 
 
 	public void testReverse() {

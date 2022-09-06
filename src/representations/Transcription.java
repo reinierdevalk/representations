@@ -317,8 +317,6 @@ public class Transcription implements Serializable {
 	// TESTED
 	static MetricalTimeLine alignMetricalTimeLine(MetricalTimeLine mtl, Timeline tl) {
 		List<Integer[]> meterInfoTab = tl.getMeterInfo();
-		
-		System.out.println(mtl.getTempo(0));
 
 		// Align mtl with tl. Examples where this is necessary:
 		// 4465_33-34_memor_esto-2.tbp / Jos1714-Memor_esto_verbi_tui-166-325.mid
@@ -458,7 +456,7 @@ public class Transcription implements Serializable {
 	 * @return The diminuted MetricalTimeLine.
 	 */
 	// TODO test
-	MetricalTimeLine diminuteMetricalTimeLine(MetricalTimeLine mtl, Timeline tl) {
+	static MetricalTimeLine diminuteMetricalTimeLine(MetricalTimeLine mtl, Timeline tl) {
 		MetricalTimeLine mtlDim = new MetricalTimeLine();
 
 		List<Integer[]> meterInfoTab = tl.getMeterInfo();
