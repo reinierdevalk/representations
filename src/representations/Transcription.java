@@ -16,8 +16,6 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 
-import org.apache.commons.lang3.SerializationUtils;
-
 import de.uos.fmt.musitech.data.performance.PerformanceNote;
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationStaff;
@@ -54,6 +52,7 @@ import utility.NoteTimePitchComparator;
 
 public class Transcription implements Serializable {
 	
+	private static final long serialVersionUID = 1L;
 //	private static final long serialVersionUID = -8586909984652950201L;
 	public static int MAXIMUM_NUMBER_OF_VOICES = 5;
 	public static int DURATION_LABEL_SIZE = (Tablature.SRV_DEN/3)*2; // trp dur; *3 for JosquIntab; *2 for Byrd
@@ -229,70 +228,129 @@ public class Transcription implements Serializable {
 	 * Cleans the given MetricalTimeLine, i.e., removes any duplicate TimeSignatureMarkers 
 	 * and TempoMarkers from it.
 	 * 
+	 * A correct MetricalTimeLine consists of the following elements:
+	 * <ul>
+	 * <li>The zeroMarker (a TimedMetrical).</li>
+	 * <li>A TimeSignatureMarker: for the initial time sig.</li>
+	 * <li>A TimeSignatureMarker + a TempoMarker (a TimedMetrical): for any following time sig(s).</li>
+	 * <li>The endMarker (a TimedMetrical), placed 10/1 (10 whole notes) after the last TimedMetrical, 
+	 *     i.e., the zeroMarker (if there is a single TimeSignatureMarker) or the last TempoMarker 
+	 *     (if there are multiple TimeSignatureMarkers). The zeroMarker's time is this last 
+	 *     TimedMetrical's time + the time that 10/1 takes in this TimedMetrical's tempo.</li>
+	 * </ul> 
+	 * 
 	 * @param mtl
 	 * @return The cleaned MetricalTimeLine. 
 	 */
 	// TESTED
 	static MetricalTimeLine cleanMetricalTimeLine(MetricalTimeLine mtl) {
+		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
+		// zeroMarker, and endMarker) 
 		MetricalTimeLine mtlClean = new MetricalTimeLine();
-		// Clear default added TimedMetricals (MetricalTimeLine.zeroMarker and MetricalTimeLine.endMarker)
 		mtlClean.clear();
-		
-		// The endMarker in a MetricalTimeLine is placed 10/1 (10 whole notes) after the last TimedMetrical, 
-		// at this TimedMetrical's time + the time that 10/1 takes in this TimedMetrical's tempo. 
-		// This last TimedMetrical is 
-		// - the zeroMarker, if the MetricalTimeLine contains no TempoMarkers
-		// - the last TempoMarker, if the MetricalTimeLine contains TempoMarkers
-		//
-		// Examples of endMarker time calculation 
-		// a. meter = 4/4; tempo = 120 (default settings; see MetricalTimeLine))
-		// Last TimedMetrical is zeroMarker at 0/1 (time 0), to which is added
-		// 120 BPM = 120/60 = 2 beats/s --> whole note (4 beats) every 2s (2 * x = 4 --> x = 2)
-		//                              --> 10 whole notes notes every 20s --> time = 20000000
-		// --> endMarker time = 0 + 20000000
-		// b. meter = 4/4 (20 bars), 4/4 (20 bars), tempo = 120, 80 
-		// Last TimedMetrical is TempoMarker at 20/1 (time 40000000), to which is added
-		// 80 BPM = 80/60 =  8/6 beats/s --> whole note (4 beats) every 3s (8/6 * x = 4 --> x = 3)
-		//                              --> 10 whole notes notes every 30s --> time = 30000000
-		// --> endMarker time = 20000000 + 30000000
-		
-		// Get Marker onsets
-		List<Rational> timeSignatureMarkerOnsets = new ArrayList<>();
-		List<Rational> tempoMarkerOnsets = new ArrayList<>();
-		List<Rational> otherTimedMetricalOnsets = new ArrayList<>();
-		List<Rational> otherOnsets = new ArrayList<>();
+		// Add zeroMarker
+		mtlClean.add((Marker) new TimedMetrical(0, Rational.ZERO));
+
+		// Add TimeSignatureMarkers and TempoMarkers 
+		List<Rational> mts = new ArrayList<>();
+		Rational mtLastTimedMetrical = Rational.ZERO;
 		for (Marker m : mtl) {
-			Rational mt = m.getMetricTime();
-			// TimeSignatureMarker: occurs at start and every meter change
 			if (m instanceof TimeSignatureMarker) {
-				if (!timeSignatureMarkerOnsets.contains(mt)) {
-					mtlClean.add(m);
-					timeSignatureMarkerOnsets.add(mt);
-				}
-			}
-			// TempoMarker (instance of TimedMetrical): occurs at every meter change
-			else if (m instanceof TempoMarker) {
-				if (!tempoMarkerOnsets.contains(mt)) {
-					mtlClean.add(m);
-					tempoMarkerOnsets.add(mt);
-				}
-			}
-			// Other TimedMetrical: MetricalTimeLine.zeroMarker and MetricalTimeLine.endMarker
-			else if (m instanceof TimedMetrical && !(m instanceof TempoMarker)) {
-				if (!otherTimedMetricalOnsets.contains(mt)) {
-					mtlClean.add(m);
-					otherTimedMetricalOnsets.add(mt);
-				}
-			}
-			// Other: occurs at (?)
-			else {
-				if (!otherOnsets.contains(mt)) {
-					mtlClean.add(m);
-					otherOnsets.add(mt);
+				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
+				Rational mt = m.getMetricTime();
+				long t = mtl.getTime(mt);
+				if (!mts.contains(mt)) {
+					mtlClean.add(new TimeSignatureMarker(tsm.getTimeSignature(), mt));
+					if (mt.isGreater(Rational.ZERO)) {
+						mtlClean.add(new TempoMarker(t, mt));
+						if (mt.isGreater(mtLastTimedMetrical)) {
+							mtLastTimedMetrical = mt;
+						}
+					}
+					mts.add(mt);
 				}
 			}
 		}
+
+		// If TempoMarkers (and through them, endMarker(s)) have been added: 
+		// remove all TimedMetricals but the zeroMarker	
+		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
+			mtlClean = cleanTimedMetricals(mtlClean);
+		}
+
+		// Add endMarker
+		long tLastTimedMetrical = mtlClean.getTime(mtLastTimedMetrical);
+		TimedMetrical end = 
+			calculateEndMarker(tLastTimedMetrical, mtl.getTempo(tLastTimedMetrical), 
+			mtLastTimedMetrical, 1);
+		mtlClean.add((Marker) end);
+
 		return mtlClean;
+	}
+
+
+	/**
+	 * Removes all TimedMetricals but the zeroMarker from the given mtl.
+	 * 
+	 * @param mtl
+	 * @return
+	 */
+	// TESTED
+	static MetricalTimeLine cleanTimedMetricals(MetricalTimeLine mtl) {
+		List<Integer> indsToRemove = new ArrayList<>();
+		for (int i = 0; i < mtl.size(); i++) {
+			Marker m = mtl.get(i);
+			if (m instanceof TimedMetrical && !(m instanceof TempoMarker)) {
+				if (!m.getMetricTime().equals(Rational.ZERO)) {
+					indsToRemove.add(i);
+				}
+			}
+		}
+		for (int i = 0; i < indsToRemove.size(); i++) {
+			mtl.remove(indsToRemove.get(i) - i);
+		}
+
+		return mtl;
+	}
+
+
+	/**
+	 * Calculates the endMarker given the time, tempo, and metric time of the last TimedMetrical 
+	 * before the endMarker. The endMarker is placed ten whole notes (10/1) after the last 
+	 * TimedMetrical, meaning that its metric time is that of the last TimedMetrical + 10/1, and 
+	 * its time is that of the last TimedMetrical + the time 10/1 takes in the tempo at the last
+	 * TimedMetrical.
+	 * 
+	 * @param tLastTimedMetrical
+	 * @param tempoLastTimedMetrical
+	 * @param mtLastTimedMetrical
+	 * @param dim
+	 * @return
+	 */
+	// TODO test
+	static TimedMetrical calculateEndMarker(long tLastTimedMetrical, double tmpLastTimedMetrical, 
+		Rational mtLastTimedMetrical, int dim) {
+		Rational r = Timeline.diminute(new Rational(10, 1), dim);
+		return new TimedMetrical(
+			tLastTimedMetrical + calculateTime(r, tmpLastTimedMetrical), 
+			mtLastTimedMetrical.add(r));
+	}
+
+
+	/**
+	 * Calculates the time the given metric duration takes in the given tempo. 
+	 * 
+	 * Formula:
+	 * tmp BPM = tmp/60 beats/s --> one whole note (four beats) every 240/tmp s (tmp/60 * x = 4 --> x = 240/tmp)
+	 * 							--> ten whole notes every (10*240)/tmp s
+	 * 							--> n whole notes every (n*240)/tmp s 
+	 */
+	// TESTED
+	static long calculateTime(Rational dur, double tempo) {
+		double time = (dur.toDouble() * 240) / tempo;
+		// Multiply by 1000000 to get time in microseconds; round
+		time = Math.round(time * 1000000);
+		return (long) time;
 	}
 
 
@@ -310,14 +368,12 @@ public class Transcription implements Serializable {
 	 * meters from MetricalTimeLine		2/1, ..., ..., 3/1,	2/1 <br>
 	 * meters from MTL, aligned			2/1, 2/1, 2/1, 3/1, 2/1 <br>
 	 * 
-	 * @param mtl
+	 * @param mtl The cleaned MetricalTimeLine.
 	 * @param tl
-	 * @return The aligned MetricalTimeline.
+	 * @return The aligned MetricalTimeLine.
 	 */
 	// TESTED
 	static MetricalTimeLine alignMetricalTimeLine(MetricalTimeLine mtl, Timeline tl) {
-		List<Integer[]> meterInfoTab = tl.getMeterInfo();
-
 		// Align mtl with tl. Examples where this is necessary:
 		// 4465_33-34_memor_esto-2.tbp / Jos1714-Memor_esto_verbi_tui-166-325.mid
 		// meters      2/2, 2/4, 2/2, 2/4, 2/2, 2/4, 2/2 
@@ -333,6 +389,7 @@ public class Transcription implements Serializable {
 		// 1. Get undiminuted meters and meter section onsets from meterInfoTab to enable aligning
 		List<Rational> metersTabUndim = new ArrayList<>();
 		List<Rational> msosTabUndim = new ArrayList<>();
+		List<Integer[]> meterInfoTab = tl.getMeterInfo();
 		for (int i = 0; i < meterInfoTab.size(); i++) {
 			Integer[] currMi = meterInfoTab.get(i);
 			metersTabUndim.add(Timeline.undiminuteMeter(
@@ -351,97 +408,75 @@ public class Transcription implements Serializable {
 		}
 
 		// 2. Align
-		int ind = 0;
-		boolean timeSigsInserted = false;
-		for (int i = 0; i < mtl.size(); i++) {
-			Marker m = mtl.get(i);
+		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
+		// zeroMarker, and endMarker) 
+		MetricalTimeLine mtlAligned = new MetricalTimeLine();
+		mtlAligned.clear();
+		// Add zeroMarker
+		mtlAligned.add((Marker) new TimedMetrical(0, Rational.ZERO));
+		
+		// Add TimeSignatureMarkers and TempoMarkers 
+		int ind = 0; // equals index in meterInfoTab
+		Rational mtLastTimedMetrical = Rational.ZERO;
+		for (Marker m : mtl) {
 			if (m instanceof TimeSignatureMarker) {
 				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
+				Rational mt = m.getMetricTime();
+				long t = mtl.getTime(mt);
 				TimeSignature ts = tsm.getTimeSignature();
+				mtlAligned.add(new TimeSignatureMarker(ts, mt));
+				if (mt.isGreater(Rational.ZERO)) {
+					mtlAligned.add(new TempoMarker(t, mt));
+					if (mt.isGreater(mtLastTimedMetrical)) {
+						mtLastTimedMetrical = mt;
+					}
+				}
+				// If the meter and meter section onset at index ind in tl are not the same
+				// as those in m, mtl is not aligned with tl: add Markers to mtlAligned
 				Rational meterTabUndim = metersTabUndim.get(ind);
 				Rational msoTabUndim = msosTabUndim.get(ind);
 				boolean isAligned = 
 					meterTabUndim.equals(new Rational(ts.getNumerator(), ts.getDenominator())) && 
 					msoTabUndim.equals(tsm.getMetricTime());
-				// If not aligned with meterInfoTab: add meter, meter section onset, and time
 				if (!isAligned) {
-					mtl.add(new TimeSignatureMarker(new TimeSignature(meterTabUndim), msoTabUndim));
-					mtl.add(new TempoMarker(mtl.getTime(msoTabUndim), msoTabUndim));
-					timeSigsInserted = true;
+					mtlAligned.add(new TimeSignatureMarker(new TimeSignature(meterTabUndim), msoTabUndim));
+					mtlAligned.add(new TempoMarker(mtl.getTime(msoTabUndim), msoTabUndim));
+					if (msoTabUndim.isGreater(mtLastTimedMetrical)) {
+						mtLastTimedMetrical = msoTabUndim;
+					}
 				}
 				ind++;
 			}
 		}
-		// If mtl and tl are still not aligned, this is because the last time sig in mtl 
-		// (which can be the only one) has not been added often enough
-		long[][] allTss = mtl.getTimeSignature();
+		// If mtl and tl are still not aligned, the last time sig in mtl (which can be 
+		// the only one) has not been added often enough
+		long[][] allTss = mtlAligned.getTimeSignature();
 		if (allTss.length < meterInfoTab.size()) {
 			Rational lastTs = new Rational(allTss[allTss.length-1][0], allTss[allTss.length-1][1]);
 			for (int i = allTss.length; i < meterInfoTab.size(); i++) {
 				Rational msoTabUndim = msosTabUndim.get(i);
-				mtl.add(new TimeSignatureMarker(new TimeSignature(lastTs), msoTabUndim));
-				mtl.add(new TempoMarker(mtl.getTime(msoTabUndim), msoTabUndim));
-				timeSigsInserted = true;
+				mtlAligned.add(new TimeSignatureMarker(new TimeSignature(lastTs), msoTabUndim));
+				mtlAligned.add(new TempoMarker(mtl.getTime(msoTabUndim), msoTabUndim));
+				if (msoTabUndim.isGreater(mtLastTimedMetrical)) {
+					mtLastTimedMetrical = msoTabUndim;
+				}
 			}
 		}
 
-		// 3. Clean up TimedMetricals. Inserting new TempoMarkers as done above can mess up the 
-		// TimedMetricals, of which there should be only two: at metric times 0 and 10/1 after 
-		// the last TempoMarker (or, if there are none, 10/1 after the zeroMarker)		
-		if (timeSigsInserted) {
-			// a. Determine the correct endMarker (this must be done before any TimedMetricals are removed)
-			// Determine the metric time of the endMarker
-			Rational mtLastTimedMetrical = Rational.ZERO;
-			for (int i = 0; i < mtl.size(); i++) {
-				Marker m = mtl.get(i);
-				if (m instanceof TempoMarker) {
-					if (m.getMetricTime().isGreater(mtLastTimedMetrical)) {
-						mtLastTimedMetrical = m.getMetricTime();
-					}
-				}
-			}
-			Rational mtEndMarker = mtLastTimedMetrical.add(new Rational(10, 1));
-			// Determine the time of the endMarker, which is the time of the last TimedMetrical +
-			// the time ten whole notes take in the tempo at the last TimedMetrical
-			// NB: mtl.getTime(mtEndMarker) is not reliable here, and cannot be used when declaring end
-			long timeLastTimedMetrical = mtl.getTime(mtLastTimedMetrical);
-			long timeTenWholeNotes = calculateTime(new Rational(10, 1), mtl.getTempo(timeLastTimedMetrical));
-			TimedMetrical end = new TimedMetrical(timeLastTimedMetrical+(long) timeTenWholeNotes, mtEndMarker);
-//			TimedMetrical end = new TimedMetrical(mtl.getTime(mtEndMarker), mtEndMarker);
-			// b. Remove all TimedMetricals but the zeroMarker
-			List<Integer> indsToRemove = new ArrayList<>();
-			for (int i = 0; i < mtl.size(); i++) {
-				Marker m = mtl.get(i);
-				if (m instanceof TimedMetrical && !(m instanceof TempoMarker)) {
-					if (!m.getMetricTime().equals(Rational.ZERO)) {
-						indsToRemove.add(i);
-					}
-				}
-			}
-			for (int i = 0; i < indsToRemove.size(); i++) {
-				mtl.remove(indsToRemove.get(i) - i);
-			}
-			// c. Add endMarker
-			mtl.add((Marker) end);
+		// If TempoMarkers (and through them, endMarker(s)) have been added: 
+		// remove all TimedMetricals but the zeroMarker	
+		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
+			mtlAligned = cleanTimedMetricals(mtlAligned);
 		}
-		return mtl;
-	}
 
+		// Add endMarker
+		long tLastTimedMetrical = mtlAligned.getTime(mtLastTimedMetrical);
+		TimedMetrical end = 
+			calculateEndMarker(tLastTimedMetrical, mtl.getTempo(tLastTimedMetrical), 
+			mtLastTimedMetrical, 1);
+		mtlAligned.add((Marker) end);
 
-	/**
-	 * Calculates the time the given metric duration takes in the given tempo. 
-	 * 
-	 * Formula:
-	 * tmp BPM = tmp/60 beats/s --> one whole note (four beats) every 240/tmp s (tmp/60 * x = 4 --> x = 240/tmp)
-	 * 							--> ten whole notes every 2400/tmp s
-	 * 							--> n whole notes every (n*240)/tmp s 
-	 */
-	// TESTED
-	static long calculateTime(Rational dur, double tempo) {
-		double time = (dur.toDouble() * 240) / tempo;
-		// Multiply by 1000000 to get time in microseconds, round
-		time = Math.round(time * 1000000);
-		return (long) time;
+		return mtlAligned;
 	}
 
 
@@ -451,37 +486,57 @@ public class Transcription implements Serializable {
 	 * NB: Only the time signatures and the meter section onsets are diminuted; not the
 	 *     meter section times.
 	 * 
-	 * @param mtl
+	 * @param mtl The cleaned and aligned MetricalTimeLine.
 	 * @param tl
 	 * @return The diminuted MetricalTimeLine.
 	 */
-	// TODO test
+	// TESTED
 	static MetricalTimeLine diminuteMetricalTimeLine(MetricalTimeLine mtl, Timeline tl) {
-		MetricalTimeLine mtlDim = new MetricalTimeLine();
-
+		// 1. Get diminuted tempi
 		List<Integer[]> meterInfoTab = tl.getMeterInfo();
+		List<Integer> diminutions = ToolBox.getItemsAtIndex(meterInfoTab, Timeline.MI_DIM);
+		List<Double[]> tempiDim = new ArrayList<>();
 		int ind = 0; // equals index in meterInfoTab
-		for (int i = 0; i < mtl.size(); i++) {
+		for (int i = 0; i < mtl.size()-1; i++) { // exclude endMarker
 			Marker m = mtl.get(i);
+			if (m instanceof TimedMetrical) {
+				long time = mtl.getTime(m.getMetricTime());
+				double tempo = mtl.getTempo(time);
+				int dim = diminutions.get(ind);
+				double tempoDim = Timeline.diminute(tempo, dim);
+				tempiDim.add(new Double[]{tempoDim, (double) time});
+				ind++;
+			}
+		}
+
+		// 2. Diminute
+		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
+		// zeroMarker, and endMarker) 
+		MetricalTimeLine mtlDim = new MetricalTimeLine();
+		mtlDim.clear();
+		// Add zeroMarker
+		mtlDim.add((Marker) new TimedMetrical(0, Rational.ZERO));
+
+		// Add TimeSignatureMarkers and TempoMarkers		
+		ind = 0; // equals index in meterInfoTab
+		Rational mtLastTimedMetrical = Rational.ZERO;
+		for (Marker m : mtl) {
 			if (m instanceof TimeSignatureMarker) {
 				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
-				// Meter
-				TimeSignature ts = tsm.getTimeSignature();
-				Rational meterUndim = new Rational(ts.getNumerator(), ts.getDenominator());
-				Rational meterDim = Timeline.diminuteMeter(meterUndim, meterInfoTab.get(ind)[Timeline.MI_DIM]);
-				// Meter section onset, meter section time
-				Rational msoUndim = tsm.getMetricTime();
-				Rational msoDim;
-				long mst = mtl.getTime(msoUndim); // NB: is not diminuted
+				Rational mtUndim = m.getMetricTime();
+				Rational mtDim;
 				if (ind == 0) {
-					msoDim = msoUndim;
+					mtDim = mtUndim;
 				}
 				else {
 					Integer[] prevMi = meterInfoTab.get(ind-1);
 					long[] prevTsDim = mtlDim.getTimeSignature()[ind-1];
-					Rational prevMeterDim = new Rational(prevMi[Timeline.MI_NUM], prevMi[Timeline.MI_DEN]);
-					int prevNumBars = (prevMi[Timeline.MI_LAST_BAR] - prevMi[Timeline.MI_FIRST_BAR]) + 1;
-					msoDim = new Rational(prevTsDim[3], prevTsDim[4]).add(prevMeterDim.mul(prevNumBars));
+					Rational prevMeterDim = 
+						new Rational(prevMi[Timeline.MI_NUM], prevMi[Timeline.MI_DEN]);
+					int prevNumBars = 
+						(prevMi[Timeline.MI_LAST_BAR] - prevMi[Timeline.MI_FIRST_BAR]) + 1;
+					mtDim = 
+						new Rational(prevTsDim[3], prevTsDim[4]).add(prevMeterDim.mul(prevNumBars));
 					// By uncommenting the lines below, the meter section time is diminuted
 //					long[] prevTsUndim = mtl.getTimeSignature()[ind-1];
 //					long prevSecLenUndim = mtl.getTime(msoUndim) - prevTsUndim[2];
@@ -489,11 +544,42 @@ public class Transcription implements Serializable {
 //					long prevSecLenDim = prevDim > 0 ? prevSecLenUndim / prevDim : prevSecLenUndim * Math.abs(prevDim);
 //					mst = prevTsDim[2] + prevSecLenDim;
 				}
-				mtlDim.add(new TimeSignatureMarker(new TimeSignature(meterDim), msoDim));
-				mtlDim.add(new TempoMarker(mst, msoDim));
+				long t = mtl.getTime(mtUndim); // NB: is not diminuted
+				TimeSignature tsUndim = tsm.getTimeSignature();
+				TimeSignature tsDim = 
+					new TimeSignature(Timeline.diminuteMeter(new Rational(tsUndim.getNumerator(), 
+					tsUndim.getDenominator()), diminutions.get(ind)));
+				mtlDim.add(new TimeSignatureMarker(tsDim, mtDim));
+				if (mtDim.isGreater(Rational.ZERO)) {
+					mtlDim.add(new TempoMarker(t, mtDim));
+					if (mtDim.isGreater(mtLastTimedMetrical)) {
+						mtLastTimedMetrical = mtDim;
+					}
+
+					// Set tempo
+					double tmpDim = 
+						tempiDim.get(ToolBox.getItemsAtIndex(tempiDim, 1).indexOf((double) t))[0];
+					mtlDim.setTempo(mtDim, tmpDim, 4);
+				}
 				ind++;
 			}
 		}
+
+		// If TempoMarkers (and through them, endMarker(s)) have been added: 
+		// remove all TimedMetricals but the zeroMarker	
+		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
+			mtlDim = cleanTimedMetricals(mtlDim);
+		}
+
+		// Add endMarker
+		long tLastTimedMetrical = mtlDim.getTime(mtLastTimedMetrical);
+		TimedMetrical end = 
+			calculateEndMarker(tLastTimedMetrical, 
+			tempiDim.get(tempiDim.size()-1)[0],	
+//			Timeline.diminute(mtl.getTempo(tLastTimedMetrical), diminutions.get(diminutions.size()-1)), 
+			mtLastTimedMetrical, diminutions.get(diminutions.size()-1));
+		mtlDim.add((Marker) end);
+
 		return mtlDim; 
 	}
 
@@ -532,7 +618,8 @@ public class Transcription implements Serializable {
 			meterSectionOnsetsDim.add(new Rational(l[3], l[4]));
 			meterSectionTimesDim.add(l[2]);
 		}
-		SortedContainer<Marker> htDim = SerializationUtils.clone(ht);
+		SortedContainer<Marker> htDim = ht; // TODO fix
+//		SortedContainer<Marker> htDim = SerializationUtils.clone(ht);
 		for (Marker m : htDim) {
 			if (m instanceof KeyMarker) {
 				KeyMarker km = (KeyMarker) m;
@@ -2862,16 +2949,16 @@ public class Transcription implements Serializable {
 					currMtDim = currMt;
 				}
 				else {
-					currMtDim = 
-						(currDim > 0) ? currMt.div(currDim) : currMt.mul(Math.abs(currDim));							
+					currMtDim = Timeline.diminute(currMt, currDim);
+//						(currDim > 0) ? currMt.div(currDim) : currMt.mul(Math.abs(currDim));							
 				}
 			}
 			// If the chord is a chord after the first: to get currMtDim, add the
 			// diminuted difference between currMt and prevMt to prevMtDim
 			else {
-				Rational mtIncrease = 
-					prevDim > 0 ? (currMt.sub(prevMt)).div(prevDim) : 
-					(currMt.sub(prevMt)).mul(Math.abs(prevDim));
+				Rational mtIncrease = Timeline.diminute(currMt.sub(prevMt), prevDim);
+//					prevDim > 0 ? (currMt.sub(prevMt)).div(prevDim) : 
+//					(currMt.sub(prevMt)).mul(Math.abs(prevDim));
 				currMtDim = prevMtDim.add(mtIncrease);
 			}
 
@@ -2883,8 +2970,8 @@ public class Transcription implements Serializable {
 				curr[ONSET_TIME_DENOM] = currMtDim.getDenom();
 				// Duration
 				Rational currDur = new Rational(curr[DUR_NUMER], curr[DUR_DENOM]);
-				Rational currDurDim = 
-					(currDim > 0) ? currDur.div(currDim) : currDur.mul(Math.abs(currDim));
+				Rational currDurDim = Timeline.diminute(currDur, currDim);
+//					(currDim > 0) ? currDur.div(currDim) : currDur.mul(Math.abs(currDim));
 				curr[DUR_NUMER] = currDurDim.getNumer();
 				curr[DUR_DENOM] = currDurDim.getDenom();
 				undiminutedBnp[j] = curr;

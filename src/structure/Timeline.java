@@ -277,6 +277,27 @@ public class Timeline implements Serializable {
 
 
 	/**
+	 * Given a double and a diminution, calculates the diminuted double.
+	 * 
+	 * @param r
+	 * @param diminution
+	 * @return
+	 */
+	// TESTED
+	public static double diminute(double d, int diminution) {
+		if (diminution == 1) {
+			return d;
+		}
+		else if (diminution > 0) {
+			return d / diminution; 
+		}
+		else {
+			return d * Math.abs(diminution);
+		}
+	}
+
+
+	/**
 	 * Given an undiminuted metric position, gets the meter section.
 	 * 
 	 * @param mp
@@ -631,7 +652,7 @@ public class Timeline implements Serializable {
 	}
 
 
-	void setMeterInfoOBS(Encoding encoding) {
+	private void setMeterInfoOBS(Encoding encoding) {
 		meterInfoOBS = makeMeterInfoOBS(encoding);
 	}
 

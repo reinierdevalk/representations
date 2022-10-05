@@ -468,14 +468,32 @@ public class TimelineTest extends TestCase {
 		});
 
 		List<Rational> undim = Arrays.asList(new Rational[]{
-				new Rational(3, 8),
-				new Rational(2, 4),
-				new Rational(2, 2),
-				new Rational(3, 1),
-				new Rational(3, 2),
-			});
+			new Rational(3, 8),
+			new Rational(2, 4),
+			new Rational(2, 2),
+			new Rational(3, 1),
+			new Rational(3, 2),
+		});
 		List<Integer> diminutions = Arrays.asList(new Integer[]{-4, -2, 1, 2, 4});
 		List<Rational> actual = new ArrayList<>();
+		for (int i = 0; i < diminutions.size(); i++) {
+			actual.add(Timeline.diminute(undim.get(i), diminutions.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testDiminuteAlt() {
+		List<Double> expected = Arrays.asList(new Double[]{1.5, 1.0, 1.0, 1.5, 0.375});
+
+		List<Double> undim = Arrays.asList(new Double[]{0.375, 0.5, 1.0, 3.0, 1.5});
+		List<Integer> diminutions = Arrays.asList(new Integer[]{-4, -2, 1, 2, 4});
+		List<Double> actual = new ArrayList<>();
 		for (int i = 0; i < diminutions.size(); i++) {
 			actual.add(Timeline.diminute(undim.get(i), diminutions.get(i)));
 		}
