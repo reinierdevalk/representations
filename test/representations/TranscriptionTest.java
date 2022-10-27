@@ -21,7 +21,10 @@ import de.uos.fmt.musitech.data.score.ScorePitch;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.Piece;
 import de.uos.fmt.musitech.data.structure.container.NoteSequence;
+import de.uos.fmt.musitech.data.structure.container.SortedContainer;
+import de.uos.fmt.musitech.data.structure.harmony.KeyMarker;
 import de.uos.fmt.musitech.data.time.Marker;
+import de.uos.fmt.musitech.data.time.MetricalComparator;
 import de.uos.fmt.musitech.data.time.MetricalTimeLine;
 import de.uos.fmt.musitech.data.time.TempoMarker;
 import de.uos.fmt.musitech.data.time.TimeSignature;
@@ -32,6 +35,7 @@ import exports.MEIExport;
 import imports.MIDIImport;
 import junit.framework.TestCase;
 import path.Path;
+import representations.Transcription.Type;
 import structure.Timeline;
 import tbp.Encoding;
 import tbp.TabSymbol;
@@ -366,7 +370,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testCleanMetricalTimeLine() {
-		List<String> pieceNamess = Arrays.asList(new String[]{
+		List<String> pieceNames = Arrays.asList(new String[]{
 			"testpiece", 
 			"memor esto", 
 			"qui habitat", 
@@ -382,7 +386,7 @@ public class TranscriptionTest extends TestCase {
 		});
 
 		List<MetricalTimeLine> expected = new ArrayList<>();
-		for (String s : pieceNamess) {
+		for (String s : pieceNames) {
 			expected.add(getCleanMetricalTimeLine(s));
 		}
 
@@ -431,7 +435,47 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testCalculateEndMarker() {
-		
+		List<Long> ts = Arrays.asList(new Long[]{
+			(long) 0, 
+			getSectionLength("memor esto", "1a") + getSectionLength("memor esto", "1b") + 
+				getSectionLength("memor esto", "1c") + getSectionLength("memor esto", "1d") +
+				getSectionLength("memor esto", "1e") + getSectionLength("memor esto", "1f"), 
+			getSectionLength("qui habitat", "1"), 
+			getSectionLength("preter rerum", "1") + getSectionLength("preter rerum", "2"), 
+			getSectionLength("in exitu", "1") + getSectionLength("in exitu", "2") + 
+				getSectionLength("in exitu", "3") + getSectionLength("in exitu", "4") + 
+				getSectionLength("in exitu", "5") + getSectionLength("in exitu", "6")
+		});
+		List<Double> tmps = Arrays.asList(new Double[]{T_100, T_289/2, T_289/2, T_289, T_289/2});
+		List<Rational> mts = Arrays.asList(new Rational[]{
+			Rational.ZERO,
+			new Rational(207, 2),
+			new Rational(75, 4),
+			new Rational(158, 1),
+			new Rational(82, 1)
+		});
+		List<Integer> dims = Arrays.asList(new Integer[]{1, 2, 2, 1, 2});
+
+		List<TimedMetrical> expected = Arrays.asList(new TimedMetrical[]{
+			new TimedMetrical(0 + 24000000, new Rational(10, 1)),
+			new TimedMetrical(187034888 + 8275880, new Rational(217, 2)),
+			new TimedMetrical(41002200 + 8275880, new Rational(95, 4)),
+			new TimedMetrical(145112320 + 8275880, new Rational(168, 1)),
+			new TimedMetrical(205450208 + 8275880, new Rational(87, 1))
+		});
+
+		List<TimedMetrical> actual = new ArrayList<>();
+		for (int i = 0; i < ts.size(); i++) {
+			actual.add(Transcription.calculateEndMarker(ts.get(i), tmps.get(i), mts.get(i), dims.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			TimedMetrical exp = (TimedMetrical) expected.get(i);
+			TimedMetrical act = (TimedMetrical) actual.get(i);
+			assertEquals(exp.getTime(), act.getTime());
+			assertEquals(exp.getMetricTime(), act.getMetricTime());
+		}
 	}
 
 
@@ -472,19 +516,19 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testAlignMetricalTimeLine() {
-		List<File> midiFiles = Arrays.asList(new File[]{
-			midiTestpiece, 
-			midiMemorEsto, 
-			midiQuiHabitat, 
-			midiPreterRerum, 
-			midiInExitu	
+		List<Tablature> tabs = Arrays.asList(new Tablature[] {
+			new Tablature(encodingTestpiece, true),
+			new Tablature(encodingMemorEsto, true),
+			new Tablature(encodingQuiHabitat, true),
+			new Tablature(encodingPreterRerum, true),
+			new Tablature(encodingInExitu, true)
 		});
-		List<File> encodings = Arrays.asList(new File[]{
-			encodingTestpiece,
-			encodingMemorEsto,
-			encodingQuiHabitat,
-			encodingPreterRerum,
-			encodingInExitu
+		List<Transcription> trs = Arrays.asList(new Transcription[]{
+			new Transcription(midiTestpiece, null), 
+			new Transcription(midiMemorEsto, null), 
+			new Transcription(midiQuiHabitat, null), 
+			new Transcription(midiPreterRerum, null), 
+			new Transcription(midiInExitu, null)
 		});
 
 		List<MetricalTimeLine> expected = new ArrayList<>();
@@ -551,12 +595,11 @@ public class TranscriptionTest extends TestCase {
 		expected.add(mtlInExitu);
 
 		List<MetricalTimeLine> actual = new ArrayList<>();
-		for (int i = 0; i < midiFiles.size(); i++) {			
-			Transcription t = new Transcription(midiFiles.get(i), null);
-			Tablature tab = new Tablature(encodings.get(i), true);
-			MetricalTimeLine mtl = t.getPiece().getMetricalTimeLine();
-			Timeline tl = tab.getTimeline();
-			actual.add(Transcription.alignMetricalTimeLine(Transcription.cleanMetricalTimeLine(mtl), tl));
+		for (int i = 0; i < trs.size(); i++) {
+			MetricalTimeLine mtl = trs.get(i).getPiece().getMetricalTimeLine();
+			Timeline tl = tabs.get(i).getTimeline();
+			mtl = Transcription.cleanMetricalTimeLine(mtl);
+			actual.add(Transcription.alignMetricalTimeLine(mtl, tl));
 		}
 
 		assertMetricalTimeLineEquality(expected, actual);
@@ -564,44 +607,29 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testDiminuteMetricalTimeLine() {
-		List<File> midiFiles = Arrays.asList(new File[]{
-			midiTestpiece, 
-			midiMemorEsto, 
-			midiQuiHabitat, 
-			midiPreterRerum, 
-			midiInExitu	
+		List<Tablature> tabs = Arrays.asList(new Tablature[] {
+			new Tablature(encodingTestpiece, true),
+			new Tablature(encodingMemorEsto, true),
+			new Tablature(encodingQuiHabitat, true),
+			new Tablature(encodingPreterRerum, true),
+			new Tablature(encodingInExitu, true)
 		});
-		List<File> encodings = Arrays.asList(new File[]{
-			encodingTestpiece,
-			encodingMemorEsto,
-			encodingQuiHabitat,
-			encodingPreterRerum,
-			encodingInExitu
+		List<Transcription> trs = Arrays.asList(new Transcription[]{
+			new Transcription(midiTestpiece, null), 
+			new Transcription(midiMemorEsto, null), 
+			new Transcription(midiQuiHabitat, null), 
+			new Transcription(midiPreterRerum, null), 
+			new Transcription(midiInExitu, null)
 		});
-
-		Transcription testpiece = new Transcription(midiTestpiece, null);
-		Tablature testpieceTab = new Tablature(encodingTestpiece, true);
-		
-		Transcription memorEsto = new Transcription(midiMemorEsto, null); 
-		Tablature memorEstoTab = new Tablature(encodingMemorEsto, true);
-		
-		Transcription quiHabitat = new Transcription(midiQuiHabitat, null);
-		Tablature quiHabitatTab = new Tablature(encodingQuiHabitat, true);
-		
-		Transcription preterRerum = new Transcription(midiPreterRerum, null);
-		Tablature preterRerumTab = new Tablature(encodingPreterRerum, true);
-		
-		Transcription inExitu = new Transcription(midiInExitu, null);
-		Tablature inExituTab = new Tablature(encodingInExitu, true);
 
 		List<MetricalTimeLine> expected = new ArrayList<>();
 		// One meter section, diminution = 1
 		MetricalTimeLine mtlTestpiece = getCleanMetricalTimeLine("testpiece");
-		mtlTestpiece = Transcription.alignMetricalTimeLine(mtlTestpiece, testpieceTab.getTimeline());
+		mtlTestpiece = Transcription.alignMetricalTimeLine(mtlTestpiece, tabs.get(0).getTimeline());
 		expected.add(mtlTestpiece);
 		// Seven meter sections, diminutions = 2, 4, 2, 4, 2, 4, 2
 		MetricalTimeLine mtlMemorEsto = getCleanMetricalTimeLine("memor esto");
-		mtlMemorEsto = Transcription.alignMetricalTimeLine(mtlMemorEsto, memorEstoTab.getTimeline());
+		mtlMemorEsto = Transcription.alignMetricalTimeLine(mtlMemorEsto, tabs.get(1).getTimeline());
 		long s1a = getSectionLength("memor esto", "1a");
 		long s1b = getSectionLength("memor esto", "1b");
 		long s1c = getSectionLength("memor esto", "1c");
@@ -641,7 +669,7 @@ public class TranscriptionTest extends TestCase {
 		expected.add(mtlMemorEsto);		
 		// Two meter sections, diminutions = 4, 2
 		MetricalTimeLine mtlQuiHabitat = getCleanMetricalTimeLine("qui habitat");
-		mtlQuiHabitat = Transcription.alignMetricalTimeLine(mtlQuiHabitat, quiHabitatTab.getTimeline());
+		mtlQuiHabitat = Transcription.alignMetricalTimeLine(mtlQuiHabitat, tabs.get(2).getTimeline());
 		long s1 = getSectionLength("qui habitat", "1");
 		// Adapt TimeSignatureMarker (meter section 1, mt = 0/1)
 		mtlQuiHabitat.getTimeSignatureMarker(Rational.ZERO).setTimeSignature(new TimeSignature(THREE_FOUR));
@@ -656,7 +684,7 @@ public class TranscriptionTest extends TestCase {
 		expected.add(mtlQuiHabitat);
 		// Three meter sections, diminutions = 1, 2, 1
 		MetricalTimeLine mtlPreterRerum = getCleanMetricalTimeLine("preter rerum");
-		mtlPreterRerum = Transcription.alignMetricalTimeLine(mtlPreterRerum, preterRerumTab.getTimeline());
+		mtlPreterRerum = Transcription.alignMetricalTimeLine(mtlPreterRerum, tabs.get(3).getTimeline());
 		s1 = getSectionLength("preter rerum", "1");
 		long s2 = getSectionLength("preter rerum", "2");
 		// Adapt TimeSignatureMarker (meter section 1, mt = 0/1)
@@ -676,7 +704,7 @@ public class TranscriptionTest extends TestCase {
 		expected.add(mtlPreterRerum);
 		// Nine meter sections, diminutions = 2, 4, 2, 4, 2, 4, 2, 4, 2
 		MetricalTimeLine mtlInExitu = getCleanMetricalTimeLine("in exitu");
-		mtlInExitu = Transcription.alignMetricalTimeLine(mtlInExitu, inExituTab.getTimeline());
+		mtlInExitu = Transcription.alignMetricalTimeLine(mtlInExitu, tabs.get(4).getTimeline());
 		s1 = getSectionLength("in exitu", "1");
 		s2 = getSectionLength("in exitu", "2");
 		long s3 = getSectionLength("in exitu", "3");
@@ -726,34 +754,71 @@ public class TranscriptionTest extends TestCase {
 		expected.add(mtlInExitu);
 
 		List<MetricalTimeLine> actual = new ArrayList<>();
-		for (int i = 0; i < midiFiles.size(); i++) {			
-			Transcription t = new Transcription(midiFiles.get(i), null);
-			Tablature tab = new Tablature(encodings.get(i), true);
-			MetricalTimeLine mtl = t.getPiece().getMetricalTimeLine();
-			Timeline tl = tab.getTimeline();
+		for (int i = 0; i < trs.size(); i++) {			
+			MetricalTimeLine mtl = trs.get(i).getPiece().getMetricalTimeLine();
+			Timeline tl = tabs.get(i).getTimeline();
 			mtl = Transcription.cleanMetricalTimeLine(mtl);
 			mtl = Transcription.alignMetricalTimeLine(mtl, tl);
 			actual.add(Transcription.diminuteMetricalTimeLine(mtl, tl));
 		}
 
-//		MetricalTimeLine mtl;
-//		mtl = Transcription.cleanMetricalTimeLine(testpiece.getPiece().getMetricalTimeLine());
-//		mtl = Transcription.alignMetricalTimeLine(mtl, testpieceTab.getTimeline());
-//		actual.add(Transcription.diminuteMetricalTimeLine(mtl, testpieceTab.getTimeline()));
-//		mtl = Transcription.cleanMetricalTimeLine(memorEsto.getPiece().getMetricalTimeLine());
-//		mtl = Transcription.alignMetricalTimeLine(mtl, memorEstoTab.getTimeline());
-//		actual.add(Transcription.diminuteMetricalTimeLine(mtl, memorEstoTab.getTimeline()));
-//		mtl = Transcription.cleanMetricalTimeLine(quiHabitat.getPiece().getMetricalTimeLine());
-//		mtl = Transcription.alignMetricalTimeLine(mtl, quiHabitatTab.getTimeline());
-//		actual.add(Transcription.diminuteMetricalTimeLine(mtl, quiHabitatTab.getTimeline()));
-//		mtl = Transcription.cleanMetricalTimeLine(preterRerum.getPiece().getMetricalTimeLine());
-//		mtl = Transcription.alignMetricalTimeLine(mtl, preterRerumTab.getTimeline());
-//		actual.add(Transcription.diminuteMetricalTimeLine(mtl, preterRerumTab.getTimeline()));
-//		mtl = Transcription.cleanMetricalTimeLine(inExitu.getPiece().getMetricalTimeLine());
-//		mtl = Transcription.alignMetricalTimeLine(mtl, inExituTab.getTimeline());
-//		actual.add(Transcription.diminuteMetricalTimeLine(mtl, inExituTab.getTimeline()));
-
 		assertMetricalTimeLineEquality(expected, actual);
+	}
+
+
+	public void testCleanHarmonyTrack() {
+		Transcription t = new Transcription(midiTestpiece, null);
+		Transcription t2 = new Transcription(midiTestGetMeterKeyInfo, null);
+
+		List<SortedContainer<Marker>> expected = new ArrayList<>(); 
+		// midiTestpiece
+		SortedContainer<Marker> e1 = 
+			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
+		KeyMarker km = new KeyMarker(Rational.ZERO, 0);
+		km.setRoot('C'); km.setMode(KeyMarker.Mode.MODE_MINOR); km.setRootAccidental(0);
+		e1.add(km);
+		expected.add(e1);
+		// midiTestGetMeterKeyInfo
+		SortedContainer<Marker> e2 = 
+			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
+		km = new KeyMarker(Rational.ZERO, 0);
+		km.setRoot('C'); km.setMode(KeyMarker.Mode.MODE_MAJOR); km.setRootAccidental(0);
+		e2.add(km);
+		km = new KeyMarker(new Rational(19, 4), Transcription.calculateTime(new Rational(19, 4), 100.0));
+		km.setRoot('A'); km.setMode(KeyMarker.Mode.MODE_MINOR); km.setRootAccidental(0);
+		e2.add(km);
+		km = new KeyMarker(new Rational(43, 4), Transcription.calculateTime(new Rational(43, 4), 100.0));
+		km.setRoot('B'); km.setMode(KeyMarker.Mode.MODE_MAJOR); km.setRootAccidental(1);
+		e2.add(km);
+		km = new KeyMarker(new Rational(51, 4), Transcription.calculateTime(new Rational(51, 4), 100.0));
+		km.setRoot('G'); km.setMode(KeyMarker.Mode.MODE_MINOR); km.setRootAccidental(0);
+		e2.add(km);
+		expected.add(e2);
+
+		List<SortedContainer<Marker>> actual = new ArrayList<>();
+		actual.add(Transcription.cleanHarmonyTrack(t.getPiece().getHarmonyTrack()));
+		actual.add(Transcription.cleanHarmonyTrack(t2.getPiece().getHarmonyTrack()));
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			SortedContainer<Marker> exp = expected.get(i);
+			SortedContainer<Marker> act = actual.get(i);
+			assertEquals(exp.size(), act.size());
+			for (int j = 0; j < exp.size(); j++) {
+				KeyMarker kmExp = (KeyMarker) exp.get(j);
+				KeyMarker kmAct = (KeyMarker) act.get(j);
+				assertEquals(kmExp.getMetricTime(), kmAct.getMetricTime());
+				assertEquals(kmExp.getTime(), kmAct.getTime());
+				assertEquals(kmExp.getRoot(), kmAct.getRoot());
+				assertEquals(kmExp.getMode(), kmAct.getMode());
+				assertEquals(kmExp.getRootAccidental(), kmAct.getRootAccidental());
+			}
+		}
+	}
+
+
+	public void testDiminuteHarmonyTrack() {
+		
 	}
 
 
@@ -1052,7 +1117,126 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testFindVoice() {
-		// TODO
+		Transcription t = new Transcription(midiTestpiece, encodingTestpiece);
+		
+		Transcription t1 = new Transcription();
+		t1.setPiece(MIDIImport.importMidiFile(midiTestpiece));
+		t1.initialiseNoteSequence();
+		for (Note n : t1.getNoteSequence()) {
+			System.out.println(n);
+		}
+		System.exit(0);
+
+		// NB: the notes cannot be retrieved from the NoteSequence, as they are not the same 
+		// as the notes in the Piece; the notes are therefore retrieved from the Piece
+		boolean check = false;
+		if (check) {
+			Note firstInNoteSeq = t.getNoteSequence().get(0);
+			Note firstInPiece = t.getPiece().getScore().get(3).get(0).get(0).get(0);
+			System.out.println(firstInNoteSeq);
+			System.out.println(firstInPiece);
+			System.out.println(firstInNoteSeq == firstInPiece);
+		}
+
+		// Get the notes (per chord, per voice) from the Piece. The Piece is exactly the same 
+		// in both the tablature and the non-tablature case, so only one case is tested
+		NotationSystem ns = t.getPiece().getScore();
+		List<Note> notes = Arrays.asList(new Note[]{
+			// Chord 0
+			ns.get(3).get(0).get(0).get(0),
+			ns.get(2).get(0).get(0).get(0),
+			ns.get(1).get(0).get(0).get(0),
+			ns.get(0).get(0).get(0).get(0),
+			// Chord 1
+			ns.get(3).get(0).get(1).get(0),
+			ns.get(2).get(0).get(1).get(0),
+			ns.get(1).get(0).get(1).get(0),
+			ns.get(0).get(0).get(1).get(0),
+			// Chord 2
+			ns.get(3).get(0).get(2).get(0),
+			// Chord 3
+			ns.get(4).get(0).get(0).get(0),
+			ns.get(3).get(0).get(0).get(0),
+			ns.get(2).get(0).get(2).get(0),
+			ns.get(1).get(0).get(2).get(0),
+			ns.get(0).get(0).get(2).get(0),
+			// Chord 4
+			ns.get(4).get(0).get(1).get(0),
+			// Chord 5
+			ns.get(4).get(0).get(2).get(0),
+			ns.get(3).get(0).get(4).get(0),
+			ns.get(2).get(0).get(3).get(0),
+			ns.get(1).get(0).get(3).get(0),
+			ns.get(0).get(0).get(3).get(0),
+			// Chord 6
+			ns.get(4).get(0).get(3).get(0),
+			ns.get(2).get(0).get(4).get(0),
+			ns.get(1).get(0).get(4).get(0),
+			ns.get(0).get(0).get(4).get(0),
+			// Chord 7
+			ns.get(2).get(0).get(5).get(0),
+			ns.get(0).get(0).get(5).get(0),
+			// Chord 8
+			ns.get(3).get(0).get(5).get(0),
+			ns.get(2).get(0).get(6).get(0),
+			ns.get(1).get(0).get(5).get(0),
+			ns.get(0).get(0).get(6).get(0),
+			// Chords 9-14
+			ns.get(0).get(0).get(7).get(0),
+			ns.get(0).get(0).get(8).get(0),
+			ns.get(0).get(0).get(9).get(0),
+			ns.get(0).get(0).get(10).get(0),
+			ns.get(0).get(0).get(11).get(0),
+			ns.get(0).get(0).get(12).get(0),
+			// Chord 15
+			ns.get(3).get(0).get(6).get(0),
+			ns.get(2).get(0).get(7).get(0),
+			ns.get(1).get(0).get(6).get(0),
+			ns.get(0).get(0).get(13).get(0),
+		});
+
+		List<Integer> expected = new ArrayList<>();
+		List<Integer> expected1 = Arrays.asList(new Integer[]{
+			// Chord 0
+			3, 2, 1, 0,
+			// Chord 1 (course crossing voices 0-1 unhandled in Piece)
+			3, 2, 1, 0, 
+			// Chord 2
+			3,
+			// Chord 3 (SNU voices 0-1 unhandled in Piece)
+			4, 3, 2, 1, 0, 
+			// Chord 4
+			4,
+			// Chord 5 (unison voices 3-2 unhandled in Piece)	
+			4, 3, 2, 1, 0,
+			// Chord 6 (voice crossing voices 0-1 present in Piece)
+			4, 2, 1, 0, 
+			// Chord 7
+			2, 0,
+			// Chord 8
+			3, 2, 1, 0,
+			// Chord 9-14	
+			0, 0, 0, 0, 0, 0,
+			// Chord 15
+			3, 2, 1, 0
+		});
+//		List<Integer> expected2 = new ArrayList<>(expected1);
+		expected.addAll(expected1);
+//		expected.addAll(expected2);
+		
+		List<Integer> actual = new ArrayList<>();		
+		for (Note n : notes) {
+			actual.add(t.findVoice(n));
+		}
+//		for (Note n : notes) {
+//			actual.add(t2.findVoice(n));
+//		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected1.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));		
+		}
+		assertEquals(expected, actual);
 	}
 
 
@@ -1142,7 +1326,7 @@ public class TranscriptionTest extends TestCase {
 		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 //		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
-		transcription.initialiseVoiceLabels();
+		transcription.initialiseVoiceLabels(null);
 
 		List<List<Double>> expected = new ArrayList<List<Double>>();
 		// Chord 0
@@ -1198,8 +1382,8 @@ public class TranscriptionTest extends TestCase {
 		Transcription transcription = new Transcription();
 		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 		transcription.initialiseNoteSequence();
-		transcription.initialiseVoiceLabels(); // not strictly necessary
-		transcription.initialiseDurationLabels();
+		transcription.initialiseVoiceLabels(null); // not strictly necessary
+		transcription.initialiseDurationLabels(null);
 
 		List<List<Double>> expected = new ArrayList<List<Double>>();
 		// Chord 0
@@ -1298,13 +1482,13 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
-	public void testHandleCoDNotes() {
+	public void testHandleSNUs() {
 		Tablature tablature = new Tablature(encodingTestpiece, true);
 		Transcription transcription = new Transcription();
 		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 		transcription.initialiseNoteSequence();
-		transcription.initialiseVoiceLabels(); 
-		transcription.initialiseDurationLabels();
+		transcription.initialiseVoiceLabels(null); 
+		transcription.initialiseDurationLabels(null);
 		if (transcription.checkChords(tablature) == false) {
 			throw new RuntimeException("ERROR: Chord error (see console).");
 		}
@@ -1328,7 +1512,7 @@ public class TranscriptionTest extends TestCase {
 		expectedDurationLabels.set(12, adaptedDurationLabel);
 		expectedDurationLabels.remove(13);
 
-		transcription.handleCoDNotes(tablature, true);
+		transcription.handleSNUs(tablature, Type.GROUND_TRUTH);
 		List<Note> actualNotes = new ArrayList<Note>();
 		for (Note n : transcription.getNoteSequence()) {
 			actualNotes.add(n);
@@ -1366,17 +1550,74 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	public void testDetermineVoicesSNU() {
+		List<List<Double>> vl = new ArrayList<>();
+		vl.add(Transcription.VOICE_0); 
+		vl.add(Transcription.VOICE_1);
+		vl.add(Transcription.combineLabels(Transcription.VOICE_0, Transcription.VOICE_2));
+		vl.add(Transcription.combineLabels(Transcription.VOICE_0, Transcription.VOICE_2));
+		vl.add(Transcription.combineLabels(Transcription.VOICE_0, Transcription.VOICE_2));
+		vl.add(Transcription.combineLabels(Transcription.VOICE_0, Transcription.VOICE_2));
+
+		List<List<Double>> dl = new ArrayList<>();
+		dl.add(Transcription.SIXTEENTH);
+		dl.add(Transcription.EIGHTH);
+		dl.add(Transcription.combineLabels(Transcription.EIGHTH, Transcription.QUARTER));
+		dl.add(Transcription.combineLabels(Transcription.EIGHTH, Transcription.QUARTER));
+		dl.add(Transcription.QUARTER);
+		dl.add(Transcription.HALF);
+
+		List<Integer[]> vls = new ArrayList<>();
+		vls.add(null);
+		vls.add(null);
+		vls.add(new Integer[]{0, 2});
+		vls.add(new Integer[]{2, 0});
+		// NB: Doesn't happen in practice: the case where both voices have a note with the same 
+		// duration is treated like the case where the lowest voice has the note with the longest 
+		// duration -- meaning that vls would contain [2, 0] here
+		vls.add(new Integer[]{0, 2});
+		vls.add(new Integer[]{2, 0});
+
+		List<Integer[]> expected = new ArrayList<>();
+		expected.add(null);
+		expected.add(null);
+		// Different duration, voice 0 has longest note: voice 0 first
+		expected.add(new Integer[]{0, 2});
+		// Different duration, voice 2 has longest note: voice 2 first
+		expected.add(new Integer[]{2, 0});
+		// Same duration: always lowest voice first
+		expected.add(new Integer[]{2, 0});
+		// Same duration: always lowest voice first
+		expected.add(new Integer[]{2, 0});
+		
+		List<Integer[]> actual = Transcription.determineVoicesSNU(vl, dl, vls);
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			if (expected.get(i) == null) {
+				assertEquals(expected.get(i), actual.get(i));
+			}
+			else {
+				assertEquals(expected.get(i).length, actual.get(i).length);
+				for (int j = 0; j < expected.get(i).length; j++) {
+					assertEquals(expected.get(i)[j], actual.get(i)[j]);
+				}
+			}
+		}	
+	}
+
+
 	public void testHandleCourseCrossings() {
 		Tablature tablature = new Tablature(encodingTestpiece, true);
 		Transcription transcription = new Transcription();
 		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 		transcription.initialiseNoteSequence();
-		transcription.initialiseVoiceLabels(); 
-		transcription.initialiseDurationLabels();
+		transcription.initialiseVoiceLabels(null); 
+		transcription.initialiseDurationLabels(null);
 		if (transcription.checkChords(tablature) == false) {
 			throw new RuntimeException("ERROR: Chord error (see console).");
 		}
-		transcription.handleCoDNotes(tablature, true);
+		transcription.handleSNUs(tablature, Type.GROUND_TRUTH);
 
 		// a. NoteSequence
 		// NB: expectedNoteSeq cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes
@@ -1397,7 +1638,7 @@ public class TranscriptionTest extends TestCase {
 		expectedDurationLabels.set(7, Transcription.EIGHTH);
 
 		// Calculate actual
-		transcription.handleCourseCrossings(tablature, true);
+		transcription.handleCourseCrossings(tablature, Type.GROUND_TRUTH);
 		List<Note> actualNotes = new ArrayList<Note>();
 		for (Note n : transcription.getNoteSequence()) {
 			actualNotes.add(n);
@@ -3833,13 +4074,13 @@ public class TranscriptionTest extends TestCase {
 		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 //		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
-		transcription.initialiseVoiceLabels(); 
-		transcription.initialiseDurationLabels();
+		transcription.initialiseVoiceLabels(null); 
+		transcription.initialiseDurationLabels(null);
 		if (transcription.checkChords(tablature) == false) {
 			throw new RuntimeException("ERROR: Chord error (see console).");
 		}
-		transcription.handleCoDNotes(tablature, true);
-		transcription.handleCourseCrossings(tablature, true);
+		transcription.handleSNUs(tablature, Type.GROUND_TRUTH);
+		transcription.handleCourseCrossings(tablature, Type.GROUND_TRUTH);
 		if (transcription.checkAlignment(tablature) == false) {
 			throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
 		}
@@ -4149,29 +4390,43 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testCreateKeyInfo() {
-		Transcription tr = new Transcription(midiTestGetMeterKeyInfoDiminuted, null);
+		Transcription tr = new Transcription(midiTestGetMeterKeyInfo, null);
 		Transcription tr2 = new Transcription(midiTestGetMeterKeyInfoDiminutedNoAnacrusis, null);
 		
 		List<Integer[]> expected = new ArrayList<Integer[]>();
 		// With anacrusis
 		expected.add(new Integer[]{0, 0, 0, 2, 0, 1024}); // C major
-		expected.add(new Integer[]{3, 1, 3, 4, 19, 8}); // f# minor
-		expected.add(new Integer[]{-2, 0, 5, 6, 31, 8}); // Bb major
-		expected.add(new Integer[]{1, 1, 7, 8, 47, 8}); // e minor
+		expected.add(new Integer[]{3, 1, 3, 4, 19, 4}); // f# minor
+		expected.add(new Integer[]{-2, 0, 5, 6, 43, 4}); // Bb major
+		expected.add(new Integer[]{1, 1, 7, 8, 51, 4}); // e minor
+//		expected.add(new Integer[]{0, 0, 0, 2, 0, 1024}); // C major
+//		expected.add(new Integer[]{3, 1, 3, 4, 19, 8}); // f# minor
+//		expected.add(new Integer[]{-2, 0, 5, 6, 31, 8}); // Bb major
+//		expected.add(new Integer[]{1, 1, 7, 8, 47, 8}); // e minor
 		// Without anacrusis
-		expected.add(new Integer[]{0, 0, 1, 3, 0, 1024}); // C major
-		expected.add(new Integer[]{3, 1, 4, 5, 3, 1}); // f# minor
-		expected.add(new Integer[]{-2, 0, 6, 7, 9, 2}); // Bb major
-		expected.add(new Integer[]{1, 1, 8, 9, 13, 2}); // e minor
-
+//		expected.add(new Integer[]{0, 0, 1, 3, 0, 1024}); // C major
+//		expected.add(new Integer[]{3, 1, 4, 5, 3, 1}); // f# minor
+//		expected.add(new Integer[]{-2, 0, 6, 7, 9, 2}); // Bb major
+//		expected.add(new Integer[]{1, 1, 8, 9, 13, 2}); // e minor
+//		expected.add(new Integer[]{0, 0, 1, 3, 0, 1024}); // C major
+//		expected.add(new Integer[]{3, 1, 4, 5, 3, 1}); // f# minor
+//		expected.add(new Integer[]{-2, 0, 6, 7, 9, 2}); // Bb major
+//		expected.add(new Integer[]{1, 1, 8, 9, 13, 2}); // e minor
+		
+		for (Integer[] in : tr2.getMeterInfo()) {
+			System.out.println(Arrays.asList(in));
+		}
+		System.out.println("----------");
 		List<Integer[]> actual = Transcription.createKeyInfo(tr.getPiece(), tr.getMeterInfo());
-		actual.addAll(Transcription.createKeyInfo(tr2.getPiece(), tr2.getMeterInfo()));
+		for (Integer[] in : actual) {
+			System.out.println(Arrays.asList(in));
+		}
+//		actual.addAll(Transcription.createKeyInfo(tr2.getPiece(), tr2.getMeterInfo()));
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i).length, actual.get(i).length);
 			for (int j = 0; j < expected.get(i).length; j++) {
-				System.out.println(i + " " + j);
 				assertEquals(expected.get(i)[j], actual.get(i)[j]);
 			}
 		}
@@ -4184,7 +4439,7 @@ public class TranscriptionTest extends TestCase {
 		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 //		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
-		transcription.initialiseVoiceLabels();
+		transcription.initialiseVoiceLabels(null);
 //		transcription.setMeterInfo(midiTestpiece1);
 		transcription.setMeterInfo();
 
@@ -4202,7 +4457,7 @@ public class TranscriptionTest extends TestCase {
 		expectedVoiceLabels.set(12, Transcription.VOICE_0);
 		expectedVoiceLabels.set(13, Transcription.VOICE_1);
 
-		transcription.handleUnisons(true);
+		transcription.handleUnisons(Type.GROUND_TRUTH);
 		List<Note> actualNotes = new ArrayList<Note>();
 		for (Note n : transcription.getNoteSequence()) {
 			actualNotes.add(n);
@@ -4828,7 +5083,7 @@ public class TranscriptionTest extends TestCase {
 		expected1.set(12, new Integer[]{0, 1});
 		expected.addAll(expected1);
 		
-		// b. For a piece with multiple Cods
+		// b. For a piece with multiple CoDs
 		List<Integer[]> expected2 = new ArrayList<Integer[]>();
 		for (int i = 0; i < tablature2.getBasicTabSymbolProperties().length; i++) {
 			expected2.add(null);
@@ -4858,8 +5113,8 @@ public class TranscriptionTest extends TestCase {
 		expected.addAll(expected2);
 
 		List<Integer[]> actual = new ArrayList<Integer[]>();
-		actual.addAll(transcription1.getVoicesCoDNotes());
-		actual.addAll(transcription2.getVoicesCoDNotes());
+		actual.addAll(transcription1.getVoicesSNU());
+		actual.addAll(transcription2.getVoicesSNU());
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -4889,7 +5144,7 @@ public class TranscriptionTest extends TestCase {
 		transcription.initialiseNoteSequence();
 		// The voice labels must be initialised before the NoteSeqeunce is adapted, as initialiseVoiceLabels() needs
 		// the actual Note objects from the NoteSequence and not the adaptations made below
-		transcription.initialiseVoiceLabels(); 
+		transcription.initialiseVoiceLabels(null); 
 //		transcription.setMeterInfo(midiTestpiece1);
 		transcription.setMeterInfo();
 		// Before calling handleUnisons(): adapt transcription so that all unisons become EDUs
@@ -4901,7 +5156,7 @@ public class TranscriptionTest extends TestCase {
 		noteSeq.replaceNoteAt(12, Transcription.createNote(n12.getMidiPitch(), n12.getMetricTime(), new Rational(1, 4)));
 		Note n16 = noteSeq.getNoteAt(16);
 		noteSeq.replaceNoteAt(16, Transcription.createNote(n16.getMidiPitch(), n16.getMetricTime(), new Rational(1, 4)));  
-		transcription.handleUnisons(true);
+		transcription.handleUnisons(Type.GROUND_TRUTH);
 		transcription.setBasicNoteProperties();
 
 		List<Integer[]> expected = new ArrayList<Integer[]>();
@@ -4917,7 +5172,7 @@ public class TranscriptionTest extends TestCase {
 		expected.set(16, new Integer[]{3, 2, 17});
 		expected.set(17, new Integer[]{3, 2, 16});
 
-		List<Integer[]> actual = transcription.getEqualDurationUnisonsInfo();
+		List<Integer[]> actual = transcription.getVoicesEDU();
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -5107,7 +5362,7 @@ public class TranscriptionTest extends TestCase {
 	public void testGetPitchesInChord() {
 		Transcription transcription = new Transcription(midiTestpiece, null);
 
-  	List<List<Integer>> expected = new ArrayList<List<Integer>>();
+		List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		// Chord 0
 		expected.add(Arrays.asList(new Integer[]{50, 57, 65, 69})); 
 		// Chord 1
@@ -5134,20 +5389,20 @@ public class TranscriptionTest extends TestCase {
 		expected.add(Arrays.asList(new Integer[]{68}));
 		expected.add(Arrays.asList(new Integer[]{69}));
 		// Chord 15
-		expected.add(Arrays.asList(new Integer[]{45, 57, 64, 69})); 
+		expected.add(Arrays.asList(new Integer[]{45, 57, 64, 69}));
 
 		List<List<Integer>> actual = new ArrayList<List<Integer>>();
-		List<List<Note>> transcriptionChords = transcription.getTranscriptionChords();
-		for (int i = 0; i < transcriptionChords.size(); i++) {
-		 	actual.add(transcription.getPitchesInChord(i));
+		List<List<Note>> chords = transcription.getChords();
+		for (int i = 0; i < chords.size(); i++) {
+			actual.add(transcription.getPitchesInChord(chords.get(i)));
 		}
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
-		 	assertEquals(expected.get(i).size(), actual.get(i).size());
-		 	for (int j = 0; j < expected.get(i).size(); j++) {
-		 		assertEquals(expected.get(i).get(j), actual.get(i).get(j));
-		 	}
+			assertEquals(expected.get(i).size(), actual.get(i).size());
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+			}
 		}
 	}
 
@@ -5174,12 +5429,12 @@ public class TranscriptionTest extends TestCase {
 		expected.add(Arrays.asList(new Integer[]{45, 57, 64, 69})); 
 
 		List<List<Integer>> actual = new ArrayList<List<Integer>>();
-		List<List<Note>> transcriptionChords = transcription.getTranscriptionChords();
+		List<List<Note>> chords = transcription.getChords();
 		Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
 		int lowestNoteIndex = 0;
-		for (int i = 0; i < transcriptionChords.size(); i++) {
+		for (int i = 0; i < chords.size(); i++) {
 			actual.add(Transcription.getPitchesInChord(basicNoteProperties, lowestNoteIndex));
-			lowestNoteIndex += transcriptionChords.get(i).size();
+			lowestNoteIndex += chords.get(i).size();
 		}
 
 		assertEquals(expected.size(), actual.size());
@@ -5224,15 +5479,15 @@ public class TranscriptionTest extends TestCase {
 //	}
 
 
-	public void testGetCoDInfo() {    
+	public void testGetSNUInfo() {    
 		Tablature tablature = new Tablature(encodingTestpiece, true);
-			Transcription transcription = new Transcription();
+		Transcription transcription = new Transcription();
 //		transcription.setFile(midiTestpiece1);
 		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 //		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
-		transcription.initialiseVoiceLabels(); 
-		transcription.initialiseDurationLabels();
+		transcription.initialiseVoiceLabels(null); 
+		transcription.initialiseDurationLabels(null);
 		if (transcription.checkChords(tablature) == false) {
 			throw new RuntimeException("ERROR: Chord error (see console).");
 		}
@@ -5248,9 +5503,11 @@ public class TranscriptionTest extends TestCase {
 		expected.add(null); expected.add(null);
 
 		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
+		List<List<Note>> chords = transcription.getNoteSequenceChords();
 		List<Integer[][]> actual = new ArrayList<Integer[][]>();
-		for (int i = 0; i < transcription.getTranscriptionChordsInternal().size(); i++) {
-			actual.add(transcription.getCoDInfo(tablatureChords, i));
+		for (int i = 0; i < chords.size(); i++) {
+			actual.add(transcription.getSNUInfo(chords.get(i), tablatureChords.get(i)));
+//			actual.add(transcription.getSNUInfo(tablatureChords, i));
 		}
 
 		assertEquals(expected.size(), actual.size());
@@ -5346,7 +5603,7 @@ public class TranscriptionTest extends TestCase {
 		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 //		transcription.setPiece(null);
 		transcription.initialiseNoteSequence();
-		transcription.initialiseVoiceLabels();
+		transcription.initialiseVoiceLabels(null);
 //		transcription.setMeterInfo(midiTestpiece1);
 		transcription.setMeterInfo();
 
@@ -5364,8 +5621,9 @@ public class TranscriptionTest extends TestCase {
 		expected.add(null); expected.add(null); expected.add(null); expected.add(null); expected.add(null);
 
 		List<Integer[][]> actual = new ArrayList<Integer[][]>();
-		for (int i = 0; i < transcription.getTranscriptionChordsInternal().size(); i++) {
-			actual.add(transcription.getUnisonInfo(i));
+		List<List<Note>> chords = transcription.getNoteSequenceChords();
+		for (int i = 0; i < chords.size(); i++) {
+			actual.add(transcription.getUnisonInfo(chords.get(i)));
 		}
 
 		assertEquals(expected.size(), actual.size());
@@ -5386,7 +5644,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
-	public void testGetAndSetTranscriptionChords(){
+	public void testGetAndSetChords(){
 //		Tablature tablature = new Tablature(encodingTestpiece1, true);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
@@ -5458,7 +5716,7 @@ public class TranscriptionTest extends TestCase {
 			Transcription.createNote(62, new Rational(11, 4), new Rational(1, 4)),
 			Transcription.createNote(67, new Rational(11, 4), new Rational(1, 4))}));
 
-		List<List<Note>> actual = transcription.getTranscriptionChords();
+		List<List<Note>> actual = transcription.getChords();
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -5548,7 +5806,7 @@ public class TranscriptionTest extends TestCase {
       Transcription.createNote(69, new Rational(11, 4), new Rational(1, 4))}));
            
     // Calculate actual
-    List<List<Note>> actual = transcription.getTranscriptionChords();
+    List<List<Note>> actual = transcription.getChords();
     	
   	// Assert equality
   	assertEquals(expected.size(), actual.size());
@@ -7086,12 +7344,12 @@ public class TranscriptionTest extends TestCase {
 
 		List<List<Integer>> actual = new ArrayList<List<Integer>>();
 		Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
-		List<List<Note>> transcriptionChords = transcription.getTranscriptionChords();
+		List<List<Note>> chords = transcription.getChords();
 		int lowestNoteIndex = 0;
-		for (int i = 0; i < transcriptionChords.size(); i++) {
+		for (int i = 0; i < chords.size(); i++) {
 			actual.add(Transcription.getPitchesOfSustainedPreviousNotesInChord(null, null, basicNoteProperties,
 				lowestNoteIndex));
-			lowestNoteIndex += transcriptionChords.get(i).size();
+			lowestNoteIndex += chords.get(i).size();
 		}
 
 		assertEquals(expected.size(), actual.size());
@@ -7141,7 +7399,7 @@ public class TranscriptionTest extends TestCase {
 		Integer[][] btp = tablature.getBasicTabSymbolProperties();
 		List<List<Double>> voiceLabels = transcription.getVoiceLabels();
 		List<List<Double>> durationLabels = transcription.getDurationLabels();
-		List<Integer[]> voicesCoDNotes=  transcription.getVoicesCoDNotes();
+		List<Integer[]> voicesCoDNotes=  transcription.getVoicesSNU();
 		int lowestNoteIndex = 0;
 		for (int i = 0; i < tablature.getTablatureChords().size(); i++) {
 			actual.add(Transcription.getVoicesOfSustainedPreviousNotesInChord(btp, durationLabels, 
@@ -7196,10 +7454,10 @@ public class TranscriptionTest extends TestCase {
 		Integer[][] bnp = transcription.getBasicNoteProperties();
 		List<List<Double>> voiceLabels = transcription.getVoiceLabels();
 		int lowestNoteIndex = 0;
-		for (int i = 0; i < transcription.getTranscriptionChords().size(); i++) {
+		for (int i = 0; i < transcription.getChords().size(); i++) {
 			actual.add(Transcription.getVoicesOfSustainedPreviousNotesInChord(null, null, null, bnp,
 				voiceLabels, lowestNoteIndex));
-			lowestNoteIndex += transcription.getTranscriptionChords().get(i).size();
+			lowestNoteIndex += transcription.getChords().get(i).size();
 		}
 
 		assertEquals(expected.size(), actual.size());
@@ -7292,8 +7550,9 @@ public class TranscriptionTest extends TestCase {
 		List<List<Double>> allVoiceLabels = transcription.getVoiceLabels();
 		Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
 		int lowestNoteIndex = 0;
-		for (int i = 0; i < transcription.getTranscriptionChords().size(); i++) {
-			List<Integer> currentPitchesInChord = transcription.getPitchesInChord(i);
+		List<List<Note>> chords = transcription.getChords();
+		for (int i = 0; i < chords.size(); i++) {
+			List<Integer> currentPitchesInChord = transcription.getPitchesInChord(chords.get(i));
 			List<Integer> currentVoiceAssignment = voiceAssignments.get(i);
 			List<List<Double>> currentVoiceLabels = 
 				DataConverter.getChordVoiceLabels(currentVoiceAssignment);
@@ -7301,7 +7560,7 @@ public class TranscriptionTest extends TestCase {
 				DataConverter.getVoicesInChord(currentVoiceLabels);
 			actual.add(Transcription.getAllPitchesAndVoicesInChord(basicNoteProperties, currentPitchesInChord,
 				currentVoicesInChord, allVoiceLabels, lowestNoteIndex));
-			lowestNoteIndex += transcription.getTranscriptionChords().get(i).size();
+			lowestNoteIndex += transcription.getChords().get(i).size();
 		}
 
 		assertEquals(expected.size(), actual.size());
@@ -7867,11 +8126,12 @@ public class TranscriptionTest extends TestCase {
 		List<List<Double>> voiceLabels = transcription.getVoiceLabels();
 		Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
 		int lowestNoteIndex = 0;
-		for (int i = 0; i < transcription.getTranscriptionChords().size(); i++) {
+		List<List<Note>> chords = transcription.getChords();
+		for (int i = 0; i < transcription.getChords().size(); i++) {
 			List<Integer> currentVoiceAssignment = voiceAssignments.get(i);
 //			List<Integer> currentPitchesInChord = 
 //				FeatureGenerator.getPitchesInChord(null, basicNoteProperties, lowestNoteIndex);
-			List<Integer> currentPitchesInChord = transcription.getPitchesInChord(i);
+			List<Integer> currentPitchesInChord = transcription.getPitchesInChord(chords.get(i));
 			List<List<Double>> currentChordVoiceLabels = 
 				DataConverter.getChordVoiceLabels(currentVoiceAssignment);
 			List<List<Integer>> currentVoicesInChord = 
@@ -7888,7 +8148,7 @@ public class TranscriptionTest extends TestCase {
 				currentVoicesInChord.add(voiceWrapped);
 			}
 			actual.add(Transcription.getVoiceCrossingInformationInChord(currentPitchesInChord, currentVoicesInChord));
-			lowestNoteIndex += transcription.getTranscriptionChords().get(i).size();
+			lowestNoteIndex += transcription.getChords().get(i).size();
 		}
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {

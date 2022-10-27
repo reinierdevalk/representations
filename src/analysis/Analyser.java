@@ -828,8 +828,9 @@ public class Analyser {
 //		}
 //		System.exit(0);
 
-		for (int i = 0; i < transcription.getTranscriptionChords().size(); i++) {
-			List<Note> currentChord = transcription.getTranscriptionChords().get(i);
+		List<List<Note>> chords = transcription.getChords();
+		for (int i = 0; i < chords.size(); i++) {
+			List<Note> currentChord = chords.get(i);
 
 			Rational currentOnsetTime = currentChord.get(0).getMetricTime();
 			Rational[] metricPos = Timeline.getMetricPosition(currentOnsetTime, meterInfo);
@@ -841,15 +842,16 @@ public class Analyser {
 			String metricPosAsString = barNum + posInBar;
 
 			// a. Determine number of unisons
-			if (transcription.getUnisonInfo(i) != null) {
+			Integer[][] unisonInfo = transcription.getUnisonInfo(currentChord);
+			if (unisonInfo != null) {
 				totalNumUnisons++;
-				if (transcription.getUnisonInfo(i).length == 1) {
+				if (unisonInfo.length == 1) {
 					results = results.concat("  chord at index " + i + " (metric position " + metricPosAsString + 
 //						") has more than one unison." + "\n");
 						") has a unison." + "\n");
 				}
-				int indexLower = transcription.getUnisonInfo(i)[0][1];
-				int indexUpper = transcription.getUnisonInfo(i)[0][2];
+				int indexLower = unisonInfo[0][1];
+				int indexUpper = unisonInfo[0][2];
 				int notesPreceding = 0;
 				for (int j = 0; j < basicNoteProperties.length; j++) {
 					int num = basicNoteProperties[j][Transcription.ONSET_TIME_NUMER];
@@ -928,7 +930,7 @@ public class Analyser {
 
 		// For each chord
 		Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
-		List<List<Note>> transcriptionChords = transcription.getTranscriptionChords();
+		List<List<Note>> transcriptionChords = transcription.getChords();
 //		int numChords = transcription.getNumberOfChords();
 		chordSizeInformation = chordSizeInformation.concat(pieceName + "\r\n");
 		chordSizeInformation = chordSizeInformation.concat("number of notes = " + basicNoteProperties.length + "\r\n");
@@ -1184,7 +1186,7 @@ public class Analyser {
 		Transcription transcription = new Transcription(midiFile, null);
 		List<Integer[]> meterInfo = transcription.getMeterInfo();
 		Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
-		List<List<Note>> transChords = transcription.getTranscriptionChords();
+		List<List<Note>> transChords = transcription.getChords();
 		List<List<Double>> allVoiceLabels = transcription.getVoiceLabels();
 		List<List<List<Double>>> chordVoiceLabels = transcription.getChordVoiceLabels();
 		int lowestNoteIndex = 0;

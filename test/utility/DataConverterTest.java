@@ -269,7 +269,7 @@ public class DataConverterTest extends TestCase {
 		List<List<List<Double>>> actual = new ArrayList<List<List<Double>>>();
 		int highestNumberOfVoices = transcription.getNumberOfVoices();
 		List<List<Integer>> voiceAssignments = transcription.getVoiceAssignments(/*tablature,*/ highestNumberOfVoices);
-		for (int i = 0; i < transcription.getTranscriptionChords().size(); i++) {
+		for (int i = 0; i < transcription.getChords().size(); i++) {
 			actual.add(DataConverter.getChordVoiceLabels(voiceAssignments.get(i)));
 		}
 

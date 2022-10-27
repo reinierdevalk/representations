@@ -23,8 +23,8 @@ public class NoteTimePitchComparator implements Comparator<Note>, Serializable {
 	 * @param note1 the first note
 	 * @param note2 the second note
 	 * @return A negative number, zero, or a positive number depending on whether the 
-	 *        first note is less, equal or greater than the second note. 
-	 *        Less/greater than is defined by:<br>
+	 *         first note is less, equal or greater than the second note. 
+	 *         Less/greater than is defined by:<br>
 	 *        <ul>
 	 *        <li>1. Onset time (metrical time)</li>
 	 *        <li>2. If onset time is equal, pitch</li>
