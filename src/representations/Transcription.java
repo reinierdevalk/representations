@@ -4,17 +4,19 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
+
+import org.apache.commons.lang3.SerializationUtils;
 
 import de.uos.fmt.musitech.data.performance.PerformanceNote;
 import de.uos.fmt.musitech.data.score.NotationChord;
@@ -27,7 +29,6 @@ import de.uos.fmt.musitech.data.score.ScoreNote;
 import de.uos.fmt.musitech.data.score.ScorePitch;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.Piece;
-import de.uos.fmt.musitech.data.structure.container.Containable;
 import de.uos.fmt.musitech.data.structure.container.NoteSequence;
 import de.uos.fmt.musitech.data.structure.container.SortedContainer;
 import de.uos.fmt.musitech.data.structure.harmony.KeyMarker;
@@ -52,17 +53,17 @@ import utility.DataConverter;
 import utility.NoteTimePitchComparator;
 
 public class Transcription implements Serializable {
-	
+
 	private static final long serialVersionUID = 1L;
-//	private static final long serialVersionUID = -8586909984652950201L;
-	public static int MAXIMUM_NUMBER_OF_VOICES = 5;
-	public static int DURATION_LABEL_SIZE = (Tablature.SRV_DEN/3)*1; // trp dur; *2 for Byrd; *3 for JosquIntab
+	public static int MAX_NUM_VOICES = 5;
+	public static int DUR_LABEL_MULTIPLIER = 1; // TODO set to 2 for Byrd and 3 for JosquIntab
+	public static int MAX_TABSYMBOL_DUR = (Tablature.SRV_DEN / 3) * DUR_LABEL_MULTIPLIER; // trp dur
 	public static final int INCORRECT_IND = 0;
 	public static final int ORNAMENTATION_IND = 1;
 	public static final int REPETITION_IND = 2;
 	public static final int FICTA_IND = 3;
 	public static final int OTHER_IND = 4;
-	
+
 	private List<File> files;
 	private Piece piece;
 	private Piece unadaptedGTPiece;
@@ -92,7 +93,7 @@ public class Transcription implements Serializable {
 	public static final int CHORD_SEQ_NUM = 5;
 	public static final int CHORD_SIZE_AS_NUM_ONSETS = 6;
 	public static final int NOTE_SEQ_NUM = 7;
-	
+
 //	public static final int MI_NUM = 0;
 //	public static final int MI_DEN = 1;
 //	public static final int MI_FIRST_BAR = 2;
@@ -100,7 +101,7 @@ public class Transcription implements Serializable {
 //	public static final int MI_NUM_MT_FIRST_BAR = 4;
 //	public static final int MI_DEN_MT_FIRST_BAR = 5;
 //	private static final int MI_SIZE = 6;
-	
+
 	public static final int KI_KEY = 0;
 	public static final int KI_MODE = 1;
 	public static final int KI_FIRST_BAR = 2;
@@ -132,18 +133,11 @@ public class Transcription implements Serializable {
 	public static final List<Double> DOTTED_HALF = createDurationLabel(24*3);
 	public static final List<Double> WHOLE = createDurationLabel(32*3);
 
-	private static final List<Double> VOICE_EMPTY = Arrays.asList(new Double[]{0.0, 0.0, 0.0, 0.0, 0.0});
-	private static final List<Double> VOICE_EMPTY_SIX = Arrays.asList(new Double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
-	public static final List<Double> VOICE_0 = Arrays.asList(new Double[]{1.0, 0.0, 0.0, 0.0, 0.0});
-	public static final List<Double> VOICE_1 = Arrays.asList(new Double[]{0.0, 1.0, 0.0, 0.0, 0.0});
-	public static final List<Double> VOICE_2 = Arrays.asList(new Double[]{0.0, 0.0, 1.0, 0.0, 0.0});
-	public static final List<Double> VOICE_3 = Arrays.asList(new Double[]{0.0, 0.0, 0.0, 1.0, 0.0});
-	public static final List<Double> VOICE_4 = Arrays.asList(new Double[]{0.0, 0.0, 0.0, 0.0, 1.0});
-
-	private final static int SUPERIUS = 0;
-	private final static int ALTUS = 1;
-	private final static int TENOR = 2;
-	private final static int BASSUS = 3;
+	public static final List<Double> VOICE_0 = createVoiceLabel(0);
+	public static final List<Double> VOICE_1 = createVoiceLabel(1);
+	public static final List<Double> VOICE_2 = createVoiceLabel(2);
+	public static final List<Double> VOICE_3 = createVoiceLabel(3);
+	public static final List<Double> VOICE_4 = createVoiceLabel(4);
 	
 	public static enum Type {
 		GROUND_TRUTH("ground truth", 0), PREDICTED("predicted", 2), 
@@ -169,87 +163,6 @@ public class Transcription implements Serializable {
 			return stringRep;
 		}
 	}
-
-//  /**
-//   * Constructor. Creates a new Transcription out of the encoding in the given File. Sets the class fields
-//   * file, piece, noteSequence and voiceLabels, and 
-//   *   In the tablature case: sets the class field durationLabels, aligns the Tablature and Transcription,
-//   *     and checks the encoding for alignment errors. If any are found, a runTimeException is thrown;
-//   *   In the non-tablature case: sets the class fields meterInfo and basicNoteProperties. In this case,
-//   *     argEncodingFile is <code>null</code>.
-//   *                              
-//   * @param argMidiFile
-//   * @param argPiece
-//   * @param argEncodingFile
-//   */
-//  public Transcription(File argMidiFile, Piece argPiece, File argEncodingFile) {
-//  	
-//    // Verify that either argMidiFile or argPiece == null
-// 		if ((argMidiFile != null && argPiece != null) ||
-// 		  (argMidiFile == null && argPiece == null)) {
-// 		  System.out.println("ERROR: if argMidiFile == null, argPiece must not be, and vice versa" + "\n");
-// 		   throw new RuntimeException("ERROR (see console for details)");
-// 		}
-//  	
-//  	if (argMidiFile != null) {
-//  	  setFile(argMidiFile);
-//  	  setPiece(); // needs file
-//  	}
-//  	else {
-//  		setPiece(argPiece);
-//  	}
-//  	
-//  	if (reversePiece) {
-//  		setMeterInfo(); // needs file
-//  	  reversePiece(); // needs piece and meterInfo
-//  	}
-//    initialiseNoteSequence(); // needs piece
-//    initialiseVoiceLabels(); // needs piece and noteSequence
-//    // a. In the tablature case
-//    if (argEncodingFile != null) {
-//    	initialiseDurationLabels(); // needs noteSequence
-//    	// 1. Check chords
-//    	Tablature tablature = new Tablature(argEncodingFile);
-//    	if (checkChords(tablature) == false) { // needs noteSequence
-//    		System.out.println(chordsSpecification);
-//      	throw new RuntimeException("ERROR: Chord error (see console).");
-//      }
-//      // 2. Align tablature and transcription
-//      handleCoDNotes(tablature); // needs noteSequence, voiceLabels, and durationLabels
-//      handleCourseCrossings(tablature); // needs noteSequence, voiceLabels, and durationLabels
-//      // 3. Do final alignment check
-//      if (checkAlignment(tablature) == false) {
-//      	System.out.println(alignmentDetails);
-//    		throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
-//      }
-//    }
-//    // b. In the non-tablature case
-//    else {
-//    	setMeterInfo(); // needs file
-//    	handleUnisons(); // needs noteSequence and voiceLabels (WAS: and basicNoteProperties??)
-//    	setBasicNoteProperties(); // needs noteSequence
-//    }
-//  }
-
-	public static void setMaxNumVoices(int num) {
-		MAXIMUM_NUMBER_OF_VOICES = num;
-	}
-
-
-	// a. Constructors and methods that have to do with the completion of a fully operational Transcription 
-	public Transcription() {
-	}
-
-
-//	private void prepareTranscription(Piece groundTruthPiece, Encoding encoding) {
-//		setPiece(groundTruthPiece);
-//
-//		// Create the Transcription based on the ground truth Piece
-//		boolean normaliseTuning = false;
-//		boolean isGroundTruthTranscription = true;
-////		createTranscription(argMidiFile.getName(), argEncodingFile, normaliseTuning, isGroundTruthTranscription);
-//		createTranscription(groundTruthPiece.getName(), encoding, normaliseTuning, isGroundTruthTranscription);
-//	}
 
 
 	/**
@@ -796,6 +709,14 @@ public class Transcription implements Serializable {
 	}
 
 
+	///////////////////////////////
+	//
+	//  C O N S T R U C T O R S
+	//
+	public Transcription() {
+	}
+
+
 	/**
 	 * Constructor for a mapping Transcription.
 	 * 
@@ -856,209 +777,12 @@ public class Transcription implements Serializable {
 	 * @param groundTruthPiece
 	 * @param encoding
 	 */
-	private Transcription(Piece groundTruthPiece, Encoding encoding) {
+	public Transcription(Piece groundTruthPiece, Encoding encoding) {
 		// Create the Transcription based on the ground truth Piece
 		boolean normaliseTuning = false;
 		boolean isGroundTruthTranscription = true;
 		createTranscription(groundTruthPiece, encoding, normaliseTuning, isGroundTruthTranscription, 
 			null, null, Type.AUGMENTED);
-	}
-
-
-	/**
-	 * Creates a new Transcription from the given arguments. 
-	 *
-	 * NBs for the tablature case 
-	 * (1) If isGroundTruthTranscription is <code>true</code>, which is only not the case for a 
-	 *     predicted Transcription, the Transcription is transposed.
-	 * (2) The Tablature object as used in this method (which is NOT the Tablature object that 
-	 *     forms a TablatureTranscriptionPair with the Transcription!), which serves for alignment
-	 *     checking, must be in the same key as the Transcription's piece in order for the alignment
-	 *     (done in handleCoDNotes(), handleCourseCrossings(), and checkAlignment()) to succeed.
-	 *     Therefore, the argument normaliseTuning, needed to create this Tablature object, is 
-	 *     <code>false</code> when creating the ground truth Transcription: the Transcription's
-	 *       Piece is only normalised/transposed after the alignment (in transpose())
-	 *     <code>true</code> when creating a predicted Transcription: the Transcription's Piece 
-	 *       has already been normalised/transposed correctly because it was created from a 
-	 *       normalised Tablature (in TrainingManager.prepareTraining())
-	 * 
-	 * @param p
-	 * @param encoding
-	 * @param normaliseTuning
-	 * @param isGroundTruthTranscription
-	 * @param argVoiceLabels Only none-<code>null</code> when t is Type.PREDICTED
-	 * @param argDurLabels Only none-<code>null</code> when t is Type.PREDICTED
-	 * @param t
-	 */
-	private void createTranscription(Piece p, Encoding encoding, boolean normaliseTuning, 
-		boolean isGrousndTruthTranscription, List<List<Double>> argVoiceLabels, 
-		List<List<Double>> argDurLabels, Type t) {
-
-		// TODO make copy rather than store and retrieve
-		String fPath = "C:/Users/Reinier/Desktop/copy.mid";
-		fPath = MEIExport.rootDir + "copy.mid";
-		MIDIExport.exportMidiFile(p, Arrays.asList(new Integer[]{MIDIExport.DEFAULT_INSTR}),
-			fPath);
-		Piece pUn = MIDIImport.importMidiFile(new File(fPath));
-		new File(fPath).delete();
-
-		setPiece(p);
-		setUnadaptedGTPiece(pUn);
-		String pName = p.getName();
-		setPieceName(pName.contains(MIDIImport.EXTENSION) ? 
-			pName.substring(0, pName.indexOf(MIDIImport.EXTENSION)) : pName);		
-
-		initialiseNoteSequence(); // needs <piece>
-		if (t != Type.PREDICTED) {
-			initialiseVoiceLabels(null); // needs <piece> and <noteSequence>
-		}
-		else {
-			initialiseVoiceLabels(argVoiceLabels); // labels have their final form
-		}
-		Tablature tab = null;
-		// a. Tablature case
-		if (encoding != null) {
-			if (t != Type.PREDICTED) {
-				initialiseDurationLabels(null); // needs <noteSequence>
-			}
-			else {
-				initialiseDurationLabels(argDurLabels); // labels have their final form 
-			}
-			// 1. Check chords 
-			// NB: normaliseTuning is false when creating a ground truth Transcription and true 
-			// when creating a predicted Transcription (see Javadoc for this method)
-			tab = new Tablature(encoding, normaliseTuning);
-			if (checkChords(tab) == false) { // needs <noteSequence>
-				System.out.println(chordsSpecification);
-				throw new RuntimeException("ERROR: Chord error (see console).");
-			}
-			// 2. Align tablature and transcription
-			handleSNUs(tab, t); // needs <noteSequence>, <voiceLabels>, and <durationLabels> (and changes these)
-			handleCourseCrossings(tab, t); // needs <noteSequence>, <voiceLabels>, and <durationLabels> (and changes these)
-			// 3. Do final alignment check
-			if (checkAlignment(tab) == false) {
-				System.out.println(alignmentDetails);
-				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
-			}
-			// 4. Transpose (only if ground truth Transcription; see Javadoc for this method)
-			if (t != Type.PREDICTED) {
-				transpose(tab.getTranspositionInterval());
-			}
-			setChords(); // needs <noteSequence> (finalised)
-			setMeterInfo(tab.getTimeline().getMeterInfo());
-			setKeyInfo(); // must be done after possible transpose()
-			setMinimumDurationLabels(tab);
-		}
-		// b. Non-tablature case
-		else {
-			setMeterInfo();
-			setKeyInfo();
-			handleUnisons(t); // needs <noteSequence> and <voiceLabels> (and changes these)
-			setChords(); // needs <noteSequence> (finalised)
-			setBasicNoteProperties(); // needs <noteSequence>	
-			setNumberOfNewNotesPerChord(); // needs <chords>
-		}
-		// c. In both
-		if (t != Type.PREDICTED) {
-			setChordVoiceLabels(tab); // needs <chords>
-		}
-		else {
-			// TODO Currently no chordVoiceLabels needed in bidir model
-		}
-	}
-
-
-	/**
-	 * Creates a new Transcription from the given Piece and Encoding. 
-	 *
-	 * NBs for the tablature case 
-	 * (1) If isGroundTruthTranscription is <code>true</code>, which is only not the case for a 
-	 *     predicted Transcription, the Transcription is transposed.
-	 * (2) The Tablature object as used in this method (which is NOT the Tablature object that 
-	 *     forms a TablatureTranscriptionPair with the Transcription!), which serves for alignment
-	 *     checking, must be in the same key as the Transcription's piece in order for the alignment
-	 *     (done in handleCoDNotes(), handleCourseCrossings(), and checkAlignment()) to succeed.
-	 *     Therefore, the argument normaliseTuning, needed to create this Tablature object, is 
-	 *     <code>false</code> when creating the ground truth Transcription: the Transcription's
-	 *       Piece is only normalised/transposed after the alignment (in transpose())
-	 *     <code>true</code> when creating a predicted Transcription: the Transcription's Piece 
-	 *       has already been normalised/transposed correctly because it was created from a 
-	 *       normalised Tablature (in TrainingManager.prepareTraining())
-	 * 
-	 * @param p
-	 * @param encoding
-	 * @param normaliseTuning    
-	 * @param isGroundTruthTranscription                        
-	 */
-	private void createTranscriptionOLD(Piece p, Encoding encoding, boolean normaliseTuning, 
-		boolean isGroundTruthTranscription) {
-
-		// TODO make copy rather than store and retrieve
-		String fPath = "C:/Users/Reinier/Desktop/copy.mid";
-		fPath = MEIExport.rootDir + "copy.mid";
-		MIDIExport.exportMidiFile(p, Arrays.asList(new Integer[]{MIDIExport.DEFAULT_INSTR}),
-			fPath);
-		Piece pUn = MIDIImport.importMidiFile(new File(fPath));
-		new File(fPath).delete();
-
-		setPiece(p);
-		setUnadaptedGTPiece(pUn);
-		String pName = p.getName();
-		setPieceName(pName.contains(MIDIImport.EXTENSION) ? 
-			pName.substring(0, pName.indexOf(MIDIImport.EXTENSION)) : pName);		
-				
-		initialiseNoteSequence(); // needs piece	
-		initialiseVoiceLabels(null); // needs piece and noteSequence
-		Tablature tab = null;
-		// a. In the tablature case
-		if (encoding != null) {
-			// The duration labels have their final form when t == Type.PREDICTED
-			if (isGroundTruthTranscription) {
-				initialiseDurationLabels(null); // needs noteSequence
-			}
-
-			// 1. Check chords 
-			// NB: normaliseTuning is false when creating a ground truth Transcription and true 
-			// when creating a predicted Transcription (see Javadoc for this method)
-			tab = new Tablature(encoding, normaliseTuning);
-			if (checkChords(tab) == false) { // needs noteSequence
-				System.out.println(chordsSpecification);
-				throw new RuntimeException("ERROR: Chord error (see console).");
-			}
-			// 2. Align tablature and transcription
-			handleSNUs(tab, null); // needs noteSequence, voiceLabels, and durationLabels
-			handleCourseCrossings(tab, null); // needs noteSequence, voiceLabels, and durationLabels
-			// 3. Do final alignment check
-			if (checkAlignment(tab) == false) {
-				System.out.println(alignmentDetails);
-				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
-			}
-			// 4. Transpose (only if ground truth Transcription; see Javadoc for this method)
-			if (isGroundTruthTranscription) {
-				transpose(tab.getTranspositionInterval());
-			}
-			setMeterInfo(tab.getTimeline().getMeterInfo());
-//			setMeterInfo(tab.getTimeline().getMeterInfoOBS());
-			setKeyInfo(); // must be done after possible transpose()
-			setChords(); // sets the final version of the transcription chords
-			setMinimumDurationLabels(tab);
-		}
-		// b. In the non-tablature case
-		else {
-			setMeterInfo();
-			setKeyInfo();
-			handleUnisons(null); // needs noteSequence and voiceLabels
-			setBasicNoteProperties(); // needs noteSequence	
-			setChords(); // sets the final version of the transcription chords
-			setNumberOfNewNotesPerChord(); // needs transcriptionChords
-		}
-		// c. In both
-		if (isGroundTruthTranscription) {
-			setChordVoiceLabels(tab); // needs transcriptionChords
-		}
-		else {
-			// TODO Currently no chordVoiceLabels needed in bidir model
-		}
 	}
 
 
@@ -1132,214 +856,158 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Constructor for the ground truth Transcription.
-	 *                              
-	 * @param argMidiFile
-	 * @param argEncodingFile
-	 */
-	private Transcription(File argMidiFile, File argEncodingFile, boolean bla) {
-		// Create and set the ground truth Piece
-		Piece groundTruthPiece = MIDIImport.importMidiFile(argMidiFile);
-//		long[][] rah = groundTruthPiece.getMetricalTimeLine().getTimeSignature();
-//		for (long[] l : rah) {
-//			System.out.println(Arrays.toString(l));
-//		}
-//		KeyMarker r = groundTruthPiece.getMetricalTimeLine().getKeyMarker(new Rational(0, 4));
-//		System.out.println(r);
-//		System.exit(0);		
-		setPiece(groundTruthPiece);
-		
-		// Create the Transcription based on the ground truth Piece
-		boolean normaliseTuning = false;
-		boolean isGroundTruthTranscription = true;
-//		createTranscription(argMidiFile.getName(), argEncodingFile, normaliseTuning, isGroundTruthTranscription);
-	}
-
-
-	/**
-	 * Constructor. Creates a new Transcription out of the given arguments; sets the class fields pieceName, file, 
-	 * piece, noteSequence, voiceLabels, and
-	 *  In the tablature case: sets the class field durationLabels, aligns the Tablature and Transcription (and 
-	 *     sets the class field voicesCoDNotes), checks the encoding for alignment errors (if any are found, 
-	 *     a RuntimeException is thrown), and transposes the Transcription.
-	 *   In the non-tablature case (where argEncodingFile is <code>null</code>): sets the class fields meterInfo,
-	 *   handles unisons (and sets the class field equalDurationUnisonsInfo), and sets the class field 
-	 *   basicNoteProperties.
-	 *  
-	 * Applies to the bi-directional model only.
+	 * Makes an empty Transcription with the given time signature, key signature, and number of voices.
 	 *
-	 * @param argMidiFile
-	 * @param argEncodingFile
-	 * @param argPiece
-	 * @param argVoiceLabels
-	 * @param argDurationLabels
-	 * @param argVoicesCoDNotes
-	 * @param argEqualDurationUnisonsInfo 
+	 * @param mtl
+	 * @param numberOfVoices
+	 * @return
 	 */
-	private Transcription(File argMidiFile, File argEncodingFile, Piece argPiece, List<List<Double>> argVoiceLabels,
-		List<List<Double>> argDurationLabels, List<Integer[]> argVoicesCoDNotes, List<Integer[]> 
-		argEqualDurationUnisonsInfo, boolean bla) {
+	// TODO copied from TestManager(); replace by simpler list method in TestManager
+	public Transcription (MetricalTimeLine mtl, /*TimeSignature timeSig,
+	 	KeyMarker keyMarker,*/ int numberOfVoices) {
+//		newTranscription = new Transcription();
+//		Transcription newTranscription = new Transcription();
+//		NotationSystem notationSystem = newTranscription.createNotationSystem();
 
-		setPieceName(argMidiFile.getName()); 
-//		setFile(argMidiFile);
-		setPiece(argPiece);
+		Piece p = new Piece();
+		p.setMetricalTimeLine(mtl);
+		setPiece(p);
+//		newTranscription.setPiece(p);
+		NotationSystem notationSystem = getPiece().createNotationSystem();
+//		NotationSystem notationSystem = newTranscription.getPiece().createNotationSystem();
 
-		initialiseNoteSequence(); // needs piece    
-		setVoiceLabels(argVoiceLabels);
-		// a. In the tablature case
-		if (argEncodingFile != null) {
-			setDurationLabels(argDurationLabels);
-			// 1. Check chords. The argument normaliseTuning must be set to true (because argPiece
-			// has already been normalised) for the final alignment check below
-			Tablature tablature = new Tablature(argEncodingFile, true);
-			if (checkChords(tablature) == false) { // needs noteSequence
-				System.out.println(chordsSpecification);
-				throw new RuntimeException("ERROR: Chord error (see console).");
+		// Add time and key signatures
+//		MetricalTimeLine mtl = newTranscription.getPiece().getMetricalTimeLine();
+
+//		TimeSignatureMarker timeSigMarker = 
+//			new TimeSignatureMarker(timeSig.getNumerator(), timeSig.getDenominator(), 
+//			new Rational(0, 1));
+//		timeSigMarker.setTimeSignature(timeSig);
+//		mtl.add(timeSigMarker);
+//		mtl.add(keyMarker);
+
+		// Create staves
+		for (int i = 0; i < numberOfVoices; i++) { 
+			NotationStaff staff = new NotationStaff(notationSystem);
+			// Ensure correct cleffing for each staff: G-clef for the upper two and F-clef for the lower three
+			if (i < 2) {
+				staff.setClefType('g', -1, 0);
 			}
-			// 2. Align tablature and transcription
-			handleSNUs(tablature, null); // needs noteSequence, voiceLabels, and durationLabels 
-//			handleCoDNotes(tablature, false); // needs noteSequence, voiceLabels, and durationLabels 
-			setVoicesSNU(argVoicesCoDNotes);
-			handleCourseCrossings(tablature, null); // needs noteSequence, voiceLabels, and durationLabels
-//			handleCourseCrossings(tablature, false); // needs noteSequence, voiceLabels, and durationLabels
-			// 3. Do final alignment check
-			if (checkAlignment(tablature) == false) {
-				System.out.println(alignmentDetails);
-					throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
+			else {
+				staff.setClefType('f', 1, 0);
 			}
-			// 4. Transpose
-//			transpose(tablature.getTranspositionInterval());
+			notationSystem.add(staff);
+			NotationVoice notationVoice = new NotationVoice(staff);
+			staff.add(notationVoice);
 		}
-		// b. In the non-tablature case
-		else {
-//			setMeterInfo(argMidiFile); // needs file
-			handleUnisons(null); // needs noteSequence and voiceLabels
-//			handleUnisons(false); // needs noteSequence and voiceLabels
-			setVoicesEDU(argEqualDurationUnisonsInfo);
-			setBasicNoteProperties(); // needs noteSequence
-		}   
+
+		// Set the initial NoteSequence and voice labels
+		initialiseNoteSequence();
+//		newTranscription.initialiseNoteSequence();
+		initialiseVoiceLabels(null);
+//		newTranscription.initialiseVoiceLabels(null);
+
+//		return newTranscription;
 	}
 
 
 	/**
-	 * Constructor. Creates a new Transcription out of the given arguments; sets the class fields piece, 
-	 * noteSequence, voiceLabels, and
-	 *  In the tablature case: sets the class field durationLabels, aligns the Tablature and Transcription (and 
-	 *     sets the class field voicesCoDNotes), checks the encoding for alignment errors (if any are found, 
-	 *     a runTimeException is thrown), and transposes the Transcription.
-	 *   In the non-tablature case: sets the class fields meterInfo, handles unisons (and sets the class field
-	 *     equalDurationUnisonsInfo), and sets the class field basicNoteProperties.
-	 *  
-	 * Applies to the bi-directional model only.
+	 * Creates a new Transcription from the given arguments. 
 	 *
-	 * @param tablature
-	 * @param argPiece
-	 * @param argVoiceLabels
-	 * @param argDurationLabels
-	 * @param argVoicesCoDNotes
-	 * @param argMeterInfo
-	 * @param argEqualDurationUnisonsInfo 
+	 * NBs for the tablature case 
+	 * (1) If isGroundTruthTranscription is <code>true</code>, which is only not the case for a 
+	 *     predicted Transcription, the Transcription is transposed.
+	 * (2) The Tablature object as used in this method (which is NOT the Tablature object that 
+	 *     forms a TablatureTranscriptionPair with the Transcription!), which serves for alignment
+	 *     checking, must be in the same key as the Transcription's piece in order for the alignment
+	 *     (done in handleCoDNotes(), handleCourseCrossings(), and checkAlignment()) to succeed.
+	 *     Therefore, the argument normaliseTuning, needed to create this Tablature object, is 
+	 *     <code>false</code> when creating the ground truth Transcription: the Transcription's
+	 *       Piece is only normalised/transposed after the alignment (in transpose())
+	 *     <code>true</code> when creating a predicted Transcription: the Transcription's Piece 
+	 *       has already been normalised/transposed correctly because it was created from a 
+	 *       normalised Tablature (in TrainingManager.prepareTraining())
+	 * 
+	 * @param p
+	 * @param encoding
+	 * @param normaliseTuning
+	 * @param isGroundTruthTranscription
+	 * @param argVoiceLabels Only none-<code>null</code> when t is Type.PREDICTED
+	 * @param argDurLabels Only none-<code>null</code> when t is Type.PREDICTED
+	 * @param t
 	 */
-	private Transcription(Tablature tablature, Piece argPiece, List<List<Double>> argVoiceLabels, List<List<Double>> 
-		argDurationLabels, List<Integer[]> argVoicesCoDNotes, List<Integer[]> argMeterInfo, List<Integer[]> 
-		argEqualDurationUnisonsInfo) {
-		setPieceName("");
-		setPiece(argPiece);
-		initialiseNoteSequence(); // needs piece    
-		setVoiceLabels(argVoiceLabels);
-		// a. In the tablature case
-		if (tablature != null) {
-			setDurationLabels(argDurationLabels);
-			// 1. Check chords
-			if (checkChords(tablature) == false) { // needs noteSequence
+	private void createTranscription(Piece p, Encoding encoding, boolean normaliseTuning, 
+		boolean isGrousndTruthTranscription, List<List<Double>> argVoiceLabels, 
+		List<List<Double>> argDurLabels, Type t) {
+
+		setPiece(p);
+		setUnadaptedGTPiece(SerializationUtils.clone(p));
+		String pName = p.getName();
+		setPieceName(pName.contains(MIDIImport.EXTENSION) ? pName.substring(
+			0, pName.indexOf(MIDIImport.EXTENSION)) : pName);		
+
+		initialiseNoteSequence(); // needs <piece>
+		if (t != Type.PREDICTED) {
+			initialiseVoiceLabels(null); // needs <piece> and <noteSequence>
+		}
+		else {
+			initialiseVoiceLabels(argVoiceLabels); // labels have their final form
+		}
+		Tablature tab = null;
+		// a. Tablature case
+		if (encoding != null) {
+			if (t != Type.PREDICTED) {
+				initialiseDurationLabels(null); // needs <noteSequence>
+			}
+			else {
+				initialiseDurationLabels(argDurLabels); // labels have their final form 
+			}
+			// 1. Check chords 
+			// NB: normaliseTuning is false when creating a ground truth Transcription and true 
+			// when creating a predicted Transcription (see Javadoc for this method)
+			tab = new Tablature(encoding, normaliseTuning);
+			if (checkChords(tab) == false) { // needs <noteSequence>
 				System.out.println(chordsSpecification);
 				throw new RuntimeException("ERROR: Chord error (see console).");
 			}
 			// 2. Align tablature and transcription
-			handleSNUs(tablature, null); // needs noteSequence, voiceLabels, and durationLabels 
-//			handleCoDNotes(tablature, false); // needs noteSequence, voiceLabels, and durationLabels 
-			setVoicesSNU(argVoicesCoDNotes);
-			handleCourseCrossings(tablature, null); // needs noteSequence, voiceLabels, and durationLabels
-//			handleCourseCrossings(tablature, false); // needs noteSequence, voiceLabels, and durationLabels
+			handleSNUs(tab, t); // needs <noteSequence>, <voiceLabels>, and <durationLabels> (and changes these)
+			handleCourseCrossings(tab, t); // needs <noteSequence>, <voiceLabels>, and <durationLabels> (and changes these)
 			// 3. Do final alignment check
-			if (checkAlignment(tablature) == false) {
+			if (checkAlignment(tab) == false) {
 				System.out.println(alignmentDetails);
 				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
 			}
-			// 4. Transpose
-			transpose(tablature.getTranspositionInterval());
+			// 4. Transpose (only if ground truth Transcription; see Javadoc for this method)
+			if (t != Type.PREDICTED) {
+				transpose(tab.getTranspositionInterval());
+			}
+			setChords(); // needs <noteSequence> (finalised)
+			setMeterInfo(tab.getTimeline().getMeterInfo());
+			setKeyInfo(); // must be done after possible transpose()
+			setMinimumDurationLabels(tab);
 		}
-		// b. In the non-tablature case
+		// b. Non-tablature case
 		else {
-			setMeterInfo(argMeterInfo);
-			handleUnisons(null); // needs noteSequence and voiceLabels
-//			handleUnisons(false); // needs noteSequence and voiceLabels
-			setVoicesEDU(argEqualDurationUnisonsInfo);
-			setBasicNoteProperties(); // needs noteSequence
-		}   
+			setMeterInfo();
+			setKeyInfo();
+			handleUnisons(t); // needs <noteSequence> and <voiceLabels> (and changes these)
+			setChords(); // needs <noteSequence> (finalised)
+			setBasicNoteProperties(); // needs <noteSequence>	
+			setNumberOfNewNotesPerChord(); // needs <chords>
+		}
+		// c. In both
+		if (t != Type.PREDICTED) {
+			setChordVoiceLabels(tab); // needs <chords>
+		}
+		else {
+			// TODO Currently no chordVoiceLabels needed in bidir model
+		}
 	}
-
-
-	private Transcription(Piece argPiece, List<List<Double>> voiceLabels, List<List<Double>> durationLabels) {
-		setPiece(argPiece);
-		initialiseNoteSequence();    
-		setVoiceLabels(voiceLabels);
-		setDurationLabels(durationLabels);
-//		handleCoDNotes(tablature, false);
-//		setVoicesCoDNotes(voicesCoDNotes);
-//		handleCourseCrossings(tablature, false);
-	}
-
-
-//  /**
-//   * Turns the given Tablature into a Transcription, using the given voices and durations.
-//   *  
-//   * @param tablature
-//   * @param voices
-//   * @param durations
-//   * @param numberOfVoices
-//   */
-//  //
-//  public Transcription(Tablature tablature, List<List<Integer>> voices, List<Rational[]> durations,
-//  	int numberOfVoices) {
-//  	
-//  	// Make an empty Piece with the given number of voices
-//  	Piece piece = new Piece();
-//    NotationSystem system = piece.createNotationSystem();
-//    for (int i = 0; i < numberOfVoices; i++) {
-//      NotationStaff staff = new NotationStaff(system); 
-//      system.add(staff);
-//      NotationVoice voice = new NotationVoice(staff); 
-//      staff.add(voice);
-//      
-//      Note voice0n0 = Transcription.createNote(67, new Rational(0, 4), new Rational(1, 2));
-//      voice.add(voice0n0); 
-//    }
-//    
-//    // Iterate through the Tablature, convert each TabSymbol into a note, and add it to the given voice
-//    Integer[][] btp = tablature.getBasicTabSymbolProperties();
-//    for (int i = 0; i < btp.length; i++) {
-//    	// Create a Note from the TabSymbol at index i
-//    	int pitch = btp[i][Tablature.PITCH];
-//    	Rational metricTime = new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-//    	Rational metricDuration = durations.get(i)[0]; // [0] is possible because each element in durations currently contains only one Rational
-//    	Note note = createNote(pitch, metricTime, metricDuration);
-//    	
-//    	// Add the Note to each voice in currentVoices
-//    	List<Integer> currentVoices = voices.get(i);
-//    	for (int v : currentVoices) {
-//    		NotationVoice voice = piece.getScore().get(v).get(0);
-//    		voice.add(note);
-//    	}	
-//    }
-//    
-//    // Set the Piece in the Transcription
-//    setPiece(piece);
-//  }
 
 
 	public static void setMaximumNumberOfVoices(int arg) {
-		MAXIMUM_NUMBER_OF_VOICES = arg;
+		MAX_NUM_VOICES = arg;
 	}
 
 
@@ -1619,80 +1287,20 @@ public class Transcription implements Serializable {
 	
 
 	/**
-	 * Finds the voice the given note is assigned to.
+	 * Finds the voice the given note is assigned to in the Piece.
 	 *  
 	 * @param note 
 	 * @return
 	 */
-	// TESTED
+	// TESTED (the same for tablature- and non-tablature case)
 	int findVoice(Note note) {
-//		System.out.println(":::" + note);
-		int voice = -1;
-		// NB: A NotationSystem has as many Staffs as the Transcription it belongs to has voices; each Staff thus 
-		// represents a voice. The Staffs are numbered from top (no. 0) to bottom (no. 4, depending on 
-		// MAXIMUM_NUMBER_OF_VOICES).
-		// For each Staff in the NotationSystem: 
 		NotationSystem ns = getPiece().getScore();
-		outerLoop: for (int i = 0; i < ns.size(); i++) {
-//			System.out.println("i = " + i);
-			NotationStaff staff = ns.get(i);
-			NotationVoice nv = staff.get(0);
-//			System.out.println("i = " + i);
-//			System.out.println(nv.contains(note));		
-			// a. Get the contents of the Staff
-			Containable[] contentsOfStaff = staff.getContentsRecursive();
-			// b. Look at each Containable in the contents. If a Containable matches the (unique) note: return i, the
-			// number of the Staff that note is on (and thus the number of the voice it belongs to), and break from the
-			// outer loop
-//			System.out.println(Arrays.asList(contentsOfStaff));
-			for (int j = 0; j < contentsOfStaff.length; j++) {
-//				System.out.println(contentsOfStaff[j]);
-//				System.exit(0);
-				if (contentsOfStaff[j] == note) {
-//					System.out.println(":::" + contentsOfStaff[j]);
-					voice = i;
-					break outerLoop;
-				}
-			}
-//			System.out.println();
-		}
-		return voice;
-	}
-
-
-	/**
-	 * Finds the voice the given Note in the given NotationSystem belongs to.
-	 *  
-	 * @param note 
-	 * @param ns
-	 * @return
-	 */
-	public int findVoiceOLD(Note note, NotationSystem ns) {
-		int voice = -1;
-		// NB: A NotationSystem has as many Staffs as the Transcription it belongs to has voices; each Staff thus 
-		// represents a voice. The Staffs are numbered from top (no. 0) to bottom (no. 4, depending on 
-		// MAXIMUM_NUMBER_OF_VOICES).
-		// For each Staff in the NotationSystem: 
-		outerLoop: for (int i = 0; i < ns.size(); i++) {
-			NotationStaff staff = ns.get(i);
-			// a. Get the contents of the Staff
-			Containable[] contentsOfStaff = staff.getContentsRecursive();
-			// b. Look at each Containable in the contents. If a Containable matches the (unique) note: return i, the
-			// number of the Staff that note is on (and thus the number of the voice it belongs to), and break from the
-			// outer loop
-			for (int j = 0; j < contentsOfStaff.length; j++) {
-				if (contentsOfStaff[j] == note) {
-					voice = i;
-					break outerLoop;
-				}
+		for (int i = 0; i < ns.size(); i++) {
+			if (ns.get(i).get(0).containsRecursive(note)) {
+				return i;
 			}
 		}
-		return voice;
-	}
-
-
-	public void initialiseNoteSequenceNEW() {
-		
+		return -1;
 	}
 
 
@@ -1722,107 +1330,87 @@ public class Transcription implements Serializable {
 	 */
 	// TESTED (for both tablature- and non-tablature case simultaneously)
 	public void initialiseNoteSequence() {
-		NoteSequence initialNoteSeq = new NoteSequence(new NoteTimePitchComparator());
-		NotationSystem ns = getPiece().getScore();
-//		NotationSystem notationSystem = piece.getScore();
-
-		// 1. Fill initialNoteSeq; the NoteTimePitchComparator orders the Notes chord per chord,
-		// from low to high
-		Collection<Containable> contents = ns.getContentsRecursiveList(null);
-		for (Containable c : contents) {
-			if (c instanceof Note) { 
-				initialNoteSeq.add((Note) c);
-			}
+		populateNoteSequence();
+		if (getNoteSequence().size() != 0) {
+			uniformiseNoteSequence();
 		}
-		System.out.println("rrrr");
-		System.out.println(ns.get(3).get(0).get(0).get(0) == initialNoteSeq.get(0));
-//		System.exit(0);
-		
-		getTranscriptionChordsInternal() gets the chords from the latest NoteSequence and is used in
-
-		- checkChords() --> getOccurrencesOfPitchesInChord()
-		  - used in createTranscription(), tab case -- non-final NoteSequence (SNUs and CCs not handled yet)
-			
-		- handleSNUs() --> getSNUInfo()
-		  - used in createTranscription(), tab case -- non-final NoteSequence (SNUs and CCs not handled yet)
-
-		- handleUnisons()
-		  - used in createTranscription(), non-tab case -- non-final NoteSequence (unisons not handled yet)
-
-		- setBasicNoteProperties()
-		  - used in createTranscription(), non-tab case -- final NoteSequence (unisons handled)
-		  - used in transposeNonTab(); not so important, tab-as-non-tab-case
-
-		- setTranscriptionChordsFinal()
-		  - used in createTranscription()
-		  - used in transposeNonTab(); not so important, tab-as-non-tab-case
-
-		// 2. Check for all equal-pitch pairs whether the Notes are added to the NoteSequence in the correct order.
-		// This is necessary because the NoteTimePitchComparator does not handle unisons and SNUs consistently in 
-		// that sometimes the note in the lower voice is added first, and sometimes the note in the upper voice
-		if (initialNoteSeq.size() != 0) {
-			// For each note but the last:
-			for (int currNoteInd = 0; currNoteInd < (initialNoteSeq.size() - 1); currNoteInd++) {
-				// 1. Get the Note's pitch, onsetTime, and the voice it belongs to 
-				Note currNote = initialNoteSeq.getNoteAt(currNoteInd);
-//				System.out.println(currNote);
-				int currNotePitch = currNote.getMidiPitch();
-				Rational currNoteOnsetTime = currNote.getMetricTime();
-				int currNoteVoice = findVoice(currNote);
-//				int currNoteVoice = findVoice(currNote, ns);
-//				System.out.println(currNoteVoice);
-//				System.exit(0);
-
-				// 2. Check the remainder of initialNoteSeq for another Note with the same onsetTime and pitch. Break 
-				// from inner for-loop when the onsetTime of nextNote becomes greater than that of currNote
-				for (int nextNoteInd = currNoteInd + 1; nextNoteInd < initialNoteSeq.size(); nextNoteInd++) {
-					Note nextNote = initialNoteSeq.getNoteAt(nextNoteInd);
-					// Same onsetTime? Check whether pitch is also the same  
-					if (nextNote.getMetricTime().equals(currNoteOnsetTime)) {
-						// Same pitch? nextNote is the complement sought; swap if necessary and break
-						// NB: since an event may contain more than one equal-pitch-pair, the ENTIRE process must be repeated
-						// from the start until the sequence is correct. (E.g., an event with three equal pitches that are
-						// added to the NoteSequence in voice order 1-2-3 becomes 2-1-3 after one iteration of both for-loops,
-						// then 3-1-2, and finally 3-2-1.) Thus, when notes are swapped: break from inner for-loop and start
-						// again in outer for-loop
-						if (nextNote.getMidiPitch() == currNotePitch) {
-							int nextNoteVoice = findVoice(nextNote);
-//							int nextNoteVoice = findVoice(nextNote, ns);
-							// If currentNote is in the higher voice (has the lower voice number): swap 
-							if (currNoteVoice < nextNoteVoice) {
-								initialNoteSeq.swapNotes(currNoteInd, nextNoteInd);
-								currNoteInd = -1;
-								break;
-							}    		    
-						}
-					}
-					// Is onsetTime of nextNote greater than that of currentNote? Break and continue with the next currentNote
-					else {
-						break; 
-					}
-				}
-			}
-		}
-		// 3. Set noteSequence 
-		setNoteSequence(initialNoteSeq);
 	}
 
 
 	/**
-	 * Arranges all Notes in the Transcription in chords. The Transcription is traversed from left to right, 
-	 * and the chords themselves are arranged starting with the lowest-voice Note. Rest events are not included
-	 * in the returned list.
-	 * NB: Is only called in the Transcription creation. On a complete Transcription, getTranscriptionChords()
-	 *     must be called.
-	 *     
-	 * Arranges the NoteSequence in its current form into chords. Depending on where this method is called, the 
-	 * NoteSequence is in its initial form, its final form, or in between. If the NoteSequence is in its final
-	 * form, it is more efficient to call getChords() immediately.
+	 * Populates the NoteSequence, i.e, adds the notes from the Piece ordered (1) by onset 
+	 * time (lower first), and (2) by pitch (lower first).
+	 */
+	// TESTED
+	void populateNoteSequence() {
+		// The NoteTimePitchComparator ensures that, when adding a note to the NoteSequence, 
+		// it is ordered (1) by onset time (lower first), and (2) by pitch (lower first). 
+		// NB If no Comparator is used, it is not guaranteed that the NoteSequence will 
+		// contain the notes in the sequence they are added
+		NoteSequence noteSeq = new NoteSequence(new NoteTimePitchComparator());
+		getPiece().getScore().getContentsRecursiveList(null).stream()
+			.filter(c -> c instanceof Note)
+			.forEach(c -> noteSeq.add((Note) c));
+		setNoteSequence(noteSeq);
+//		if (noteSeq.get(12).getMetricDuration().equals(new Rational(1, 4)) &&
+//			noteSeq.get(13).getMetricDuration().equals(new Rational(1, 8))) {
+//			System.out.println("12-13 incorrect --> OK");
+//		}
+//		if (noteSeq.get(16).getMetricDuration().equals(new Rational(1, 2)) &&
+//			noteSeq.get(17).getMetricDuration().equals(new Rational(1, 4))) {
+//			System.out.println("16-17 correct --> OK");
+//		}
+	}
+
+
+	/**
+	 * Uniformises the NoteSequence, i.e., orders any equal-pitch notes that have the same 
+	 * onset time by voice (lower first).  
+	 */
+	// TESTED
+	void uniformiseNoteSequence() {
+		NoteSequence noteSeq = getNoteSequence();
+		List<List<Note>> notes = getChordsFromNoteSequence();
+		for (List<Note> chord: notes) {
+			// If the chord contains equal-pitch notes: swap incorrectly ordered ones. 
+			// Example for chord with pitches [10 20 10 10] and voices [1 0 2 3] (should be [3 0 2 1])
+			// i = 0, j = 1: OK
+			//        j = 2: swap to [2 0 1 3]; restart at i = 0
+			//        j = 1, 2: OK
+			//        j = 3: swap to [3 0 1 2]; restart at i = 0
+			//        j = 1, 2, 3: OK
+			// i = i, j = 2, 3: OK
+			// i = 2, j = 3: swap to: [3 0 2 1]; restart at i = 2 
+			// i = 2, j = 3: OK
+			if (chord.size() > getPitchesInChord(chord).stream().distinct().collect(Collectors.toList()).size()) {
+				for (int i = 0; i < chord.size() - 1; i++) {
+					Note n = chord.get(i);
+					int v = findVoice(n);
+					for (int j = i+1; j < chord.size(); j++) {
+						Note nextN = chord.get(j);
+						if (n.getMidiPitch() == nextN.getMidiPitch() && v < findVoice(nextN)) {
+							Collections.swap(chord, i, j);
+							noteSeq.swapNotes(noteSeq.indexOf(n), noteSeq.indexOf(nextN));
+							i = i-1; // start again at first note of chord 
+							break;
+						}
+					}				
+				}
+			}
+		}
+		setNoteSequence(noteSeq);
+	}
+
+
+	/**
+	 * Arranges the NoteSequence in its current form (populated, uniformised, or final -- depending on 
+	 * where this method is called) into chords. 
+	 * NB If the NoteSequence is in its final form, getChords() should be called.
 	 *  
 	 * @return
 	 */
-	// TESTED (through getTranscriptionChords())
-	List<List<Note>> getNoteSequenceChords() {
+	// TESTED
+	List<List<Note>> getChordsFromNoteSequence() {
 		List<List<Note>> ch = new ArrayList<List<Note>>();
 		NoteSequence noteSeq = getNoteSequence();
 
@@ -1858,52 +1446,50 @@ public class Transcription implements Serializable {
 
 
 	/** 
-	 * Initialises the voice labels. 
-	 * 
-	 * If <code>null</code> is given as argument, the voice labels are initialised from the initial, 
-	 * unadapted NoteSequence; else, they are initialised with the given labels.
-	 * 
-	 * Each voice label is a binary vector containing MAXIMUM_NUMBER_OF_VOICES elements, where the 
-	 * position of the 1.0 indicates the voice encoded (index 0 denotes the highest voice).
-	 * 
+	 * Initialises the voice labels<br>
+	 * <ul>
+	 * <li>If no argument (i.e., <code>null</code>) is given: from the initialised NoteSequence.</li>
+	 * <li>Else, with the given labels.</li>
+	 * </ul> 
+	 *
 	 * NB: Must be called after initialiseNoteSequence().
 	 * 
-	 * @param vl The voice labels to initialise with.
+	 * @param argVl The voice labels to initialise with.
 	 */
-	// TESTED (for both tablature- and non-tablature case simultaneously)
-	public void initialiseVoiceLabels(List<List<Double>> vl) {
-		if (vl == null) {
-			List<List<Double>> initialVoiceLabels = new ArrayList<List<Double>>(); 
-
-			// For every Note in noteSeq
-			NoteSequence initialNoteSeq = getNoteSequence();
-			NotationSystem system = getPiece().getScore();
-			for (int i = 0; i < initialNoteSeq.size(); i++) {
-				Note note = initialNoteSeq.getNoteAt(i);
-				// 1. Create a voice label for the Note
-				List<Double> currentVoiceLabel = new ArrayList<Double>();
-
-				// 2. Extract the voice the Note is in and fill currentVoiceLabel
-//				NotationSystem system = piece.getScore();
-				int voice = findVoice(note);
-//				int voice = findVoice(note, system);
-				for (int j = 0; j < MAXIMUM_NUMBER_OF_VOICES; j++) {
-					if (voice == j) {
-						currentVoiceLabel.add(j, 1.0);
-					}
-					else {
-						currentVoiceLabel.add(j, 0.0);
-					}
-				}
-
-				// 3. Add currentVoiceLabel to initialVoiceLabels 
-				initialVoiceLabels.add(currentVoiceLabel);
-			}
-			// Set voiceLabels
-			setVoiceLabels(initialVoiceLabels);
+	// TESTED
+	void initialiseVoiceLabels(List<List<Double>> argVl) {
+		if (argVl == null) {
+			List<List<Double>> vl = new ArrayList<List<Double>>(); 
+			getNoteSequence().forEach(n -> vl.add(createVoiceLabel(findVoice(n))));
+			setVoiceLabels(vl);
 		}
 		else {
-			setVoiceLabels(vl);
+			setVoiceLabels(argVl);
+		}
+	}
+
+
+	/**
+	 * Initialises the duration labels<br>
+	 * <ul>
+	 * <li>If no argument (i.e., <code>null</code>) is given: from the initialised NoteSequence.</li>
+	 * <li>Else, with the given labels.</li>
+	 * </ul> 
+	 * 
+	 * NB: Tablature case only; must be called after initialiseNoteSequence().
+	 * 
+	 * @param argDl The duration labels to initialise with.
+	 */
+	// TESTED
+	void initialiseDurationLabels(List<List<Double>> argDl) {
+		if (argDl == null) {
+			List<List<Double>> dl = new ArrayList<List<Double>>();
+			getNoteSequence().forEach(n -> 
+				dl.add(createDurationLabel(Tablature.getTabSymbolDur(n.getMetricDuration()))));
+			setDurationLabels(dl);
+		}
+		else {
+			setDurationLabels(argDl);
 		}
 	}
 
@@ -1923,7 +1509,7 @@ public class Transcription implements Serializable {
 	 * @param dl The duration labels to initialise with.
 	 */
 	// TESTED (for both tablature- and non-tablature case simultaneously)
-	void initialiseDurationLabels(List<List<Double>> dl) {
+	void initialiseDurationLabelsOLD(List<List<Double>> dl) {
 		if (dl == null) {
 			List<List<Double>> initialDurationLabels = new ArrayList<List<Double>>();
 
@@ -2880,12 +2466,12 @@ public class Transcription implements Serializable {
 						voicesEDU.set(indLower, new Integer[]{first, second, indUpper});
 						voicesEDU.set(indUpper, new Integer[]{first, second, indLower});
 					}
-					
+
 					// 3. Adapt NoteSequence
 					if (durLower.isLess(durUpper)) {
 						noteSeq.swapNotes(indLower, indUpper);
 					}
-					
+
 					// 4. Adapt voice labels
 					if (durLower.isLess(durUpper)) {
 						if (adaptLabels) {
@@ -3037,7 +2623,7 @@ public class Transcription implements Serializable {
 
 	// TESTED (together with getChords())
 	void setChords() {
-		chords = getNoteSequenceChords();
+		chords = getChordsFromNoteSequence();
 	}
 
 
@@ -3045,12 +2631,17 @@ public class Transcription implements Serializable {
 	public List<List<Note>> getChords() {
 		// If chords has not yet been finalised
 		if (chords == null) {
-			return getNoteSequenceChords();
+			return getChordsFromNoteSequence();
 		}
 		// If chords has been finalised
 		else {
 			return chords;
 		}
+	}
+
+
+	public static void setMaxNumVoices(int num) {
+		MAX_NUM_VOICES = num;
 	}
 
 
@@ -3155,6 +2746,13 @@ public class Transcription implements Serializable {
 	}
 
 
+	/**
+	 * Gets the voice labels. Each voice label is a one-hot vector containing <code>MAX_NUM_VOICES</code>
+	 * elements; the index of the 1.0 indicates the voice encoded (where 0 denotes the highest voice). 
+	 * NB In the case of a SNU, there are two voices encoded (i.e., the vector is a 'two-hot' vector). 
+	 * 
+	 * @return
+	 */
 	// TESTED (for both tablature- and non-tablature case)
 	public List<List<Double>> getVoiceLabels() {
 		return voiceLabels;
@@ -3167,6 +2765,15 @@ public class Transcription implements Serializable {
 	}
 
 
+	/**
+	 * Gets the duration labels. Each duration label is a one-hot vector containing <code>MAX_DUR</code>
+	 * elements; the index of the 1.0 indicates the full duration (as a TabSymbol duration) encoded 
+	 * (where 0 denotes the shortest TabSymbol duration, i.e., that of a semifusa (3)). 
+	 * NB In the case of a SNU, if the SNU note has two durations, there are two durations encoded 
+	 * (i.e., the vector is a 'two-hot' vector). 
+	 * 
+	 * @return
+	 */
 	// TESTED
 	public List<List<Double>> getDurationLabels() {
 		return durationLabels;
@@ -7359,7 +6966,7 @@ public class Transcription implements Serializable {
 		List<List<Integer>> notesPerVoice = new ArrayList<List<Integer>>();
 
 		// For each voice
-		for (int i = 0; i < MAXIMUM_NUMBER_OF_VOICES; i++) {
+		for (int i = 0; i < MAX_NUM_VOICES; i++) {
 			int currentVoice = i;
 			List<Integer> notesInCurrentVoice = new ArrayList<Integer>();
 			// For each note: check whether the note at index j belongs to currentVoice. If so, add it to notesInCurrentVoice 
@@ -7530,9 +7137,7 @@ public class Transcription implements Serializable {
 	 * Gets the pitches in the given chord. Element 0 of the List represents the lowest note's pitch,
 	 * element 1 the second-lowest note's, etc. Sustained notes are not included. 
 	 * 
-	 * NB: This method applies only to the non-tablature case
-	 * 
-	 * @param chordIndex
+	 * @param chord
 	 * @return
 	 */
 	// TESTED
@@ -7574,7 +7179,7 @@ public class Transcription implements Serializable {
 		// Use the no-final version of the chords when called in Transcription creation
 		if (getChords() == null) {
 //		if (transcriptionChordsFinal == null) {
-			transcriptionChord = getNoteSequenceChords().get(chordIndex);
+			transcriptionChord = getChordsFromNoteSequence().get(chordIndex);
 		}
 		// Otherwise use external version
 		else {
@@ -7726,7 +7331,7 @@ public class Transcription implements Serializable {
 	private Integer[][] getSNUInfoOLD(List<List<TabSymbol>> tablatureChords, int chordIndex) {
 		Integer[][] SNUInfo = null;
 
-		List<List<Note>> ch = getNoteSequenceChords();
+		List<List<Note>> ch = getChordsFromNoteSequence();
 		// Determine the number of SNUs in the chord
 		int numCoDs = ch.get(chordIndex).size() - tablatureChords.get(chordIndex).size();
 
@@ -7896,7 +7501,7 @@ public class Transcription implements Serializable {
 		Integer[][] unisonInfo = null;
 
 		// Determine the number of unisons in the chord
-		List<Integer> pitchesInChord = getPitchesInChord(getNoteSequenceChords().get(chordIndex));
+		List<Integer> pitchesInChord = getPitchesInChord(getChordsFromNoteSequence().get(chordIndex));
 //		List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
 		List<Integer> uniquePitchesInChord = new ArrayList<Integer>();
 		for (int pitch : pitchesInChord) {
@@ -7993,13 +7598,14 @@ public class Transcription implements Serializable {
 	 */
 	private boolean chordContainsVoiceCrossing(int chordIndex) {
 		boolean chordContainsVoiceCrossing = false;
-		NotationSystem notationSystem = piece.getScore();
+//		NotationSystem notationSystem = piece.getScore();
 		List<Note> currentChord = getChords().get(chordIndex); // conditions satisfied; external version OK
 		List<Integer> voicesInCurrentChord = new ArrayList<Integer>();
 		// List the voices in the chord 
 		for (int j = 0; j < currentChord.size(); j++) {
 			Note currentNote = currentChord.get(j);
-			int currentVoice = findVoice(currentNote, notationSystem);
+			int currentVoice = findVoice(currentNote);
+//			int currentVoice = findVoice(currentNote, notationSystem);
 			voicesInCurrentChord.add(currentVoice);
 		}
 //		System.out.println("chordIndex = " + chordIndex);
@@ -8031,7 +7637,7 @@ public class Transcription implements Serializable {
 	 */
 	// TESTED (for both tablature- and non-tablature case) 
 	Integer[][] getLowestAndHighestPitchPerVoice() {
-		Integer[][] lowestAndHighest = new Integer[MAXIMUM_NUMBER_OF_VOICES][2];
+		Integer[][] lowestAndHighest = new Integer[MAX_NUM_VOICES][2];
 
 		NotationSystem system = piece.getScore();
 		// For every voice in the Transcription
@@ -8268,6 +7874,37 @@ public class Transcription implements Serializable {
 
 
 	/**
+	 * Creates a voice label encoding the given voice.
+	 *   
+	 * @param voice The voice, an integer ranging from 0 (the highest voice) to 
+	 *              MAX_NUM_VOICES - 1 (the lowest voice). 
+	 * @return
+	 */
+	// 
+	public static List<Double> createVoiceLabel(int voice) {
+		Double[] voiceLabel = new Double[MAX_NUM_VOICES];
+		Arrays.setAll(voiceLabel, ind -> ind == voice ? 1.0 : 0.0);
+		return Arrays.asList(voiceLabel);
+	}
+
+
+	/**
+	 * Creates a duration label encoding the given duration.
+	 * 
+	 * NB: Tablature case only.
+	 *  
+	 * @param dur The duration as a TabSymbol duration. The duration is always divisible by 3. 
+	 * @return
+	 */
+	// TESTED
+	public static List<Double> createDurationLabel(int dur) {
+		Double[] durLabel = new Double[MAX_TABSYMBOL_DUR];
+		Arrays.setAll(durLabel, ind -> ind == ((dur/3) - 1) ? 1.0 : 0.0);
+		return Arrays.asList(durLabel);
+	}
+
+
+	/**
 	 * Creates a duration label encoding the given durational value (in Tablature.SRV_DEN).
 	 * 
 	 * NB: Tablature case only.
@@ -8276,9 +7913,9 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED
-	public static List<Double> createDurationLabel(int duration) {
+	public static List<Double> createDurationLabelOLD(int duration) {		
 		List<Double> durationLabel = new ArrayList<Double>();
-		for (int i = 0; i < DURATION_LABEL_SIZE; i++) {
+		for (int i = 0; i < MAX_TABSYMBOL_DUR; i++) {
 			durationLabel.add(0.0);
 		}
 		int posInLabel = (duration - 1) / 3;
@@ -8553,31 +8190,35 @@ public class Transcription implements Serializable {
 		metricalTimeLine.add(timeSigMarker);
 //		metricalTimeLine.add(keyMarker);
 		
+		int superius = 0;
+		int altus = 1;
+		int tenor = 2;
+		int bassus = 3;
 		
 		int lowestVoice = -1; 
 		if (numberOfVoices == 3) {
-			lowestVoice = TENOR;
+			lowestVoice = tenor;
 		}
 		else if (numberOfVoices == 4) {
-			lowestVoice = BASSUS;
+			lowestVoice = bassus;
 		}
 		
-		for (int voice = SUPERIUS; voice <= lowestVoice; voice++) {
+		for (int voice = superius; voice <= lowestVoice; voice++) {
 			NotationStaff notationStaff = null;
-			if (voice == SUPERIUS || voice == TENOR) {
+			if (voice == superius || voice == tenor) {
 				notationStaff = new NotationStaff(notationSystem);
-				if (voice == TENOR) {
+				if (voice == tenor) {
 					notationStaff.setClefType('f', 1, 0);
 				}
 			}
-			if (voice == ALTUS || voice == BASSUS) {
+			if (voice == altus || voice == bassus) {
 				if (!showAsScore) {
 					// If j == ALTUS, notationSystem contains one staff; if j == BASSUS it contains two staves
 					notationStaff = notationSystem.get((notationSystem.size() - voice) * -1);
 				}
 				else {
 					notationStaff = new NotationStaff(notationSystem);
-					if (voice == BASSUS) {
+					if (voice == bassus) {
 						notationStaff.setClefType('f', 1, 0);
 					}
 				}
@@ -9505,20 +9146,20 @@ public class Transcription implements Serializable {
 				int numVoices = getNumberOfVoices();
 				if (numVoices == 4) {
 					// Only voice 4 is allowed to be empty
-					if (i != MAXIMUM_NUMBER_OF_VOICES-1) {
+					if (i != MAX_NUM_VOICES-1) {
 						throw new RuntimeException("Voice " + i + " does not contain any notes.");
 					}
 				}
 				if (numVoices == 3) {
 					// Only voice 3 and 4 are allowed to be empty
-					if (i != MAXIMUM_NUMBER_OF_VOICES-1 && i != MAXIMUM_NUMBER_OF_VOICES-2) {
+					if (i != MAX_NUM_VOICES-1 && i != MAX_NUM_VOICES-2) {
 						throw new RuntimeException("Voice " + i + " does not contain any notes.");
 					}
 				}
 				if (numVoices == 2) {
 					// Only voice 2, 3 and 4 are allowed to be empty
-					if (i != MAXIMUM_NUMBER_OF_VOICES-1 && i != MAXIMUM_NUMBER_OF_VOICES-2 &&
-						i != MAXIMUM_NUMBER_OF_VOICES-3) {
+					if (i != MAX_NUM_VOICES-1 && i != MAX_NUM_VOICES-2 &&
+						i != MAX_NUM_VOICES-3) {
 						throw new RuntimeException("Voice " + i + " does not contain any notes.");
 					}
 				}
@@ -9652,8 +9293,467 @@ public class Transcription implements Serializable {
 	  return durationLabelsOLD;
   }
 
-	
-	// COMMENTED OUT 25.10.2022
+
+  	// COMMENTED OUT 10.2022
+	/**
+	 * Constructor for the ground truth Transcription.
+	 *                              
+	 * @param argMidiFile
+	 * @param argEncodingFile
+	 */
+	private Transcription(File argMidiFile, File argEncodingFile, boolean bla) {
+		// Create and set the ground truth Piece
+		Piece groundTruthPiece = MIDIImport.importMidiFile(argMidiFile);
+//		long[][] rah = groundTruthPiece.getMetricalTimeLine().getTimeSignature();
+//		for (long[] l : rah) {
+//			System.out.println(Arrays.toString(l));
+//		}
+//		KeyMarker r = groundTruthPiece.getMetricalTimeLine().getKeyMarker(new Rational(0, 4));
+//		System.out.println(r);
+//		System.exit(0);		
+		setPiece(groundTruthPiece);
+		
+		// Create the Transcription based on the ground truth Piece
+		boolean normaliseTuning = false;
+		boolean isGroundTruthTranscription = true;
+//		createTranscription(argMidiFile.getName(), argEncodingFile, normaliseTuning, isGroundTruthTranscription);
+	}
+
+
+//	/**
+//	 * Turns the given Tablature into a Transcription, using the given voices and durations.
+//	 *  
+//	 * @param tablature
+//	 * @param voices
+//	 * @param durations
+//	 * @param numberOfVoices
+//	 */
+//	public Transcription(Tablature tablature, List<List<Integer>> voices, List<Rational[]> durations,
+//		int numberOfVoices) {
+//
+//		// Make an empty Piece with the given number of voices
+//		Piece piece = new Piece();
+//		NotationSystem system = piece.createNotationSystem();
+//		for (int i = 0; i < numberOfVoices; i++) {
+//			NotationStaff staff = new NotationStaff(system); 
+//			system.add(staff);
+//			NotationVoice voice = new NotationVoice(staff); 
+//			staff.add(voice);
+//
+//			Note voice0n0 = Transcription.createNote(67, new Rational(0, 4), new Rational(1, 2));
+//			voice.add(voice0n0); 
+//		}
+//
+//		// Iterate through the Tablature, convert each TabSymbol into a note, and add it to the given voice
+//		Integer[][] btp = tablature.getBasicTabSymbolProperties();
+//		for (int i = 0; i < btp.length; i++) {
+//			// Create a Note from the TabSymbol at index i
+//			int pitch = btp[i][Tablature.PITCH];
+//			Rational metricTime = new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+//			Rational metricDuration = durations.get(i)[0]; // [0] is possible because each element in durations currently contains only one Rational
+//			Note note = createNote(pitch, metricTime, metricDuration);
+//
+//			// Add the Note to each voice in currentVoices
+//			List<Integer> currentVoices = voices.get(i);
+//			for (int v : currentVoices) {
+//				NotationVoice voice = piece.getScore().get(v).get(0);
+//				voice.add(note);
+//			}	
+//		}
+//
+//		// Set the Piece in the Transcription
+//		setPiece(piece);
+//	}
+
+
+	/**
+	 * Constructor. Creates a new Transcription out of the given arguments; sets the class fields pieceName, file, 
+	 * piece, noteSequence, voiceLabels, and
+	 *  In the tablature case: sets the class field durationLabels, aligns the Tablature and Transcription (and 
+	 *     sets the class field voicesCoDNotes), checks the encoding for alignment errors (if any are found, 
+	 *     a RuntimeException is thrown), and transposes the Transcription.
+	 *   In the non-tablature case (where argEncodingFile is <code>null</code>): sets the class fields meterInfo,
+	 *   handles unisons (and sets the class field equalDurationUnisonsInfo), and sets the class field 
+	 *   basicNoteProperties.
+	 *  
+	 * Applies to the bi-directional model only.
+	 *
+	 * @param argMidiFile
+	 * @param argEncodingFile
+	 * @param argPiece
+	 * @param argVoiceLabels
+	 * @param argDurationLabels
+	 * @param argVoicesCoDNotes
+	 * @param argEqualDurationUnisonsInfo 
+	 */
+	private Transcription(File argMidiFile, File argEncodingFile, Piece argPiece, List<List<Double>> argVoiceLabels,
+		List<List<Double>> argDurationLabels, List<Integer[]> argVoicesCoDNotes, List<Integer[]> 
+		argEqualDurationUnisonsInfo, boolean bla) {
+
+		setPieceName(argMidiFile.getName()); 
+//		setFile(argMidiFile);
+		setPiece(argPiece);
+
+		initialiseNoteSequence(); // needs piece    
+		setVoiceLabels(argVoiceLabels);
+		// a. In the tablature case
+		if (argEncodingFile != null) {
+			setDurationLabels(argDurationLabels);
+			// 1. Check chords. The argument normaliseTuning must be set to true (because argPiece
+			// has already been normalised) for the final alignment check below
+			Tablature tablature = new Tablature(argEncodingFile, true);
+			if (checkChords(tablature) == false) { // needs noteSequence
+				System.out.println(chordsSpecification);
+				throw new RuntimeException("ERROR: Chord error (see console).");
+			}
+			// 2. Align tablature and transcription
+			handleSNUs(tablature, null); // needs noteSequence, voiceLabels, and durationLabels 
+//			handleCoDNotes(tablature, false); // needs noteSequence, voiceLabels, and durationLabels 
+			setVoicesSNU(argVoicesCoDNotes);
+			handleCourseCrossings(tablature, null); // needs noteSequence, voiceLabels, and durationLabels
+//			handleCourseCrossings(tablature, false); // needs noteSequence, voiceLabels, and durationLabels
+			// 3. Do final alignment check
+			if (checkAlignment(tablature) == false) {
+				System.out.println(alignmentDetails);
+					throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
+			}
+			// 4. Transpose
+//			transpose(tablature.getTranspositionInterval());
+		}
+		// b. In the non-tablature case
+		else {
+//			setMeterInfo(argMidiFile); // needs file
+			handleUnisons(null); // needs noteSequence and voiceLabels
+//			handleUnisons(false); // needs noteSequence and voiceLabels
+			setVoicesEDU(argEqualDurationUnisonsInfo);
+			setBasicNoteProperties(); // needs noteSequence
+		}   
+	}
+
+
+	/**
+	 * Constructor. Creates a new Transcription out of the given arguments; sets the class fields piece, 
+	 * noteSequence, voiceLabels, and
+	 *  In the tablature case: sets the class field durationLabels, aligns the Tablature and Transcription (and 
+	 *     sets the class field voicesCoDNotes), checks the encoding for alignment errors (if any are found, 
+	 *     a runTimeException is thrown), and transposes the Transcription.
+	 *   In the non-tablature case: sets the class fields meterInfo, handles unisons (and sets the class field
+	 *     equalDurationUnisonsInfo), and sets the class field basicNoteProperties.
+	 *  
+	 * Applies to the bi-directional model only.
+	 *
+	 * @param tablature
+	 * @param argPiece
+	 * @param argVoiceLabels
+	 * @param argDurationLabels
+	 * @param argVoicesCoDNotes
+	 * @param argMeterInfo
+	 * @param argEqualDurationUnisonsInfo 
+	 */
+	private Transcription(Tablature tablature, Piece argPiece, List<List<Double>> argVoiceLabels, List<List<Double>> 
+		argDurationLabels, List<Integer[]> argVoicesCoDNotes, List<Integer[]> argMeterInfo, List<Integer[]> 
+		argEqualDurationUnisonsInfo) {
+		setPieceName("");
+		setPiece(argPiece);
+		initialiseNoteSequence(); // needs piece    
+		setVoiceLabels(argVoiceLabels);
+		// a. In the tablature case
+		if (tablature != null) {
+			setDurationLabels(argDurationLabels);
+			// 1. Check chords
+			if (checkChords(tablature) == false) { // needs noteSequence
+				System.out.println(chordsSpecification);
+				throw new RuntimeException("ERROR: Chord error (see console).");
+			}
+			// 2. Align tablature and transcription
+			handleSNUs(tablature, null); // needs noteSequence, voiceLabels, and durationLabels 
+//			handleCoDNotes(tablature, false); // needs noteSequence, voiceLabels, and durationLabels 
+			setVoicesSNU(argVoicesCoDNotes);
+			handleCourseCrossings(tablature, null); // needs noteSequence, voiceLabels, and durationLabels
+//			handleCourseCrossings(tablature, false); // needs noteSequence, voiceLabels, and durationLabels
+			// 3. Do final alignment check
+			if (checkAlignment(tablature) == false) {
+				System.out.println(alignmentDetails);
+				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
+			}
+			// 4. Transpose
+			transpose(tablature.getTranspositionInterval());
+		}
+		// b. In the non-tablature case
+		else {
+			setMeterInfo(argMeterInfo);
+			handleUnisons(null); // needs noteSequence and voiceLabels
+//			handleUnisons(false); // needs noteSequence and voiceLabels
+			setVoicesEDU(argEqualDurationUnisonsInfo);
+			setBasicNoteProperties(); // needs noteSequence
+		}   
+	}
+
+
+	private Transcription(Piece argPiece, List<List<Double>> voiceLabels, List<List<Double>> durationLabels) {
+		setPiece(argPiece);
+		initialiseNoteSequence();    
+		setVoiceLabels(voiceLabels);
+		setDurationLabels(durationLabels);
+//		handleCoDNotes(tablature, false);
+//		setVoicesCoDNotes(voicesCoDNotes);
+//		handleCourseCrossings(tablature, false);
+	}
+
+
+	/**
+	 * Creates a new Transcription from the given Piece and Encoding. 
+	 *
+	 * NBs for the tablature case 
+	 * (1) If isGroundTruthTranscription is <code>true</code>, which is only not the case for a 
+	 *     predicted Transcription, the Transcription is transposed.
+	 * (2) The Tablature object as used in this method (which is NOT the Tablature object that 
+	 *     forms a TablatureTranscriptionPair with the Transcription!), which serves for alignment
+	 *     checking, must be in the same key as the Transcription's piece in order for the alignment
+	 *     (done in handleCoDNotes(), handleCourseCrossings(), and checkAlignment()) to succeed.
+	 *     Therefore, the argument normaliseTuning, needed to create this Tablature object, is 
+	 *     <code>false</code> when creating the ground truth Transcription: the Transcription's
+	 *       Piece is only normalised/transposed after the alignment (in transpose())
+	 *     <code>true</code> when creating a predicted Transcription: the Transcription's Piece 
+	 *       has already been normalised/transposed correctly because it was created from a 
+	 *       normalised Tablature (in TrainingManager.prepareTraining())
+	 * 
+	 * @param p
+	 * @param encoding
+	 * @param normaliseTuning    
+	 * @param isGroundTruthTranscription                        
+	 */
+	private void createTranscriptionOLD(Piece p, Encoding encoding, boolean normaliseTuning, 
+		boolean isGroundTruthTranscription) {
+
+		// TODO Make copy rather than store and retrieve
+		String fPath = "C:/Users/Reinier/Desktop/copy.mid";
+		fPath = MEIExport.rootDir + "copy.mid";
+		MIDIExport.exportMidiFile(p, Arrays.asList(new Integer[]{MIDIExport.DEFAULT_INSTR}),
+			fPath);
+		Piece pUn = MIDIImport.importMidiFile(new File(fPath));
+		new File(fPath).delete();
+
+		setPiece(p);
+		setUnadaptedGTPiece(pUn);
+		String pName = p.getName();
+		setPieceName(pName.contains(MIDIImport.EXTENSION) ? 
+			pName.substring(0, pName.indexOf(MIDIImport.EXTENSION)) : pName);		
+				
+		initialiseNoteSequence(); // needs piece	
+		initialiseVoiceLabels(null); // needs piece and noteSequence
+		Tablature tab = null;
+		// a. In the tablature case
+		if (encoding != null) {
+			// The duration labels have their final form when t == Type.PREDICTED
+			if (isGroundTruthTranscription) {
+				initialiseDurationLabels(null); // needs noteSequence
+			}
+
+			// 1. Check chords 
+			// NB: normaliseTuning is false when creating a ground truth Transcription and true 
+			// when creating a predicted Transcription (see Javadoc for this method)
+			tab = new Tablature(encoding, normaliseTuning);
+			if (checkChords(tab) == false) { // needs noteSequence
+				System.out.println(chordsSpecification);
+				throw new RuntimeException("ERROR: Chord error (see console).");
+			}
+			// 2. Align tablature and transcription
+			handleSNUs(tab, null); // needs noteSequence, voiceLabels, and durationLabels
+			handleCourseCrossings(tab, null); // needs noteSequence, voiceLabels, and durationLabels
+			// 3. Do final alignment check
+			if (checkAlignment(tab) == false) {
+				System.out.println(alignmentDetails);
+				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
+			}
+			// 4. Transpose (only if ground truth Transcription; see Javadoc for this method)
+			if (isGroundTruthTranscription) {
+				transpose(tab.getTranspositionInterval());
+			}
+			setMeterInfo(tab.getTimeline().getMeterInfo());
+//			setMeterInfo(tab.getTimeline().getMeterInfoOBS());
+			setKeyInfo(); // must be done after possible transpose()
+			setChords(); // sets the final version of the transcription chords
+			setMinimumDurationLabels(tab);
+		}
+		// b. In the non-tablature case
+		else {
+			setMeterInfo();
+			setKeyInfo();
+			handleUnisons(null); // needs noteSequence and voiceLabels
+			setBasicNoteProperties(); // needs noteSequence	
+			setChords(); // sets the final version of the transcription chords
+			setNumberOfNewNotesPerChord(); // needs transcriptionChords
+		}
+		// c. In both
+		if (isGroundTruthTranscription) {
+			setChordVoiceLabels(tab); // needs transcriptionChords
+		}
+		else {
+			// Currently no chordVoiceLabels needed in bidir model
+		}
+	}
+  
+
+//	/** 
+//	 * Initialises the voice labels. 
+//	 * 
+//	 * If <code>null</code> is given as argument, the voice labels are initialised from the initial, 
+//	 * unadapted NoteSequence; else, they are initialised with the given labels.
+//	 * 
+//	 * Each voice label is a binary vector containing MAXIMUM_NUMBER_OF_VOICES elements, where the 
+//	 * position of the 1.0 indicates the voice encoded (index 0 denotes the highest voice).
+//	 * 
+//	 * NB: Must be called after initialiseNoteSequence().
+//	 * 
+//	 * @param vl The voice labels to initialise with.
+//	 */
+//	// TESTED (for both tablature- and non-tablature case simultaneously)
+//	void initialiseVoiceLabelsOLD(List<List<Double>> vl) {
+//		if (vl == null) {
+//			List<List<Double>> voiceLabels = new ArrayList<List<Double>>(); 
+//
+//			NoteSequence noteSeq = getNoteSequence();
+//			for (int i = 0; i < noteSeq.size(); i++) {
+//				Note n = noteSeq.getNoteAt(i);
+//				
+//				// 1. Create a voice label for the Note
+//				List<Double> currVoiceLabel = new ArrayList<Double>();
+//				
+//				// 2. Extract the voice the Note is in and fill currentVoiceLabel
+//				int voice = findVoice(n);
+//				for (int j = 0; j < MAXIMUM_NUMBER_OF_VOICES; j++) {
+//					if (voice == j) {
+//						currVoiceLabel.add(j, 1.0);
+//					}
+//					else {
+//						currVoiceLabel.add(j, 0.0);
+//					}
+//				}
+//
+//				// 3. Add currentVoiceLabel to initialVoiceLabels 
+//				voiceLabels.add(currVoiceLabel);
+//			}
+//			setVoiceLabels(voiceLabels);
+//		}
+//		else {
+//			setVoiceLabels(vl);
+//		}
+//	}
+
+//	/**
+//	 * Initialises the NoteSequence, in which all notes from the Piece are ordered hierarchically by<br>
+//	 * <ul>
+//	 * <li>(1) Onset time (lower first).</li>
+//	 * <li>(2) If two notes have the same onset time: pitch (lower first).</li>
+//	 * <li>(3) If two notes have the same onset time and the same pitch: voice (lower first).</li>
+//	 * </ul>
+//	 * 
+//	 * After initialisation, any SNU notes (tablature case), course crossing notes (tablature case), 
+//	 * and unison notes (non-tablature case) need further handling. 
+//	 * <ul>
+//	 * <li>SNU notes must be merged; this is done in <code>handleSNUs()</code>.</li> 
+//	 * <li>Course crossing notes must be swapped so that the course crossing note that has the 
+//	 *     higher pitch (the lower-course course crossing note) comes first; this is done 
+//	 *     in <code>handleCourseCrossings()</code>.</li>
+//	 * <li>Unison notes must be swapped so that the unison note that has the longer duration 
+//	 *     comes first; this is done in <code>handleUnisons()</code>.</li>
+//	 * </ul>
+//	 * 
+//	 * Any unison notes (tablature case) need no further handling, as the lower-course unison
+//	 * note automatically always comes first.
+//	 *               
+//	 * NB: Must be called before initialiseVoiceLabels().
+//	 */
+//	// TESTED (for both tablature- and non-tablature case simultaneously)
+//	private void initialiseNoteSequenceOLD() {
+//		// 1. Populate a NoteSequence that orders the Notes chord per chord, from low to high
+//		// (ensured by the comparator)
+//		NoteSequence initialNoteSeq = new NoteSequence(new NoteTimePitchComparator());
+//		NotationSystem ns = getPiece().getScore();
+////		Collection<Containable> contents = ns.getContentsRecursiveList(null);
+//		ns.getContentsRecursiveList(null).stream().filter(c -> c instanceof Note).forEach(c -> initialNoteSeq.add((Note) c));		
+////		for (Containable c : contents) {
+////			if (c instanceof Note) { 
+////				initialNoteSeq.add((Note) c);
+////			}
+////		}
+//
+//		// 2. Check for all equal-pitch pairs whether the Notes are added to the NoteSequence in the correct order.
+//		// This is necessary because the NoteTimePitchComparator does not handle unisons and SNUs consistently in 
+//		// that sometimes the note in the lower voice is added first, and sometimes the note in the upper voice
+//		if (initialNoteSeq.size() != 0) {
+//			// For each note but the last:
+//			for (int currNoteInd = 0; currNoteInd < (initialNoteSeq.size() - 1); currNoteInd++) {
+//				// 1. Get the Note's pitch, onsetTime, and the voice it belongs to 
+//				Note currNote = initialNoteSeq.getNoteAt(currNoteInd);
+//				int currNotePitch = currNote.getMidiPitch();
+//				Rational currNoteOnsetTime = currNote.getMetricTime();
+//				int currNoteVoice = findVoice(currNote);
+//
+//				// 2. Check the remainder of initialNoteSeq for another Note with the same onsetTime and pitch. Break 
+//				// from inner for-loop when the onsetTime of nextNote becomes greater than that of currNote
+//				for (int nextNoteInd = currNoteInd + 1; nextNoteInd < initialNoteSeq.size(); nextNoteInd++) {
+//					Note nextNote = initialNoteSeq.getNoteAt(nextNoteInd);
+//					// Same onsetTime? Check whether pitch is also the same  
+//					if (nextNote.getMetricTime().equals(currNoteOnsetTime)) {
+//						// Same pitch? nextNote is the complement sought; swap if necessary and break
+//						// NB: since an event may contain more than one equal-pitch-pair, the ENTIRE process must be repeated
+//						// from the start until the sequence is correct. (E.g., an event with three equal pitches that are
+//						// added to the NoteSequence in voice order 1-2-3 becomes 2-1-3 after one iteration of both for-loops,
+//						// then 3-1-2, and finally 3-2-1.) Thus, when notes are swapped: break from inner for-loop and start
+//						// again in outer for-loop
+//						if (nextNote.getMidiPitch() == currNotePitch) {
+//							int nextNoteVoice = findVoice(nextNote);
+//							// If currentNote is in the higher voice (has the lower voice number): swap 
+//							if (currNoteVoice < nextNoteVoice) {								
+//								initialNoteSeq.swapNotes(currNoteInd, nextNoteInd);
+//								currNoteInd = -1;
+//								break;
+//							}    		    
+//						}
+//					}
+//					// Is onsetTime of nextNote greater than that of currNote? Break and continue with the next currNote
+//					else {
+//						break; 
+//					}
+//				}
+//			}
+//		}
+//		// 3. Set noteSequence 
+//		setNoteSequence(initialNoteSeq);
+//	}
+
+
+//	/**
+//	 * Finds the voice the given Note in the given NotationSystem belongs to.
+//	 *  
+//	 * @param note 
+//	 * @param ns
+//	 * @return
+//	 */
+//	private int findVoiceOLD(Note note, NotationSystem ns) {
+//		int voice = -1;
+//		// NB: A NotationSystem has as many Staffs as the Transcription it belongs to has voices; each Staff thus 
+//		// represents a voice. The Staffs are numbered from top (no. 0) to bottom (no. 4, depending on 
+//		// MAXIMUM_NUMBER_OF_VOICES).
+//		// For each Staff in the NotationSystem: 
+//		outerLoop: for (int i = 0; i < ns.size(); i++) {
+//			NotationStaff staff = ns.get(i);
+//			// a. Get the contents of the Staff
+//			Containable[] contentsOfStaff = staff.getContentsRecursive();
+//			// b. Look at each Containable in the contents. If a Containable matches the (unique) note: return i, the
+//			// number of the Staff that note is on (and thus the number of the voice it belongs to), and break from the
+//			// outer loop
+//			for (int j = 0; j < contentsOfStaff.length; j++) {
+//				if (contentsOfStaff[j] == note) {
+//					voice = i;
+//					break outerLoop;
+//				}
+//			}
+//		}
+//		return voice;
+//	}
 
 //	/** 
 //	 * Finds for all CoDnotes (i.e., notes representing a Note that is shared by two voices) in

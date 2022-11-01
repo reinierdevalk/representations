@@ -438,10 +438,10 @@ public class DataConverterTest extends TestCase {
 		
 		List<Integer> expected = null;
 //		List<Integer> expected = Arrays.asList(new Integer[]{2, 4, 20, 26});
-		if (Transcription.DURATION_LABEL_SIZE == 64) {
+		if (Transcription.MAX_TABSYMBOL_DUR == 64) {
 			expected = Arrays.asList(new Integer[]{4, 8, 40, 52});
 		}
-		else if (Transcription.DURATION_LABEL_SIZE == 96) {
+		else if (Transcription.MAX_TABSYMBOL_DUR == 96) {
 			
 		}
 		
