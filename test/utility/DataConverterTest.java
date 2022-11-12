@@ -137,8 +137,8 @@ public class DataConverterTest extends TestCase {
 		List<List<Double>> voiceLabels = transcription.getVoiceLabels();
 		int largestNumberOfChordVoices = transcription.getNumberOfVoices();
 		int lowestOnsetIndex = 0;
-		for (int i = 0; i < tablature.getTablatureChords().size(); i++) {
-			List<TabSymbol> currentChord = tablature.getTablatureChords().get(i);
+		for (int i = 0; i < tablature.getChords().size(); i++) {
+			List<TabSymbol> currentChord = tablature.getChords().get(i);
 			List<List<Double>> currentChordVoiceLabels = 
 				voiceLabels.subList(lowestOnsetIndex, lowestOnsetIndex + currentChord.size());
 			actual.add(DataConverter.getVoiceAssignment(currentChordVoiceLabels, largestNumberOfChordVoices));
@@ -352,8 +352,8 @@ public class DataConverterTest extends TestCase {
 		List<List<List<Integer>>> actual = new ArrayList<List<List<Integer>>>();
 		List<List<Double>> voiceLabels = transcription.getVoiceLabels();
 		int lowestOnsetIndex = 0;
-		for (int i = 0; i < tablature.getTablatureChords().size(); i++) {
-			List<TabSymbol> currentChord = tablature.getTablatureChords().get(i);
+		for (int i = 0; i < tablature.getChords().size(); i++) {
+			List<TabSymbol> currentChord = tablature.getChords().get(i);
 			List<List<Double>> currentChordVoiceLabels = 
 				voiceLabels.subList(lowestOnsetIndex, lowestOnsetIndex + currentChord.size());
 			actual.add(DataConverter.getVoicesInChord(currentChordVoiceLabels));

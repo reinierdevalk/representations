@@ -526,41 +526,41 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	private List<List<TabSymbol>> getTablatureChords() {
+	private List<List<TabSymbol>> getChords() {
 		// For testpiece
 		TabSymbolSet tss = new Tablature(encodingTestpiece, false).getEncoding().getTabSymbolSet();
-		List<List<TabSymbol>> tablatureChords = new ArrayList<List<TabSymbol>>();
+		List<List<TabSymbol>> chords = new ArrayList<List<TabSymbol>>();
 		//
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{
+		chords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a5", tss),
 			TabSymbol.getTabSymbol("c4", tss),
 			TabSymbol.getTabSymbol("b2", tss),
 			TabSymbol.getTabSymbol("a1", tss)
 		}));
 		//
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{
+		chords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a6", tss),
 			TabSymbol.getTabSymbol("c4", tss),
 			TabSymbol.getTabSymbol("i2", tss),
 			TabSymbol.getTabSymbol("a1", tss)	
 		}));
 		//
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{
+		chords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("d6", tss)
 		})); 
 		//
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{
+		chords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("c6", tss),
 			TabSymbol.getTabSymbol("a5", tss),
 			TabSymbol.getTabSymbol("e4", tss),
 			TabSymbol.getTabSymbol("b2", tss)
 		}));
 		//
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{
+		chords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a6", tss)
 		}));
 		//
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{
+		chords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a6", tss),
 			TabSymbol.getTabSymbol("h5", tss),
 			TabSymbol.getTabSymbol("c4", tss),
@@ -568,39 +568,39 @@ public class TablatureTest extends TestCase {
 			TabSymbol.getTabSymbol("f2", tss)
 		}));
 		//
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{
+		chords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a6", tss),
 			TabSymbol.getTabSymbol("b3", tss),
 			TabSymbol.getTabSymbol("a2", tss),
 			TabSymbol.getTabSymbol("a1", tss)
 		}));
 		//
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{
+		chords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a3", tss),
 			TabSymbol.getTabSymbol("e2", tss)
 		}));
 		//
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{
+		chords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a6", tss),
 			TabSymbol.getTabSymbol("c4", tss),
 			TabSymbol.getTabSymbol("a2", tss),
 			TabSymbol.getTabSymbol("a1", tss)
 		}));
 		//
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("a1", tss)}));
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("c2", tss)}));
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("a1", tss)}));
+		chords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
+		chords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("a1", tss)}));
+		chords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
+		chords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("c2", tss)}));
+		chords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
+		chords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("a1", tss)}));
 		//
-		tablatureChords.add(Arrays.asList(new TabSymbol[]{
+		chords.add(Arrays.asList(new TabSymbol[]{
 			TabSymbol.getTabSymbol("a6", tss),
 			TabSymbol.getTabSymbol("c4", tss),
 			TabSymbol.getTabSymbol("a2", tss),
 			TabSymbol.getTabSymbol("a1", tss)
 		}));
-		return tablatureChords;
+		return chords;
 	}
 
 
@@ -608,7 +608,7 @@ public class TablatureTest extends TestCase {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
 		t.setNormaliseTuning(true);
-		t.setPiecename();
+		t.setName();
 		t.setTimeline();
 
 		Tuning[] expected = new Tuning[]{Tuning.A, Tuning.G};
@@ -625,7 +625,7 @@ public class TablatureTest extends TestCase {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
 		t.setNormaliseTuning(true);
-		t.setPiecename();
+		t.setName();
 		t.setTimeline();
 		t.setTunings();
 
@@ -646,7 +646,7 @@ public class TablatureTest extends TestCase {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
 		t.setNormaliseTuning(true);
-		t.setPiecename();
+		t.setName();
 		t.setTimeline();
 		t.setTunings();
 		
@@ -673,13 +673,13 @@ public class TablatureTest extends TestCase {
 		Tablature t1 = new Tablature();
 		t1.setEncoding(new Encoding(encodingTestpiece));
 		t1.setNormaliseTuning(true);
-		t1.setPiecename();
+		t1.setName();
 		t1.setTimeline();
 		t1.setTunings();
 		Tablature t2 = new Tablature();
 		t2.setEncoding(new Encoding(encodingTestGetMeterInfo));
 		t2.setNormaliseTuning(true);
-		t2.setPiecename();
+		t2.setName();
 		t2.setTimeline();
 		t2.setTunings();
 
@@ -739,7 +739,7 @@ public class TablatureTest extends TestCase {
 		Tablature t1 = new Tablature();
 		t1.setEncoding(new Encoding(encodingTestpiece));
 		t1.setNormaliseTuning(true);
-		t1.setPiecename();
+		t1.setName();
 		t1.setTimeline();
 		t1.setTunings();
 
@@ -768,17 +768,17 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testMakeTablatureChords() {
+	public void testMakeChords() {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
 		t.setNormaliseTuning(true);
-		t.setPiecename();
+		t.setName();
 		t.setTimeline();
 		t.setTunings();
 		t.setBasicTabSymbolProperties();
 		
-		List<List<TabSymbol>> expected = getTablatureChords();
-		List<List<TabSymbol>> actual = t.makeTablatureChords();
+		List<List<TabSymbol>> expected = getChords();
+		List<List<TabSymbol>> actual = t.makeChords();
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -795,14 +795,14 @@ public class TablatureTest extends TestCase {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
 		t.setNormaliseTuning(true);
-		t.setPiecename();
+		t.setName();
 		t.setTimeline();
 		t.setTunings();
 		t.setBasicTabSymbolProperties();
-		t.setTablatureChords();
+		t.setChords();
 		
 		List<Integer> expected = new ArrayList<>();
-		getTablatureChords().forEach(item -> expected.add(item.size()));
+		getChords().forEach(item -> expected.add(item.size()));
 		List<Integer> actual = t.makeNumberOfNotesPerChord();
 
 		assertEquals(expected.size(), actual.size());
@@ -819,12 +819,12 @@ public class TablatureTest extends TestCase {
 		List<List<Integer>> expected = getPitchesInChord(false);
 
 		List<List<Integer>> actual = new ArrayList<List<Integer>>();
-		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
+		List<List<TabSymbol>> chords = tablature.getChords();
 		Integer[][] btp = tablature.getBasicTabSymbolProperties();
 		int lowestNoteIndex = 0;
-		for (int i = 0; i < tablatureChords.size(); i++) {
+		for (int i = 0; i < chords.size(); i++) {
 			actual.add(Tablature.getPitchesInChord(btp, lowestNoteIndex));
-			lowestNoteIndex += tablatureChords.get(i).size();
+			lowestNoteIndex += chords.get(i).size();
 		}
 
 		assertEquals(expected.size(), actual.size());
@@ -938,7 +938,7 @@ public class TablatureTest extends TestCase {
 
 		List<List<Integer>> expected = getPitchesInChord(false);
 		List<List<Integer>> actual = new ArrayList<List<Integer>>();
-		for (int i = 0; i < tablature.getTablatureChords().size(); i++) {
+		for (int i = 0; i < tablature.getChords().size(); i++) {
 		 	actual.add(tablature.getPitchesInChord(i));
 		}
 
@@ -976,7 +976,7 @@ public class TablatureTest extends TestCase {
 		expected.add(null);
 
 		List<List<Integer[]>> actual = new ArrayList<>();
-		for (int i = 0; i < tablature.getTablatureChords().size(); i++) {
+		for (int i = 0; i < tablature.getChords().size(); i++) {
 			actual.add(tablature.getUnisonInfo(i));
 		}
 
@@ -1004,7 +1004,7 @@ public class TablatureTest extends TestCase {
 		List<Integer> expected = 
 			Arrays.asList(new Integer[]{0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 		List<Integer> actual = new ArrayList<Integer>();
-		for (int i = 0; i < tablature.getTablatureChords().size(); i++) {
+		for (int i = 0; i < tablature.getChords().size(); i++) {
 			actual.add(tablature.getNumberOfUnisonsInChord(i));
 		}
 
@@ -1039,8 +1039,8 @@ public class TablatureTest extends TestCase {
 		expected.add(null);
 
 		List<List<Integer[]>> actual = new ArrayList<>();
-		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
-		for (int i = 0; i < tablatureChords.size(); i++) {
+		List<List<TabSymbol>> chords = tablature.getChords();
+		for (int i = 0; i < chords.size(); i++) {
 			actual.add(tablature.getCourseCrossingInfo(i));
 		}
 
@@ -1068,8 +1068,8 @@ public class TablatureTest extends TestCase {
 		List<Integer> expected = Arrays.asList(new Integer[]{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 
 		List<Integer> actual = new ArrayList<Integer>();
-		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
-		for (int i = 0; i < tablatureChords.size(); i++) {
+		List<List<TabSymbol>> chords = tablature.getChords();
+		for (int i = 0; i < chords.size(); i++) {
 			actual.add(tablature.getNumberOfCourseCrossingsInChord(i));
 		}
 
@@ -1514,13 +1514,13 @@ public class TablatureTest extends TestCase {
 		}
 		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
 
-		// tablatureChords
-		List<List<TabSymbol>> expectedTc = getTablatureChords();
+		// chords
+		List<List<TabSymbol>> expectedTc = getChords();
 		Collections.reverse(expectedTc);
 
 		t.reverse();
 		Integer[][] actualBtp = t.getBasicTabSymbolProperties();
-		List<List<TabSymbol>> actualTc = t.getTablatureChords();
+		List<List<TabSymbol>> actualTc = t.getChords();
 
 		assertEquals(expectedBtp.length, actualBtp.length);
 		for (int i = 0; i < expectedBtp.length; i++) {
@@ -1623,15 +1623,15 @@ public class TablatureTest extends TestCase {
 		}
 		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
 
-		// tablatureChords
-		List<List<TabSymbol>> expectedTc = getTablatureChords();
+		// chords
+		List<List<TabSymbol>> expectedTc = getChords();
 		expectedTc = 
 			ToolBox.removeItemsAtIndices(expectedTc, 
 			Arrays.asList(new Integer[]{2, 9, 10, 11, 12, 13}));
 
 		t.deornament(new Rational(RhythmSymbol.SEMIMINIM.getDuration(), Tablature.SRV_DEN));
 		Integer[][] actualBtp = t.getBasicTabSymbolProperties();
-		List<List<TabSymbol>> actualTc = t.getTablatureChords();
+		List<List<TabSymbol>> actualTc = t.getChords();
 
 		assertEquals(expectedBtp.length, actualBtp.length);
 		for (int i = 0; i < expectedBtp.length; i++) {

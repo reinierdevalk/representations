@@ -1248,7 +1248,7 @@ public class Analyser {
 			Tablature tablature = new Tablature(tablatureEncoding, false);
 //			preprocessor.prepareInitialInformation(tablature, null, true);
 			Integer[][] basicTabSymbolProperties = tablature.getBasicTabSymbolProperties();
-			List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
+			List<List<TabSymbol>> tablatureChords = tablature.getChords();
 
 			// For each chord
 			int lowestNoteIndex = 0;

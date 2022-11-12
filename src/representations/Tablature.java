@@ -54,11 +54,11 @@ public class Tablature implements Serializable {
 
 	private Encoding encoding;
 	private boolean normaliseTuning;
-	private String piecename;
+	private String name;
 	private Timeline timeline;
 	private Tuning[] tunings;
 	private Integer[][] basicTabSymbolProperties;
-	private List<List<TabSymbol>> tablatureChords;
+	private List<List<TabSymbol>> chords;
 	private List<Integer> numberOfNotesPerChord;
 
 	public static enum Tuning  {
@@ -183,11 +183,11 @@ public class Tablature implements Serializable {
 	private void init(Encoding encoding, boolean normaliseTuning) {
 		setEncoding(encoding);
 		setNormaliseTuning(normaliseTuning);
-		setPiecename();
+		setName();
 		setTimeline();
 		setTunings();
 		setBasicTabSymbolProperties();
-		setTablatureChords();
+		setChords();
 		setNumberOfNotesPerChord();
 	}
 
@@ -207,8 +207,8 @@ public class Tablature implements Serializable {
 	}
 
 
-	void setPiecename() {
-		piecename = getEncoding().getPiecename(); 
+	void setName() {
+		name = getEncoding().getPiecename(); 
 	}
 
 
@@ -447,13 +447,13 @@ public class Tablature implements Serializable {
 	}
 
 
-	void setTablatureChords() {
-		tablatureChords = makeTablatureChords();
+	void setChords() {
+		chords = makeChords();
 	}
 
 
 	// TESTED
-	List<List<TabSymbol>> makeTablatureChords() {
+	List<List<TabSymbol>> makeChords() {
 		List<List<TabSymbol>> tc = new ArrayList<List<TabSymbol>>();
 		Integer[][] btp = getBasicTabSymbolProperties();
 		TabSymbolSet tss = getEncoding().getTabSymbolSet();
@@ -482,7 +482,7 @@ public class Tablature implements Serializable {
 			}
 			onsetTimePrevTabSymbol = onsetTimeCurrTabSymbol;
 		}
-		// Add the last chord to tablatureChords
+		// Add the last chord to chords
 		tc.add(currChord);
 		return tc;
 	}
@@ -495,7 +495,7 @@ public class Tablature implements Serializable {
 
 	// TESTED
 	List<Integer> makeNumberOfNotesPerChord() {
-		return getTablatureChords().stream().map(List::size).collect(Collectors.toList());
+		return getChords().stream().map(List::size).collect(Collectors.toList());
 	}
 
 
@@ -514,8 +514,8 @@ public class Tablature implements Serializable {
 	}
 
 
-	public String getPiecename() {
-		return piecename;
+	public String getName() {
+		return name;
 	}
 
 
@@ -576,8 +576,8 @@ public class Tablature implements Serializable {
 	 *  
 	 * NB: Rest events are not included in the returned list. 
 	 */
-	public List<List<TabSymbol>> getTablatureChords() {
-		return tablatureChords;
+	public List<List<TabSymbol>> getChords() {
+		return chords;
 	}
 
 
@@ -834,8 +834,8 @@ public class Tablature implements Serializable {
 		List<List<Integer>> chordDictionary = new ArrayList<List<Integer>>();
 
 		// For each chord 
-		List<List<TabSymbol>> tablatureChords = getTablatureChords();
-		for (int i = 0; i < tablatureChords.size(); i++) {
+		List<List<TabSymbol>> chords = getChords();
+		for (int i = 0; i < chords.size(); i++) {
 			// List the pitches in the chord
 			List<Integer> pitchesInCurrentChord = getPitchesInChord(i);
 			// Sort the pitches numerically
@@ -1361,16 +1361,16 @@ public class Tablature implements Serializable {
 	public List<List<Integer>> getIndicesPerChord(boolean isBwd) {
 		List<List<Integer>> indicesPerChord = new ArrayList<List<Integer>>();
 
-		List<List<TabSymbol>> tablatureChords = getTablatureChords();
+		List<List<TabSymbol>> chords = getChords();
 		if (isBwd) {
-			Collections.reverse(tablatureChords);
+			Collections.reverse(chords);
 		}
 
 		int startIndex = 0;
 		// For each chord
-		for (int i = 0; i < tablatureChords.size(); i++) {
+		for (int i = 0; i < chords.size(); i++) {
 		List<Integer> indicesCurrChord = new ArrayList<Integer>();
-		int endIndex = startIndex + tablatureChords.get(i).size();
+		int endIndex = startIndex + chords.get(i).size();
 		// For each note in the chord at index i: add its index to indicesCurrChord
 		for (int j = startIndex; j < endIndex; j++) {
 			indicesCurrChord.add(j);

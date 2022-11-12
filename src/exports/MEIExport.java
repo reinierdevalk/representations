@@ -926,7 +926,7 @@ public class MEIExport {
 			ki.add(new Integer[]{-2, 0, 0, 0, 0, 0, 1});
 		}
 		List<Rational[]> tripletOnsetPairs = tab != null ? tab.getTripletOnsetPairs() : null; 
-		String pieceName = tab != null ? tab.getPiecename() : trans.getPieceName();
+		String pieceName = tab != null ? tab.getName() : trans.getName();
 		int numVoices = trans != null ? trans.getNumberOfVoices() : 0;
 		List<String[]> tabMensSigns = tab != null ? tab.getMensurationSigns() : null;
 		
@@ -4455,7 +4455,7 @@ public class MEIExport {
 
 		// 1. Make meiHead
 		String[] meiHead = new String[MEI_HEAD.size()];
-		meiHead[MEI_HEAD.indexOf("title")] = tab.getPiecename();
+		meiHead[MEI_HEAD.indexOf("title")] = tab.getName();
 		res = res.replace("title_placeholder", meiHead[MEI_HEAD.indexOf("title")]);
 
 		List<Integer[]> mi = tab.getTimeline().getMeterInfo();
