@@ -1010,10 +1010,11 @@ public class Transcription implements Serializable {
 		setOriginalPiece(); // needs <piece>
 		setName(); // needs <piece>
 		
-		setTaggedNotes(tab);
-		setNotes(tab); // needs <piece>	
-		System.exit(0);
+		setTaggedNotes(tab); // needs <piece>
+//		setNotes(tab); // needs <piece>	
+
 		setNoteSequence(); // needs <piece>
+		System.exit(0);
 		
 		if (tab!= null) {
 			if (checkChords(tab) == false) { // needs <noteSequence>
@@ -1021,8 +1022,6 @@ public class Transcription implements Serializable {
 				throw new RuntimeException("ERROR: Chord error (see console).");
 			}
 		}
-		System.exit(0);
-		
 		
 		if (t != Type.PREDICTED) {
 			initialiseVoiceLabels(null); // needs <piece> and <noteSequence>
@@ -1098,11 +1097,11 @@ public class Transcription implements Serializable {
 	}
 
 
-	@SuppressWarnings("unchecked")
-	void setNotes(Tablature tab) {
-		List<Object> notesPlus = makeNotes(tab);
-		notes = (List<Note>) notesPlus.get(0);
-	}
+//	@SuppressWarnings("unchecked")
+//	void setNotes(Tablature tab) {
+//		List<Object> notesPlus = makeNotes(tab);
+//		notes = (List<Note>) notesPlus.get(0);
+//	}
 	
 	
 	void setTaggedNotes(Tablature tab) {
@@ -1110,6 +1109,32 @@ public class Transcription implements Serializable {
 	}
 
 
+	/**
+	 * Makes the list of <code>TaggedNote</code>s, in which all notes from the <code>Piece</code> are 
+	 * added as a <code>TaggedNote</code>, ordered hierarchically by<br>
+	 * <ol>
+	 * <li>Onset time (lower first).</li>
+	 * <li>If two notes have the same onset time: pitch (lower first).</li>
+	 * <li>If two notes have the same onset time and the same pitch: voice (lower first).</li>
+	 * </ol>
+	 * 
+	 * In the list returned, any SNUs (tablature case), course crossings (tablature case), 
+	 * and unisons (non-tablature case) are handled, i.e.,
+	 * <ul>
+	 * <li>SNU notes are merged; the SNU voices and durations are set in the <code>TaggedNote</code> 
+	 *     (see <code>handleSNUs()</code>).</li>
+	 * <li>Course crossing notes are swapped so that they are in the correct order (see 
+	 *     <code>handleCourseCrossings()</code>).</li>
+	 * <li>Unisons notes are swapped (if necessary) so that they are in the correct order; the 
+	 *     unison voices and durations, as well as the index of the respective complementary 
+	 *     unison note are set in the <code>TaggedNote</code>s (see <code>handleUnisons()</code>).</li>
+	 *      
+	 * </ul>
+	 *  
+	 * NB: Any unison notes (tablature case) need no further handling, as the lower-course unison
+	 * note automatically always comes first.
+	 */
+	// TESTED
 	List<TaggedNote> makeTaggedNotes(Tablature tab) {
 		List<TaggedNote> argTaggedNotes;
 
@@ -1131,34 +1156,34 @@ public class Transcription implements Serializable {
 	}
 
 
-	/**
-	 * 
-	 * @return
-	 */
-	// TESTED
-	List<TaggedNote> makeNotes(Tablature tab) {
-		// Unhandled notes
-		List<Note> argNotes = makeUnhandledNotes();
-		List<Integer[]> argVoicesSNU = null;
-		List<Integer[]> argVoicesUnison = null;
-
-		// In the tablature case: handle SNUs and course crossings
-		if (tab != null) {
-			// a. SNUs
-			List<TaggedNote> SNUs = handleSNUs(argNotes, tab);
-			argNotes = (List<Note>) SNUs.get(0);
-			argVoicesSNU = (List<Integer[]>) SNUs.get(1);
-			// b. Course crossings
-			argNotes = handleCourseCrossings(argNotes, tab);
-		}
-		// In the non-tablature case: handle unisons
-		else {
-			List<Object> unisons = handleUnisons(argNotes);
-			argNotes = (List<Note>) unisons.get(0);
-			argVoicesUnison = (List<Integer[]>) unisons.get(1);
-		}	
-		return Arrays.asList(new Object[]{argNotes, argVoicesSNU, argVoicesUnison});
-	}
+//	/**
+//	 * 
+//	 * @return
+//	 */
+//	// TESTED
+//	List<TaggedNote> makeNotes(Tablature tab) {
+//		// Unhandled notes
+//		List<Note> argNotes = makeUnhandledNotes();
+//		List<Integer[]> argVoicesSNU = null;
+//		List<Integer[]> argVoicesUnison = null;
+//
+//		// In the tablature case: handle SNUs and course crossings
+//		if (tab != null) {
+//			// a. SNUs
+//			List<TaggedNote> SNUs = handleSNUs(argNotes, tab);
+//			argNotes = (List<Note>) SNUs.get(0);
+//			argVoicesSNU = (List<Integer[]>) SNUs.get(1);
+//			// b. Course crossings
+//			argNotes = handleCourseCrossings(argNotes, tab);
+//		}
+//		// In the non-tablature case: handle unisons
+//		else {
+//			List<Object> unisons = handleUnisons(argNotes);
+//			argNotes = (List<Note>) unisons.get(0);
+//			argVoicesUnison = (List<Integer[]>) unisons.get(1);
+//		}	
+//		return Arrays.asList(new Object[]{argNotes, argVoicesSNU, argVoicesUnison});
+//	}
 
 
 	// TESTED
@@ -1178,24 +1203,26 @@ public class Transcription implements Serializable {
 	 * Handles single-note unisons (SNUs). Iterates through the given list of unhandled <code>Note</code>s
 	 * and checks for SNU note pairs. If a <code>Note</code> in the list is not part of a SNU note pair, it 
 	 * is added to the list of <code>TaggedNote</code>s returned as a simple <code>TaggedNote</code>; else, 
+	 * the SNU note pair is handled at once:
 	 * 
 	 * <ul>
-	 * <li>One SNU note of the pair is added as a full <code>TaggedNote</code>, i.e.,
+	 * <li>One SNU note is added as a full <code>TaggedNote</code> (the complementary SNU note is excluded)
 	 *     <ul>
-	 *     <li>If the SNU notes have the same duration: the lower (higher-voice) SNU note.</li>
+	 *     <li>If the SNU notes have the same duration: the lower (lower-voice) SNU note.</li>
 	 *     <li>If the SNU notes have different durations: the SNU note that has the longer duration.</li>
 	 *     </ul>
 	 * </li>
-	 * <li>The SNU voices are added to the full <code>TaggedNote</code>, with 
+	 * <li>The SNU voices are set in the full <code>TaggedNote</code>
 	 *     <ul>
-	 *     <li>If the SNU notes have the same duration: the lower voice first.</li>
-	 *     <li>If the SNU notes have different durations: the voice that contains the note that has 
+	 *     <li>If the SNU notes have the same duration: with the lower voice first.</li>
+	 *     <li>If the SNU notes have different durations: with the voice that contains the note that has 
 	 *         the longer duration first.</li>
 	 *     </ul>
 	 * </li>         
-	 * <li>The SNU durations are added to the full <code>TaggedNote</code>, with the longer 
+	 * <li>The SNU durations are set in the full <code>TaggedNote</code>, with the longer 
 	 *     duration first.</li>
 	 * </ul>
+	 * 
 	 * 
 	 * If <code>t == Type.PREDICTED</code>, the SNU notes always have the same duration: i.e., if no 
 	 * duration is predicted, the (minimum) duration for the Tablature note; else, the duration that 
@@ -1264,7 +1291,7 @@ public class Transcription implements Serializable {
 						removeInd = indShorter;
 					}
 					Note removeNote = argNotes.get(removeInd);
-					argNotes.remove(removeInd);
+					argNotes.remove(removeInd); // TODO not needed (but clearer?)
 					argTaggedNotes.remove(indUpper);
 					notesRemovedFromChord++;
 
@@ -1279,14 +1306,78 @@ public class Transcription implements Serializable {
 	}
 
 
+	/**
+	 * Gets information on the single-note unison (SNU) notes in the given chord. 
+	 * A SNU occurs when a single Tablature note is shared by two Transcription Notes. Returns an Integer[][],
+	 * each element of which represents a SNU note pair (starting from below in the chord) containing
+	 * <ul>
+	 * <li>As element 0: the pitch (as a MIDInumber) of both SNU notes.</li>
+	 * <li>As element 1: the sequence number in the chord of the lower SNU note.</li>
+	 * <li>As element 2: the sequence number in the chord of the upper SNU note.</li> 
+	 * </ul>
+	 * 
+	 * If the chord does not contain any SNUs, <code>null</code> is returned.  
+	 *
+	 * NB1: This method presumes that a chord contains only one SNU, and neither a unison nor a course crossing.
+	 * NB2: Tablature case only. 
+	 *
+	 * @param chord
+	 * @param tablatureChord
+	 * @return    
+	 */
+	// TODO test
+	static Integer[][] getSNUInfo(List<Note> chord, List<TabSymbol> tablatureChord) {
+		Integer[][] SNUInfo = null;
+
+//		List<List<Note>> transcriptionChords = getNoteSequenceChords();
+		// Determine the number of SNUs in the chord
+		int numSNUs = chord.size() - tablatureChord.size();
+
+		// If chord contains any SNUs
+		if (numSNUs > 0) { 
+//		if (getNumberOfCoDsInChord(tablatureChords, chordIndex) > 0) {
+			SNUInfo = new Integer[numSNUs][3];
+//			coDInfo = new Integer[getNumberOfCoDsInChord(tablatureChords, chordIndex)][3];
+
+//			List<Note> chord = transcriptionChords.get(chordIndex);
+
+			// Gather the pitches of the Notes in chord in a list
+			List<Integer> pitchesInChord = new ArrayList<Integer>();
+			for (int i = 0; i < chord.size(); i++) {
+				int pitch = chord.get(i).getMidiPitch();
+				pitchesInChord.add(pitch);
+			}
+			// For each pitch in pitchesInChord
+			int currentRowInSNUInfo = 0;
+			for (int i = 0; i < pitchesInChord.size(); i++) {
+				int currentPitch = pitchesInChord.get(i);        
+				// Search the remainder of pitchesInChord for a note with the same pitch (the upper SNU note)
+				for (int j = i + 1; j < pitchesInChord.size(); j++) {
+					// Same pitch found? upper SNU note found; fill the currentRowInCoDInfo-th row of SNUInfo, increase
+					// currentRowInSNUInfo, break from inner for, and continue with the next iteration of the outer
+					// for (the next pitch)
+					if (pitchesInChord.get(j) == currentPitch) {
+						SNUInfo[currentRowInSNUInfo][0] = currentPitch;
+						SNUInfo[currentRowInSNUInfo][1] = i;
+						SNUInfo[currentRowInSNUInfo][2] = j;
+						currentRowInSNUInfo++;
+						break; 
+					}
+				} 
+			}
+		}
+		return SNUInfo;
+	}
+
+
 	/** 
 	 * Handles course crossings (CCs). Iterates through the given list of <code>TaggedNote</code>s and checks
-	 * for voice crossing note pairs. If a <code>TaggedNote</code> in the list is part of a course 
-	 * crossing note pair, 
+	 * for course crossing note pairs. If a <code>TaggedNote</code> in the list is part of a course 
+	 * crossing note pair, the course crossing note pair is handled at once:
 	 * 
 	 * <ul>
-	 * <li>The <code>TaggedNote</code> and its complement are swapped so that the lower-course (i.e., 
-	 * higher-pitch) course crossing note comes first.</li>
+	 * <li>The <code>TaggedNote</code>s are swapped so that the lower-course (i.e., higher-pitch) course 
+	 *     crossing note comes first.</li>
 	 * </ul>
 	 *   
 	 * NB1: This method presumes that a chord contains only one course crossing, and neither a SNU 
@@ -1327,71 +1418,183 @@ public class Transcription implements Serializable {
 	}
 
 
-	// TODO test
+	/**
+	 * Handles unisons. Iterates through the given list of unhandled <code>Note</code>s and
+	 * checks for unison note pairs. If a <code>Note</code> in the list is not part of a unison 
+	 * note pair, it is added to the list of <code>TaggedNote</code>s returned as a simple 
+	 * <code>TaggedNote</code>; else, the unison note pair is handled at once:
+	 * 
+	 * <ul>
+	 * <li>The unison notes are added as full <code>TaggedNote</code>s 
+	 *     <ul>
+	 *     <li>If the unison notes have the same duration: the lower (lower-voice) unison note 
+	 *         first.</li>
+	 *     <li>If the unison notes have different durations: the unison note that has the longer
+	 *         duration first.</li>
+	 *     </ul>
+	 * </li>
+	 * <li>The unison voices are set in the full <code>TaggedNote</code>s
+	 *     <ul>
+	 *     <li>If the unison notes have the same duration: with the lower voice first.</li>
+	 *     <li>If the unison notes have different durations: with the voice that contains 
+	 *         the note that has the longer duration first.</li>
+	 *     </ul>
+	 * </li>         
+	 * <li>The unison durations are set in the full <code>TaggedNote</code>s, with the longer 
+	 *     duration first.</li>
+	 * <li>The index of the respective complementary unison note is set in the full <code>TaggedNote</code>s.</li>
+	 * </ul>
+	 * 
+	 * NB: The notes in a unison note pair do not necessarily have successive indices.
+	 * 
+	 * @param argNotes
+	 * @return
+	 */
+	// TESTED
 	List<TaggedNote> handleUnisons(List<Note> argNotes) {
+		List<TaggedNote> argTaggedNotes = new ArrayList<>();
+		argNotes.forEach(n -> argTaggedNotes.add(new TaggedNote(n)));
+
 		List<List<Note>> argChords = getChordsFromNotes(argNotes);
-		List<Integer[]> argVoicesUnison = new ArrayList<>();
 		int notesPreceding = 0;
 		for (int i = 0; i < argChords.size(); i++) {
-			argVoicesUnison.addAll(Collections.nCopies(argChords.get(i).size(), null));
 			Integer[][] unisonInfo = getUnisonInfo(argChords.get(i));
 			// If the chord contains a unison note pair
 			if (unisonInfo != null) {
 				// For each unison note pair in the chord (there should be only one)
-				for (int j = 0; j < unisonInfo.length; j++) {					
+				for (Integer[] in : unisonInfo) {
 					// 1. Determine indices
 					// a. Indices of the lower and upper unison note   
-					int indLower = notesPreceding + unisonInfo[j][1];
-					int indUpper = notesPreceding + unisonInfo[j][2];
+					int indLower = notesPreceding + in[1];
+					int indUpper = notesPreceding + in[2];
 					Note noteLower = argNotes.get(indLower);
 					Note noteUpper = argNotes.get(indUpper);
 					// b. Indices of the longer and shorter unison note
 					Rational durLower = argNotes.get(indLower).getMetricDuration();
 					Rational durUpper = argNotes.get(indUpper).getMetricDuration();
 
-					// Set <voicesUnison> and adapt <notes>
+					// 2. Set argTaggedNotes
 					// a. If the unison notes have the same duration
-					// - list the lower voice first
-					int isEDU;
 					if (durLower.isEqual(durUpper)) {
-						isEDU = 1;
-						argVoicesUnison.set(indLower, new Integer[]{
-							findVoice(argNotes.get(indLower)), findVoice(argNotes.get(indUpper)),
-							indUpper, isEDU
-						});
-						argVoicesUnison.set(indUpper, new Integer[]{
-							findVoice(argNotes.get(indLower)), findVoice(argNotes.get(indUpper)),
-							indLower, isEDU
-						});
+//						argVoicesUnison.set(indLower, new Integer[]{
+//							findVoice(argNotes.get(indLower)), findVoice(argNotes.get(indUpper)),
+//							indUpper, isEDU
+//						});
+//						argVoicesUnison.set(indUpper, new Integer[]{
+//							findVoice(argNotes.get(indLower)), findVoice(argNotes.get(indUpper)),
+//							indLower, isEDU
+//						});
+						Integer[] argVoicesUnison = 
+							new Integer[]{findVoice(argNotes.get(indLower)), 
+							findVoice(argNotes.get(indUpper))};
+						Rational[] argDurationsUnison = new Rational[]{durLower, durUpper};
+						argTaggedNotes.set(indLower, new TaggedNote(
+							argNotes.get(indLower), argVoicesUnison, argDurationsUnison, indUpper)
+						);
+						argTaggedNotes.set(indUpper, new TaggedNote(
+							argNotes.get(indUpper), argVoicesUnison, argDurationsUnison, indLower)
+						);
+						
 					}
-					// If the unison notes have different durations
-					// - list the voice that contains the note that has the longer duration first
+					// b. If the unison notes have different durations
 					else {
-						isEDU = 0;
 						int indLonger = durLower.isGreater(durUpper) ? indLower : indUpper;
 						int indShorter = durLower.isGreater(durUpper) ? indUpper : indLower;
-						argVoicesUnison.set(indLower, new Integer[]{
-							findVoice(argNotes.get(indLonger)), findVoice(argNotes.get(indShorter)),
-							indUpper, isEDU
-						});
-						argVoicesUnison.set(indUpper, new Integer[]{
-							findVoice(argNotes.get(indLonger)), findVoice(argNotes.get(indShorter)),
-							indLower, isEDU
-						});
-					}
-					if (durLower.isLess(durUpper)) {
-						Collections.swap(argNotes, indLower, indUpper);
+//						argVoicesUnison.set(indLower, new Integer[]{
+//							findVoice(argNotes.get(indLonger)), findVoice(argNotes.get(indShorter)),
+//							indUpper, isEDU
+//						});
+//						argVoicesUnison.set(indUpper, new Integer[]{
+//							findVoice(argNotes.get(indLonger)), findVoice(argNotes.get(indShorter)),
+//							indLower, isEDU
+//						});
+						Integer[] argVoicesUnison = 
+							new Integer[]{findVoice(argNotes.get(indLonger)), 
+							findVoice(argNotes.get(indShorter))}; 
+						Rational[] argDurationsUnison = 
+							new Rational[]{durLower.max(durUpper), durLower.min(durUpper)};
+						argTaggedNotes.set(indLower, new TaggedNote(
+							argNotes.get(indLonger), argVoicesUnison, argDurationsUnison, indUpper));
+						argTaggedNotes.set(indUpper, new TaggedNote(
+							argNotes.get(indShorter), argVoicesUnison, argDurationsUnison, indLower));
+						// TODO not needed (but clearer?)
+						if (durLower.isLess(durUpper)) {
+							Collections.swap(argNotes, indLower, indUpper);
+						}
 					}
 
 					adaptations = adaptations.concat(
 						"unison found in chord " + i + ": notes " + (indLower - notesPreceding) + 
 						" (" + noteLower +	") and " + (indUpper - notesPreceding) + " (" + noteUpper +
-						")" + (durLower.isLess(durUpper) ? " swapped in <notes>" : "in correct order") + "\n");
+						")" + (durLower.isLess(durUpper) ? " swapped in list of tagged notes" : 
+						"in correct order") + "\n");
 				}
 			}
 			notesPreceding += argChords.get(i).size();
 		}
-		return Arrays.asList(new Object[]{argNotes, argVoicesUnison});
+		return argTaggedNotes;
+	}
+
+
+	/**
+	 * Gets information on the unison(s) in the given chord. A unison occurs when two different 
+	 * notes in the same chord have the same pitch.  
+	 *
+	 * Returns an Integer[][], each element of which represents a unison pair (starting from below), each element
+	 * of which contains:
+	 *   as element 0: the pitch (as a MIDInumber) of the unison note
+	 *   as element 1: the sequence number in the chord of the lower unison note (i.e., the one appearing first in the chord)
+	 *   as element 2: the sequence number in the chord of the upper unison note 
+	 * If the chord does not contain (a) unison(s), <code>null</code> is returned. 
+	 *
+	 * NB1: This method presumes that a chord will not contain more than two of the same pitches in a chord.
+	 * NB2: Non-tablature case only; must be called before handleUnisons().
+	 *
+	 * @param chord
+	 * @return
+	 */
+	// TODO test
+	public static Integer[][] getUnisonInfo(List<Note> chord) {
+		Integer[][] unisonInfo = null;
+
+		// Determine the number of unisons in the chord
+		List<Integer> pitchesInChord = getPitchesInChord(chord);
+//		List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
+//		List<Integer> uniquePitchesInChord = new ArrayList<Integer>();
+//		for (int pitch : pitchesInChord) {
+//			if (!uniquePitchesInChord.contains(pitch)) {
+//				uniquePitchesInChord.add(pitch);
+//			}
+//		}
+		
+		List<Integer> uniquePitchesInChord = 
+			getPitchesInChord(chord).stream().distinct().collect(Collectors.toList());
+		int numUnisons = pitchesInChord.size() - uniquePitchesInChord.size();
+
+		// If the chord at chordIndex contains (a) unison(s)
+		if (numUnisons > 0) {
+			unisonInfo = new Integer[numUnisons][3];
+
+			// For each pitch in pitchesInChord 
+			int currRowInUnisonInfo = 0;
+			for (int i = 0; i < pitchesInChord.size(); i++) {
+				int currentPitch = pitchesInChord.get(i);        
+				// Search the remainder of pitchesInChord for an onset with the same pitch
+				for (int j = i + 1; j < pitchesInChord.size(); j++) {
+					// Same pitch found? Unison found; fill the currentRowInUnisonInfo-th row of unisonInfo, increase
+					// currentRowInUnisonInfo, break from inner for, and continue with the next iteration of the outer
+					// for (the next pitch)
+					if (pitchesInChord.get(j) == currentPitch) {
+						unisonInfo[currRowInUnisonInfo][0] = currentPitch;
+						unisonInfo[currRowInUnisonInfo][1] = i;
+						unisonInfo[currRowInUnisonInfo][2] = j;
+						currRowInUnisonInfo++;
+						break; // See NB1 for reason of break
+					}
+				} 
+			}
+		}
+		return unisonInfo;
 	}
 
 
@@ -7667,70 +7870,6 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Gets information on the single-note unison (SNU) notes in the given chord. 
-	 * A SNU occurs when a single Tablature note is shared by two Transcription Notes. Returns an Integer[][],
-	 * each element of which represents a SNU pair (starting from below in the chord) containing
-	 * <ul>
-	 * <li>As element 0: the pitch (as a MIDInumber) of both SNU notes.</li>
-	 * <li>As element 1: the sequence number in the chord of the lower SNU note.</li>
-	 * <li>As element 2: the sequence number in the chord of the upper SNU note.</li> 
-	 * </ul>
-	 * 
-	 * If the chord does not contain any SNUs, <code>null</code> is returned.  
-	 *
-	 * NB1: This method presumes that a chord contains only one SNU, and neither a unison nor a course crossing.
-	 * NB2: Tablature case only; must be called before handleSNUs(). 
-	 *
-	 * @param chord
-	 * @param tablatureChord
-	 * @return    
-	 */
-	// TESTED
-	Integer[][] getSNUInfo(List<Note> chord, List<TabSymbol> tablatureChord) {
-		Integer[][] SNUInfo = null;
-
-//		List<List<Note>> transcriptionChords = getNoteSequenceChords();
-		// Determine the number of SNUs in the chord
-		int numCoDs = chord.size() - tablatureChord.size();
-
-		// If chord contains any SNUs
-		if (numCoDs > 0) { 
-//		if (getNumberOfCoDsInChord(tablatureChords, chordIndex) > 0) {
-			SNUInfo = new Integer[numCoDs][3];
-//			coDInfo = new Integer[getNumberOfCoDsInChord(tablatureChords, chordIndex)][3];
-
-//			List<Note> chord = transcriptionChords.get(chordIndex);
-
-			// Gather the pitches of the Notes in chord in a list
-			List<Integer> pitchesInChord = new ArrayList<Integer>();
-			for (int i = 0; i < chord.size(); i++) {
-				int pitch = chord.get(i).getMidiPitch();
-				pitchesInChord.add(pitch);
-			}
-			// For each pitch in pitchesInChord
-			int currentRowInCoDInfo = 0;
-			for (int i = 0; i < pitchesInChord.size(); i++) {
-				int currentPitch = pitchesInChord.get(i);        
-				// Search the remainder of pitchesInChord for a note with the same pitch (the upper SNU note)
-				for (int j = i + 1; j < pitchesInChord.size(); j++) {
-					// Same pitch found? upper SNU note found; fill the currentRowInCoDInfo-th row of SNUInfo, increase
-					// currentRowInCoDInfo, break from inner for, and continue with the next iteration of the outer
-					// for (the next pitch)
-					if (pitchesInChord.get(j) == currentPitch) {
-						SNUInfo[currentRowInCoDInfo][0] = currentPitch;
-						SNUInfo[currentRowInCoDInfo][1] = i;
-						SNUInfo[currentRowInCoDInfo][2] = j;
-						currentRowInCoDInfo++;
-						break; 
-					}
-				} 
-			}
-		}
-		return SNUInfo;
-	}
-
-
-	/**
 	 * Gets information on the single-note unison (SNU) notes in the chord at the given index in the given list. 
 	 * A SNU occurs when a single Tablature note is shared by two Transcription Notes. Returns an Integer[][],
 	 * each element of which represents a SNU pair (starting from below in the chord) containing
@@ -7839,68 +7978,6 @@ public class Transcription implements Serializable {
 //    }
 //  	return numberOfUnisons;
 //  }
-
-
-	/**
-	 * Gets information on the unison(s) in the given chord. A unison occurs when two different 
-	 * notes in the same chord have the same pitch.  
-	 *
-	 * Returns an Integer[][], each element of which represents a unison pair (starting from below), each element
-	 * of which contains:
-	 *   as element 0: the pitch (as a MIDInumber) of the unison note
-	 *   as element 1: the sequence number in the chord of the lower unison note (i.e., the one appearing first in the chord)
-	 *   as element 2: the sequence number in the chord of the upper unison note 
-	 * If the chord does not contain (a) unison(s), <code>null</code> is returned. 
-	 *
-	 * NB1: This method presumes that a chord will not contain more than two of the same pitches in a chord.
-	 * NB2: Non-tablature case only; must be called before handleUnisons().
-	 *
-	 * @param chord
-	 * @return
-	 */
-	// TESTED
-	public Integer[][] getUnisonInfo(List<Note> chord) {
-		Integer[][] unisonInfo = null;
-
-		// Determine the number of unisons in the chord
-		List<Integer> pitchesInChord = getPitchesInChord(chord);
-//		List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
-//		List<Integer> uniquePitchesInChord = new ArrayList<Integer>();
-//		for (int pitch : pitchesInChord) {
-//			if (!uniquePitchesInChord.contains(pitch)) {
-//				uniquePitchesInChord.add(pitch);
-//			}
-//		}
-		
-		List<Integer> uniquePitchesInChord = 
-			getPitchesInChord(chord).stream().distinct().collect(Collectors.toList());
-		int numUnisons = pitchesInChord.size() - uniquePitchesInChord.size();
-
-		// If the chord at chordIndex contains (a) unison(s)
-		if (numUnisons > 0) {
-			unisonInfo = new Integer[numUnisons][3];
-
-			// For each pitch in pitchesInChord 
-			int currentRowInUnisonInfo = 0;
-			for (int i = 0; i < pitchesInChord.size(); i++) {
-				int currentPitch = pitchesInChord.get(i);        
-				// Search the remainder of pitchesInChord for an onset with the same pitch
-				for (int j = i + 1; j < pitchesInChord.size(); j++) {
-					// Same pitch found? Unison found; fill the currentRowInUnisonInfo-th row of unisonInfo, increase
-					// currentRowInUnisonInfo, break from inner for, and continue with the next iteration of the outer
-					// for (the next pitch)
-					if (pitchesInChord.get(j) == currentPitch) {
-						unisonInfo[currentRowInUnisonInfo][0] = currentPitch;
-						unisonInfo[currentRowInUnisonInfo][1] = i;
-						unisonInfo[currentRowInUnisonInfo][2] = j;
-						currentRowInUnisonInfo++;
-						break; // See NB1 for reason of break
-					}
-				} 
-			}
-		}
-		return unisonInfo;
-	}
 
 
 	/**

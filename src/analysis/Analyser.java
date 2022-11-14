@@ -842,7 +842,7 @@ public class Analyser {
 			String metricPosAsString = barNum + posInBar;
 
 			// a. Determine number of unisons
-			Integer[][] unisonInfo = transcription.getUnisonInfo(currentChord);
+			Integer[][] unisonInfo = Transcription.getUnisonInfo(currentChord);
 			if (unisonInfo != null) {
 				totalNumUnisons++;
 				if (unisonInfo.length == 1) {
