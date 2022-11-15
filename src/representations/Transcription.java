@@ -78,7 +78,7 @@ public class Transcription implements Serializable {
 	private List<List<Double>> durationLabels; // length = l1
 	private List<List<Double>> minimumDurationLabels;
 	private List<List<List<Double>>> durationLabelsOLD;
-	private List<Integer[]> voicesSNU = null; // length = l1
+	private List<Integer[]> voicesSNU; // length = l1
 	private List<Integer[]> voicesEDU;
 	private List<Integer[]> voicesIDU;
 	private List<Integer[]> voicesUnison;
@@ -113,9 +113,9 @@ public class Transcription implements Serializable {
 	public static final int KI_NUM_MT_FIRST_BAR = 4;
 	public static final int KI_DEN_MT_FIRST_BAR = 5;
 
-	private String adaptations = "Adaptations:" + "\n";
-	private String chordsSpec;
-	private String alignmentDetails = "Alignment details:" + "\n"; 
+	private String handledNotes;
+	private String chordCheck;
+	private String alignmentCheck; 
 	private static boolean reversePiece = false;
 
 	public static final List<Double> THIRTYSECOND = createDurationLabel(1*3);
@@ -137,11 +137,11 @@ public class Transcription implements Serializable {
 	public static final List<Double> DOTTED_HALF = createDurationLabel(24*3);
 	public static final List<Double> WHOLE = createDurationLabel(32*3);
 
-	public static final List<Double> VOICE_0 = createVoiceLabel(0);
-	public static final List<Double> VOICE_1 = createVoiceLabel(1);
-	public static final List<Double> VOICE_2 = createVoiceLabel(2);
-	public static final List<Double> VOICE_3 = createVoiceLabel(3);
-	public static final List<Double> VOICE_4 = createVoiceLabel(4);
+	public static final List<Double> VOICE_0 = createVoiceLabel(new Integer[]{0});
+	public static final List<Double> VOICE_1 = createVoiceLabel(new Integer[]{1});
+	public static final List<Double> VOICE_2 = createVoiceLabel(new Integer[]{2});
+	public static final List<Double> VOICE_3 = createVoiceLabel(new Integer[]{3});
+	public static final List<Double> VOICE_4 = createVoiceLabel(new Integer[]{4});
 	
 	public static enum Type {
 		GROUND_TRUTH("ground truth", 0), PREDICTED("predicted", 2), 
@@ -219,8 +219,10 @@ public class Transcription implements Serializable {
 			TaggedNote t = (TaggedNote) o;
 			return 
 				getNote().equals(t.getNote()) &&
-				getVoices() == null ? t.getVoices() == null : Arrays.equals(getVoices(), t.getVoices()) &&
-				getDurations() == null ? t.getDurations() == null : Arrays.equals(getDurations(), t.getDurations()) &&
+				getVoices() == null ? t.getVoices() == null : 
+					Arrays.equals(getVoices(), t.getVoices()) &&
+				getDurations() == null ? t.getDurations() == null : 
+					Arrays.equals(getDurations(), t.getDurations()) &&
 				getIndexOtherUnisonNote() == t.getIndexOtherUnisonNote()
 //				&&
 //				isEDU() == t.isEDU()
@@ -1004,6 +1006,8 @@ public class Transcription implements Serializable {
 		boolean isGrousndTruthTranscription, List<List<Double>> argVoiceLabels, 
 		List<List<Double>> argDurLabels, Type t) {
 		
+		// NB: normaliseTuning is false when creating a ground truth Transcription and true 
+		// when creating a predicted Transcription (see Javadoc for this method)
 		Tablature tab = encoding != null ? new Tablature(encoding, normaliseTuning) : null;
 
 		setPiece(p);
@@ -1012,26 +1016,21 @@ public class Transcription implements Serializable {
 		
 		setTaggedNotes(tab); // needs <piece>
 //		setNotes(tab); // needs <piece>	
+//		setNoteSequence(); // needs <piece>
+		setNotes();
 
-		setNoteSequence(); // needs <piece>
-		System.exit(0);
-		
-		if (tab!= null) {
-			if (checkChords(tab) == false) { // needs <noteSequence>
-				System.out.println(chordsSpec);
-				throw new RuntimeException("ERROR: Chord error (see console).");
-			}
-		}
-		
 		if (t != Type.PREDICTED) {
-			initialiseVoiceLabels(null); // needs <piece> and <noteSequence>
+			setVoiceLabels(null, tab != null);
+//			initialiseVoiceLabels(null); // needs <piece> and <noteSequence>
 		}
 		else {
-			initialiseVoiceLabels(argVoiceLabels); // labels have their final form
+			setVoiceLabels(argVoiceLabels, tab != null);
+//			initialiseVoiceLabels(argVoiceLabels); // labels have their final form
 		}
 //		Tablature tab = null;
 		// a. Tablature case
 		if (encoding != null) {
+			setVoicesSNU();
 			if (t != Type.PREDICTED) {
 				initialiseDurationLabels(null); // needs <noteSequence>
 			}
@@ -1041,17 +1040,17 @@ public class Transcription implements Serializable {
 			// 1. Check chords 
 			// NB: normaliseTuning is false when creating a ground truth Transcription and true 
 			// when creating a predicted Transcription (see Javadoc for this method)
-			tab = new Tablature(encoding, normaliseTuning);
-			if (checkChords(tab) == false) { // needs <noteSequence>
-				System.out.println(chordsSpec);
-				throw new RuntimeException("ERROR: Chord error (see console).");
-			}
+//			tab = new Tablature(encoding, normaliseTuning);
+//			if (checkChords(tab) == false) { // needs <noteSequence>
+//				System.out.println(chordCheck);
+//				throw new RuntimeException("ERROR: Chord error (see console).");
+//			}
 			// 2. Align tablature and transcription
 			handleSNUs(tab, t); // needs <noteSequence>, <voiceLabels>, and <durationLabels> (and changes these)
 			handleCourseCrossings(tab, t); // needs <noteSequence>, <voiceLabels>, and <durationLabels> (and changes these)
 			// 3. Do final alignment check
 			if (checkAlignment(tab) == false) {
-				System.out.println(alignmentDetails);
+				System.out.println(alignmentCheck);
 				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
 			}
 			// 4. Transpose (only if ground truth Transcription; see Javadoc for this method)
@@ -1065,6 +1064,9 @@ public class Transcription implements Serializable {
 		}
 		// b. Non-tablature case
 		else {
+			setVoicesUnison();
+			setVoicesEDU();
+			setVoicesIDU();
 			setMeterInfo();
 			setKeyInfo();
 			handleUnisonsss(t); // needs <noteSequence> and <voiceLabels> (and changes these)
@@ -1143,10 +1145,22 @@ public class Transcription implements Serializable {
 
 		// In the tablature case: handle SNUs and course crossings
 		if (tab != null) {
-			// a. SNUs
+			// Check tablature chords
+			if (checkChords(tab, argNotes) == false) { // TODO make static?
+				System.out.println(chordCheck);
+				throw new RuntimeException("ERROR: Chord error (see console).");
+			}
+
+			// Handle SNUs
 			argTaggedNotes = handleSNUs(argNotes, tab);
-			// b. Course crossings
+			// Handle course crossings
 			argTaggedNotes = handleCourseCrossings(argTaggedNotes, tab);
+			
+			// Check alignment
+			if (checkAlignment(tab, argTaggedNotes) == false) { // TODO make static?
+				System.out.println(alignmentCheck);
+				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
+			}
 		}
 		// In the non-tablature case: handle unisons
 		else {
@@ -1154,36 +1168,6 @@ public class Transcription implements Serializable {
 		}	
 		return argTaggedNotes;
 	}
-
-
-//	/**
-//	 * 
-//	 * @return
-//	 */
-//	// TESTED
-//	List<TaggedNote> makeNotes(Tablature tab) {
-//		// Unhandled notes
-//		List<Note> argNotes = makeUnhandledNotes();
-//		List<Integer[]> argVoicesSNU = null;
-//		List<Integer[]> argVoicesUnison = null;
-//
-//		// In the tablature case: handle SNUs and course crossings
-//		if (tab != null) {
-//			// a. SNUs
-//			List<TaggedNote> SNUs = handleSNUs(argNotes, tab);
-//			argNotes = (List<Note>) SNUs.get(0);
-//			argVoicesSNU = (List<Integer[]>) SNUs.get(1);
-//			// b. Course crossings
-//			argNotes = handleCourseCrossings(argNotes, tab);
-//		}
-//		// In the non-tablature case: handle unisons
-//		else {
-//			List<Object> unisons = handleUnisons(argNotes);
-//			argNotes = (List<Note>) unisons.get(0);
-//			argVoicesUnison = (List<Integer[]>) unisons.get(1);
-//		}	
-//		return Arrays.asList(new Object[]{argNotes, argVoicesSNU, argVoicesUnison});
-//	}
 
 
 	// TESTED
@@ -1196,6 +1180,239 @@ public class Transcription implements Serializable {
 			.thenComparing(Note::getMidiPitch)
 			.thenComparing(this::findVoice, Comparator.reverseOrder()));
 		return notes;
+	}
+
+
+	/**
+	 * Checks whether the given <code>Tablature</code> contains any illegal chords, i.e.,
+	 * <ul>
+	 * <li>Chords with more than one SNU, unison, or course crossing.</li>
+	 * <li>Chords with combinations of SNUs, unisons, and course crossings.</li>
+	 * </ul>
+	 * 
+	 * Adds a summary of the findings to <code>chordCheck</code>.<br><br>
+	 *   
+	 * NB: Tablature case only; must be called before handling of SNUs and course crossings.
+	 *  
+	 * @param tab
+	 * @param argNotes
+	 * @return <code>true</code> if no illegal chords are found; else <code>false</code>.
+	 */
+	boolean checkChords(Tablature tab, List<Note> argNotes) {  
+		boolean checkPassed = true;
+		chordCheck = "";
+
+		List<List<TabSymbol>> tabCh = tab.getChords();
+		List<List<Note>> ch = getChordsFromNotes(argNotes);
+//		List<List<Note>> ch = getChords();
+
+		// 0. Check equality of number of chords
+		if (tabCh.size() != ch.size()) {
+			chordCheck = tabCh.size() + " chords in Tablature, " + ch.size() + " in Transcription";
+			return false;
+		}
+
+		// 1. Counts
+		String counts = "the Tablature/Transcription contains" + "\n";
+		counts = counts.concat(
+			"- " + tab.getNumberOfNotes() + "/" + 
+				ch.stream().flatMap(List::stream).collect(Collectors.toList()).size() + " notes" + "\n" +
+			"- " + tabCh.size() + "/" + ch.size() + " chords" + "\n" +
+			"- " + Collections.frequency(tab.getEncoding().getListsOfStatistics()
+				.get(Encoding.IS_REST_EVENT_IND), 1) + " rest events (Tablature)" + "\n"
+		);
+
+		// 2. Special chords
+		String special = "chords with SNUs, unisons, or course crossings" + "\n"; 
+		List<String> specialChords = new ArrayList<String>();
+		List<String> oneEqualPitchPair = new ArrayList<String>();
+		List<String> twoEqualPitchPairs = new ArrayList<String>();
+		List<String> equalPitchTriplet = new ArrayList<String>();
+		List<String> oneSNU = new ArrayList<String>();
+		List<String> twoSNUs = new ArrayList<String>();
+		List<String> threeSNUs = new ArrayList<String>();
+		List<String> oneUnison = new ArrayList<String>();
+		List<String> twoUnisons = new ArrayList<String>();
+		List<String> threeUnisons = new ArrayList<String>();
+		List<String> oneCC = new ArrayList<String>();
+		List<String> twoCC = new ArrayList<String>();
+		List<String> threeCC = new ArrayList<String>();
+		for (int i = 0; i < tabCh.size(); i++) {
+			Rational[] metPos = Timeline.getMetricPosition(
+				new Rational(tab.getBasicTabSymbolPropertiesChord(i)[0][Tablature.ONSET_TIME], Tablature.SRV_DEN), 
+				tab.getTimeline().getMeterInfo());
+			String metPosAsString = 
+				String.valueOf(metPos[0].getNumer()) + 
+				(metPos[1].getNumer() == 0 ? "" : " " + String.valueOf(metPos[1]));
+			// a. Check for equal-pitch-pairs
+			List<Integer> pitches = getPitchesInChord(ch.get(i));
+			if (pitches.stream().distinct().collect(Collectors.toList()).size() < pitches.size()) {
+				List<Integer> pitchFreq = getPitchFrequency(ch.get(i));
+				if (Collections.frequency(pitchFreq, 2) == 2) {
+					oneEqualPitchPair.add(metPosAsString);
+				}
+				if (Collections.frequency(pitchFreq, 2) == 4) {
+					twoEqualPitchPairs.add(metPosAsString);
+				}
+				if (pitchFreq.contains(3)) { 
+					equalPitchTriplet.add(metPosAsString);
+				}
+				if (!specialChords.contains(metPosAsString)) {
+					specialChords.add(metPosAsString);
+				}
+			}
+			// b. Check for any SNUs
+			if (ch.get(i).size() != tabCh.get(i).size()) {
+				if (ch.get(i).size() == (tabCh.get(i).size() + 1)) {					
+					oneSNU.add(metPosAsString);
+				}
+				if (ch.get(i).size() == (tabCh.get(i).size() + 2)) {
+					twoSNUs.add(metPosAsString);
+				}
+				if (ch.get(i).size() == (tabCh.get(i).size() + 3)) {
+					threeSNUs.add(metPosAsString);
+				}
+				if (!specialChords.contains(metPosAsString)) {
+					specialChords.add(metPosAsString);
+				}
+			}	     
+			// c. Check for any unisons
+			if (tab.getUnisonInfo(i) != null) {
+				if (tab.getUnisonInfo(i).size() == 1) {
+					oneUnison.add(metPosAsString);
+				}
+				if (tab.getUnisonInfo(i).size() == 2) {
+					twoUnisons.add(metPosAsString);
+				}
+				if (tab.getUnisonInfo(i).size() == 3) {
+					threeUnisons.add(metPosAsString);
+				}
+				if (!specialChords.contains(metPosAsString)) {
+					specialChords.add(metPosAsString);
+				}
+			}
+			// d. Check for any course crossings
+			if (tab.getCourseCrossingInfo(i) != null) {
+				if (tab.getCourseCrossingInfo(i).size() == 1) {
+					oneCC.add(metPosAsString);
+				}
+				if (tab.getCourseCrossingInfo(i).size() == 2) {
+					twoCC.add(metPosAsString);
+				}
+				if (tab.getCourseCrossingInfo(i).size() == 3) {
+					threeCC.add(metPosAsString);
+				}
+				if (!specialChords.contains(metPosAsString)) {
+					specialChords.add(metPosAsString);
+				}
+			}
+		}
+		special = special.concat(
+			"- equal-pitch pairs" + "\n" +
+			"  - one in bar(s)   " + oneEqualPitchPair + "\n" +
+			"  - two in bar(s)   " + twoEqualPitchPairs + "\n" +  	
+			"  - three in bar(s) " + equalPitchTriplet + "\n" +
+			"- SNUs" + "\n" +
+			"  - one in bar(s)   " + oneSNU + "\n" +
+			"  - two in bar(s)   " + twoSNUs + "\n" +
+			"  - three in bar(s) " + threeSNUs + "\n" +
+			"- unisons" + "\n" +
+			"  - one in bar(s)   " + oneUnison + "\n" +
+			"  - two in bar(s)   " + twoUnisons + "\n" +
+			"  - three in bar(s) " + threeUnisons + "\n" +
+			"- course crossings" + "\n" +
+			"  - one in bar(s)   " + oneCC + "\n" +
+			"  - two in bar(s)   " + twoCC + "\n" +
+			"  - three in bar(s) " + threeCC + "\n" +
+			"- duplicates or combinations" + "\n"
+		);
+		// Find any illegal duplicates or combinations, i.e., chords containing (a) more than one SNU, 
+		// unison, or course crossing; (b) any combination of SNUs, unisons, or course crossings
+		String details = "  (none)";
+		// a. More than one SNU, unison, or course crossing
+		if (twoSNUs.size() != 0 || threeSNUs.size() != 0 || twoUnisons.size() != 0 ||
+			threeUnisons.size() != 0 ||	twoCC.size() != 0 || threeCC.size() != 0) {
+			details = "";
+			checkPassed = false;
+			if (twoSNUs.size() != 0) {
+				details = details.concat("  - two SNUs in bar(s) " + twoSNUs + "\n");
+			}
+			if (threeSNUs.size() != 0) {
+				details = details.concat("  - three SNUs in bar(s) " + threeSNUs + "\n");
+			}
+			if (twoUnisons.size() != 0) {
+				details = details.concat("  - two unisons in bar(s) " + twoUnisons + "\n");
+			}
+			if (threeUnisons.size() != 0) {
+				details = details.concat("  - three unisons in bar(s) " + threeUnisons + "\n");
+			}
+			if (twoCC.size() != 0) {
+				details = details.concat("  - two course crossings in bar(s) " + twoCC + "\n");
+			}
+			if (threeCC.size() != 0) {
+				details = details.concat("  - three course crossings in bar(s) " + threeCC + "\n");
+			}
+		}
+		// b. Combinations of SNUs, unisons, and course crossings 
+		// Find which chord appears more than once in specialChords and add that to combinationChords
+		List<String> combiChords = new ArrayList<String>();
+		specialChords.stream()
+			.filter(c -> Collections.frequency(specialChords, c) > 1)
+			.forEach(c -> { if (!combiChords.contains(c)) {combiChords.add(c);} });
+//		for (String specialChord : specialChords) {
+//			if (Collections.frequency(specialChords, specialChord) > 1) {
+//				checkPassed = false;
+//				if (!combiChords.contains(specialChord)) {
+//					combiChords.add(specialChord);
+//				}
+//			}
+//		}
+		if (combiChords.size() != 0) {
+			details = "";
+			checkPassed = false;
+			List<String> allSNUs = 
+				Stream.concat(Stream.concat(oneSNU.stream(), twoSNUs.stream()), threeSNUs.stream())
+				.collect(Collectors.toList());
+//			List<String> SNUChords = new ArrayList<String>();
+//			SNUChords.addAll(oneSNU); 
+//			SNUChords.addAll(twoSNUs);
+//			SNUChords.addAll(threeSNUs);
+			List<String> allUnisons = 
+				Stream.concat(Stream.concat(oneUnison.stream(), twoUnisons.stream()), threeUnisons.stream())
+				.collect(Collectors.toList());
+//			List<String> unisonChords = new ArrayList<String>();
+//			unisonChords.addAll(oneUnison); 
+//			unisonChords.addAll(twoUnisons);
+//			unisonChords.addAll(threeUnisons);
+			List<String> allCCs = 
+				Stream.concat(Stream.concat(oneCC.stream(), twoCC.stream()), threeCC.stream())
+				.collect(Collectors.toList());
+//			List<String> courseCrossingChords = new ArrayList<String>();
+//			courseCrossingChords.addAll(oneCourseCrossing); 
+//			courseCrossingChords.addAll(twoCourseCrossings);
+//			courseCrossingChords.addAll(threeCourseCrossings);
+			for (String metPos : combiChords) {
+				// There are four possible combinations:
+				// 1. SNUs and unisons (= unisons and SNUs)  
+				// 2. SNUs and course crossings (= course crossings and SNUs)
+				// 3. unisons and course crossings (= course crossings and unisons)
+				// 4. SNUs, unisons, and course crossings
+				if (allSNUs.contains(metPos) && allUnisons.contains(metPos)) {
+					details = details.concat("  - SNU(s) and unison(s) in bar " + metPos + "\n");
+				}
+				if (allSNUs.contains(metPos) && allCCs.contains(metPos)) {
+					details = details.concat("  - SNU(s) and course crossing(s) in bar " + metPos + "\n");	
+				}
+				if (allUnisons.contains(metPos) && allCCs.contains(metPos)) {
+					details = details.concat("  - unison(s) and course crossing(s) in bar " + metPos + "\n");
+				}	 
+				if (allSNUs.contains(metPos) && allUnisons.contains(metPos) && allCCs.contains(metPos)) {
+					details = details.concat("  - SNU(s), unison(s), and course crossing(s) in bar " + metPos + "\n");
+				}
+			}
+		}
+		chordCheck = chordCheck.concat(counts + special + details);
+		return checkPassed; 
 	}
 
 
@@ -1223,10 +1440,11 @@ public class Transcription implements Serializable {
 	 *     duration first.</li>
 	 * </ul>
 	 * 
-	 * 
 	 * If <code>t == Type.PREDICTED</code>, the SNU notes always have the same duration: i.e., if no 
 	 * duration is predicted, the (minimum) duration for the Tablature note; else, the duration that 
-	 * is predicted (only one duration is predicted).
+	 * is predicted (only one duration is predicted).<br><br>
+	 * 
+	 * Adds a summary of the findings to <code>handledNotes</code>.<br><br>
 	 * 
 	 * NB1: This method presumes that a chord contains only one SNU, and neither a course crossing nor a 
 	 *      unison.<br>
@@ -1295,7 +1513,10 @@ public class Transcription implements Serializable {
 					argTaggedNotes.remove(indUpper);
 					notesRemovedFromChord++;
 
-					adaptations = adaptations.concat(
+					if (handledNotes == null) {
+						handledNotes = "";
+					}
+					handledNotes = handledNotes.concat(
 						"SNU found in chord " + i + ": note " + (removeInd - notesPreceding) + 
 						" (" + removeNote +	") excluded from list of tagged notes" + "\n");
 				}
@@ -1379,6 +1600,8 @@ public class Transcription implements Serializable {
 	 * <li>The <code>TaggedNote</code>s are swapped so that the lower-course (i.e., higher-pitch) course 
 	 *     crossing note comes first.</li>
 	 * </ul>
+	 *  
+	 * Adds a summary of the findings to <code>handledNotes</code>.<br><br>
 	 *   
 	 * NB1: This method presumes that a chord contains only one course crossing, and neither a SNU 
 	 *      nor a unison.<br>
@@ -1406,7 +1629,7 @@ public class Transcription implements Serializable {
 					// 2. Adapt argNotes
 					Collections.swap(argTaggedNotes, indLower, indUpper);
 
-					adaptations = adaptations.concat(
+					handledNotes = handledNotes.concat(
 						"course crossing found in chord " + i + ": notes " + (indLower - notesPreceding) + 
 						" (" + noteLower + ") and " + (indUpper - notesPreceding) + " (" + noteUpper + 
 						") swapped in list of tagged notes" + "\n");
@@ -1415,6 +1638,65 @@ public class Transcription implements Serializable {
 			notesPreceding += tabChords.get(i).size();
 		}
 		return argTaggedNotes;
+	}
+
+
+	/**
+	 * Checks whether, after handling of SNUs and course crossings, the <code>Transcription</code> is 
+	 * aligned with the given <code>Tablature</code>, i.e., whether
+	 * <ol>
+	 * <li>They contain the same number of notes.</li>
+	 * <li>The notes are in the same order (in <code>notes</code> and in the <code>Tablature</code>'s 
+	 * <code>basicTabSymbolProperties</code>).</li>
+	 * </ol>
+	 * 
+	 * Adds a summary of the findings to <code>alignmentCheck</code>.<br><br>     
+	 * 
+	 * NB: Tablature case only; must be called after handling of SNUs and course crossings.
+	 * 
+	 * @param tab
+	 * @param argTaggedNotes
+	 * @return <code>true</code> if both conditions are met; else <code>false</code>.
+	 */
+	// TESTED
+	boolean checkAlignment(Tablature tab, List<TaggedNote> argTaggedNotes) {
+		Integer[][] btp = tab.getBasicTabSymbolProperties();
+//		NoteSequence noteSeq = getNoteSequence();
+//		List<Note> notes = getNotes();
+
+		// 1. Check equality of number of notes
+		if (btp.length != argTaggedNotes.size()) {
+			alignmentCheck = btp.length + " notes in Tablature, " + argTaggedNotes.size() + " in Transcription";		
+			return false;
+		}
+
+		// 2. Check alignment
+		for (int i = 0; i < btp.length; i++) {	
+			// Get the pitch and onset time of the TS at index i
+			int pitchCurrTabSymbol = btp[i][Tablature.PITCH];
+			Rational onsetTimeCurrTabSymbol = 
+				new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN);
+			onsetTimeCurrTabSymbol.reduce();
+			// Get the pitch and onset time of the Note at index i in noteSeq
+			Note currNote = argTaggedNotes.get(i).getNote();
+//			Note currNote = noteSeq.getNoteAt(i);
+			int pitchCurrNote = currNote.getMidiPitch();
+			Rational onsetTimeCurrNote = currNote.getMetricTime();
+			onsetTimeCurrNote.reduce();
+			// Compare
+			if (pitchCurrTabSymbol != pitchCurrNote || !onsetTimeCurrTabSymbol.equals(onsetTimeCurrNote)) {
+				if (alignmentCheck == null) {
+					alignmentCheck = "";
+				}
+				alignmentCheck = alignmentCheck.concat("Misalignment found at note index " + i + " (chord index " + 
+					btp[i][Tablature.CHORD_SEQ_NUM] + "; " + "sequence number " + 
+					btp[i][Tablature.NOTE_SEQ_NUM] + "): pitch and onset time in " + 
+					"tablature are " + pitchCurrTabSymbol + " and " + onsetTimeCurrTabSymbol + "; pitch and onset " +
+					"time in transcription are " + pitchCurrNote + " and " + onsetTimeCurrNote + ".");
+				return false;
+			}
+		}
+		return true;
 	}
 
 
@@ -1444,6 +1726,8 @@ public class Transcription implements Serializable {
 	 *     duration first.</li>
 	 * <li>The index of the respective complementary unison note is set in the full <code>TaggedNote</code>s.</li>
 	 * </ul>
+	 * 
+	 * Adds a summary of the findings to <code>handledNotes</code>.<br><br>
 	 * 
 	 * NB: The notes in a unison note pair do not necessarily have successive indices.
 	 * 
@@ -1523,7 +1807,10 @@ public class Transcription implements Serializable {
 						}
 					}
 
-					adaptations = adaptations.concat(
+					if (handledNotes == null) {
+						handledNotes = "";
+					}
+					handledNotes = handledNotes.concat(
 						"unison found in chord " + i + ": notes " + (indLower - notesPreceding) + 
 						" (" + noteLower +	") and " + (indUpper - notesPreceding) + " (" + noteUpper +
 						")" + (durLower.isLess(durUpper) ? " swapped in list of tagged notes" : 
@@ -1595,6 +1882,55 @@ public class Transcription implements Serializable {
 			}
 		}
 		return unisonInfo;
+	}
+
+
+	void setNotes() {
+		notes = makeNotes();
+	}
+
+
+	// TESTED
+	List<Note> makeNotes() {	
+		List<Note> argNotes = new ArrayList<>();
+		getTaggedNotes().forEach(tn -> argNotes.add(tn.getNote()));
+		return argNotes;
+	}
+
+
+	void setVoiceLabels(List<List<Double>> argVoiceLabels, boolean argIsTablatureCase) {
+		voiceLabels = 
+			argVoiceLabels == null ? makeVoiceLabels(argIsTablatureCase) : argVoiceLabels;
+	}
+
+
+	// TESTED
+	List<List<Double>> makeVoiceLabels(boolean argIsTablatureCase) {
+		List<List<Double>> vl = new ArrayList<List<Double>>(); 
+		getTaggedNotes().forEach(tn -> {
+			if (argIsTablatureCase) {
+				vl.add(createVoiceLabel(
+					tn.getVoices() == null ? new Integer[]{findVoice(tn.getNote())} : 
+						tn.getVoices()));
+			}
+			else {
+				vl.add(createVoiceLabel(new Integer[]{findVoice(tn.getNote())}));
+			}
+		});
+		return vl;
+	}
+
+
+	void setVoicesSNU() {
+		voicesSNU = makeVoicesSNU();
+	}
+
+
+	// TESTED
+	List<Integer[]> makeVoicesSNU() {
+		List<Integer[]> argVoicesSNU = new ArrayList<>();
+		getTaggedNotes().forEach(tn -> argVoicesSNU.add(tn.getVoices()));
+		return argVoicesSNU;
 	}
 
 
@@ -2092,9 +2428,9 @@ public class Transcription implements Serializable {
 	}
 
 
-	public void setVoiceLabels(List<List<Double>> argVoiceLabels) {
-		voiceLabels = argVoiceLabels;
-	}
+//	public void setVoiceLabels(List<List<Double>> argVoiceLabels) {
+//		voiceLabels = argVoiceLabels;
+//	}
 
 
 	void setDurationLabels(List<List<Double>> argDurationLabels) {
@@ -2109,235 +2445,6 @@ public class Transcription implements Serializable {
 
 	public List<List<Double>> getMinimumDurationLabels() {
 		return minimumDurationLabels;
-	}
-
-
-	/**
-	 * Checks whether the given Tablature contains any illegal chords, i.e., chords with more than
-	 * one SNU, unison, or course crossing; or with combinations of these. Sets <code>chordsSpec</code> 
-	 * with detailed information on any SNU, unison, and course crossing chords, as well as on any illegal 
-	 * chords.
-	 *  
-	 * NB: Tablature case only.
-	 *  
-	 * @param tab
-	 * @return <code>false</code> if any illegal chords are found.
-	 */
-	// TODO test
-	boolean checkChords(Tablature tab) {  
-		boolean checkPassed = true;
-		chordsSpec = "";
-
-		List<List<TabSymbol>> tabCh = tab.getChords();
-		List<List<Note>> ch = getChords();
-
-		// 0. Check for equality of number of chords
-		if (tabCh.size() != ch.size()) {
-			chordsSpec = tabCh.size() + "chords in Tablature, " + ch.size() + " in Transcription";
-			return false;
-		}
-
-		// 1. Counts
-		String counts = "the Tablature/Transcription contains" + "\n";
-		counts = counts.concat(
-			"- " + tab.getNumberOfNotes() + "/" + 
-				ch.stream().flatMap(List::stream).collect(Collectors.toList()).size() + " notes" + "\n" +
-			"- " + tabCh.size() + "/" + ch.size() + " chords" + "\n" +
-			"- " + Collections.frequency(tab.getEncoding().getListsOfStatistics()
-				.get(Encoding.IS_REST_EVENT_IND), 1) + " rest events (Tablature)" + "\n"
-		);
-
-		// 2. Special chords
-		String special = "chords with SNUs, unisons, or course crossings" + "\n"; 
-		List<String> specialChords = new ArrayList<String>();
-		List<String> oneEqualPitchPair = new ArrayList<String>();
-		List<String> twoEqualPitchPairs = new ArrayList<String>();
-		List<String> equalPitchTriplet = new ArrayList<String>();
-		List<String> oneSNU = new ArrayList<String>();
-		List<String> twoSNUs = new ArrayList<String>();
-		List<String> threeSNUs = new ArrayList<String>();
-		List<String> oneUnison = new ArrayList<String>();
-		List<String> twoUnisons = new ArrayList<String>();
-		List<String> threeUnisons = new ArrayList<String>();
-		List<String> oneCC = new ArrayList<String>();
-		List<String> twoCC = new ArrayList<String>();
-		List<String> threeCC = new ArrayList<String>();
-		for (int i = 0; i < tabCh.size(); i++) {
-			Rational[] metPos = Timeline.getMetricPosition(
-				new Rational(tab.getBasicTabSymbolPropertiesChord(i)[0][Tablature.ONSET_TIME], Tablature.SRV_DEN), 
-				tab.getTimeline().getMeterInfo());
-			String metPosAsString = 
-				String.valueOf(metPos[0].getNumer()) + 
-				(metPos[1].getNumer() == 0 ? "" : " " + String.valueOf(metPos[1]));
-			// a. Check for equal-pitch-pairs
-			List<Integer> pitches = getPitchesInChord(ch.get(i));
-			if (pitches.stream().distinct().collect(Collectors.toList()).size() < pitches.size()) {
-				List<Integer> pitchFreq = getPitchFrequency(ch.get(i));
-				if (Collections.frequency(pitchFreq, 2) == 2) {
-					oneEqualPitchPair.add(metPosAsString);
-				}
-				if (Collections.frequency(pitchFreq, 2) == 4) {
-					twoEqualPitchPairs.add(metPosAsString);
-				}
-				if (pitchFreq.contains(3)) { 
-					equalPitchTriplet.add(metPosAsString);
-				}
-				if (!specialChords.contains(metPosAsString)) {
-					specialChords.add(metPosAsString);
-				}
-			}
-			// b. Check for any SNUs
-			if (ch.get(i).size() != tabCh.get(i).size()) {
-				if (ch.get(i).size() == (tabCh.get(i).size() + 1)) {					
-					oneSNU.add(metPosAsString);
-				}
-				if (ch.get(i).size() == (tabCh.get(i).size() + 2)) {
-					twoSNUs.add(metPosAsString);
-				}
-				if (ch.get(i).size() == (tabCh.get(i).size() + 3)) {
-					threeSNUs.add(metPosAsString);
-				}
-				if (!specialChords.contains(metPosAsString)) {
-					specialChords.add(metPosAsString);
-				}
-			}	     
-			// c. Check for any unisons
-			if (tab.getUnisonInfo(i) != null) {
-				if (tab.getUnisonInfo(i).size() == 1) {
-					oneUnison.add(metPosAsString);
-				}
-				if (tab.getUnisonInfo(i).size() == 2) {
-					twoUnisons.add(metPosAsString);
-				}
-				if (tab.getUnisonInfo(i).size() == 3) {
-					threeUnisons.add(metPosAsString);
-				}
-				if (!specialChords.contains(metPosAsString)) {
-					specialChords.add(metPosAsString);
-				}
-			}
-			// d. Check for any course crossings
-			if (tab.getCourseCrossingInfo(i) != null) {
-				if (tab.getCourseCrossingInfo(i).size() == 1) {
-					oneCC.add(metPosAsString);
-				}
-				if (tab.getCourseCrossingInfo(i).size() == 2) {
-					twoCC.add(metPosAsString);
-				}
-				if (tab.getCourseCrossingInfo(i).size() == 3) {
-					threeCC.add(metPosAsString);
-				}
-				if (!specialChords.contains(metPosAsString)) {
-					specialChords.add(metPosAsString);
-				}
-			}
-		}
-		special = special.concat(
-			"- equal-pitch pairs" + "\n" +
-			"  - one in bar(s)   " + oneEqualPitchPair + "\n" +
-			"  - two in bar(s)   " + twoEqualPitchPairs + "\n" +  	
-			"  - three in bar(s) " + equalPitchTriplet + "\n" +
-			"- SNUs" + "\n" +
-			"  - one in bar(s)   " + oneSNU + "\n" +
-			"  - two in bar(s)   " + twoSNUs + "\n" +
-			"  - three in bar(s) " + threeSNUs + "\n" +
-			"- unisons" + "\n" +
-			"  - one in bar(s)   " + oneUnison + "\n" +
-			"  - two in bar(s)   " + twoUnisons + "\n" +
-			"  - three in bar(s) " + threeUnisons + "\n" +
-			"- course crossings" + "\n" +
-			"  - one in bar(s)   " + oneCC + "\n" +
-			"  - two in bar(s)   " + twoCC + "\n" +
-			"  - three in bar(s) " + threeCC + "\n" +
-			"- duplicates or combinations" + "\n"
-		);
-		// Find any illegal duplicates or combinations, i.e., chords containing (a) more than one SNU, 
-		// unison, or course crossing; (b) any combination of SNUs, unisons, or course crossings
-		String details = "  (none)";
-		// a. More than one SNU, unison, or course crossing
-		if (twoSNUs.size() != 0 || threeSNUs.size() != 0 || twoUnisons.size() != 0 ||
-			threeUnisons.size() != 0 ||	twoCC.size() != 0 || threeCC.size() != 0) {
-			details = "";
-			checkPassed = false;
-			if (twoSNUs.size() != 0) {
-				details = details.concat("  - two SNUs in bar(s) " + twoSNUs + "\n");
-			}
-			if (threeSNUs.size() != 0) {
-				details = details.concat("  - three SNUs in bar(s) " + threeSNUs + "\n");
-			}
-			if (twoUnisons.size() != 0) {
-				details = details.concat("  - two unisons in bar(s) " + twoUnisons + "\n");
-			}
-			if (threeUnisons.size() != 0) {
-				details = details.concat("  - three unisons in bar(s) " + threeUnisons + "\n");
-			}
-			if (twoCC.size() != 0) {
-				details = details.concat("  - two course crossings in bar(s) " + twoCC + "\n");
-			}
-			if (threeCC.size() != 0) {
-				details = details.concat("  - three course crossings in bar(s) " + threeCC + "\n");
-			}
-		}
-		// b. Combinations of SNUs, unisons, and course crossings 
-		// Find which chord appears more than once in specialChords and add that to combinationChords
-		List<String> combiChords = new ArrayList<String>();
-		specialChords.stream()
-			.filter(c -> Collections.frequency(specialChords, c) > 1)
-			.forEach(c -> { if (!combiChords.contains(c)) {combiChords.add(c);} });
-//		for (String specialChord : specialChords) {
-//			if (Collections.frequency(specialChords, specialChord) > 1) {
-//				checkPassed = false;
-//				if (!combiChords.contains(specialChord)) {
-//					combiChords.add(specialChord);
-//				}
-//			}
-//		}
-		if (combiChords.size() != 0) {
-			details = "";
-			checkPassed = false;
-			List<String> allSNUs = 
-				Stream.concat(Stream.concat(oneSNU.stream(), twoSNUs.stream()), threeSNUs.stream())
-				.collect(Collectors.toList());
-//			List<String> SNUChords = new ArrayList<String>();
-//			SNUChords.addAll(oneSNU); 
-//			SNUChords.addAll(twoSNUs);
-//			SNUChords.addAll(threeSNUs);
-			List<String> allUnisons = 
-				Stream.concat(Stream.concat(oneUnison.stream(), twoUnisons.stream()), threeUnisons.stream())
-				.collect(Collectors.toList());
-//			List<String> unisonChords = new ArrayList<String>();
-//			unisonChords.addAll(oneUnison); 
-//			unisonChords.addAll(twoUnisons);
-//			unisonChords.addAll(threeUnisons);
-			List<String> allCCs = 
-				Stream.concat(Stream.concat(oneCC.stream(), twoCC.stream()), threeCC.stream())
-				.collect(Collectors.toList());
-//			List<String> courseCrossingChords = new ArrayList<String>();
-//			courseCrossingChords.addAll(oneCourseCrossing); 
-//			courseCrossingChords.addAll(twoCourseCrossings);
-//			courseCrossingChords.addAll(threeCourseCrossings);
-			for (String metPos : combiChords) {
-				// There are four possible combinations:
-				// 1. SNUs and unisons (= unisons and SNUs)  
-				// 2. SNUs and course crossings (= course crossings and SNUs)
-				// 3. unisons and course crossings (= course crossings and unisons)
-				// 4. SNUs, unisons, and course crossings
-				if (allSNUs.contains(metPos) && allUnisons.contains(metPos)) {
-					details = details.concat("  - SNU(s) and unison(s) in bar " + metPos + "\n");
-				}
-				if (allSNUs.contains(metPos) && allCCs.contains(metPos)) {
-					details = details.concat("  - SNU(s) and course crossing(s) in bar " + metPos + "\n");	
-				}
-				if (allUnisons.contains(metPos) && allCCs.contains(metPos)) {
-					details = details.concat("  - unison(s) and course crossing(s) in bar " + metPos + "\n");
-				}	 
-				if (allSNUs.contains(metPos) && allUnisons.contains(metPos) && allCCs.contains(metPos)) {
-					details = details.concat("  - SNU(s), unison(s), and course crossing(s) in bar " + metPos + "\n");
-				}
-			}
-		}
-		chordsSpec = chordsSpec.concat(counts + special + details);
-		return checkPassed; 
 	}
 
 
@@ -2384,7 +2491,7 @@ public class Transcription implements Serializable {
 
 
 	public String getChordsSpecification() {
-		return chordsSpec;
+		return chordCheck;
 	}
 
 
@@ -2490,7 +2597,7 @@ public class Transcription implements Serializable {
 					// In case the chord contains multiple SNUs 
 					notesRemovedFromChord++;
 
-					adaptations = adaptations.concat("  SNU found in chord " + i + ": note no. " + (indShorter	
+					handledNotes = handledNotes.concat("  SNU found in chord " + i + ": note no. " + (indShorter	
 						- notesPreceding) +	" (pitch " + SNUInfo[j][0]	+	") in that chord removed from the NoteSequence; " + 
 						"list of voice labels and list of durations adapted accordingly." + "\n");
 				}
@@ -2557,7 +2664,7 @@ public class Transcription implements Serializable {
 						Collections.swap(durationLab, indLower, indUpper);
 					}
 
-					adaptations = adaptations.concat("  Course crossing found in chord " + i + ": notes no. " + 
+					handledNotes = handledNotes.concat("  Course crossing found in chord " + i + ": notes no. " + 
 						courseCrossingInfo.get(j)[2] + " (pitch " + courseCrossingInfo.get(j)[0]	+ ") and " + courseCrossingInfo.get(j)[3] +
 						" (pitch " + courseCrossingInfo.get(j)[1] + ") in that chord swapped in the NoteSequence; "+ "list of " + 
 						"voice labels and list of durations adapted accordingly." + "\n");
@@ -2632,56 +2739,6 @@ public class Transcription implements Serializable {
 	// TESTED (together with getVoicesCoDNotes())
 	public void setVoicesSNU(List<Integer[]> argVoicesCoDNotes) {
 		voicesSNU = argVoicesCoDNotes;
-	}
-
-
-	/**
-	 * Checks whether the Transcription and Tablature are aligned by 
-	 * (1) comparing their number of notes;
-	 * (2) comparing the order of pitches and onset times in the Transcription's NoteSequence and in the 
-	 *     Tablature's basicTabSymbolProperties.
-	 * Returns <code>true</code> if both (1) and (2) are met, and <code>false</code> if not.     
-	 * 
-	 * NB: Tablature case only; must be called after handleCourseCrossings().
-	 * 
-	 * @param tablature
-	 * @return
-	 */
-	// TESTED
-	boolean checkAlignment(Tablature tablature) {
-		Integer[][] basicTabSymbolProperties = tablature.getBasicTabSymbolProperties();
-		NoteSequence noteSeq = getNoteSequence();
-
-		// 1. Check equality of number of notes
-		if (basicTabSymbolProperties.length != noteSeq.size()) {
-			alignmentDetails = alignmentDetails.concat("The Tablature contains " + basicTabSymbolProperties.length + 
-				" notes, and the Transcription contains " + noteSeq.size() + " notes.");		
-			return false;
-		}
-
-		// 2. Check alignment
-		for (int i = 0; i < basicTabSymbolProperties.length; i++) {	
-			// Get the pitch and onset time of the TS at index i
-			int pitchCurrentTabSymbol = basicTabSymbolProperties[i][Tablature.PITCH];
-			Rational onsetTimeCurrentTabSymbol = 
-				new Rational(basicTabSymbolProperties[i][Tablature.ONSET_TIME], Tablature.SRV_DEN);
-			onsetTimeCurrentTabSymbol.reduce();
-			// Get the pitch and onset time of the Note at index i in noteSeq
-			Note currentNote = noteSeq.getNoteAt(i);
-			int pitchCurrentNote = currentNote.getMidiPitch();
-			Rational onsetTimeCurrentNote = currentNote.getMetricTime();
-			onsetTimeCurrentNote.reduce();
-			// Compare
-			if (pitchCurrentTabSymbol != pitchCurrentNote || !onsetTimeCurrentTabSymbol.equals(onsetTimeCurrentNote)) {
-				alignmentDetails = alignmentDetails.concat("Misalignment found at note index " + i + " (chord index " + 
-					basicTabSymbolProperties[i][Tablature.CHORD_SEQ_NUM] + "; " + "sequence number " + 
-					basicTabSymbolProperties[i][Tablature.NOTE_SEQ_NUM] + "): pitch and onset time in " + 
-					"tablature are " + pitchCurrentTabSymbol + " and " + onsetTimeCurrentTabSymbol + "; pitch and onset " +
-					"time in transcription are " + pitchCurrentNote + " and " + onsetTimeCurrentNote + ".");
-				return false;
-			}
-		}
-		return true;
 	}
 
 
@@ -3361,8 +3418,13 @@ public class Transcription implements Serializable {
 	public NoteSequence getNoteSequence() {
 		return noteSequence;
 	}
-	
-	
+
+
+	public List<TaggedNote> getTaggedNotes() {
+		return taggedNotes;
+	}
+
+
 	public List<Note> getNotes() {
 		return notes;
 	}
@@ -8375,16 +8437,16 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Creates a voice label encoding the given voice.
+	 * Creates a voice label encoding the given voice(s).
 	 *   
-	 * @param voice The voice, an integer ranging from 0 (the highest voice) to 
+	 * @param voice The voices, integers ranging from 0 (the highest voice) to 
 	 *              MAX_NUM_VOICES - 1 (the lowest voice). 
 	 * @return
 	 */
-	// 
-	public static List<Double> createVoiceLabel(int voice) {
+	// TESTED
+	public static List<Double> createVoiceLabel(Integer[] voices) {
 		Double[] voiceLabel = new Double[MAX_NUM_VOICES];
-		Arrays.setAll(voiceLabel, ind -> ind == voice ? 1.0 : 0.0);
+		Arrays.setAll(voiceLabel, ind -> Arrays.asList(voices).contains(ind) ? 1.0 : 0.0);
 		return Arrays.asList(voiceLabel);
 	}
 
@@ -9904,7 +9966,7 @@ public class Transcription implements Serializable {
 			// has already been normalised) for the final alignment check below
 			Tablature tablature = new Tablature(argEncodingFile, true);
 			if (checkChords(tablature) == false) { // needs noteSequence
-				System.out.println(chordsSpec);
+				System.out.println(chordCheck);
 				throw new RuntimeException("ERROR: Chord error (see console).");
 			}
 			// 2. Align tablature and transcription
@@ -9915,7 +9977,7 @@ public class Transcription implements Serializable {
 //			handleCourseCrossings(tablature, false); // needs noteSequence, voiceLabels, and durationLabels
 			// 3. Do final alignment check
 			if (checkAlignment(tablature) == false) {
-				System.out.println(alignmentDetails);
+				System.out.println(alignmentCheck);
 					throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
 			}
 			// 4. Transpose
@@ -9963,7 +10025,7 @@ public class Transcription implements Serializable {
 			setDurationLabels(argDurationLabels);
 			// 1. Check chords
 			if (checkChords(tablature) == false) { // needs noteSequence
-				System.out.println(chordsSpec);
+				System.out.println(chordCheck);
 				throw new RuntimeException("ERROR: Chord error (see console).");
 			}
 			// 2. Align tablature and transcription
@@ -9974,7 +10036,7 @@ public class Transcription implements Serializable {
 //			handleCourseCrossings(tablature, false); // needs noteSequence, voiceLabels, and durationLabels
 			// 3. Do final alignment check
 			if (checkAlignment(tablature) == false) {
-				System.out.println(alignmentDetails);
+				System.out.println(alignmentCheck);
 				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
 			}
 			// 4. Transpose
@@ -10057,7 +10119,7 @@ public class Transcription implements Serializable {
 			// when creating a predicted Transcription (see Javadoc for this method)
 			tab = new Tablature(encoding, normaliseTuning);
 			if (checkChords(tab) == false) { // needs noteSequence
-				System.out.println(chordsSpec);
+				System.out.println(chordCheck);
 				throw new RuntimeException("ERROR: Chord error (see console).");
 			}
 			// 2. Align tablature and transcription
@@ -10065,7 +10127,7 @@ public class Transcription implements Serializable {
 			handleCourseCrossings(tab, null); // needs noteSequence, voiceLabels, and durationLabels
 			// 3. Do final alignment check
 			if (checkAlignment(tab) == false) {
-				System.out.println(alignmentDetails);
+				System.out.println(alignmentCheck);
 				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
 			}
 			// 4. Transpose (only if ground truth Transcription; see Javadoc for this method)
@@ -10113,6 +10175,36 @@ public class Transcription implements Serializable {
 			.forEach(c -> noteSeq.add((Note) c));
 		return noteSeq; 
 	}
+
+
+//	/**
+//	 * 
+//	 * @return
+//	 */
+//	// TESTED
+//	List<TaggedNote> makeNotes(Tablature tab) {
+//		// Unhandled notes
+//		List<Note> argNotes = makeUnhandledNotes();
+//		List<Integer[]> argVoicesSNU = null;
+//		List<Integer[]> argVoicesUnison = null;
+//
+//		// In the tablature case: handle SNUs and course crossings
+//		if (tab != null) {
+//			// a. SNUs
+//			List<TaggedNote> SNUs = handleSNUs(argNotes, tab);
+//			argNotes = (List<Note>) SNUs.get(0);
+//			argVoicesSNU = (List<Integer[]>) SNUs.get(1);
+//			// b. Course crossings
+//			argNotes = handleCourseCrossings(argNotes, tab);
+//		}
+//		// In the non-tablature case: handle unisons
+//		else {
+//			List<Object> unisons = handleUnisons(argNotes);
+//			argNotes = (List<Note>) unisons.get(0);
+//			argVoicesUnison = (List<Integer[]>) unisons.get(1);
+//		}	
+//		return Arrays.asList(new Object[]{argNotes, argVoicesSNU, argVoicesUnison});
+//	}
 
 
 //	/**
