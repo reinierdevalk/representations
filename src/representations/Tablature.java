@@ -170,19 +170,31 @@ public class Tablature implements Serializable {
 	}
 
 
+	/**
+	 * Creates a <code>Tablature</code> from a <code>.tbp</code> file.
+	 * 
+	 * @param argFile
+	 * @param argNormaliseTuning
+	 */
 	public Tablature(File argFile, boolean argNormaliseTuning) {
 		init(new Encoding(argFile), argNormaliseTuning);
 	}
 
 
+	/**
+	 * Creates a <code>Tablature</code> from an existing <code>Encoding</code>.
+	 *  
+	 * @param argEncoding
+	 * @param argNormaliseTuning
+	 */
 	public Tablature(Encoding argEncoding, boolean argNormaliseTuning) {
 		init(argEncoding, argNormaliseTuning);
 	}
 
 
-	private void init(Encoding encoding, boolean normaliseTuning) {
-		setEncoding(encoding);
-		setNormaliseTuning(normaliseTuning);
+	private void init(Encoding argEncoding, boolean argNormaliseTuning) {
+		setEncoding(argEncoding);
+		setNormaliseTuning(argNormaliseTuning);
 		setName();
 		setTimeline();
 		setTunings();

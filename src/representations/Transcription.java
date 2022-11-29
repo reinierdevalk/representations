@@ -18,9 +18,12 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.SerializationUtils;
 
 import de.uos.fmt.musitech.data.performance.PerformanceNote;
+import de.uos.fmt.musitech.data.score.Interval;
+import de.uos.fmt.musitech.data.score.Interval.iQual;
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationStaff;
 import de.uos.fmt.musitech.data.score.NotationStaffConnector;
@@ -31,6 +34,7 @@ import de.uos.fmt.musitech.data.score.ScoreNote;
 import de.uos.fmt.musitech.data.score.ScorePitch;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.Piece;
+import de.uos.fmt.musitech.data.structure.container.Containable;
 import de.uos.fmt.musitech.data.structure.container.NoteSequence;
 import de.uos.fmt.musitech.data.structure.container.SortedContainer;
 import de.uos.fmt.musitech.data.structure.harmony.KeyMarker;
@@ -118,24 +122,24 @@ public class Transcription implements Serializable {
 	private String alignmentCheck; 
 	private static boolean reversePiece = false;
 
-	public static final List<Double> THIRTYSECOND = createDurationLabel(1*3);
-	public static final List<Double> SIXTEENTH = createDurationLabel(2*3);
-	public static final List<Double> DOTTED_SIXTEENTH = createDurationLabel(3*3);
-	public static final List<Double> EIGHTH = createDurationLabel(4*3);
-	public static final List<Double> EIGHTH_AND_THIRTYSECOND = createDurationLabel(5*3);
-	public static final List<Double> DOTTED_EIGHTH = createDurationLabel(6*3);
-	public static final List<Double> DOUBLE_DOTTED_EIGHTH = createDurationLabel(7*3);
-	public static final List<Double> QUARTER = createDurationLabel(8*3);
-	public static final List<Double> QUARTER_AND_THIRTYSECOND = createDurationLabel(9*3);
-	public static final List<Double> QUARTER_AND_SIXTEENTH = createDurationLabel(10*3);
-	public static final List<Double> QUARTER_AND_DOTTED_SIXTEENTH = createDurationLabel(11*3);
-	public static final List<Double> DOTTED_QUARTER = createDurationLabel(12*3);
-	public static final List<Double> DOTTED_QUARTER_AND_THIRTYSECOND = createDurationLabel(13*3);
-	public static final List<Double> DOUBLE_DOTTED_QUARTER = createDurationLabel(14*3);
-	public static final List<Double> TRIPLE_DOTTED_QUARTER = createDurationLabel(15*3);
-	public static final List<Double> HALF = createDurationLabel(16*3);
-	public static final List<Double> DOTTED_HALF = createDurationLabel(24*3);
-	public static final List<Double> WHOLE = createDurationLabel(32*3);
+	public static final List<Double> THIRTYSECOND = createDurationLabel(new Integer[]{1*3});
+	public static final List<Double> SIXTEENTH = createDurationLabel(new Integer[]{2*3});
+	public static final List<Double> DOTTED_SIXTEENTH = createDurationLabel(new Integer[]{3*3});
+	public static final List<Double> EIGHTH = createDurationLabel(new Integer[]{4*3});
+	public static final List<Double> EIGHTH_AND_THIRTYSECOND = createDurationLabel(new Integer[]{5*3});
+	public static final List<Double> DOTTED_EIGHTH = createDurationLabel(new Integer[]{6*3});
+	public static final List<Double> DOUBLE_DOTTED_EIGHTH = createDurationLabel(new Integer[]{7*3});
+	public static final List<Double> QUARTER = createDurationLabel(new Integer[]{8*3});
+	public static final List<Double> QUARTER_AND_THIRTYSECOND = createDurationLabel(new Integer[]{9*3});
+	public static final List<Double> QUARTER_AND_SIXTEENTH = createDurationLabel(new Integer[]{10*3});
+	public static final List<Double> QUARTER_AND_DOTTED_SIXTEENTH = createDurationLabel(new Integer[]{11*3});
+	public static final List<Double> DOTTED_QUARTER = createDurationLabel(new Integer[]{12*3});
+	public static final List<Double> DOTTED_QUARTER_AND_THIRTYSECOND = createDurationLabel(new Integer[]{13*3});
+	public static final List<Double> DOUBLE_DOTTED_QUARTER = createDurationLabel(new Integer[]{14*3});
+	public static final List<Double> TRIPLE_DOTTED_QUARTER = createDurationLabel(new Integer[]{15*3});
+	public static final List<Double> HALF = createDurationLabel(new Integer[]{16*3});
+	public static final List<Double> DOTTED_HALF = createDurationLabel(new Integer[]{24*3});
+	public static final List<Double> WHOLE = createDurationLabel(new Integer[]{32*3});
 
 	public static final List<Double> VOICE_0 = createVoiceLabel(new Integer[]{0});
 	public static final List<Double> VOICE_1 = createVoiceLabel(new Integer[]{1});
@@ -231,550 +235,6 @@ public class Transcription implements Serializable {
 	}
 
 
-	/**
-	 * Cleans the given MetricalTimeLine, i.e., removes any duplicate TimeSignatureMarkers 
-	 * and TempoMarkers from it.
-	 * 
-	 * A correct MetricalTimeLine consists of the following elements:
-	 * <ul>
-	 * <li>The zeroMarker (a TimedMetrical).</li>
-	 * <li>A TimeSignatureMarker: for the initial time sig.</li>
-	 * <li>A TimeSignatureMarker + a TempoMarker (a TimedMetrical): for any following time sig(s).</li>
-	 * <li>The endMarker (a TimedMetrical), placed 10/1 (10 whole notes) after the last TimedMetrical, 
-	 *     i.e., the zeroMarker (if there is a single TimeSignatureMarker) or the last TempoMarker 
-	 *     (if there are multiple TimeSignatureMarkers). The zeroMarker's time is this last 
-	 *     TimedMetrical's time + the time that 10/1 takes in this TimedMetrical's tempo.</li>
-	 * </ul> 
-	 * 
-	 * @param mtl
-	 * @return The cleaned MetricalTimeLine. 
-	 */
-	// TESTED
-	static MetricalTimeLine cleanMetricalTimeLine(MetricalTimeLine mtl) {
-		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
-		// zeroMarker, and endMarker) 
-		MetricalTimeLine mtlClean = new MetricalTimeLine();
-		mtlClean.clear();
-		// Add zeroMarker
-		mtlClean.add((Marker) new TimedMetrical(0, Rational.ZERO));
-
-		// Add TimeSignatureMarkers and TempoMarkers 
-		List<Rational> mts = new ArrayList<>();
-		Rational mtLastTimedMetrical = Rational.ZERO;
-		for (Marker m : mtl) {
-			if (m instanceof TimeSignatureMarker) {
-				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
-				Rational mt = m.getMetricTime();
-				long t = mtl.getTime(mt);
-				if (!mts.contains(mt)) {
-					mtlClean.add(new TimeSignatureMarker(tsm.getTimeSignature(), mt));
-					if (mt.isGreater(Rational.ZERO)) {
-						mtlClean.add(new TempoMarker(t, mt));
-						if (mt.isGreater(mtLastTimedMetrical)) {
-							mtLastTimedMetrical = mt;
-						}
-					}
-					mts.add(mt);
-				}
-			}
-		}
-
-		// If TempoMarkers (and through them, endMarker(s)) have been added: 
-		// remove all TimedMetricals but the zeroMarker	
-		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
-			mtlClean = cleanTimedMetricals(mtlClean);
-		}
-
-		// Add endMarker
-		long tLastTimedMetrical = mtlClean.getTime(mtLastTimedMetrical);
-		TimedMetrical end = 
-			calculateEndMarker(tLastTimedMetrical, mtl.getTempo(tLastTimedMetrical), 
-			mtLastTimedMetrical, 1);
-		mtlClean.add((Marker) end);
-
-		return mtlClean;
-	}
-
-
-	/**
-	 * Removes all TimedMetricals but the zeroMarker from the given mtl.
-	 * 
-	 * @param mtl
-	 * @return
-	 */
-	// TESTED
-	static MetricalTimeLine cleanTimedMetricals(MetricalTimeLine mtl) {
-		List<Integer> indsToRemove = new ArrayList<>();
-		for (int i = 0; i < mtl.size(); i++) {
-			Marker m = mtl.get(i);
-			if (m instanceof TimedMetrical && !(m instanceof TempoMarker)) {
-				if (!m.getMetricTime().equals(Rational.ZERO)) {
-					indsToRemove.add(i);
-				}
-			}
-		}
-		for (int i = 0; i < indsToRemove.size(); i++) {
-			mtl.remove(indsToRemove.get(i) - i);
-		}
-
-		return mtl;
-	}
-
-
-	/**
-	 * Calculates the endMarker given the time, tempo, and metric time of the last TimedMetrical 
-	 * before the endMarker. The endMarker is placed ten whole notes (10/1) after the last 
-	 * TimedMetrical, meaning that its metric time is that of the last TimedMetrical + 10/1, and 
-	 * its time is that of the last TimedMetrical + the time 10/1 takes in the tempo at the last
-	 * TimedMetrical.
-	 * 
-	 * @param tLastTimedMetrical
-	 * @param tempoLastTimedMetrical
-	 * @param mtLastTimedMetrical
-	 * @param dim
-	 * @return
-	 */
-	// TESTED
-	static TimedMetrical calculateEndMarker(long tLastTimedMetrical, double tmpLastTimedMetrical, 
-		Rational mtLastTimedMetrical, int dim) {
-		Rational r = Timeline.diminute(new Rational(10, 1), dim);
-		return new TimedMetrical(
-			tLastTimedMetrical + calculateTime(r, tmpLastTimedMetrical), 
-			mtLastTimedMetrical.add(r));
-	}
-
-
-	/**
-	 * Calculates the time the given metric duration takes in the given tempo. 
-	 * 
-	 * Formula:
-	 * tmp BPM = tmp/60 beats/s --> one whole note (four beats) every 240/tmp s (tmp/60 * x = 4 --> x = 240/tmp)
-	 * 							--> ten whole notes every (10*240)/tmp s
-	 * 							--> n whole notes every (n*240)/tmp s 
-	 */
-	// TESTED
-	static long calculateTime(Rational dur, double tempo) {
-		double time = (dur.toDouble() * 240) / tempo;
-		// Multiply by 1000000 to get time in microseconds; round
-		time = Math.round(time * 1000000);
-		return (long) time;
-	}
-
-
-	/**
-	 * Aligns the given MetricalTimeLine (from a Transcription) with the given Timeline (from a 
-	 * Tablature).
-	 * 
-	 * This is necessary if in the Tablature different diminutions are used for a section that is
-	 * in a single meter in the Transcription, resulting in the MetricalTimeLine lacking the repeated 
-	 * meter 'changes'. In such cases, the MetricalTimeLine is aligned with the Timeline by adding 
-	 * each repeated meter at the appropriate onset to the MetricalTimeLine (i.e., adding 
-	 * TimeSignatureMarkers and TempoMarkers). Example: <br> 
-	 * meters from TimeLine 			2/2, 2/4, 2/2, 3/4, 2/2 <br>
-	 * diminutions from TimeLine 		2,   4,   2,   4,   2   <br>
-	 * meters from MetricalTimeLine		2/1, ..., ..., 3/1,	2/1 <br>
-	 * meters from MTL, aligned			2/1, 2/1, 2/1, 3/1, 2/1 <br>
-	 * 
-	 * @param mtl The cleaned MetricalTimeLine.
-	 * @param tl
-	 * @return The aligned MetricalTimeLine.
-	 */
-	// TESTED
-	static MetricalTimeLine alignMetricalTimeLine(MetricalTimeLine mtl, Timeline tl) {
-		// Align mtl with tl. Examples where this is necessary:
-		// 4465_33-34_memor_esto-2.tbp / Jos1714-Memor_esto_verbi_tui-166-325.mid
-		// meters      2/2, 2/4, 2/2, 2/4, 2/2, 2/4, 2/2 
-		// diminutions 2,   4,   2,   4,   2,   4,   2
-		// =           2/1, 2/1, 2/1, 2/1, 2/1, 2/1, 2/1 
-		// in Piece    2/1 
-		// 5263_12_in_exitu_israel_de_egipto_desprez-3.tbp / Jos1704-In_exitu_Israel_de_Egypto-281-401.mid
-		// meters      2/2, 3/4, 2/2, 3/4, 2/2, 2/4, 2/2, 3/4, 2/2
-		// diminutions 2,   4,   2,   4,   2,   4,   2,   4,   2
-		// =           2/1, 3/1, 2/1, 3/1, 2/1, 2/1, 2/1, 3/1, 2/1
-		// in Piece    2/1, 3/1, 2/1, 3/1, 2/1,           3/1, 2/1
-
-		// 1. Get undiminuted meters and meter section onsets from meterInfoTab to enable aligning
-		List<Rational> metersTabUndim = new ArrayList<>();
-		List<Rational> msosTabUndim = new ArrayList<>();
-		List<Integer[]> meterInfoTab = tl.getMeterInfo();
-		for (int i = 0; i < meterInfoTab.size(); i++) {
-			Integer[] currMi = meterInfoTab.get(i);
-			metersTabUndim.add(Timeline.undiminuteMeter(
-				new Rational(currMi[Timeline.MI_NUM], currMi[Timeline.MI_DEN]), currMi[Timeline.MI_DIM]));
-			Rational msoTabUndim;
-			if (i == 0) {
-				msoTabUndim = 
-					new Rational(currMi[Timeline.MI_NUM_MT_FIRST_BAR], currMi[Timeline.MI_DEN_MT_FIRST_BAR]);
-			}
-			else {
-				Integer[] prevMi = meterInfoTab.get(i-1);
-				int numBarsPrevMeter = (prevMi[Timeline.MI_LAST_BAR] - prevMi[Timeline.MI_FIRST_BAR]) + 1; 
-				msoTabUndim = msosTabUndim.get(i-1).add(metersTabUndim.get(i-1).mul(numBarsPrevMeter));
-			}
-			msosTabUndim.add(msoTabUndim);
-		}
-
-		// 2. Align
-		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
-		// zeroMarker, and endMarker) 
-		MetricalTimeLine mtlAligned = new MetricalTimeLine();
-		mtlAligned.clear();
-		// Add zeroMarker
-		mtlAligned.add((Marker) new TimedMetrical(0, Rational.ZERO));
-		
-		// Add TimeSignatureMarkers and TempoMarkers 
-		int ind = 0; // equals index in meterInfoTab
-		Rational mtLastTimedMetrical = Rational.ZERO;
-		for (Marker m : mtl) {
-			if (m instanceof TimeSignatureMarker) {
-				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
-				Rational mt = m.getMetricTime();
-				long t = mtl.getTime(mt);
-				TimeSignature ts = tsm.getTimeSignature();
-				mtlAligned.add(new TimeSignatureMarker(ts, mt));
-				if (mt.isGreater(Rational.ZERO)) {
-					mtlAligned.add(new TempoMarker(t, mt));
-					if (mt.isGreater(mtLastTimedMetrical)) {
-						mtLastTimedMetrical = mt;
-					}
-				}
-				// If the meter and meter section onset at index ind in tl are not the same
-				// as those in m, mtl is not aligned with tl: add Markers to mtlAligned
-				Rational meterTabUndim = metersTabUndim.get(ind);
-				Rational msoTabUndim = msosTabUndim.get(ind);
-				boolean isAligned = 
-					meterTabUndim.equals(new Rational(ts.getNumerator(), ts.getDenominator())) && 
-					msoTabUndim.equals(tsm.getMetricTime());
-				if (!isAligned) {
-					mtlAligned.add(new TimeSignatureMarker(new TimeSignature(meterTabUndim), msoTabUndim));
-					mtlAligned.add(new TempoMarker(mtl.getTime(msoTabUndim), msoTabUndim));
-					if (msoTabUndim.isGreater(mtLastTimedMetrical)) {
-						mtLastTimedMetrical = msoTabUndim;
-					}
-				}
-				ind++;
-			}
-		}
-		// If mtl and tl are still not aligned, the last time sig in mtl (which can be 
-		// the only one) has not been added often enough
-		long[][] allTss = mtlAligned.getTimeSignature();
-		if (allTss.length < meterInfoTab.size()) {
-			Rational lastTs = new Rational(allTss[allTss.length-1][0], allTss[allTss.length-1][1]);
-			for (int i = allTss.length; i < meterInfoTab.size(); i++) {
-				Rational msoTabUndim = msosTabUndim.get(i);
-				mtlAligned.add(new TimeSignatureMarker(new TimeSignature(lastTs), msoTabUndim));
-				mtlAligned.add(new TempoMarker(mtl.getTime(msoTabUndim), msoTabUndim));
-				if (msoTabUndim.isGreater(mtLastTimedMetrical)) {
-					mtLastTimedMetrical = msoTabUndim;
-				}
-			}
-		}
-
-		// If TempoMarkers (and through them, endMarker(s)) have been added: 
-		// remove all TimedMetricals but the zeroMarker	
-		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
-			mtlAligned = cleanTimedMetricals(mtlAligned);
-		}
-
-		// Add endMarker
-		long tLastTimedMetrical = mtlAligned.getTime(mtLastTimedMetrical);
-		TimedMetrical end = 
-			calculateEndMarker(tLastTimedMetrical, mtl.getTempo(tLastTimedMetrical), 
-			mtLastTimedMetrical, 1);
-		mtlAligned.add((Marker) end);
-
-		return mtlAligned;
-	}
-
-
-	/**
-	 * Diminutes the given MetricalTimeLine according to the given Timeline.
-	 * 
-	 * NB: Only the time signatures and the meter section onsets are diminuted; not the
-	 *     meter section times.
-	 * 
-	 * @param mtl The cleaned and aligned MetricalTimeLine.
-	 * @param tl
-	 * @return The diminuted MetricalTimeLine.
-	 */
-	// TESTED
-	static MetricalTimeLine diminuteMetricalTimeLine(MetricalTimeLine mtl, Timeline tl) {
-		// 1. Get diminuted tempi
-		List<Integer[]> meterInfoTab = tl.getMeterInfo();
-		List<Integer> diminutions = ToolBox.getItemsAtIndex(meterInfoTab, Timeline.MI_DIM);
-		List<Double[]> tempiDim = new ArrayList<>();
-		int ind = 0; // equals index in meterInfoTab
-		for (int i = 0; i < mtl.size()-1; i++) { // exclude endMarker
-			Marker m = mtl.get(i);
-			if (m instanceof TimedMetrical) {
-				long time = mtl.getTime(m.getMetricTime());
-				double tempo = mtl.getTempo(time);
-				int dim = diminutions.get(ind);
-				double tempoDim = Timeline.diminute(tempo, dim);
-				tempiDim.add(new Double[]{tempoDim, (double) time});
-				ind++;
-			}
-		}
-
-		// 2. Diminute
-		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
-		// zeroMarker, and endMarker) 
-		MetricalTimeLine mtlDim = new MetricalTimeLine();
-		mtlDim.clear();
-		// Add zeroMarker
-		mtlDim.add((Marker) new TimedMetrical(0, Rational.ZERO));
-
-		// Add TimeSignatureMarkers and TempoMarkers		
-		ind = 0; // equals index in meterInfoTab
-		Rational mtLastTimedMetrical = Rational.ZERO;
-		for (Marker m : mtl) {
-			if (m instanceof TimeSignatureMarker) {
-				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
-				Rational mtUndim = m.getMetricTime();
-				Rational mtDim;
-				if (ind == 0) {
-					mtDim = mtUndim;
-				}
-				else {
-					Integer[] prevMi = meterInfoTab.get(ind-1);
-					long[] prevTsDim = mtlDim.getTimeSignature()[ind-1];
-					Rational prevMeterDim = 
-						new Rational(prevMi[Timeline.MI_NUM], prevMi[Timeline.MI_DEN]);
-					int prevNumBars = 
-						(prevMi[Timeline.MI_LAST_BAR] - prevMi[Timeline.MI_FIRST_BAR]) + 1;
-					mtDim = 
-						new Rational(prevTsDim[3], prevTsDim[4]).add(prevMeterDim.mul(prevNumBars));
-					// By uncommenting the lines below, the meter section time is diminuted
-//					long[] prevTsUndim = mtl.getTimeSignature()[ind-1];
-//					long prevSecLenUndim = mtl.getTime(msoUndim) - prevTsUndim[2];
-//					int prevDim = prevMi[Timeline.MI_DIM];
-//					long prevSecLenDim = prevDim > 0 ? prevSecLenUndim / prevDim : prevSecLenUndim * Math.abs(prevDim);
-//					mst = prevTsDim[2] + prevSecLenDim;
-				}
-				long t = mtl.getTime(mtUndim); // NB: is not diminuted
-				TimeSignature tsUndim = tsm.getTimeSignature();
-				TimeSignature tsDim = 
-					new TimeSignature(Timeline.diminuteMeter(new Rational(tsUndim.getNumerator(), 
-					tsUndim.getDenominator()), diminutions.get(ind)));
-				mtlDim.add(new TimeSignatureMarker(tsDim, mtDim));
-				if (mtDim.isGreater(Rational.ZERO)) {
-					mtlDim.add(new TempoMarker(t, mtDim));
-					if (mtDim.isGreater(mtLastTimedMetrical)) {
-						mtLastTimedMetrical = mtDim;
-					}
-					// Set tempo
-					double tmpDim = 
-						tempiDim.get(ToolBox.getItemsAtIndex(tempiDim, 1).indexOf((double) t))[0];
-					mtlDim.setTempo(mtDim, tmpDim, 4);
-				}
-				ind++;
-			}
-		}
-
-		// If TempoMarkers (and through them, endMarker(s)) have been added: 
-		// remove all TimedMetricals but the zeroMarker	
-		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
-			mtlDim = cleanTimedMetricals(mtlDim);
-		}
-
-		// Add endMarker
-		long tLastTimedMetrical = mtlDim.getTime(mtLastTimedMetrical);
-		TimedMetrical end = 
-			calculateEndMarker(tLastTimedMetrical, 
-			tempiDim.get(tempiDim.size()-1)[0],	
-//			Timeline.diminute(mtl.getTempo(tLastTimedMetrical), diminutions.get(diminutions.size()-1)), 
-			mtLastTimedMetrical, diminutions.get(diminutions.size()-1));
-		mtlDim.add((Marker) end);
-
-		return mtlDim; 
-	}
-
-
-	/**
-	 * Cleans the given harmonyTrack, i.e., removes any duplicate KeyMarkers from it. 
-	 * 
-	 * @param ht
-	 * @return The cleaned harmonyTrack
-	 */
-	// TESTED 
-	static SortedContainer<Marker> cleanHarmonyTrack(SortedContainer<Marker> ht) {
-		SortedContainer<Marker> htClean = 
-			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
-		List<Rational> mts = new ArrayList<>();
-		for (Marker m : ht) {
-			if (m instanceof KeyMarker) {
-				KeyMarker km = (KeyMarker) m;
-				Rational mt = m.getMetricTime();
-				if (!mts.contains(mt)) {
-					htClean.add(km);
-					mts.add(mt);
-				}
-			}
-		}
-		return htClean;
-	}
-
-
-	/**
-	 * Diminutes the given harmonyTrack according to the given Timeline and undiminuted and diminuted
-	 * meter section onset times.
-	 * 
-	 * @param ht The cleaned harmonyTrack.
-	 * @param tl
-	 * @param msoUndim
-	 * @param msoDim
-	 * @return The diminuted harmonyTrack.
-	 */
-	// TODO test
-	static SortedContainer<Marker> diminuteHarmonyTrack(SortedContainer<Marker> ht, Timeline tl, 
-		List<Rational> msoUndim, List<Rational> msoDim) {
-		SortedContainer<Marker> htDim = 
-			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
-
-		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfo(), Timeline.MI_DIM);
-		for (Marker m : ht) {
-			if (m instanceof KeyMarker) {
-				KeyMarker km = (KeyMarker) m;
-				km.setMetricTime(Timeline.getDiminutedMetricPosition(m.getMetricTime(), 
-					msoUndim, msoDim, diminutions));
-				htDim.add(km);
-			}
-		}
-		return htDim;
-	}
-
-
-	/**
-	 * Diminutes the given Piece according to the given Timeline from the tablature.
-	 * 
-	 * @param groundTruthPiece
-	 * @param tl
-	 * @return
-	 */
-	// TODO test
-	Piece diminutePiece(Piece groundTruthPiece, Timeline tl) {
-		Piece groundTruthPieceDim = new Piece();
-
-		// 1. Clean, align, and diminute MetricalTimeLine
-		MetricalTimeLine mtl = groundTruthPiece.getMetricalTimeLine();		
-//		mtl = cleanMetricalTimeLine(mtl);
-//		mtl = alignMetricalTimeLine(mtl, tl);
-		MetricalTimeLine mtlDim = diminuteMetricalTimeLine(mtl, tl);
-
-		// Get undiminuted and diminuted meter section onsets
-		List<Rational> meterSectionOnsetsUndim = new ArrayList<>();
-		List<Long> meterSectionTimesUndim = new ArrayList<>();
-		for (long[] l : mtl.getTimeSignature()) {
-			meterSectionOnsetsUndim.add(new Rational(l[3], l[4]));
-//			meterSectionTimesUndim.add(l[2]);
-		}
-		List<Rational> meterSectionOnsetsDim = new ArrayList<>();
-		List<Long> meterSectionTimesDim = new ArrayList<>();
-		for (long[] l : mtlDim.getTimeSignature()) {
-			meterSectionOnsetsDim.add(new Rational(l[3], l[4]));
-//			meterSectionTimesDim.add(l[2]);
-		}
-		
-		// 2. Clean and diminute harmonyTrack
-		SortedContainer<Marker> ht = groundTruthPiece.getHarmonyTrack();
-		ht = cleanHarmonyTrack(ht);
-		SortedContainer<Marker> htDim = 
-			diminuteHarmonyTrack(ht, tl, meterSectionOnsetsUndim, meterSectionOnsetsDim);
-
-//		SortedContainer<Marker> htDim = ht;
-//		SortedContainer<Marker> htDim = SerializationUtils.clone(ht);
-//		for (Marker m : htDim) {
-//			if (m instanceof KeyMarker) {
-//				KeyMarker km = (KeyMarker) m;
-//				km.setMetricTime(Timeline.getDiminutedMetricPosition(km.getMetricTime(), 
-//					meterSectionOnsetsUndim, meterSectionOnsetsDim, diminutions));
-//			}
-//		}
-
-		// 3. Diminute NotationSystem
-		NotationSystem ns = groundTruthPiece.getScore();
-		NotationSystem nsDim = new NotationSystem();
-		for (int v = 0; v < ns.size(); v++) {
-			NotationStaff nstDim = new NotationStaff();
-			nstDim.add(new NotationVoice());
-			nsDim.add(nstDim);
-		}
-		// 1. Get, per voice, the diminuted NotationChords for each meter section
-///		// Initialise meterSectionsPerVoice with empty lists  
-///		List<List<List<NotationChord>>> meterSectionsPerVoice = new ArrayList<>();
-///		for (int v = 0; v < ns.size(); v++) {
-///			List<List<NotationChord>> currVoice = new ArrayList<>();
-/////			for (int dim : diminutions) {
-/////			for (int j = 0; j < meterInfoTab.size(); j++) {	
-/////				currVoice.add(new ArrayList<>());
-/////			}
-///			diminutions.forEach(d -> currVoice.add(new ArrayList<>()));
-///			meterSectionsPerVoice.add(currVoice);
-///		}
-///		// Fill meterSectionsPerVoice
-///		// meterSectionsPerVoice.get(v)       : the sections for voice v
-///		// meterSectionsPerVoice.get(v).get(s): the notes for section s in voice v
-
-		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfo(), Timeline.MI_DIM);
-		for (int v = 0; v < ns.size(); v++) {
-			NotationVoice nv = ns.get(v).get(0);
-			for (NotationChord nc : nv) {
-				// All notes in nc have the same (metric) time
-				Rational mt = nc.getMetricTime();
-				long time = nc.getTime();
-				int sec = Timeline.getMeterSection(mt, meterSectionOnsetsUndim);
-				// Diminute the notes in nc (and therewith nc itself) and add to nsDim
-				for (Note n : nc) {
-					// Adapt ScoreNote
-					ScoreNote sn = n.getScoreNote();
-					Rational onsDim = 
-						Timeline.getDiminutedMetricPosition(mt, meterSectionOnsetsUndim, 
-						meterSectionOnsetsDim, diminutions);
-					sn.setMetricTime(onsDim);
-					Rational durDim = Timeline.diminute(n.getMetricDuration(), diminutions.get(sec));
-					sn.setMetricDuration(durDim);
-					n.setScoreNote(sn);
-					// Adapt PerformanceNote
-					PerformanceNote pn = n.getPerformanceNote();
-					long duration = n.getDuration();
-//					// By uncommenting the lines below, the time and duration are diminuted
-//					time = 
-//						Timeline.getDiminutedTime(time, meterSectionTimesUndim, meterSectionTimesDim, 
-//						diminutions);
-//					long duration = dim > 0 ? n.getDuration() / dim : n.getDuration() * Math.abs(dim);
-					pn.setTime(time);
-					pn.setDuration(duration);
-					n.setPerformanceNote(pn);
-				}
-///				meterSectionsPerVoice.get(v).get(sec).add(nc);
-				nsDim.get(v).get(0).add(nc);
-			}
-		}
-///		// 2. Create diminuted NotationSystem from meterSectionsPerVoice 
-///		// For each voice
-///		for (int i = 0; i < meterSectionsPerVoice.size(); i++) {
-///			NotationStaff nstDim = new NotationStaff();
-///			NotationVoice nvDim = new NotationVoice();
-///			// For each section
-///			for (List<NotationChord> l : meterSectionsPerVoice.get(i)) {
-///				for (NotationChord nc : l) {
-///					nvDim.add(nc);
-///				}
-///			}
-///			nstDim.add(nvDim);
-///			nsDim.add(nstDim);
-///		}
-
-		// 4. Set in groundTruthPieceDim
-		groundTruthPieceDim.setMetricalTimeLine(mtlDim);
-		groundTruthPieceDim.setHarmonyTrack(htDim);
-		groundTruthPieceDim.setScore(nsDim);
-		groundTruthPieceDim.setName(groundTruthPiece.getName());		
-
-		return groundTruthPieceDim;
-	}
-
-
 	///////////////////////////////
 	//
 	//  C O N S T R U C T O R S
@@ -784,34 +244,8 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Constructor for a mapping Transcription.
-	 * 
-	 * @param argMidiFile
-	 * @param tl
-	 */
-	public Transcription(File argMidiFile, File encodingFile, Timeline tl) {
-		setFiles(Arrays.asList(new File[]{argMidiFile, null}));
-
-		Piece groundTruthPiece = MIDIImport.importMidiFile(argMidiFile);
-		MetricalTimeLine mtl = groundTruthPiece.getMetricalTimeLine();
-		mtl = cleanMetricalTimeLine(mtl);
-		mtl = alignMetricalTimeLine(mtl, tl);
-		SortedContainer<Marker> ht = groundTruthPiece.getHarmonyTrack();
-		ht = cleanHarmonyTrack(ht);
-		groundTruthPiece.setMetricalTimeLine(mtl);
-		groundTruthPiece.setHarmonyTrack(ht);
-		groundTruthPiece = diminutePiece(groundTruthPiece, tl);
-
-		Encoding encoding = null;
-		boolean normaliseTuning = false;
-		boolean isGroundTruthTranscription = true;
-		createTranscription(groundTruthPiece, encoding, normaliseTuning, isGroundTruthTranscription, 
-			null, null, Type.MAPPING);	
-	}
-
-
-	/**
-	 * Constructor for a ground truth Transcription.
+	 * Constructor for a ground truth <code>Transcription</code>. 
+	 * Creates a <code>Transcription</code> from a <code>.mid</code> and a <code>.tbp</code> file.
 	 *                              
 	 * @param argMidiFile
 	 * @param argEncodingFile
@@ -820,35 +254,133 @@ public class Transcription implements Serializable {
 		setFiles(Arrays.asList(new File[]{argMidiFile, argEncodingFile}));
 
 		Piece groundTruthPiece = MIDIImport.importMidiFile(argMidiFile);
-		MetricalTimeLine mtl = groundTruthPiece.getMetricalTimeLine();
-		mtl = cleanMetricalTimeLine(mtl);
-		SortedContainer<Marker> ht = groundTruthPiece.getHarmonyTrack();
-		ht = cleanHarmonyTrack(ht);
-		groundTruthPiece.setMetricalTimeLine(mtl);
-		groundTruthPiece.setHarmonyTrack(ht);
+//		MetricalTimeLine mtl = groundTruthPiece.getMetricalTimeLine();
+//		mtl = cleanMetricalTimeLine(mtl);
+//		SortedContainer<Marker> ht = groundTruthPiece.getHarmonyTrack();
+//		ht = cleanHarmonyTrack(ht);
+//		groundTruthPiece.setMetricalTimeLine(mtl);
+//		groundTruthPiece.setHarmonyTrack(ht);
 
 		Encoding encoding = argEncodingFile != null ? new Encoding(argEncodingFile) : null;
 
 		// Create the Transcription based on the ground truth Piece
 		boolean normaliseTuning = false;
 		boolean isGroundTruthTranscription = true;
-		createTranscription(groundTruthPiece, encoding, normaliseTuning, isGroundTruthTranscription, 
+		init(groundTruthPiece, encoding, normaliseTuning, isGroundTruthTranscription, 
 			null, null, Type.GROUND_TRUTH);	
 	}
 
 
 	/**
-	 * Constructor for a derivation of a ground truth Transcription (used for data augmentation).
-	 *                              
-	 * @param groundTruthPiece
-	 * @param encoding
+	 * Constructor for a mapping Transcription.
+	 * Creates a <code>Transcription</code> from a <code>.mid</code> file and a <code>Timeline</code>
+	 * from a <code>Tablature</code>.
+	 * 
+	 * @param argMidiFile
+	 * @param tl
 	 */
-	public Transcription(Piece groundTruthPiece, Encoding encoding) {
-		// Create the Transcription based on the ground truth Piece
+	public Transcription(File argMidiFile, File argEncodingFile, Timeline tl) {
+		setFiles(Arrays.asList(new File[]{argMidiFile, null}));
+
+		Piece groundTruthPiece = MIDIImport.importMidiFile(argMidiFile);
+//		MetricalTimeLine mtl = groundTruthPiece.getMetricalTimeLine();
+//		mtl = cleanMetricalTimeLine(mtl);
+//		mtl = alignMetricalTimeLine(mtl, tl);
+//		SortedContainer<Marker> ht = groundTruthPiece.getHarmonyTrack();
+//		ht = cleanHarmonyTrack(ht);
+//		groundTruthPiece.setMetricalTimeLine(mtl);
+//		groundTruthPiece.setHarmonyTrack(ht);
+//		groundTruthPiece = diminutePiece(groundTruthPiece, tl);
+
+		Encoding encoding = argEncodingFile != null ? new Encoding(argEncodingFile) : null;
+		
 		boolean normaliseTuning = false;
 		boolean isGroundTruthTranscription = true;
-		createTranscription(groundTruthPiece, encoding, normaliseTuning, isGroundTruthTranscription, 
+		init(groundTruthPiece, encoding, normaliseTuning, isGroundTruthTranscription, 
+			null, null, Type.MAPPING);	
+	}
+
+
+	/**
+	 * Constructor for a derivation of a ground truth Transcription (used for data augmentation).
+	 * Creates a <code>Transcription</code> from an existing <code>Piece</code> and <code>Encoding</code>. 
+	 *                              
+	 * @param argGroundTruthPiece
+	 * @param argEncoding
+	 */
+	public Transcription(Piece argGroundTruthPiece, Encoding argEncoding) {
+		boolean normaliseTuning = false;
+		boolean isGroundTruthTranscription = true;
+		init(argGroundTruthPiece, argEncoding, normaliseTuning, isGroundTruthTranscription, 
 			null, null, Type.AUGMENTED);
+	}
+
+
+	/**
+	 * Constructor for a predicted Transcription.
+	 * Creates a <code>Transcription</code> from an existing <code>Piece</code> and <code>Encoding</code>. 
+	 * 
+	 * @param argMidiFile
+	 * @param argEncodingFile
+	 * @param argPiece
+	 * @param argVoiceLabels
+	 * @param argDurationLabels
+	 */
+	public Transcription(Piece argPredictedPiece, Encoding argEncoding,  
+		List<List<Double>> argVoiceLabels, List<List<Double>> argDurationLabels) {
+		
+//		Encoding argEncoding = argEncodingFile != null ? new Encoding(argEncodingFile) : null;
+
+//		// Create and set the predicted Piece
+//		Piece predictedPiece = 
+//			createPiece(argBtp, argBnp, argVoiceLabels, argDurationLabels, argHiNumVoices, mtl, ks);
+//		predictedPiece.setName(name);
+
+		boolean normaliseTuning = true; // is only used in the tablature case
+		boolean isGroundTruthTranscription = false;
+		init(argPredictedPiece, argEncoding, normaliseTuning, isGroundTruthTranscription, 
+			argVoiceLabels, argDurationLabels, Type.PREDICTED);
+			
+//		// Set the predicted class fields. When creating a ground truth Transcription, this happens inside
+//		// handleCoDNotes() and handleCourseCrossings(), but when creating a predicted Transcription this step
+//		// is skipped in those methods because the voice labels and duration labels are already ready-to-use. In 
+//		// the tablature case, only voicesCoDNotes must still be created from them
+//		setVoiceLabels(argVoiceLabels);
+//		// a. In the tablature case
+//		if (argEncodingFile != null) {
+//			// Set durationLabels
+//			// NB: The durationLabels created in createTranscription are overwritten by argDurationLabels. Thus, 
+//			// when not modelling duration (when argDurationLabels == null), they are reset to null
+//			setDurationLabels(argDurationLabels);
+//			// Create voicesCoDNotes
+//			// NB: currently, only one duration is always predicted; both CoDnotes thus have the same duration. In
+//			// this case, the lower CoDnote (i.e., the one in the lower voice that comes first in the NoteSequence) 
+//			// is placed at element 0 (see Javadoc handleCoDNotes()) TODO 
+//			List<Integer[]> voicesCoDNotes = new ArrayList<Integer[]>();
+//			// For each predicted voiceLabel
+//			for (int i = 0; i < argVoiceLabels.size(); i++) {
+//				List<Double> currLabel = argVoiceLabels.get(i);
+//				// IN case of a CoD, voices contain two elements: the highest predicted voice as element 0, 
+//				// and the lowest predicted voice as element 1 
+//				List<Integer> voices = DataConverter.convertIntoListOfVoices(currLabel);
+//				// If a CoD is predicted
+//				if (voices.size() > 1) {
+//					Integer[] currVoicesCoDNotes = new Integer[2];
+//					currVoicesCoDNotes[0] = voices.get(1); // lowest predicted voice
+//					currVoicesCoDNotes[1] = voices.get(0); // highest predicted voice
+//					voicesCoDNotes.add(currVoicesCoDNotes);
+//				}
+//				// If no CoD is predicted
+//				else {
+//					voicesCoDNotes.add(null);
+//				}
+//			}	
+//			setVoicesSNU(voicesCoDNotes);
+//		}	
+//		// b. In the non-tablature case
+//		else {
+//			setEqualDurationUnisonsInfo(argEqualDurationUnisonsInfo); // TODO 1 mei
+//		}  	  	
 	}
 
 
@@ -861,21 +393,21 @@ public class Transcription implements Serializable {
 	 * @param argVoiceLabels
 	 * @param argDurationLabels
 	 */
-	public Transcription(String name, File argEncodingFile, Integer[][] argBtp, 
+	private Transcription(String name, Encoding argEncoding, /*File argEncodingFile,*/ Integer[][] argBtp, 
 		Integer[][] argBnp, int argHiNumVoices, List<List<Double>> argVoiceLabels, 
 		List<List<Double>> argDurationLabels, MetricalTimeLine mtl, SortedContainer<Marker> ks) {
 		
-		Encoding encoding = argEncodingFile != null ? new Encoding(argEncodingFile) : null;
+//		Encoding argEncoding = argEncodingFile != null ? new Encoding(argEncodingFile) : null;
 
 		// Create and set the predicted Piece
 		Piece predictedPiece = 
-			createPiece(argBtp, argBnp, argVoiceLabels, argDurationLabels, argHiNumVoices, mtl, ks);
-		predictedPiece.setName(name);
+			createPiece(argBtp, argBnp, argVoiceLabels, argDurationLabels, argHiNumVoices, mtl, ks, name);
+//		predictedPiece.setName(name);
 
 		// Create the Transcription based on the predicted Piece
 		boolean normaliseTuning = true; // is only used in the tablature case
 		boolean isGroundTruthTranscription = false;
-		createTranscription(predictedPiece, encoding, normaliseTuning, isGroundTruthTranscription, 
+		init(predictedPiece, argEncoding, normaliseTuning, isGroundTruthTranscription, 
 			argVoiceLabels, argDurationLabels, Type.PREDICTED);
 			
 //		// Set the predicted class fields. When creating a ground truth Transcription, this happens inside
@@ -994,65 +526,68 @@ public class Transcription implements Serializable {
 	 *       has already been normalised/transposed correctly because it was created from a 
 	 *       normalised Tablature (in TrainingManager.prepareTraining())
 	 * 
-	 * @param p
-	 * @param encoding
-	 * @param normaliseTuning
+	 * @param argPiece
+	 * @param argEncoding
+	 * @param argNormaliseTuning
 	 * @param isGroundTruthTranscription
 	 * @param argVoiceLabels Only none-<code>null</code> when t is Type.PREDICTED
 	 * @param argDurLabels Only none-<code>null</code> when t is Type.PREDICTED
 	 * @param t
 	 */
-	private void createTranscription(Piece p, Encoding encoding, boolean normaliseTuning, 
+	private void init(Piece argPiece, Encoding argEncoding, boolean argNormaliseTuning, 
 		boolean isGrousndTruthTranscription, List<List<Double>> argVoiceLabels, 
 		List<List<Double>> argDurLabels, Type t) {
 		
 		// NB: normaliseTuning is false when creating a ground truth Transcription and true 
 		// when creating a predicted Transcription (see Javadoc for this method)
-		Tablature tab = encoding != null ? new Tablature(encoding, normaliseTuning) : null;
+		Tablature tab = argEncoding != null ? new Tablature(argEncoding, true) : null;
+//		Tablature tab = encoding != null ? new Tablature(encoding, normaliseTuning) : null;
 
-		setPiece(p);
-		setOriginalPiece(); // needs <piece>
-		setName(); // needs <piece>
-		
-		setTaggedNotes(tab); // needs <piece>
-//		setNotes(tab); // needs <piece>	
-//		setNoteSequence(); // needs <piece>
+		setPiece(argPiece, tab, t);
+		setOriginalPiece();
+		setName();
+		setTaggedNotes(tab);
 		setNotes();
 
-		if (t != Type.PREDICTED) {
-			setVoiceLabels(null, tab != null);
-//			initialiseVoiceLabels(null); // needs <piece> and <noteSequence>
-		}
-		else {
-			setVoiceLabels(argVoiceLabels, tab != null);
-//			initialiseVoiceLabels(argVoiceLabels); // labels have their final form
-		}
-//		Tablature tab = null;
+		setVoiceLabels(t != Type.PREDICTED ? null : argVoiceLabels, tab != null);
+//		if (t != Type.PREDICTED) {
+//			setVoiceLabels(null, tab != null);
+////			initialiseVoiceLabels(null);
+//		}
+//		else {
+//			setVoiceLabels(argVoiceLabels, tab != null);
+////			initialiseVoiceLabels(argVoiceLabels);
+//		}
 		// a. Tablature case
-		if (encoding != null) {
+		if (argEncoding != null) {
+//			setVoicesSNU();
+			setDurationLabels(t != Type.PREDICTED ? null : argDurLabels);
+//			if (t != Type.PREDICTED) {
+//				setDurationLabels(null);
+////				initialiseDurationLabels(null); // needs <noteSequence>
+//			}
+//			else {
+//				setDurationLabels(argDurLabels);
+////				initialiseDurationLabels(argDurLabels); // labels have their final form 
+//			}
 			setVoicesSNU();
-			if (t != Type.PREDICTED) {
-				initialiseDurationLabels(null); // needs <noteSequence>
-			}
-			else {
-				initialiseDurationLabels(argDurLabels); // labels have their final form 
-			}
-			// 1. Check chords 
-			// NB: normaliseTuning is false when creating a ground truth Transcription and true 
-			// when creating a predicted Transcription (see Javadoc for this method)
+
+//			// 1. Check chords 
+//			// NB: normaliseTuning is false when creating a ground truth Transcription and true 
+//			// when creating a predicted Transcription (see Javadoc for this method)
 //			tab = new Tablature(encoding, normaliseTuning);
 //			if (checkChords(tab) == false) { // needs <noteSequence>
 //				System.out.println(chordCheck);
 //				throw new RuntimeException("ERROR: Chord error (see console).");
 //			}
-			// 2. Align tablature and transcription
-			handleSNUs(tab, t); // needs <noteSequence>, <voiceLabels>, and <durationLabels> (and changes these)
-			handleCourseCrossings(tab, t); // needs <noteSequence>, <voiceLabels>, and <durationLabels> (and changes these)
-			// 3. Do final alignment check
-			if (checkAlignment(tab) == false) {
-				System.out.println(alignmentCheck);
-				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
-			}
+//			// 2. Align tablature and transcription
+//			handleSNUs(tab, t); // needs <noteSequence>, <voiceLabels>, and <durationLabels> (and changes these)
+//			handleCourseCrossings(tab, t); // needs <noteSequence>, <voiceLabels>, and <durationLabels> (and changes these)
+//			// 3. Do final alignment check
+//			if (checkAlignment(tab) == false) {
+//				System.out.println(alignmentCheck);
+//				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
+//			}
 			// 4. Transpose (only if ground truth Transcription; see Javadoc for this method)
 			if (t != Type.PREDICTED) {
 				transpose(tab.getTranspositionInterval());
@@ -1069,7 +604,7 @@ public class Transcription implements Serializable {
 			setVoicesIDU();
 			setMeterInfo();
 			setKeyInfo();
-			handleUnisonsss(t); // needs <noteSequence> and <voiceLabels> (and changes these)
+//			handleUnisonsss(t); // needs <noteSequence> and <voiceLabels> (and changes these)
 			setChords(); // needs <noteSequence> (finalised)
 			setBasicNoteProperties(); // needs <noteSequence>	
 			setNumberOfNewNotesPerChord(); // needs <chords>
@@ -1084,28 +619,708 @@ public class Transcription implements Serializable {
 	}
 
 
+	// TODO make acccess package
 	public void setPiece(Piece argPiece) {
 		piece = argPiece;
 	}
 
 
-	public void setOriginalPiece() {
+	void setPiece(Piece argPiece, Tablature tab, Type t) {
+		piece = makePiece(argPiece, tab, t);
+	}
+
+
+	Piece makePiece(Piece argPiece, Tablature tab, Type t) {
+		if (t == Type.GROUND_TRUTH) {
+			// Clean mtl
+			MetricalTimeLine mtl = argPiece.getMetricalTimeLine();
+			mtl = cleanMetricalTimeLine(mtl);
+			argPiece.setMetricalTimeLine(mtl);			
+			// Clean ht
+			SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
+			ht = cleanHarmonyTrack(ht);
+			argPiece.setHarmonyTrack(ht);
+			// Transpose piece
+			if (tab != null) {
+				argPiece = transposePiece(argPiece, tab.getTranspositionInterval());
+			}
+		}
+		else if (t == Type.MAPPING) {
+			// Clean and align mtl
+			Timeline tl = tab.getTimeline();
+			MetricalTimeLine mtl = argPiece.getMetricalTimeLine();
+			mtl = cleanMetricalTimeLine(mtl);
+			mtl = alignMetricalTimeLine(mtl, tl);
+			argPiece.setMetricalTimeLine(mtl);
+			// Clean ht
+			SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
+			ht = cleanHarmonyTrack(ht);
+			argPiece.setHarmonyTrack(ht);
+			// Diminute piece
+			argPiece = diminutePiece(argPiece, tl);
+		}
+		else if (t == Type.AUGMENTED) {
+			
+		}
+		else if (t == Type.PREDICTED) {
+			
+		}
+		
+
+		
+//		NotationSystem ns = argPiece.getScore();
+//		for (NotationStaff nst : ns) {
+//			for (NotationVoice nv: nst) {
+//					for (NotationChord nc : nv) {
+//						for (Note n : nc) {
+//							ScoreNote sn = n.getScoreNote();
+//							sn.setPitch(new ScorePitch(sn.getMidiPitch() + transposition));
+//							PerformanceNote pn = n.getPerformanceNote();
+//							pn.setPitch(pn.getPitch() + transposition);
+//					}
+//				}	
+//			}
+//		}
+//		System.out.println("---------------------");
+//		for (Containable c : argPiece.getScore().getContentsRecursiveList(null)) {
+//			if (c instanceof Note) {
+//				System.out.println(c);
+//			}
+//		}
+		return argPiece;
+	}
+
+
+	/**
+	 * Cleans the given <code>MetricalTimeLine</code>, i.e., removes any duplicate 
+	 * <code>TimeSignatureMarker</code>s and <code>TempoMarkers</code> from it.
+	 * 
+	 * A correct <code>MetricalTimeLine</code> consists of the following elements:
+	 * <ul>
+	 * <li>The zeroMarker (a <code>TimedMetrical</code>).</li>
+	 * <li>A <code>TimeSignatureMarker</code>: for the initial time sig.</li>
+	 * <li>A <code>TimeSignatureMarker</code> + a <code>TempoMarker</code> (a <code>TimedMetrical</code>): 
+	 *     for any following time sig(s).</li>
+	 * <li>The endMarker (a <code>TimedMetrical</code>), placed 10/1 (10 whole notes) after the last 
+	 *     <code>TimedMetrical</code>, i.e., the zeroMarker (if there is a single <code>TimeSignatureMarker</code>) 
+	 *     or the last <code>TempoMarker</code> (if there are multiple <code>TimeSignatureMarkers</code>). The 
+	 *     zeroMarker's time is this last <code>TimedMetrical</code>'s time + the time that 10/1 takes in this 
+	 *     <code>TimedMetrical</code>'s tempo.</li>
+	 * </ul> 
+	 * 
+	 * @param mtl The raw <code>MetricalTimeLine</code>.
+	 * @return The cleaned <code>MetricalTimeLine</code>. 
+	 */
+	// TESTED
+	static MetricalTimeLine cleanMetricalTimeLine(MetricalTimeLine mtl) {
+		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
+		// zeroMarker, and endMarker) 
+		MetricalTimeLine mtlClean = new MetricalTimeLine();
+		mtlClean.clear();
+		// Add zeroMarker
+		mtlClean.add((Marker) new TimedMetrical(0, Rational.ZERO));
+
+		// Add TimeSignatureMarkers and TempoMarkers 
+		List<Rational> mts = new ArrayList<>();
+		Rational mtLastTimedMetrical = Rational.ZERO;
+		for (Marker m : mtl) {
+			if (m instanceof TimeSignatureMarker) {
+				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
+				Rational mt = m.getMetricTime();
+				long t = mtl.getTime(mt);
+				if (!mts.contains(mt)) {
+					mtlClean.add(new TimeSignatureMarker(tsm.getTimeSignature(), mt));
+					if (mt.isGreater(Rational.ZERO)) {
+						mtlClean.add(new TempoMarker(t, mt));
+						if (mt.isGreater(mtLastTimedMetrical)) {
+							mtLastTimedMetrical = mt;
+						}
+					}
+					mts.add(mt);
+				}
+			}
+		}
+
+		// If TempoMarkers (and through them, endMarker(s)) have been added: 
+		// remove all TimedMetricals but the zeroMarker	
+		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
+			mtlClean = cleanTimedMetricals(mtlClean);
+		}
+
+		// Add endMarker
+		long tLastTimedMetrical = mtlClean.getTime(mtLastTimedMetrical);
+		TimedMetrical end = 
+			calculateEndMarker(tLastTimedMetrical, mtl.getTempo(tLastTimedMetrical), 
+			mtLastTimedMetrical, 1);
+		mtlClean.add((Marker) end);
+
+		return mtlClean;
+	}
+
+
+	/**
+	 * Removes all TimedMetricals but the zeroMarker from the given mtl.
+	 * 
+	 * @param mtl
+	 * @return
+	 */
+	// TESTED
+	static MetricalTimeLine cleanTimedMetricals(MetricalTimeLine mtl) {
+		List<Integer> indsToRemove = new ArrayList<>();
+		for (int i = 0; i < mtl.size(); i++) {
+			Marker m = mtl.get(i);
+			if (m instanceof TimedMetrical && !(m instanceof TempoMarker)) {
+				if (!m.getMetricTime().equals(Rational.ZERO)) {
+					indsToRemove.add(i);
+				}
+			}
+		}
+		for (int i = 0; i < indsToRemove.size(); i++) {
+			mtl.remove(indsToRemove.get(i) - i);
+		}
+
+		return mtl;
+	}
+
+
+	/**
+	 * Calculates the endMarker given the time, tempo, and metric time of the last TimedMetrical 
+	 * before the endMarker. The endMarker is placed ten whole notes (10/1) after the last 
+	 * TimedMetrical, meaning that its metric time is that of the last TimedMetrical + 10/1, and 
+	 * its time is that of the last TimedMetrical + the time 10/1 takes in the tempo at the last
+	 * TimedMetrical.
+	 * 
+	 * @param tLastTimedMetrical
+	 * @param tempoLastTimedMetrical
+	 * @param mtLastTimedMetrical
+	 * @param dim
+	 * @return
+	 */
+	// TESTED
+	static TimedMetrical calculateEndMarker(long tLastTimedMetrical, double tmpLastTimedMetrical, 
+		Rational mtLastTimedMetrical, int dim) {
+		Rational r = Timeline.diminute(new Rational(10, 1), dim);
+		return new TimedMetrical(
+			tLastTimedMetrical + calculateTime(r, tmpLastTimedMetrical), 
+			mtLastTimedMetrical.add(r));
+	}
+
+
+	/**
+	 * Calculates the time the given metric duration takes in the given tempo. 
+	 * 
+	 * Formula:
+	 * tmp BPM = tmp/60 beats/s --> one whole note (four beats) every 240/tmp s (tmp/60 * x = 4 --> x = 240/tmp)
+	 * 							--> ten whole notes every (10*240)/tmp s
+	 * 							--> n whole notes every (n*240)/tmp s 
+	 */
+	// TESTED
+	static long calculateTime(Rational dur, double tempo) {
+		double time = (dur.toDouble() * 240) / tempo;
+		// Multiply by 1000000 to get time in microseconds; round
+		time = Math.round(time * 1000000);
+		return (long) time;
+	}
+
+
+	/**
+	 * Aligns the given <code>MetricalTimeLine</code> (from a <code>Transcription</code>) 
+	 * with the given <code>Timeline</code> (from a <code>Tablature</code>).
+	 * 
+	 * This is necessary if in the <code>Tablature</code> different diminutions are used for
+	 * a section that is in a single meter in the <code>Transcription</code>, resulting in 
+	 * the <code>MetricalTimeLine</code> lacking the repeated meter 'changes'. In such cases, 
+	 * the <code>MetricalTimeLine</code> is aligned with the <code>Timeline</code> by adding 
+	 * each repeated meter at the appropriate onset to the <code>MetricalTimeLine</code> (i.e.,
+	 * adding <code>TimeSignatureMarkers</code> and <code>TempoMarkers</code>). Example: <br> 
+	 * meters from <code>TimeLine</code> 			2/2, 2/4, 2/2, 3/4, 2/2 <br>
+	 * diminutions from <code>TimeLine</code> 		2,   4,   2,   4,   2   <br>
+	 * meters from <code>MetricalTimeLine</code>	2/1, ..., ..., 3/1,	2/1 <br>
+	 * meters from MTL, aligned						2/1, 2/1, 2/1, 3/1, 2/1 <br>
+	 * 
+	 * @param mtl The cleaned <code>MetricalTimeLine</code>.
+	 * @param tl
+	 * @return The cleaned and aligned <code>MetricalTimeLine</code>.
+	 */
+	// TESTED
+	static MetricalTimeLine alignMetricalTimeLine(MetricalTimeLine mtl, Timeline tl) {
+		// Align mtl with tl. Examples where this is necessary:
+		// 4465_33-34_memor_esto-2.tbp / Jos1714-Memor_esto_verbi_tui-166-325.mid
+		// meters      2/2, 2/4, 2/2, 2/4, 2/2, 2/4, 2/2 
+		// diminutions 2,   4,   2,   4,   2,   4,   2
+		// =           2/1, 2/1, 2/1, 2/1, 2/1, 2/1, 2/1 
+		// in Piece    2/1 
+		// 5263_12_in_exitu_israel_de_egipto_desprez-3.tbp / Jos1704-In_exitu_Israel_de_Egypto-281-401.mid
+		// meters      2/2, 3/4, 2/2, 3/4, 2/2, 2/4, 2/2, 3/4, 2/2
+		// diminutions 2,   4,   2,   4,   2,   4,   2,   4,   2
+		// =           2/1, 3/1, 2/1, 3/1, 2/1, 2/1, 2/1, 3/1, 2/1
+		// in Piece    2/1, 3/1, 2/1, 3/1, 2/1,           3/1, 2/1
+
+		// 1. Get undiminuted meters and meter section onsets from meterInfoTab to enable aligning
+		List<Rational> metersTabUndim = new ArrayList<>();
+		List<Rational> msosTabUndim = new ArrayList<>();
+		List<Integer[]> meterInfoTab = tl.getMeterInfo();
+		for (int i = 0; i < meterInfoTab.size(); i++) {
+			Integer[] currMi = meterInfoTab.get(i);
+			metersTabUndim.add(Timeline.undiminuteMeter(
+				new Rational(currMi[Timeline.MI_NUM], currMi[Timeline.MI_DEN]), currMi[Timeline.MI_DIM]));
+			Rational msoTabUndim;
+			if (i == 0) {
+				msoTabUndim = 
+					new Rational(currMi[Timeline.MI_NUM_MT_FIRST_BAR], currMi[Timeline.MI_DEN_MT_FIRST_BAR]);
+			}
+			else {
+				Integer[] prevMi = meterInfoTab.get(i-1);
+				int numBarsPrevMeter = (prevMi[Timeline.MI_LAST_BAR] - prevMi[Timeline.MI_FIRST_BAR]) + 1; 
+				msoTabUndim = msosTabUndim.get(i-1).add(metersTabUndim.get(i-1).mul(numBarsPrevMeter));
+			}
+			msosTabUndim.add(msoTabUndim);
+		}
+
+		// 2. Align
+		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
+		// zeroMarker, and endMarker) 
+		MetricalTimeLine mtlAligned = new MetricalTimeLine();
+		mtlAligned.clear();
+		// Add zeroMarker
+		mtlAligned.add((Marker) new TimedMetrical(0, Rational.ZERO));
+		
+		// Add TimeSignatureMarkers and TempoMarkers 
+		int ind = 0; // equals index in meterInfoTab
+		Rational mtLastTimedMetrical = Rational.ZERO;
+		for (Marker m : mtl) {
+			if (m instanceof TimeSignatureMarker) {
+				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
+				Rational mt = m.getMetricTime();
+				long t = mtl.getTime(mt);
+				TimeSignature ts = tsm.getTimeSignature();
+				mtlAligned.add(new TimeSignatureMarker(ts, mt));
+				if (mt.isGreater(Rational.ZERO)) {
+					mtlAligned.add(new TempoMarker(t, mt));
+					if (mt.isGreater(mtLastTimedMetrical)) {
+						mtLastTimedMetrical = mt;
+					}
+				}
+				// If the meter and meter section onset at index ind in tl are not the same
+				// as those in m, mtl is not aligned with tl: add Markers to mtlAligned
+				Rational meterTabUndim = metersTabUndim.get(ind);
+				Rational msoTabUndim = msosTabUndim.get(ind);
+				boolean isAligned = 
+					meterTabUndim.equals(new Rational(ts.getNumerator(), ts.getDenominator())) && 
+					msoTabUndim.equals(tsm.getMetricTime());
+				if (!isAligned) {
+					mtlAligned.add(new TimeSignatureMarker(new TimeSignature(meterTabUndim), msoTabUndim));
+					mtlAligned.add(new TempoMarker(mtl.getTime(msoTabUndim), msoTabUndim));
+					if (msoTabUndim.isGreater(mtLastTimedMetrical)) {
+						mtLastTimedMetrical = msoTabUndim;
+					}
+				}
+				ind++;
+			}
+		}
+		// If mtl and tl are still not aligned, the last time sig in mtl (which can be 
+		// the only one) has not been added often enough
+		long[][] allTss = mtlAligned.getTimeSignature();
+		if (allTss.length < meterInfoTab.size()) {
+			Rational lastTs = new Rational(allTss[allTss.length-1][0], allTss[allTss.length-1][1]);
+			for (int i = allTss.length; i < meterInfoTab.size(); i++) {
+				Rational msoTabUndim = msosTabUndim.get(i);
+				mtlAligned.add(new TimeSignatureMarker(new TimeSignature(lastTs), msoTabUndim));
+				mtlAligned.add(new TempoMarker(mtl.getTime(msoTabUndim), msoTabUndim));
+				if (msoTabUndim.isGreater(mtLastTimedMetrical)) {
+					mtLastTimedMetrical = msoTabUndim;
+				}
+			}
+		}
+
+		// If TempoMarkers (and through them, endMarker(s)) have been added: 
+		// remove all TimedMetricals but the zeroMarker	
+		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
+			mtlAligned = cleanTimedMetricals(mtlAligned);
+		}
+
+		// Add endMarker
+		long tLastTimedMetrical = mtlAligned.getTime(mtLastTimedMetrical);
+		TimedMetrical end = 
+			calculateEndMarker(tLastTimedMetrical, mtl.getTempo(tLastTimedMetrical), 
+			mtLastTimedMetrical, 1);
+		mtlAligned.add((Marker) end);
+
+		return mtlAligned;
+	}
+
+
+	/**
+	 * Cleans the given harmony track, i.e., removes any duplicate <code>KeyMarker</code>s from it. 
+	 * 
+	 * @param ht The raw harmony track
+	 * @return The cleaned harmony track
+	 */
+	// TESTED 
+	static SortedContainer<Marker> cleanHarmonyTrack(SortedContainer<Marker> ht) {
+		SortedContainer<Marker> htClean = 
+			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
+		List<Rational> mts = new ArrayList<>();
+		for (Marker m : ht) {
+			if (m instanceof KeyMarker) {
+				KeyMarker km = (KeyMarker) m;
+				Rational mt = m.getMetricTime();
+				if (!mts.contains(mt)) {
+					htClean.add(km);
+					mts.add(mt);
+				}
+			}
+		}
+		return htClean;
+	}
+
+
+	/**
+	 * Transposes the given <code>Piece</code> by the given interval.
+	 *  
+	 * @param argPiece
+	 * @param transposition
+	 * @return
+	 */
+	static Piece transposePiece(Piece argPiece, int transposition) {
+//		SortedContainer<Marker> keySigs = 
+//			transposeHarmonyTrack(argPiece.getHarmonyTrack(), transposition);
+		argPiece.setHarmonyTrack(transposeHarmonyTrack(argPiece.getHarmonyTrack(), transposition));
+
+//		NotationSystem ns = transposeNotationSystem(argPiece.getScore(), transposition);
+		argPiece.setScore(transposeNotationSystem(argPiece.getScore(), transposition));
+
+		return argPiece;
+	}
+
+
+	/**
+	 * Transposes the given harmony track according to the given transposition.
+	 * 
+	 * @param ht The cleaned harmony track
+	 * @param transposition
+	 * @return
+	 */
+	// TESTED
+	static SortedContainer<Marker> transposeHarmonyTrack(SortedContainer<Marker> ht, int transposition) {
+		SortedContainer<Marker> htTrn = 
+			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
+
+		for (Marker m : ht) {
+			if (m instanceof KeyMarker) {
+				KeyMarker km = (KeyMarker) m;		
+				// Determine the number of accidentals and redefine km by setting
+				// - alterationNum: the number of accidentals, negative for flats and positive for sharps
+				// - mode: MODE_MINOR or MODE_MAJOR
+				// - root: the root, always the major parallel, even when mode is MODE_MINOR. Example:
+				//         A major: root = 'A', alterationNum = 3; rootAlteration = 0; mode = Mode.MODE_MAJOR
+				//         F# minor: root = 'A', alterationNum = 3; rootAlteration = 0; mode = Mode.MODE_MINOR 				               
+				// - rootAlteration: the number of flats/sharps that must be added to the root
+				// NB: setAlterationNumAndMode() should set all four at once, but doesn't work correctly 
+				//     for root and rootAlteration (the problem is in determineRootAndAccidental()); therefore, 
+				//     root and rootAlteration must additionally be set manually 
+				int accid = transposeNumAccidentals(transposition, km.getAlterationNum());
+				km.setAlterationNumAndMode(accid, km.getMode());
+				Integer[] rra = getRootIndexAndRootAlteration(accid);
+				km.setRoot("ABCDEFG".charAt(rra[0]));
+				km.setRootAlteration(rra[1]);
+				htTrn.add(km);
+			}
+		}		
+		return htTrn;
+	}
+
+
+	/**
+	 * Transposes the given <code>NotationSystem</code> according to the given transposition.
+	 * 
+	 * @param ns
+	 * @param transposition
+	 * @return
+	 */
+	// TESTED
+	static NotationSystem transposeNotationSystem(NotationSystem ns, int transposition) {
+		ns.getContentsRecursiveList(null).stream()
+			.filter(c -> c instanceof Note).forEach(c -> {
+				int p = ((Note) c).getScoreNote().getMidiPitch() + transposition;
+				((Note) c).getScoreNote().setPitch(new ScorePitch(p));
+				((Note) c).getPerformanceNote().setPitch(p);
+			}
+		);
+		return ns;
+	}
+
+
+	/**
+	 * Diminutes the given <code>Piece</code> according to the given <code>Timeline</code> 
+	 * from the <code>Tablature</code>.
+	 * 
+	 * @param argPiece
+	 * @param tl
+	 * @return
+	 */
+	static Piece diminutePiece(Piece argPiece, Timeline tl) {
+		Piece pieceDim = new Piece();
+
+		MetricalTimeLine mtl = argPiece.getMetricalTimeLine();		
+		MetricalTimeLine mtlDim = diminuteMetricalTimeLine(mtl, tl);
+
+//		SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
+//		SortedContainer<Marker> htDim = diminuteHarmonyTrack(argPiece.getHarmonyTrack(), tl, mtl, mtlDim);
+
+//		NotationSystem nsDim = diminuteNotationSystem(argPiece.getScore(), tl, mtl, mtlDim);
+
+		pieceDim.setMetricalTimeLine(mtlDim);
+		pieceDim.setHarmonyTrack(diminuteHarmonyTrack(argPiece.getHarmonyTrack(), tl, mtl, mtlDim));
+		pieceDim.setScore(diminuteNotationSystem(argPiece.getScore(), tl, mtl, mtlDim));
+		pieceDim.setName(argPiece.getName());		
+
+		return pieceDim;
+	}
+
+
+	/**
+	 * Diminutes the given <code>MetricalTimeLine</code> according to the given <code>Timeline</code>.
+	 * 
+	 * NB: Only the time signatures and the meter section onsets are diminuted; not the
+	 *     meter section times.
+	 * 
+	 * @param mtl The cleaned and aligned <code>MetricalTimeLine</code>.
+	 * @param tl
+	 * @return The cleaned, aligned, and diminuted <code>MetricalTimeLine</code>.
+	 */
+	// TESTED
+	static MetricalTimeLine diminuteMetricalTimeLine(MetricalTimeLine mtl, Timeline tl) {
+		// 1. Get diminuted tempi
+		List<Integer[]> meterInfoTab = tl.getMeterInfo();
+		List<Integer> diminutions = ToolBox.getItemsAtIndex(meterInfoTab, Timeline.MI_DIM);
+		List<Double[]> tempiDim = new ArrayList<>();
+		int ind = 0; // equals index in meterInfoTab
+		for (int i = 0; i < mtl.size()-1; i++) { // exclude endMarker
+			Marker m = mtl.get(i);
+			if (m instanceof TimedMetrical) {
+				long time = mtl.getTime(m.getMetricTime());
+				double tempo = mtl.getTempo(time);
+				int dim = diminutions.get(ind);
+				double tempoDim = Timeline.diminute(tempo, dim);
+				tempiDim.add(new Double[]{tempoDim, (double) time});
+				ind++;
+			}
+		}
+
+		// 2. Diminute
+		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
+		// zeroMarker, and endMarker) 
+		MetricalTimeLine mtlDim = new MetricalTimeLine();
+		mtlDim.clear();
+		// Add zeroMarker
+		mtlDim.add((Marker) new TimedMetrical(0, Rational.ZERO));
+
+		// Add TimeSignatureMarkers and TempoMarkers		
+		ind = 0; // equals index in meterInfoTab
+		Rational mtLastTimedMetrical = Rational.ZERO;
+		for (Marker m : mtl) {
+			if (m instanceof TimeSignatureMarker) {
+				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
+				Rational mtUndim = m.getMetricTime();
+				Rational mtDim;
+				if (ind == 0) {
+					mtDim = mtUndim;
+				}
+				else {
+					Integer[] prevMi = meterInfoTab.get(ind-1);
+					long[] prevTsDim = mtlDim.getTimeSignature()[ind-1];
+					Rational prevMeterDim = 
+						new Rational(prevMi[Timeline.MI_NUM], prevMi[Timeline.MI_DEN]);
+					int prevNumBars = 
+						(prevMi[Timeline.MI_LAST_BAR] - prevMi[Timeline.MI_FIRST_BAR]) + 1;
+					mtDim = 
+						new Rational(prevTsDim[3], prevTsDim[4]).add(prevMeterDim.mul(prevNumBars));
+					// By uncommenting the lines below, the meter section time is diminuted
+//					long[] prevTsUndim = mtl.getTimeSignature()[ind-1];
+//					long prevSecLenUndim = mtl.getTime(msoUndim) - prevTsUndim[2];
+//					int prevDim = prevMi[Timeline.MI_DIM];
+//					long prevSecLenDim = prevDim > 0 ? prevSecLenUndim / prevDim : prevSecLenUndim * Math.abs(prevDim);
+//					mst = prevTsDim[2] + prevSecLenDim;
+				}
+				long t = mtl.getTime(mtUndim); // NB: is not diminuted
+				TimeSignature tsUndim = tsm.getTimeSignature();
+				TimeSignature tsDim = 
+					new TimeSignature(Timeline.diminuteMeter(new Rational(tsUndim.getNumerator(), 
+					tsUndim.getDenominator()), diminutions.get(ind)));
+				mtlDim.add(new TimeSignatureMarker(tsDim, mtDim));
+				if (mtDim.isGreater(Rational.ZERO)) {
+					mtlDim.add(new TempoMarker(t, mtDim));
+					if (mtDim.isGreater(mtLastTimedMetrical)) {
+						mtLastTimedMetrical = mtDim;
+					}
+					// Set tempo
+					double tmpDim = 
+						tempiDim.get(ToolBox.getItemsAtIndex(tempiDim, 1).indexOf((double) t))[0];
+					mtlDim.setTempo(mtDim, tmpDim, 4);
+				}
+				ind++;
+			}
+		}
+
+		// If TempoMarkers (and through them, endMarker(s)) have been added: 
+		// remove all TimedMetricals but the zeroMarker	
+		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
+			mtlDim = cleanTimedMetricals(mtlDim);
+		}
+
+		// Add endMarker
+		long tLastTimedMetrical = mtlDim.getTime(mtLastTimedMetrical);
+		TimedMetrical end = 
+			calculateEndMarker(tLastTimedMetrical, 
+			tempiDim.get(tempiDim.size()-1)[0],	
+//			Timeline.diminute(mtl.getTempo(tLastTimedMetrical), diminutions.get(diminutions.size()-1)), 
+			mtLastTimedMetrical, diminutions.get(diminutions.size()-1));
+		mtlDim.add((Marker) end);
+
+		return mtlDim; 
+	}
+
+
+	/**
+	 * Diminutes the given harmony track according to the given <code>Timeline</code> and undiminuted and diminuted
+	 * <code>MetricalTimeLine</code>.
+	 * 
+	 * @param ht The cleaned harmony track.
+	 * @param tl
+	 * @param mtl
+	 * @param mtlDim
+	 * @return The cleaned and diminuted harmony track.
+	 */
+	// TESTED
+	static SortedContainer<Marker> diminuteHarmonyTrack(SortedContainer<Marker> ht, Timeline tl, 
+		MetricalTimeLine mtl, MetricalTimeLine mtlDim/*List<Rational> msoUndim, List<Rational> msoDim*/) {
+		SortedContainer<Marker> htDim = 
+			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
+
+		List<Rational> msoUndim = new ArrayList<>();
+		Arrays.stream(mtl.getTimeSignature()).forEach(ts -> msoUndim.add(new Rational(ts[3], ts[4])));
+		List<Rational> msoDim = new ArrayList<>();
+		Arrays.stream(mtlDim.getTimeSignature()).forEach(ts -> msoDim.add(new Rational(ts[3], ts[4])));
+
+		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfo(), Timeline.MI_DIM);
+		for (Marker m : ht) {
+			if (m instanceof KeyMarker) {
+				KeyMarker km = (KeyMarker) m;
+				km.setMetricTime(Timeline.getDiminutedMetricPosition(m.getMetricTime(), 
+					msoUndim, msoDim, diminutions));
+				htDim.add(km);
+			}
+		}
+		return htDim;
+	}
+
+
+	/**
+	 * Diminutes the given <code>NotationSystem</code> according to the given 
+	 * <code>Timeline</code> and undiminuted and diminuted <code>MetricalTimeLine</code>.
+	 * 
+	 * @param ns The <code>NotationSystem</code>.
+	 * @param tl
+	 * @param mtl
+	 * @param mtlDim
+	 * @return The diminuted <code>NotationSystem</code>.
+	 */
+	// TESTED
+	static NotationSystem diminuteNotationSystem(NotationSystem ns, Timeline tl, 
+		MetricalTimeLine mtl, MetricalTimeLine mtlDim /*List<Rational> msoUndim, List<Rational> msoDim*/) {
+//		NotationSystem ns = argPiece.getScore();
+		NotationSystem nsDim = new NotationSystem();
+		for (int v = 0; v < ns.size(); v++) {
+			NotationStaff nstDim = new NotationStaff();
+			nstDim.add(new NotationVoice());
+			nsDim.add(nstDim);
+		}
+
+		List<Rational> msoUndim = new ArrayList<>();
+		Arrays.stream(mtl.getTimeSignature()).forEach(ts -> msoUndim.add(new Rational(ts[3], ts[4])));
+		List<Rational> msoDim = new ArrayList<>();
+		Arrays.stream(mtlDim.getTimeSignature()).forEach(ts -> msoDim.add(new Rational(ts[3], ts[4])));
+
+		// 1. Get, per voice, the diminuted NotationChords for each meter section
+///		// Initialise meterSectionsPerVoice with empty lists  
+///		List<List<List<NotationChord>>> meterSectionsPerVoice = new ArrayList<>();
+///		for (int v = 0; v < ns.size(); v++) {
+///			List<List<NotationChord>> currVoice = new ArrayList<>();
+/////			for (int dim : diminutions) {
+/////			for (int j = 0; j < meterInfoTab.size(); j++) {	
+/////				currVoice.add(new ArrayList<>());
+/////			}
+///			diminutions.forEach(d -> currVoice.add(new ArrayList<>()));
+///			meterSectionsPerVoice.add(currVoice);
+///		}
+///		// Fill meterSectionsPerVoice
+///		// meterSectionsPerVoice.get(v)       : the sections for voice v
+///		// meterSectionsPerVoice.get(v).get(s): the notes for section s in voice v
+
+		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfo(), Timeline.MI_DIM);
+		for (int v = 0; v < ns.size(); v++) {
+			NotationVoice nv = ns.get(v).get(0);
+			for (NotationChord nc : nv) {
+				// All notes in nc have the same (metric) time
+				Rational mt = nc.getMetricTime();
+				long time = nc.getTime();
+				int sec = Timeline.getMeterSection(mt, msoUndim);
+				// Diminute the notes in nc (and therewith nc itself) and add to nsDim
+				for (Note n : nc) {
+					// Adapt ScoreNote
+					ScoreNote sn = n.getScoreNote();
+					Rational onsDim = 
+						Timeline.getDiminutedMetricPosition(mt, msoUndim, 
+						msoDim, diminutions);
+					sn.setMetricTime(onsDim);
+					Rational durDim = Timeline.diminute(n.getMetricDuration(), diminutions.get(sec));
+					sn.setMetricDuration(durDim);
+					n.setScoreNote(sn);
+					// Adapt PerformanceNote
+					PerformanceNote pn = n.getPerformanceNote();
+					long duration = n.getDuration();
+//					// By uncommenting the lines below, the time and duration are diminuted
+//					time = 
+//						Timeline.getDiminutedTime(time, meterSectionTimesUndim, meterSectionTimesDim, 
+//						diminutions);
+//					long duration = dim > 0 ? n.getDuration() / dim : n.getDuration() * Math.abs(dim);
+					pn.setTime(time);
+					pn.setDuration(duration);
+					n.setPerformanceNote(pn);
+				}
+///				meterSectionsPerVoice.get(v).get(sec).add(nc);
+				nsDim.get(v).get(0).add(nc);
+			}
+		}
+///		// 2. Create diminuted NotationSystem from meterSectionsPerVoice 
+///		// For each voice
+///		for (int i = 0; i < meterSectionsPerVoice.size(); i++) {
+///			NotationStaff nstDim = new NotationStaff();
+///			NotationVoice nvDim = new NotationVoice();
+///			// For each section
+///			for (List<NotationChord> l : meterSectionsPerVoice.get(i)) {
+///				for (NotationChord nc : l) {
+///					nvDim.add(nc);
+///				}
+///			}
+///			nstDim.add(nvDim);
+///			nsDim.add(nstDim);
+///		}
+		return nsDim;
+	}
+
+
+	void setOriginalPiece() {
 		originalPiece = SerializationUtils.clone(getPiece());
 	}
 
 
-	public void setName() { 
+	void setName() { 
 		name = getPiece().getName().substring(0, getPiece().getName().indexOf(MIDIImport.EXTENSION));
 	}
 
 
-//	@SuppressWarnings("unchecked")
-//	void setNotes(Tablature tab) {
-//		List<Object> notesPlus = makeNotes(tab);
-//		notes = (List<Note>) notesPlus.get(0);
-//	}
-	
-	
 	void setTaggedNotes(Tablature tab) {
 		taggedNotes = makeTaggedNotes(tab);
 	}
@@ -1413,6 +1628,42 @@ public class Transcription implements Serializable {
 		}
 		chordCheck = chordCheck.concat(counts + special + details);
 		return checkPassed; 
+	}
+
+
+	/**
+	 * Gets the chords from <code>notes</code>.
+	 * NB If <code>notes</code> is in its final form, getChords() should be called.
+	 * 
+	 * @param argNotes To be used when <code>notes</code> has not yet been set. 
+	 * @return
+	 */
+	// TESTED
+	List<List<Note>> getChordsFromNotes(List<Note> argNotes) {
+		List<List<Note>> ch = new ArrayList<List<Note>>();
+
+		if (argNotes == null) {
+			argNotes = getNotes();
+		}
+		List<Note> currChord = new ArrayList<Note>();
+		Rational onsetPrevNote = argNotes.get(0).getMetricTime();
+		for (int i = 0; i < argNotes.size(); i++) {
+			Note currNote = argNotes.get(i);
+			Rational onsetCurrNote = currNote.getMetricTime();
+			if (onsetCurrNote.equals(onsetPrevNote)) {
+				currChord.add(currNote);
+				if (i == argNotes.size() - 1) {
+					ch.add(currChord);
+				}
+			}
+			else {
+				ch.add(currChord);
+				currChord = new ArrayList<Note>();
+				currChord.add(currNote);
+			}
+			onsetPrevNote = onsetCurrNote;
+		}
+		return ch;
 	}
 
 
@@ -1906,18 +2157,38 @@ public class Transcription implements Serializable {
 
 	// TESTED
 	List<List<Double>> makeVoiceLabels(boolean argIsTablatureCase) {
-		List<List<Double>> vl = new ArrayList<List<Double>>(); 
+		List<List<Double>> argVoiceLabels = new ArrayList<List<Double>>(); 
 		getTaggedNotes().forEach(tn -> {
 			if (argIsTablatureCase) {
-				vl.add(createVoiceLabel(
+				argVoiceLabels.add(createVoiceLabel(
 					tn.getVoices() == null ? new Integer[]{findVoice(tn.getNote())} : 
-						tn.getVoices()));
+					tn.getVoices()));
 			}
 			else {
-				vl.add(createVoiceLabel(new Integer[]{findVoice(tn.getNote())}));
+				argVoiceLabels.add(createVoiceLabel(new Integer[]{findVoice(tn.getNote())}));
 			}
 		});
-		return vl;
+		return argVoiceLabels;
+	}
+
+
+	void setDurationLabels(List<List<Double>> argDurLabels) {
+		durationLabels = argDurLabels == null ? makeDurationLabels() : argDurLabels;
+	}
+
+
+	// TESTED 
+	List<List<Double>> makeDurationLabels() {
+		List<List<Double>> argDurLabels = new ArrayList<List<Double>>(); 
+		getTaggedNotes().forEach(tn -> 	
+			argDurLabels.add(createDurationLabel(
+				tn.getDurations() == null ? 
+					new Integer[]{Tablature.getTabSymbolDur(tn.getNote().getMetricDuration())} :
+				new Integer[]{Tablature.getTabSymbolDur(tn.getDurations()[0]), 
+					Tablature.getTabSymbolDur(tn.getDurations()[1])}	
+//				(Integer[]) Arrays.stream(tn.getDurations()).map(d -> Tablature.getTabSymbolDur(d)).toArray()
+		)));
+		return argDurLabels;
 	}
 
 
@@ -1931,6 +2202,52 @@ public class Transcription implements Serializable {
 		List<Integer[]> argVoicesSNU = new ArrayList<>();
 		getTaggedNotes().forEach(tn -> argVoicesSNU.add(tn.getVoices()));
 		return argVoicesSNU;
+	}
+
+
+	void setVoicesUnison() {
+		voicesUnison = makeVoicesUnison();
+	}
+
+
+	// TESTED
+	List<Integer[]> makeVoicesUnison() {
+		List<Integer[]> argVoicesUnison = new ArrayList<>();
+		getTaggedNotes().forEach(tn -> 
+			argVoicesUnison.add(tn.getVoices() == null ? null :
+				new Integer[]{tn.getVoices()[0], tn.getVoices()[1], 
+				tn.getIndexOtherUnisonNote(), tn.isEDU() ? 1 : 0}));
+		return argVoicesUnison;
+	}
+
+
+	void setVoicesEDU() {
+		voicesEDU = makeVoicesEDU();
+	}
+
+
+	// TESTED
+	List<Integer[]> makeVoicesEDU() {
+		List<Integer[]> argVoicesEDU = new ArrayList<>();
+		getVoicesUnison().forEach(in ->
+			argVoicesEDU.add(in == null ? null : 
+			(in[3] == 1 ? Arrays.copyOfRange(in, 0, 3) : null)));
+		return argVoicesEDU;
+	}
+
+
+	void setVoicesIDU() {
+		voicesIDU = makeVoicesIDU();
+	}
+
+
+	// TESTED
+	List<Integer[]> makeVoicesIDU() {
+		List<Integer[]> argVoicesIDU = new ArrayList<>();
+		getVoicesUnison().forEach(in ->
+			argVoicesIDU.add(in == null ? null : 
+			(in[3] == 0 ? Arrays.copyOfRange(in, 0, 3) : null)));
+		return argVoicesIDU;
 	}
 
 
@@ -2013,42 +2330,6 @@ public class Transcription implements Serializable {
 		}
 //		// Add the last chord to ch
 //		ch.add(currChord);
-		return ch;
-	}
-
-
-	/**
-	 * Gets the chords from <code>notes</code>.
-	 * NB If <code>notes</code> is in its final form, getChords() should be called.
-	 * 
-	 * @param argNotes To be used when <code>notes</code> has not yet been set. 
-	 * @return
-	 */
-	// TESTED
-	List<List<Note>> getChordsFromNotes(List<Note> argNotes) {
-		List<List<Note>> ch = new ArrayList<List<Note>>();
-
-		if (argNotes == null) {
-			argNotes = getNotes();
-		}
-		List<Note> currChord = new ArrayList<Note>();
-		Rational onsetPrevNote = argNotes.get(0).getMetricTime();
-		for (int i = 0; i < argNotes.size(); i++) {
-			Note currNote = argNotes.get(i);
-			Rational onsetCurrNote = currNote.getMetricTime();
-			if (onsetCurrNote.equals(onsetPrevNote)) {
-				currChord.add(currNote);
-				if (i == argNotes.size() - 1) {
-					ch.add(currChord);
-				}
-			}
-			else {
-				ch.add(currChord);
-				currChord = new ArrayList<Note>();
-				currChord.add(currNote);
-			}
-			onsetPrevNote = onsetCurrNote;
-		}
 		return ch;
 	}
 
@@ -2428,14 +2709,14 @@ public class Transcription implements Serializable {
 	}
 
 
-//	public void setVoiceLabels(List<List<Double>> argVoiceLabels) {
-//		voiceLabels = argVoiceLabels;
-//	}
-
-
-	void setDurationLabels(List<List<Double>> argDurationLabels) {
-		durationLabels = argDurationLabels;
+	public void setVoiceLabels(List<List<Double>> argVoiceLabels) {
+		voiceLabels = argVoiceLabels;
 	}
+
+
+//	void setDurationLabels(List<List<Double>> argDurationLabels) {
+//		durationLabels = argDurationLabels;
+//	}
 	
 	
 	void setMinimumDurationLabels(Tablature tab) {
@@ -3126,7 +3407,7 @@ public class Transcription implements Serializable {
 	}
 
 
-	List<Integer[]> makeVoicesUnison() {
+	List<Integer[]> makeVoicesUnisonnnn() {
 		// Get indices of upper and lower unison note as above
 		// Get notes (in noteseq) and voices (in voiceLabels)
 		// If duration the same: lower voice first in noteSeq and voiceLabels
@@ -3164,31 +3445,7 @@ public class Transcription implements Serializable {
 	}
 
 
-	void setVoicesEDU() {
-		voicesEDU = makeVoicesEDU();
-	}
-
-
-	List<Integer[]> makeVoicesEDU() {
-		List<Integer[]> voicesEDU = new ArrayList<>();
-		getVoicesUnison().forEach(in -> voicesEDU.add(in[3] == 1 ? Arrays.copyOfRange(in, 0, 3) : null));
-		return voicesEDU;
-	}
-
-
-	void setVoicesIDU() {
-		voicesIDU = makeVoicesIDU();
-	}
-
-
-	List<Integer[]> makeVoicesIDU() {
-		List<Integer[]> voicesIDU = new ArrayList<>();
-		getVoicesUnison().forEach(in -> voicesIDU.add(in[3] == 0 ? Arrays.copyOfRange(in, 0, 3) : null));
-		return voicesIDU;
-	}
-
-
-	//TESTED (together with getEqualDurationUnisonsInfo())
+	//TESTED (together with getVoicesEDU())
 	void setVoicesEDU(List<Integer[]> arg) {
 		voicesEDU = arg;
 	}
@@ -3437,7 +3694,6 @@ public class Transcription implements Serializable {
 	 * 
 	 * @return
 	 */
-	// TESTED (for both tablature- and non-tablature case)
 	public List<List<Double>> getVoiceLabels() {
 		return voiceLabels;
 	}
@@ -3458,7 +3714,6 @@ public class Transcription implements Serializable {
 	 * 
 	 * @return
 	 */
-	// TESTED
 	public List<List<Double>> getDurationLabels() {
 		return durationLabels;
 	}
@@ -3655,19 +3910,40 @@ public class Transcription implements Serializable {
 	 *         </li>
 	 *         </ul>
 	 */
-	// TODO test
 	public List<Integer[]> getVoicesUnison() {
 		return voicesUnison;
 	}
 
 
-	// TESTED (together with setEqualDurationUnisonsInfo())
+	/**
+	 * Gets, for each equal-duration unison (EDU) note, the voices for it and the complementary 
+	 * EDU note, as well as the index of the complementary EDU note.
+	 *   
+	 * @return A list containing for each non-EDU note <code>null</code>, and for each EDU note
+	 *         an <code>Integer[]</code> containing
+	 *         <ul>
+	 *             <li>As element 0: the lower voice.</li>
+	 *             <li>As element 1: the higher voice.</li>
+	 *             <li>As element 2: the index of the complementary EDU note.</li>
+	 *         </ul>
+	 */
 	public List<Integer[]> getVoicesEDU() {
 		return voicesEDU;
 	}
 
 
-	// TODO test
+	/**
+	 * Gets, for each inequal-duration unison (IDU) note, the voices for it and the complementary 
+	 * IDU note, as well as the index of the complementary IDU note.
+	 *   
+	 * @return A list containing for each non-IDU note <code>null</code>, and for each IDU note
+	 *         an <code>Integer[]</code> containing
+	 *         <ul>
+	 *             <li>As element 0: the voice that contains the IDU note that has the longer duration.</li>
+	 *             <li>As element 1: the voice that contains the IDU note that has the shorter duration.</li>
+	 *             <li>As element 2: the index of the complementary IDU note.</li>
+	 *         </ul>
+	 */
 	public List<Integer[]> getVoicesIDU() {
 		return voicesIDU;
 	}
@@ -7441,12 +7717,58 @@ public class Transcription implements Serializable {
 		Integer[] in = transpMatrix.get(rowInd);
 		int optionA = accid + in[2];
 		int optionB = accid + in[3];
-		if (Math.abs(optionA) <= Math.abs(optionB)) {
-			return optionA;
-		}
-		else {
-			return optionB;
-		}
+		return Math.abs(optionA) <= Math.abs(optionB) ? optionA : optionB;
+//		if (Math.abs(optionA) <= Math.abs(optionB)) {
+//			return optionA;
+//		}
+//		else {
+//			return optionB;
+//		}
+	}
+
+
+	/**
+	 * Gets, for the given accidentals (i.e., the number of flats if negative, and the number of
+	 * sharps if positive), the index of the root char and the root alteration.
+	 * 
+	 * @param accidentals
+	 * @return An <code>Integer[]</code> containing
+	 *         <ul>
+	 *         <li>As element 0: the index in "ABCDEFG" of the root that goes with the number of accidentals.</li>
+	 *         <li>As element 1: the root alteration, i.e., the number of alterations (sharps/flats) to 
+	 *             be added to the root. If the given number of accidentals is negative, the alterations
+	 *             are flats; else, they are sharps.</li>
+	 *         </ul>
+	 */ 
+	static Integer[] getRootIndexAndRootAlteration(int accidentals) {
+		Map<Integer, Integer[]> rootMap = new LinkedHashMap<Integer, Integer[]>();
+		rootMap.put(0, new Integer[]{2, 0});
+		// Sharps
+		rootMap.put(1, new Integer[]{6, 0}); // G
+		rootMap.put(2, new Integer[]{3, 0}); // D
+		rootMap.put(3, new Integer[]{0, 0}); // A
+		rootMap.put(4, new Integer[]{4, 0}); // E
+		rootMap.put(5, new Integer[]{1, 0}); // B
+		rootMap.put(6, new Integer[]{5, 0}); // F#
+		rootMap.put(7, new Integer[]{2, 1}); // C#
+		rootMap.put(8, new Integer[]{6, 1}); // G#
+		rootMap.put(9, new Integer[]{3, 1}); // D#
+		rootMap.put(10, new Integer[]{0, 1}); // A#
+		rootMap.put(11, new Integer[]{4, 1}); // E#
+		// Flats
+		rootMap.put(-1, new Integer[]{5, 0}); // F
+		rootMap.put(-2, new Integer[]{1, 1}); // Bb
+		rootMap.put(-3, new Integer[]{4, 1}); // Eb
+		rootMap.put(-4, new Integer[]{0, 1}); // Ab
+		rootMap.put(-5, new Integer[]{3, 1}); // Db
+		rootMap.put(-6, new Integer[]{6, 1}); // Gb
+		rootMap.put(-7, new Integer[]{2, 1}); // Cb
+		rootMap.put(-8, new Integer[]{5, 1}); // Fb
+		rootMap.put(-9, new Integer[]{1, 2}); // Bbb
+		rootMap.put(-10, new Integer[]{4, 2}); // Ebb
+		rootMap.put(-11, new Integer[]{0, 2}); // Abb
+
+		return rootMap.get(accidentals);
 	}
 
 
@@ -8452,17 +8774,21 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Creates a duration label encoding the given duration.
+	 * Creates a duration label encoding the given duration(s).
 	 * 
 	 * NB: Tablature case only.
 	 *  
-	 * @param dur The duration as a TabSymbol duration. The duration is always divisible by 3. 
+	 * @param durations The durations as TabSymbol durations, integers ranging from 0 
+	 *        (the shortest duration) to MAX_TABSYMBOL_DUR - 1 (the longest duration).
+	 *        TabSymbol durations are always divisible by 3.
 	 * @return
 	 */
 	// TESTED
-	public static List<Double> createDurationLabel(int dur) {
+	public static List<Double> createDurationLabel(Integer[] durations) {
+		List<Integer> durs = 
+			Arrays.asList(durations).stream().map(d -> ((d/3) - 1)).collect(Collectors.toList());
 		Double[] durLabel = new Double[MAX_TABSYMBOL_DUR];
-		Arrays.setAll(durLabel, ind -> ind == ((dur/3) - 1) ? 1.0 : 0.0);
+		Arrays.setAll(durLabel, ind -> durs.contains(ind) ? 1.0 : 0.0);
 		return Arrays.asList(durLabel);
 	}
 
@@ -8476,7 +8802,7 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED
-	public static List<Double> createDurationLabelOLD(int duration) {		
+	private static List<Double> createDurationLabelOLD(int duration) {		
 		List<Double> durationLabel = new ArrayList<Double>();
 		for (int i = 0; i < MAX_TABSYMBOL_DUR; i++) {
 			durationLabel.add(0.0);
@@ -8576,7 +8902,7 @@ public class Transcription implements Serializable {
 	// TESTED (for both tablature- and non-tablature case)
 	public static Piece createPiece(Integer[][] btp, Integer[][] bnp, List<List<Double>> voiceLabels, 
 		List<List<Double>> durationLabels, int numberOfVoices, MetricalTimeLine mtl,
-		SortedContainer<Marker> keySigs) {
+		SortedContainer<Marker> keySigs, String name) {
 
 		verifyCase(btp, bnp);
 
