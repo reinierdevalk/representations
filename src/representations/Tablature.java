@@ -704,10 +704,27 @@ public class Tablature implements Serializable {
 	// TESTED
 	public List<Integer> getPitchesInChord(int chordIndex) {
 		List<Integer> pitchesInChord = new ArrayList<Integer>();
-		Integer[][] btpChord = getBasicTabSymbolPropertiesChord(chordIndex);	
-		for (Integer[] currBtp : btpChord) {
-			pitchesInChord.add(currBtp[PITCH]);
-		}
+		Arrays.stream(getBasicTabSymbolPropertiesChord(chordIndex)).forEach(in -> 
+			pitchesInChord.add(in[PITCH]));
+		return pitchesInChord;
+	}
+
+
+	/**
+	 * Gets the pitches in the given chord. Element 0 of the List represents the lowest 
+	 * note's pitch, element 1 the second-lowest note's, etc. 
+	 * 
+	 * NB: If the chord contains course crossings, the list returned will not be in numerical 
+	 * order.
+	 * 
+	 * @param argChord
+	 * @return
+	 */
+	// TESTED
+	public List<Integer> getPitchesInChord(List<TabSymbol> argChord) {
+		List<Integer> pitchesInChord = new ArrayList<Integer>();
+		argChord.forEach(ts -> pitchesInChord.add(
+			ts.getPitch(getNormaliseTuning() ? tunings[NORMALISED_TUNING_IND] : tunings[ENCODED_TUNING_IND])));
 		return pitchesInChord;
 	}
 
@@ -784,7 +801,7 @@ public class Tablature implements Serializable {
 	 *    possible (e.g., 6th c., 12th fr. - 5th c., 6th fr. - 4th c., open), but will not 
 	 *    likely occur in practice.</li>
 	 * </ul>
-	 * @param chordIndex 
+	 * @param tabChord
 	 * @return A List of Integer[]s, each element of which represents a course crossing pair 
 	 * (starting from below), each element of which contains<br>
 	 * <ul>
@@ -797,16 +814,17 @@ public class Tablature implements Serializable {
 	 * If the chord does not contain (a) course crossing(s), <code>null</code> is returned. 
 	 */
 	// TESTED
-	public List<Integer[]> getCourseCrossingInfo(int chordIndex) {
+	public List<Integer[]> getCourseCrossingInfo(List<TabSymbol> argChord /*int chordIndex */) {
 		List<Integer[]> courseCrossingsInfo = new ArrayList<>();
 		// For each pitch in pitchesInChord
-		List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
+		List<Integer> pitchesInChord = getPitchesInChord(argChord);
+//		List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
 		for (int i = 0; i < pitchesInChord.size(); i++) {
-			int currentPitch = pitchesInChord.get(i);        
+			int currPitch = pitchesInChord.get(i);        
 			// Search the remainder of pitchesInChord for a note with a lower pitch (course crossing)
 			for (int j = i + 1; j < pitchesInChord.size(); j++) {
-				if (pitchesInChord.get(j) < currentPitch) {
-					courseCrossingsInfo.add(new Integer[]{currentPitch, pitchesInChord.get(j), i, j});
+				if (pitchesInChord.get(j) < currPitch) {
+					courseCrossingsInfo.add(new Integer[]{currPitch, pitchesInChord.get(j), i, j});
 					break; // See NB b) for reason of break
 				}
 			} 
@@ -823,12 +841,12 @@ public class Tablature implements Serializable {
 	 * @return 
 	 */
 	// TESTED
-	public int getNumberOfCourseCrossingsInChord(int chordIndex) {
-		if (getCourseCrossingInfo(chordIndex) == null) {
+	public int getNumberOfCourseCrossingsInChord(List<TabSymbol> chord /*int chordIndex*/) {
+		if (getCourseCrossingInfo(chord/*chordIndex*/) == null) {
 			return 0;
 		}
 		else {
-			return getCourseCrossingInfo(chordIndex).size();
+			return getCourseCrossingInfo(chord/*chordIndex*/).size();
 		}
 	}
 

@@ -937,6 +937,7 @@ public class TablatureTest extends TestCase {
 		Tablature tablature = new Tablature(encodingTestpiece, false);
 
 		List<List<Integer>> expected = getPitchesInChord(false);
+
 		List<List<Integer>> actual = new ArrayList<List<Integer>>();
 		for (int i = 0; i < tablature.getChords().size(); i++) {
 		 	actual.add(tablature.getPitchesInChord(i));
@@ -950,8 +951,29 @@ public class TablatureTest extends TestCase {
 		 	}
 		}
 	}
-	
-	
+
+
+	public void testGetPitchesInChordAlt() {
+		Tablature tablature = new Tablature(encodingTestpiece, false);
+
+		List<List<Integer>> expected = getPitchesInChord(false);
+
+		List<List<Integer>> actual = new ArrayList<List<Integer>>();
+		List<List<TabSymbol>> chords = tablature.getChords();
+		for (int i = 0; i < chords.size(); i++) {
+		 	actual.add(tablature.getPitchesInChord(chords.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+		 	assertEquals(expected.get(i).size(), actual.get(i).size());
+		 	for (int j = 0; j < expected.get(i).size(); j++) {
+		 		assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+		 	}
+		}
+	}
+
+
 	public void testGetUnisonInfo() {
 		Tablature tablature = new Tablature(encodingTestpiece, false);
 
@@ -1018,30 +1040,15 @@ public class TablatureTest extends TestCase {
 	public void testGetCourseCrossingInfo() {
 		Tablature tablature = new Tablature(encodingTestpiece, false);
 
-		List<List<Integer[]>> expected = new ArrayList<>();
-		expected.add(null);
+		List<List<Integer[]>> expected = new ArrayList<>(Collections.nCopies(16, null));
 		List<Integer[]> chord1 = new ArrayList<>();
 		chord1.add(new Integer[]{72, 69, 2, 3});
-		expected.add(chord1);
-		expected.add(null);
-		expected.add(null);
-		expected.add(null);
-		expected.add(null);
-		expected.add(null);
-		expected.add(null);
-		expected.add(null);
-		expected.add(null);
-		expected.add(null);
-		expected.add(null);
-		expected.add(null);
-		expected.add(null);
-		expected.add(null);
-		expected.add(null);
+		expected.set(1, chord1);
 
 		List<List<Integer[]>> actual = new ArrayList<>();
 		List<List<TabSymbol>> chords = tablature.getChords();
 		for (int i = 0; i < chords.size(); i++) {
-			actual.add(tablature.getCourseCrossingInfo(i));
+			actual.add(tablature.getCourseCrossingInfo(chords.get(i)));
 		}
 
 		assertEquals(expected.size(), actual.size());
@@ -1070,7 +1077,7 @@ public class TablatureTest extends TestCase {
 		List<Integer> actual = new ArrayList<Integer>();
 		List<List<TabSymbol>> chords = tablature.getChords();
 		for (int i = 0; i < chords.size(); i++) {
-			actual.add(tablature.getNumberOfCourseCrossingsInChord(i));
+			actual.add(tablature.getNumberOfCourseCrossingsInChord(chords.get(i)));
 		}
 
 		assertEquals(expected.size(), actual.size());
