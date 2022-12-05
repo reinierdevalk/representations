@@ -120,11 +120,13 @@ public class MIDIExport {
 	/**
 	 * Returns a MIDI sequence of the given Piece.
 	 * 
-	 * @param 
+	 * @param p The Piece.
 	 * @param instruments The instrument for each voice. If the list contains only one element, 
 	 *        this instrument is used for all tracks.
+	 * @param meterInfo The meterInfo for the Piece.       
 	 */
-	private static Sequence exportMidiFile(Piece p, List<Integer> instruments) {
+	private static Sequence exportMidiFile(Piece p, List<Integer> instruments, List<Integer[]> meterInfo,
+		List<Integer[]> keyInfo) { // 05.12 added meterInfo and keyInfo
 		
 		NotationSystem ns = p.getScore();
 		int numVoices = ns.size();
@@ -192,7 +194,7 @@ public class MIDIExport {
 			// The four bytes in bts (nn, dd, cc, bb) indicate num, den (as 2^dd), per how many 
 			// MIDI clock ticks a metronome click is given (the standard MIDI clock has 24 ticks
 			// per quarter note), and the number of 32nd notes per quarter note
-			List<Integer[]> meterInfo = Transcription.createMeterInfo(p);
+//			List<Integer[]> meterInfo = Transcription.createMeterInfo(p); // 05.12 commented out
 			List<Integer[]> timeSigTicks = getTimeSigTicks(meterInfo, TICKS_PER_BEAT);
 			for (int i = 0; i < meterInfo.size(); i++) {
 				Integer[] mi = meterInfo.get(i);
@@ -209,7 +211,7 @@ public class MIDIExport {
 			byte[] majMin = new byte[]{0x00, 0x01};
 			
 			// Key signature (0x59)
-			List<Integer[]> keyInfo = Transcription.createKeyInfo(p, meterInfo);
+//			List<Integer[]> keyInfo = Transcription.createKeyInfo(p, meterInfo); // 05.12 commented out
 			for (int i = 0; i < keyInfo.size(); i++) {
 				Integer[] ki = keyInfo.get(i);
 				mt = new MetaMessage();
@@ -303,10 +305,12 @@ public class MIDIExport {
 	 * @param p The piece
 	 * @param instruments The instrument for each voice. If the list contains only one element, 
 	 *        this instrument is used for all tracks.
+	 * @param meterInfo The meterInfo for the Piece.       
 	 * @param path The path where the MIDI file is saved 
 	 */
-	public static void exportMidiFile(Piece p, List<Integer> instruments, String path) {
-		Sequence seq = exportMidiFile(p, instruments);
+	public static void exportMidiFile(Piece p, List<Integer> instruments, List<Integer[]> meterInfo, 
+		List<Integer[]> keyInfo, String path) { // 05.12 added meterInfo and keyInfo
+		Sequence seq = exportMidiFile(p, instruments, meterInfo, keyInfo);
 		
 		File f = new File(path);
 		f.getParentFile().mkdirs();

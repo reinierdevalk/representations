@@ -116,6 +116,7 @@ public class Transcription implements Serializable {
 	public static final int KI_LAST_BAR = 3;
 	public static final int KI_NUM_MT_FIRST_BAR = 4;
 	public static final int KI_DEN_MT_FIRST_BAR = 5;
+	private static final int KI_SIZE = 6;
 
 	private String handledNotes;
 	private static String chordCheck;
@@ -546,6 +547,8 @@ public class Transcription implements Serializable {
 		setPiece(argPiece, tab, t);
 		setOriginalPiece();
 		setName();
+		setMeterInfo();
+		setKeyInfo();
 		setTaggedNotes(tab);
 		setNotes();
 		setChords();
@@ -596,8 +599,8 @@ public class Transcription implements Serializable {
 //				transpose(tab.getTranspositionInterval());
 //			}
 //			setChords(); // needs <noteSequence> (finalised)
-			setMeterInfo(tab.getTimeline().getMeterInfo());
-			setKeyInfo(); // must be done after possible transpose()
+//			setMeterInfo(tab.getTimeline().getMeterInfo());
+//			setKeyInfo(); // must be done after possible transpose()
 //			setMinimumDurationLabels(tab);
 		}
 		// b. Non-tablature case
@@ -606,8 +609,8 @@ public class Transcription implements Serializable {
 			setVoicesEDU();
 			setVoicesIDU();
 			
-			setMeterInfo();
-			setKeyInfo();
+//			setMeterInfo();
+//			setKeyInfo();
 //			handleUnisonsss(t); // needs <noteSequence> and <voiceLabels> (and changes these)
 //			setChords(); // needs <noteSequence> (finalised)
 			setBasicNoteProperties(); // needs <noteSequence>	
@@ -618,7 +621,7 @@ public class Transcription implements Serializable {
 //			setChordVoiceLabels(tab); // needs <chords>
 //		}
 //		else {
-//			// TODO Currently no chordVoiceLabels needed in bidir model
+//			// Currently no chordVoiceLabels needed in bidir model
 //		}
 	}
 
@@ -1318,6 +1321,118 @@ public class Transcription implements Serializable {
 
 	void setName() { 
 		name = getPiece().getName().substring(0, getPiece().getName().indexOf(MIDIImport.EXTENSION));
+	}
+
+
+	void setMeterInfo() {
+		meterInfo = makeMeterInfo();
+	}
+
+
+	// TESTED
+	List<Integer[]> makeMeterInfo() {
+		long[][] timeSigs = getPiece().getMetricalTimeLine().getTimeSignature();
+
+		int numTimeSigs = timeSigs.length;
+		int start = 1;
+		// If there is an anacrusis, start should be 0
+		if (numTimeSigs > 1) {
+			Rational firstTimeSig = new Rational((int)timeSigs[0][0], (int)timeSigs[0][1]);
+			Rational secondMetricTime = new Rational((int)timeSigs[1][3], (int)timeSigs[1][4]);
+			Rational secondTimeSig = new Rational((int)timeSigs[1][0], (int)timeSigs[1][1]);
+			// An anacrusis is assumed when the first time sig is smaller than the second and 
+			// the metric time of the second time sig equals the first time sig
+			// NB When exporting a .sib file with a real anacrusis to MIDI, the anacrusis bar
+			// is padded with rests. To get a real anacrusis in a MIDI file, the anacrusis bar
+			// must thus be given its own meter
+			if (firstTimeSig.isLess(secondTimeSig) && secondMetricTime.equals(firstTimeSig)) {
+				start = 0;
+			}
+		}
+		List<Integer[]> mInfo = new ArrayList<Integer[]>();
+
+		int numBars;
+		for (int i = 0; i < numTimeSigs; i++) {
+			Integer[] currMeterInfo = new Integer[Timeline.MI_SIZE_TRANS];
+			long[] curr = timeSigs[i];
+			Rational currMeter = new Rational(curr[0], curr[1]);
+			Rational currMetricTime = new Rational(curr[3], curr[4]);
+			// If there is a next timesig
+			if ((i+1) < numTimeSigs) {
+				long[] next = timeSigs[i+1];
+				Rational nextMetricTime = new Rational(next[3], next[4]);
+				numBars = (int) (nextMetricTime.sub(currMetricTime)).div(currMeter).toDouble();
+			}
+			// If there is no next time sig
+			else {
+				// Determine the offset of the last note of the piece
+				Rational end = Rational.ZERO;
+				for (NotationStaff ns : piece.getScore()) {
+					NotationVoice nv = ns.get(0);
+					NotationChord lastNc = nv.get(nv.size() - 1);
+					Rational currEnd = lastNc.getMetricTime().add(lastNc.getMetricDuration());
+					if (currEnd.isGreater(end)) {
+						end = currEnd;
+					}
+				}
+				// Determine the remaining time in bars
+				Rational rem = end.sub(currMetricTime);
+				numBars = (rem.div(currMeter)).ceil();
+			}
+			currMeterInfo[Timeline.MI_NUM] = (int)curr[0];
+			currMeterInfo[Timeline.MI_DEN] = (int)curr[1];
+			currMeterInfo[Timeline.MI_FIRST_BAR] = start;
+			currMeterInfo[Timeline.MI_LAST_BAR] = start + (numBars - 1);
+			currMeterInfo[Timeline.MI_NUM_MT_FIRST_BAR] = currMetricTime.getNumer();
+			currMeterInfo[Timeline.MI_DEN_MT_FIRST_BAR] = currMetricTime.getNumer() == 0 ? 1 : currMetricTime.getDenom();
+			mInfo.add(currMeterInfo);
+			start += numBars;
+		}		
+		return mInfo;
+	}
+
+
+	void setKeyInfo() {
+		keyInfo = makeKeyInfo();
+	}
+
+
+	// TESTED
+	List<Integer[]> makeKeyInfo() {
+		List<Integer[]> keyInfo = new ArrayList<Integer[]>();
+
+		SortedContainer<Marker> keySigs = getPiece().getHarmonyTrack();
+		List<Integer[]> meterInfo = getMeterInfo();
+		int numKeySigs = keySigs.size();
+		for (int i = 0; i < numKeySigs; i++) {
+			Integer[] currKeyInfo = new Integer[KI_SIZE];
+			KeyMarker km = (KeyMarker) keySigs.get(i);
+			int key = km.getAlterationNum(); 
+			// Reverse KeyMarker.Mode labels (minor = 0; major = 1)
+			int mode = Math.abs(km.getMode().getCode() -1);
+			Rational mt = km.getMetricTime();
+			// It is assumed that key signature changes only occur at the beginning of a bar
+			int firstBar = Timeline.getMetricPosition(mt, meterInfo)[0].getNumer();
+			int lastBar = -1;
+			// If there is a next keysig
+			if ((i+1) < numKeySigs) {
+				KeyMarker next = (KeyMarker) keySigs.get(i+1);
+				Rational mtNext = next.getMetricTime();
+				int firstBarNext = Timeline.getMetricPosition(mtNext, meterInfo)[0].getNumer();
+				lastBar = firstBarNext - 1;
+			}
+			else {
+				lastBar = meterInfo.get(meterInfo.size() -1)[Timeline.MI_LAST_BAR];
+			}
+			currKeyInfo[KI_KEY] = key;
+			currKeyInfo[KI_MODE] = mode;
+			currKeyInfo[KI_FIRST_BAR] = firstBar;
+			currKeyInfo[KI_LAST_BAR] = lastBar;
+			currKeyInfo[KI_NUM_MT_FIRST_BAR] = mt.getNumer();
+			currKeyInfo[KI_DEN_MT_FIRST_BAR] = mt.getNumer() == 0 ? 1 : mt.getDenom();
+			keyInfo.add(currKeyInfo);
+		}
+		return keyInfo;
 	}
 
 
@@ -2088,13 +2203,13 @@ public class Transcription implements Serializable {
 	}
 
 
-	void setNotes() { HIERRR
+	void setNotes() {
 		notes = makeNotes();
 	}
 
 
 	// TESTED
-	List<Note> makeNotes() {	
+	List<Note> makeNotes() {
 		List<Note> argNotes = new ArrayList<>();
 		getTaggedNotes().forEach(tn -> argNotes.add(tn.getNote()));
 		return argNotes;
@@ -2244,6 +2359,56 @@ public class Transcription implements Serializable {
 			argVoicesIDU.add(in == null ? null : 
 			(in[3] == 0 ? Arrays.copyOfRange(in, 0, 3) : null)));
 		return argVoicesIDU;
+	}
+
+
+	void setBasicNoteProperties() {
+		basicNoteProperties = makeBasicNoteProperties();
+	}
+
+
+	//
+	Integer[][] makeBasicNoteProperties() {
+		List<Note> argNotes = getNotes();
+//		NoteSequence noteSeq = getNoteSequence();
+		List<List<Note>> argChords = getChords();
+//		List<List<Note>> chords = getNoteSequenceChords();
+		Integer[][] argBnp = new Integer[argNotes.size()][8];
+
+		for (int i = 0; i < argNotes.size(); i++) {
+			Note currNote = argNotes.get(i);
+			Integer[] bnpCurr = new Integer[8];
+
+			// 0. Pitch
+			bnpCurr[PITCH] = currNote.getMidiPitch();
+			// 1-2. MetricTime (i.e., the numerator and the denominator of the Rational MetricTime)
+			bnpCurr[ONSET_TIME_NUMER] = currNote.getMetricTime().getNumer();
+			bnpCurr[ONSET_TIME_DENOM] = currNote.getMetricTime().getDenom();
+			// 3-4. Duration (i.e., the numerator and the denominator of the Rational MetricDuration)
+			bnpCurr[DUR_NUMER] = currNote.getMetricDuration().getNumer();
+			bnpCurr[DUR_DENOM] = currNote.getMetricDuration().getDenom();
+			// 5. Chord number			
+			int chordNum = 0;
+			int seqNum = 0;
+			// Find the chord n is in; then determine chordNum (and seqNum)
+			for (int j = 0; j < argChords.size(); j++) {
+				List<Note> currentChord = argChords.get(j);
+				if (currentChord.contains(currNote)) {
+					chordNum = j;
+					seqNum = currentChord.indexOf(currNote);
+					break;
+				}
+			}
+			bnpCurr[CHORD_SEQ_NUM] = chordNum;
+			// 6. The size of the chord the Note is in
+			int size = argChords.get(chordNum).size();
+			bnpCurr[CHORD_SIZE_AS_NUM_ONSETS] = size;
+			// 7. Sequence number in chord
+			bnpCurr[NOTE_SEQ_NUM] = seqNum;
+
+			argBnp[i] = bnpCurr;
+		}
+		return argBnp;
 	}
 
 
@@ -2994,43 +3159,6 @@ public class Transcription implements Serializable {
 	}
 
 
-//	/**
-//	 * Sets meterInfo.
-//	 * 
-//	 * NB: Non-tablature case only.
-//	 */
-//	private void setMeterInfo(File file) {
-////		File file = getFile();
-//		String[] contents = file.list();
-//		for (String s: contents) {
-//			if (s.endsWith(".txt")) {
-//				File meterFile = new File(file + "/" + s);
-//				String meterInfoString = ToolBox.readTextFile(meterFile);
-////				meterInfo = Tablature.createMeterInfo(meterInfoString);
-//			}
-//		}
-//	}
-	
-	
-	/**
-	 * Sets meterInfo.
-	 * 
-	 * NB: Non-tablature case only.
-	 */
-	void setMeterInfo() {
-		meterInfo = createMeterInfo(getPiece());
-	}
-	
-	
-	/**
-	 * Sets keyInfo.
-	 * 
-	 */
-	void setKeyInfo() {
-		keyInfo = createKeyInfo(getPiece(), getMeterInfo());
-	}
-
-
 	public void setColourIndices(List<List<Integer>> arg) {
 		colourIndices = arg;
 	}
@@ -3088,137 +3216,6 @@ public class Transcription implements Serializable {
 			}
 		}
 		return null;
-	}
-
-
-	/**
-	 * Given a Piece, creates the meterInfo.
-	 * 
-	 * @param piece  
-	 * @return A list whose elements represent the meters in the piece. Each element contains<br>
-	 *         <ul>
-	 *   	   <li> as element 0: the numerator of the meter </li>
-	 *         <li> as element 1: the denominator of the meter </li>
-	 *         <li> as element 2: the first bar in the meter </li>
-	 *         <li> as element 3: the last bar in the meter </li>
-	 *         <li> as element 4: the numerator of the metric time of that first bar </li>
-	 *         <li> as element 5: the denominator of the metric time of that first bar </li>
-	 *         </ul>
-	 *   
-	 *         An anacrusis bar will be denoted with bar numbers 0-0.
-	 */
-	// TESTED
-	public static List<Integer[]> createMeterInfo(Piece piece) {
-		long[][] timeSigs = piece.getMetricalTimeLine().getTimeSignature();
-		
-		int numTimeSigs = timeSigs.length;
-		int start = 1;
-		// If there is an anacrusis, start should be 0
-		if (numTimeSigs > 1) {
-			Rational firstTimeSig = new Rational((int)timeSigs[0][0], (int)timeSigs[0][1]);
-			Rational secondMetricTime = new Rational((int)timeSigs[1][3], (int)timeSigs[1][4]);
-			Rational secondTimeSig = new Rational((int)timeSigs[1][0], (int)timeSigs[1][1]);
-			// An anacrusis is assumed when first time sig is smaller than the second and the 
-			// metric time of the second time sig equals the first time sig
-			// NB When exporting a .sib file with a real anacrusis to MIDI, the anacrusis bar
-			// is padded with rests. To get a real anacrusis in a MIDI file, the anacrusis bar
-			// must thus be given its own meter
-			if (firstTimeSig.isLess(secondTimeSig) && secondMetricTime.equals(firstTimeSig)) {
-				start = 0;
-			}
-		}
-		List<Integer[]> mInfo = new ArrayList<Integer[]>();
-		
-		int numBars;
-		for (int i = 0; i < numTimeSigs; i++) {
-			Integer[] currMeterInfo = new Integer[Timeline.MI_SIZE_TRANS];
-			long[] curr = timeSigs[i];
-			Rational currMeter = new Rational(curr[0], curr[1]);
-			Rational currMetricTime = new Rational(curr[3], curr[4]);
-			// If there is a next timesig
-			if ((i+1) < numTimeSigs) {
-				long[] next = timeSigs[i+1];
-				Rational nextMetricTime = new Rational(next[3], next[4]);
-				numBars = (int) (nextMetricTime.sub(currMetricTime)).div(currMeter).toDouble();
-			}
-			// If there is no next time sig
-			else {
-				// Determine the offset of the last note of the piece
-				Rational end = Rational.ZERO;
-				for (NotationStaff ns : piece.getScore()) {
-					NotationVoice nv = ns.get(0);
-					NotationChord lastNc = nv.get(nv.size() - 1);
-					Rational currEnd = lastNc.getMetricTime().add(lastNc.getMetricDuration());
-					if (currEnd.isGreater(end)) {
-						end = currEnd;
-					}
-				}
-				// Determine the remaining time in bars
-				Rational rem = end.sub(currMetricTime);
-				numBars = (rem.div(currMeter)).ceil();
-			}
-			currMeterInfo[Timeline.MI_NUM] = (int)curr[0];
-			currMeterInfo[Timeline.MI_DEN] = (int)curr[1];
-			currMeterInfo[Timeline.MI_FIRST_BAR] = start;
-			currMeterInfo[Timeline.MI_LAST_BAR] = start + (numBars - 1);
-			currMeterInfo[Timeline.MI_NUM_MT_FIRST_BAR] = currMetricTime.getNumer();
-			currMeterInfo[Timeline.MI_DEN_MT_FIRST_BAR] = currMetricTime.getDenom();
-			mInfo.add(currMeterInfo);
-//			mInfo.add(
-//				new Integer[]{
-//					(int)curr[0], (int)curr[1], 
-//					start, start + (numBars - 1),
-//					currMetricTime.getNumer(), currMetricTime.getDenom()}
-//			);
-			start += numBars;
-		}		
-		return mInfo;
-	}
-
-
-	/**
-	 * Given a Piece and the meterInfo, creates the keyInfo.
-	 * 
-	 * @param piece
-	 * @param meterInfo 
-	 * @return A list whose elements represent the keys in the piece. Each element contains<br>
-	 *   <ul>
-	 *   <li> as element 0: the key, as a number of sharps (positive) or flats (negative) </li>
-	 *   <li> as element 1: the mode, where major = 0 and minor = 1 </li>
-	 *   <li> as element 2: the first bar in the key </li>
-	 *   <li> as element 3: the last bar in the key </li>
-	 *   <li> as element 4: the numerator of the metric time of that first bar </li>
-	 *   <li> as element 5: the denominator of the metric time of that first bar </li>
-	 *   </ul>
-	 */
-	// TESTED
-	public static List<Integer[]> createKeyInfo(Piece piece, List<Integer[]> meterInfo) {
-		List<Integer[]> keyInfo = new ArrayList<Integer[]>();
-		
-		SortedContainer<Marker> keySigs = piece.getHarmonyTrack();
-		int numKeySigs = keySigs.size();
-		for (int i = 0; i < numKeySigs; i++) {
-			KeyMarker km = (KeyMarker) keySigs.get(i);
-			int key = km.getAlterationNum(); 
-			// Reverse KeyMarker.Mode labels (minor = 0; major = 1)
-			int mode = Math.abs(km.getMode().getCode() -1);
-			Rational mt = km.getMetricTime();
-			// It is assumed that key signature changes only occur at the beginning of a bar
-			int firstBar = Timeline.getMetricPosition(mt, meterInfo)[0].getNumer();
-			int lastBar = -1;
-			// If there is a next keysig
-			if ((i+1) < numKeySigs) {
-				KeyMarker next = (KeyMarker) keySigs.get(i+1);
-				Rational mtNext = next.getMetricTime();
-				int firstBarNext = Timeline.getMetricPosition(mtNext, meterInfo)[0].getNumer();
-				lastBar = firstBarNext - 1;
-			}
-			else {
-				lastBar = meterInfo.get(meterInfo.size() -1)[Timeline.MI_LAST_BAR];
-			}
-			keyInfo.add(new Integer[]{key, mode, firstBar, lastBar, mt.getNumer(), mt.getDenom()});
-		}
-		return keyInfo;
 	}
 
 
@@ -3490,51 +3487,6 @@ public class Transcription implements Serializable {
 //	}
 
 
-	// TESTED (together with getBasicNoteProperties())
-	void setBasicNoteProperties() {
-		NoteSequence noteSeq = getNoteSequence();
-		List<List<Note>> ch = getChords();
-//		List<List<Note>> chords = getNoteSequenceChords();
-		basicNoteProperties = new Integer[noteSeq.size()][8];
-
-		// For each Note in noteSeq
-		for (int i = 0; i < noteSeq.size(); i++) {
-			Note currentNote = noteSeq.get(i);
-			Integer[] bnpCurrent = new Integer[8];
-
-			// 0. Pitch
-			bnpCurrent[PITCH] = currentNote.getMidiPitch();
-			// 1-2. MetricTime (i.e., the numerator and the denominator of the Rational MetricTime)
-			bnpCurrent[ONSET_TIME_NUMER] = currentNote.getMetricTime().getNumer();
-			bnpCurrent[ONSET_TIME_DENOM] = currentNote.getMetricTime().getDenom();
-			// 3-4. Duration (i.e., the numerator and the denominator of the Rational MetricDuration)
-			bnpCurrent[DUR_NUMER] = currentNote.getMetricDuration().getNumer();
-			bnpCurrent[DUR_DENOM] = currentNote.getMetricDuration().getDenom();
-			// 5. Chord number			
-			int chordNum = 0;
-			int seqNum = 0;
-			// Find the chord n is in; then determine chordNum (and seqNum)
-			for (int j = 0; j < ch.size(); j++) {
-				List<Note> currentChord = ch.get(j);
-				if (currentChord.contains(currentNote)) {
-					chordNum = j;
-					seqNum = currentChord.indexOf(currentNote);
-					break;
-				}
-			}
-			bnpCurrent[CHORD_SEQ_NUM] = chordNum;
-			// 6. The size of the chord the Note is in
-			int size = ch.get(chordNum).size();
-			bnpCurrent[CHORD_SIZE_AS_NUM_ONSETS] = size;
-			// 7. Sequence number in chord
-			bnpCurrent[NOTE_SEQ_NUM] = seqNum;
-
-			// Add to currentBasicNoteProperties to basicNoteProperties
-			basicNoteProperties[i] = bnpCurrent;
-		}
-	}
-
-
 	// TESTED (together with getChords())
 	private void setChordsOLD() {
 		chords = getChordsFromNoteSequence();
@@ -3646,12 +3598,12 @@ public class Transcription implements Serializable {
 	 * 
 	 * @return A list whose elements represent the meters in the piece. Each element contains<br>
 	 *         <ul>
-	 *         <li> as element 0: the numerator of the meter </li>
-	 *         <li> as element 1: the denominator of the meter </li>
-	 *         <li> as element 2: the first bar in the meter </li>
-	 *         <li> as element 3: the last bar in the meter </li>
-	 *         <li> as element 4: the numerator of the metric time of that first bar </li>
-	 *         <li> as element 5: the denominator of the metric time of that first bar </li>
+	 *         <li> As element 0: the numerator of the meter.</li>
+	 *         <li> As element 1: the denominator of the meter.</li>
+	 *         <li> As element 2: the first bar in the meter.</li>
+	 *         <li> As element 3: the last bar in the meter.</li>
+	 *         <li> As element 4: the numerator of the metric time of that first bar.</li>
+	 *         <li> As element 5: the denominator of the metric time of that first bar.</li>
 	 *         </ul>
 	 *     
 	 *         An anacrusis bar will be denoted with bar numbers 0-0.
@@ -3659,18 +3611,19 @@ public class Transcription implements Serializable {
 	public List<Integer[]> getMeterInfo() {
 		return meterInfo;
 	}
-	
+
+
 	/**
-	 * Gets the keyInfo.
+	 * Gets the <i>keyInfo</i>.
 	 * 
 	 * @return A list whose elements represent the keys in the piece. Each element contains<br>
 	 *   <ul>
-	 *   <li> as element 0: the key, as a number of sharps (positive) or flats (negative) </li>
-	 *   <li> as element 1: the mode, where major = 0 and minor = 1 </li>
-	 *   <li> as element 2: the first bar in the key </li>
-	 *   <li> as element 3: the last bar in the key </li>
-	 *   <li> as element 4: the numerator of the metric time of that first bar </li>
-	 *   <li> as element 5: the denominator of the metric time of that first bar </li>
+	 *   <li> As element 0: the key, as a number of sharps (positive) or flats (negative).</li>
+	 *   <li> As element 1: the mode, where major = 0 and minor = 1.</li>
+	 *   <li> As element 2: the first bar in the key.</li>
+	 *   <li> As element 3: the last bar in the key.</li>
+	 *   <li> As element 4: the numerator of the metric time of that first bar.</li>
+	 *   <li> As element 5: the denominator of the metric time of that first bar.</li>
 	 *   </ul>
 	 */
 	public List<Integer[]> getKeyInfo() {
@@ -3679,24 +3632,31 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Gets <i>basicNoteProperties</i>, a two-dimensional Array in which the basic Note properties are stored.
-	 * It contains for each Note in row i the following properties:
-	 * in column 0: the Note's pitch (as a MIDInumber)
-	 * in column 1-2: the numerator and denominator of the Note's MetricTime (both reduced as much as possible)
-	 * in column 3-4: the numerator and denominator of the Note's MetricDuration (both reduced as much as possible)
-	 * in column 5: the sequence number of the chord the Note is in
-	 * in column 6: the size of the chord the Note is in (as new onsets only, so not including any sustained Notes)
-	 * in column 7: the Note's sequence number in the chord, not including any sustained notes. The sequence number
-	 *              is based on pitch only; voice crossing are left out of consideration. Where two notes have the 
-	 *              same pitch, the one with the longer duration is listed first.
+	 * Gets the <i>basicNoteProperties</i>.
 	 *              
 	 * NB: Non-tablature case only.
+	 * 
+	 * @return An Integer[][], each element of which represents a note, and contains 
+	 *         <ul>
+	 *         <li>As element 0   : the Note's pitch (as a MIDInumber).</li>
+	 *         <li>As elements 1-2: the numerator and denominator of the Note's metric time 
+	 *                              (both reduced as much as possible).</li>
+	 *         <li>As elements 3-4: the numerator and denominator of the Note's metric duration 
+	 *                              (both reduced as much as possible).</li>
+	 *         <li>As element 5   : the sequence number of the chord the Note is in.</li>
+	 *         <li>As element 6   : the size of the chord the Note is in (as new onsets only, so not 
+	 *                              including any sustained Notes).</li>
+	 *         <li>As element 7   : the Note's sequence number in the chord, not including any sustained 
+	 *                              notes. The sequence number is based on pitch only; voice crossing are 
+	 *                              left out of consideration. Where two notes have the same pitch, the one 
+	 *                              with the longer duration is listed first.</li>
+	 * </ul>
 	 */
-	// TESTED (together with setBasicNoteProperties)
 	public Integer[][] getBasicNoteProperties() {
 		return basicNoteProperties;
 	}
-	
+
+
 	/**
 	 * Undiminutes the given basic note properties, i.e., sets the duration and onset values back to 
 	 * the values as found in the tablature.
