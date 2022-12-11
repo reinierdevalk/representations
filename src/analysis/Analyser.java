@@ -442,7 +442,7 @@ public class Analyser {
 
 		// Create output
 		for (int i = 0; i < pieces.size(); i++) {
-			Transcription trans = new Transcription(new File(path + pieces.get(i) + MIDIImport.EXTENSION), null);
+			Transcription trans = new Transcription(new File(path + pieces.get(i) + MIDIImport.EXTENSION));
 			String shortName = shortPieceNames.get(i);
 
 			outputSpreadsheet += shortName + "\t";
@@ -552,7 +552,7 @@ public class Analyser {
 
 		// Create output
 		for (int i = 0; i < pieces.size(); i++) {
-			Transcription trans = new Transcription(new File(path + pieces.get(i) + MIDIImport.EXTENSION), null);
+			Transcription trans = new Transcription(new File(path + pieces.get(i) + MIDIImport.EXTENSION));
 			String shortName = shortPieceNames.get(i); 
 
 			outputSpreadsheet += shortName + "\t";
@@ -678,7 +678,7 @@ public class Analyser {
 
 		// Create output
 		for (int i = 0; i < pieces.size(); i++) {
-			Transcription trans = new Transcription(new File(path + pieces.get(i) + MIDIImport.EXTENSION), null);
+			Transcription trans = new Transcription(new File(path + pieces.get(i) + MIDIImport.EXTENSION));
 			String shortName = shortPieceNames.get(i);
 
 			outputSpreadsheet += shortName + "\t";
@@ -810,7 +810,7 @@ public class Analyser {
 	private static String hasMoreThanOneUnison(String folderName, String pieceName) {
 		String results = folderName + pieceName + ":" + "\n";
 
-		Transcription transcription = new Transcription(new File(folderName + pieceName), null);
+		Transcription transcription = new Transcription(new File(folderName + pieceName));
 		List<Integer[]> meterInfo = transcription.getMeterInfo();
 		Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
 		int totalNumUnisons = 0;
@@ -842,12 +842,11 @@ public class Analyser {
 			String metricPosAsString = barNum + posInBar;
 
 			// a. Determine number of unisons
-			Integer[][] unisonInfo = Transcription.getUnisonInfo(currentChord);
+			Integer[][] unisonInfo = null; //Transcription.getUnisonInfo(currentChord);
 			if (unisonInfo != null) {
 				totalNumUnisons++;
 				if (unisonInfo.length == 1) {
 					results = results.concat("  chord at index " + i + " (metric position " + metricPosAsString + 
-//						") has more than one unison." + "\n");
 						") has a unison." + "\n");
 				}
 				int indexLower = unisonInfo[0][1];
@@ -864,8 +863,10 @@ public class Analyser {
 				}
 				indexLower += notesPreceding;
 				indexUpper += notesPreceding;
-				Rational durationLower = transcription.getNoteSequence().getNoteAt(indexLower).getMetricDuration();
-				Rational durationUpper = transcription.getNoteSequence().getNoteAt(indexUpper).getMetricDuration();
+				Rational durationLower = transcription.getNotes().get(indexLower).getMetricDuration();
+//				Rational durationLower = transcription.getNoteSequence().getNoteAt(indexLower).getMetricDuration();
+				Rational durationUpper = transcription.getNotes().get(indexUpper).getMetricDuration();
+//				Rational durationUpper = transcription.getNoteSequence().getNoteAt(indexUpper).getMetricDuration();
 				if (durationLower.equals(durationUpper)) {
 					numUnisonsEqualDuration++;
 				}
@@ -881,7 +882,6 @@ public class Analyser {
 				for (int pitch : pitchesInChord) {
 					if (Collections.frequency(pitchesInChord, pitch) == 2) {
 						results = results.concat("  chord at index " + i + " (metric position " + metricPosAsString + 
-//							") has more than two notes with pitch " + pitch + "." + "\n");
 							") has two notes with pitch " + pitch + "." + "\n");}	
 				}
 			}
@@ -906,7 +906,7 @@ public class Analyser {
 	private static String chordSizeChecker(String folderName, String pieceName) {	
 		String chordSizeInformation = "";
 
-		Transcription transcription = new Transcription(new File(folderName + pieceName), null);
+		Transcription transcription = new Transcription(new File(folderName + pieceName));
 //		preprocessor.preprocess(null, transcription, false, new Integer(0));
 
 		List<Integer[]> meterInfo = transcription.getMeterInfo();
@@ -981,7 +981,7 @@ public class Analyser {
 	 * @param pieceName
 	 */
 	private static void checkOnsetTimeLastNote(String folderName, String pieceName) {
-		Transcription transcription = new Transcription(new File(folderName + pieceName), null);
+		Transcription transcription = new Transcription(new File(folderName + pieceName));
 //		preprocessor.preprocess(null, transcription, false, new Integer(0));
 
 		List<Integer[]> meterInfo = transcription.getMeterInfo();
@@ -1010,7 +1010,7 @@ public class Analyser {
 	 */
 	private static String hasDoubleNote(String folderName, String pieceName) {	
 		String doubleNoteInformation = "";
-		Transcription transcription = new Transcription(new File(folderName + pieceName), null);
+		Transcription transcription = new Transcription(new File(folderName + pieceName));
 //		preprocessor.preprocess(null, transcription, false, new Integer(0));
 
 		List<Integer[]> meterInfo = transcription.getMeterInfo();
@@ -1078,19 +1078,23 @@ public class Analyser {
 				folderName = "tests/"; 
 			}
 			File midiFile = new File("F/PhD/data" + "MIDI/" + folderName + pieceName);
-			Transcription transcription = new Transcription(midiFile, null);
+			Transcription transcription = new Transcription(midiFile);
 
-			NoteSequence noteSeq = transcription.getNoteSequence();
+			List<Note> notes = transcription.getNotes();
+//			NoteSequence noteSeq = transcription.getNoteSequence();
 			Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
 
 			// Security check
-			if (noteSeq.size() != basicNoteProperties.length) {
+			if (notes.size() != basicNoteProperties.length) {
+//			if (noteSeq.size() != basicNoteProperties.length) {
 				System.out.println("noteSeq and basicNoteProperties do not have the same size");
 				System.exit(0);
 			}
 
-			for (int j = 0; j < noteSeq.size(); j++) {
-				Note currentNote = noteSeq.getNoteAt(j);
+			for (int j = 0; j < notes.size(); j++) {
+//			for (int j = 0; j < noteSeq.size(); j++) {
+				Note currentNote = notes.get(j);
+//				Note currentNote = noteSeq.getNoteAt(j);
 				numNotes++;
 				Rational currentDuration = currentNote.getMetricDuration();
 				Integer[] currentBNP = basicNoteProperties[j];
@@ -1183,7 +1187,7 @@ public class Analyser {
 		System.out.println(pieceName);
 
 		File midiFile = new File(folderName + pieceName);
-		Transcription transcription = new Transcription(midiFile, null);
+		Transcription transcription = new Transcription(midiFile);
 		List<Integer[]> meterInfo = transcription.getMeterInfo();
 		Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
 		List<List<Note>> transChords = transcription.getChords();

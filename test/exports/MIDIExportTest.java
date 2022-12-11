@@ -26,7 +26,7 @@ public class MIDIExportTest extends TestCase {
 
 
 	public void testGetTimeSigTicks() {
-		Transcription t = new Transcription(midiTestGetMeterInfoDiminuted, null);
+		Transcription t = new Transcription(midiTestGetMeterInfoDiminuted);
 		
 		List<Integer[]> expected = new ArrayList<Integer[]>();
 		expected.add(new Integer[]{0, 384});

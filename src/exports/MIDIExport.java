@@ -3,6 +3,7 @@ package exports;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.sound.midi.MetaMessage;
@@ -310,8 +311,9 @@ public class MIDIExport {
 	 */
 	public static void exportMidiFile(Piece p, List<Integer> instruments, List<Integer[]> meterInfo, 
 		List<Integer[]> keyInfo, String path) { // 05.12 added meterInfo and keyInfo
+
 		Sequence seq = exportMidiFile(p, instruments, meterInfo, keyInfo);
-		
+
 		File f = new File(path);
 		f.getParentFile().mkdirs();
 		try {
