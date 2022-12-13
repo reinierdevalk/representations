@@ -692,7 +692,6 @@ public class Transcription implements Serializable {
 			calculateEndMarker(tLastTimedMetrical, mtl.getTempo(tLastTimedMetrical), 
 			mtLastTimedMetrical, 1);
 		mtlClean.add((Marker) end);
-
 		return mtlClean;
 	}
 
@@ -884,7 +883,6 @@ public class Transcription implements Serializable {
 			calculateEndMarker(tLastTimedMetrical, mtl.getTempo(tLastTimedMetrical), 
 			mtLastTimedMetrical, 1);
 		mtlAligned.add((Marker) end);
-
 		return mtlAligned;
 	}
 

@@ -44,8 +44,9 @@ public class TabImport {
 	private static final Map<String, String> RHYTHM_SYMBOLS;
 	static { RHYTHM_SYMBOLS = new LinkedHashMap<String, String>();
 		RHYTHM_SYMBOLS.put(" ", ""); // TODO why this?
-		RHYTHM_SYMBOLS.put("F", Symbol.CORONA_BREVIS.getEncoding());
-		RHYTHM_SYMBOLS.put("D", Symbol.LONGA.getEncoding());
+		RHYTHM_SYMBOLS.put("F", Symbol.CORONA_BREVIS.getEncoding()); // TODO let fermata fill whole bar
+//		RHYTHM_SYMBOLS.put("D", Symbol.LONGA.getEncoding());
+		RHYTHM_SYMBOLS.put("B", Symbol.LONGA.getEncoding());
 		RHYTHM_SYMBOLS.put("W", Symbol.BREVIS.getEncoding());
 		RHYTHM_SYMBOLS.put("H", Symbol.SEMIBREVIS.getEncoding());
 		RHYTHM_SYMBOLS.put("Q", Symbol.MINIM.getEncoding());
@@ -145,7 +146,7 @@ public class TabImport {
 //			"4400_45_ach_unfall_was",
 //			"4481_49_ach_unfal_wes_zeigst_du_mich",
 //			"4406_51_adieu_mes_amours",
-			"4467_37_adieu_mes_amours",
+//			"4467_37_adieu_mes_amours",
 //			"1025_adieu_mes_amours",
 //			"1030_coment_peult_avoir_joye",
 //			"1275_13_faulte_d_argent",
@@ -160,7 +161,8 @@ public class TabImport {
 //			"4469_39_plus_nulz_regrets_P",	
 //			"922_milano_098_que_voulez_vous_dire_de_moi"
 
-//			"3610_033_inter_natos_mulierum_morales_T-rev"	
+//			"3610_033_inter_natos_mulierum_morales_T-rev"
+			"je_prens_en_gre-tab-corr_rests"	
 		});
 				
 		String tbp;
@@ -172,6 +174,7 @@ public class TabImport {
 		path = "F:/research/data/annotated/josquintab/tab/";
 //		path = "F:/research/projects/byrd/";
 //		path = "C:/Users/Reinier/Desktop/test-capirola/";
+		path = "C:/Users/Reinier/Desktop/luteconv_v1.4.7/";
 		
 		// From TabCode
 		for (String s : pieces) {
@@ -229,8 +232,10 @@ public class TabImport {
 		StringBuffer tbpEncoding = getEncoding(tc);
 		
 		// Make metadataString
-		String tss = rulesMap.get("notation") != null ? 
-			notations.get(rulesMap.get("notation")) : notations.get("French");
+		String notation = rulesMap.get("notation");
+		// Ensure correct capitalisation
+		notation = notation.substring(0, 1).toUpperCase() + notation.substring(1).toLowerCase();		
+		String tss = notation != null ? notations.get(notation) : notations.get("French");
 		String[] metadata = new String[]{
 			rulesMap.get("author") != null ? rulesMap.get("author") : "", // author TODO
 			rulesMap.get("title") != null ? rulesMap.get("title") : "", // title TODO

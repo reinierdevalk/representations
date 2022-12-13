@@ -60,13 +60,15 @@ public class Symbol {
 	}
 
 	// 3. Rhythm symbols
-	public static final RhythmSymbol LONGA = new RhythmSymbol("lo", "D", 192);
+	public static final RhythmSymbol LONGA = new RhythmSymbol("lo", "B", 192);
+//	public static final RhythmSymbol LONGA = new RhythmSymbol("lo", "D", 192);
 	public static final RhythmSymbol BREVIS = new RhythmSymbol("br", "W", 96); 
 	public static final RhythmSymbol SEMIBREVIS = new RhythmSymbol("sb", "H", 48);
 	public static final RhythmSymbol MINIM = new RhythmSymbol("mi", "Q", 24);
 	public static final RhythmSymbol SEMIMINIM = new RhythmSymbol("sm", "E", 12);
 	public static final RhythmSymbol FUSA = new RhythmSymbol("fu", "S", 6); 
 	public static final RhythmSymbol SEMIFUSA = new RhythmSymbol("sf", "T", 3);
+	public static final RhythmSymbol CORONA_LONGA = new RhythmSymbol("colo", "C", 192);
 	public static final RhythmSymbol CORONA_BREVIS = new RhythmSymbol("cobr", "C", 96);
 	public static final RhythmSymbol CORONA_SEMIBREVIS = new RhythmSymbol("cosb", "C", 48);
 	public static final RhythmSymbol RHYTHM_DOT = new RhythmSymbol(RhythmSymbol.DOT_ENCODING, ".", -1);
@@ -75,7 +77,7 @@ public class Symbol {
 		List<RhythmSymbol> rss = new ArrayList<RhythmSymbol>();
 		// Basic (lo-sf)
 		Arrays.asList(new RhythmSymbol[]{LONGA, BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, SEMIFUSA, 
-			CORONA_BREVIS, CORONA_SEMIBREVIS, RHYTHM_DOT}).forEach(rs -> rss.add(rs));
+			CORONA_LONGA, CORONA_BREVIS, CORONA_SEMIBREVIS, RHYTHM_DOT}).forEach(rs -> rss.add(rs));
 		// Dotted (lo-fu)
 		Arrays.asList(new RhythmSymbol[]{LONGA, BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, CORONA_BREVIS, 
 			CORONA_SEMIBREVIS}).forEach(rs -> rss.addAll(rs.makeVariant(1, false, false)));
