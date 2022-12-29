@@ -162,7 +162,7 @@ public class TabImport {
 //			"922_milano_098_que_voulez_vous_dire_de_moi"
 
 //			"3610_033_inter_natos_mulierum_morales_T-rev"
-			"je_prens_en_gre-tab-corr_rests"	
+			"je_prens_en_gre-tab-rests"	
 		});
 				
 		String tbp;

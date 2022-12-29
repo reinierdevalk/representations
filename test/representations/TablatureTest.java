@@ -22,6 +22,7 @@ import path.Path;
 import representations.Tablature.Tuning;
 import tbp.Encoding;
 import tbp.RhythmSymbol;
+import tbp.Symbol;
 import tbp.TabSymbol;
 import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
@@ -1370,318 +1371,6 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testReverse() {
-		Tablature t = new Tablature(encodingTestpiece, false);
-		
-		// btp
-		Integer[][] expectedBtp = new Integer[0][0];
-		Integer[][] btp = getBtp(false);
-		// Chord 0 (15)		
-		Integer[][] chord = Arrays.copyOfRange(btp, 35, 39);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 0;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{90, 90, 72, 48}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 0;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 1;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 1 (14)
-		chord = Arrays.copyOfRange(btp, 34, 35);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 48;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{33}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 1;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 3;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 2 (13)
-		chord = Arrays.copyOfRange(btp, 33, 34);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 72;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{3}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 2;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 4;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 3 (12)
-		chord = Arrays.copyOfRange(btp, 32, 33);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 75;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{3}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 3;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 5;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 4 (11)
-		chord = Arrays.copyOfRange(btp, 31, 32);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 78;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{6}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 4;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 7;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 5 (10)
-		chord = Arrays.copyOfRange(btp, 30, 31);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 81;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{9}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 5;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 8;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 6 (9)
-		chord = Arrays.copyOfRange(btp, 29, 30);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 84;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{6}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 6;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 9;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 7 (8)
-		chord = Arrays.copyOfRange(btp, 25, 29);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 90;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{18, 30, 6, 18}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 7;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 10;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 8 (7)
-		chord = Arrays.copyOfRange(btp, 23, 25);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 96;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{12, 12}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 8;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 13;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 9 (6)
-		chord = Arrays.copyOfRange(btp, 19, 23);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 108;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{12, 12, 12, 66}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 9;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 14;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 10 (5)
-		chord = Arrays.copyOfRange(btp, 14, 19);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 120;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{24, 36, 36, 96, 36}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 10;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 15;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 11 (4)
-		chord = Arrays.copyOfRange(btp, 13, 14);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 144;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{12}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 11;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 16;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 12 (3)
-		chord = Arrays.copyOfRange(btp, 9, 13);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 156;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{12, 36, 18, 18}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 12;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 17;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 13 (2)
-		chord = Arrays.copyOfRange(btp, 8, 9);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 168;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{6}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 13;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 18;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 14 (1)
-		chord = Arrays.copyOfRange(btp, 4, 8);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 174;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{42, 18, 18, 18}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 14;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 19;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 15 (0)
-		chord = Arrays.copyOfRange(btp, 0, 4);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.ONSET_TIME] = 192;
-			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{24, 24, 24, 24}).get(i);
-			chord[i][Tablature.CHORD_SEQ_NUM] = 15;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 21;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-
-		// chords
-		List<List<TabSymbol>> expectedTc = getChords();
-		Collections.reverse(expectedTc);
-
-		t.reverse();
-		Integer[][] actualBtp = t.getBasicTabSymbolProperties();
-		List<List<TabSymbol>> actualTc = t.getChords();
-
-		assertEquals(expectedBtp.length, actualBtp.length);
-		for (int i = 0; i < expectedBtp.length; i++) {
-			assertEquals(expectedBtp[i].length, actualBtp[i].length);
-			for (int j = 0; j < expectedBtp[i].length; j++) {
-				assertEquals(expectedBtp[i][j], actualBtp[i][j]);
-			}
-		}
-
-		assertEquals(expectedTc.size(), actualTc.size());
-		for (int i = 0; i < expectedTc.size(); i++) {
-			assertEquals(expectedTc.get(i).size(), actualTc.get(i).size());
-			for (int j = 0; j < expectedTc.get(i).size(); j++) {
-				assertEquals(expectedTc.get(i).get(j), actualTc.get(i).get(j));
-			}
-		}
-		assertEquals(expectedTc, actualTc);
-	}
-
-
-	public void testDeornament() {
-		Tablature t = new Tablature(encodingTestpiece, false);
-
-		// btp
-		Integer[][] expectedBtp = new Integer[0][0];
-		Integer[][] btp = getBtp(false);	
-		// Chord 0 (0)
-		Integer[][] chord = Arrays.copyOfRange(btp, 0, 4);
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 1 (1)
-		chord = Arrays.copyOfRange(btp, 4, 8);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.MIN_DURATION] = 24;
-			if (i == 0) {
-				chord[i][Tablature.MAX_DURATION] = 24;
-			}
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 2 (3)
-		chord = Arrays.copyOfRange(btp, 9, 13);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.CHORD_SEQ_NUM] = 2;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 6;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 3 (4)
-		chord = Arrays.copyOfRange(btp, 13, 14);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.CHORD_SEQ_NUM] = 3;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 7;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 4 (5)
-		chord = Arrays.copyOfRange(btp, 14, 19);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.CHORD_SEQ_NUM] = 4;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 8;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 5 (6)
-		chord = Arrays.copyOfRange(btp, 19, 23);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.CHORD_SEQ_NUM] = 5;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 9;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 6 (7)
-		chord = Arrays.copyOfRange(btp, 23, 25);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.CHORD_SEQ_NUM] = 6;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 10;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 7 (8)
-		chord = Arrays.copyOfRange(btp, 25, 29);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.MIN_DURATION] = 24;
-			chord[i][Tablature.CHORD_SEQ_NUM] = 7;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 13;
-			if (i == 2) {
-				chord[i][Tablature.MAX_DURATION] = 72;
-			}
-			if (i == 3) {
-				chord[i][Tablature.MAX_DURATION] = 24;
-			}
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 8 (14)
-		chord = Arrays.copyOfRange(btp, 34, 35);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.CHORD_SEQ_NUM] = 8;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 15;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-		// Chord 9 (15)
-		chord = Arrays.copyOfRange(btp, 35, 39);
-		for (int i = 0; i < chord.length; i++) {
-			chord[i][Tablature.CHORD_SEQ_NUM] = 9;
-			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 17;
-		}
-		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
-
-		// chords
-		List<List<TabSymbol>> expectedTc = getChords();
-		expectedTc = 
-			ToolBox.removeItemsAtIndices(expectedTc, 
-			Arrays.asList(new Integer[]{2, 9, 10, 11, 12, 13}));
-
-		t.deornament(new Rational(RhythmSymbol.SEMIMINIM.getDuration(), Tablature.SRV_DEN));
-		Integer[][] actualBtp = t.getBasicTabSymbolProperties();
-		List<List<TabSymbol>> actualTc = t.getChords();
-
-		assertEquals(expectedBtp.length, actualBtp.length);
-		for (int i = 0; i < expectedBtp.length; i++) {
-			assertEquals(expectedBtp[i].length, actualBtp[i].length);
-			for (int j = 0; j < expectedBtp[i].length; j++) {
-				assertEquals(expectedBtp[i][j], actualBtp[i][j]);
-			}
-		}
-
-		assertEquals(expectedTc.size(), actualTc.size());
-		for (int i = 0; i < expectedTc.size(); i++) {
-			assertEquals(expectedTc.get(i).size(), actualTc.get(i).size());
-			for (int j = 0; j < expectedTc.get(i).size(); j++) {
-				assertEquals(expectedTc.get(i).get(j), actualTc.get(i).get(j));
-			}
-		}
-		assertEquals(expectedTc, actualTc);
-	}
-
-
-	public void testStretch() {
-		Tablature t = new Tablature(encodingTestpiece, false);
-		
-		Integer[][] expectedBtp = getBtp(false);
-		for (Integer[] in : expectedBtp) {
-			in[Tablature.ONSET_TIME] = in[Tablature.ONSET_TIME] * 2;
-			in[Tablature.MIN_DURATION] = in[Tablature.MIN_DURATION] * 2;
-			in[Tablature.MAX_DURATION] = in[Tablature.MAX_DURATION] * 2;
-		}
-
-		t.stretch(2);
-		Integer[][] actualBtp = t.getBasicTabSymbolProperties();
-
-		assertEquals(expectedBtp.length, actualBtp.length);
-		for (int i = 0; i < expectedBtp.length; i++) {
-			assertEquals(expectedBtp[i].length, actualBtp[i].length);
-			for (int j = 0; j < expectedBtp[i].length; j++) {
-				assertEquals(expectedBtp[i][j], actualBtp[i][j]);
-			}
-		}
-	}
-
-
 	public void testGetBasicTabSymbolPropertiesChord() {
 		Tablature tablature = new Tablature(encodingTestpiece, false);
 		Integer[][] btp = getBtp(false);
@@ -1809,4 +1498,315 @@ public class TablatureTest extends TestCase {
 		assertEquals(expected, actual);
 	}
 
+
+//	public void testReverse() {
+//		Tablature t = new Tablature(encodingTestpiece, false);
+//		
+//		// btp
+//		Integer[][] expectedBtp = new Integer[0][0];
+//		Integer[][] btp = getBtp(false);
+//		// Chord 0 (15)		
+//		Integer[][] chord = Arrays.copyOfRange(btp, 35, 39);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 0;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{90, 90, 72, 48}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 0;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 1;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 1 (14)
+//		chord = Arrays.copyOfRange(btp, 34, 35);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 48;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{33}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 1;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 3;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 2 (13)
+//		chord = Arrays.copyOfRange(btp, 33, 34);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 72;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{3}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 2;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 4;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 3 (12)
+//		chord = Arrays.copyOfRange(btp, 32, 33);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 75;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{3}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 3;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 5;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 4 (11)
+//		chord = Arrays.copyOfRange(btp, 31, 32);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 78;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{6}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 4;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 7;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 5 (10)
+//		chord = Arrays.copyOfRange(btp, 30, 31);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 81;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{9}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 5;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 8;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 6 (9)
+//		chord = Arrays.copyOfRange(btp, 29, 30);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 84;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{6}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 6;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 9;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 7 (8)
+//		chord = Arrays.copyOfRange(btp, 25, 29);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 90;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{18, 30, 6, 18}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 7;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 10;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 8 (7)
+//		chord = Arrays.copyOfRange(btp, 23, 25);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 96;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{12, 12}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 8;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 13;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 9 (6)
+//		chord = Arrays.copyOfRange(btp, 19, 23);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 108;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{12, 12, 12, 66}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 9;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 14;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 10 (5)
+//		chord = Arrays.copyOfRange(btp, 14, 19);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 120;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{24, 36, 36, 96, 36}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 10;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 15;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 11 (4)
+//		chord = Arrays.copyOfRange(btp, 13, 14);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 144;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{12}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 11;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 16;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 12 (3)
+//		chord = Arrays.copyOfRange(btp, 9, 13);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 156;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{12, 36, 18, 18}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 12;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 17;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 13 (2)
+//		chord = Arrays.copyOfRange(btp, 8, 9);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 168;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{6}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 13;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 18;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 14 (1)
+//		chord = Arrays.copyOfRange(btp, 4, 8);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 174;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{42, 18, 18, 18}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 14;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 19;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 15 (0)
+//		chord = Arrays.copyOfRange(btp, 0, 4);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.ONSET_TIME] = 192;
+//			chord[i][Tablature.MAX_DURATION] = Arrays.asList(new Integer[]{24, 24, 24, 24}).get(i);
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 15;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 21;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//
+//		// chords
+//		List<List<TabSymbol>> expectedTc = getChords();
+//		Collections.reverse(expectedTc);
+//
+//		t.reverse();
+//		Integer[][] actualBtp = t.getBasicTabSymbolProperties();
+//		List<List<TabSymbol>> actualTc = t.getChords();
+//
+//		assertEquals(expectedBtp.length, actualBtp.length);
+//		for (int i = 0; i < expectedBtp.length; i++) {
+//			assertEquals(expectedBtp[i].length, actualBtp[i].length);
+//			for (int j = 0; j < expectedBtp[i].length; j++) {
+//				assertEquals(expectedBtp[i][j], actualBtp[i][j]);
+//			}
+//		}
+//
+//		assertEquals(expectedTc.size(), actualTc.size());
+//		for (int i = 0; i < expectedTc.size(); i++) {
+//			assertEquals(expectedTc.get(i).size(), actualTc.get(i).size());
+//			for (int j = 0; j < expectedTc.get(i).size(); j++) {
+//				assertEquals(expectedTc.get(i).get(j), actualTc.get(i).get(j));
+//			}
+//		}
+//		assertEquals(expectedTc, actualTc);
+//	}
+
+
+//	public void testDeornament() {
+//		Tablature t = new Tablature(encodingTestpiece, false);
+//
+//		// btp
+//		Integer[][] expectedBtp = new Integer[0][0];
+//		Integer[][] btp = getBtp(false);	
+//		// Chord 0 (0)
+//		Integer[][] chord = Arrays.copyOfRange(btp, 0, 4);
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 1 (1)
+//		chord = Arrays.copyOfRange(btp, 4, 8);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.MIN_DURATION] = 24;
+//			if (i == 0) {
+//				chord[i][Tablature.MAX_DURATION] = 24;
+//			}
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 2 (3)
+//		chord = Arrays.copyOfRange(btp, 9, 13);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 2;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 6;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 3 (4)
+//		chord = Arrays.copyOfRange(btp, 13, 14);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 3;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 7;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 4 (5)
+//		chord = Arrays.copyOfRange(btp, 14, 19);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 4;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 8;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 5 (6)
+//		chord = Arrays.copyOfRange(btp, 19, 23);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 5;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 9;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 6 (7)
+//		chord = Arrays.copyOfRange(btp, 23, 25);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 6;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 10;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 7 (8)
+//		chord = Arrays.copyOfRange(btp, 25, 29);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.MIN_DURATION] = 24;
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 7;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 13;
+//			if (i == 2) {
+//				chord[i][Tablature.MAX_DURATION] = 72;
+//			}
+//			if (i == 3) {
+//				chord[i][Tablature.MAX_DURATION] = 24;
+//			}
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 8 (14)
+//		chord = Arrays.copyOfRange(btp, 34, 35);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 8;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 15;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//		// Chord 9 (15)
+//		chord = Arrays.copyOfRange(btp, 35, 39);
+//		for (int i = 0; i < chord.length; i++) {
+//			chord[i][Tablature.CHORD_SEQ_NUM] = 9;
+//			chord[i][Tablature.TAB_EVENT_SEQ_NUM] = 17;
+//		}
+//		expectedBtp = ArrayUtils.addAll(expectedBtp, chord);
+//
+//		// chords
+//		List<List<TabSymbol>> expectedTc = getChords();
+//		expectedTc = 
+//			ToolBox.removeItemsAtIndices(expectedTc, 
+//			Arrays.asList(new Integer[]{2, 9, 10, 11, 12, 13}));
+//
+//		t.deornament(new Rational(RhythmSymbol.SEMIMINIM.getDuration(), Tablature.SRV_DEN));
+//		Integer[][] actualBtp = t.getBasicTabSymbolProperties();
+//		List<List<TabSymbol>> actualTc = t.getChords();
+//
+//		assertEquals(expectedBtp.length, actualBtp.length);
+//		for (int i = 0; i < expectedBtp.length; i++) {
+//			assertEquals(expectedBtp[i].length, actualBtp[i].length);
+//			for (int j = 0; j < expectedBtp[i].length; j++) {
+//				assertEquals(expectedBtp[i][j], actualBtp[i][j]);
+//			}
+//		}
+//
+//		assertEquals(expectedTc.size(), actualTc.size());
+//		for (int i = 0; i < expectedTc.size(); i++) {
+//			assertEquals(expectedTc.get(i).size(), actualTc.get(i).size());
+//			for (int j = 0; j < expectedTc.get(i).size(); j++) {
+//				assertEquals(expectedTc.get(i).get(j), actualTc.get(i).get(j));
+//			}
+//		}
+//		assertEquals(expectedTc, actualTc);
+//	}
+
+
+//	public void testStretch() {
+//		Tablature t = new Tablature(encodingTestpiece, false);
+//		
+//		Integer[][] expectedBtp = getBtp(false);
+//		for (Integer[] in : expectedBtp) {
+//			in[Tablature.ONSET_TIME] = in[Tablature.ONSET_TIME] * 2;
+//			in[Tablature.MIN_DURATION] = in[Tablature.MIN_DURATION] * 2;
+//			in[Tablature.MAX_DURATION] = in[Tablature.MAX_DURATION] * 2;
+//		}
+//
+//		t.stretch(2);
+//		Integer[][] actualBtp = t.getBasicTabSymbolProperties();
+//
+//		assertEquals(expectedBtp.length, actualBtp.length);
+//		for (int i = 0; i < expectedBtp.length; i++) {
+//			assertEquals(expectedBtp[i].length, actualBtp[i].length);
+//			for (int j = 0; j < expectedBtp[i].length; j++) {
+//				assertEquals(expectedBtp[i][j], actualBtp[i][j]);
+//			}
+//		}
+//	}
 }

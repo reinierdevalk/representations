@@ -165,6 +165,11 @@ public class Tablature implements Serializable {
 	}
 
 
+	/**
+	 * Creates a deep copy of the given <code>Tablature</code>.
+	 * 
+	 * @param t
+	 */
 	public Tablature(Tablature t) {
 		init(t.getEncoding(), t.getNormaliseTuning());
 	}
@@ -681,7 +686,8 @@ public class Tablature implements Serializable {
 		return Transcription.createNote(
 			btp[noteIndex][PITCH], 
 			new Rational(btp[noteIndex][ONSET_TIME], SRV_DEN), 
-			new Rational(btp[noteIndex][MIN_DURATION], SRV_DEN)
+			new Rational(btp[noteIndex][MIN_DURATION], SRV_DEN),
+			null
 		);
 	}
 
@@ -1263,81 +1269,18 @@ public class Tablature implements Serializable {
 	//  augmentation
 	//
 	/**
-	 * Reverses the Tablature.
-	 */
-	// TESTED
-	public void reverse() {
-		this.init(getEncoding().reverse(getTimeline().getMeterInfo()), 
-//		this.init(getEncoding().reverse(getTimeline().getMeterInfoOBS()), 
-			getNormaliseTuning());
-	}
-
-
-	/**
-	 * Gets the reversed Tablature.
+	 * TODO Add description (from Encoding?)
 	 * 
-	 * @return The reversed Tablature.
+	 * @param thresholdDur
+	 * @param rescaleFactor
+	 * @param augmentation
 	 */
-	public Tablature getReversed() {
-		return new Tablature(
-//			getEncoding().reverse(getTimeline().getMeterInfoOBS()), getNormaliseTuning());
-			getEncoding().reverse(getTimeline().getMeterInfo()), getNormaliseTuning());
-	}
-
-
-	/**
-	 * Deornaments the tablature.
-	 * 
-	 * @param dur Only (single-event) notes with a duration shorter than this duration are 
-	 *            considered ornamental and are removed.
-	 */
-	// TESTED
-	public void deornament(Rational dur) {
-		this.init(getEncoding().deornament(getTabSymbolDur(dur)), 
-			getNormaliseTuning());
-	}
-
-
-	/**
-	 * Gets the deornamented Tablature.
-	 * 
-	 * @param dur Only (single-event) notes with a duration shorter than this duration are 
-	 *            considered ornamental and are removed.
-	 * @return The deornamented Tablature.
-	 */
-	public Tablature getDeornamented(Rational dur) {
-		return new Tablature(
-			getEncoding().deornament(getTabSymbolDur(dur)), 
-			getNormaliseTuning());
-	}
-
-
-	/**
-	 * Stretches the Tablature durationally. 
-	 * 
-	 * @param factor The factor to stretch the durations by.
-	 * @return
-	 */
-	// TESTED
-	public void stretch(double factor) {
-		this.init(getEncoding().stretch(getTimeline().getMeterInfo(), factor), 
-//		this.init(getEncoding().stretch(getTimeline().getMeterInfoOBS(), factor), 
-			getNormaliseTuning());
-	}
-
-
-	/**
-	 * Gets a durationally stretched version of the Tablature.
-	 * 
-	 * @param tab
-	 * @param factor The factor to stretch the durations by.
-	 * @return
-	 */
-	public Tablature getStretched(Tablature tab, double factor) {
-		return new Tablature(
-			tab.getEncoding().stretch(tab.getTimeline().getMeterInfo(), factor), 
-//			tab.getEncoding().stretch(tab.getTimeline().getMeterInfoOBS(), factor), 
-			tab.getNormaliseTuning());
+	// NOT TESTED (wrapper method)
+	public void augment(int thresholdDur, int rescaleFactor, String augmentation) {
+		Encoding e = getEncoding();
+		e.augment(
+			getTimeline().getMeterInfo(), thresholdDur, rescaleFactor, augmentation);
+		this.init(e, getNormaliseTuning());
 	}
 
 
@@ -1442,7 +1385,7 @@ public class Tablature implements Serializable {
 		Rational noteOnsetTime = new Rational(tabSymbolOnsetTime, SRV_DEN);
 
 		// 3. Create a Note with the given pitch, onset time, and minimum duration
-		Note note = Transcription.createNote(tabSymbolPitch, noteOnsetTime, noteMinimumDuration);
+		Note note = Transcription.createNote(tabSymbolPitch, noteOnsetTime, noteMinimumDuration, null);
 
 		return note; 
 	}
@@ -1472,7 +1415,6 @@ public class Tablature implements Serializable {
 	 * 
 	 * @return
 	 */
-	// TESTED
 	private List<Rational[]> getAllMetricPositions() {
 		List<Rational[]> allMetricPositions = new ArrayList<Rational[]>();
 		List<Integer[]> mi = getTimeline().getMeterInfo();
@@ -1528,7 +1470,6 @@ public class Tablature implements Serializable {
 	 * 
 	 * @return
 	 */
-	// TESTED
 	private List<Rational[]> getAllOnsetTimesAndMinDurations() {
 		List<Rational[]> allOnsetTimesAndMinDurs = new ArrayList<Rational[]>();
 		Integer[][] btp = getBasicTabSymbolProperties();
@@ -1558,33 +1499,86 @@ public class Tablature implements Serializable {
 	}
 
 
-	/**
-	 * Returns a reversed version of the Tablature.
-	 * 
-	 * @param tab
-	 * @return
-	 */
-	private static Tablature reverse(Tablature tab) {
-		return new Tablature(
-			tab.getEncoding().reverse(tab.getTimeline().getMeterInfo()), 
-//			tab.getEncoding().reverse(tab.getTimeline().getMeterInfoOBS()), 
-			tab.getNormaliseTuning());
-	}
+//	/**
+//	 * Returns a reversed version of the Tablature.
+//	 * 
+//	 * @param tab
+//	 * @return
+//	 */
+//	private static Tablature reverse(Tablature tab) {
+//		return new Tablature(
+//			tab.getEncoding().reverse(tab.getTimeline().getMeterInfo()), 
+////			tab.getEncoding().reverse(tab.getTimeline().getMeterInfoOBS()), 
+//			tab.getNormaliseTuning());
+//	}
 
 
-	/**
-	 * Returns a deornamented version of the Tablature.
-	 * 
-	 * @param tab
-	 * @param dur Only (single-event) notes with a duration shorter than this duration are 
-	 *            considered ornamental and are removed.
-	 * @return
-	 */
-	private static Tablature deornament(Tablature tab, Rational dur) {
-		return new Tablature(
-			tab.getEncoding().deornament(getTabSymbolDur(dur)), 
-			tab.getNormaliseTuning());
-	}
+//	/**
+//	 * Returns a deornamented version of the Tablature.
+//	 * 
+//	 * @param tab
+//	 * @param dur Only (single-event) notes with a duration shorter than this duration are 
+//	 *            considered ornamental and are removed.
+//	 * @return
+//	 */
+//	private static Tablature deornament(Tablature tab, Rational dur) {
+//		return new Tablature(
+//			tab.getEncoding().deornament(getTabSymbolDur(dur)), 
+//			tab.getNormaliseTuning());
+//	}
+
+
+//	/**
+//	 * Stretches the Tablature durationally. 
+//	 * 
+//	 * @param factor The factor to stretch the durations by.
+//	 * @return
+//	 */
+//	// TESTED
+//	public void stretch(double factor) {
+//		this.init(
+//			getEncoding().stretch(getTimeline().getMeterInfo(), factor),
+//			getNormaliseTuning()
+//		);
+//	}
+
+
+//	/**
+//	 * Gets the reversed Tablature.
+//	 * 
+//	 * @return The reversed Tablature.
+//	 */
+//	private Tablature getReversed() {
+//		return new Tablature(getEncoding().reverse(getTimeline().getMeterInfo()), 
+//			getNormaliseTuning());
+//	}
+
+
+//	/**
+//	 * Gets the deornamented Tablature.
+//	 * 
+//	 * @param dur Only (single-event) notes with a duration shorter than this duration are 
+//	 *            considered ornamental and are removed.
+//	 * @return The deornamented Tablature.
+//	 */
+//	private Tablature getDeornamented(Rational dur) {
+//		return new Tablature(
+//			getEncoding().deornament(getTabSymbolDur(dur)), getNormaliseTuning());
+//	}
+
+
+//	/**
+//	 * Gets a durationally stretched version of the Tablature.
+//	 * 
+//	 * @param tab
+//	 * @param factor The factor to stretch the durations by.
+//	 * @return
+//	 */
+//	private Tablature getStretched(Tablature tab, double factor) {
+//		return new Tablature(
+//			tab.getEncoding().stretch(tab.getTimeline().getMeterInfo(), factor), 
+//			tab.getNormaliseTuning());
+//	}
 
 
 	/**
@@ -1664,4 +1658,30 @@ public class Tablature implements Serializable {
 		return mapped;
 	}
 
+
+	private void reverse() {
+		Encoding e = getEncoding();
+		e.augment(getTimeline().getMeterInfo(), -1, -1, "reverse");
+		this.init(e, getNormaliseTuning());
+//			getEncoding().reverse(getTimeline().getMeterInfo()), 
+//			getNormaliseTuning());
+	}
+
+
+	private void deornament(int dur) {
+		Encoding e = getEncoding();
+		e.augment(null, dur, 1, "deornament");
+		this.init(e, getNormaliseTuning());
+//		this.init(getEncoding().deornament(getTabSymbolDur(dur)), 
+//			getNormaliseTuning());
+	}
+
+
+	private void rescale(int factor) {
+		Encoding e = getEncoding();
+		e.augment(getTimeline().getMeterInfo(), -1, factor, "rescale");
+		this.init(e, getNormaliseTuning());
+//		this.init(getEncoding().deornament(getTabSymbolDur(dur)), 
+//			getNormaliseTuning());
+	}
 }

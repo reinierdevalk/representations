@@ -9,6 +9,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.After;
 import org.junit.Before;
@@ -26,6 +28,7 @@ import tools.ToolBox;
 public class EncodingTest extends TestCase {
 
 	private File encodingTestpiece;
+	private File encodingTestGetMeterInfo;
 	private String miniRawEncoding;
 
 
@@ -35,6 +38,8 @@ public class EncodingTest extends TestCase {
 		String root = Path.getRootPath() + Path.getDataDir(); 
 		encodingTestpiece = 
 			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "testpiece.tbp");
+		encodingTestGetMeterInfo = 
+			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "test_get_meter_info.tbp");
 		miniRawEncoding = "{}{}{}{French}{}{}{}MC\\.>.sb.>.|.mi.a3.a2.a1.>.b1.>.|./MO.M34.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./|.MC\\.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//";
 	}
 
@@ -94,22 +99,36 @@ public class EncodingTest extends TestCase {
 	}
 
 
-	private String getHeader() {
-		return
-			"{AUTHOR: Author}" + "\r\n" +
-			"{TITLE: Title}" + "\r\n" +
-			"{SOURCE: Source (year)}" + "\r\n" + 
-			"{TABSYMBOLSET: French}" + "\r\n" +
-			"{TUNING: A}" + "\r\n" +
-			"{METER_INFO: 2/2 (1-3)}" + "\r\n" +
-			"{DIMINUTION: 1}";
+	private String getHeader(String piece) {
+		String header = null;
+		if (piece.equals("testpiece")) {
+			header =
+				"{AUTHOR: Author}" + "\r\n" +
+				"{TITLE: Title}" + "\r\n" +
+				"{SOURCE: Source (year)}" + "\r\n" + 
+				"{TABSYMBOLSET: French}" + "\r\n" +
+				"{TUNING: A}" + "\r\n" +
+				"{METER_INFO: 2/2 (1-3)}" + "\r\n" +
+				"{DIMINUTION: 1}";
+		}
+		else if (piece.equals("testGetMeterInfo")) {
+			header =
+				"{AUTHOR: }" + "\r\n" +
+				"{TITLE: test_get_meter_info}" + "\r\n" +
+				"{SOURCE: }" + "\r\n" + 
+				"{TABSYMBOLSET: French}" + "\r\n" +
+				"{TUNING: G}" + "\r\n" +
+				"{METER_INFO: 3/8 (0); 2/2 (1-2); 3/4 (3-4); 2/2 (5-6); 5/16 (7); 2/2 (8)}" + "\r\n" +
+				"{DIMINUTION: 2; 2; 4; 1; 1; -2}";
+		}
+		return header;
 	}
 
 
 	private List<String> getDecomposedEvents(boolean complementRs) {
 		List<String> l;
 		if (!complementRs) {
-			l = Arrays.asList(new String[]{
+			l = Arrays.asList(
 				"MC\\.>.", 
 				"sb.>.", 
 				"mi.>.", 
@@ -137,10 +156,10 @@ public class EncodingTest extends TestCase {
 				"mi.a6.c4.a2.a1.>.", 
 				"||.",
 				"//"	
-			});
+			);
 		}
 		else {
-			l = Arrays.asList(new String[]{
+			l = Arrays.asList(
 				"MC\\.>.", 
 				"sb.>.", 
 				"mi.>.", 
@@ -168,7 +187,7 @@ public class EncodingTest extends TestCase {
 				"mi.a6.c4.a2.a1.>.", 
 				"||.",
 				"//"	
-			});
+			);
 		}
 		return new ArrayList<>(l);
 	}
@@ -223,7 +242,7 @@ public class EncodingTest extends TestCase {
 		encoding.setCleanEncoding();
 		encoding.setMetadata();
 
-		String expected = getHeader();
+		String expected = getHeader("testpiece");
 		String actual = encoding.makeHeader();
 
 		assertEquals(expected, actual);
@@ -901,106 +920,147 @@ public class EncodingTest extends TestCase {
 
 
 	@Test
-	public void testReverse() {
-		Encoding encoding = new Encoding(encodingTestpiece);
-		Tablature tab = new Tablature(encodingTestpiece, true);
+	public void testReverseHeader() {
+		Encoding e1 = new Encoding(encodingTestpiece);
+		Tablature tab1 = new Tablature(encodingTestpiece, true);
+		Encoding e2 = new Encoding(encodingTestGetMeterInfo);
+		Tablature tab2 = new Tablature(encodingTestGetMeterInfo, true);
 
-		List<String> decomposed = getDecomposedEvents(true);
-		List<String> expEvents = decomposed.subList(0, decomposed.size()-1);
-		Collections.reverse(expEvents);
+		List<String> expected = new ArrayList<>();
+		String expected1 = getHeader("testpiece");
+		expected.add(expected1);
+		String expected2 = getHeader("testGetMeterInfo");
+		int start = expected2.indexOf(Encoding.METER_INFO_TAG) + 
+			(Encoding.METER_INFO_TAG + ": ").length();
+		expected2 = 
+			expected2.replace(expected2.substring(start, 
+			expected2.indexOf(Encoding.CLOSE_METADATA_BRACKET, start)), 
+			"2/2 (1); 5/16 (2); 2/2 (3-4); 3/4 (5-6); 2/2 (7-8); 3/8 (9)");
+		start = expected2.indexOf(Encoding.DIMINUTION_TAG) +  
+			(Encoding.DIMINUTION_TAG + ": ").length();
+		expected2 = 
+			expected2.replace(expected2.substring(start, 
+			expected2.indexOf(Encoding.CLOSE_METADATA_BRACKET, start)), 
+			"-2; 1; 1; 4; 2; 2");
+		expected.add(expected2);
 
-		String expected = getHeader() + "\r\n\r\n";
-		for (String e : expEvents) {
-			expected += e;
-			if (e.contains(Symbol.SYMBOL_SEPARATOR) && 
-				(Symbol.getConstantMusicalSymbol(e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))) != null &&
-				Symbol.getConstantMusicalSymbol(e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))).isBarline()) || 
-				e.equals(Symbol.SYSTEM_BREAK_INDICATOR)) {
-				expected += "\r\n";
-			}
+		List<String> actual = Arrays.asList(
+			e1.reverseHeader(tab1.getTimeline().getMeterInfo()),
+			e2.reverseHeader(tab2.getTimeline().getMeterInfo())
+		);
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i <expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
+	public void testReverseCleanEncoding() {
+		Encoding e = new Encoding(encodingTestpiece);
+
+		String expected = "";
+		List<String> eventsRev = getDecomposedEvents(true);
+		Collections.reverse(eventsRev);
+		for (String s : eventsRev.subList(1, eventsRev.size())) {
+			expected += 
+				s + ((Encoding.assertEventType(s, e.getTabSymbolSet(), "barline") ||
+				s.equals(Symbol.SYSTEM_BREAK_INDICATOR)) ? "\r\n" : "");
 		}
 		expected += Symbol.END_BREAK_INDICATOR;
 
-		String actual = 
-//			encoding.reverse(tab.getTimeline().getMeterInfoOBS()).getRawEncoding();
-			encoding.reverse(tab.getTimeline().getMeterInfo()).getRawEncoding();
+		String actual = e.reverseCleanEncoding();
 
 		assertEquals(expected, actual);		
 	}
 
 
 	@Test
-	public void testDeornament() {		
-		Encoding encoding = new Encoding(encodingTestpiece);
+	public void testDeornamentCleanEncoding() {
+		Encoding e = new Encoding(encodingTestpiece);
 
-		List<String> decomposed = getDecomposedEvents(true);
-		List<String> expEvents = new ArrayList<>();		
-		for (int i : Arrays.asList(new Integer[]{0, 1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 
-			19, 22, 23, 24, 25, 26})) {
-			expEvents.add(decomposed.get(i));
-		}
-		expEvents.add(5, "mi.a6.c4.i2.a1.>.");
-		expEvents.add(14, "mi.a6.c4.a2.a1.>.");
-
-		String expected = getHeader() + "\r\n\r\n";
-		for (String e : expEvents) {
-			expected += e;
-			if (e.contains(Symbol.SYMBOL_SEPARATOR) && 
-				(Symbol.getConstantMusicalSymbol(e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))) != null &&
-				Symbol.getConstantMusicalSymbol(e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))).isBarline()) ||
-				e.equals(Symbol.SYSTEM_BREAK_INDICATOR)) {
-				expected += "\r\n";
-			}
+		String expected = "";
+		List<String> events = getDecomposedEvents(true);
+		List<String> eventsDeorn = new ArrayList<>(events);
+		eventsDeorn.set(5, "mi.a6.c4.i2.a1.>.");
+		eventsDeorn.set(15, "mi.a6.c4.a2.a1.>.");
+		events.stream()
+			.filter(ev -> ev.startsWith("fu") || ev.startsWith("sf"))
+			.forEach(ev -> eventsDeorn.remove(ev));
+		for (String s : eventsDeorn) {
+			expected += 
+				s + ((Encoding.assertEventType(s, e.getTabSymbolSet(), "barline") ||
+				s.equals(Symbol.SYSTEM_BREAK_INDICATOR)) ? "\r\n" : "");
 		}
 
-		String actual = 
-			encoding.deornament(RhythmSymbol.SEMIMINIM.getDuration()).getRawEncoding();
+		String actual = e.deornamentCleanEncoding(RhythmSymbol.SEMIMINIM.getDuration());
 
 		assertEquals(expected, actual);		
 	}
 
 
 	@Test
-	public void testStretch() {
-		Encoding encoding = new Encoding(encodingTestpiece);
-		Tablature tab = new Tablature(encodingTestpiece, true);
+	public void testRescaleHeader() {
+		Encoding e1 = new Encoding(encodingTestpiece);
+		Tablature tab1 = new Tablature(encodingTestpiece, true);
+		Encoding e2 = new Encoding(encodingTestGetMeterInfo);
+		Tablature tab2 = new Tablature(encodingTestGetMeterInfo, true);
 
-		List<String> decomposed = getDecomposedEvents(true);
-		List<String> expEvents = new ArrayList<>();
-		List<String> newDurs = Arrays.asList(new String[]{
-			null, "br", "sb", "sb", null,
-			"mi*", "sm", "mi", "mi", "sb", "mi", "mi", null,
-			null,
-			null, "sm", "sm", "fu", "fu", null,
-			"fu", "fu", "sb", "sb", "sb", null, 
-			null
-		});
-		for (int i = 0; i < decomposed.size(); i++) {
-			String e = decomposed.get(i);
-			if (newDurs.get(i) == null) {
-				expEvents.add(e);
-			}
-			else {
-				expEvents.add(
-					newDurs.get(i) + e.substring(e.indexOf(Symbol.SYMBOL_SEPARATOR)));
-			}
+		List<String> expected = new ArrayList<>();
+		String expected1 = getHeader("testpiece");
+		expected1 = expected1.replace("2/2", "2/1");
+		expected.add(expected1);
+		String expected2 = getHeader("testGetMeterInfo");
+		expected2 = expected2.replace("3/8", "3/16");
+		expected2 = expected2.replace("2/2", "2/4");
+		expected2 = expected2.replace("3/4", "3/8");
+		expected2 = expected2.replace("5/16", "5/32");
+		expected.add(expected2);
+
+		List<String> actual = Arrays.asList(
+			e1.rescaleHeader(tab1.getTimeline().getMeterInfo(), 2),
+			e2.rescaleHeader(tab2.getTimeline().getMeterInfo(), -2)
+		);
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
+	public void testRescaleCleanEncoding() {
+		Encoding e = new Encoding(encodingTestpiece);
+
+		String expected = "";
+		List<String> eventsStretched = getDecomposedEvents(true);
+		List<String[]> rsMap = Arrays.asList(
+			new String[]{"sb", "br"},
+			new String[]{"mi", "sb"},
+			new String[]{"sm", "mi"},
+			new String[]{"sm*", "mi*"},
+			new String[]{"fu", "sm"},
+			new String[]{"sf", "fu"}
+		);
+		eventsStretched.stream()
+			.filter(ev -> Encoding.assertEventType(ev, e.getTabSymbolSet(), "RhythmSymbol"))
+			.forEach(ev -> {
+				String rs = ev.substring(0, ev.indexOf(Symbol.SYMBOL_SEPARATOR));
+				eventsStretched.set(
+					eventsStretched.indexOf(ev), 
+					ev.replace(rs, rsMap.get(ToolBox.getItemsAtIndex(rsMap, 0).indexOf(rs))[1]));
+			});
+		for (String s : eventsStretched) {
+			expected += 
+				s + ((Encoding.assertEventType(s, e.getTabSymbolSet(), "barline") ||
+				s.equals(Symbol.SYSTEM_BREAK_INDICATOR)) ? "\r\n" : "");
 		}
 
-		String expected = getHeader() + "\r\n\r\n";
-		expected = expected.replace("(1-3)", "(1-6)");
-		for (String e : expEvents) {
-			expected += e;
-			if (e.contains(Symbol.SYMBOL_SEPARATOR) && 
-				(Symbol.getConstantMusicalSymbol(e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))) != null &&
-				Symbol.getConstantMusicalSymbol(e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))).isBarline()) ||	
-				e.equals(Symbol.SYSTEM_BREAK_INDICATOR)) {
-				expected += "\r\n";
-			}
-		}
-
-		String actual = 
-//			encoding.stretch(tab.getTimeline().getMeterInfoOBS(), 2).getRawEncoding();
-			encoding.stretch(tab.getTimeline().getMeterInfo(), 2).getRawEncoding();
+		String actual = e.rescaleCleanEncoding(2);
 
 		assertEquals(expected, actual);		
 	}

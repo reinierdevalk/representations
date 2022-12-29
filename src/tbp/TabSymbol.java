@@ -169,5 +169,4 @@ public class TabSymbol extends Symbol implements Serializable {
 			getCourse() == t.getCourse() &&
 			getFingeringDots() == t.getFingeringDots();
 	}
-
 }

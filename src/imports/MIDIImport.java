@@ -14,8 +14,6 @@ import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
-import javax.swing.JFrame;
-import javax.swing.JScrollPane;
 
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationStaff;
@@ -29,7 +27,6 @@ import de.uos.fmt.musitech.data.structure.container.Containable;
 import de.uos.fmt.musitech.data.time.MetricalTimeLine;
 import de.uos.fmt.musitech.data.time.TimeSignatureMarker;
 import de.uos.fmt.musitech.performance.midi.MidiReader;
-import de.uos.fmt.musitech.score.ScoreEditor;
 import de.uos.fmt.musitech.utility.math.Rational;
 import representations.Tablature;
 import representations.Transcription;
@@ -225,7 +222,7 @@ public class MIDIImport {
 						}
 						if (!onsetQuantised.equals(onset) || !durQuantised.equals(dur)) {
 							Note quantisedNote = Transcription.createNote(
-								originalNote.getMidiPitch(), onsetQuantised, durQuantised);
+								originalNote.getMidiPitch(), onsetQuantised, durQuantised, null);
 							notationChord.remove(originalNote);
 							notationChord.add(quantisedNote);
 						}

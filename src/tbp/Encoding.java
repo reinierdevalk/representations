@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import de.uos.fmt.musitech.utility.math.Rational;
 import structure.Timeline;
 import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
@@ -29,6 +30,7 @@ public class Encoding implements Serializable {
 	public static final String NO_BARLINE_TEXT = "no barline";
 	public static final String MISPLACED_BARLINE_TEXT = "misplaced barline";
 	public static final String METER_INFO_TAG = "METER_INFO";
+	public static final String DIMINUTION_TAG = "DIMINUTION";
 	public static final int MINIMAL = 0;
 	public static final int METADATA_CHECKED = 1;
 	public static final int SYNTAX_CHECKED = 2;
@@ -39,7 +41,7 @@ public class Encoding implements Serializable {
 		"TABSYMBOLSET", 
 		"TUNING", 
 		METER_INFO_TAG,
-		"DIMINUTION"
+		DIMINUTION_TAG
 	};
 	public static final String OPEN_METADATA_BRACKET = "{";
 	public static final String CLOSE_METADATA_BRACKET = "}";
@@ -90,11 +92,23 @@ public class Encoding implements Serializable {
 	}
 
 
+	/**
+	 * Creates an <code>Encoding</code> from a <code>.tbp</code> file.
+	 * 
+	 * @param f
+	 */
 	public Encoding(File f) {
 		init(ToolBox.readTextFile(f), ToolBox.getFilename(f, EXTENSION), SYNTAX_CHECKED);
 	}
 
 
+	/**
+	 * Creates an <code>Encoding</code> from an existing raw encoding.
+	 *  
+	 * @param rawEncoding
+	 * @param piecename
+	 * @param stage
+	 */
 	public Encoding(String rawEncoding, String piecename, int stage) {
 		init(rawEncoding, piecename, stage);
 	}
@@ -198,8 +212,7 @@ public class Encoding implements Serializable {
 	String makeHeader() {
 		List<String> elements = new ArrayList<>();
 		getMetadata().entrySet().forEach(e -> elements.add(
-			OPEN_METADATA_BRACKET + e.getKey() + ": " + e.getValue() +
-			CLOSE_METADATA_BRACKET
+			OPEN_METADATA_BRACKET + e.getKey() + ": " + e.getValue() + CLOSE_METADATA_BRACKET
 		));
 		return String.join("\r\n", elements);
 	}
@@ -1344,7 +1357,7 @@ public class Encoding implements Serializable {
 	 * @return
 	 */ 
 	// TESTED
-	public static String recompose(List<String> events) {
+	public static String recompose(List<String> events) { // TODO move to Tablature class?
 		String recomposed = "";
 
 		String ss = Symbol.SYMBOL_SEPARATOR;
@@ -1375,82 +1388,132 @@ public class Encoding implements Serializable {
 	//  augmentation
 	//
 	/**
-	 * Reverses the encoding.
+	 * Augments the <code>Encoding</code>, i.e.,
+	 * <ul>
+	 * <li>Reverse   : reverses the <code>Encoding</code>.</li>
+	 * <li>Deornament: removes all sequences of single-note events shorter than the given
+	 *                 threshold duration from the <code>Encoding</code>, and lengthens 
+	 *                 the duration of the event preceding a sequence by the total length 
+	 *                 of the removed sequence.</li>
+	 * <li>Rescale   : rescales (up or down) the <code>Encoding</code> durationally by the 
+	 *                 given rescale factor.</li>
+	 * </ul>
 	 * 
-	 * @param  meterInfo
-	 * @return
+	 * @param mi Applies only if augmentation is "reverse" or "rescale".
+	 * @param thresholdDur Applies only if augmentation is "deornament". The threshold duration (a 
+	 *            RhythmSymbol duration); all single-note events with a duration shorter than 
+	 *            this duration are considered ornamental and are removed.
+	 * @param rescaleFactor Applies only if augmentation is "rescale". A positive value doubles
+	 *               all durations (e.g., 4/4 becomes 4/2); a negative value halves them 
+	 *               (4/4 becomes 4/8).
+	 * @param augmentation One of "reverse", "deornament", or "rescale".
 	 */
-	// TESTED
-	public Encoding reverse(List<Integer[]> meterInfo) {
-		String header = getHeader();
-
-		// 1. Adapt header
-		// Reverse meterInfo information 
-		int startInd = 
-			header.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length();
-		String origMeterInfo = header.substring(startInd, 
-			header.indexOf(CLOSE_METADATA_BRACKET, startInd));
-		List<Integer[]> copyOfMeterInfo = new ArrayList<>();
-		for (Integer[] in : meterInfo) {
-			copyOfMeterInfo.add(Arrays.copyOf(in, in.length));
+	// NOT TESTED (wrapper method)
+	public void augment(List<Integer[]> mi, int thresholdDur, int rescaleFactor, String augmentation) {
+		String rawEnc = null;
+		if (augmentation.equals("reverse")) {
+			rawEnc = reverseHeader(mi) + "\r\n\r\n" + reverseCleanEncoding();
 		}
-		Integer[] last = copyOfMeterInfo.get(copyOfMeterInfo.size() - 1);
-		int numBars = last[Timeline.MI_LAST_BAR];
-		for (Integer[] in : copyOfMeterInfo) {
-			in[Timeline.MI_FIRST_BAR] = (numBars - in[Timeline.MI_FIRST_BAR]) + 1;
-			in[Timeline.MI_LAST_BAR] = (numBars - in[Timeline.MI_LAST_BAR]) + 1;
+		else if (augmentation.equals("deornament")) {
+			rawEnc = 
+				getHeader() + "\r\n\r\n" + 
+				deornamentCleanEncoding(thresholdDur);
 		}
-		Collections.reverse(copyOfMeterInfo);
-		String reversedMeterInfo = "";
-		for (int i = 0; i < copyOfMeterInfo.size(); i++) {
-			Integer[] in = copyOfMeterInfo.get(i);
-			reversedMeterInfo += in[Timeline.MI_NUM] + "/" + in[Timeline.MI_DEN] + " (";
-			if (in[Timeline.MI_FIRST_BAR] == in[Timeline.MI_LAST_BAR]) {
-				reversedMeterInfo += in[Timeline.MI_LAST_BAR];
-			}
-			if (in[Timeline.MI_FIRST_BAR] != in[Timeline.MI_LAST_BAR]) {
-				reversedMeterInfo += in[Timeline.MI_LAST_BAR] + "-" + in[Timeline.MI_FIRST_BAR];
-			}
-			reversedMeterInfo += ")";
-			if (i < copyOfMeterInfo.size() - 1) {
-				reversedMeterInfo += "; ";
-			}
+		else if (augmentation.equals("rescale")) {
+			rawEnc = 
+				rescaleHeader(mi, rescaleFactor) + "\r\n\r\n" + 
+				rescaleCleanEncoding(rescaleFactor);
 		}
-		header = header.replace(origMeterInfo, reversedMeterInfo);
-		
-		// 2. Reverse encoding and recombine
-		List<String> events = decompose(true, true);
-		events = events.subList(0, events.size() - 1);
-		Collections.reverse(events);
-		return new Encoding(
-			header + "\r\n\r\n" + recompose(events) + Symbol.END_BREAK_INDICATOR, 
-			getPiecename(), 
-			SYNTAX_CHECKED
-		);
+		this.init(rawEnc, getPiecename(), SYNTAX_CHECKED);
 	}
 
 
 	/**
-	 * Removes all sequences of single-note events shorter than the given duration from the
-	 * encoding, and lengthens the duration of the event preceding the sequence by the total 
-	 * length of the removed sequence.
+	 * Reverses the header (i.e., adapts the METER_INFO and DIMINUTION information).
 	 * 
-	 * @param dur The given duration (as a RhythmSymbol duration). 
+	 * @param mi
 	 * @return
 	 */
 	// TESTED
-	public Encoding deornament(int dur) {
+	String reverseHeader(List<Integer[]> mi) {
+		String argHeader = getHeader();
+
+		// Get original METER_INFO and DIMINUTION content
+		// NB: makeHeader() guarantees that (i) there is a space after the colon following
+		//     the METER_INFO_TAG and DIMINUTION_TAG, and (ii) the content following that
+		//     space, which is succeeded by the CLOSE_METADATA_BRACKET, is trimmed
+		int startInd =
+			argHeader.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length(); 
+		String miOrigContent = 
+			argHeader.substring(startInd, argHeader.indexOf(CLOSE_METADATA_BRACKET, startInd));
+		startInd = 
+			argHeader.indexOf(DIMINUTION_TAG) + DIMINUTION_TAG.length() + ": ".length(); 
+		String dimOrigContent = 
+			argHeader.substring(startInd, argHeader.indexOf(CLOSE_METADATA_BRACKET, startInd));
+
+		// Reverse mi
+		List<Integer[]> miRev = new ArrayList<>();
+		for (Integer[] in : mi) {
+			miRev.add(Arrays.copyOf(in, in.length));
+		}
+		int numBars = miRev.get(miRev.size() - 1)[Timeline.MI_LAST_BAR];
+		for (Integer[] in : miRev) {
+			in[Timeline.MI_FIRST_BAR] = (numBars - in[Timeline.MI_FIRST_BAR]) + 1;
+			in[Timeline.MI_LAST_BAR] = (numBars - in[Timeline.MI_LAST_BAR]) + 1;
+		}
+		Collections.reverse(miRev);
+
+		// Make reversed METER_INFO and DIMINUTION content
+		String miRevContent = "";
+		String dimRevContent = "";		
+		for (int i = 0; i < miRev.size(); i++) {
+			Integer[] in = miRev.get(i);
+			int firstBar = in[Timeline.MI_FIRST_BAR];
+			int lastBar = in[Timeline.MI_LAST_BAR];
+			miRevContent += 
+				in[Timeline.MI_NUM] + "/" + in[Timeline.MI_DEN] + " (" + 
+				(firstBar != lastBar ? lastBar + "-" + firstBar : lastBar) + ")" +
+				(i < miRev.size() - 1 ? "; " : "");
+			dimRevContent += in[Timeline.MI_DIM] + (i < miRev.size() - 1 ? "; " : "");
+		}
+		argHeader = argHeader.replace(miOrigContent, miRevContent);
+		argHeader = argHeader.replace(dimOrigContent, dimRevContent);
+		return argHeader;
+	}
+
+
+	/**
+	 * Reverses the (clean) encoding. If not all events have an RS, the missing RS are 
+	 * complemented before reversing. 
+	 * 
+	 * @return
+	 */
+	// TESTED
+	String reverseCleanEncoding() {
+		List<String> events = decompose(true, true);
+		Collections.reverse(events);
+		return recompose(events.subList(1, events.size())) + events.get(0);
+	}
+
+
+	/**
+	 * Deornaments the (clean) encoding. If not all events have an RS, the missing RS are 
+	 * complemented before deornamenting.
+	 * 
+	 * @param thresholdDur
+	 * 
+	 * @return
+	 */
+	// TESTED
+	String deornamentCleanEncoding(int thresholdDur) {
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
 		String ebi = Symbol.END_BREAK_INDICATOR;
 
-		// 1. Adapt events
 		List<String> events = decompose(true, true);
 		String pre = null;
 		int durPre = -1;
 		int indPre = -1;
-		List<Integer> removed = new ArrayList<>();
-		int i2 = 0;
 		for (int i = 0; i < events.size(); i++) {
 			String e = events.get(i);
 			// If e is not a barline, a SBI, or an EBI
@@ -1459,8 +1522,7 @@ public class Encoding implements Serializable {
 				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
 				// If the event is an ornamentation (which always consists of only a RS, 
 				// a TS, and a space)
-				if (r != null && r.getDuration() < dur && symbols.length == 3) {
-					removed.add(i2);
+				if (r != null && r.getDuration() < thresholdDur && symbols.length == 3) {
 					// Determine pre, if it has not yet been determined
 					if (pre == null) {
 						for (int j = i - 1; j >= 0; j--) {
@@ -1483,7 +1545,7 @@ public class Encoding implements Serializable {
 				// If the event is the first after a sequence of one or more ornamental
 				// notes (i.e., it does not meet the if conditions above but pre != null)
 				else if (pre != null) {
-					// Determine the new Rs for pre, and adapt and set it
+					// Determine the new RS for pre, and adapt and set it
 					String newRs = "";
 					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
 						if (rs.getDuration() == durPre) {
@@ -1496,62 +1558,63 @@ public class Encoding implements Serializable {
 					pre = null;
 					indPre = -1;
 				}
-				// Do not consider rests
-				if (symbols.length != 2) { 
-					i2++;
-				}
 			}
 		}
 		events.removeIf(t -> t == null);
-
-		// 2. Recombine
-		return new Encoding(
-			getHeader() + "\r\n\r\n" + recompose(events), 
-			getPiecename(), 
-			SYNTAX_CHECKED
-		);
+		return recompose(events); 
 	}
 
 
 	/**
-	 * Stretches the encoding durationally by the given factor.
+	 * Rescales the header (i.e., adapts the METER_INFO information).
 	 * 
-	 * @param meterInfo
-	 * @param factor
+	 * @param mi
+	 * @param rescaleFactor 
 	 * @return
 	 */
 	// TESTED
-	public Encoding stretch(List<Integer[]> meterInfo, double factor) {
-		String header = getHeader();
+	String rescaleHeader(List<Integer[]> mi, int rescaleFactor) {
+		String argHeader = getHeader();
 
+		// Get original METER_INFO content
+		// NB: makeHeader() guarantees that (i) there is a space after the colon following
+		//     the METER_INFO_TAG, and (ii) the content following that space, which is 
+		//     succeeded by the CLOSE_METADATA_BRACKET, is trimmed
+		int startInd = 
+			argHeader.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length();
+		String miOrigContent = 
+			argHeader.substring(startInd, argHeader.indexOf(CLOSE_METADATA_BRACKET, startInd));
+
+		// Make stretched METER_INFO content
+		String miRescaleContent = "";
+		for (int i = 0; i < mi.size(); i++) {
+			Integer[] in = mi.get(i);
+			int firstBar = in[Timeline.MI_FIRST_BAR];
+			int lastBar = in[Timeline.MI_LAST_BAR];
+			int den = in[Timeline.MI_DEN];
+			miRescaleContent += 
+				in[Timeline.MI_NUM] + "/" + 
+				(rescaleFactor > 0 ? den/rescaleFactor : den*Math.abs(rescaleFactor)) + " (" +
+				(firstBar != lastBar ? firstBar + "-" + lastBar : firstBar) + ")" +
+				(i < mi.size() - 1 ? "; " : "");
+		}
+		return argHeader = argHeader.replace(miOrigContent, miRescaleContent);
+	}
+
+
+	/**
+	 * Rescales the (clean) encoding. If not all events have an RS, the missing RS are 
+	 * complemented before rescaling.
+	 * 
+	 * @param rescaleFactor  
+	 * @return
+	 */
+	// TESTED
+	String rescaleCleanEncoding(int rescaleFactor) {
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
 		String ebi = Symbol.END_BREAK_INDICATOR;
 
-		// 1. Adapt header
-		// Reverse meterInfo information 
-		int startInd = 
-			header.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length();
-		String origMeterInfo = header.substring(startInd, 
-			header.indexOf(CLOSE_METADATA_BRACKET, startInd));
-		List<Integer[]> copyOfMeterInfo = new ArrayList<>();
-		String stretchedMeterInfo = "";
-		for (int i = 0; i < meterInfo.size(); i++) {
-			Integer[] in = meterInfo.get(i);
-			if (i > 0) {
-				in[Timeline.MI_FIRST_BAR] = meterInfo.get(i - 1)[Timeline.MI_LAST_BAR] + 1;
-			}
-			in[Timeline.MI_LAST_BAR] = (int) (in[Timeline.MI_LAST_BAR] * factor);
-			stretchedMeterInfo += 
-				in[Timeline.MI_NUM] + "/" + in[Timeline.MI_DEN] + 
-				" (" + in[Timeline.MI_FIRST_BAR] + "-" + in[Timeline.MI_LAST_BAR] + ")";
-			if (i < copyOfMeterInfo.size() - 1) {
-				stretchedMeterInfo += "; ";
-			}
-		}
-		header = header.replace(origMeterInfo, stretchedMeterInfo);
-
-		// 2. Adapt events
 		List<String> events = decompose(true, true);
 		for (int i = 0; i < events.size(); i++) {
 			String e = events.get(i);
@@ -1562,7 +1625,7 @@ public class Encoding implements Serializable {
 				String newRs = "";
 				if (r != null) {
 					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
-						if (rs.getDuration() == r.getDuration() * factor) {
+						if (rs.getDuration() == r.getDuration() * rescaleFactor) {
 							newRs = rs.getEncoding();
 							break;
 						}
@@ -1571,12 +1634,7 @@ public class Encoding implements Serializable {
 				}
 			}
 		}
-
-		// 3. Recombine
-		return new Encoding(
-			header + "\r\n\r\n" + recompose(events), 
-			getPiecename(), 
-			SYNTAX_CHECKED);
+		return recompose(events); 
 	}
 
 
@@ -2323,6 +2381,28 @@ public class Encoding implements Serializable {
 		else {
 			return false;
 		}
+	}
+
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) {
+			return true;
+		}
+		if (!(o instanceof Encoding)) {
+			return false;
+		}
+		Encoding e = (Encoding) o;
+		return
+			getPiecename().equals(e.getPiecename()) &&
+			getRawEncoding().equals(e.getRawEncoding()) &&
+			getCleanEncoding().equals(e.getCleanEncoding()) &&
+			getMetadata().equals(e.getMetadata()) &&
+			getHeader().equals(e.getHeader()) &&
+			getTabSymbolSet().equals(e.getTabSymbolSet()) &&
+			getEvents().equals(e.getEvents()) &&
+			getListsOfSymbols().equals(e.getListsOfSymbols()) &&
+			getListsOfStatistics().equals(e.getListsOfStatistics());
 	}
 
 
@@ -3141,4 +3221,232 @@ public class Encoding implements Serializable {
 		return new String[]{header, enc};
 	}
 
+
+	private void reverse(List<Integer[]> mi) {
+		this.init(
+			reverseHeader(mi) + "\r\n\r\n" + reverseCleanEncoding(), 
+			getPiecename(), 
+			SYNTAX_CHECKED
+		);
+	}
+
+
+	/**
+	 * Reverses the encoding.
+	 * 
+	 * @param  meterInfo
+	 * @return
+	 */
+	// TESTED
+	private void reverseOLD(List<Integer[]> meterInfo) {
+		String header = getHeader();
+
+		// 1. Adapt header (reverse meterInfo information)
+		int startInd = 
+			header.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length();
+		String origMeterInfo = header.substring(startInd, 
+			header.indexOf(CLOSE_METADATA_BRACKET, startInd));
+		List<Integer[]> meterInfoRev = new ArrayList<>();
+		for (Integer[] in : meterInfo) {
+			meterInfoRev.add(Arrays.copyOf(in, in.length));
+		}
+		Integer[] last = meterInfoRev.get(meterInfoRev.size() - 1);
+		int numBars = last[Timeline.MI_LAST_BAR];
+		for (Integer[] in : meterInfoRev) {
+			in[Timeline.MI_FIRST_BAR] = (numBars - in[Timeline.MI_FIRST_BAR]) + 1;
+			in[Timeline.MI_LAST_BAR] = (numBars - in[Timeline.MI_LAST_BAR]) + 1;
+		}
+		Collections.reverse(meterInfoRev);
+		String reversedMeterInfo = "";
+		for (int i = 0; i < meterInfoRev.size(); i++) {
+			Integer[] in = meterInfoRev.get(i);
+			reversedMeterInfo += in[Timeline.MI_NUM] + "/" + in[Timeline.MI_DEN] + " (";
+			if (in[Timeline.MI_FIRST_BAR] == in[Timeline.MI_LAST_BAR]) {
+				reversedMeterInfo += in[Timeline.MI_LAST_BAR];
+			}
+			if (in[Timeline.MI_FIRST_BAR] != in[Timeline.MI_LAST_BAR]) {
+				reversedMeterInfo += in[Timeline.MI_LAST_BAR] + "-" + in[Timeline.MI_FIRST_BAR];
+			}
+			reversedMeterInfo += ")";
+			if (i < meterInfoRev.size() - 1) {
+				reversedMeterInfo += "; ";
+			}
+		}
+		header = header.replace(origMeterInfo, reversedMeterInfo);
+		
+		// 2. Reverse encoding and recombine
+		List<String> events = decompose(true, true);
+		events = events.subList(0, events.size() - 1);
+		Collections.reverse(events);
+		
+		this.init(
+			header + "\r\n\r\n" + recompose(events) + Symbol.END_BREAK_INDICATOR, 
+			getPiecename(), 
+			SYNTAX_CHECKED
+		);
+//		return new Encoding(
+//			header + "\r\n\r\n" + recompose(events) + Symbol.END_BREAK_INDICATOR, 
+//			getPiecename(), 
+//			SYNTAX_CHECKED
+//		);
+	}
+
+
+	private void deornament(int dur) {
+		this.init(
+			getHeader() + "\r\n\r\n" + deornamentCleanEncoding(dur), 
+			getPiecename(), 
+			SYNTAX_CHECKED
+		);
+	}
+
+
+	/**
+	 * Removes all sequences of single-note events shorter than the given duration from the
+	 * <code>Encoding</code>, and lengthens the duration of the event preceding the sequence 
+	 * by the total length of the removed sequence.
+	 * 
+	 * @param dur The given duration (as a <code>RhythmSymbol</code> duration). 
+	 * @return
+	 */
+	// TESTED
+	private Encoding deornamentOLD(int dur) {
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
+		String ebi = Symbol.END_BREAK_INDICATOR;
+
+		// 1. Adapt events
+		List<String> events = decompose(true, true);
+		String pre = null;
+		int durPre = -1;
+		int indPre = -1;
+		List<Integer> removed = new ArrayList<>();
+		int i2 = 0;
+		for (int i = 0; i < events.size(); i++) {
+			String e = events.get(i);
+			// If e is not a barline, a SBI, or an EBI
+			if (!e.equals(sbi) && !e.equals(ebi) && !assertEventType(e, null, "barline")) {
+				String[] symbols = e.split("\\" + ss);
+				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
+				// If the event is an ornamentation (which always consists of only a RS, 
+				// a TS, and a space)
+				if (r != null && r.getDuration() < dur && symbols.length == 3) {
+					removed.add(i2);
+					// Determine pre, if it has not yet been determined
+					if (pre == null) {
+						for (int j = i - 1; j >= 0; j--) {
+							String tPrev = events.get(j);
+							// If tPrev is not a barline or SBI
+							if (!tPrev.equals(sbi) && !assertEventType(tPrev, null, "barline")) {
+								pre = tPrev;
+								durPre = 
+									RhythmSymbol.getRhythmSymbol(tPrev.substring(0, 
+									tPrev.indexOf(ss))).getDuration();
+								indPre = j;
+								break;
+							}
+						}
+					}
+					// Increment durPre and set event to null
+					durPre += r.getDuration();
+					events.set(i, null);
+				}
+				// If the event is the first after a sequence of one or more ornamental
+				// notes (i.e., it does not meet the if conditions above but pre != null)
+				else if (pre != null) {
+					// Determine the new Rs for pre, and adapt and set it
+					String newRs = "";
+					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
+						if (rs.getDuration() == durPre) {
+							newRs = rs.getEncoding();
+							break;
+						}
+					}
+					events.set(indPre, newRs + pre.substring(pre.indexOf(ss), pre.length()));
+					// Reset
+					pre = null;
+					indPre = -1;
+				}
+				// Do not consider rests
+				if (symbols.length != 2) { 
+					i2++;
+				}
+			}
+		}
+		events.removeIf(t -> t == null);
+
+		// 2. Recombine
+		return new Encoding(
+			getHeader() + "\r\n\r\n" + recompose(events), 
+			getPiecename(), 
+			SYNTAX_CHECKED
+		);
+	}
+
+
+	/**
+	 * Stretches the encoding durationally by the given factor.  
+	 * 
+	 * @param meterInfo
+	 * @param factor
+	 * @return
+	 */
+	// TESTED
+	private Encoding stretchOLD(List<Integer[]> meterInfo, double factor) {
+		String header = getHeader();
+
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
+		String ebi = Symbol.END_BREAK_INDICATOR;
+
+		// 1. Adapt header
+		// Stretch meterInfo information 
+		int startInd = 
+			header.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length();
+		String origMeterInfo = header.substring(startInd, 
+			header.indexOf(CLOSE_METADATA_BRACKET, startInd));
+		List<Integer[]> copyOfMeterInfo = new ArrayList<>();
+		String stretchedMeterInfo = "";
+		for (int i = 0; i < meterInfo.size(); i++) {
+			Integer[] in = meterInfo.get(i);
+			if (i > 0) {
+				in[Timeline.MI_FIRST_BAR] = meterInfo.get(i - 1)[Timeline.MI_LAST_BAR] + 1;
+			}
+			in[Timeline.MI_LAST_BAR] = (int) (in[Timeline.MI_LAST_BAR] * factor);
+			stretchedMeterInfo += 
+				in[Timeline.MI_NUM] + "/" + in[Timeline.MI_DEN] + 
+				" (" + in[Timeline.MI_FIRST_BAR] + "-" + in[Timeline.MI_LAST_BAR] + ")";
+			if (i < copyOfMeterInfo.size() - 1) {
+				stretchedMeterInfo += "; ";
+			}
+		}
+		header = header.replace(origMeterInfo, stretchedMeterInfo);
+
+		// 2. Adapt events
+		List<String> events = decompose(true, true);
+		for (int i = 0; i < events.size(); i++) {
+			String e = events.get(i);
+			// If e is not a barline, a SBI, or an EBI
+			if (!e.equals(sbi) && !e.equals(ebi) && !assertEventType(e, null, "barline")) {
+				String[] symbols = e.split("\\" + ss);
+				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
+				String newRs = "";
+				if (r != null) {
+					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
+						if (rs.getDuration() == r.getDuration() * factor) {
+							newRs = rs.getEncoding();
+							break;
+						}
+					}
+					events.set(i, newRs + e.substring(e.indexOf(ss), e.length()));
+				}
+			}
+		}
+
+		// 3. Recombine
+		return new Encoding(
+			header + "\r\n\r\n" + recompose(events), 
+			getPiecename(), 
+			SYNTAX_CHECKED);
+	}
 }
