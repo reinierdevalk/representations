@@ -63,4 +63,22 @@ public class RhythmSymbolTest {
 		}
 	}
 
+
+	@Test
+	public void testIsTriplet() {
+		List<String> expected = Arrays.asList(RhythmSymbol.TRIPLET_OPEN, "", RhythmSymbol.TRIPLET_CLOSE, null);
+
+		List<RhythmSymbol> smtrs = Symbol.SEMIMINIM.makeVariant(1, true, true);
+		List<String> actual = new ArrayList<>();
+		for (RhythmSymbol rs : Arrays.asList(smtrs.get(0), smtrs.get(1), smtrs.get(2), Symbol.SEMIMINIM)) {
+			actual.add(rs.isTriplet());
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
 }

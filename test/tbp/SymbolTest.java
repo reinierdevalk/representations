@@ -91,12 +91,12 @@ public class SymbolTest {
 
 	@Test
 	public void testGetConstantMusicalSymbol() {
-		List<ConstantMusicalSymbol> expected = Arrays.asList(new ConstantMusicalSymbol[]{
+		List<ConstantMusicalSymbol> expected = Arrays.asList(
 			Symbol.SPACE,
 			Symbol.BARLINE,
 			Symbol.BARLINE.makeVariant(2, "both"),
 			null
-		});
+		);
 
 		List<ConstantMusicalSymbol> actual = new ArrayList<>();
 		for (String s : Arrays.asList(new String[]{">", "|", ":||:", "not"})) {
@@ -113,12 +113,12 @@ public class SymbolTest {
 
 	@Test
 	public void testGetMensurationSign() {
-		List<MensurationSign> expected = Arrays.asList(new MensurationSign[]{
+		List<MensurationSign> expected = Arrays.asList(
 			Symbol.TWO,
 			Symbol.CUT_C,
 			Symbol.THREE.makeVariant(-1, 4),
 			null
-		});
+		);
 
 		List<MensurationSign> actual = new ArrayList<>();
 		for (String s : Arrays.asList(new String[]{"M2", "MC\\", "M34", "not"})) {
@@ -135,12 +135,12 @@ public class SymbolTest {
 
 	@Test
 	public void testGetRhythmSymbol() {
-		List<RhythmSymbol> expected = Arrays.asList(new RhythmSymbol[]{
+		List<RhythmSymbol> expected = Arrays.asList(
 			Symbol.SEMIMINIM,
 			Symbol.CORONA_BREVIS,
 			Symbol.SEMIMINIM.makeVariant(0, true, true).get(0),
 			null
-		});
+		);
 
 		List<RhythmSymbol> actual = new ArrayList<>();
 		for (String s : Arrays.asList(new String[]{"sm", "cobr", "tr[sm-", "not"})) {
@@ -156,14 +156,49 @@ public class SymbolTest {
 
 
 	@Test
+	public void testGetRhythmSymbolAlt() {
+		List<RhythmSymbol> expected = Arrays.asList(
+			Symbol.SEMIMINIM,
+			Symbol.CORONA_BREVIS,
+			Symbol.SEMIMINIM.makeVariant(0, true, true).get(0),
+			null
+		);
+
+		List<RhythmSymbol> actual = new ArrayList<>();
+		List<Integer> durs = Arrays.asList(
+			12, 96, 8, 13
+		);
+		List<Boolean> isCorona = Arrays.asList(
+			false, true, false, false
+		);
+		List<Boolean> isBeamed = Arrays.asList(
+			false, false, true, false
+		);
+		List<String> tripletType = Arrays.asList(
+			null, null, RhythmSymbol.TRIPLET_OPEN, null
+		);
+		for (int i = 0; i < durs.size(); i++) {
+			int dur = durs.get(i);
+			actual.add(Symbol.getRhythmSymbol(dur, isCorona.get(i), isBeamed.get(i), tripletType.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
 	public void testGetTabSymbol() {
-		List<TabSymbol> expected = Arrays.asList(new TabSymbol[]{
+		List<TabSymbol> expected = Arrays.asList(
 			Symbol.FRENCH.get(5), // first course, fifth fret
 			Symbol.ITALIAN.get(5), // first course, fifth fret
 			Symbol.NEWSIDLER_1536.get(5), // first course, fifth fret
 			Symbol.NEWSIDLER_1536.get(5).makeVariant(1),
 			null
-		});
+		);
 
 		List<TabSymbol> actual = new ArrayList<>();
 		List<String> es = Arrays.asList(new String[]{"f1", "51", "9", "9'", "not"});
@@ -185,7 +220,7 @@ public class SymbolTest {
 	@Test
 	public void testGetTabSymbols() {
 		List<TabSymbol> expected = new ArrayList<>();
-		List<TabSymbol> expectedFrench = Arrays.asList(new TabSymbol[]{
+		List<TabSymbol> expectedFrench = Arrays.asList(
 			new TabSymbol("a1", "a", 0, 1),
 			new TabSymbol("b1", "b", 1, 1),
 			new TabSymbol("c1", "c", 2, 1),
@@ -280,11 +315,11 @@ public class SymbolTest {
 			new TabSymbol("h8", "h", 7, 8),
 			new TabSymbol("i8", "i", 8, 8),
 			new TabSymbol("k8", "k", 9, 8),
-			new TabSymbol("l8", "l", 10, 8),
-		});
+			new TabSymbol("l8", "l", 10, 8)
+		);
 		expected.addAll(expectedFrench);
 
-		List<TabSymbol> expectedItalianSpanish = Arrays.asList(new TabSymbol[]{
+		List<TabSymbol> expectedItalianSpanish = Arrays.asList(
 			new TabSymbol("01", "0", 0, 1),
 			new TabSymbol("11", "1", 1, 1),
 			new TabSymbol("21", "2", 2, 1),
@@ -380,12 +415,12 @@ public class SymbolTest {
 			new TabSymbol("88", "8", 8, 8),
 			new TabSymbol("98", "9", 9, 8),
 			new TabSymbol("108", "10", 10, 8)
-		});
+		);
 		expected.addAll(expectedItalianSpanish);
 		expected.addAll(expectedItalianSpanish);
 
 		List<TabSymbol> expectedJudenkuenig = new ArrayList<TabSymbol>(getFretsGerman());
-		expectedJudenkuenig.addAll(Arrays.asList(new TabSymbol[]{
+		expectedJudenkuenig.addAll(Arrays.asList(
 			new TabSymbol("A", "A", 0, 6),    
 			new TabSymbol("B", "B", 1, 6),
 			new TabSymbol("C", "C", 2, 6),
@@ -394,11 +429,11 @@ public class SymbolTest {
 			new TabSymbol("F", "F", 5, 6),
 			new TabSymbol("G", "G", 6, 6),
 			new TabSymbol("H", "H", 7, 6)
-		}));
+		));
 		expected.addAll(expectedJudenkuenig);
 
 		List<TabSymbol> expectedNewsidler = new ArrayList<TabSymbol>(getFretsGerman());
-		expectedNewsidler.addAll(Arrays.asList(new TabSymbol[]{
+		expectedNewsidler.addAll(Arrays.asList(
 			new TabSymbol("+", "+", 0, 6),
 			new TabSymbol("A", "A", 1, 6),
 			new TabSymbol("B", "B", 2, 6),
@@ -408,11 +443,11 @@ public class SymbolTest {
 			new TabSymbol("F", "F", 6, 6),
 			new TabSymbol("G", "G", 7, 6),
 			new TabSymbol("H", "H", 8, 6)
-		}));
+		));
 		expected.addAll(expectedNewsidler);
 
 		List<TabSymbol> expectedOchsenkun = new ArrayList<TabSymbol>(getFretsGerman());
-		expectedOchsenkun.addAll(Arrays.asList(new TabSymbol[]{
+		expectedOchsenkun.addAll(Arrays.asList(
 			new TabSymbol("+", "+", 0, 6),    
 			new TabSymbol("2-", "2-", 1, 6),
 			new TabSymbol("3-", "3-", 2, 6),
@@ -424,18 +459,18 @@ public class SymbolTest {
 			new TabSymbol("9-", "9-", 8, 6),
 			new TabSymbol("10-", "10-", 9, 6),
 			new TabSymbol("11-", "11-", 10, 6)
-		}));
+		));
 		expected.addAll(expectedOchsenkun);
 
 		List<TabSymbol> expectedHeckel = new ArrayList<TabSymbol>(getFretsGerman());
-		expectedHeckel.addAll(Arrays.asList(new TabSymbol[]{
+		expectedHeckel.addAll(Arrays.asList(
 			new TabSymbol("+", "+", 0, 6),    
 			new TabSymbol("A-", "A-", 1, 6),
 			new TabSymbol("F-", "F-", 2, 6),
 			new TabSymbol("L-", "L-", 3, 6),
 			new TabSymbol("Q-", "Q-", 4, 6),
 			new TabSymbol("X-", "X-", 5, 6)
-		}));
+		));
 		expected.addAll(expectedHeckel);
 
 		List<TabSymbol> actual = new ArrayList<>();

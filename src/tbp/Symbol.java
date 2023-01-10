@@ -178,6 +178,26 @@ public class Symbol {
 
 
 	// TESTED
+	public static RhythmSymbol getRhythmSymbol(int d, boolean isCorona, boolean isBeamed, 
+		String tripletType) {
+		List<Integer> durations = new ArrayList<>();
+		RHYTHM_SYMBOLS.values().forEach(rs -> durations.add(rs.getDuration()));
+
+		return 
+			!durations.contains(d) ? null : 
+			RHYTHM_SYMBOLS.values().stream()
+			.filter(
+				rs -> rs.getDuration() == d &&
+				rs.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR) == isCorona && // corona check
+				rs.getEncoding().endsWith(RhythmSymbol.BEAM) == isBeamed && // beam check
+				(rs.isTriplet() != null ? rs.isTriplet().equals(tripletType) : 
+				rs.isTriplet() == tripletType) // triplet check
+			)
+			.findFirst().get();
+	}
+
+
+	// TESTED
 	public static TabSymbol getTabSymbol(String e, TabSymbolSet tss) {
 		String n = tss.getName(); 
 		return !TAB_SYMBOLS.containsKey(n) ? null :

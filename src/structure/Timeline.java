@@ -26,9 +26,9 @@ public class Timeline implements Serializable {
 	public static final int MI_SIZE_TRANS = 6; // TODO make private
 
 	private List<Integer[]> meterInfo;
-	private List<Integer[]> undiminutedMeterInfoOBS;
-	private List<Integer[]> meterInfoOBS;	
 	private List<Integer[]> diminutionPerBar;
+//	private List<Integer[]> undiminutedMeterInfoOBS;
+//	private List<Integer[]> meterInfoOBS;	
 
 
 	///////////////////////////////
@@ -41,8 +41,6 @@ public class Timeline implements Serializable {
 
 
 	private void init(Encoding encoding) {
-//		setUndiminutedMeterInfoOBS(encoding);
-//		setMeterInfoOBS(encoding);
 		setMeterInfo(encoding);		
 		setDiminutionPerBar();
 	}
@@ -126,7 +124,6 @@ public class Timeline implements Serializable {
 	List<Integer[]> makeDiminutionPerBar() {
 		List<Integer[]> dimPerBar = new ArrayList<>();
 		List<Integer[]> mi = getMeterInfo();
-//		List<Integer[]> mi = getMeterInfoOBS();
 		List<Integer> meterChangeBars = ToolBox.getItemsAtIndex(mi, MI_FIRST_BAR);
 		// In case of an anacrusis, firstBar == 0
 		int firstBar = mi.get(0)[MI_FIRST_BAR];
@@ -588,157 +585,156 @@ public class Timeline implements Serializable {
 	// TESTED
 	public Integer[] getNumberOfMetricBars() {
 		List<Integer[]> mi = getMeterInfo();
-//		List<Integer[]> mi = getMeterInfoOBS();
 		int firstBar = mi.get(0)[MI_FIRST_BAR];
 		int lastBar = mi.get(mi.size()-1)[MI_LAST_BAR];
 		return new Integer[]{lastBar, firstBar == 0 ? 1 : 0};
 	}
 
 
-	void setUndiminutedMeterInfoOBS(Encoding encoding) {
-		undiminutedMeterInfoOBS = makeUndiminutedMeterInfoOBS(encoding);
-	}
+//	void setUndiminutedMeterInfoOBS(Encoding encoding) {
+//		undiminutedMeterInfoOBS = makeUndiminutedMeterInfoOBS(encoding);
+//	}
 
 
-	// TESTED
-	List<Integer[]> makeUndiminutedMeterInfoOBS(Encoding encoding) {
-		List<Integer[]> undiminutedMeterInfo = new ArrayList<>();
-
-		String[] undiminutedMeters = 
-			encoding.getMetadata().get(Encoding.METADATA_TAGS[Encoding.METER_INFO_IND]).split(";");		
-		Rational prevMeterAsRat = Rational.ZERO;
-		int prevNumBars = 0;
-		Rational prevMt = Rational.ZERO;
-		for (int i = 0; i < undiminutedMeters.length; i++) {
-			Integer[] currentMeterInfo = new Integer[MI_SIZE_TAB - 1];
-			String currInfo = undiminutedMeters[i].trim();
-			// 1. Meter
-			String currMeter = currInfo.substring(0, currInfo.indexOf("(")).trim();
-			int currNum = Integer.parseInt(currMeter.split("/")[0].trim());
-			int currDen = Integer.parseInt(currMeter.split("/")[1].trim());
-			currentMeterInfo[MI_NUM] = currNum;
-			currentMeterInfo[MI_DEN] = currDen;
-			// 2. Bar number(s)
-			int currNumBars = 0;
-			String currBars = 
-				currInfo.substring(currInfo.indexOf("(") + 1, currInfo.indexOf(")")).trim();
-			// If the meter is only for a single bar
-			if (!currBars.contains("-")) {
-				currentMeterInfo[MI_FIRST_BAR] = Integer.parseInt(currBars.trim());
-				currentMeterInfo[MI_LAST_BAR] = Integer.parseInt(currBars.trim());
-				currNumBars = 1;
-			}
-			// If the meter is for more than one bar
-			else {
-				int firstBar = Integer.parseInt(currBars.split("-")[0].trim());
-				int lastBar = Integer.parseInt(currBars.split("-")[1].trim());
-				currentMeterInfo[MI_FIRST_BAR] = firstBar;
-				currentMeterInfo[MI_LAST_BAR] = lastBar;
-				currNumBars = (lastBar-firstBar) + 1;
-			}
-			// 3. Metric times
-			Rational currMt = prevMt.add(prevMeterAsRat.mul(prevNumBars));
-			currMt.reduce();
-			currentMeterInfo[MI_NUM_MT_FIRST_BAR] = currMt.getNumer();
-			currentMeterInfo[MI_DEN_MT_FIRST_BAR] = currMt.getDenom();
-
-			// Add and update
-			undiminutedMeterInfo.add(currentMeterInfo);
-			prevNumBars = currNumBars;
-			prevMt = currMt;
-			prevMeterAsRat = new Rational(currNum, currDen);
-		}
-		return undiminutedMeterInfo;
-	}
-
-
-	private void setMeterInfoOBS(Encoding encoding) {
-		meterInfoOBS = makeMeterInfoOBS(encoding);
-	}
+//	// TESTED
+//	List<Integer[]> makeUndiminutedMeterInfoOBS(Encoding encoding) {
+//		List<Integer[]> undiminutedMeterInfo = new ArrayList<>();
+//
+//		String[] undiminutedMeters = 
+//			encoding.getMetadata().get(Encoding.METADATA_TAGS[Encoding.METER_INFO_IND]).split(";");		
+//		Rational prevMeterAsRat = Rational.ZERO;
+//		int prevNumBars = 0;
+//		Rational prevMt = Rational.ZERO;
+//		for (int i = 0; i < undiminutedMeters.length; i++) {
+//			Integer[] currentMeterInfo = new Integer[MI_SIZE_TAB - 1];
+//			String currInfo = undiminutedMeters[i].trim();
+//			// 1. Meter
+//			String currMeter = currInfo.substring(0, currInfo.indexOf("(")).trim();
+//			int currNum = Integer.parseInt(currMeter.split("/")[0].trim());
+//			int currDen = Integer.parseInt(currMeter.split("/")[1].trim());
+//			currentMeterInfo[MI_NUM] = currNum;
+//			currentMeterInfo[MI_DEN] = currDen;
+//			// 2. Bar number(s)
+//			int currNumBars = 0;
+//			String currBars = 
+//				currInfo.substring(currInfo.indexOf("(") + 1, currInfo.indexOf(")")).trim();
+//			// If the meter is only for a single bar
+//			if (!currBars.contains("-")) {
+//				currentMeterInfo[MI_FIRST_BAR] = Integer.parseInt(currBars.trim());
+//				currentMeterInfo[MI_LAST_BAR] = Integer.parseInt(currBars.trim());
+//				currNumBars = 1;
+//			}
+//			// If the meter is for more than one bar
+//			else {
+//				int firstBar = Integer.parseInt(currBars.split("-")[0].trim());
+//				int lastBar = Integer.parseInt(currBars.split("-")[1].trim());
+//				currentMeterInfo[MI_FIRST_BAR] = firstBar;
+//				currentMeterInfo[MI_LAST_BAR] = lastBar;
+//				currNumBars = (lastBar-firstBar) + 1;
+//			}
+//			// 3. Metric times
+//			Rational currMt = prevMt.add(prevMeterAsRat.mul(prevNumBars));
+//			currMt.reduce();
+//			currentMeterInfo[MI_NUM_MT_FIRST_BAR] = currMt.getNumer();
+//			currentMeterInfo[MI_DEN_MT_FIRST_BAR] = currMt.getDenom();
+//
+//			// Add and update
+//			undiminutedMeterInfo.add(currentMeterInfo);
+//			prevNumBars = currNumBars;
+//			prevMt = currMt;
+//			prevMeterAsRat = new Rational(currNum, currDen);
+//		}
+//		return undiminutedMeterInfo;
+//	}
 
 
-	// TESTED
-	List<Integer[]> makeMeterInfoOBS(Encoding encoding) {
-		List<Integer[]> mi = new ArrayList<>();
-
-		List<Integer> diminutions = new ArrayList<>();
-		String dimStr = encoding.getMetadata().get(Encoding.METADATA_TAGS[Encoding.DIMINUTION_IND]);
-		Arrays.asList(dimStr.split(";")).forEach(d -> diminutions.add(Integer.parseInt(d.trim())));
-		List<Integer[]> undiminutedMeterInfo = getUndiminutedMeterInfoOBS();
-		// For each meter
-		Rational prevMeterAsRat = Rational.ZERO;
-		int prevNumBars = 0;
-		Rational prevMt = Rational.ZERO;
-		for (int i = 0; i < undiminutedMeterInfo.size(); i++) {
-			Integer[] currMeterInfo = new Integer[MI_SIZE_TAB];
-			for (int j = 0; j < undiminutedMeterInfo.get(i).length; j++) {
-				currMeterInfo[j] = undiminutedMeterInfo.get(i)[j];
-			}
-			int currNum = currMeterInfo[MI_NUM];
-			int currDen = currMeterInfo[MI_DEN];
-			Rational currMt = 
-				new Rational(currMeterInfo[MI_NUM_MT_FIRST_BAR], 
-				currMeterInfo[MI_DEN_MT_FIRST_BAR]);
-			int currNumBars = (currMeterInfo[MI_LAST_BAR] - 
-				currMeterInfo[MI_FIRST_BAR]) + 1;
-			int currDim = diminutions.get(i);
-			// 1. Meter
-			Rational newMeter = undiminuteMeter(new Rational(currNum, currDen), currDim);
-			currMeterInfo[MI_NUM] = newMeter.getNumer();
-			currMeterInfo[MI_DEN] = newMeter.getDenom();
-			// 2. Metric time
-			currMt = prevMt.add(prevMeterAsRat.mul(prevNumBars));
-			currMt.reduce();
-			currMeterInfo[MI_NUM_MT_FIRST_BAR] = currMt.getNumer();
-			currMeterInfo[MI_DEN_MT_FIRST_BAR] = currMt.getDenom();
-			currMeterInfo[MI_DIM] = currDim;
-
-			// Add and update
-			mi.add(currMeterInfo);
-			prevNumBars = currNumBars;
-			prevMt = currMt;
-			prevMeterAsRat = newMeter;
-		}
-		return mi;
-	}
+//	private void setMeterInfoOBS(Encoding encoding) {
+//		meterInfoOBS = makeMeterInfoOBS(encoding);
+//	}
 
 
-	/**
-	 * Gets the original (undiminuted) meterInfo.
-	 * 
-	 * @return A list, containing, for each meter<break>
-	 *         <ul>
-	 *         <li> as element 0: the numerator of the meter </li>
-	 * 		   <li> as element 1: the denominator of the meter </li>
-	 *         <li> as element 2: the first (metric) bar in the meter </li>
-	 *         <li> as element 3: the last (metric) bar in the meter </li>
-	 *         <li> as element 4: the numerator of the metric time of that first bar </li>
-	 *         <li> as element 5: the denominator of the metric time of that first bar </li>
-	 *         </ul>
-	 */
-	public List<Integer[]> getUndiminutedMeterInfoOBS() {
-		return undiminutedMeterInfoOBS;
-	}
+//	// TESTED
+//	List<Integer[]> makeMeterInfoOBS(Encoding encoding) {
+//		List<Integer[]> mi = new ArrayList<>();
+//
+//		List<Integer> diminutions = new ArrayList<>();
+//		String dimStr = encoding.getMetadata().get(Encoding.METADATA_TAGS[Encoding.DIMINUTION_IND]);
+//		Arrays.asList(dimStr.split(";")).forEach(d -> diminutions.add(Integer.parseInt(d.trim())));
+//		List<Integer[]> undiminutedMeterInfo = getUndiminutedMeterInfoOBS();
+//		// For each meter
+//		Rational prevMeterAsRat = Rational.ZERO;
+//		int prevNumBars = 0;
+//		Rational prevMt = Rational.ZERO;
+//		for (int i = 0; i < undiminutedMeterInfo.size(); i++) {
+//			Integer[] currMeterInfo = new Integer[MI_SIZE_TAB];
+//			for (int j = 0; j < undiminutedMeterInfo.get(i).length; j++) {
+//				currMeterInfo[j] = undiminutedMeterInfo.get(i)[j];
+//			}
+//			int currNum = currMeterInfo[MI_NUM];
+//			int currDen = currMeterInfo[MI_DEN];
+//			Rational currMt = 
+//				new Rational(currMeterInfo[MI_NUM_MT_FIRST_BAR], 
+//				currMeterInfo[MI_DEN_MT_FIRST_BAR]);
+//			int currNumBars = (currMeterInfo[MI_LAST_BAR] - 
+//				currMeterInfo[MI_FIRST_BAR]) + 1;
+//			int currDim = diminutions.get(i);
+//			// 1. Meter
+//			Rational newMeter = undiminuteMeter(new Rational(currNum, currDen), currDim);
+//			currMeterInfo[MI_NUM] = newMeter.getNumer();
+//			currMeterInfo[MI_DEN] = newMeter.getDenom();
+//			// 2. Metric time
+//			currMt = prevMt.add(prevMeterAsRat.mul(prevNumBars));
+//			currMt.reduce();
+//			currMeterInfo[MI_NUM_MT_FIRST_BAR] = currMt.getNumer();
+//			currMeterInfo[MI_DEN_MT_FIRST_BAR] = currMt.getDenom();
+//			currMeterInfo[MI_DIM] = currDim;
+//
+//			// Add and update
+//			mi.add(currMeterInfo);
+//			prevNumBars = currNumBars;
+//			prevMt = currMt;
+//			prevMeterAsRat = newMeter;
+//		}
+//		return mi;
+//	}
 
 
-	/**
-	 * Gets the meterInfo.
-	 * 
-	 * @return A list whose elements represent the meters in the piece. Each element contains<br>
-	 *         <ul>
-	 *         <li> as element 0: the numerator of the meter (adapted according to the diminution)</li>
-	 *         <li> as element 1: the denominator of the meter (adapted according to the diminution)</li>
-	 *         <li> as element 2: the first (metric) bar in the meter </li>
-	 *         <li> as element 3: the last (metric) bar in the meter </li>
-	 *         <li> as element 4: the numerator of the metric time of that first bar (adapted according to the diminution)</li>
-	 *         <li> as element 5: the denominator of the metric time of that first bar (adapted according to the diminution)</li>
-	 *         <li> as element 6: the diminution for the meter </li>
-	 *         </ul>
-	 *         
-	 *         An anacrusis bar will be denoted with bar numbers 0-0.
-	 */
-	private List<Integer[]> getMeterInfoOBS() {
-		return meterInfoOBS;
-	}
+//	/**
+//	 * Gets the original (undiminuted) meterInfo.
+//	 * 
+//	 * @return A list, containing, for each meter<break>
+//	 *         <ul>
+//	 *         <li> as element 0: the numerator of the meter </li>
+//	 * 		   <li> as element 1: the denominator of the meter </li>
+//	 *         <li> as element 2: the first (metric) bar in the meter </li>
+//	 *         <li> as element 3: the last (metric) bar in the meter </li>
+//	 *         <li> as element 4: the numerator of the metric time of that first bar </li>
+//	 *         <li> as element 5: the denominator of the metric time of that first bar </li>
+//	 *         </ul>
+//	 */
+//	public List<Integer[]> getUndiminutedMeterInfoOBS() {
+//		return undiminutedMeterInfoOBS;
+//	}
+
+
+//	/**
+//	 * Gets the meterInfo.
+//	 * 
+//	 * @return A list whose elements represent the meters in the piece. Each element contains<br>
+//	 *         <ul>
+//	 *         <li> as element 0: the numerator of the meter (adapted according to the diminution)</li>
+//	 *         <li> as element 1: the denominator of the meter (adapted according to the diminution)</li>
+//	 *         <li> as element 2: the first (metric) bar in the meter </li>
+//	 *         <li> as element 3: the last (metric) bar in the meter </li>
+//	 *         <li> as element 4: the numerator of the metric time of that first bar (adapted according to the diminution)</li>
+//	 *         <li> as element 5: the denominator of the metric time of that first bar (adapted according to the diminution)</li>
+//	 *         <li> as element 6: the diminution for the meter </li>
+//	 *         </ul>
+//	 *         
+//	 *         An anacrusis bar will be denoted with bar numbers 0-0.
+//	 */
+//	private List<Integer[]> getMeterInfoOBS() {
+//		return meterInfoOBS;
+//	}
 
 }

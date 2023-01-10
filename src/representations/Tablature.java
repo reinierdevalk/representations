@@ -34,7 +34,7 @@ public class Tablature implements Serializable {
 	public static final int SECOND_METRIC_BAR_IND = 2;
 	public static final int TAB_BAR_REL_ONSET_IND = 3;
 	public static final int METRIC_BAR_REMAINDER_IND = 4;
-	private static final boolean ADAPT_TAB = false;
+	private static final boolean ADAPT_TAB = false; // TODO remove
 
 	// For tunings
 	public static final int ENCODED_TUNING_IND = 0;
@@ -274,9 +274,9 @@ public class Tablature implements Serializable {
 		List<Integer> durOfTabSymbols = durAndOnsets.get(0);
 		List<Integer> onsetOfTabSymbols = durAndOnsets.get(1);
 		if (ADAPT_TAB) {
-			List<List<Integer>> scaled = adaptToDiminutions(durOfTabSymbols, onsetOfTabSymbols);
-			durOfTabSymbols = scaled.get(0);
-			onsetOfTabSymbols = scaled.get(1);
+//			List<List<Integer>> scaled = adaptToDiminutions(durOfTabSymbols, onsetOfTabSymbols);
+//			durOfTabSymbols = scaled.get(0);
+//			onsetOfTabSymbols = scaled.get(1);
 		}
 
 		// 2. Make pitches
@@ -356,82 +356,6 @@ public class Tablature implements Serializable {
 		durAndOnset.add(durOfTabSymbols);
 		durAndOnset.add(onsetOfTabSymbols);
 		return durAndOnset;
-	}
-
-
-	// TESTED
-	List<List<Integer>> adaptToDiminutions(List<Integer> durOfTabSymbols, 
-		List<Integer> onsetOfTabSymbols) {
-		List<List<Integer>> res = new ArrayList<>();
-
-		Timeline tl = getTimeline();
-		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfo(), Timeline.MI_DIM);
-//		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfoOBS(), Timeline.MI_DIM);
-		List<Integer[]> undiminutedMeterInfo = tl.getUndiminutedMeterInfoOBS();
-
-		// Get the metric time and the adapted metric time of beat 0 for all new meters
-		List<Integer> metricTimesBeatZero = new ArrayList<>();
-		metricTimesBeatZero.add(0);
-		List<Integer> metricTimesBeatZeroAdapted = new ArrayList<>();
-		metricTimesBeatZeroAdapted.add(0);
-		for (int i = 1 ; i < undiminutedMeterInfo.size(); i++) {
-			Integer[] prevMeterInfo = undiminutedMeterInfo.get(i-1);
-			int prevNumBars = (prevMeterInfo[Timeline.MI_LAST_BAR] - 
-				prevMeterInfo[Timeline.MI_FIRST_BAR]) + 1;
-			Rational prevMeter = new Rational(prevMeterInfo[Timeline.MI_NUM], 
-				prevMeterInfo[Timeline.MI_DEN]);
-			// The metric time (duration of the previous bars) for beat zero equals 
-			// original: previous meter * number of bars in that meter 
-			// adapted: previous meter * number of bars in that meter * (or /) the dim for that meter
-			int prevDim = diminutions.get(i-1);
-			Rational beatZero = prevMeter.mul(prevNumBars);
-			Rational beatZeroAdapted;
-			if (prevDim > 0) {
-				beatZeroAdapted = prevMeter.mul(prevDim).mul(prevNumBars ); 
-			}
-			else {
-				beatZeroAdapted = prevMeter.mul(prevNumBars).div(Math.abs(prevDim));
-			}
-			// Represent Rational r as integer using cross-multiplication
-			// num(r)/den(r) = x/32 --> x * den(r) = num(r) * 32 --> x = (num(r) * 32) / den(r)
-			int beatZeroAsInt = getTabSymbolDur(beatZero);
-			int beatZeroAdaptedAsInt = getTabSymbolDur(beatZeroAdapted);
-
-			metricTimesBeatZero.add(metricTimesBeatZero.get(i-1) + beatZeroAsInt);
-			metricTimesBeatZeroAdapted.add(metricTimesBeatZeroAdapted.get(i-1) + beatZeroAdaptedAsInt);
-		}
-
-		// Get the adapted durations and onsets. onsetOfTabSymbols and durationOfTabSymbols have
-		// the same size: that of listOfTabSymbols (i.e., the number of TS in the tablature)
-		List<Integer> adaptedDurationOfTabSymbols = new ArrayList<>();
-		List<Integer> adaptedOnsetOfTabSymbols = new ArrayList<>();
-		int ind = 0;
-		int dim = -1;
-		int beatZero = -1; 
-		int beatZeroAdapted = -1; 
-		for (int i = 0; i < durOfTabSymbols.size(); i++) {
-			int currDur = durOfTabSymbols.get(i);
-			int currOnset = onsetOfTabSymbols.get(i);
-			// If currOnset is on or past metric beat zero at index ind: determine new metric beat zeros
-			if (ind < diminutions.size() && currOnset >= metricTimesBeatZero.get(ind)) {
-				dim = diminutions.get(ind);
-				beatZero = metricTimesBeatZero.get(ind);
-				beatZeroAdapted = metricTimesBeatZeroAdapted.get(ind);
-				ind++;
-			}
-			// Add current duration and onset to lists
-			if (dim > 0) {					
-				adaptedDurationOfTabSymbols.add(currDur*dim);
-				adaptedOnsetOfTabSymbols.add(beatZeroAdapted + ((currOnset-beatZero)*dim));
-			}
-			else {
-				adaptedDurationOfTabSymbols.add(currDur/Math.abs(dim));
-				adaptedOnsetOfTabSymbols.add(beatZeroAdapted + ((currOnset-beatZero)/Math.abs(dim)));
-			}
-		}
-		res.add(adaptedDurationOfTabSymbols);
-		res.add(adaptedOnsetOfTabSymbols);
-		return res;
 	}
 
 
@@ -1278,8 +1202,7 @@ public class Tablature implements Serializable {
 	// NOT TESTED (wrapper method)
 	public void augment(int thresholdDur, int rescaleFactor, String augmentation) {
 		Encoding e = getEncoding();
-		e.augment(
-			getTimeline().getMeterInfo(), thresholdDur, rescaleFactor, augmentation);
+		e.augment(getTimeline().getMeterInfo(), thresholdDur, rescaleFactor, augmentation);
 		this.init(e, getNormaliseTuning());
 	}
 
@@ -1656,6 +1579,82 @@ public class Tablature implements Serializable {
 			}	
 		}
 		return mapped;
+	}
+
+
+	// TESTED
+	private List<List<Integer>> adaptToDiminutions(List<Integer> durOfTabSymbols, 
+		List<Integer> onsetOfTabSymbols) {
+		List<List<Integer>> res = new ArrayList<>();
+
+		Timeline tl = getTimeline();
+		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfo(), Timeline.MI_DIM);
+//		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfoOBS(), Timeline.MI_DIM);
+		List<Integer[]> undiminutedMeterInfo = null; //tl.getUndiminutedMeterInfoOBS();
+
+		// Get the metric time and the adapted metric time of beat 0 for all new meters
+		List<Integer> metricTimesBeatZero = new ArrayList<>();
+		metricTimesBeatZero.add(0);
+		List<Integer> metricTimesBeatZeroAdapted = new ArrayList<>();
+		metricTimesBeatZeroAdapted.add(0);
+		for (int i = 1 ; i < undiminutedMeterInfo.size(); i++) {
+			Integer[] prevMeterInfo = undiminutedMeterInfo.get(i-1);
+			int prevNumBars = (prevMeterInfo[Timeline.MI_LAST_BAR] - 
+				prevMeterInfo[Timeline.MI_FIRST_BAR]) + 1;
+			Rational prevMeter = new Rational(prevMeterInfo[Timeline.MI_NUM], 
+				prevMeterInfo[Timeline.MI_DEN]);
+			// The metric time (duration of the previous bars) for beat zero equals 
+			// original: previous meter * number of bars in that meter 
+			// adapted: previous meter * number of bars in that meter * (or /) the dim for that meter
+			int prevDim = diminutions.get(i-1);
+			Rational beatZero = prevMeter.mul(prevNumBars);
+			Rational beatZeroAdapted;
+			if (prevDim > 0) {
+				beatZeroAdapted = prevMeter.mul(prevDim).mul(prevNumBars ); 
+			}
+			else {
+				beatZeroAdapted = prevMeter.mul(prevNumBars).div(Math.abs(prevDim));
+			}
+			// Represent Rational r as integer using cross-multiplication
+			// num(r)/den(r) = x/32 --> x * den(r) = num(r) * 32 --> x = (num(r) * 32) / den(r)
+			int beatZeroAsInt = getTabSymbolDur(beatZero);
+			int beatZeroAdaptedAsInt = getTabSymbolDur(beatZeroAdapted);
+
+			metricTimesBeatZero.add(metricTimesBeatZero.get(i-1) + beatZeroAsInt);
+			metricTimesBeatZeroAdapted.add(metricTimesBeatZeroAdapted.get(i-1) + beatZeroAdaptedAsInt);
+		}
+
+		// Get the adapted durations and onsets. onsetOfTabSymbols and durationOfTabSymbols have
+		// the same size: that of listOfTabSymbols (i.e., the number of TS in the tablature)
+		List<Integer> adaptedDurationOfTabSymbols = new ArrayList<>();
+		List<Integer> adaptedOnsetOfTabSymbols = new ArrayList<>();
+		int ind = 0;
+		int dim = -1;
+		int beatZero = -1; 
+		int beatZeroAdapted = -1; 
+		for (int i = 0; i < durOfTabSymbols.size(); i++) {
+			int currDur = durOfTabSymbols.get(i);
+			int currOnset = onsetOfTabSymbols.get(i);
+			// If currOnset is on or past metric beat zero at index ind: determine new metric beat zeros
+			if (ind < diminutions.size() && currOnset >= metricTimesBeatZero.get(ind)) {
+				dim = diminutions.get(ind);
+				beatZero = metricTimesBeatZero.get(ind);
+				beatZeroAdapted = metricTimesBeatZeroAdapted.get(ind);
+				ind++;
+			}
+			// Add current duration and onset to lists
+			if (dim > 0) {					
+				adaptedDurationOfTabSymbols.add(currDur*dim);
+				adaptedOnsetOfTabSymbols.add(beatZeroAdapted + ((currOnset-beatZero)*dim));
+			}
+			else {
+				adaptedDurationOfTabSymbols.add(currDur/Math.abs(dim));
+				adaptedOnsetOfTabSymbols.add(beatZeroAdapted + ((currOnset-beatZero)/Math.abs(dim)));
+			}
+		}
+		res.add(adaptedDurationOfTabSymbols);
+		res.add(adaptedOnsetOfTabSymbols);
+		return res;
 	}
 
 

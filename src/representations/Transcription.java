@@ -20,6 +20,7 @@ import javax.swing.JScrollPane;
 
 import org.apache.commons.lang3.SerializationUtils;
 
+import de.uos.fmt.musitech.data.performance.MidiNote;
 import de.uos.fmt.musitech.data.performance.PerformanceNote;
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationStaff;
@@ -87,9 +88,9 @@ public class Transcription implements Serializable {
 //	private NoteSequence noteSequence;
 //	private List<List<List<Double>>> durationLabelsOLD;
 //	private List<List<Integer>> colourIndices;
-	private String handledNotes;
 	private static String chordCheck;
 	static String alignmentCheck;
+	private String handledNotes;
 
 	public static final int PITCH = 0;
 	public static final int ONSET_TIME_NUMER = 1;
@@ -1280,12 +1281,13 @@ public class Transcription implements Serializable {
 	// TESTED
 	static NotationSystem transposeNotationSystem(NotationSystem ns, int transposition) {
 		ns.getContentsRecursiveList(null).stream()
-			.filter(c -> c instanceof Note).forEach(c -> {
+			.filter(c -> c instanceof Note)
+			.forEach(c -> {
 				int p = ((Note) c).getScoreNote().getMidiPitch() + transposition;
 				((Note) c).getScoreNote().setPitch(new ScorePitch(p));
 				((Note) c).getPerformanceNote().setPitch(p);
 			}
-		);
+			);
 		return ns;
 	}
 
@@ -1569,7 +1571,9 @@ public class Transcription implements Serializable {
 		// In the non-tablature case: handle unisons
 		else {
 			argTaggedNotes = handleUnisons(argNotes);
-		}	
+		}
+//		System.out.println(argTaggedNotes.get(0).getNote());
+//		System.out.println(argTaggedNotes.get(0).getNote().getPerformanceNote());
 		return argTaggedNotes;
 	}
 
@@ -1580,6 +1584,8 @@ public class Transcription implements Serializable {
 		getPiece().getScore().getContentsRecursiveList(null).stream()
 			.filter(c -> c instanceof Note)
 			.forEach(c -> notes.add((Note) c));
+//		System.out.println(notes.get(0));
+//		System.out.println(notes.get(0).getPerformanceNote());
 		Collections.sort(notes, Comparator.comparing(Note::getMetricTime)
 			.thenComparing(Note::getMidiPitch)
 			.thenComparing(this::findVoice, Comparator.reverseOrder()));
@@ -2331,6 +2337,10 @@ public class Transcription implements Serializable {
 	List<Note> makeNotes() {
 		List<Note> argNotes = new ArrayList<>();
 		getTaggedNotes().forEach(tn -> argNotes.add(tn.getNote()));
+//		System.out.println(argNotes.get(0));
+//		System.out.println(argNotes.get(0).getPerformanceNote());
+//		System.out.println(argNotes.get(0).getPerformanceNote() instanceof MidiNote);
+//		System.exit(0);
 		return argNotes;
 	}
 
@@ -2943,42 +2953,41 @@ public class Transcription implements Serializable {
 				// the onset- and offset bar(s) as well as the onset meter 
 				// NB: The offset time of the last note must be reduced to ensure that it falls with the bar 
 				// (if it coincides with the final barline, offsetTimeLastNote will not have a metric position)
-				Rational[] metricPositionOnset = Timeline.getMetricPosition(onsetTimeLastNote, meterInfo);
+				Rational[] metPosOnset = Timeline.getMetricPosition(onsetTimeLastNote, meterInfo);
 				Rational reduction = new Rational(1, 128);
-				Rational[] metricPositionOffset = 
+				Rational[] metPosOffset = 
 					Timeline.getMetricPosition(offsetTimeLastNote.sub(reduction), meterInfo);
 				// Onset- and offset bar(s)
-				int barNumberOnset = metricPositionOnset[0].getNumer();
-				int barNumberOffset = metricPositionOffset[0].getNumer();
+				int barNumOnset = metPosOnset[0].getNumer();
+				int barNumOffset = metPosOffset[0].getNumer();
 				// Onset bar meter
 				Rational meterOnset = null;
 				for (Integer[] currMeter : meterInfo) {
-					if (barNumberOnset >= currMeter[Timeline.MI_FIRST_BAR] && 
-						barNumberOnset <= currMeter[Timeline.MI_LAST_BAR]) {
+					if (barNumOnset >= currMeter[Timeline.MI_FIRST_BAR] && 
+						barNumOnset <= currMeter[Timeline.MI_LAST_BAR]) {
 						meterOnset = new Rational(currMeter[Timeline.MI_NUM], currMeter[Timeline.MI_DEN]);
 					}
 				}
 
 				// 3. Determine currMirrorPoint
 				// Determine the distance of the note's onset to the beginning of the (possibly fictional) next bar 
-				Rational distanceFromOnsetToNextBar = meterOnset.sub(metricPositionOnset[1]);
+				Rational distanceFromOnsetToNextBar = meterOnset.sub(metPosOnset[1]);
 				// If the note's onset and offset are not in the same bar: determine the total duration of all 
 				// succeeding bars	
-				Rational durationSucceedingBars = Rational.ZERO;
-				if (barNumberOffset > barNumberOnset) {     	
-					for (int i = barNumberOnset + 1; i <= barNumberOffset; i++) {
+				Rational durSucceedingBars = Rational.ZERO;
+				if (barNumOffset > barNumOnset) {     	
+					for (int i = barNumOnset + 1; i <= barNumOffset; i++) {
 						for (Integer[] currMeter : meterInfo) {
-							if (i >= currMeter[Timeline.MI_FIRST_BAR] && 
-								i <= currMeter[Timeline.MI_LAST_BAR]) { 
-								durationSucceedingBars = 
-									durationSucceedingBars.add(new Rational(
+							if (i >= currMeter[Timeline.MI_FIRST_BAR] && i <= currMeter[Timeline.MI_LAST_BAR]) { 
+								durSucceedingBars = 
+									durSucceedingBars.add(new Rational(
 									currMeter[Timeline.MI_NUM], currMeter[Timeline.MI_DEN]));
 							}
 						}
 					}
 				}
 				currMirrorPoint = 
-					onsetTimeLastNote.add(distanceFromOnsetToNextBar).add(durationSucceedingBars);
+					onsetTimeLastNote.add(distanceFromOnsetToNextBar).add(durSucceedingBars);
 				if (currMirrorPoint.isGreater(mirrorPoint)) {
 					mirrorPoint = currMirrorPoint;
 				}
@@ -3022,68 +3031,123 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Reverses the given <code>NotationSystem</code>.
-	 *  
-	 * @param ns An existing <code>NotationSystem</code>.
+	 * Augments the <code>NotationSystem</code>.
+	 * TODO: make instance method of Piece; get args from Piece
+	 * 
+	 * @param ns
 	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
-	 * @param mp The mirror point.
+	 * @param mp
+	 * @param ch
+	 * @param onsetTimes
+	 * @param dur
+	 * @param rescaleFactor
+	 * @param augmentation
+	 * @param name
 	 * @return
 	 */
-	static NotationSystem reverseNotationSystem(NotationSystem ns, MetricalTimeLine mtl, 
-		Rational mp, String name) { // TODO get rid of name arg
-		// For each voice
-		NotationSystem nsRev = new NotationSystem();
+	// TESTED
+	static NotationSystem augmentNotationSystem(NotationSystem ns, MetricalTimeLine mtl, 
+		Rational mp, List<List<Note>> ch, List<Rational> onsetTimes, Rational thresholdDur, 
+		int rescaleFactor, String augmentation, String name) {
+		
+		NotationSystem nsAugm = new NotationSystem();
 		for (NotationStaff nst : ns) {	
-			NotationStaff nstRev = new NotationStaff();
+			NotationStaff nstAugm = new NotationStaff();
 			for (NotationVoice nv : nst) {
-				NotationVoice nvRev = new NotationVoice();
-				for (NotationChord nc : nv) {
-					NotationChord ncRev = new NotationChord();
-					for (Note n : nc) {
-						// Calculate the Note's new onset time (mirrorPoint - offset time)
-						Rational dur = n.getMetricDuration();
-//						// In tablature case: use minimum duration
-//						if (tab != null) {
-//							for (Rational[] item : onsetsAndMinDurs) {
-//								if (item[0].equals(n.getMetricTime())) {
-//									dur = item[1];
-//									dur.reduce();
-//									break;
-//								}
-//							}
-//							
-//							// NB: onsets and minDurs are corresponding lists and can be 
-//							//     indexed concurrently
-//							for (int i = 0; i < onsets.size(); i++) {
-//								if (onsets.get(i).equals(n.getMetricTime())) {
-//									dur = minDurs.get(i);
-//									dur.reduce();
-//									break;
-//								}
-//							}
-//						}
-						Rational offset = n.getMetricTime().add(dur);
-						Rational mt = mp.sub(offset);
-						
-						// TODO Error in barbetta-1582_1-il_nest.tbp: last chord should be co1 
-						// (and not co2), leading to newOnsetTime being -1/2 
-						if (name.equals("barbetta-1582_1-il_nest.mid") && mt.equals(new Rational(-1, 2))) {
-//						if (pOrig.getName().equals("barbetta-1582_1-il_nest.mid") && 
-//							mt.equals(new Rational(-1, 2))) {
-							mt = Rational.ZERO;
-							dur = new Rational(1, 2);
+				NotationVoice nvAugm = new NotationVoice();
+				for (int i = 0; i < nv.size(); i++) {
+					NotationChord nc = nv.get(i);
+					NotationChord ncAugm = new NotationChord();
+					// Reverse
+					if (augmentation.equals("reverse")) {
+						if (!name.equals("barbetta-1582_1-il_nest.mid")) {
+							// Reversed mt = mirror point - offset time
+							NotationChord ncRev = new NotationChord();
+							nc.forEach(n -> { 
+								Rational dur = n.getMetricDuration();
+								ncRev.add(createNote(n.getMidiPitch(), mp.sub(n.getMetricTime().add(dur)), dur, mtl));
+							});
+							ncAugm = ncRev;
 						}
-
-						ncRev.add(createNote(n.getMidiPitch(), mt, dur, mtl));
+						// Error in barbetta-1582_1-il_nest.tbp: last chord should be cosb (and not cobr), 
+						// leading to mt being -1/2 TODO fix and remove else (and if open and close above) 
+						else {
+							for (Note n : nc) {
+								Rational dur = n.getMetricDuration();
+								Rational mt = mp.sub(n.getMetricTime().add(dur));
+								if (mt.equals(new Rational(-1, 2))) {
+									mt = Rational.ZERO;
+									dur = new Rational(1, 2);
+								}
+								ncAugm.add(createNote(n.getMidiPitch(), mt, dur, mtl));
+							}
+						}
+//						nvAugm.add(ncAugm);
 					}
-					nc = ncRev;
-					nvRev.add(ncRev);
+					// Deornament
+					else if (augmentation.equals("deornament")) {
+						int ind = onsetTimes.indexOf(nc.getMetricTime());
+						// If nc is ornamental and not part of an ornamental sequence at 
+						// the beginning of nv (in which case nvAugm is still empty):					
+						// calculate the total duration of the ornamental sequence; create 
+						// ncPrevDeorn with the result; replace ncPrev with ncPrevDeorn
+						// NB: It is assumed that an ornamental sequence is not interrupted by (ornamental) rests 
+						if ((ch.get(ind).size() == 1 && nc.size() == 1 && 
+							nc.getMetricDuration().isLess(thresholdDur)) && nvAugm.size() > 0) {
+							Rational durOrnSeq = nc.getMetricDuration();
+							for (int j = i+1; j < nv.size(); j++) {
+								NotationChord ncNext = nv.get(j);
+								int indNext = onsetTimes.indexOf(ncNext.getMetricTime());
+								// If ncNext is ornamental: increment duration of ornamental sequence
+								if (ch.get(indNext).size() == 1 && ncNext.size() == 1 && 
+									ncNext.getMetricDuration().isLess(thresholdDur)) {
+									durOrnSeq = durOrnSeq.add(ncNext.getMetricDuration());
+								}
+								// If not: replace ncPrev with ncPrevDeorn 
+								else {
+									NotationChord ncPrev = nv.get(i-1);
+									NotationChord ncPrevDeorn = new NotationChord();
+									for (Note n : ncPrev) {
+										ncPrevDeorn.add(createNote(n.getMidiPitch(), n.getMetricTime(), 
+											ncPrev.getMetricDuration().add(durOrnSeq), mtl));
+									}
+									nvAugm.remove(ncPrev);
+									ncAugm = ncPrevDeorn;
+//									nvAugm.add(ncPrevDeorn);
+									i = j-1;
+									break;
+								}
+							}
+						}
+						// If nc is not ornamental
+						else {
+							ncAugm = nc;
+//							nvAugm.add(nc);
+						}
+					}
+					// Rescale
+					else {
+						NotationChord ncResc = new NotationChord();
+						nc.forEach(n -> { 
+							Rational dur = n.getMetricDuration();
+							Rational mt = n.getMetricTime();
+							ncResc.add(createNote(
+								n.getMidiPitch(), 
+								rescaleFactor > 0 ? mt.mul(rescaleFactor) : mt.div(Math.abs(rescaleFactor)),
+								rescaleFactor > 0 ? dur.mul(rescaleFactor) : dur.div(Math.abs(rescaleFactor)), 
+								mtl)
+							);
+						});
+						ncAugm = ncResc;
+//						nvAugm.add(ncAugm);
+					}
+					nvAugm.add(ncAugm);
 				}
-				nstRev.add(nvRev);
+				nstAugm.add(nvAugm);
 			}
-			nsRev.add(nstRev);
+			nsAugm.add(nstAugm);
 		}
-		return nsRev;
+		return nsAugm;
 	}
 
 
@@ -3091,40 +3155,63 @@ public class Transcription implements Serializable {
 	 * Reverses the given <code>MetricalTimeLine</code>.
 	 * 
 	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
-	 * @param mp The mirror point.
-	 * @param mi An existing meterInfo.
+	 * @param mp 
+	 * @param mi 
+	 * @param rescaleFactor
+	 * @param augmentation
 	 * @return
 	 */
 	// TESTED
-	static MetricalTimeLine reverseMetricalTimeLine(MetricalTimeLine mtl, Rational mp, 
-		List<Integer[]> mi) {
+	static MetricalTimeLine augmentMetricalTimeLine(MetricalTimeLine mtl, Rational mp, 
+		List<Integer[]> mi, int rescaleFactor, String augmentation) {
 		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
 		// zeroMarker, and endMarker) 
-		MetricalTimeLine mtlReversed = new MetricalTimeLine();
-		mtlReversed.clear();
+		MetricalTimeLine mtlAugm = new MetricalTimeLine();
+		mtlAugm.clear();
 		// Add zeroMarker
-		mtlReversed.add((Marker) new TimedMetrical(0, Rational.ZERO));
+		mtlAugm.add((Marker) new TimedMetrical(0, Rational.ZERO));
 
 		// Add TimeSignatureMarkers and TempoMarkers 
 		int ind = 0; // equals index in mi
-		Rational mtRevLastTimedMetrical = Rational.ZERO;
-		long mpTime = mtl.getTime(mp);
+		Rational mtAugmLastTimedMetrical = Rational.ZERO;
+		long mpTime = augmentation.equals("reverse") ? mtl.getTime(mp) : -1;
 		for (Marker m : mtl) {
 			if (m instanceof TimeSignatureMarker) {				
 				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
 				TimeSignature ts = tsm.getTimeSignature();
-				// Calculate reversed mt and t (mirror point - mt/t of next meter section)
-				Rational mtNextMeterSec = 
-					ind == (mi.size() - 1) ? mp : 
-					new Rational(mi.get(ind + 1)[Timeline.MI_NUM_MT_FIRST_BAR], 
-					mi.get(ind + 1)[Timeline.MI_DEN_MT_FIRST_BAR]);
-				Rational mtRev = mp.sub(mtNextMeterSec);
-				long tRev = mpTime - mtl.getTime(mtNextMeterSec);
-				mtlReversed.add(new TimeSignatureMarker(ts, mtRev));
-				if (mtRev.isGreater(Rational.ZERO)) {
-					mtlReversed.add(new TempoMarker(tRev, mtRev));
-					if (mtRev.isGreater(mtRevLastTimedMetrical)) {
-						mtRevLastTimedMetrical = mtRev;
+				Rational mtAugm;
+				long tAugm;
+				TimeSignature tsAugm;
+				// Reverse
+				if (augmentation.equals("reverse")) {
+					// Reversed mt/t = mirror point - mt/t of next meter section
+					Rational mtNextMeterSec = 
+						ind == (mi.size() - 1) ? mp : 
+						new Rational(mi.get(ind + 1)[Timeline.MI_NUM_MT_FIRST_BAR], 
+						mi.get(ind + 1)[Timeline.MI_DEN_MT_FIRST_BAR]);
+					mtAugm = mp.sub(mtNextMeterSec);
+					tAugm = mpTime - mtl.getTime(mtNextMeterSec);
+					tsAugm = ts;
+				}
+				// Rescale
+				else {
+					Rational mt = m.getMetricTime();
+					long t = mtl.getTime(mt);
+					mtAugm = rescaleFactor > 0 ? mt.mul(rescaleFactor) : mt.div(Math.abs(rescaleFactor));
+					tAugm = rescaleFactor > 0 ? t * rescaleFactor : t / Math.abs(rescaleFactor);
+					Rational meter = new Rational(ts.getNumerator(), ts.getDenominator());
+					// Take into account exception case where meter is x/1 and rescaleFactor > 1
+					tsAugm = new TimeSignature(
+						ts.getDenominator() == 1 && rescaleFactor > 1 ?	
+						new Rational(meter.getNumer() * rescaleFactor, meter.getDenom()) :
+						Timeline.undiminuteMeter(meter, rescaleFactor)
+					);
+				}
+				mtlAugm.add(new TimeSignatureMarker(tsAugm, mtAugm));
+				if (mtAugm.isGreater(Rational.ZERO)) {
+					mtlAugm.add(new TempoMarker(tAugm, mtAugm));
+					if (mtAugm.isGreater(mtAugmLastTimedMetrical)) {
+						mtAugmLastTimedMetrical = mtAugm;
 					}
 				}
 				ind++;
@@ -3133,55 +3220,69 @@ public class Transcription implements Serializable {
 
 		// If TempoMarkers (and through them, endMarker(s)) have been added: 
 		// remove all TimedMetricals but the zeroMarker	
-		if (mtRevLastTimedMetrical.isGreater(Rational.ZERO)) {
-			mtlReversed = cleanTimedMetricals(mtlReversed);
+		if (mtAugmLastTimedMetrical.isGreater(Rational.ZERO)) {
+			mtlAugm = cleanTimedMetricals(mtlAugm);
 		}
 
 		// Add endMarker
-		long tRevLastTimedMetrical = mtlReversed.getTime(mtRevLastTimedMetrical);
+		long tAugmLastTimedMetrical = mtlAugm.getTime(mtAugmLastTimedMetrical);
 		TimedMetrical end = 
-			calculateEndMarker(tRevLastTimedMetrical, mtl.getTempo(tRevLastTimedMetrical), 
-			mtRevLastTimedMetrical, 1);
-		mtlReversed.add((Marker) end);		
+			calculateEndMarker(tAugmLastTimedMetrical, mtl.getTempo(tAugmLastTimedMetrical), 
+			mtAugmLastTimedMetrical, augmentation.equals("reverse") ? 1 : -rescaleFactor);
+		mtlAugm.add((Marker) end);		
 
-		return mtlReversed;
+		return mtlAugm;
 	}
 
 
 	/**
-	 * Reverses the given harmony track.
+	 * Augments the given harmony track.
 	 *  
 	 * @param ht An existing (clean) harmony track.
 	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
-	 * @param mp The mirror point.
-	 * @param ki An existing keyInfo.
+	 * @param mp
+	 * @param ki
+	 * @param rescaleFactor
+	 * @param augmentation
 	 * @return
 	 */
 	// TESTED
-	static SortedContainer<Marker> reverseHarmonyTrack(SortedContainer<Marker> ht, 
-		MetricalTimeLine mtl, Rational mp, List<Integer[]> ki) {
-		SortedContainer<Marker> htRev = 
+	static SortedContainer<Marker> augmentHarmonyTrack(SortedContainer<Marker> ht, 
+		MetricalTimeLine mtl, Rational mp, List<Integer[]> ki, int rescaleFactor, String augmentation) {
+		SortedContainer<Marker> htAugm = 
 			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
 
 		int ind = 0; // equals index in ki
-		long mpTime = mtl.getTime(mp);
+		long mpTime = augmentation.equals("reverse") ? mtl.getTime(mp) : -1;
 		for (Marker m : ht) {
 			if (m instanceof KeyMarker) {
 				KeyMarker km = (KeyMarker) m;
-				// Calculate reversed mt and t (mirror point - mt/t of next meter section)
-				Rational mtNextKeySec = 
-					ind == (ki.size() - 1) ? mp : 
-					new Rational(ki.get(ind + 1)[KI_NUM_MT_FIRST_BAR], 
-					ki.get(ind + 1)[KI_DEN_MT_FIRST_BAR]);
-				Rational mtRev = mp.sub(mtNextKeySec);
-				long tRev = mpTime - mtl.getTime(mtNextKeySec);
-				km.setMetricTime(mtRev);
-				km.setTime(tRev);
-				htRev.add(km);
+				Rational mtAugm;
+				long tAugm;
+				// Reverse
+				if (augmentation.equals("reverse")) {
+					// Reversed mt/t = mirror point - mt/t of next meter section
+					Rational mtNextKeySec = 
+						ind == (ki.size() - 1) ? mp : 
+						new Rational(ki.get(ind + 1)[KI_NUM_MT_FIRST_BAR], 
+						ki.get(ind + 1)[KI_DEN_MT_FIRST_BAR]);
+					mtAugm = mp.sub(mtNextKeySec);
+					tAugm = mpTime - mtl.getTime(mtNextKeySec);
+				}
+				// Rescale
+				else {
+					Rational mt = km.getMetricTime();
+					long t = mtl.getTime(mt);
+					mtAugm = rescaleFactor > 0 ? mt.mul(rescaleFactor) : mt.div(Math.abs(rescaleFactor)); 
+					tAugm = rescaleFactor > 0 ? t * rescaleFactor : t / Math.abs(rescaleFactor);
+				}
+				km.setMetricTime(mtAugm);
+				km.setTime(tAugm);
+				htAugm.add(km);
 				ind++;
 			}
 		}
-		return htRev;
+		return htAugm;
 	}
 
 
@@ -3306,115 +3407,6 @@ public class Transcription implements Serializable {
 		pDeorn.setHarmonyTrack(origP.getHarmonyTrack());		
 		pDeorn.setName(t.getPiece().getName());
 		return pDeorn;
-	}
-
-
-	/**
-	 * Removes all sequences of single-note events shorter than the given duration from the
-	 * encoding, and lengthens the duration of the event preceding the sequence by the total 
-	 * length of the removed sequence. NB: Handles the _unadapted_ Piece.
-	 *
-	 * @param t
-	 * @param tab
-	 * @param dur
-	 * @return
-	 */
-	// TESTED
-	static NotationSystem deornamentNotationSystem(NotationSystem nsCopy, MetricalTimeLine mtl, 
-		/*Transcription t, Tablature tab,*/ 
-		List<List<Note>> ch, List<Rational> onsetTimes, Rational dur) {
-//		Piece pDeorn = new Piece();
-
-//		MetricalTimeLine mtl = t.getPiece().getMetricalTimeLine();
-//		List<Rational> onsetTimes = t.getAllOnsetTimes();
-//		List<List<Note>> ch = t.getChords();
-//		List<List<TabSymbol>> tabChords = null;
-////		List<Rational[]> onsetsAndMinDurs = null;
-//		List<Rational> minDurs = null;
-//		if (tab != null) {
-//			tabChords = tab.getChords(); 
-////			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations();
-//			minDurs = tab.getMinimumDurationPerChord();
-//		}
-
-
-//		Piece origP = t.getOriginalPiece();
-//		// Make a copy of notationSystem so that pOrig is not affected
-//		NotationSystem nsCopy = copyNotationSystem(origP.getScore());
-		
-		// For each voice
-		NotationSystem nsDeorn = new NotationSystem();
-//		List<Integer> removed = new ArrayList<>();
-//		int voice = 0;
-		for (NotationStaff nst : nsCopy) {
-//			System.out.println("voice = " + voice);
-			NotationStaff nstDeorn = new NotationStaff();
-			for (NotationVoice nv : nst) {
-				NotationVoice nvDeorn = new NotationVoice();
-				NotationChord pre = null;
-				Rational durPre = null;
-				for (int i = 0; i < nv.size(); i++) {
-					NotationChord nc = nv.get(i);
-//					Rational onset = nc.getMetricTime();
-					int ind = onsetTimes.indexOf(nc.getMetricTime());
-
-//					boolean isOrn; 
-//					if (tabChords != null) { 
-//						isOrn = tabChords.get(ind).size() == 1 && 
-//							minDurs.get(ind).isLess(dur);
-////							onsetsAndMinDurs.get(ind)[1].isLess(dur);
-//					}
-//					else {
-//					isOrn = nc.size() == 1 && ch.get(ind).size() == 1 &&
-//						nc.getMetricDuration().isLess(dur);
-//					}
-					boolean isOrn = 
-						nc.size() == 1 && ch.get(ind).size() == 1 && 
-						nc.getMetricDuration().isLess(dur);
-					// If currNc is ornamental
-					// NB: In case of a single-event SNU, the note will be removed from both voices
-					if (isOrn) {
-//						removed.add(ind);
-						// Determine pre, if it has not yet been determined
-						if (pre == null) {
-							NotationChord ncPrev = nv.get(i-1);
-							pre = ncPrev;
-							durPre = ncPrev.getMetricDuration(); // all notes in a NotationChord have the same duration 
-						}
-						// Increment durPre
-						durPre = durPre.add(nc.getMetricDuration());
-					}
-					// If currNc is the first after a sequence of one or more ornamental notes
-					// (i.e., it does not meet the if condition above but pre != null)
-					else if (pre != null) {
-						// Adapt duration of pre
-						for (Note n : pre) {
-//							n.setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), 
-//								n.getMetricTime(), durPre));
-							n = createNote(n.getMidiPitch(), n.getMetricTime(), durPre, mtl);
-						}
-						// Add currNc
-						nvDeorn.add(nc);
-						// Reset
-						pre = null;
-					}
-					else {
-						nvDeorn.add(nc);
-					}
-				}
-				nstDeorn.add(nvDeorn);
-			}
-//			voice++;
-			nsDeorn.add(nstDeorn);
-		}
-
-		return nsDeorn;
-
-//		pDeorn.setScore(nsDeorn);
-//		pDeorn.setMetricalTimeLine(mtl);
-//		pDeorn.setHarmonyTrack(origP.getHarmonyTrack());		
-//		pDeorn.setName(t.getPiece().getName());
-//		return pDeorn;
 	}
 
 
@@ -3871,7 +3863,7 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED
-	public static List<Double> combineLabels(List<Double> labelOne, List<Double> labelTwo) {
+	public static List<Double> combineLabels(List<Double> labelOne, List<Double> labelTwo) { // TODO only used in testing: remove?
 		List<Double> combined = new ArrayList<Double>(labelOne);
 		int voiceTwo = labelTwo.indexOf(1.0);
 		combined.set(voiceTwo, 1.0);
@@ -4017,6 +4009,7 @@ public class Transcription implements Serializable {
 	 * @param metricDuration
 	 * @return
 	 */
+	// TODO test
 	public static Note createNote(int pitch, Rational metricTime, Rational metricDuration, MetricalTimeLine mtl) {
 		// A Note consists of a ScoreNote and a PerformanceNote; each need to be created 
 		// separately first 
@@ -4032,13 +4025,12 @@ public class Transcription implements Serializable {
 			performanceNote = new PerformanceNote(-1, -1, -1, pitch);
 		}
 		else {
-//			System.out.println("joe");
 			performanceNote = scoreNote.toPerformanceNote(mtl);
 //			System.out.println(performanceNote.getPitch());
 //			System.out.println(performanceNote.getTime());
 //			System.out.println(performanceNote.getVelocity());
 //			System.out.println(performanceNote.getDuration());
-//			System.exit(0);
+			performanceNote = MidiNote.convert(performanceNote);
 		}
 //		PerformanceNote performanceNote = new PerformanceNote();
 //		performanceNote.setPitch(pitch);
@@ -6427,7 +6419,7 @@ public class Transcription implements Serializable {
 				//   
 				// x x   x x     x   
 				// x x     x   x x
-				//   x   x x   x x
+				//   x)   x x   x x
 				//   
 				// x x   x x   x x     x
 				// x x   x x     x   x x
@@ -8456,7 +8448,7 @@ public class Transcription implements Serializable {
 	 * @param showAsScore
 	 * @param numberOfVoices
 	 */
-	public JFrame visualise(TimeSignature timeSig, /*KeyMarker keyMarker,*/ boolean showAsScore, int numberOfVoices) {
+	private JFrame visualise(TimeSignature timeSig, /*KeyMarker keyMarker,*/ boolean showAsScore, int numberOfVoices) {
 
 		String windowTitle = getName();
 		Piece argPiece = getPiece();
@@ -8649,26 +8641,6 @@ public class Transcription implements Serializable {
 
 		}
 		return encodingWindowMenubar;
-	}
-
-
-	/**
-	 * Visualises the Transcription; the given name is the one shown in the JFrame. 
-	 * 
-	 * @param windowTitle
-	 */
-	public JFrame visualise(String windowTitle) {
-		ScoreEditor scoreEditor = new ScoreEditor(getPiece().getScore());
-		scoreEditor.setModus(Mode.SELECT_AND_EDIT);
-
-		JFrame fullScoreFrame = new JFrame(windowTitle);
-		fullScoreFrame.add(new JScrollPane(scoreEditor));
-		fullScoreFrame.setSize(800, 600);
-//		fullScoreFrame.setSize(1200, 1200);
-	    fullScoreFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	    fullScoreFrame.setVisible(true);
-	    scoreEditor.setSize(20000, 20000);
-	    return fullScoreFrame;
 	}
 
 
@@ -10714,6 +10686,551 @@ public class Transcription implements Serializable {
 			.filter(c -> c instanceof Note)
 			.forEach(c -> noteSeq.add((Note) c));
 		return noteSeq; 
+	}
+
+
+	/**
+	 * Reverses the <code>NotationSystem</code>.
+	 *  
+	 * @param ns An existing <code>NotationSystem</code>.
+	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
+	 * @param mp The mirror point.
+	 * @return
+	 */
+	private static NotationSystem reverseNotationSystemOLD(NotationSystem ns, MetricalTimeLine mtl, 
+		Rational mp, String name) {
+		// For each voice
+		NotationSystem nsRev = new NotationSystem();
+		for (NotationStaff nst : ns) {	
+			NotationStaff nstRev = new NotationStaff();
+			for (NotationVoice nv : nst) {
+				NotationVoice nvRev = new NotationVoice();
+				for (NotationChord nc : nv) {
+					NotationChord ncRev = new NotationChord();
+					for (Note n : nc) {
+						// Calculate the Note's new onset time (mirrorPoint - offset time)
+						Rational dur = n.getMetricDuration();
+//						// In tablature case: use minimum duration
+//						if (tab != null) {
+//							for (Rational[] item : onsetsAndMinDurs) {
+//								if (item[0].equals(n.getMetricTime())) {
+//									dur = item[1];
+//									dur.reduce();
+//									break;
+//								}
+//							}
+//							
+//							// NB: onsets and minDurs are corresponding lists and can be 
+//							//     indexed concurrently
+//							for (int i = 0; i < onsets.size(); i++) {
+//								if (onsets.get(i).equals(n.getMetricTime())) {
+//									dur = minDurs.get(i);
+//									dur.reduce();
+//									break;
+//								}
+//							}
+//						}
+						Rational offset = n.getMetricTime().add(dur);
+						Rational mt = mp.sub(offset);
+						
+						// Error in barbetta-1582_1-il_nest.tbp: last chord should be co1 
+						// (and not co2), leading to newOnsetTime being -1/2 
+						if (name.equals("barbetta-1582_1-il_nest.mid") && mt.equals(new Rational(-1, 2))) {
+//						if (pOrig.getName().equals("barbetta-1582_1-il_nest.mid") && 
+//							mt.equals(new Rational(-1, 2))) {
+							mt = Rational.ZERO;
+							dur = new Rational(1, 2);
+						}
+
+						ncRev.add(createNote(n.getMidiPitch(), mt, dur, mtl));
+					}
+					nc = ncRev;
+					nvRev.add(ncRev);
+				}
+				nstRev.add(nvRev);
+			}
+			nsRev.add(nstRev);
+		}
+		return nsRev;
+	}
+
+
+	/**
+	 * Removes all sequences of single-note events shorter than the given duration from the
+	 * encoding, and lengthens the duration of the event preceding the sequence by the total 
+	 * length of the removed sequence. NB: Handles the _unadapted_ Piece. 
+	 *
+	 * @param t
+	 * @param tab
+	 * @param dur
+	 * @return
+	 */
+	private static NotationSystem deornamentNotationSystemOLD(NotationSystem nsCopy, MetricalTimeLine mtl, 
+		/*Transcription t, Tablature tab,*/ 
+		List<List<Note>> ch, List<Rational> onsetTimes, Rational dur) {
+//		Piece pDeorn = new Piece();
+
+//		MetricalTimeLine mtl = t.getPiece().getMetricalTimeLine();
+//		List<Rational> onsetTimes = t.getAllOnsetTimes();
+//		List<List<Note>> ch = t.getChords();
+//		List<List<TabSymbol>> tabChords = null;
+////		List<Rational[]> onsetsAndMinDurs = null;
+//		List<Rational> minDurs = null;
+//		if (tab != null) {
+//			tabChords = tab.getChords(); 
+////			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations();
+//			minDurs = tab.getMinimumDurationPerChord();
+//		}
+
+
+//		Piece origP = t.getOriginalPiece();
+//		// Make a copy of notationSystem so that pOrig is not affected
+//		NotationSystem nsCopy = copyNotationSystem(origP.getScore());
+		
+		// For each voice
+		NotationSystem nsDeorn = new NotationSystem();
+//		List<Integer> removed = new ArrayList<>();
+//		int voice = 0;
+		for (NotationStaff nst : nsCopy) {
+//			System.out.println("voice = " + voice);
+			NotationStaff nstDeorn = new NotationStaff();
+			for (NotationVoice nv : nst) {
+				NotationVoice nvDeorn = new NotationVoice();
+				NotationChord pre = null;
+				Rational durPre = null;
+				for (int i = 0; i < nv.size(); i++) {
+					NotationChord nc = nv.get(i);
+//					System.out.println(nc);
+//					Rational onset = nc.getMetricTime();
+					int ind = onsetTimes.indexOf(nc.getMetricTime());
+
+//					boolean isOrn; 
+//					if (tabChords != null) { 
+//						isOrn = tabChords.get(ind).size() == 1 && 
+//							minDurs.get(ind).isLess(dur);
+////							onsetsAndMinDurs.get(ind)[1].isLess(dur);
+//					}
+//					else {
+//					isOrn = nc.size() == 1 && ch.get(ind).size() == 1 &&
+//						nc.getMetricDuration().isLess(dur);
+//					}
+					boolean isOrn = 
+						nc.size() == 1 && ch.get(ind).size() == 1 && 
+						nc.getMetricDuration().isLess(dur);
+					// If currNc is ornamental
+					// NB: In case of a single-event SNU, the note will be removed from both voices
+					if (isOrn) {
+//						System.out.println(isOrn);
+//						removed.add(ind);
+						// Determine pre, if it has not yet been determined
+						if (pre == null) {
+							NotationChord ncPrev = nv.get(i-1);
+							pre = ncPrev;
+							durPre = ncPrev.getMetricDuration(); // all notes in a NotationChord have the same duration 
+						}
+						// Increment durPre
+						durPre = durPre.add(nc.getMetricDuration());
+//						System.out.println(durPre);
+					}
+					// If currNc is the first after a sequence of one or more ornamental notes
+					// (i.e., it does not meet the if condition above but pre != null)
+					else if (pre != null) {
+//						// Adapt pre
+//						pre.setMetricDuration(durPre);
+//						for (int j = 0; j < pre.size(); j++) {
+////						for (Note n : pre) {
+//							Note n = pre.get(j);
+//							pre.remove(j);
+////							n.setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), 
+////								n.getMetricTime(), durPre));
+//							n = createNote(n.getMidiPitch(), n.getMetricTime(), durPre, mtl);
+//						}
+
+						// Add adapted pre
+						NotationChord preDeorn = new NotationChord();
+						for (Note n : pre) {
+							preDeorn.add(createNote(n.getMidiPitch(), n.getMetricTime(), durPre, mtl));
+						}
+						nvDeorn.remove(pre);
+						nvDeorn.add(preDeorn);
+						
+						// Add currNc
+						nvDeorn.add(nc);
+						System.out.println(pre);
+						// Reset
+						pre = null;
+//						System.exit(0);
+					}
+					else {
+						nvDeorn.add(nc);
+					}
+				}
+				nstDeorn.add(nvDeorn);
+//				nvDeorn.forEach(nc -> System.out.println(nc));
+//				System.exit(0);
+			}
+//			voice++;
+			nsDeorn.add(nstDeorn);
+		}
+
+		return nsDeorn;
+
+//		pDeorn.setScore(nsDeorn);
+//		pDeorn.setMetricalTimeLine(mtl);
+//		pDeorn.setHarmonyTrack(origP.getHarmonyTrack());		
+//		pDeorn.setName(t.getPiece().getName());
+//		return pDeorn;
+	}
+
+
+	/**
+	 * Reverses the given harmony track.
+	 *  
+	 * @param ht An existing (clean) harmony track.
+	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
+	 * @param mp The mirror point.
+	 * @param ki An existing keyInfo.
+	 * @return
+	 */
+	private static SortedContainer<Marker> reverseHarmonyTrackOLD(SortedContainer<Marker> ht, 
+		MetricalTimeLine mtl, Rational mp, List<Integer[]> ki) {
+		SortedContainer<Marker> htRev = 
+			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
+
+		int ind = 0; // equals index in ki
+		long mpTime = mtl.getTime(mp);
+		for (Marker m : ht) {
+			if (m instanceof KeyMarker) {
+				KeyMarker km = (KeyMarker) m;
+				// Calculate reversed mt and t (mirror point - mt/t of next meter section)
+				Rational mtNextKeySec = 
+					ind == (ki.size() - 1) ? mp : 
+					new Rational(ki.get(ind + 1)[KI_NUM_MT_FIRST_BAR], 
+					ki.get(ind + 1)[KI_DEN_MT_FIRST_BAR]);
+				Rational mtRev = mp.sub(mtNextKeySec);
+				long tRev = mpTime - mtl.getTime(mtNextKeySec);
+				km.setMetricTime(mtRev);
+				km.setTime(tRev);
+				htRev.add(km);
+				ind++;
+			}
+		}
+		return htRev;
+	}
+
+
+	/**
+	 * Rescales the given harmony track.
+	 *  
+	 * @param ht An existing (clean) harmony track.
+	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
+	 * @param rescaleFactor
+	 * @return
+	 */
+	private static SortedContainer<Marker> rescaleHarmonyTrackOLD(SortedContainer<Marker> ht, 
+		MetricalTimeLine mtl, int rescaleFactor) {
+		SortedContainer<Marker> htResc = 
+			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
+
+		for (Marker m : ht) {
+			if (m instanceof KeyMarker) {
+				KeyMarker km = (KeyMarker) m;
+				Rational mt = km.getMetricTime();
+				long t = mtl.getTime(mt);
+				km.setMetricTime(
+					rescaleFactor > 0 ? mt.mul(rescaleFactor) : mt.div(Math.abs(rescaleFactor)) 
+				);
+				km.setTime(
+					rescaleFactor > 0 ? t * rescaleFactor : t / Math.abs(rescaleFactor) 
+				);
+				htResc.add(km);
+			}
+		}
+		return htResc;
+	}
+
+
+	/**
+	 * Reverses the given <code>MetricalTimeLine</code>.
+	 * 
+	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
+	 * @param mp The mirror point.
+	 * @param mi An existing meterInfo.
+	 * @return
+	 */
+	private static MetricalTimeLine reverseMetricalTimeLineOLD(MetricalTimeLine mtl, Rational mp, 
+		List<Integer[]> mi) {
+		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
+		// zeroMarker, and endMarker) 
+		MetricalTimeLine mtlReversed = new MetricalTimeLine();
+		mtlReversed.clear();
+		// Add zeroMarker
+		mtlReversed.add((Marker) new TimedMetrical(0, Rational.ZERO));
+
+		// Add TimeSignatureMarkers and TempoMarkers 
+		int ind = 0; // equals index in mi
+		Rational mtRevLastTimedMetrical = Rational.ZERO;
+		long mpTime = mtl.getTime(mp);
+		for (Marker m : mtl) {
+			if (m instanceof TimeSignatureMarker) {				
+				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
+				TimeSignature ts = tsm.getTimeSignature();
+				// Calculate reversed mt and t (mirror point - mt/t of next meter section)
+				Rational mtNextMeterSec = 
+					ind == (mi.size() - 1) ? mp : 
+					new Rational(mi.get(ind + 1)[Timeline.MI_NUM_MT_FIRST_BAR], 
+					mi.get(ind + 1)[Timeline.MI_DEN_MT_FIRST_BAR]);
+				Rational mtRev = mp.sub(mtNextMeterSec);
+				long tRev = mpTime - mtl.getTime(mtNextMeterSec);
+				mtlReversed.add(new TimeSignatureMarker(ts, mtRev));
+				if (mtRev.isGreater(Rational.ZERO)) {
+					mtlReversed.add(new TempoMarker(tRev, mtRev));
+					if (mtRev.isGreater(mtRevLastTimedMetrical)) {
+						mtRevLastTimedMetrical = mtRev;
+					}
+				}
+				ind++;
+			}
+		}
+
+		// If TempoMarkers (and through them, endMarker(s)) have been added: 
+		// remove all TimedMetricals but the zeroMarker	
+		if (mtRevLastTimedMetrical.isGreater(Rational.ZERO)) {
+			mtlReversed = cleanTimedMetricals(mtlReversed);
+		}
+
+		// Add endMarker
+		long tRevLastTimedMetrical = mtlReversed.getTime(mtRevLastTimedMetrical);
+		TimedMetrical end = 
+			calculateEndMarker(tRevLastTimedMetrical, mtl.getTempo(tRevLastTimedMetrical), 
+			mtRevLastTimedMetrical, 1);
+		mtlReversed.add((Marker) end);		
+
+		return mtlReversed;
+	}
+
+
+	/**
+	 * Rescales the given <code>MetricalTimeLine</code>.
+	 * 
+	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
+	 * @param mp The rescaling factor.
+	 * @return
+	 */
+	private static MetricalTimeLine rescaleMetricalTimeLineOLD(MetricalTimeLine mtl, int rescaleFactor) {
+		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
+		// zeroMarker, and endMarker) 
+		MetricalTimeLine mtlRescaled = new MetricalTimeLine();
+		mtlRescaled.clear();
+		// Add zeroMarker
+		mtlRescaled.add((Marker) new TimedMetrical(0, Rational.ZERO));
+
+		// Add TimeSignatureMarkers and TempoMarkers 
+		Rational mtRescLastTimedMetrical = Rational.ZERO;
+		for (Marker m : mtl) {
+			if (m instanceof TimeSignatureMarker) {				
+				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
+				TimeSignature ts = tsm.getTimeSignature();
+
+				// Calculate rescaled ts, mt and t
+				Rational mt = m.getMetricTime();
+				long t = mtl.getTime(mt);				
+//				Rational meter = new Rational(ts.getNumerator(), ts.getDenominator());
+//				Rational meterResc = rescaleFactor > 0 ? meter.mul(rescaleFactor) : meter.div(Math.abs(rescaleFactor));
+				Rational meter = new Rational(ts.getNumerator(), ts.getDenominator());
+				Rational meterResc;
+				// Excpetion case where meter is x/1 and rescaling is lengthening
+				if (ts.getDenominator() == 1 && rescaleFactor > 1) {
+					meterResc = new Rational(meter.getNumer() * rescaleFactor, meter.getDenom());
+				}
+				else {
+					meterResc = Timeline.undiminuteMeter(meter, rescaleFactor);
+				}
+				TimeSignature tsResc = new TimeSignature(meterResc);
+				Rational mtResc = 
+					rescaleFactor > 0 ? mt.mul(rescaleFactor) : mt.div(Math.abs(rescaleFactor));
+				long tResc = rescaleFactor > 0 ? t * rescaleFactor : t / Math.abs(rescaleFactor);
+				
+//				Rational mtNextMeterSec = 
+//					ind == (mi.size() - 1) ? mp : 
+//					new Rational(mi.get(ind + 1)[Timeline.MI_NUM_MT_FIRST_BAR], 
+//					mi.get(ind + 1)[Timeline.MI_DEN_MT_FIRST_BAR]);
+//				Rational mtRev = mp.sub(mtNextMeterSec);
+//				long tRev = mpTime - mtl.getTime(mtNextMeterSec);
+				mtlRescaled.add(new TimeSignatureMarker(tsResc, mtResc));
+				if (mtResc.isGreater(Rational.ZERO)) {
+					mtlRescaled.add(new TempoMarker(tResc, mtResc));
+					if (mtResc.isGreater(mtRescLastTimedMetrical)) {
+						mtRescLastTimedMetrical = mtResc;
+					}
+				}
+//				ind++;
+			}
+		}
+
+		// If TempoMarkers (and through them, endMarker(s)) have been added: 
+		// remove all TimedMetricals but the zeroMarker	
+		if (mtRescLastTimedMetrical.isGreater(Rational.ZERO)) {
+			mtlRescaled = cleanTimedMetricals(mtlRescaled);
+		}
+
+		// Add endMarker
+		long tRevLastTimedMetrical = mtlRescaled.getTime(mtRescLastTimedMetrical);
+		TimedMetrical end = 
+			calculateEndMarker(tRevLastTimedMetrical, mtl.getTempo(tRevLastTimedMetrical), 
+			mtRescLastTimedMetrical, -rescaleFactor);
+		mtlRescaled.add((Marker) end);		
+
+		return mtlRescaled;
+	}
+
+
+	/**
+	 * Reverses the <code>NotationSystem</code>.
+	 *  
+	 * @param ns An existing <code>NotationSystem</code>.
+	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
+	 * @param mp The mirror point.
+	 * @return
+	 */
+	private static NotationSystem reverseNotationSystemOLDBetter(NotationSystem ns, MetricalTimeLine mtl, 
+		Rational mp, String name) {
+
+		NotationSystem nsRev = new NotationSystem();
+		for (NotationStaff nst : ns) {	
+			NotationStaff nstRev = new NotationStaff();
+			for (NotationVoice nv : nst) {
+				NotationVoice nvRev = new NotationVoice();
+				for (NotationChord nc : nv) {
+					NotationChord ncRev = new NotationChord();
+					if (!name.equals("barbetta-1582_1-il_nest.mid")) {
+						// Recalculate the onset time (mirrorPoint - offset time)
+						nc.forEach(n -> { 
+							Rational dur = n.getMetricDuration();
+							ncRev.add(createNote(n.getMidiPitch(), mp.sub(n.getMetricTime().add(dur)), dur, mtl));
+						});
+					}
+					// Error in barbetta-1582_1-il_nest.tbp: last chord should be cosb (and not cobr), 
+					// leading to mt being -1/2 TODO fix and remove else (and if open and close above) 
+					else {
+						for (Note n : nc) {
+							Rational dur = n.getMetricDuration();
+							Rational mt = mp.sub(n.getMetricTime().add(dur));
+							if (mt.equals(new Rational(-1, 2))) {
+								mt = Rational.ZERO;
+								dur = new Rational(1, 2);
+							}
+							ncRev.add(createNote(n.getMidiPitch(), mt, dur, mtl));
+						}
+					}
+					nvRev.add(ncRev);
+				}
+				nstRev.add(nvRev);
+			}
+			nsRev.add(nstRev);
+		}
+		return nsRev;
+	}
+
+
+	/**
+	 * Deornaments the <code>NotationSystem</code>.
+	 * 
+	 * @param ns
+	 * @param mtl
+	 * @param ch
+	 * @param onsetTimes
+	 * @param thresholdDur
+	 * @return
+	 */
+	private static NotationSystem deornamentNotationSystemOLDBetter(NotationSystem ns, MetricalTimeLine mtl, 
+		List<List<Note>> ch, List<Rational> onsetTimes, Rational thresholdDur) {
+
+		NotationSystem nsDeorn = new NotationSystem();
+		for (NotationStaff nst : ns) {
+			NotationStaff nstDeorn = new NotationStaff();
+			for (NotationVoice nv : nst) {
+				NotationVoice nvDeorn = new NotationVoice();
+				for (int i = 0; i < nv.size(); i++) {
+					NotationChord nc = nv.get(i);
+					int ind = onsetTimes.indexOf(nc.getMetricTime());
+					// If nc is ornamental and not part of an ornamental sequence at 
+					// the beginning of nv (in which case nvDeorn is still empty):					
+					// calculate the total duration of the ornamental sequence; create 
+					// ncPrevDeorn with the result; replace ncPrev with ncPrevDeorn
+					// NB: It is assumed that an ornamental sequence is not interrupted by (ornamental) rests 
+					if ((ch.get(ind).size() == 1 && nc.size() == 1 && 
+						nc.getMetricDuration().isLess(thresholdDur)) && nvDeorn.size() > 0) {
+						Rational durOrnSeq = nc.getMetricDuration();
+						for (int j = i+1; j < nv.size(); j++) {
+							NotationChord ncNext = nv.get(j);
+							int indNext = onsetTimes.indexOf(ncNext.getMetricTime());
+							// If ncNext is ornamental: increment duration of ornamental sequence
+							if (ch.get(indNext).size() == 1 && ncNext.size() == 1 && 
+								ncNext.getMetricDuration().isLess(thresholdDur)) {
+								durOrnSeq = durOrnSeq.add(ncNext.getMetricDuration());
+							}
+							// If not: replace ncPrev with ncPrevDeorn 
+							else {
+								NotationChord ncPrev = nv.get(i-1);
+								NotationChord ncPrevDeorn = new NotationChord();
+								for (Note n : ncPrev) {
+									ncPrevDeorn.add(createNote(n.getMidiPitch(), n.getMetricTime(), 
+										ncPrev.getMetricDuration().add(durOrnSeq), mtl));
+								}
+								nvDeorn.remove(ncPrev);
+								nvDeorn.add(ncPrevDeorn);
+								i = j-1;
+								break;
+							}
+						}
+					}
+					// If nc is not ornamental
+					else {
+						nvDeorn.add(nc);
+					}
+				}
+				nstDeorn.add(nvDeorn);
+			}
+			nsDeorn.add(nstDeorn);
+		}
+		return nsDeorn;
+	}
+
+
+	/**
+	 * Rescales the <code>NotationSystem</code>.
+	 * 
+	 * @param ns
+	 * @param mtl
+	 * @param rescaleFactor
+	 * @return
+	 */
+	private static NotationSystem rescaleNotationSystemOLD(NotationSystem ns, MetricalTimeLine mtl, int rescaleFactor) {
+		NotationSystem nsResc = new NotationSystem();
+		for (NotationStaff nst : ns) {	
+			NotationStaff nstResc = new NotationStaff();
+			for (NotationVoice nv : nst) {
+				NotationVoice nvResc = new NotationVoice();
+				for (NotationChord nc : nv) {
+					NotationChord ncResc = new NotationChord();
+					nc.forEach(n -> { 
+						Rational dur = n.getMetricDuration();
+						Rational mt = n.getMetricTime();
+						ncResc.add(createNote(
+							n.getMidiPitch(), 
+							rescaleFactor > 0 ? mt.mul(rescaleFactor) : mt.div(Math.abs(rescaleFactor)),
+							rescaleFactor > 0 ? dur.mul(rescaleFactor) : dur.div(Math.abs(rescaleFactor)), 
+							mtl)
+						);
+					});
+					nvResc.add(ncResc);
+				}
+				nstResc.add(nvResc);
+			}
+			nsResc.add(nstResc);
+		}
+		return nsResc;
 	}
 
 

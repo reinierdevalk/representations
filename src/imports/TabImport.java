@@ -1081,14 +1081,15 @@ public class TabImport {
 									}
 								}
 								// Set rs to RS corresponding to sum rs and nextRs
+								// TODO replace for-loop with Symbol.getRhythmSymbol(d, isCorona, isBeamed, tripletType)
+								// rs = Symbol.getRhythmSymbol(
+								//	Symbol.getRhythmSymbol(rs).getDuration() + Symbol.getRhythmSymbol(nextRs).getDuration(), 
+								//	false, false, Symbol.getRhythmSymbol(rs).isTriplet()).getEncoding();
 								for (RhythmSymbol r : Symbol.RHYTHM_SYMBOLS.values()) {
-//								for (RhythmSymbol r : RhythmSymbol.RHYTHM_SYMBOLS) {	
 									if (r.getDuration() == Symbol.getRhythmSymbol(rs).getDuration() +
 										Symbol.getRhythmSymbol(nextRs).getDuration()) {
 										// Do not consider coronas/fermate
-										if (!r.getSymbol().equals(Symbol.CORONA_BREVIS.getSymbol()) 
-//											&& !r.getSymbol().equals(RhythmSymbol.FERMATA_DOTTED.getSymbol())
-											) {
+										if (!r.getSymbol().equals(Symbol.CORONA_BREVIS.getSymbol())) {
 											rs = r.getEncoding();
 											break;
 										}

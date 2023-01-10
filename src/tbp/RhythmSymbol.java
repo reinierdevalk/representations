@@ -10,6 +10,7 @@ public class RhythmSymbol extends Symbol {
 	public static final String TRIPLET_INDICATOR = "tr";
 	public static final String TRIPLET_OPEN = "[";
 	public static final String TRIPLET_CLOSE = "]";
+	public static final String CORONA_INDICATOR = "co"; 
 	public static final int TRIPLET_OPEN_IND = 0;
 	public static final int TRIPLET_MID_IND = 1;
 	public static final int TRIPLET_CLOSE_IND = 2;
@@ -100,6 +101,16 @@ public class RhythmSymbol extends Symbol {
 			rss.add(new RhythmSymbol(enc, s, dur));
 		}
 		return rss;
+	}
+
+
+	// TESTED
+	public String isTriplet() {
+		String e = getEncoding();
+		return 
+			!e.contains(TRIPLET_INDICATOR) ? null :
+			(e.contains(TRIPLET_OPEN) ? TRIPLET_OPEN : 
+			(e.contains(TRIPLET_CLOSE) ? TRIPLET_CLOSE : ""));
 	}
 
 

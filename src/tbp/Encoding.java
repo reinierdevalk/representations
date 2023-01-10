@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.utility.math.Rational;
 import structure.Timeline;
 import tbp.TabSymbol.TabSymbolSet;
@@ -656,6 +657,7 @@ public class Encoding implements Serializable {
      * <li>A String[] containing the relevant error information if not.</li>
      * </ul>
 	 */
+	// NOT TESTED
 	public static String[] checkForEncodingErrors(String rawEnc, String cleanEnc, 
 		TabSymbolSet tss) {
 		Integer[] indsAligned = alignRawAndCleanEncoding(rawEnc, cleanEnc);
@@ -1506,62 +1508,66 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED
 	String deornamentCleanEncoding(int thresholdDur) {
-		String ss = Symbol.SYMBOL_SEPARATOR;
-		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
-		String ebi = Symbol.END_BREAK_INDICATOR;
-
 		List<String> events = decompose(true, true);
-		String pre = null;
-		int durPre = -1;
-		int indPre = -1;
+		List<String> eventsDeorn = new ArrayList<>();
 		for (int i = 0; i < events.size(); i++) {
 			String e = events.get(i);
-			// If e is not a barline, a SBI, or an EBI
-			if (!e.equals(sbi) && !e.equals(ebi) && !assertEventType(e, null, "barline")) {
-				String[] symbols = e.split("\\" + ss);
+			// If e is a RS event
+			if (assertEventType(e, null, "RhythmSymbol")) {
+				String[] symbols = e.split("\\" + Symbol.SYMBOL_SEPARATOR);
 				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
-				// If the event is an ornamentation (which always consists of only a RS, 
-				// a TS, and a space)
-				if (r != null && r.getDuration() < thresholdDur && symbols.length == 3) {
-					// Determine pre, if it has not yet been determined
-					if (pre == null) {
-						for (int j = i - 1; j >= 0; j--) {
-							String tPrev = events.get(j);
-							// If tPrev is not a barline or SBI
-							if (!tPrev.equals(sbi) && !assertEventType(tPrev, null, "barline")) {
-								pre = tPrev;
-								durPre = 
-									RhythmSymbol.getRhythmSymbol(tPrev.substring(0, 
-									tPrev.indexOf(ss))).getDuration();
-								indPre = j;
+				// If e is ornamental (in which case it consists of only a RS, a TS, and a space) 
+				// and not part of an ornamental sequence at the beginning of the Encoding (in 
+				// which case eventsDeorn is still empty):
+				// calculate the total duration of the ornamental sequence; create 
+				// ePrevDeorn with the result; replace ePrev with ePrevDeorn
+				// NB: It is assumed that an ornamental sequence is not interrupted by (ornamental) rests 
+				if (r.getDuration() < thresholdDur && symbols.length == 3 && eventsDeorn.size() > 0) {
+					int durOrnSeq = r.getDuration();
+					for (int j = i+1; j < events.size(); j++) {
+						String eNext = events.get(j);
+						// If eNext is a RS event
+						if (assertEventType(eNext, null, "RhythmSymbol")) {
+							String[] symbolsNext = eNext.split("\\" + Symbol.SYMBOL_SEPARATOR);
+							RhythmSymbol rNext = RhythmSymbol.getRhythmSymbol(symbolsNext[0]);
+							// If eNext is ornamental: increment duration of ornamental sequence
+							if (rNext.getDuration() < thresholdDur && symbolsNext.length == 3) {
+								durOrnSeq += rNext.getDuration();
+							}
+							// If not: replace ePrev with ePrevDeorn 
+							else {
+								String ePrev = events.get(i-1);
+								String[] symbolsPrev = ePrev.split("\\" + Symbol.SYMBOL_SEPARATOR);
+								RhythmSymbol rPrev = RhythmSymbol.getRhythmSymbol(symbolsPrev[0]);
+								String ePrevDeorn = Symbol.getRhythmSymbol(
+									rPrev.getDuration() + durOrnSeq,
+									rPrev.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR),
+									rPrev.getBeam(),
+									rPrev.isTriplet()
+								).getEncoding();
+								ePrevDeorn += ePrev.substring(ePrev.indexOf(Symbol.SYMBOL_SEPARATOR));
+								eventsDeorn.set(eventsDeorn.lastIndexOf(ePrev), ePrevDeorn);
+								i = j-1;
 								break;
 							}
 						}
-					}
-					// Increment durPre and set event to null
-					durPre += r.getDuration();
-					events.set(i, null);
-				}
-				// If the event is the first after a sequence of one or more ornamental
-				// notes (i.e., it does not meet the if conditions above but pre != null)
-				else if (pre != null) {
-					// Determine the new RS for pre, and adapt and set it
-					String newRs = "";
-					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
-						if (rs.getDuration() == durPre) {
-							newRs = rs.getEncoding();
-							break;
+						// If eNext is not a RS event
+						else {
+							eventsDeorn.add(eNext);
 						}
 					}
-					events.set(indPre, newRs + pre.substring(pre.indexOf(ss), pre.length()));
-					// Reset
-					pre = null;
-					indPre = -1;
+				}
+				// If e is not ornamental
+				else {
+					eventsDeorn.add(e);
 				}
 			}
+			// If e is not a RS event
+			else {
+				eventsDeorn.add(e);
+			}
 		}
-		events.removeIf(t -> t == null);
-		return recompose(events); 
+		return recompose(eventsDeorn);
 	}
 
 
@@ -1585,7 +1591,7 @@ public class Encoding implements Serializable {
 		String miOrigContent = 
 			argHeader.substring(startInd, argHeader.indexOf(CLOSE_METADATA_BRACKET, startInd));
 
-		// Make stretched METER_INFO content
+		// Make rescaled METER_INFO content
 		String miRescaleContent = "";
 		for (int i = 0; i < mi.size(); i++) {
 			Integer[] in = mi.get(i);
@@ -1611,27 +1617,21 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED
 	String rescaleCleanEncoding(int rescaleFactor) {
-		String ss = Symbol.SYMBOL_SEPARATOR;
-		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
-		String ebi = Symbol.END_BREAK_INDICATOR;
-
 		List<String> events = decompose(true, true);
 		for (int i = 0; i < events.size(); i++) {
 			String e = events.get(i);
-			// If e is not a barline, a SBI, or an EBI
-			if (!e.equals(sbi) && !e.equals(ebi) && !assertEventType(e, null, "barline")) {
-				String[] symbols = e.split("\\" + ss);
+			// If e is a RS event
+			if (assertEventType(e, null, "RhythmSymbol")) {
+				String[] symbols = e.split("\\" + Symbol.SYMBOL_SEPARATOR);
 				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
-				String newRs = "";
-				if (r != null) {
-					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
-						if (rs.getDuration() == r.getDuration() * rescaleFactor) {
-							newRs = rs.getEncoding();
-							break;
-						}
-					}
-					events.set(i, newRs + e.substring(e.indexOf(ss), e.length()));
-				}
+				String eResc = Symbol.getRhythmSymbol(
+					r.getDuration() * rescaleFactor, 
+					r.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR), 
+					r.getBeam(), 
+					r.isTriplet()
+				).getEncoding();
+				eResc += e.substring(e.indexOf(Symbol.SYMBOL_SEPARATOR), e.length());
+				events.set(i, eResc);
 			}
 		}
 		return recompose(events); 
@@ -1655,6 +1655,7 @@ public class Encoding implements Serializable {
 	 * 
 	 * @return A String representation of the encoding.
 	 */
+	// NOT TESTED
 	public String visualise(TabSymbolSet tssSelected, boolean ignoreRepeatedRs, 
 		boolean showHeader, boolean showFootnotes) {
 		String tab = "";
@@ -1960,6 +1961,7 @@ public class Encoding implements Serializable {
 	}
 
 
+	// NOT TESTED
 	StringBuffer visualiseFootnotes(TabSymbolSet argTss) {
 		StringBuffer footnotesStr;
 
@@ -3448,5 +3450,74 @@ public class Encoding implements Serializable {
 			header + "\r\n\r\n" + recompose(events), 
 			getPiecename(), 
 			SYNTAX_CHECKED);
+	}
+
+
+	/**
+	 * Deornaments the (clean) encoding. If not all events have an RS, the missing RS are 
+	 * complemented before deornamenting.
+	 * 
+	 * @param thresholdDur
+	 * 
+	 * @return
+	 */
+	// TESTED
+	private String deornamentCleanEncodingOLD(int thresholdDur) {
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
+		String ebi = Symbol.END_BREAK_INDICATOR;
+
+		List<String> events = decompose(true, true);
+		String pre = null;
+		int durPre = -1;
+		int indPre = -1;
+		for (int i = 0; i < events.size(); i++) {
+			String e = events.get(i);
+			// If e is not a barline, a SBI, or an EBI
+			if (!e.equals(sbi) && !e.equals(ebi) && !assertEventType(e, null, "barline")) {
+				String[] symbols = e.split("\\" + ss);
+				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
+				// If the event is an ornamentation (which always consists of only a RS, 
+				// a TS, and a space)
+				if (r != null && r.getDuration() < thresholdDur && symbols.length == 3) {
+					// Determine pre, if it has not yet been determined
+					if (pre == null) {
+						for (int j = i - 1; j >= 0; j--) {
+							String tPrev = events.get(j);
+							// If tPrev is not a barline or SBI
+							if (!tPrev.equals(sbi) && !assertEventType(tPrev, null, "barline")) {
+								pre = tPrev;
+								durPre = 
+									RhythmSymbol.getRhythmSymbol(tPrev.substring(0, 
+									tPrev.indexOf(ss))).getDuration();
+								indPre = j;
+								break;
+							}
+						}
+					}
+					// Increment durPre and set event to null
+					durPre += r.getDuration();
+					events.set(i, null);
+				}
+				// If the event is the first after a sequence of one or more ornamental
+				// notes (i.e., it does not meet the if conditions above but pre != null)
+				else if (pre != null) {
+					// Determine the new RS for pre, and adapt and set it
+					String newRs = "";
+					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
+						if (rs.getDuration() == durPre) {
+							newRs = rs.getEncoding();
+							break;
+						}
+					}
+					events.set(indPre, newRs + pre.substring(pre.indexOf(ss), pre.length()));
+					// Reset
+					pre = null;
+					indPre = -1;
+				}
+			}
+		}
+		events.removeIf(t -> t == null);
+		return recompose(events); 
 	}
 }

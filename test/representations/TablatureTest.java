@@ -670,72 +670,6 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testAdaptToDiminutions() {
-		Tablature t1 = new Tablature();
-		t1.setEncoding(new Encoding(encodingTestpiece));
-		t1.setNormaliseTuning(true);
-		t1.setName();
-		t1.setTimeline();
-		t1.setTunings();
-		Tablature t2 = new Tablature();
-		t2.setEncoding(new Encoding(encodingTestGetMeterInfo));
-		t2.setNormaliseTuning(true);
-		t2.setName();
-		t2.setTimeline();
-		t2.setTunings();
-
-		// For encodingTestPiece
-		List<Integer> minDur1 = getMinimumDurationPerNote(false).get(0);
-		List<Integer> minDur1Exp = getMinimumDurationPerNote(true).get(0);
-		//
-		List<Integer> gridX1 = new ArrayList<>();
-		getOnsetTimesPerNote(false).get(0).forEach(item -> { if (item[1] != 0) { gridX1.add(item[0]);}});
-		List<Integer> gridX1Exp = new ArrayList<>();
-		getOnsetTimesPerNote(true).get(0).forEach(item -> { if (item[1] != 0) { gridX1Exp.add(item[0]);}});
-		
-		// For testGetMeterInfo
-		List<Integer> minDur2 = getMinimumDurationPerNote(false).get(1);
-		List<Integer> minDur2Exp = getMinimumDurationPerNote(true).get(1);
-		//
-		List<Integer> gridX2 = new ArrayList<>();
-		getOnsetTimesPerNote(false).get(1).forEach(item -> { if (item[1] != 0) { gridX2.add(item[0]);}});
-		List<Integer> gridX2Exp = new ArrayList<>();
-		getOnsetTimesPerNote(true).get(1).forEach(item -> { if (item[1] != 0) { gridX2Exp.add(item[0]);}});
-
-		List<List<List<Integer>>> expected = new ArrayList<>();
-		List<List<Integer>> expected1 = new ArrayList<>();
-		expected1.add(minDur1Exp);
-		expected1.add(gridX1Exp);
-		expected.add(expected1);
-		List<List<Integer>> expected2 = new ArrayList<>();
-		expected2.add(minDur2Exp);
-		expected2.add(gridX2Exp);
-		expected.add(expected2);
-
-		List<List<List<Integer>>> actual = new ArrayList<>();
-		actual.add(t1.adaptToDiminutions(minDur1, gridX1));
-//		actual.add(Tablature.adaptToDiminutions(minDur1, gridX1, 
-//			ToolBox.getItemsAtIndex(t1.getTimeline().getMeterInfo(), Timeline.MI_DIM), 
-//			t1.getTimeline().getUndiminutedMeterInfo()));
-		actual.add(t2.adaptToDiminutions(minDur2, gridX2));
-//		actual.add(Tablature.adaptToDiminutions(minDur2, gridX2, 
-//			ToolBox.getItemsAtIndex(t2.getTimeline().getMeterInfo(), Timeline.MI_DIM), 
-//			t2.getTimeline().getUndiminutedMeterInfo()));
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size());
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j).size(), actual.get(i).get(j).size());
-				for (int k = 0; k < expected.get(i).get(j).size(); k++) {
-					assertEquals(expected.get(i).get(j).get(k), actual.get(i).get(j).get(k));
-				}
-			}
-		}
-		assertEquals(expected, actual);
-	}
-
-
 	public void testGetMaximumDuration() {
 		Tablature t1 = new Tablature();
 		t1.setEncoding(new Encoding(encodingTestpiece));
@@ -1497,6 +1431,72 @@ public class TablatureTest extends TestCase {
 		int actual = new Tablature(encodingTestpiece, false).getLargestTablatureChord();
 		assertEquals(expected, actual);
 	}
+
+
+//	public void testAdaptToDiminutions() {
+//		Tablature t1 = new Tablature();
+//		t1.setEncoding(new Encoding(encodingTestpiece));
+//		t1.setNormaliseTuning(true);
+//		t1.setName();
+//		t1.setTimeline();
+//		t1.setTunings();
+//		Tablature t2 = new Tablature();
+//		t2.setEncoding(new Encoding(encodingTestGetMeterInfo));
+//		t2.setNormaliseTuning(true);
+//		t2.setName();
+//		t2.setTimeline();
+//		t2.setTunings();
+//
+//		// For encodingTestPiece
+//		List<Integer> minDur1 = getMinimumDurationPerNote(false).get(0);
+//		List<Integer> minDur1Exp = getMinimumDurationPerNote(true).get(0);
+//		//
+//		List<Integer> gridX1 = new ArrayList<>();
+//		getOnsetTimesPerNote(false).get(0).forEach(item -> { if (item[1] != 0) { gridX1.add(item[0]);}});
+//		List<Integer> gridX1Exp = new ArrayList<>();
+//		getOnsetTimesPerNote(true).get(0).forEach(item -> { if (item[1] != 0) { gridX1Exp.add(item[0]);}});
+//		
+//		// For testGetMeterInfo
+//		List<Integer> minDur2 = getMinimumDurationPerNote(false).get(1);
+//		List<Integer> minDur2Exp = getMinimumDurationPerNote(true).get(1);
+//		//
+//		List<Integer> gridX2 = new ArrayList<>();
+//		getOnsetTimesPerNote(false).get(1).forEach(item -> { if (item[1] != 0) { gridX2.add(item[0]);}});
+//		List<Integer> gridX2Exp = new ArrayList<>();
+//		getOnsetTimesPerNote(true).get(1).forEach(item -> { if (item[1] != 0) { gridX2Exp.add(item[0]);}});
+//
+//		List<List<List<Integer>>> expected = new ArrayList<>();
+//		List<List<Integer>> expected1 = new ArrayList<>();
+//		expected1.add(minDur1Exp);
+//		expected1.add(gridX1Exp);
+//		expected.add(expected1);
+//		List<List<Integer>> expected2 = new ArrayList<>();
+//		expected2.add(minDur2Exp);
+//		expected2.add(gridX2Exp);
+//		expected.add(expected2);
+//
+//		List<List<List<Integer>>> actual = new ArrayList<>();
+//		actual.add(t1.adaptToDiminutions(minDur1, gridX1));
+////		actual.add(Tablature.adaptToDiminutions(minDur1, gridX1, 
+////			ToolBox.getItemsAtIndex(t1.getTimeline().getMeterInfo(), Timeline.MI_DIM), 
+////			t1.getTimeline().getUndiminutedMeterInfo()));
+//		actual.add(t2.adaptToDiminutions(minDur2, gridX2));
+////		actual.add(Tablature.adaptToDiminutions(minDur2, gridX2, 
+////			ToolBox.getItemsAtIndex(t2.getTimeline().getMeterInfo(), Timeline.MI_DIM), 
+////			t2.getTimeline().getUndiminutedMeterInfo()));
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i).size(), actual.get(i).size());
+//			for (int j = 0; j < expected.get(i).size(); j++) {
+//				assertEquals(expected.get(i).get(j).size(), actual.get(i).get(j).size());
+//				for (int k = 0; k < expected.get(i).get(j).size(); k++) {
+//					assertEquals(expected.get(i).get(j).get(k), actual.get(i).get(j).get(k));
+//				}
+//			}
+//		}
+//		assertEquals(expected, actual);
+//	}
 
 
 //	public void testReverse() {

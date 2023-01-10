@@ -1037,7 +1037,7 @@ public class EncodingTest extends TestCase {
 		Encoding e = new Encoding(encodingTestpiece);
 
 		String expected = "";
-		List<String> eventsStretched = getDecomposedEvents(true);
+		List<String> eventsRescaled = getDecomposedEvents(true);
 		List<String[]> rsMap = Arrays.asList(
 			new String[]{"sb", "br"},
 			new String[]{"mi", "sb"},
@@ -1046,15 +1046,15 @@ public class EncodingTest extends TestCase {
 			new String[]{"fu", "sm"},
 			new String[]{"sf", "fu"}
 		);
-		eventsStretched.stream()
+		eventsRescaled.stream()
 			.filter(ev -> Encoding.assertEventType(ev, e.getTabSymbolSet(), "RhythmSymbol"))
 			.forEach(ev -> {
 				String rs = ev.substring(0, ev.indexOf(Symbol.SYMBOL_SEPARATOR));
-				eventsStretched.set(
-					eventsStretched.indexOf(ev), 
+				eventsRescaled.set(
+					eventsRescaled.indexOf(ev), 
 					ev.replace(rs, rsMap.get(ToolBox.getItemsAtIndex(rsMap, 0).indexOf(rs))[1]));
 			});
-		for (String s : eventsStretched) {
+		for (String s : eventsRescaled) {
 			expected += 
 				s + ((Encoding.assertEventType(s, e.getTabSymbolSet(), "barline") ||
 				s.equals(Symbol.SYSTEM_BREAK_INDICATOR)) ? "\r\n" : "");
