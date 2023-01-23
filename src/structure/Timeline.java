@@ -60,56 +60,29 @@ public class Timeline implements Serializable {
 	List<Integer[]> makeMeterInfo(Encoding encoding) {
 		List<Integer[]> meterInfo = new ArrayList<>();
 
-		List<Integer> diminutions = new ArrayList<>();
-		String dimStr = encoding.getMetadata().get(Encoding.METADATA_TAGS[Encoding.DIMINUTION_IND]);
-		Arrays.asList(dimStr.split(";")).forEach(d -> diminutions.add(Integer.parseInt(d.trim())));
-		
-		String[] meters = 
-			encoding.getMetadata().get(Encoding.METADATA_TAGS[Encoding.METER_INFO_IND]).split(";");		
-
 		Rational prevMeterAsRat = Rational.ZERO;
 		int prevNumBars = 0;
 		Rational prevMt = Rational.ZERO;
-		for (int i = 0; i < meters.length; i++) {
+		for (Integer[] in : encoding.getMetersBarsDiminutions()) {
 			Integer[] currentMeterInfo = new Integer[MI_SIZE_TAB];
-			String currInfo = meters[i].trim();
 			// 1. Meter
-			String currMeter = currInfo.substring(0, currInfo.indexOf("(")).trim();
-			int currNum = Integer.parseInt(currMeter.split("/")[0].trim());
-			int currDen = Integer.parseInt(currMeter.split("/")[1].trim());
-			currentMeterInfo[MI_NUM] = currNum;
-			currentMeterInfo[MI_DEN] = currDen;
+			currentMeterInfo[MI_NUM] = in[0];
+			currentMeterInfo[MI_DEN] = in[1];
 			// 2. Bar number(s)
-			int currNumBars = 0;
-			String currBars = 
-				currInfo.substring(currInfo.indexOf("(") + 1, currInfo.indexOf(")")).trim();
-			// If the meter is only for a single bar
-			if (!currBars.contains("-")) {
-				currentMeterInfo[MI_FIRST_BAR] = Integer.parseInt(currBars.trim());
-				currentMeterInfo[MI_LAST_BAR] = Integer.parseInt(currBars.trim());
-				currNumBars = 1;
-			}
-			// If the meter is for more than one bar
-			else {
-				int firstBar = Integer.parseInt(currBars.split("-")[0].trim());
-				int lastBar = Integer.parseInt(currBars.split("-")[1].trim());
-				currentMeterInfo[MI_FIRST_BAR] = firstBar;
-				currentMeterInfo[MI_LAST_BAR] = lastBar;
-				currNumBars = (lastBar-firstBar) + 1;
-			}
+			currentMeterInfo[MI_FIRST_BAR] = in[2];
+			currentMeterInfo[MI_LAST_BAR] = in[3];
 			// 3. Metric times
 			Rational currMt = prevMt.add(prevMeterAsRat.mul(prevNumBars));
 			currMt.reduce();
 			currentMeterInfo[MI_NUM_MT_FIRST_BAR] = currMt.getNumer();
 			currentMeterInfo[MI_DEN_MT_FIRST_BAR] = currMt.getDenom();
 			// 4. Diminution
-			currentMeterInfo[MI_DIM] = diminutions.get(i);
+			currentMeterInfo[MI_DIM] = in[4];
 
-			// Add and update
 			meterInfo.add(currentMeterInfo);
-			prevNumBars = currNumBars;
+			prevNumBars = (in[3] - in[2]) + 1;
 			prevMt = currMt;
-			prevMeterAsRat = new Rational(currNum, currDen);
+			prevMeterAsRat = new Rational(in[0], in[1]);
 		}
 		return meterInfo;
 	}
@@ -149,16 +122,17 @@ public class Timeline implements Serializable {
 	 * 
 	 * @return A list whose elements represent the meters in the piece. Each element contains<br>
 	 *         <ul>
-	 *         <li> as element 0: the numerator of the meter (adapted according to the diminution)</li>
-	 *         <li> as element 1: the denominator of the meter (adapted according to the diminution)</li>
-	 *         <li> as element 2: the first (metric) bar in the meter </li>
-	 *         <li> as element 3: the last (metric) bar in the meter </li>
-	 *         <li> as element 4: the numerator of the metric time of that first bar (adapted according to the diminution)</li>
-	 *         <li> as element 5: the denominator of the metric time of that first bar (adapted according to the diminution)</li>
-	 *         <li> as element 6: the diminution for the meter </li>
+	 *         <li> As element 0: the numerator of the meter.</li>
+	 *         <li> As element 1: the denominator of the meter.</li>
+	 *         <li> As element 2: the first (metric) bar in the meter.</li>
+	 *         <li> As element 3: the last (metric) bar in the meter.</li>
+	 *         <li> As element 4: the numerator of the metric time of that first bar.</li>
+	 *         <li> As element 5: the denominator of the metric time of that first bar.</li>
+	 *         <li> As element 6: the diminution for the meter.</li>
 	 *         </ul>
 	 *         
-	 *         An anacrusis bar will be denoted with bar numbers 0-0.
+	 *         An anacrusis bar would be denoted with bar number 0; however, the current 
+	 *         approach is to pre-pad an anacrusis bar with rests, making it a complete bar.
 	 */
 	public List<Integer[]> getMeterInfo() {
 		return meterInfo;

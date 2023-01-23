@@ -59,7 +59,7 @@ public class MIDIExport {
 			
 		Transcription stored =	
 			ToolBox.getStoredObjectBinary(new Transcription(), new File(path + piece + ".ser"));
-		Piece p = stored.getPiece();
+		Piece p = stored.getScorePiece();
 		
 		List<Integer> instruments = null; // Arrays.asList(new Integer[]{h, h, h, h});
 		String s = "C:/Users/Reinier/Desktop/MIDI-test/midifile2.mid";

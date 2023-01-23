@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.utility.math.Rational;
 import structure.Timeline;
 import tbp.TabSymbol.TabSymbolSet;
@@ -1390,251 +1389,291 @@ public class Encoding implements Serializable {
 	//  augmentation
 	//
 	/**
-	 * Augments the <code>Encoding</code>, i.e.,
-	 * <ul>
-	 * <li>Reverse   : reverses the <code>Encoding</code>.</li>
-	 * <li>Deornament: removes all sequences of single-note events shorter than the given
-	 *                 threshold duration from the <code>Encoding</code>, and lengthens 
-	 *                 the duration of the event preceding a sequence by the total length 
-	 *                 of the removed sequence.</li>
-	 * <li>Rescale   : rescales (up or down) the <code>Encoding</code> durationally by the 
-	 *                 given rescale factor.</li>
-	 * </ul>
+	 * Augments the <code>Encoding</code> according to the given augmentation. Must be
+	 * called on an <code>Encoding</code> extracted from an existing <code>Tablature</code>.
 	 * 
-	 * @param mi Applies only if augmentation is "reverse" or "rescale".
-	 * @param thresholdDur Applies only if augmentation is "deornament". The threshold duration (a 
-	 *            RhythmSymbol duration); all single-note events with a duration shorter than 
-	 *            this duration are considered ornamental and are removed.
-	 * @param rescaleFactor Applies only if augmentation is "rescale". A positive value doubles
-	 *               all durations (e.g., 4/4 becomes 4/2); a negative value halves them 
-	 *               (4/4 becomes 4/8).
-	 * @param augmentation One of "reverse", "deornament", or "rescale".
+	 * @param thresholdDur
+	 * @param rescaleFactor
+	 * @param augmentation
 	 */
 	// NOT TESTED (wrapper method)
-	public void augment(List<Integer[]> mi, int thresholdDur, int rescaleFactor, String augmentation) {
-		String rawEnc = null;
-		if (augmentation.equals("reverse")) {
-			rawEnc = reverseHeader(mi) + "\r\n\r\n" + reverseCleanEncoding();
+	public void augment(int thresholdDur, int rescaleFactor, String augmentation) {		
+		String rawEncAugm = 
+			augmentHeader(getHeader(), getMetersBarsDiminutions(), getMetadata(), 
+			rescaleFactor, augmentation) + 				
+			"\r\n\r\n" + 
+			recompose(augmentEvents(decompose(true, true), getMetersBarsDiminutions(), 
+			getTabSymbolSet(), thresholdDur, rescaleFactor, augmentation));
+		this.init(rawEncAugm, getPiecename(), SYNTAX_CHECKED);
+	}
+
+
+	List<Integer[]> getTimeline() {
+		String tc = getTagContent(getHeader(), METER_INFO_TAG);
+		List<Integer[]> timeline = new ArrayList<>();
+		for (String s : tc.split(";")) {
+			s = s.trim();
+			String meter = s.substring(0, s.indexOf("(")).trim();
+			int meterNum = Integer.valueOf(meter.split("/")[0]);
+			int meterDen = Integer.valueOf(meter.split("/")[1]);
+			String bars = s.substring(s.indexOf("(" + 1, s.indexOf(")"))).trim();
+			int startBar = 
+				bars.contains("-") ? Integer.valueOf(bars.split("-")[0]) : Integer.valueOf(bars);
+			int endBar = 
+				bars.contains("-") ? Integer.valueOf(bars.split("-")[1]) : startBar; 
+//			timeline.add(new Integer[])
 		}
-		else if (augmentation.equals("deornament")) {
-			rawEnc = 
-				getHeader() + "\r\n\r\n" + 
-				deornamentCleanEncoding(thresholdDur);
-		}
-		else if (augmentation.equals("rescale")) {
-			rawEnc = 
-				rescaleHeader(mi, rescaleFactor) + "\r\n\r\n" + 
-				rescaleCleanEncoding(rescaleFactor);
-		}
-		this.init(rawEnc, getPiecename(), SYNTAX_CHECKED);
+		return null;
+	}
+
+
+	static String getTasgContent(String argHeader, String argTag) {
+		// makeHeader() guarantees that (i) there is a space after the colon following
+		// argTag, and (ii) the content following that space, which is succeeded by the 
+		// CLOSE_METADATA_BRACKET, is trimmed
+		int startInd = argHeader.indexOf(argTag) + argTag.length() + ": ".length(); 
+		return argHeader.substring(startInd, argHeader.indexOf(CLOSE_METADATA_BRACKET, startInd));
 	}
 
 
 	/**
-	 * Reverses the header (i.e., adapts the METER_INFO and DIMINUTION information).
+	 * Parses the meter information from the metadata. 
 	 * 
-	 * @param mi
+	 * @return A List containing, for each meter, an Integer[] containing
+	 * <ul>
+	 * <li>As element 0: the meter's numerator.</li>
+	 * <li>As element 1: the meter's denominator.</li>
+	 * <li>As element 2: the meter's first bar.</li>
+	 * <li>As element 3: the meter's last bar.</li>
+	 * <li>As element 4: the meter's diminution.</li>
+	 * </ul>
+	 */
+	// TESTED
+	public List<Integer[]> getMetersBarsDiminutions() {
+		List<Integer[]> mbd = new ArrayList<>();
+		List<String> metersBars = new ArrayList<>();
+		Arrays.stream(getMetadata().get(METADATA_TAGS[METER_INFO_IND]).split(";"))
+			.forEach(m -> metersBars.add(m.trim()));
+		List<String> diminutions = new ArrayList<>();
+		Arrays.stream(getMetadata().get(METADATA_TAGS[DIMINUTION_IND]).split(";"))
+			.forEach(m -> diminutions.add(m.trim()));
+		for (int i = 0; i < metersBars.size(); i++) {
+			String m = metersBars.get(i);
+			String meter = m.substring(0, m.indexOf("(")).trim();
+			String bars = m.substring(m.indexOf("(") + 1, m.indexOf(")")).trim();
+			mbd.add(new Integer[]{
+				Integer.valueOf(meter.split("/")[0]), 
+				Integer.valueOf(meter.split("/")[1]), 
+				bars.contains("-") ? Integer.valueOf(bars.split("-")[0]) : Integer.valueOf(bars),
+				bars.contains("-") ? Integer.valueOf(bars.split("-")[1]) : Integer.valueOf(bars),
+				Integer.valueOf(diminutions.get(i)) 		
+			});
+		}		
+		return mbd;
+	}
+
+
+	/**
+	 * Augments the given header according to the given augmentation. 
+	 * 
+	 * @param argHeader
+	 * @param metadata
+	 * @param mbd
+	 * @param rescaleFactor
+	 * @param augmentation
 	 * @return
 	 */
 	// TESTED
-	String reverseHeader(List<Integer[]> mi) {
-		String argHeader = getHeader();
+	static String augmentHeader(String argHeader, List<Integer[]> mbd, 
+		Map<String, String> metadata, int rescaleFactor, String augmentation) {
 
-		// Get original METER_INFO and DIMINUTION content
-		// NB: makeHeader() guarantees that (i) there is a space after the colon following
-		//     the METER_INFO_TAG and DIMINUTION_TAG, and (ii) the content following that
-		//     space, which is succeeded by the CLOSE_METADATA_BRACKET, is trimmed
-		int startInd =
-			argHeader.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length(); 
-		String miOrigContent = 
-			argHeader.substring(startInd, argHeader.indexOf(CLOSE_METADATA_BRACKET, startInd));
-		startInd = 
-			argHeader.indexOf(DIMINUTION_TAG) + DIMINUTION_TAG.length() + ": ".length(); 
-		String dimOrigContent = 
-			argHeader.substring(startInd, argHeader.indexOf(CLOSE_METADATA_BRACKET, startInd));
-
-		// Reverse mi
-		List<Integer[]> miRev = new ArrayList<>();
-		for (Integer[] in : mi) {
-			miRev.add(Arrays.copyOf(in, in.length));
+		if (!augmentation.equals("deornament")) {
+			// Make augmented content
+			String miAugmContent = "";
+			String dimAugmContent = "";
+			if (augmentation.equals("reverse")) {
+				int lastBar = mbd.get(mbd.size() - 1)[3];
+				for (int i = mbd.size() - 1; i >= 0; i--) {
+					Integer[] curr = mbd.get(i);
+					miAugmContent += 
+						curr[0] + "/" + curr[1] + " " + 
+						"(" + (curr[2] == curr[3] ? (lastBar - curr[2] + 1):
+						(lastBar - (curr[3]) + 1) + "-" + (lastBar - curr[2] + 1)) + 
+						(i > 0 ? "); " : ")");
+					dimAugmContent += curr[4] + (i > 0 ? "; " : ""); 
+				}
+			}
+			else if (augmentation.equals("rescale")) {
+				for (int i = 0; i < mbd.size(); i++) {
+					Integer[] curr = mbd.get(i);
+					miAugmContent += 
+						curr[0] + "/" + (rescaleFactor > 0 ? curr[1]/rescaleFactor : 
+						curr[1]*Math.abs(rescaleFactor)) + " " + 
+						"(" + (curr[2] == curr[3] ? curr[2] : (curr[2] + "-" + curr[3])) + 
+						(i < mbd.size() -1 ? "); " : ")");
+				}
+			}
+	
+			// Replace original content with augmented content
+			argHeader = argHeader.replace(metadata.get(METADATA_TAGS[METER_INFO_IND]), miAugmContent);
+			if (augmentation.equals("reverse")) {
+				argHeader = argHeader.replace(metadata.get(METADATA_TAGS[DIMINUTION_IND]), dimAugmContent);
+			}
 		}
-		int numBars = miRev.get(miRev.size() - 1)[Timeline.MI_LAST_BAR];
-		for (Integer[] in : miRev) {
-			in[Timeline.MI_FIRST_BAR] = (numBars - in[Timeline.MI_FIRST_BAR]) + 1;
-			in[Timeline.MI_LAST_BAR] = (numBars - in[Timeline.MI_LAST_BAR]) + 1;
-		}
-		Collections.reverse(miRev);
-
-		// Make reversed METER_INFO and DIMINUTION content
-		String miRevContent = "";
-		String dimRevContent = "";		
-		for (int i = 0; i < miRev.size(); i++) {
-			Integer[] in = miRev.get(i);
-			int firstBar = in[Timeline.MI_FIRST_BAR];
-			int lastBar = in[Timeline.MI_LAST_BAR];
-			miRevContent += 
-				in[Timeline.MI_NUM] + "/" + in[Timeline.MI_DEN] + " (" + 
-				(firstBar != lastBar ? lastBar + "-" + firstBar : lastBar) + ")" +
-				(i < miRev.size() - 1 ? "; " : "");
-			dimRevContent += in[Timeline.MI_DIM] + (i < miRev.size() - 1 ? "; " : "");
-		}
-		argHeader = argHeader.replace(miOrigContent, miRevContent);
-		argHeader = argHeader.replace(dimOrigContent, dimRevContent);
 		return argHeader;
 	}
 
 
 	/**
-	 * Reverses the (clean) encoding. If not all events have an RS, the missing RS are 
-	 * complemented before reversing. 
+	 * Augments the given list of events according to the given augmentation.
 	 * 
-	 * @return
-	 */
-	// TESTED
-	String reverseCleanEncoding() {
-		List<String> events = decompose(true, true);
-		Collections.reverse(events);
-		return recompose(events.subList(1, events.size())) + events.get(0);
-	}
-
-
-	/**
-	 * Deornaments the (clean) encoding. If not all events have an RS, the missing RS are 
-	 * complemented before deornamenting.
-	 * 
+	 * @param events List of events with any missing RS complemented.
+	 * @param mbd
+	 * @param tss
 	 * @param thresholdDur
-	 * 
+	 * @param rescaleFactor
+	 * @param augmentation If augmentation is "reverse", any MensurationSigns not encoded 
+	 *        explicitly in the given list of events (i.e., only appearing in the meter info) 
+	 *        will be included in the augmented list of events returned.
 	 * @return
 	 */
 	// TESTED
-	String deornamentCleanEncoding(int thresholdDur) {
-		List<String> events = decompose(true, true);
-		List<String> eventsDeorn = new ArrayList<>();
-		for (int i = 0; i < events.size(); i++) {
-			String e = events.get(i);
-			// If e is a RS event
-			if (assertEventType(e, null, "RhythmSymbol")) {
-				String[] symbols = e.split("\\" + Symbol.SYMBOL_SEPARATOR);
-				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
-				// If e is ornamental (in which case it consists of only a RS, a TS, and a space) 
-				// and not part of an ornamental sequence at the beginning of the Encoding (in 
-				// which case eventsDeorn is still empty):
-				// calculate the total duration of the ornamental sequence; create 
-				// ePrevDeorn with the result; replace ePrev with ePrevDeorn
-				// NB: It is assumed that an ornamental sequence is not interrupted by (ornamental) rests 
-				if (r.getDuration() < thresholdDur && symbols.length == 3 && eventsDeorn.size() > 0) {
-					int durOrnSeq = r.getDuration();
-					for (int j = i+1; j < events.size(); j++) {
-						String eNext = events.get(j);
-						// If eNext is a RS event
-						if (assertEventType(eNext, null, "RhythmSymbol")) {
-							String[] symbolsNext = eNext.split("\\" + Symbol.SYMBOL_SEPARATOR);
-							RhythmSymbol rNext = RhythmSymbol.getRhythmSymbol(symbolsNext[0]);
-							// If eNext is ornamental: increment duration of ornamental sequence
-							if (rNext.getDuration() < thresholdDur && symbolsNext.length == 3) {
-								durOrnSeq += rNext.getDuration();
-							}
-							// If not: replace ePrev with ePrevDeorn 
-							else {
-								String ePrev = events.get(i-1);
-								String[] symbolsPrev = ePrev.split("\\" + Symbol.SYMBOL_SEPARATOR);
-								RhythmSymbol rPrev = RhythmSymbol.getRhythmSymbol(symbolsPrev[0]);
-								String ePrevDeorn = Symbol.getRhythmSymbol(
-									rPrev.getDuration() + durOrnSeq,
-									rPrev.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR),
-									rPrev.getBeam(),
-									rPrev.isTriplet()
-								).getEncoding();
-								ePrevDeorn += ePrev.substring(ePrev.indexOf(Symbol.SYMBOL_SEPARATOR));
-								eventsDeorn.set(eventsDeorn.lastIndexOf(ePrev), ePrevDeorn);
-								i = j-1;
-								break;
+	static List<String> augmentEvents(List<String> events, List<Integer[]> mbd, TabSymbolSet tss, 
+		int thresholdDur, int rescaleFactor, String augmentation) {
+
+		List<String> eventsAugm = new ArrayList<>();
+		if (augmentation.equals("reverse")) {
+			Collections.reverse(mbd);
+			// Get the encodings of the MSs
+			List<String> msEncodings = new ArrayList<>();
+			mbd.forEach(in -> msEncodings.add(MensurationSign.getMensurationSign(in).getEncoding() + 
+				Symbol.SYMBOL_SEPARATOR + Symbol.SPACE.getEncoding() + Symbol.SYMBOL_SEPARATOR));
+			// Get the onsets (in TabSymbol durations) of the MSs
+			// The onset time of a MS is the sum of the durations of all preceding meter sections, 
+			// where the duration of a meter section = (meter * number of bars * a whole note)
+			List<Integer> msOnsets = new ArrayList<>(); // TODO put in getMetersBarsDiminutions()?
+			msOnsets.add(0);
+			for (int i = 1; i < mbd.size(); i++) {
+				Integer[] prev = mbd.get(i-1);
+				msOnsets.add(msOnsets.get(i-1) + 
+					(int) new Rational(prev[0], prev[1])
+					.mul((prev[3] - prev[2]) + 1)
+					.mul(Symbol.BREVIS.getDuration()).toDouble()); 
+			}
+
+			// 1. Strip events that need to be re-placed from events; reverse events
+			// EBI
+			events = events.subList(0, events.indexOf(Symbol.END_BREAK_INDICATOR));
+			// Decorative opening barline
+			String first = events.get(0);
+			if (assertEventType(first, tss, "barline")) {
+				events = events.subList(1, events.size() - 1);
+			}
+			// Closing barline
+			String last = events.get(events.size() - 1);
+			if (assertEventType(last, tss, "barline")) {
+				events = events.subList(0, events.size() - 1);
+			}
+			// MensurationSigns
+			for (String ms : msEncodings) {
+				events.remove(ms);
+			}
+			Collections.reverse(events);
+
+			// 2. Construct eventsAugm 
+			// Decorative opening barline 
+			if (assertEventType(first, tss, "barline")) {
+				eventsAugm.add(0, first);
+			}			
+			// Events and Mss
+			int mt = 0;
+			for (int i = 0; i < events.size(); i++) {
+				String e = events.get(i);
+				if (assertEventType(e, tss, "RhythmSymbol")) {
+					if (msOnsets.contains(mt)) {
+						String ms = msEncodings.get(msOnsets.indexOf(mt));
+						eventsAugm.add(ms);
+					}	
+					mt += Symbol.getRhythmSymbol(e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))).getDuration();
+				}
+				eventsAugm.add(e);
+			}
+			// Closing barline and EBI
+			if (assertEventType(last, tss, "barline")) {
+				eventsAugm.add(last);
+			}
+			eventsAugm.add(Symbol.END_BREAK_INDICATOR);
+		}
+		else {			
+			for (int i = 0; i < events.size(); i++) {
+				String e = events.get(i);
+				// If e is a RS event
+				if (assertEventType(e, null, "RhythmSymbol")) {
+					String[] symbols = e.split("\\" + Symbol.SYMBOL_SEPARATOR);
+					RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
+					if (augmentation.equals("deornament")) {
+						// If e is ornamental (in which case it consists of only a RS, a TS, and a space) and 
+						// not part of an ornamental sequence at the beginning of the Encoding (in which case 
+						// eventsAugm is still empty)
+						// NB: It is assumed that an ornamental sequence is not interrupted by (ornamental) rests 
+						if (r.getDuration() < thresholdDur && symbols.length == 3 && eventsAugm.size() > 0) {
+							int durOrnSeq = r.getDuration();
+							for (int j = i+1; j < events.size(); j++) {
+								String eNext = events.get(j);
+								// If eNext is a RS event
+								if (assertEventType(eNext, null, "RhythmSymbol")) {
+									String[] symbolsNext = eNext.split("\\" + Symbol.SYMBOL_SEPARATOR);
+									RhythmSymbol rNext = RhythmSymbol.getRhythmSymbol(symbolsNext[0]);
+									// If eNext is ornamental: increment duration of ornamental sequence
+									if (rNext.getDuration() < thresholdDur && symbolsNext.length == 3) {
+										durOrnSeq += rNext.getDuration();
+									}
+									// If not: make ePrevDeorn, which replaces ePrev
+									else {
+										String ePrev = events.get(i-1);
+										String[] symbolsPrev = ePrev.split("\\" + Symbol.SYMBOL_SEPARATOR);
+										RhythmSymbol rPrev = RhythmSymbol.getRhythmSymbol(symbolsPrev[0]);
+										String ePrevDeorn = Symbol.getRhythmSymbol(
+											rPrev.getDuration() + durOrnSeq,
+											rPrev.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR),
+											rPrev.getBeam(),
+											rPrev.isTriplet()
+												).getEncoding();
+										ePrevDeorn += ePrev.substring(ePrev.indexOf(Symbol.SYMBOL_SEPARATOR));
+										eventsAugm.set(eventsAugm.lastIndexOf(ePrev), ePrevDeorn);
+										i = j-1;
+										break;
+									}
+								}
+								// If eNext is not a RS event
+								else {
+									eventsAugm.add(eNext);
+								}
 							}
 						}
-						// If eNext is not a RS event
+						// If e is not ornamental
 						else {
-							eventsDeorn.add(eNext);
+							eventsAugm.add(e);
 						}
 					}
+					else if (augmentation.equals("rescale")) {
+						String eResc = Symbol.getRhythmSymbol(
+							r.getDuration() * rescaleFactor, 
+							r.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR), 
+							r.getBeam(), 
+							r.isTriplet()
+						).getEncoding();
+						eResc += e.substring(e.indexOf(Symbol.SYMBOL_SEPARATOR), e.length());
+						eventsAugm.add(eResc);
+					}
 				}
-				// If e is not ornamental
+				// If e is not a RS event
 				else {
-					eventsDeorn.add(e);
+					eventsAugm.add(e);
 				}
 			}
-			// If e is not a RS event
-			else {
-				eventsDeorn.add(e);
-			}
 		}
-		return recompose(eventsDeorn);
-	}
-
-
-	/**
-	 * Rescales the header (i.e., adapts the METER_INFO information).
-	 * 
-	 * @param mi
-	 * @param rescaleFactor 
-	 * @return
-	 */
-	// TESTED
-	String rescaleHeader(List<Integer[]> mi, int rescaleFactor) {
-		String argHeader = getHeader();
-
-		// Get original METER_INFO content
-		// NB: makeHeader() guarantees that (i) there is a space after the colon following
-		//     the METER_INFO_TAG, and (ii) the content following that space, which is 
-		//     succeeded by the CLOSE_METADATA_BRACKET, is trimmed
-		int startInd = 
-			argHeader.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length();
-		String miOrigContent = 
-			argHeader.substring(startInd, argHeader.indexOf(CLOSE_METADATA_BRACKET, startInd));
-
-		// Make rescaled METER_INFO content
-		String miRescaleContent = "";
-		for (int i = 0; i < mi.size(); i++) {
-			Integer[] in = mi.get(i);
-			int firstBar = in[Timeline.MI_FIRST_BAR];
-			int lastBar = in[Timeline.MI_LAST_BAR];
-			int den = in[Timeline.MI_DEN];
-			miRescaleContent += 
-				in[Timeline.MI_NUM] + "/" + 
-				(rescaleFactor > 0 ? den/rescaleFactor : den*Math.abs(rescaleFactor)) + " (" +
-				(firstBar != lastBar ? firstBar + "-" + lastBar : firstBar) + ")" +
-				(i < mi.size() - 1 ? "; " : "");
-		}
-		return argHeader = argHeader.replace(miOrigContent, miRescaleContent);
-	}
-
-
-	/**
-	 * Rescales the (clean) encoding. If not all events have an RS, the missing RS are 
-	 * complemented before rescaling.
-	 * 
-	 * @param rescaleFactor  
-	 * @return
-	 */
-	// TESTED
-	String rescaleCleanEncoding(int rescaleFactor) {
-		List<String> events = decompose(true, true);
-		for (int i = 0; i < events.size(); i++) {
-			String e = events.get(i);
-			// If e is a RS event
-			if (assertEventType(e, null, "RhythmSymbol")) {
-				String[] symbols = e.split("\\" + Symbol.SYMBOL_SEPARATOR);
-				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
-				String eResc = Symbol.getRhythmSymbol(
-					r.getDuration() * rescaleFactor, 
-					r.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR), 
-					r.getBeam(), 
-					r.isTriplet()
-				).getEncoding();
-				eResc += e.substring(e.indexOf(Symbol.SYMBOL_SEPARATOR), e.length());
-				events.set(i, eResc);
-			}
-		}
-		return recompose(events); 
+		return eventsAugm;
 	}
 
 
@@ -3519,5 +3558,276 @@ public class Encoding implements Serializable {
 		}
 		events.removeIf(t -> t == null);
 		return recompose(events); 
+	}
+
+
+	/**
+	 * Reverses the header (i.e., adapts the METER_INFO and DIMINUTION information).
+	 * 
+	 * @param mi
+	 * @return
+	 */
+	private String reverseHeader(List<Integer[]> mi) {
+		String argHeader = getHeader();
+
+		// Get original METER_INFO and DIMINUTION content
+		// NB: makeHeader() guarantees that (i) there is a space after the colon following
+		//     the METER_INFO_TAG and DIMINUTION_TAG, and (ii) the content following that
+		//     space, which is succeeded by the CLOSE_METADATA_BRACKET, is trimmed
+		int startInd =
+			argHeader.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length(); 
+		String miOrigContent = 
+			argHeader.substring(startInd, argHeader.indexOf(CLOSE_METADATA_BRACKET, startInd));
+		startInd = 
+			argHeader.indexOf(DIMINUTION_TAG) + DIMINUTION_TAG.length() + ": ".length(); 
+		String dimOrigContent = 
+			argHeader.substring(startInd, argHeader.indexOf(CLOSE_METADATA_BRACKET, startInd));
+
+		// Reverse mi
+		List<Integer[]> miRev = new ArrayList<>();
+		for (Integer[] in : mi) {
+			miRev.add(Arrays.copyOf(in, in.length));
+		}
+		int numBars = miRev.get(miRev.size() - 1)[Timeline.MI_LAST_BAR];
+		for (Integer[] in : miRev) {
+			in[Timeline.MI_FIRST_BAR] = (numBars - in[Timeline.MI_FIRST_BAR]) + 1;
+			in[Timeline.MI_LAST_BAR] = (numBars - in[Timeline.MI_LAST_BAR]) + 1;
+		}
+		Collections.reverse(miRev);
+
+		// Make reversed METER_INFO and DIMINUTION content
+		String miRevContent = "";
+		String dimRevContent = "";		
+		for (int i = 0; i < miRev.size(); i++) {
+			Integer[] in = miRev.get(i);
+			int firstBar = in[Timeline.MI_FIRST_BAR];
+			int lastBar = in[Timeline.MI_LAST_BAR];
+			miRevContent += 
+				in[Timeline.MI_NUM] + "/" + in[Timeline.MI_DEN] + " (" + 
+				(firstBar != lastBar ? lastBar + "-" + firstBar : lastBar) + ")" +
+				(i < miRev.size() - 1 ? "; " : "");
+			dimRevContent += in[Timeline.MI_DIM] + (i < miRev.size() - 1 ? "; " : "");
+		}
+		argHeader = argHeader.replace(miOrigContent, miRevContent);
+		argHeader = argHeader.replace(dimOrigContent, dimRevContent);
+		return argHeader;
+	}
+
+
+	/**
+	 * Rescales the header (i.e., adapts the METER_INFO information).
+	 * 
+	 * @param mi
+	 * @param rescaleFactor 
+	 * @return
+	 */
+	private String rescaleHeader(List<Integer[]> mi, int rescaleFactor) {
+		String argHeader = getHeader();
+
+		// Get original METER_INFO content
+		// NB: makeHeader() guarantees that (i) there is a space after the colon following
+		//     the METER_INFO_TAG, and (ii) the content following that space, which is 
+		//     succeeded by the CLOSE_METADATA_BRACKET, is trimmed
+		int startInd = 
+			argHeader.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length();
+		String miOrigContent = 
+			argHeader.substring(startInd, argHeader.indexOf(CLOSE_METADATA_BRACKET, startInd));
+
+		// Make rescaled METER_INFO content
+		String miRescContent = "";
+		for (int i = 0; i < mi.size(); i++) {
+			Integer[] in = mi.get(i);
+			int firstBar = in[Timeline.MI_FIRST_BAR];
+			int lastBar = in[Timeline.MI_LAST_BAR];
+			int den = in[Timeline.MI_DEN];
+			miRescContent += 
+				in[Timeline.MI_NUM] + "/" + 
+				(rescaleFactor > 0 ? den/rescaleFactor : den*Math.abs(rescaleFactor)) + " (" +
+				(firstBar != lastBar ? firstBar + "-" + lastBar : firstBar) + ")" +
+				(i < mi.size() - 1 ? "; " : "");
+		}
+		return argHeader = argHeader.replace(miOrigContent, miRescContent);
+	}
+
+
+	/**
+	 * Reverses the (clean) encoding. If not all events have an RS, the missing RS are 
+	 * complemented before reversing. 
+	 * 
+	 * @return
+	 */
+	private String reverseCleanEncoding() {
+		List<String> events = decompose(true, true);
+		Collections.reverse(events);
+		events.forEach(e -> System.out.println(e));
+		return recompose(events.subList(1, events.size())) + events.get(0);
+	}
+
+
+	/**
+	 * Deornaments the (clean) encoding. If not all events have an RS, the missing RS are 
+	 * complemented before deornamenting.
+	 * 
+	 * @param thresholdDur
+	 * 
+	 * @return
+	 */
+	private String deornamentCleanEncoding(int thresholdDur) {
+		List<String> events = decompose(true, true);
+		List<String> eventsDeorn = new ArrayList<>();
+		for (int i = 0; i < events.size(); i++) {
+			String e = events.get(i);
+			// If e is a RS event
+			if (assertEventType(e, null, "RhythmSymbol")) {
+				String[] symbols = e.split("\\" + Symbol.SYMBOL_SEPARATOR);
+				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
+				// If e is ornamental (in which case it consists of only a RS, a TS, and a space) and 
+				// not part of an ornamental sequence at the beginning of the Encoding (in which case 
+				// eventsDeorn is still empty)
+				// NB: It is assumed that an ornamental sequence is not interrupted by (ornamental) rests 
+				if (r.getDuration() < thresholdDur && symbols.length == 3 && eventsDeorn.size() > 0) {
+					int durOrnSeq = r.getDuration();
+					for (int j = i+1; j < events.size(); j++) {
+						String eNext = events.get(j);
+						// If eNext is a RS event
+						if (assertEventType(eNext, null, "RhythmSymbol")) {
+							String[] symbolsNext = eNext.split("\\" + Symbol.SYMBOL_SEPARATOR);
+							RhythmSymbol rNext = RhythmSymbol.getRhythmSymbol(symbolsNext[0]);
+							// If eNext is ornamental: increment duration of ornamental sequence
+							if (rNext.getDuration() < thresholdDur && symbolsNext.length == 3) {
+								durOrnSeq += rNext.getDuration();
+							}
+							// If not: make ePrevDeorn, which replaces ePrev
+							else {
+								String ePrev = events.get(i-1);
+								String[] symbolsPrev = ePrev.split("\\" + Symbol.SYMBOL_SEPARATOR);
+								RhythmSymbol rPrev = RhythmSymbol.getRhythmSymbol(symbolsPrev[0]);
+								String ePrevDeorn = Symbol.getRhythmSymbol(
+									rPrev.getDuration() + durOrnSeq,
+									rPrev.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR),
+									rPrev.getBeam(),
+									rPrev.isTriplet()
+								).getEncoding();
+								ePrevDeorn += ePrev.substring(ePrev.indexOf(Symbol.SYMBOL_SEPARATOR));
+								eventsDeorn.set(eventsDeorn.lastIndexOf(ePrev), ePrevDeorn);
+								i = j-1;
+								break;
+							}
+						}
+						// If eNext is not a RS event
+						else {
+							eventsDeorn.add(eNext);
+						}
+					}
+				}
+				// If e is not ornamental
+				else {
+					eventsDeorn.add(e);
+				}
+			}
+			// If e is not a RS event
+			else {
+				eventsDeorn.add(e);
+			}
+		}
+		return recompose(eventsDeorn);
+	}
+
+
+	/**
+	 * Rescales the (clean) encoding. If not all events have an RS, the missing RS are 
+	 * complemented before rescaling.
+	 * 
+	 * @param rescaleFactor  
+	 * @return
+	 */
+	private String rescaleCleanEncoding(int rescaleFactor) {
+		List<String> events = decompose(true, true);
+		for (int i = 0; i < events.size(); i++) {
+			String e = events.get(i);
+			// If e is a RS event
+			if (assertEventType(e, null, "RhythmSymbol")) {
+				String[] symbols = e.split("\\" + Symbol.SYMBOL_SEPARATOR);
+				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
+				String eResc = Symbol.getRhythmSymbol(
+					r.getDuration() * rescaleFactor, 
+					r.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR), 
+					r.getBeam(), 
+					r.isTriplet()
+				).getEncoding();
+				eResc += e.substring(e.indexOf(Symbol.SYMBOL_SEPARATOR), e.length());
+				events.set(i, eResc);
+			}
+		}
+		return recompose(events); 
+	}
+
+
+	/**
+	 * Augments the given header according to the given augmentation. 
+	 * 
+	 * @param argHeader
+	 * @param mi
+	 * @param rescaleFactor
+	 * @param augmentation
+	 * @return
+	 */
+	private static String augmentHeaderOLD(String argHeader, List<Integer[]> mi, int rescaleFactor, String augmentation) {
+		// Get original METER_INFO and DIMINUTION content
+		// NB: makeHeader() guarantees that (i) there is a space after the colon following
+		//     the METER_INFO_TAG and DIMINUTION_TAG, and (ii) the content following that
+		//     space, which is succeeded by the CLOSE_METADATA_BRACKET, is trimmed
+		int startInd =
+			argHeader.indexOf(METER_INFO_TAG) + METER_INFO_TAG.length() + ": ".length(); 
+		String miOrigContent = 
+			argHeader.substring(startInd, argHeader.indexOf(CLOSE_METADATA_BRACKET, startInd));
+		startInd = 
+			argHeader.indexOf(DIMINUTION_TAG) + DIMINUTION_TAG.length() + ": ".length(); 
+		String dimOrigContent = 
+			argHeader.substring(startInd, argHeader.indexOf(CLOSE_METADATA_BRACKET, startInd));
+
+		// Reverse mi
+		List<Integer[]> miRev = new ArrayList<>();
+		if (augmentation.equals("reverse")) {
+			mi.forEach(in -> miRev.add(Arrays.copyOf(in, in.length)));
+			int numBars = miRev.get(miRev.size() - 1)[Timeline.MI_LAST_BAR];
+			for (Integer[] in : miRev) {
+				in[Timeline.MI_FIRST_BAR] = (numBars - in[Timeline.MI_FIRST_BAR]) + 1;
+				in[Timeline.MI_LAST_BAR] = (numBars - in[Timeline.MI_LAST_BAR]) + 1;
+			}
+			Collections.reverse(miRev);
+		}
+
+		// Make augmented METER_INFO and DIMINUTION content
+		String miAugmContent = "";
+		String dimAugmContent = "";
+		for (int i = 0; i < mi.size(); i++) {
+			Integer[] in = augmentation.equals("reverse") ? miRev.get(i) : mi.get(i);
+			int firstBar = in[Timeline.MI_FIRST_BAR];
+			int lastBar = in[Timeline.MI_LAST_BAR];
+			int den = in[Timeline.MI_DEN];
+			if (augmentation.equals("reverse")) {
+				
+				miAugmContent += 
+					in[Timeline.MI_NUM] + "/" + in[Timeline.MI_DEN] + " (" + 
+					(firstBar != lastBar ? lastBar + "-" + firstBar : lastBar) + ")" +
+					(i < miRev.size() - 1 ? "; " : "");
+				dimAugmContent += in[Timeline.MI_DIM] + (i < miRev.size() - 1 ? "; " : "");
+			}
+			else if (augmentation.equals("rescale")) {
+				miAugmContent +=
+					in[Timeline.MI_NUM] + "/" + 
+					(rescaleFactor > 0 ? den/rescaleFactor : den*Math.abs(rescaleFactor)) + " (" +
+					(firstBar != lastBar ? firstBar + "-" + lastBar : firstBar) + ")" +
+					(i < mi.size() - 1 ? "; " : "");
+			}
+		}
+
+		// Replace original with augmented content
+		argHeader = argHeader.replace(miOrigContent, miAugmContent);
+		if (augmentation.equals("reverse")) {
+			argHeader = argHeader.replace(dimOrigContent, dimAugmContent);
+		}
+		return argHeader;
 	}
 }

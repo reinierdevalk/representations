@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
+import structure.ScorePiece;
 import structure.Timeline;
 import tbp.Encoding;
 import tbp.Event;
@@ -607,7 +608,7 @@ public class Tablature implements Serializable {
 	 */
 	// TESTED
 	public static Note convertTabSymbolToNote(Integer[][] btp, int noteIndex) {
-		return Transcription.createNote(
+		return ScorePiece.createNote(
 			btp[noteIndex][PITCH], 
 			new Rational(btp[noteIndex][ONSET_TIME], SRV_DEN), 
 			new Rational(btp[noteIndex][MIN_DURATION], SRV_DEN),
@@ -1193,16 +1194,31 @@ public class Tablature implements Serializable {
 	//  augmentation
 	//
 	/**
-	 * TODO Add description (from Encoding?)
+	 * Augments the <code>Tablature</code>. There are three types of augmentation:
+	 * <ul>
+	 * <li>Reverse   : reverses the <code>Tablature</code>.</li>
+	 * <li>Deornament: removes all sequences of single-note chords shorter than the given
+	 *                 threshold duration from the <code>Tablature</code>, and lengthens 
+	 *                 the duration of the chord preceding a sequence by the total length 
+	 *                 of the removed sequence.</li>
+	 * <li>Rescale   : rescales (up or down) the <code>Tablature</code> durationally by the 
+	 *                 given rescale factor.</li>
+	 * </ul>
 	 * 
-	 * @param thresholdDur
-	 * @param rescaleFactor
-	 * @param augmentation
+	 * NB: See also <code>Transcription.augment()</code>.<br><br>
+	 * 
+	 * @param thresholdDur  Applies only if augmentation is "deornament". The threshold duration (a 
+	 *                      RhythmSymbol duration); all single-note chords with a duration shorter than 
+	 *                      this duration are considered ornamental and are removed.
+	 * @param rescaleFactor Applies only if augmentation is "rescale". A positive value doubles
+	 *                      all durations (e.g., 4/4 becomes 4/2); a negative value halves them 
+	 *                      (4/4 becomes 4/8).
+	 * @param augmentation  One of "reverse", "deornament", or "rescale".
 	 */
 	// NOT TESTED (wrapper method)
 	public void augment(int thresholdDur, int rescaleFactor, String augmentation) {
 		Encoding e = getEncoding();
-		e.augment(getTimeline().getMeterInfo(), thresholdDur, rescaleFactor, augmentation);
+		e.augment(thresholdDur, rescaleFactor, augmentation);
 		this.init(e, getNormaliseTuning());
 	}
 
@@ -1308,7 +1324,7 @@ public class Tablature implements Serializable {
 		Rational noteOnsetTime = new Rational(tabSymbolOnsetTime, SRV_DEN);
 
 		// 3. Create a Note with the given pitch, onset time, and minimum duration
-		Note note = Transcription.createNote(tabSymbolPitch, noteOnsetTime, noteMinimumDuration, null);
+		Note note = ScorePiece.createNote(tabSymbolPitch, noteOnsetTime, noteMinimumDuration, null);
 
 		return note; 
 	}

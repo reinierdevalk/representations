@@ -9,8 +9,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.junit.After;
 import org.junit.Before;
@@ -19,9 +17,6 @@ import org.junit.Test;
 import junit.framework.TestCase;
 import path.Path;
 import representations.Tablature;
-import tbp.Event;
-import tbp.Encoding;
-import tbp.RhythmSymbol;
 import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 
@@ -118,76 +113,74 @@ public class EncodingTest extends TestCase {
 				"{SOURCE: }" + "\r\n" + 
 				"{TABSYMBOLSET: French}" + "\r\n" +
 				"{TUNING: G}" + "\r\n" +
-				"{METER_INFO: 3/8 (0); 2/2 (1-2); 3/4 (3-4); 2/2 (5-6); 5/16 (7); 2/2 (8)}" + "\r\n" +
+				"{METER_INFO: 3/8 (1); 2/2 (2-3); 3/4 (4-5); 2/2 (6-7); 5/16 (8); 2/2 (9)}" + "\r\n" +
 				"{DIMINUTION: 2; 2; 4; 1; 1; -2}";
 		}
 		return header;
 	}
 
 
-	private List<String> getDecomposedEvents(boolean complementRs) {
-		List<String> l;
-		if (!complementRs) {
-			l = Arrays.asList(
-				"MC\\.>.", 
-				"sb.>.", 
-				"mi.>.", 
-				"mi.a5.c4.b2.a1.>.", 
-				"|.",	
-				"sm*.a6.c4.i2.a1.>.", 
-				"fu.d6.>.", 
-				"sm.c6.a5.e4.b2.>.", 
-				"a6.>.",
-				"mi.a6.h5.c4.b3.f2.>.", 
-				"sm.a6.b3.a2.a1.>.", 
-				"a3.e2.>.",
-				"|.", 
-				"/",
-				"||.",
-				"fu.a6.c4.a2.a1.>.", 
-				"e2.>.", 
-				"sf.a1.>.", 
-				"e2.>.", 
-				"|.", 
-				"c2.>.", 
-				"e2.>.", 
-				"mi.a1.>.", 
-				"mi.>.", 
-				"mi.a6.c4.a2.a1.>.", 
-				"||.",
-				"//"	
-			);
+	private List<String> getDecomposedEvents(String piece, boolean complementRs) {
+		List<String> l = null;
+		if (piece.equals("testpiece")) {
+			if (!complementRs) {
+				l = Arrays.asList(
+					"MC\\.>.", "sb.>.", "mi.>.", "mi.a5.c4.b2.a1.>.", 
+					"|.",	
+					"sm*.a6.c4.i2.a1.>.", "fu.d6.>.", "sm.c6.a5.e4.b2.>.", "a6.>.", 
+						"mi.a6.h5.c4.b3.f2.>.", "sm.a6.b3.a2.a1.>.", "a3.e2.>.",
+					"|.", 
+					"/",
+					"||.",
+					"fu.a6.c4.a2.a1.>.", "e2.>.", "sf.a1.>.", "e2.>.", 
+					"|.", 
+					"c2.>.", "e2.>.", "mi.a1.>.", "mi.>.", "mi.a6.c4.a2.a1.>.", 
+					"||.",
+					"//"	
+				);
+			}
+			else {
+				l = Arrays.asList(
+					"MC\\.>.", "sb.>.", "mi.>.", "mi.a5.c4.b2.a1.>.", 
+					"|.",	
+					"sm*.a6.c4.i2.a1.>.", "fu.d6.>.", "sm.c6.a5.e4.b2.>.", "sm.a6.>.",
+						"mi.a6.h5.c4.b3.f2.>.", "sm.a6.b3.a2.a1.>.", "sm.a3.e2.>.",
+					"|.", 
+					"/",
+					"||.",
+					"fu.a6.c4.a2.a1.>.", "fu.e2.>.", "sf.a1.>.", "sf.e2.>.", 
+					"|.", 
+					"sf.c2.>.", "sf.e2.>.", "mi.a1.>.", "mi.>.", "mi.a6.c4.a2.a1.>.", 
+					"||.",
+					"//"
+				);
+			}	
 		}
-		else {
+		if (piece.equals("testGetMeterInfo")) {
 			l = Arrays.asList(
-				"MC\\.>.", 
-				"sb.>.", 
-				"mi.>.", 
-				"mi.a5.c4.b2.a1.>.", 
-				"|.",	
-				"sm*.a6.c4.i2.a1.>.", 
-				"fu.d6.>.", 
-				"sm.c6.a5.e4.b2.>.", 
-				"sm.a6.>.",
-				"mi.a6.h5.c4.b3.f2.>.", 
-				"sm.a6.b3.a2.a1.>.", 
-				"sm.a3.e2.>.",
-				"|.", 
-				"/",
+				"M3:8.>.", "sm.a1.>.", "sm.a1.>.", "sm.a1.>.",
+				"|.",
+				"MC\\.>.", "mi*.a2.a1.>.", "sm.a1.>.", "sb.a2.a1.>.",
+				"|.",
+				"mi.a2.a1.>.", "fu-.a1.>.", "fu-.a1.>.", "sf-.a1.>.", "sf-.a1.>.", "sf-.a1.>.", 
+					"sf.a1.>.", "sb.a2.a1.>.",
+				"|.",
+				"M3.>.", "mi.a2.a1.>.", "sm-.a1.>.", "fu-.a1.>.", "fu.a1.>.", "mi.a2.a1.>.", 
+				"|.",
+				"sm*.a1.>.", "sf-.a1.>.", "sf.a1.>.", "sb.a2.a1.>.",
+				"|.",
+				"MC\\.>.", "sb.a2.a1.>.", "sb.a2.a1.>.", 
+				"|.",
+				"sm-.a1.>.", "sm-.a1.>.", "sm-.a1.>.", "sm.a1.>.", "sm-.a1.>.", "sm.a1.>.", 
+					"mi.a2.a1.>.",
+				"|.",
+				"sm-.a1.>.", "fu-.a1.>.", "fu-.a1.>.", "fu.a1.>.",
+				"|.",
+				"MC\\.>.", "sb.a2.a1.>.", "sm-.a1.>.", "fu-.a1.>.", "fu.a1.>.", "mi.a2.a1.>.",
 				"||.",
-				"fu.a6.c4.a2.a1.>.", 
-				"fu.e2.>.", 
-				"sf.a1.>.", 
-				"sf.e2.>.", 
-				"|.", 
-				"sf.c2.>.", 
-				"sf.e2.>.", 
-				"mi.a1.>.", 
-				"mi.>.", 
-				"mi.a6.c4.a2.a1.>.", 
-				"||.",
-				"//"	
+				"//"
 			);
+			
 		}
 		return new ArrayList<>(l);
 	}
@@ -902,7 +895,7 @@ public class EncodingTest extends TestCase {
 	public void testRecompose() {
 		Encoding encoding = new Encoding(encodingTestpiece);
 
-		List<String> events = getDecomposedEvents(true);
+		List<String> events = getDecomposedEvents("testpiece", true);
 		// Add line break after barlines without one
 		String expected = "";
 		for (String s : events) {
@@ -914,17 +907,42 @@ public class EncodingTest extends TestCase {
 				expected += "\r\n"; 
 			}				
 		}
+		System.out.println(expected);
 
 		assertEquals(expected, Encoding.recompose(encoding.decompose(true, true)));
 	}
 
 
 	@Test
-	public void testReverseHeader() {
-		Encoding e1 = new Encoding(encodingTestpiece);
-		Tablature tab1 = new Tablature(encodingTestpiece, true);
-		Encoding e2 = new Encoding(encodingTestGetMeterInfo);
-		Tablature tab2 = new Tablature(encodingTestGetMeterInfo, true);
+	public void testGetMetersBarsDiminutions() {
+		Encoding e = new Encoding(encodingTestGetMeterInfo);
+
+		List<Integer[]> expected = new ArrayList<>();
+		expected.add(new Integer[]{3, 8, 1, 1, 2});
+		expected.add(new Integer[]{2, 2, 2, 3, 2});
+		expected.add(new Integer[]{3, 4, 4, 5, 4});
+		expected.add(new Integer[]{2, 2, 6, 7, 1});
+		expected.add(new Integer[]{5, 16, 8, 8, 1});
+		expected.add(new Integer[]{2, 2, 9, 9, -2});
+
+		List<Integer[]> actual = e.getMetersBarsDiminutions();
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).length, actual.get(i).length);
+			for (int j = 0; j < expected.get(i).length; j++) {
+				assertEquals(expected.get(i)[j], actual.get(i)[j]);
+			}
+		}
+	}
+
+
+	@Test
+	public void testAugmentHeader() {
+		Encoding e1 = new Encoding(encodingTestpiece); // reverse
+		Encoding e2 = new Encoding(encodingTestGetMeterInfo); // reverse
+		Encoding e3 = new Encoding(encodingTestpiece); // rescale
+		Encoding e4 = new Encoding(encodingTestGetMeterInfo); // rescale
 
 		List<String> expected = new ArrayList<>();
 		String expected1 = getHeader("testpiece");
@@ -944,9 +962,25 @@ public class EncodingTest extends TestCase {
 			"-2; 1; 1; 4; 2; 2");
 		expected.add(expected2);
 
+		String expected3 = getHeader("testpiece");
+		expected3 = expected3.replace("2/2", "2/1");
+		expected.add(expected3);
+		String expected4 = getHeader("testGetMeterInfo");
+		expected4 = expected4.replace("3/8", "3/16");
+		expected4 = expected4.replace("2/2", "2/4");
+		expected4 = expected4.replace("3/4", "3/8");
+		expected4 = expected4.replace("5/16", "5/32");
+		expected.add(expected4);
+
 		List<String> actual = Arrays.asList(
-			e1.reverseHeader(tab1.getTimeline().getMeterInfo()),
-			e2.reverseHeader(tab2.getTimeline().getMeterInfo())
+			Encoding.augmentHeader(e1.getHeader(), e1.getMetadata(), 
+				e1.getMetersBarsDiminutions(), -1, "reverse"),
+			Encoding.augmentHeader(e2.getHeader(), e2.getMetadata(), 
+				e2.getMetersBarsDiminutions(), -1, "reverse"),
+			Encoding.augmentHeader(e3.getHeader(), e3.getMetadata(), 
+				e3.getMetersBarsDiminutions(), 2, "rescale"),
+			Encoding.augmentHeader(e4.getHeader(), e4.getMetadata(), 
+				e4.getMetersBarsDiminutions(), -2, "rescale")
 		);
 
 		assertEquals(expected.size(), actual.size());
@@ -958,86 +992,50 @@ public class EncodingTest extends TestCase {
 
 
 	@Test
-	public void testReverseCleanEncoding() {
-		Encoding e = new Encoding(encodingTestpiece);
+	public void testAugmentEvents() {
+		Encoding e1 = new Encoding(encodingTestpiece); // reverse
+		Encoding e2 = new Encoding(encodingTestGetMeterInfo); // reverse (multiple MensurationSigns)
+		Encoding e3 = new Encoding(encodingTestpiece); // deornament
+		Encoding e4 = new Encoding(encodingTestpiece); // rescale
 
-		String expected = "";
-		List<String> eventsRev = getDecomposedEvents(true);
-		Collections.reverse(eventsRev);
-		for (String s : eventsRev.subList(1, eventsRev.size())) {
-			expected += 
-				s + ((Encoding.assertEventType(s, e.getTabSymbolSet(), "barline") ||
-				s.equals(Symbol.SYSTEM_BREAK_INDICATOR)) ? "\r\n" : "");
-		}
-		expected += Symbol.END_BREAK_INDICATOR;
+		String dblBarline = Symbol.BARLINE.makeVariant(2, null).getEncoding() + Symbol.SYMBOL_SEPARATOR;
 
-		String actual = e.reverseCleanEncoding();
-
-		assertEquals(expected, actual);		
-	}
-
-
-	@Test
-	public void testDeornamentCleanEncoding() {
-		Encoding e = new Encoding(encodingTestpiece);
-
-		String expected = "";
-		List<String> events = getDecomposedEvents(true);
-		List<String> eventsDeorn = new ArrayList<>(events);
-		eventsDeorn.set(5, "mi.a6.c4.i2.a1.>.");
-		eventsDeorn.set(15, "mi.a6.c4.a2.a1.>.");
-		events.stream()
-			.filter(ev -> ev.startsWith("fu") || ev.startsWith("sf"))
-			.forEach(ev -> eventsDeorn.remove(ev));
-		for (String s : eventsDeorn) {
-			expected += 
-				s + ((Encoding.assertEventType(s, e.getTabSymbolSet(), "barline") ||
-				s.equals(Symbol.SYSTEM_BREAK_INDICATOR)) ? "\r\n" : "");
-		}
-
-		String actual = e.deornamentCleanEncoding(RhythmSymbol.SEMIMINIM.getDuration());
-
-		assertEquals(expected, actual);		
-	}
-
-
-	@Test
-	public void testRescaleHeader() {
-		Encoding e1 = new Encoding(encodingTestpiece);
-		Tablature tab1 = new Tablature(encodingTestpiece, true);
-		Encoding e2 = new Encoding(encodingTestGetMeterInfo);
-		Tablature tab2 = new Tablature(encodingTestGetMeterInfo, true);
-
-		List<String> expected = new ArrayList<>();
-		String expected1 = getHeader("testpiece");
-		expected1 = expected1.replace("2/2", "2/1");
+		List<List<String>> expected = new ArrayList<>();
+		List<String> expected1 = new ArrayList<>(getDecomposedEvents("testpiece", true));	
+		expected1 = expected1.subList(0, expected1.lastIndexOf(dblBarline));
+		expected1.remove(expected1.indexOf("MC\\.>."));
+		Collections.reverse(expected1);
+		expected1.add(0, "MC\\.>.");
+		expected1.add(dblBarline);
+		expected1.add(Symbol.END_BREAK_INDICATOR);
 		expected.add(expected1);
-		String expected2 = getHeader("testGetMeterInfo");
-		expected2 = expected2.replace("3/8", "3/16");
-		expected2 = expected2.replace("2/2", "2/4");
-		expected2 = expected2.replace("3/4", "3/8");
-		expected2 = expected2.replace("5/16", "5/32");
+
+		List<String> expected2 = new ArrayList<>(getDecomposedEvents("testGetMeterInfo", true));
+		expected2 = expected2.subList(0, expected2.indexOf(dblBarline));
+		for (String s : Arrays.asList("M3:8.>.", "MC\\.>.", "M3.>.", "MC\\.>.", "MC\\.>.")) {
+			expected2.remove(expected2.indexOf(s));
+		}
+		Collections.reverse(expected2);
+		expected2.add(0, "MC\\.>.");
+		expected2.add(7, "M5:16.>.");
+		expected2.add(13, "MC\\.>.");
+		expected2.add(25, "M3.>.");
+		expected2.add(37, "MC\\.>.");
+		expected2.add(51, "M3:8.>.");
+		expected2.add(dblBarline);
+		expected2.add(Symbol.END_BREAK_INDICATOR);
 		expected.add(expected2);
 
-		List<String> actual = Arrays.asList(
-			e1.rescaleHeader(tab1.getTimeline().getMeterInfo(), 2),
-			e2.rescaleHeader(tab2.getTimeline().getMeterInfo(), -2)
-		);
+		List<String> events = getDecomposedEvents("testpiece", true);
+		List<String> expected3 = new ArrayList<>(events);
+		expected3.set(5, "mi.a6.c4.i2.a1.>.");
+		expected3.set(15, "mi.a6.c4.a2.a1.>.");
+		events.stream()
+			.filter(ev -> ev.startsWith("fu") || ev.startsWith("sf"))
+			.forEach(ev -> expected3.remove(ev));
+		expected.add(expected3);
 
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		}
-		assertEquals(expected, actual);
-	}
-
-
-	@Test
-	public void testRescaleCleanEncoding() {
-		Encoding e = new Encoding(encodingTestpiece);
-
-		String expected = "";
-		List<String> eventsRescaled = getDecomposedEvents(true);
+		List<String> expected4 = new ArrayList<>(getDecomposedEvents("testpiece", true));
 		List<String[]> rsMap = Arrays.asList(
 			new String[]{"sb", "br"},
 			new String[]{"mi", "sb"},
@@ -1046,23 +1044,40 @@ public class EncodingTest extends TestCase {
 			new String[]{"fu", "sm"},
 			new String[]{"sf", "fu"}
 		);
-		eventsRescaled.stream()
-			.filter(ev -> Encoding.assertEventType(ev, e.getTabSymbolSet(), "RhythmSymbol"))
+		expected4.stream()
+			.filter(ev -> Encoding.assertEventType(ev, e4.getTabSymbolSet(), "RhythmSymbol"))
 			.forEach(ev -> {
 				String rs = ev.substring(0, ev.indexOf(Symbol.SYMBOL_SEPARATOR));
-				eventsRescaled.set(
-					eventsRescaled.indexOf(ev), 
+				expected4.set(
+					expected4.indexOf(ev), 
 					ev.replace(rs, rsMap.get(ToolBox.getItemsAtIndex(rsMap, 0).indexOf(rs))[1]));
-			});
-		for (String s : eventsRescaled) {
-			expected += 
-				s + ((Encoding.assertEventType(s, e.getTabSymbolSet(), "barline") ||
-				s.equals(Symbol.SYSTEM_BREAK_INDICATOR)) ? "\r\n" : "");
-		}
+			}
+		);
+		expected.add(expected4);
 
-		String actual = e.rescaleCleanEncoding(2);
+		List<List<String>> actual = Arrays.asList(
+			Encoding.augmentEvents(e1.decompose(true, true), 
+				e1.getMetersBarsDiminutions(), e1.getTabSymbolSet(), 
+				-1, -1, "reverse"),
+			Encoding.augmentEvents(e2.decompose(true, true), 
+				e2.getMetersBarsDiminutions(), e2.getTabSymbolSet(), 
+				-1, -1, "reverse"),
+			Encoding.augmentEvents(e3.decompose(true, true), 
+				null, null, 
+				RhythmSymbol.SEMIMINIM.getDuration(), -1, "deornament"),
+			Encoding.augmentEvents(e4.decompose(true, true), 
+				null, null, 
+				-1, 2, "rescale")
+		);
 
-		assertEquals(expected, actual);		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i <expected.size(); i++) {
+			assertEquals(expected.get(i).size(), actual.get(i).size());
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+			}
+		}	
+		assertEquals(expected, actual);
 	}
 
 
@@ -1142,9 +1157,9 @@ public class EncodingTest extends TestCase {
 		List<String> expected = new ArrayList<>();
 		// Complementing RS 
 		// a. With SBI/EBI
-		expected.addAll(getDecomposedEvents(true));
+		expected.addAll(getDecomposedEvents("testpiece", true));
 		// b. Without SBI/EBI
-		for (String s : getDecomposedEvents(true)) {
+		for (String s : getDecomposedEvents("testpiece", true)) {
 			if (!s.equals(Symbol.SYSTEM_BREAK_INDICATOR) &&
 				!s.equals(Symbol.END_BREAK_INDICATOR)) {
 				expected.add(s);
@@ -1152,9 +1167,9 @@ public class EncodingTest extends TestCase {
 		}
 		// Not complementing RS 
 		// a. With SBI/EBI
-		expected.addAll(getDecomposedEvents(false));
+		expected.addAll(getDecomposedEvents("testpiece", false));
 		// b. Without SBI/EBI
-		for (String s : getDecomposedEvents(false)) {
+		for (String s : getDecomposedEvents("testpiece", false)) {
 			if (!s.equals(Symbol.SYSTEM_BREAK_INDICATOR) &&
 				!s.equals(Symbol.END_BREAK_INDICATOR)) {
 				expected.add(s);

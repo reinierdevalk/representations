@@ -334,12 +334,12 @@ public class TimelineTest extends TestCase {
 
 		List<Integer[]> expected = new ArrayList<Integer[]>();
 		// t1
-		expected.add(new Integer[]{3, 8, 0, 0, 0, 1, 2});
-		expected.add(new Integer[]{2, 2, 1, 2, 3, 8, 2});
-		expected.add(new Integer[]{3, 4, 3, 4, 19, 8, 4});
-		expected.add(new Integer[]{2, 2, 5, 6, 31, 8, 1});
-		expected.add(new Integer[]{5, 16, 7, 7, 47, 8, 1});
-		expected.add(new Integer[]{2, 2, 8, 8, 99, 16, -2});
+		expected.add(new Integer[]{3, 8, 1, 1, 0, 1, 2});
+		expected.add(new Integer[]{2, 2, 2, 3, 3, 8, 2});
+		expected.add(new Integer[]{3, 4, 4, 5, 19, 8, 4});
+		expected.add(new Integer[]{2, 2, 6, 7, 31, 8, 1});
+		expected.add(new Integer[]{5, 16, 8, 8, 47, 8, 1});
+		expected.add(new Integer[]{2, 2, 9, 9, 99, 16, -2});
 
 		// t2		
 		expected.add(new Integer[]{2, 2, 1, 3, 0, 1, 1});
@@ -819,60 +819,60 @@ public class TimelineTest extends TestCase {
 	}
 
 
-	public void testMakeUndiminutedMeterInfoOBS() {
-		Encoding e = new Encoding(encodingTestGetMeterInfo);
-		Timeline tl = new Timeline(e);
+//	public void testMakeUndiminutedMeterInfoOBS() {
+//		Encoding e = new Encoding(encodingTestGetMeterInfo);
+//		Timeline tl = new Timeline(e);
+//
+//		List<Integer[]> expected = new ArrayList<>();
+//		expected.add(new Integer[]{3, 8, 0, 0, 0, 1});
+//		expected.add(new Integer[]{2, 2, 1, 2, 3, 8});
+//		expected.add(new Integer[]{3, 4, 3, 4, 19, 8});
+//		expected.add(new Integer[]{2, 2, 5, 6, 31, 8});
+//		expected.add(new Integer[]{5, 16, 7, 7, 47, 8});
+//		expected.add(new Integer[]{2, 2, 8, 8, 99, 16});
+//
+//		List<Integer[]> actual = tl.makeUndiminutedMeterInfoOBS(e);
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//	  		assertEquals(expected.get(i).length, actual.get(i).length);
+//	  		for (int j = 0; j < expected.get(i).length; j++) {
+//	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
+//	  		}
+//		}
+//	}
 
-		List<Integer[]> expected = new ArrayList<>();
-		expected.add(new Integer[]{3, 8, 0, 0, 0, 1});
-		expected.add(new Integer[]{2, 2, 1, 2, 3, 8});
-		expected.add(new Integer[]{3, 4, 3, 4, 19, 8});
-		expected.add(new Integer[]{2, 2, 5, 6, 31, 8});
-		expected.add(new Integer[]{5, 16, 7, 7, 47, 8});
-		expected.add(new Integer[]{2, 2, 8, 8, 99, 16});
 
-		List<Integer[]> actual = tl.makeUndiminutedMeterInfoOBS(e);
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-	  		assertEquals(expected.get(i).length, actual.get(i).length);
-	  		for (int j = 0; j < expected.get(i).length; j++) {
-	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
-	  		}
-		}
-	}
-
-
-	public void testMakeMeterInfoOBS() {
-		Encoding e1 = new Encoding(encodingTestGetMeterInfo);
-		Timeline tl1 = new Timeline(e1);
-		tl1.setUndiminutedMeterInfoOBS(e1);
-
-		Encoding e2 = new Encoding(encodingTestpiece);
-		Timeline tl2 = new Timeline(e2);
-		tl2.setUndiminutedMeterInfoOBS(e2);
-
-		List<Integer[]> expected = new ArrayList<Integer[]>();
-		// t1
-		expected.add(new Integer[]{3, 4, 0, 0, 0, 1, 2});
-		expected.add(new Integer[]{2, 1, 1, 2, 3, 4, 2});
-		expected.add(new Integer[]{3, 1, 3, 4, 19, 4, 4});
-		expected.add(new Integer[]{2, 2, 5, 6, 43, 4, 1});
-		expected.add(new Integer[]{5, 16, 7, 7, 51, 4, 1});
-		expected.add(new Integer[]{2, 4, 8, 8, 209, 16, -2});
-		// t2		
-		expected.add(new Integer[]{2, 2, 1, 3, 0, 1, 1});
-
-		List<Integer[]> actual = tl1.makeMeterInfoOBS(e1);
-		actual.addAll(tl2.makeMeterInfoOBS(e2));
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-	  		assertEquals(expected.get(i).length, actual.get(i).length);
-	  		for (int j = 0; j < expected.get(i).length; j++) {
-	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
-	  		}
-		}
-	}
+//	public void testMakeMeterInfoOBS() {
+//		Encoding e1 = new Encoding(encodingTestGetMeterInfo);
+//		Timeline tl1 = new Timeline(e1);
+//		tl1.setUndiminutedMeterInfoOBS(e1);
+//
+//		Encoding e2 = new Encoding(encodingTestpiece);
+//		Timeline tl2 = new Timeline(e2);
+//		tl2.setUndiminutedMeterInfoOBS(e2);
+//
+//		List<Integer[]> expected = new ArrayList<Integer[]>();
+//		// t1
+//		expected.add(new Integer[]{3, 4, 0, 0, 0, 1, 2});
+//		expected.add(new Integer[]{2, 1, 1, 2, 3, 4, 2});
+//		expected.add(new Integer[]{3, 1, 3, 4, 19, 4, 4});
+//		expected.add(new Integer[]{2, 2, 5, 6, 43, 4, 1});
+//		expected.add(new Integer[]{5, 16, 7, 7, 51, 4, 1});
+//		expected.add(new Integer[]{2, 4, 8, 8, 209, 16, -2});
+//		// t2		
+//		expected.add(new Integer[]{2, 2, 1, 3, 0, 1, 1});
+//
+//		List<Integer[]> actual = tl1.makeMeterInfoOBS(e1);
+//		actual.addAll(tl2.makeMeterInfoOBS(e2));
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//	  		assertEquals(expected.get(i).length, actual.get(i).length);
+//	  		for (int j = 0; j < expected.get(i).length; j++) {
+//	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
+//	  		}
+//		}
+//	}
 
 }

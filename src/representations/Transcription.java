@@ -47,6 +47,7 @@ import de.uos.fmt.musitech.score.ScoreEditor.Mode;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import imports.MIDIImport;
+import structure.ScorePiece;
 import structure.Timeline;
 import tbp.Encoding;
 import tbp.TabSymbol;
@@ -66,7 +67,7 @@ public class Transcription implements Serializable {
 	public static final int FICTA_IND = 3;
 	public static final int OTHER_IND = 4;
 
-	private Piece piece;
+	private ScorePiece scorePiece;
 	private Piece originalPiece;
 	private String name;
 	private List<Integer[]> meterInfo;
@@ -270,7 +271,7 @@ public class Transcription implements Serializable {
 		Encoding encoding = argEncodingFile != null ? new Encoding(argEncodingFile) : null;
 //		boolean normaliseTuning = false;
 //		boolean isGroundTruthTranscription = true;
-		init(piece, encoding, null, /*normaliseTuning, isGroundTruthTranscription,*/ 
+		init(new ScorePiece(piece), encoding, null, /*normaliseTuning, isGroundTruthTranscription,*/ 
 			null, null, Type.GROUND_TRUTH);	
 	}
 
@@ -299,7 +300,7 @@ public class Transcription implements Serializable {
 //		Encoding encoding = null; //new Encoding(argEncodingFile);	
 //		boolean normaliseTuning = false;
 //		boolean isGroundTruthTranscription = true;
-		init(piece, null, argTimeline, 
+		init(new ScorePiece(piece), null, argTimeline, 
 			/*normaliseTuning, isGroundTruthTranscription,*/  
 			null, null, Type.MAPPING);	
 	}
@@ -315,7 +316,7 @@ public class Transcription implements Serializable {
 	public Transcription(Piece argPiece, Encoding argEncoding) {
 //		boolean normaliseTuning = false;
 //		boolean isGroundTruthTranscription = true;
-		init(argPiece, argEncoding, null, 
+		init(new ScorePiece(argPiece), argEncoding, null, 
 			/*normaliseTuning, isGroundTruthTranscription,*/
 			null, null, Type.AUGMENTED);
 	}
@@ -330,7 +331,7 @@ public class Transcription implements Serializable {
 	 * @param argVoiceLabels
 	 * @param argDurationLabels
 	 */
-	public Transcription(Piece argPredictedPiece, Encoding argEncoding,  
+	public Transcription(ScorePiece argPredictedPiece, Encoding argEncoding,  
 		List<List<Double>> argVoiceLabels, List<List<Double>> argDurationLabels) {
 		
 //		Encoding argEncoding = argEncodingFile != null ? new Encoding(argEncodingFile) : null;
@@ -405,9 +406,9 @@ public class Transcription implements Serializable {
 
 		Piece p = new Piece();
 		p.setMetricalTimeLine(mtl);
-		setPiece(p);
+		setPiece(new ScorePiece(p));
 //		newTranscription.setPiece(p);
-		NotationSystem notationSystem = getPiece().createNotationSystem();
+		NotationSystem notationSystem = getScorePiece().createNotationSystem();
 //		NotationSystem notationSystem = newTranscription.getPiece().createNotationSystem();
 
 		// Add time and key signatures
@@ -471,7 +472,7 @@ public class Transcription implements Serializable {
 	 * @param argDurLabels Only none-<code>null</code> if <code>t</code> is <code>Type.PREDICTED</code>.
 	 * @param argType
 	 */
-	private void init(Piece argPiece, Encoding argEncoding, Timeline argTimeline, 
+	private void init(ScorePiece argPiece, Encoding argEncoding, Timeline argTimeline, 
 		/*boolean argnNormaliseTuning, boolean isGrousndTruthTranscription,*/ 
 		List<List<Double>> argVoiceLabels, List<List<Double>> argDurLabels, Type argType) {
 		
@@ -493,7 +494,7 @@ public class Transcription implements Serializable {
 		setNotes();
 		setChords();
 
-		setVoiceLabels(argType != Type.PREDICTED ? null : argVoiceLabels, tab != null);
+		setVoiceLabels((argType != Type.PREDICTED ? null : argVoiceLabels), tab != null);
 //		if (t != Type.PREDICTED) {
 //			setVoiceLabels(null, tab != null);
 ////			initialiseVoiceLabels(null);
@@ -570,36 +571,36 @@ public class Transcription implements Serializable {
 	//  S E T T E R S  
 	//  for instance variables
 	//
-	public void setPiece(Piece argPiece) { // TODO make access package
-		piece = argPiece;
+	public void setPiece(ScorePiece argPiece) { // TODO make access package
+		scorePiece = argPiece;
 	}
 
 
-	void setPiece(Piece argPiece, Tablature tab, Timeline tl,  Type t) {
-		piece = makePiece(argPiece, tab, tl, t);
+	void setPiece(ScorePiece argPiece, Tablature tab, Timeline tl,  Type t) {
+		scorePiece = makeScorePiece(argPiece, tab, tl, t);
 	}
 
 
 	// NOT TESTED (wrapper method)
-	Piece makePiece(Piece argPiece, Tablature tab, Timeline tl, Type t) {
+	ScorePiece makeScorePiece(ScorePiece argPiece, Tablature tab, Timeline tl, Type t) {
 		if (t == Type.GROUND_TRUTH) {
 			// Clean mtl
 			MetricalTimeLine mtl = argPiece.getMetricalTimeLine();
-			mtl = cleanMetricalTimeLine(mtl);
+			mtl = ScorePiece.cleanMetricalTimeLine(mtl);
 //			argPiece.setMetricalTimeLine(mtl);
 			// Clean ht
 			SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
-			ht = cleanHarmonyTrack(ht);
+			ht = ScorePiece.cleanHarmonyTrack(ht);
 //			argPiece.setHarmonyTrack(ht);
 			// Transpose ht and ns
 			if (tab != null) {
 //				argPiece = transposePiece(argPiece, tab.getTranspositionInterval());
 				int transposition = tab.getTranspositionInterval();
 //				ht = argPiece.getHarmonyTrack();
-				ht = transposeHarmonyTrack(ht, transposition);
+				ht = ScorePiece.transposeHarmonyTrack(ht, transposition);
 //				argPiece.setHarmonyTrack(ht);
 				NotationSystem ns = argPiece.getScore();
-				ns = transposeNotationSystem(ns, transposition);
+				ns = ScorePiece.transposeNotationSystem(ns, transposition);
 				argPiece.setScore(ns);
 			}
 			// Set mtl and ht
@@ -610,18 +611,18 @@ public class Transcription implements Serializable {
 			// Clean, align, and diminute mtl
 //			Timeline tl = tab.getTimeline();
 			MetricalTimeLine mtl = argPiece.getMetricalTimeLine();
-			mtl = cleanMetricalTimeLine(mtl);
-			mtl = alignMetricalTimeLine(mtl, tl);
-			MetricalTimeLine mtlDim = diminuteMetricalTimeLine(mtl, tl);
+			mtl = ScorePiece.cleanMetricalTimeLine(mtl);
+			mtl = ScorePiece.alignMetricalTimeLine(mtl, tl);
+			MetricalTimeLine mtlDim = ScorePiece.diminuteMetricalTimeLine(mtl, tl);
 //			argPiece.setMetricalTimeLine(mtl);
 			// Clean and diminute ht
 			SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
-			ht = cleanHarmonyTrack(ht);
-			ht = diminuteHarmonyTrack(ht, tl, mtl, mtlDim);
+			ht = ScorePiece.cleanHarmonyTrack(ht);
+			ht = ScorePiece.diminuteHarmonyTrack(ht, tl, mtl, mtlDim);
 //			argPiece.setHarmonyTrack(ht);
 			// Diminute ns
 			NotationSystem ns = argPiece.getScore();
-			ns = diminuteNotationSystem(ns, tl, mtl, mtlDim);			
+			ns = ScorePiece.diminuteNotationSystem(ns, tl, mtl, mtlDim);			
 //			argPiece = diminutePiece(argPiece, tl);
 //			mtl = argPiece.getMetricalTimeLine();		
 //			MetricalTimeLine mtlDim = diminuteMetricalTimeLine(mtl, tl);
@@ -641,760 +642,13 @@ public class Transcription implements Serializable {
 	}
 
 
-	/**
-	 * Cleans the given <code>MetricalTimeLine</code>, i.e., removes any duplicate 
-	 * <code>TimeSignatureMarker</code>s and <code>TempoMarkers</code> from it.
-	 * 
-	 * A correct <code>MetricalTimeLine</code> consists of the following elements:
-	 * <ul>
-	 * <li>The zeroMarker (a <code>TimedMetrical</code>).</li>
-	 * <li>A <code>TimeSignatureMarker</code>: for the initial time sig.</li>
-	 * <li>A <code>TimeSignatureMarker</code> + a <code>TempoMarker</code> (a <code>TimedMetrical</code>): 
-	 *     for any following time sig(s).</li>
-	 * <li>The endMarker (a <code>TimedMetrical</code>), placed 10/1 (10 whole notes) after the last 
-	 *     <code>TimedMetrical</code>, i.e., the zeroMarker (if there is a single <code>TimeSignatureMarker</code>) 
-	 *     or the last <code>TempoMarker</code> (if there are multiple <code>TimeSignatureMarkers</code>). The 
-	 *     zeroMarker's time is this last <code>TimedMetrical</code>'s time + the time that 10/1 takes in this 
-	 *     <code>TimedMetrical</code>'s tempo.</li>
-	 * </ul> 
-	 * 
-	 * @param mtl The raw <code>MetricalTimeLine</code>.
-	 * @return The cleaned <code>MetricalTimeLine</code>.
-	 */
-	// TESTED
-	static MetricalTimeLine cleanMetricalTimeLine(MetricalTimeLine mtl) {
-		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
-		// zeroMarker, and endMarker) 
-		MetricalTimeLine mtlClean = new MetricalTimeLine();
-		mtlClean.clear();
-		// Add zeroMarker
-		mtlClean.add((Marker) new TimedMetrical(0, Rational.ZERO));
-
-		// Add TimeSignatureMarkers and TempoMarkers 
-		List<Rational> mts = new ArrayList<>();
-		Rational mtLastTimedMetrical = Rational.ZERO;
-		for (Marker m : mtl) {
-			if (m instanceof TimeSignatureMarker) {
-				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
-				Rational mt = m.getMetricTime();
-				long t = mtl.getTime(mt);
-				if (!mts.contains(mt)) {
-					mtlClean.add(new TimeSignatureMarker(tsm.getTimeSignature(), mt));
-					if (mt.isGreater(Rational.ZERO)) {
-						mtlClean.add(new TempoMarker(t, mt));
-						if (mt.isGreater(mtLastTimedMetrical)) {
-							mtLastTimedMetrical = mt;
-						}
-					}
-					mts.add(mt);
-				}
-			}
-		}
-
-		// If TempoMarkers (and through them, endMarker(s)) have been added: 
-		// remove all TimedMetricals but the zeroMarker	
-		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
-			mtlClean = cleanTimedMetricals(mtlClean);
-		}
-
-		// Add endMarker
-		long tLastTimedMetrical = mtlClean.getTime(mtLastTimedMetrical);
-		TimedMetrical end = 
-			calculateEndMarker(tLastTimedMetrical, mtl.getTempo(tLastTimedMetrical), 
-			mtLastTimedMetrical, 1);
-		mtlClean.add((Marker) end);
-
-		return mtlClean;
-	}
-
-
-	/**
-	 * Removes all TimedMetricals but the zeroMarker from the given mtl.
-	 * 
-	 * @param mtl
-	 * @return
-	 */
-	// TESTED
-	static MetricalTimeLine cleanTimedMetricals(MetricalTimeLine mtl) {
-		List<Integer> indsToRemove = new ArrayList<>();
-		for (int i = 0; i < mtl.size(); i++) {
-			Marker m = mtl.get(i);
-			if (m instanceof TimedMetrical && !(m instanceof TempoMarker)) {
-				if (!m.getMetricTime().equals(Rational.ZERO)) {
-					indsToRemove.add(i);
-				}
-			}
-		}
-		for (int i = 0; i < indsToRemove.size(); i++) {
-			mtl.remove(indsToRemove.get(i) - i);
-		}
-
-		return mtl;
-	}
-
-
-	/**
-	 * Calculates the endMarker given the time, tempo, and metric time of the last TimedMetrical 
-	 * before the endMarker. The endMarker is placed ten whole notes (10/1) after the last 
-	 * TimedMetrical, meaning that its metric time is that of the last TimedMetrical + 10/1, and 
-	 * its time is that of the last TimedMetrical + the time 10/1 takes in the tempo at the last
-	 * TimedMetrical.
-	 * 
-	 * @param tLastTimedMetrical
-	 * @param tempoLastTimedMetrical
-	 * @param mtLastTimedMetrical
-	 * @param dim
-	 * @return
-	 */
-	// TESTED
-	static TimedMetrical calculateEndMarker(long tLastTimedMetrical, double tmpLastTimedMetrical, 
-		Rational mtLastTimedMetrical, int dim) {
-		Rational r = Timeline.diminute(new Rational(10, 1), dim);
-		return new TimedMetrical(
-			tLastTimedMetrical + calculateTime(r, tmpLastTimedMetrical), 
-			mtLastTimedMetrical.add(r));
-	}
-
-
-	/**
-	 * Calculates the time the given metric duration takes in the given tempo. 
-	 * 
-	 * Formula:
-	 * tmp BPM = tmp/60 beats/s --> one whole note (four beats) every 240/tmp s (tmp/60 * x = 4 --> x = 240/tmp)
-	 * 							--> ten whole notes every (10*240)/tmp s
-	 * 							--> n whole notes every (n*240)/tmp s 
-	 */
-	// TESTED
-	static long calculateTime(Rational dur, double tempo) {
-		double time = (dur.toDouble() * 240) / tempo;
-		// Multiply by 1000000 to get time in microseconds; round
-		time = Math.round(time * 1000000);
-		return (long) time;
-	}
-
-
-	/**
-	 * Aligns the given <code>MetricalTimeLine</code> (from a <code>Transcription</code>) 
-	 * with the given <code>Timeline</code> (from a <code>Tablature</code>).
-	 * 
-	 * This is necessary if in the <code>Tablature</code> different diminutions are used for
-	 * a section that is in a single meter in the <code>Transcription</code>, resulting in 
-	 * the <code>MetricalTimeLine</code> lacking the repeated meter 'changes'. In such cases, 
-	 * the <code>MetricalTimeLine</code> is aligned with the <code>Timeline</code> by adding 
-	 * each repeated meter at the appropriate onset to the <code>MetricalTimeLine</code> (i.e.,
-	 * adding <code>TimeSignatureMarkers</code> and <code>TempoMarkers</code>). Example: <br> 
-	 * meters from <code>TimeLine</code> 			2/2, 2/4, 2/2, 3/4, 2/2 <br>
-	 * diminutions from <code>TimeLine</code> 		2,   4,   2,   4,   2   <br>
-	 * meters from <code>MetricalTimeLine</code>	2/1, ..., ..., 3/1,	2/1 <br>
-	 * meters from MTL, aligned						2/1, 2/1, 2/1, 3/1, 2/1 <br>
-	 * 
-	 * @param mtl The cleaned <code>MetricalTimeLine</code>.
-	 * @param tl
-	 * @return The cleaned and aligned <code>MetricalTimeLine</code>.
-	 */
-	// TESTED
-	static MetricalTimeLine alignMetricalTimeLine(MetricalTimeLine mtl, Timeline tl) {
-		// Align mtl with tl. Examples where this is necessary:
-		// 4465_33-34_memor_esto-2.tbp / Jos1714-Memor_esto_verbi_tui-166-325.mid
-		// meters      2/2, 2/4, 2/2, 2/4, 2/2, 2/4, 2/2 
-		// diminutions 2,   4,   2,   4,   2,   4,   2
-		// =           2/1, 2/1, 2/1, 2/1, 2/1, 2/1, 2/1 
-		// in Piece    2/1 
-		// 5263_12_in_exitu_israel_de_egipto_desprez-3.tbp / Jos1704-In_exitu_Israel_de_Egypto-281-401.mid
-		// meters      2/2, 3/4, 2/2, 3/4, 2/2, 2/4, 2/2, 3/4, 2/2
-		// diminutions 2,   4,   2,   4,   2,   4,   2,   4,   2
-		// =           2/1, 3/1, 2/1, 3/1, 2/1, 2/1, 2/1, 3/1, 2/1
-		// in Piece    2/1, 3/1, 2/1, 3/1, 2/1,           3/1, 2/1
-
-		// 1. Get undiminuted meters and meter section onsets from meterInfoTab to enable aligning
-		List<Rational> metersTabUndim = new ArrayList<>();
-		List<Rational> msosTabUndim = new ArrayList<>();
-		List<Integer[]> meterInfoTab = tl.getMeterInfo();
-		for (int i = 0; i < meterInfoTab.size(); i++) {
-			Integer[] currMi = meterInfoTab.get(i);
-			metersTabUndim.add(Timeline.undiminuteMeter(
-				new Rational(currMi[Timeline.MI_NUM], currMi[Timeline.MI_DEN]), currMi[Timeline.MI_DIM]));
-			Rational msoTabUndim;
-			if (i == 0) {
-				msoTabUndim = 
-					new Rational(currMi[Timeline.MI_NUM_MT_FIRST_BAR], currMi[Timeline.MI_DEN_MT_FIRST_BAR]);
-			}
-			else {
-				Integer[] prevMi = meterInfoTab.get(i-1);
-				int numBarsPrevMeter = (prevMi[Timeline.MI_LAST_BAR] - prevMi[Timeline.MI_FIRST_BAR]) + 1; 
-				msoTabUndim = msosTabUndim.get(i-1).add(metersTabUndim.get(i-1).mul(numBarsPrevMeter));
-			}
-			msosTabUndim.add(msoTabUndim);
-		}
-
-		// 2. Align
-		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
-		// zeroMarker, and endMarker) 
-		MetricalTimeLine mtlAligned = new MetricalTimeLine();
-		mtlAligned.clear();
-		// Add zeroMarker
-		mtlAligned.add((Marker) new TimedMetrical(0, Rational.ZERO));
-		
-		// Add TimeSignatureMarkers and TempoMarkers 
-		int ind = 0; // equals index in meterInfoTab
-		Rational mtLastTimedMetrical = Rational.ZERO;
-		for (Marker m : mtl) {
-			if (m instanceof TimeSignatureMarker) {
-				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
-				Rational mt = m.getMetricTime();
-				long t = mtl.getTime(mt);
-				TimeSignature ts = tsm.getTimeSignature();
-				mtlAligned.add(new TimeSignatureMarker(ts, mt));
-				if (mt.isGreater(Rational.ZERO)) {
-					mtlAligned.add(new TempoMarker(t, mt));
-					if (mt.isGreater(mtLastTimedMetrical)) {
-						mtLastTimedMetrical = mt;
-					}
-				}
-				// If the meter and meter section onset at index ind in tl are not the same
-				// as those in m, mtl is not aligned with tl: add Markers to mtlAligned
-				Rational meterTabUndim = metersTabUndim.get(ind);
-				Rational msoTabUndim = msosTabUndim.get(ind);
-				boolean isAligned = 
-					meterTabUndim.equals(new Rational(ts.getNumerator(), ts.getDenominator())) && 
-					msoTabUndim.equals(tsm.getMetricTime());
-				if (!isAligned) {
-					mtlAligned.add(new TimeSignatureMarker(new TimeSignature(meterTabUndim), msoTabUndim));
-					mtlAligned.add(new TempoMarker(mtl.getTime(msoTabUndim), msoTabUndim));
-					if (msoTabUndim.isGreater(mtLastTimedMetrical)) {
-						mtLastTimedMetrical = msoTabUndim;
-					}
-				}
-				ind++;
-			}
-		}
-		// If mtl and tl are still not aligned, the last time sig in mtl (which can be 
-		// the only one) has not been added often enough
-		long[][] allTss = mtlAligned.getTimeSignature();
-		if (allTss.length < meterInfoTab.size()) {
-			Rational lastTs = new Rational(allTss[allTss.length-1][0], allTss[allTss.length-1][1]);
-			for (int i = allTss.length; i < meterInfoTab.size(); i++) {
-				Rational msoTabUndim = msosTabUndim.get(i);
-				mtlAligned.add(new TimeSignatureMarker(new TimeSignature(lastTs), msoTabUndim));
-				mtlAligned.add(new TempoMarker(mtl.getTime(msoTabUndim), msoTabUndim));
-				if (msoTabUndim.isGreater(mtLastTimedMetrical)) {
-					mtLastTimedMetrical = msoTabUndim;
-				}
-			}
-		}
-
-		// If TempoMarkers (and through them, endMarker(s)) have been added: 
-		// remove all TimedMetricals but the zeroMarker	
-		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
-			mtlAligned = cleanTimedMetricals(mtlAligned);
-		}
-
-		// Add endMarker
-		long tLastTimedMetrical = mtlAligned.getTime(mtLastTimedMetrical);
-		TimedMetrical end = 
-			calculateEndMarker(tLastTimedMetrical, mtl.getTempo(tLastTimedMetrical), 
-			mtLastTimedMetrical, 1);
-		mtlAligned.add((Marker) end);
-
-		return mtlAligned;
-	}
-
-
-//	public static MetricalTimeLine reverseMetricalTimeLineOLD(MetricalTimeLine mtl, Rational mp, List<Integer[]> mi) {
-//		// This method is called on an existing Transcription, so meterInfo exists and mtl
-//		// is clean. So arguments can be inside method and method non-static
-//		
-//		// mt: mp     - mt of timeSig + (bars in timeSig * timeSig) 
-//		// t : mpTime - t  of (mt of timeSig + (bars in timeSig * timeSig))
-//		// long time = mtl.getTime(m.getMetricTime());
-//
-////		List<Integer[]> mi = getMeterInfo();
-////		MetricalTimeLine mtl = getPiece().getMetricalTimeLine();
-////		Rational mp = getMirrorPoint();
-//		long mpTime = mtl.getTime(mp);
-//		System.out.println("---> " + mp);
-//		System.out.println(mpTime);
-//		
-//		for (Marker m : mtl) {
-//			System.out.println(m);
-//		}
-//		System.out.println("----");
-//
-//		for (Marker m : mtl) {
-////			System.out.println(m);
-//			Rational mt = m.getMetricTime();
-//			int indInMi = -1;
-//			for (int i = 0; i < mi.size(); i++) {
-//				Rational currMt = 
-//					new Rational(mi.get(i)[Timeline.MI_NUM_MT_FIRST_BAR], 
-//					mi.get(i)[Timeline.MI_DEN_MT_FIRST_BAR]);
-//				if (currMt.equals(mt)) {
-//					indInMi = i;
-//					break;
-//				}
-//			}
-//			// Adapt mt
-//			if (m instanceof TimeSignatureMarker) {
-//				System.out.println("time sig");
-//				Integer[] currMi = mi.get(indInMi);
-//				int currBars = (currMi[Timeline.MI_LAST_BAR] - currMi[Timeline.MI_FIRST_BAR]) + 1;
-//				Rational currMeter = new Rational(currMi[Timeline.MI_NUM], currMi[Timeline.MI_DEN]);
-//				Rational mtRev = mp.sub(mt.add(currMeter.mul(currBars)));
-//				((TimeSignatureMarker) m).setMetricTime(mtRev);
-//				System.out.println("--> " + mtl.getTime(mt.add(currMeter.mul(currBars))));
-//				System.out.println("--> " + (mpTime - mtl.getTime(mt.add(currMeter.mul(currBars)))));
-//			}
-//			// Adapt mt and t
-//			if (m instanceof TimedMetrical) {
-//				// Has mt and time
-//				if (!(m instanceof TempoMarker)) {
-////					System.out.println("timed metrical");
-//				}
-//				else {
-////					System.out.println("tempomarker");
-//					// t : mpTime - t  of (mt of timeSig + (bars in timeSig * timeSig))
-//					
-//				}
-//			}
-//		}
-//		
-//		
-////		System.out.println(numTimeSigs == mi.size());
-//		return null;
-//	}
-
-
-	/**
-	 * Diminutes the given <code>MetricalTimeLine</code> according to the given <code>Timeline</code>.
-	 * 
-	 * NB: Only the time signatures and the meter section onsets are diminuted; not the
-	 *     meter section times.
-	 * 
-	 * @param mtl The cleaned and aligned <code>MetricalTimeLine</code>.
-	 * @param tl
-	 * @return The cleaned, aligned, and diminuted <code>MetricalTimeLine</code>.
-	 */
-	// TESTED
-	static MetricalTimeLine diminuteMetricalTimeLine(MetricalTimeLine mtl, Timeline tl) {
-		// 1. Get diminuted tempi
-		List<Integer[]> meterInfoTab = tl.getMeterInfo();
-		List<Integer> diminutions = ToolBox.getItemsAtIndex(meterInfoTab, Timeline.MI_DIM);
-		List<Double[]> tempiDim = new ArrayList<>();
-		int ind = 0; // equals index in meterInfoTab
-		for (int i = 0; i < mtl.size()-1; i++) { // exclude endMarker
-			Marker m = mtl.get(i);
-			if (m instanceof TimedMetrical) {
-				long time = mtl.getTime(m.getMetricTime());
-				double tempo = mtl.getTempo(time);
-				int dim = diminutions.get(ind);
-				double tempoDim = Timeline.diminute(tempo, dim);
-				tempiDim.add(new Double[]{tempoDim, (double) time});
-				ind++;
-			}
-		}
-
-		// 2. Diminute
-		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
-		// zeroMarker, and endMarker) 
-		MetricalTimeLine mtlDim = new MetricalTimeLine();
-		mtlDim.clear();
-		// Add zeroMarker
-		mtlDim.add((Marker) new TimedMetrical(0, Rational.ZERO));
-
-		// Add TimeSignatureMarkers and TempoMarkers		
-		ind = 0; // equals index in meterInfoTab
-		Rational mtLastTimedMetrical = Rational.ZERO;
-		for (Marker m : mtl) {
-			if (m instanceof TimeSignatureMarker) {
-				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
-				Rational mtUndim = m.getMetricTime();
-				Rational mtDim;
-				if (ind == 0) {
-					mtDim = mtUndim;
-				}
-				else {
-					Integer[] prevMi = meterInfoTab.get(ind-1);
-					long[] prevTsDim = mtlDim.getTimeSignature()[ind-1];
-					Rational prevMeterDim = 
-						new Rational(prevMi[Timeline.MI_NUM], prevMi[Timeline.MI_DEN]);
-					int prevNumBars = 
-						(prevMi[Timeline.MI_LAST_BAR] - prevMi[Timeline.MI_FIRST_BAR]) + 1;
-					mtDim = 
-						new Rational(prevTsDim[3], prevTsDim[4]).add(prevMeterDim.mul(prevNumBars));
-					// By uncommenting the lines below, the meter section time is diminuted
-//					long[] prevTsUndim = mtl.getTimeSignature()[ind-1];
-//					long prevSecLenUndim = mtl.getTime(msoUndim) - prevTsUndim[2];
-//					int prevDim = prevMi[Timeline.MI_DIM];
-//					long prevSecLenDim = prevDim > 0 ? prevSecLenUndim / prevDim : prevSecLenUndim * Math.abs(prevDim);
-//					mst = prevTsDim[2] + prevSecLenDim;
-				}
-				long t = mtl.getTime(mtUndim); // NB: is not diminuted
-				TimeSignature tsUndim = tsm.getTimeSignature();
-				TimeSignature tsDim = 
-					new TimeSignature(Timeline.diminuteMeter(new Rational(tsUndim.getNumerator(), 
-					tsUndim.getDenominator()), diminutions.get(ind)));
-				mtlDim.add(new TimeSignatureMarker(tsDim, mtDim));
-				if (mtDim.isGreater(Rational.ZERO)) {
-					mtlDim.add(new TempoMarker(t, mtDim));
-					if (mtDim.isGreater(mtLastTimedMetrical)) {
-						mtLastTimedMetrical = mtDim;
-					}
-					// Set tempo
-					double tmpDim = 
-						tempiDim.get(ToolBox.getItemsAtIndex(tempiDim, 1).indexOf((double) t))[0];
-					mtlDim.setTempo(mtDim, tmpDim, 4);
-				}
-				ind++;
-			}
-		}
-
-		// If TempoMarkers (and through them, endMarker(s)) have been added: 
-		// remove all TimedMetricals but the zeroMarker	
-		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
-			mtlDim = cleanTimedMetricals(mtlDim);
-		}
-
-		// Add endMarker
-		long tLastTimedMetrical = mtlDim.getTime(mtLastTimedMetrical);
-		TimedMetrical end = 
-			calculateEndMarker(tLastTimedMetrical, 
-			tempiDim.get(tempiDim.size()-1)[0],	
-//			Timeline.diminute(mtl.getTempo(tLastTimedMetrical), diminutions.get(diminutions.size()-1)), 
-			mtLastTimedMetrical, diminutions.get(diminutions.size()-1));
-		mtlDim.add((Marker) end);
-
-		return mtlDim; 
-	}
-
-
-	/**
-	 * Cleans the given harmony track, i.e., removes any duplicate <code>KeyMarker</code>s from it. 
-	 * 
-	 * @param ht The raw harmony track
-	 * @return The cleaned harmony track
-	 */
-	// TESTED 
-	static SortedContainer<Marker> cleanHarmonyTrack(SortedContainer<Marker> ht) {
-		SortedContainer<Marker> htClean = 
-			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
-		List<Rational> mts = new ArrayList<>();
-		for (Marker m : ht) {
-			if (m instanceof KeyMarker) {
-				KeyMarker km = (KeyMarker) m;
-				Rational mt = m.getMetricTime();
-				if (!mts.contains(mt)) {
-					htClean.add(km);
-					mts.add(mt);
-				}
-			}
-		}
-		return htClean;
-	}
-
-
-	/**
-	 * Transposes the given harmony track according to the given transposition.
-	 * 
-	 * @param ht The cleaned harmony track
-	 * @param transposition
-	 * @return
-	 */
-	// TESTED
-	static SortedContainer<Marker> transposeHarmonyTrack(SortedContainer<Marker> ht, int transposition) {
-		SortedContainer<Marker> htTrn = 
-			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
-		for (Marker m : ht) {
-			if (m instanceof KeyMarker) {
-				KeyMarker km = (KeyMarker) m;		
-				// Determine the number of accidentals and redefine km by setting
-				// - alterationNum: the number of accidentals, negative for flats and positive for sharps
-				// - mode: MODE_MINOR or MODE_MAJOR
-				// - root: the root, always the major parallel, even when mode is MODE_MINOR. Example:
-				//         A major: root = 'A', alterationNum = 3; rootAlteration = 0; mode = Mode.MODE_MAJOR
-				//         F# minor: root = 'A', alterationNum = 3; rootAlteration = 0; mode = Mode.MODE_MINOR 				               
-				// - rootAlteration: the number of flats/sharps that must be added to the root
-				// NB: setAlterationNumAndMode() should set all four at once, but doesn't work correctly 
-				//     for root and rootAlteration (the problem is in determineRootAndAccidental()); therefore, 
-				//     root and rootAlteration must additionally be set manually 
-				int accid = transposeNumAccidentals(transposition, km.getAlterationNum());
-				km.setAlterationNumAndMode(accid, km.getMode());
-				Integer[] rra = getRootIndexAndRootAlteration(accid);
-				km.setRoot("ABCDEFG".charAt(rra[0]));
-				km.setRootAlteration(rra[1]);
-				htTrn.add(km);
-			}
-		}
-		return htTrn;
-	}
-
-
-	/**
-	 * Given a number of accidentals and a transposition, returns the smallest new number of 
-	 * accidentals (there are always two outcomes, sharps and flats.
-	 * 
-	 * Examples: 
-	 * Transposition 2 semitones down from F major: transp = -2 (or +10); accid = -1;
-	 * new number is -1 + -2 = -3 (3b, i.e., Eb major) OR -1 + 10 = 9 (9#, i.e., D# major) 
-	 * --> -3 is returned
-	 * Transposition 1 semitone down from B major: transp = -1 (or +11); accid = 5;
-	 * new number is 5 + 5 = 10 (10#, i.e., A#) OR 5 + (-7) = -2 (2b, i.e., Bb major) 
-	 * --> -2 is returned
-	 * 
-	 * @param transposition
-	 * @param accid
-	 * @return
-	 */
-	// TESTED
-	static int transposeNumAccidentals(int transposition, int accid) {
-		// transposition	#accidentals
-		// -1 or 11			+5/-7
-		// -2 or 10			-2/+10
-		// -3 or 9			+3/-9
-		// -4 or 8			-4/+8
-		// -5 or 7			+1/-11
-		// -6 or 6			-6/+6
-		// -7 or 5			-1/+11
-		// -8 or 4			+4/-8
-		// -9 or 3			-3/+9
-		// -10 or 2			+2/-10
-		// -11 or 1			-5/+7
-		//
-		// The 1st and 2nd row elements are the transposition; the 3rd and 4th are the 
-		// two ways by which accid can be altered
-		List<Integer[]> transpMatrix = new ArrayList<>();
-		transpMatrix.add(new Integer[]{0, 0, 0, 0});
-		transpMatrix.add(new Integer[]{-1, 11, 5, -7});
-		transpMatrix.add(new Integer[]{-2, 10, -2, 10});
-		transpMatrix.add(new Integer[]{-3, 9, 3, -9});
-		transpMatrix.add(new Integer[]{-4, 8, -4, 8});
-		transpMatrix.add(new Integer[]{-5, 7, 1, -11});
-		transpMatrix.add(new Integer[]{-6, 6, -6, 6});
-		transpMatrix.add(new Integer[]{-7, 5, -1, 11});
-		transpMatrix.add(new Integer[]{-8, 4, 4, -8});
-		transpMatrix.add(new Integer[]{-9, 3, -3, 9});
-		transpMatrix.add(new Integer[]{-10, 2, 2, -10});
-		transpMatrix.add(new Integer[]{-11, 1, -5, 7});
-		
-		int col = (transposition < 0) ? 0 : 1;
-		int	rowInd = ToolBox.getItemsAtIndex(transpMatrix, col).indexOf(transposition);
-		Integer[] in = transpMatrix.get(rowInd);
-		int optionA = accid + in[2];
-		int optionB = accid + in[3];
-		return Math.abs(optionA) <= Math.abs(optionB) ? optionA : optionB;
-//		if (Math.abs(optionA) <= Math.abs(optionB)) {
-//			return optionA;
-//		}
-//		else {
-//			return optionB;
-//		}
-	}
-
-
-	/**
-	 * Gets, for the given accidentals (i.e., the number of flats if negative, and the number of
-	 * sharps if positive), the index of the root char and the root alteration.
-	 * 
-	 * @param accidentals
-	 * @return An <code>Integer[]</code> containing
-	 *         <ul>
-	 *         <li>As element 0: the index in "ABCDEFG" of the root that goes with the number of accidentals.</li>
-	 *         <li>As element 1: the root alteration, i.e., the number of alterations (sharps/flats) to 
-	 *             be added to the root. If the given number of accidentals is negative, the alterations
-	 *             are flats; else, they are sharps.</li>
-	 *         </ul>
-	 */
-	// NOT TESTED TODO make class var?
-	static Integer[] getRootIndexAndRootAlteration(int accidentals) {
-		Map<Integer, Integer[]> rootMap = new LinkedHashMap<Integer, Integer[]>();
-		rootMap.put(0, new Integer[]{2, 0});
-		// Sharps
-		rootMap.put(1, new Integer[]{6, 0}); // G
-		rootMap.put(2, new Integer[]{3, 0}); // D
-		rootMap.put(3, new Integer[]{0, 0}); // A
-		rootMap.put(4, new Integer[]{4, 0}); // E
-		rootMap.put(5, new Integer[]{1, 0}); // B
-		rootMap.put(6, new Integer[]{5, 0}); // F#
-		rootMap.put(7, new Integer[]{2, 1}); // C#
-		rootMap.put(8, new Integer[]{6, 1}); // G#
-		rootMap.put(9, new Integer[]{3, 1}); // D#
-		rootMap.put(10, new Integer[]{0, 1}); // A#
-		rootMap.put(11, new Integer[]{4, 1}); // E#
-		// Flats
-		rootMap.put(-1, new Integer[]{5, 0}); // F
-		rootMap.put(-2, new Integer[]{1, 1}); // Bb
-		rootMap.put(-3, new Integer[]{4, 1}); // Eb
-		rootMap.put(-4, new Integer[]{0, 1}); // Ab
-		rootMap.put(-5, new Integer[]{3, 1}); // Db
-		rootMap.put(-6, new Integer[]{6, 1}); // Gb
-		rootMap.put(-7, new Integer[]{2, 1}); // Cb
-		rootMap.put(-8, new Integer[]{5, 1}); // Fb
-		rootMap.put(-9, new Integer[]{1, 2}); // Bbb
-		rootMap.put(-10, new Integer[]{4, 2}); // Ebb
-		rootMap.put(-11, new Integer[]{0, 2}); // Abb
-
-		return rootMap.get(accidentals);
-	}
-
-
-	/**
-	 * Diminutes the given harmony track according to the given <code>Timeline</code> and undiminuted and diminuted
-	 * <code>MetricalTimeLine</code>.
-	 * 
-	 * @param ht The cleaned harmony track.
-	 * @param tl
-	 * @param mtl
-	 * @param mtlDim
-	 * @return The cleaned and diminuted harmony track.
-	 */
-	// TESTED
-	static SortedContainer<Marker> diminuteHarmonyTrack(SortedContainer<Marker> ht, Timeline tl, 
-		MetricalTimeLine mtl, MetricalTimeLine mtlDim/*List<Rational> msoUndim, List<Rational> msoDim*/) {
-		SortedContainer<Marker> htDim = 
-			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
-
-		List<Rational> msoUndim = new ArrayList<>();
-		Arrays.stream(mtl.getTimeSignature()).forEach(ts -> msoUndim.add(new Rational(ts[3], ts[4])));
-		List<Rational> msoDim = new ArrayList<>();
-		Arrays.stream(mtlDim.getTimeSignature()).forEach(ts -> msoDim.add(new Rational(ts[3], ts[4])));
-
-		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfo(), Timeline.MI_DIM);
-		for (Marker m : ht) {
-			if (m instanceof KeyMarker) {
-				KeyMarker km = (KeyMarker) m;
-				km.setMetricTime(Timeline.getDiminutedMetricPosition(m.getMetricTime(), 
-					msoUndim, msoDim, diminutions));
-				htDim.add(km);
-			}
-		}
-
-		return htDim;
-	}
-
-
-	/**
-	 * Transposes the given <code>NotationSystem</code> according to the given transposition.
-	 * 
-	 * @param ns
-	 * @param transposition
-	 * @return
-	 */
-	// TESTED
-	static NotationSystem transposeNotationSystem(NotationSystem ns, int transposition) {
-		ns.getContentsRecursiveList(null).stream()
-			.filter(c -> c instanceof Note)
-			.forEach(c -> {
-				int p = ((Note) c).getScoreNote().getMidiPitch() + transposition;
-				((Note) c).getScoreNote().setPitch(new ScorePitch(p));
-				((Note) c).getPerformanceNote().setPitch(p);
-			}
-			);
-		return ns;
-	}
-
-
-	/**
-	 * Diminutes the given <code>NotationSystem</code> according to the given 
-	 * <code>Timeline</code> and undiminuted and diminuted <code>MetricalTimeLine</code>.
-	 * 
-	 * @param ns The <code>NotationSystem</code>.
-	 * @param tl
-	 * @param mtl
-	 * @param mtlDim
-	 * @return The diminuted <code>NotationSystem</code>.
-	 */
-	// TESTED
-	static NotationSystem diminuteNotationSystem(NotationSystem ns, Timeline tl, 
-		MetricalTimeLine mtl, MetricalTimeLine mtlDim /*List<Rational> msoUndim, List<Rational> msoDim*/) {
-//		NotationSystem ns = argPiece.getScore();
-		NotationSystem nsDim = new NotationSystem();
-		for (int v = 0; v < ns.size(); v++) {
-			NotationStaff nstDim = new NotationStaff();
-			nstDim.add(new NotationVoice());
-			nsDim.add(nstDim);
-		}
-
-		List<Rational> msoUndim = new ArrayList<>();
-		Arrays.stream(mtl.getTimeSignature()).forEach(ts -> msoUndim.add(new Rational(ts[3], ts[4])));
-		List<Rational> msoDim = new ArrayList<>();
-		Arrays.stream(mtlDim.getTimeSignature()).forEach(ts -> msoDim.add(new Rational(ts[3], ts[4])));
-
-		// 1. Get, per voice, the diminuted NotationChords for each meter section
-///		// Initialise meterSectionsPerVoice with empty lists  
-///		List<List<List<NotationChord>>> meterSectionsPerVoice = new ArrayList<>();
-///		for (int v = 0; v < ns.size(); v++) {
-///			List<List<NotationChord>> currVoice = new ArrayList<>();
-/////			for (int dim : diminutions) {
-/////			for (int j = 0; j < meterInfoTab.size(); j++) {	
-/////				currVoice.add(new ArrayList<>());
-/////			}
-///			diminutions.forEach(d -> currVoice.add(new ArrayList<>()));
-///			meterSectionsPerVoice.add(currVoice);
-///		}
-///		// Fill meterSectionsPerVoice
-///		// meterSectionsPerVoice.get(v)       : the sections for voice v
-///		// meterSectionsPerVoice.get(v).get(s): the notes for section s in voice v
-
-		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfo(), Timeline.MI_DIM);
-		for (int v = 0; v < ns.size(); v++) {
-			NotationVoice nv = ns.get(v).get(0);
-			for (NotationChord nc : nv) {
-				// All notes in nc have the same (metric) time
-				Rational mt = nc.getMetricTime();
-				long time = nc.getTime();
-				int sec = Timeline.getMeterSection(mt, msoUndim);
-				// Diminute the notes in nc (and therewith nc itself) and add to nsDim
-				for (Note n : nc) {
-					// Adapt ScoreNote
-					ScoreNote sn = n.getScoreNote();
-					Rational onsDim = 
-						Timeline.getDiminutedMetricPosition(mt, msoUndim, 
-						msoDim, diminutions);
-					sn.setMetricTime(onsDim);
-					Rational durDim = Timeline.diminute(n.getMetricDuration(), diminutions.get(sec));
-					sn.setMetricDuration(durDim);
-					n.setScoreNote(sn);
-					// Adapt PerformanceNote
-					PerformanceNote pn = n.getPerformanceNote();
-					long duration = n.getDuration();
-//					// By uncommenting the lines below, the time and duration are diminuted
-//					time = 
-//						Timeline.getDiminutedTime(time, meterSectionTimesUndim, meterSectionTimesDim, 
-//						diminutions);
-//					long duration = dim > 0 ? n.getDuration() / dim : n.getDuration() * Math.abs(dim);
-					pn.setTime(time);
-					pn.setDuration(duration);
-					n.setPerformanceNote(pn);
-				}
-///				meterSectionsPerVoice.get(v).get(sec).add(nc);
-				nsDim.get(v).get(0).add(nc);
-			}
-		}
-///		// 2. Create diminuted NotationSystem from meterSectionsPerVoice 
-///		// For each voice
-///		for (int i = 0; i < meterSectionsPerVoice.size(); i++) {
-///			NotationStaff nstDim = new NotationStaff();
-///			NotationVoice nvDim = new NotationVoice();
-///			// For each section
-///			for (List<NotationChord> l : meterSectionsPerVoice.get(i)) {
-///				for (NotationChord nc : l) {
-///					nvDim.add(nc);
-///				}
-///			}
-///			nstDim.add(nvDim);
-///			nsDim.add(nstDim);
-///		}
-
-		return nsDim;
-	}
-
-
 	void setOriginalPiece() {
-		originalPiece = SerializationUtils.clone(getPiece());
+		originalPiece = SerializationUtils.clone(getScorePiece());
 	}
 
 
 	void setName() {
-		String n = getPiece().getName(); 
+		String n = getScorePiece().getName(); 
 		name = 
 			n.contains(MIDIImport.EXTENSION) ? n.substring(0, n.indexOf(MIDIImport.EXTENSION)) : n;
 	}
@@ -1407,24 +661,24 @@ public class Transcription implements Serializable {
 
 	// TESTED
 	List<Integer[]> makeMeterInfo() {
-		long[][] timeSigs = getPiece().getMetricalTimeLine().getTimeSignature();
+		long[][] timeSigs = getScorePiece().getMetricalTimeLine().getTimeSignature();
 
 		int numTimeSigs = timeSigs.length;
 		int start = 1;
-		// If there is an anacrusis, start should be 0
-		if (numTimeSigs > 1) {
-			Rational firstTimeSig = new Rational((int)timeSigs[0][0], (int)timeSigs[0][1]);
-			Rational secondMetricTime = new Rational((int)timeSigs[1][3], (int)timeSigs[1][4]);
-			Rational secondTimeSig = new Rational((int)timeSigs[1][0], (int)timeSigs[1][1]);
-			// An anacrusis is assumed when the first time sig is smaller than the second and 
-			// the metric time of the second time sig equals the first time sig
-			// NB: When exporting a .sib file with a real anacrusis to MIDI, the anacrusis bar
-			// is padded with rests. To get a real anacrusis in a MIDI file, the anacrusis bar
-			// must thus be given its own meter
-			if (firstTimeSig.isLess(secondTimeSig) && secondMetricTime.equals(firstTimeSig)) {
-				start = 0;
-			}
-		}
+//		// If there is an anacrusis, start should be 0
+//		if (numTimeSigs > 1) {
+//			Rational firstTimeSig = new Rational((int)timeSigs[0][0], (int)timeSigs[0][1]);
+//			Rational secondMetricTime = new Rational((int)timeSigs[1][3], (int)timeSigs[1][4]);
+//			Rational secondTimeSig = new Rational((int)timeSigs[1][0], (int)timeSigs[1][1]);
+//			// An anacrusis is assumed when the first time sig is smaller than the second and 
+//			// the metric time of the second time sig equals the first time sig
+//			// NB: When exporting a .sib file with a real anacrusis to MIDI, the anacrusis bar
+//			// is padded with rests. To get a real anacrusis in a MIDI file, the anacrusis bar
+//			// must thus be given its own meter
+//			if (firstTimeSig.isLess(secondTimeSig) && secondMetricTime.equals(firstTimeSig)) {
+//				start = 0;
+//			}
+//		}
 		List<Integer[]> mInfo = new ArrayList<Integer[]>();
 
 		int numBars;
@@ -1433,7 +687,7 @@ public class Transcription implements Serializable {
 			long[] curr = timeSigs[i];
 			Rational currMeter = new Rational(curr[0], curr[1]);
 			Rational currMetricTime = new Rational(curr[3], curr[4]);
-			// If there is a next timesig
+			// If there is a next time sig
 			if ((i+1) < numTimeSigs) {
 				long[] next = timeSigs[i+1];
 				Rational nextMetricTime = new Rational(next[3], next[4]);
@@ -1443,7 +697,7 @@ public class Transcription implements Serializable {
 			else {
 				// Determine the offset of the last note of the piece
 				Rational end = Rational.ZERO;
-				for (NotationStaff ns : piece.getScore()) {
+				for (NotationStaff ns : getScorePiece().getScore()) {
 					NotationVoice nv = ns.get(0);
 					NotationChord lastNc = nv.get(nv.size() - 1);
 					Rational currEnd = lastNc.getMetricTime().add(lastNc.getMetricDuration());
@@ -1477,7 +731,7 @@ public class Transcription implements Serializable {
 	List<Integer[]> makeKeyInfo() {
 		List<Integer[]> keyInfo = new ArrayList<Integer[]>();
 
-		SortedContainer<Marker> keySigs = getPiece().getHarmonyTrack();
+		SortedContainer<Marker> keySigs = getScorePiece().getHarmonyTrack();
 		List<Integer[]> meterInfo = getMeterInfo();
 		int numKeySigs = keySigs.size();
 		for (int i = 0; i < numKeySigs; i++) {
@@ -1581,7 +835,7 @@ public class Transcription implements Serializable {
 	// TESTED
 	List<Note> makeUnhandledNotes() {
 		List<Note> notes = new ArrayList<>();
-		getPiece().getScore().getContentsRecursiveList(null).stream()
+		getScorePiece().getScore().getContentsRecursiveList(null).stream()
 			.filter(c -> c instanceof Note)
 			.forEach(c -> notes.add((Note) c));
 //		System.out.println(notes.get(0));
@@ -1595,7 +849,7 @@ public class Transcription implements Serializable {
 
 	// TESTED
 	int findVoice(Note note) {
-		NotationSystem ns = getPiece().getScore();
+		NotationSystem ns = getScorePiece().getScore();
 		for (int i = 0; i < ns.size(); i++) {
 			if (ns.get(i).get(0).containsRecursive(note)) {
 				return i;
@@ -2552,8 +1806,8 @@ public class Transcription implements Serializable {
 	//  G E T T E R S
 	//  for instance variables
 	//
-	public Piece getPiece() {
-		return piece;
+	public ScorePiece getScorePiece() {
+		return scorePiece;
 	}
 
 
@@ -2579,10 +1833,9 @@ public class Transcription implements Serializable {
 	 *         <li> As element 4: the numerator of the metric time of that first bar.</li>
 	 *         <li> As element 5: the denominator of the metric time of that first bar.</li>
 	 *         </ul>
-	 *     
-	 *         An anacrusis bar is denoted with bar numbers 0-0. An anacrusis is assumed when the 
-	 *         first time signature is smaller than the second, and the metric time of the second 
-	 *         time signature equals the first time signature.
+	 *    
+	 *         An anacrusis bar would be denoted with bar number 0; however, the current 
+	 *         approach is to pre-pad an anacrusis bar with rests, making it a complete bar.
 	 */
 	public List<Integer[]> getMeterInfo() {
 		return meterInfo;
@@ -2811,114 +2064,34 @@ public class Transcription implements Serializable {
 	//  augmentation
 	//
 	/**
-	 * Returns a reversed version of the Transcription.
+	 * Augments the <code>Transcription</code>. There are three types of augmentation:
+	 * <ul>
+	 * <li>Reverse   : reverses the <code>Transcription</code>.</li>
+	 * <li>Deornament: removes all sequences of single-note chords shorter than the given
+	 *                 threshold duration from the <code>Transcription</code>, and lengthens 
+	 *                 the duration of the chord preceding a sequence by the total length 
+	 *                 of the removed sequence.</li>
+	 * <li>Rescale   : rescales (up or down) the <code>Transcription</code> durationally by the 
+	 *                 given rescale factor.</li>
+	 * </ul>
 	 * 
-	 * @param t
-	 * @param tab
-	 * @return
+	 * NB: See also <code>Tablature.augment()</code>.<br><br>
+	 * 
+	 * @param argEncoding   An augmented <code>Encoding</code>.
+	 * @param thresholdDur  Applies only if augmentation is "deornament". The threshold duration; 
+	 *                      all single-note chords with a duration shorter than this duration are 
+	 *                      considered ornamental and are removed.
+	 * @param rescaleFactor Applies only if augmentation is "rescale". A positive value doubles
+	 *                      all durations (e.g., 4/4 becomes 4/2); a negative value halves them 
+	 *                      (4/4 becomes 4/8).
+	 * @param augmentation  One of "reverse", "deornament", or "rescale".
 	 */
 	// NOT TESTED (wrapper method)
-	public static Transcription reverse(Transcription t, Tablature tab) {
-		Piece pRev = reversePiece(t/*, tab*/);
-
-		Encoding eRev = null;
-		if (tab != null) {
-			eRev = tab.getEncoding().reverse(tab.getTimeline().getMeterInfo()); // NB The value of normaliseTuning is irrelevant
-		}
-		return new Transcription(pRev, eRev);
-	}
-
-
-	public void reverse(Tablature tab) {
-		Piece p = getPiece();
-		p = revers
-		init(argPiece, argEncoding, null, null, null, Type.GROUND_TRUTH);
-	}
-
-
-	/**
-	 * Reverses the <code>Transcription</code>'s <code>Piece</code>. 
-	 * NB: Handles the _unadapted_ <code>Piece</code>. 
-	 * 
-	 * @param t
-	 * @return
-	 */
-	// NOT TESTED (wrapper method)
-	static Piece reversePiece(Transcription t/*, Tablature tab*/) { // TODO name reverse()
-		Piece pRev = new Piece();
-
-		MetricalTimeLine mtl = t.getPiece().getMetricalTimeLine();
-		Rational mp = t.getMirrorPoint();
-//		List<Rational[]> onsetsAndMinDurs = null;
-//		List<Rational> onsets = null;
-//		List<Rational> minDurs = null;
-//		if (tab != null) {
-//			onsets = ToolBox.getItemsAtIndex(tab.getMetricTimePerChord(false), 0);
-//			minDurs = tab.getMinimumDurationPerChord();
-//			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations();
-//		}
-
-		Piece pOrig = t.getOriginalPiece();
-		// Make a copy of notationSystem so that pOrig is not affected
-		NotationSystem nsCopy = copyNotationSystem(pOrig.getScore());
-
-//		// For each voice
-//		NotationSystem nsRev = new NotationSystem();
-//		for (NotationStaff nst : nsCopy) {	
-//			NotationStaff nstRev = new NotationStaff();
-//			for (NotationVoice nv : nst) {
-//				NotationVoice nvRev = new NotationVoice();
-//				for (NotationChord nc : nv) {
-//					NotationChord ncRev = new NotationChord();
-//					for (Note n : nc) {
-//						// Calculate the Note's new onset time (mirrorPoint - offset time)
-//						Rational dur = n.getMetricDuration();
-////						// In tablature case: use minimum duration
-////						if (tab != null) {
-////							for (Rational[] item : onsetsAndMinDurs) {
-////								if (item[0].equals(n.getMetricTime())) {
-////									dur = item[1];
-////									dur.reduce();
-////									break;
-////								}
-////							}
-////							
-////							// NB: onsets and minDurs are corresponding lists and can be 
-////							//     indexed concurrently
-////							for (int i = 0; i < onsets.size(); i++) {
-////								if (onsets.get(i).equals(n.getMetricTime())) {
-////									dur = minDurs.get(i);
-////									dur.reduce();
-////									break;
-////								}
-////							}
-////						}
-//						Rational offset = n.getMetricTime().add(dur);
-//						Rational mt = mirrorPoint.sub(offset);
-//						
-//						// Error in barbetta-1582_1-il_nest.tbp: last chord should be co1 
-//						// (and not co2), leading to newOnsetTime being -1/2 
-//						if (pOrig.getName().equals("barbetta-1582_1-il_nest.mid") && 
-//							mt.equals(new Rational(-1, 2))) {
-//							mt = Rational.ZERO;
-//							dur = new Rational(1, 2);
-//						}
-//
-//						ncRev.add(createNote(n.getMidiPitch(), mt, dur, mtl));
-//					}
-//					nc = ncRev;
-//					nvRev.add(ncRev);
-//				}
-//				nstRev.add(nvRev);
-//			}
-//			nsRev.add(nstRev);
-//		}
-
-		pRev.setScore(reverseNotationSystem(nsCopy, mtl, mp, pOrig.getName()));
-		pRev.setMetricalTimeLine(reverseMetricalTimeLine(mtl, mp, t.getMeterInfo()));
-		pRev.setHarmonyTrack(reverseHarmonyTrack(pOrig.getHarmonyTrack(), mtl, mp, t.getKeyInfo()));
-		pRev.setName(t.getPiece().getName());
-		return pRev;
+	public void augment(Encoding argEncoding, Rational thresholdDur, int rescaleFactor, String augmentation) {
+		ScorePiece sp = getScorePiece();
+		sp.augment(getMirrorPoint(), getChords(), getAllOnsetTimes(), thresholdDur, 
+			rescaleFactor, augmentation);
+		this.init(sp, argEncoding, null, null, null, Type.AUGMENTED);
 	}
 
 
@@ -2930,12 +2103,12 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED
-	Rational getMirrorPoint() {
+	public Rational getMirrorPoint() {
 		Rational mirrorPoint = Rational.ZERO;
 
+		List<Integer[]> mi = getMeterInfo();
 		// For each voice
-		List<Integer[]> meterInfo = getMeterInfo();
-		for (NotationStaff ns : getPiece().getScore()) {	
+		for (NotationStaff ns : getScorePiece().getScore()) {	
 			for (NotationVoice nv : ns) {
 				Rational currMirrorPoint = Rational.ZERO;
 				// 1. Determine the onset- and offset time of the last note in the voice
@@ -2953,16 +2126,16 @@ public class Transcription implements Serializable {
 				// the onset- and offset bar(s) as well as the onset meter 
 				// NB: The offset time of the last note must be reduced to ensure that it falls with the bar 
 				// (if it coincides with the final barline, offsetTimeLastNote will not have a metric position)
-				Rational[] metPosOnset = Timeline.getMetricPosition(onsetTimeLastNote, meterInfo);
+				Rational[] metPosOnset = Timeline.getMetricPosition(onsetTimeLastNote, mi);
 				Rational reduction = new Rational(1, 128);
 				Rational[] metPosOffset = 
-					Timeline.getMetricPosition(offsetTimeLastNote.sub(reduction), meterInfo);
+					Timeline.getMetricPosition(offsetTimeLastNote.sub(reduction), mi);
 				// Onset- and offset bar(s)
 				int barNumOnset = metPosOnset[0].getNumer();
 				int barNumOffset = metPosOffset[0].getNumer();
 				// Onset bar meter
 				Rational meterOnset = null;
-				for (Integer[] currMeter : meterInfo) {
+				for (Integer[] currMeter : mi) {
 					if (barNumOnset >= currMeter[Timeline.MI_FIRST_BAR] && 
 						barNumOnset <= currMeter[Timeline.MI_LAST_BAR]) {
 						meterOnset = new Rational(currMeter[Timeline.MI_NUM], currMeter[Timeline.MI_DEN]);
@@ -2977,7 +2150,7 @@ public class Transcription implements Serializable {
 				Rational durSucceedingBars = Rational.ZERO;
 				if (barNumOffset > barNumOnset) {     	
 					for (int i = barNumOnset + 1; i <= barNumOffset; i++) {
-						for (Integer[] currMeter : meterInfo) {
+						for (Integer[] currMeter : mi) {
 							if (i >= currMeter[Timeline.MI_FIRST_BAR] && i <= currMeter[Timeline.MI_LAST_BAR]) { 
 								durSucceedingBars = 
 									durSucceedingBars.add(new Rational(
@@ -2994,419 +2167,6 @@ public class Transcription implements Serializable {
 			}
 		}
 		return mirrorPoint;
-	}
-
-
-	/**
-	 * Returns a copy of the given NotationSystem.
-	 * @param ns
-	 * @return
-	 */
-	// TESTED
-	static NotationSystem copyNotationSystem(NotationSystem ns) {
-		NotationSystem copy = new NotationSystem();
-
-		for (NotationStaff notationStaff : ns) {
-			NotationStaff copyNs = new NotationStaff();
-			for (NotationVoice nv : notationStaff) {
-				NotationVoice copyNv = new NotationVoice();
-				for (NotationChord nc : nv) {
-					NotationChord copyNc = new NotationChord();
-					for (Note n : nc) {
-						try {
-							copyNc.add((Note) n.clone());
-						} catch (CloneNotSupportedException e) {
-							e.printStackTrace();
-						}
-//						copyNc.add(createNote(n.getMidiPitch(), n.getMetricTime(), n.getMetricDuration()));
-					}
-					copyNv.add(copyNc);
-				}
-				copyNs.add(copyNv);
-			}
-			copy.add(copyNs);
-		}
-		return copy;
-	}
-
-
-	/**
-	 * Augments the <code>NotationSystem</code>.
-	 * TODO: make instance method of Piece; get args from Piece
-	 * 
-	 * @param ns
-	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
-	 * @param mp
-	 * @param ch
-	 * @param onsetTimes
-	 * @param dur
-	 * @param rescaleFactor
-	 * @param augmentation
-	 * @param name
-	 * @return
-	 */
-	// TESTED
-	static NotationSystem augmentNotationSystem(NotationSystem ns, MetricalTimeLine mtl, 
-		Rational mp, List<List<Note>> ch, List<Rational> onsetTimes, Rational thresholdDur, 
-		int rescaleFactor, String augmentation, String name) {
-		
-		NotationSystem nsAugm = new NotationSystem();
-		for (NotationStaff nst : ns) {	
-			NotationStaff nstAugm = new NotationStaff();
-			for (NotationVoice nv : nst) {
-				NotationVoice nvAugm = new NotationVoice();
-				for (int i = 0; i < nv.size(); i++) {
-					NotationChord nc = nv.get(i);
-					NotationChord ncAugm = new NotationChord();
-					// Reverse
-					if (augmentation.equals("reverse")) {
-						if (!name.equals("barbetta-1582_1-il_nest.mid")) {
-							// Reversed mt = mirror point - offset time
-							NotationChord ncRev = new NotationChord();
-							nc.forEach(n -> { 
-								Rational dur = n.getMetricDuration();
-								ncRev.add(createNote(n.getMidiPitch(), mp.sub(n.getMetricTime().add(dur)), dur, mtl));
-							});
-							ncAugm = ncRev;
-						}
-						// Error in barbetta-1582_1-il_nest.tbp: last chord should be cosb (and not cobr), 
-						// leading to mt being -1/2 TODO fix and remove else (and if open and close above) 
-						else {
-							for (Note n : nc) {
-								Rational dur = n.getMetricDuration();
-								Rational mt = mp.sub(n.getMetricTime().add(dur));
-								if (mt.equals(new Rational(-1, 2))) {
-									mt = Rational.ZERO;
-									dur = new Rational(1, 2);
-								}
-								ncAugm.add(createNote(n.getMidiPitch(), mt, dur, mtl));
-							}
-						}
-//						nvAugm.add(ncAugm);
-					}
-					// Deornament
-					else if (augmentation.equals("deornament")) {
-						int ind = onsetTimes.indexOf(nc.getMetricTime());
-						// If nc is ornamental and not part of an ornamental sequence at 
-						// the beginning of nv (in which case nvAugm is still empty):					
-						// calculate the total duration of the ornamental sequence; create 
-						// ncPrevDeorn with the result; replace ncPrev with ncPrevDeorn
-						// NB: It is assumed that an ornamental sequence is not interrupted by (ornamental) rests 
-						if ((ch.get(ind).size() == 1 && nc.size() == 1 && 
-							nc.getMetricDuration().isLess(thresholdDur)) && nvAugm.size() > 0) {
-							Rational durOrnSeq = nc.getMetricDuration();
-							for (int j = i+1; j < nv.size(); j++) {
-								NotationChord ncNext = nv.get(j);
-								int indNext = onsetTimes.indexOf(ncNext.getMetricTime());
-								// If ncNext is ornamental: increment duration of ornamental sequence
-								if (ch.get(indNext).size() == 1 && ncNext.size() == 1 && 
-									ncNext.getMetricDuration().isLess(thresholdDur)) {
-									durOrnSeq = durOrnSeq.add(ncNext.getMetricDuration());
-								}
-								// If not: replace ncPrev with ncPrevDeorn 
-								else {
-									NotationChord ncPrev = nv.get(i-1);
-									NotationChord ncPrevDeorn = new NotationChord();
-									for (Note n : ncPrev) {
-										ncPrevDeorn.add(createNote(n.getMidiPitch(), n.getMetricTime(), 
-											ncPrev.getMetricDuration().add(durOrnSeq), mtl));
-									}
-									nvAugm.remove(ncPrev);
-									ncAugm = ncPrevDeorn;
-//									nvAugm.add(ncPrevDeorn);
-									i = j-1;
-									break;
-								}
-							}
-						}
-						// If nc is not ornamental
-						else {
-							ncAugm = nc;
-//							nvAugm.add(nc);
-						}
-					}
-					// Rescale
-					else {
-						NotationChord ncResc = new NotationChord();
-						nc.forEach(n -> { 
-							Rational dur = n.getMetricDuration();
-							Rational mt = n.getMetricTime();
-							ncResc.add(createNote(
-								n.getMidiPitch(), 
-								rescaleFactor > 0 ? mt.mul(rescaleFactor) : mt.div(Math.abs(rescaleFactor)),
-								rescaleFactor > 0 ? dur.mul(rescaleFactor) : dur.div(Math.abs(rescaleFactor)), 
-								mtl)
-							);
-						});
-						ncAugm = ncResc;
-//						nvAugm.add(ncAugm);
-					}
-					nvAugm.add(ncAugm);
-				}
-				nstAugm.add(nvAugm);
-			}
-			nsAugm.add(nstAugm);
-		}
-		return nsAugm;
-	}
-
-
-	/**
-	 * Reverses the given <code>MetricalTimeLine</code>.
-	 * 
-	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
-	 * @param mp 
-	 * @param mi 
-	 * @param rescaleFactor
-	 * @param augmentation
-	 * @return
-	 */
-	// TESTED
-	static MetricalTimeLine augmentMetricalTimeLine(MetricalTimeLine mtl, Rational mp, 
-		List<Integer[]> mi, int rescaleFactor, String augmentation) {
-		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
-		// zeroMarker, and endMarker) 
-		MetricalTimeLine mtlAugm = new MetricalTimeLine();
-		mtlAugm.clear();
-		// Add zeroMarker
-		mtlAugm.add((Marker) new TimedMetrical(0, Rational.ZERO));
-
-		// Add TimeSignatureMarkers and TempoMarkers 
-		int ind = 0; // equals index in mi
-		Rational mtAugmLastTimedMetrical = Rational.ZERO;
-		long mpTime = augmentation.equals("reverse") ? mtl.getTime(mp) : -1;
-		for (Marker m : mtl) {
-			if (m instanceof TimeSignatureMarker) {				
-				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
-				TimeSignature ts = tsm.getTimeSignature();
-				Rational mtAugm;
-				long tAugm;
-				TimeSignature tsAugm;
-				// Reverse
-				if (augmentation.equals("reverse")) {
-					// Reversed mt/t = mirror point - mt/t of next meter section
-					Rational mtNextMeterSec = 
-						ind == (mi.size() - 1) ? mp : 
-						new Rational(mi.get(ind + 1)[Timeline.MI_NUM_MT_FIRST_BAR], 
-						mi.get(ind + 1)[Timeline.MI_DEN_MT_FIRST_BAR]);
-					mtAugm = mp.sub(mtNextMeterSec);
-					tAugm = mpTime - mtl.getTime(mtNextMeterSec);
-					tsAugm = ts;
-				}
-				// Rescale
-				else {
-					Rational mt = m.getMetricTime();
-					long t = mtl.getTime(mt);
-					mtAugm = rescaleFactor > 0 ? mt.mul(rescaleFactor) : mt.div(Math.abs(rescaleFactor));
-					tAugm = rescaleFactor > 0 ? t * rescaleFactor : t / Math.abs(rescaleFactor);
-					Rational meter = new Rational(ts.getNumerator(), ts.getDenominator());
-					// Take into account exception case where meter is x/1 and rescaleFactor > 1
-					tsAugm = new TimeSignature(
-						ts.getDenominator() == 1 && rescaleFactor > 1 ?	
-						new Rational(meter.getNumer() * rescaleFactor, meter.getDenom()) :
-						Timeline.undiminuteMeter(meter, rescaleFactor)
-					);
-				}
-				mtlAugm.add(new TimeSignatureMarker(tsAugm, mtAugm));
-				if (mtAugm.isGreater(Rational.ZERO)) {
-					mtlAugm.add(new TempoMarker(tAugm, mtAugm));
-					if (mtAugm.isGreater(mtAugmLastTimedMetrical)) {
-						mtAugmLastTimedMetrical = mtAugm;
-					}
-				}
-				ind++;
-			}
-		}
-
-		// If TempoMarkers (and through them, endMarker(s)) have been added: 
-		// remove all TimedMetricals but the zeroMarker	
-		if (mtAugmLastTimedMetrical.isGreater(Rational.ZERO)) {
-			mtlAugm = cleanTimedMetricals(mtlAugm);
-		}
-
-		// Add endMarker
-		long tAugmLastTimedMetrical = mtlAugm.getTime(mtAugmLastTimedMetrical);
-		TimedMetrical end = 
-			calculateEndMarker(tAugmLastTimedMetrical, mtl.getTempo(tAugmLastTimedMetrical), 
-			mtAugmLastTimedMetrical, augmentation.equals("reverse") ? 1 : -rescaleFactor);
-		mtlAugm.add((Marker) end);		
-
-		return mtlAugm;
-	}
-
-
-	/**
-	 * Augments the given harmony track.
-	 *  
-	 * @param ht An existing (clean) harmony track.
-	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
-	 * @param mp
-	 * @param ki
-	 * @param rescaleFactor
-	 * @param augmentation
-	 * @return
-	 */
-	// TESTED
-	static SortedContainer<Marker> augmentHarmonyTrack(SortedContainer<Marker> ht, 
-		MetricalTimeLine mtl, Rational mp, List<Integer[]> ki, int rescaleFactor, String augmentation) {
-		SortedContainer<Marker> htAugm = 
-			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
-
-		int ind = 0; // equals index in ki
-		long mpTime = augmentation.equals("reverse") ? mtl.getTime(mp) : -1;
-		for (Marker m : ht) {
-			if (m instanceof KeyMarker) {
-				KeyMarker km = (KeyMarker) m;
-				Rational mtAugm;
-				long tAugm;
-				// Reverse
-				if (augmentation.equals("reverse")) {
-					// Reversed mt/t = mirror point - mt/t of next meter section
-					Rational mtNextKeySec = 
-						ind == (ki.size() - 1) ? mp : 
-						new Rational(ki.get(ind + 1)[KI_NUM_MT_FIRST_BAR], 
-						ki.get(ind + 1)[KI_DEN_MT_FIRST_BAR]);
-					mtAugm = mp.sub(mtNextKeySec);
-					tAugm = mpTime - mtl.getTime(mtNextKeySec);
-				}
-				// Rescale
-				else {
-					Rational mt = km.getMetricTime();
-					long t = mtl.getTime(mt);
-					mtAugm = rescaleFactor > 0 ? mt.mul(rescaleFactor) : mt.div(Math.abs(rescaleFactor)); 
-					tAugm = rescaleFactor > 0 ? t * rescaleFactor : t / Math.abs(rescaleFactor);
-				}
-				km.setMetricTime(mtAugm);
-				km.setTime(tAugm);
-				htAugm.add(km);
-				ind++;
-			}
-		}
-		return htAugm;
-	}
-
-
-	/**
-	 * Returns a deornamented version of the Transcription.
-	 * 
-	 * @param t
-	 * @param tab
-	 * @param dur Only (single-event) notes with a duration shorter than this duration are 
-	 *            considered ornamental.
-	 * @return
-	 */
-	// NOT TESTED (wrapper method)
-	public static Transcription deornament(Transcription t, Tablature tab, Rational dur) {
-		Piece pDeorn = deornamentPiece(t, /*tab,*/ dur);
-		Encoding eDeorn = null;
-		if (tab != null) {
-			eDeorn = tab.getEncoding().deornament(Tablature.getTabSymbolDur(dur)); // NB The value of normaliseTuning is irrelevant
-		}
-		return new Transcription(pDeorn, eDeorn);
-	}
-
-
-	/**
-	 * Removes all sequences of single-note events shorter than the given duration from the
-	 * encoding, and lengthens the duration of the event preceding the sequence by the total 
-	 * length of the removed sequence. NB: Handles the _unadapted_ Piece.
-	 *
-	 * @param t
-	 * @param tab
-	 * @param dur
-	 * @return
-	 */
-	// TESTED
-	static Piece deornamentPiece(Transcription t, /*Tablature tab,*/ Rational dur) {
-		Piece pDeorn = new Piece();
-
-		MetricalTimeLine mtl = t.getPiece().getMetricalTimeLine();
-		List<Rational> onsetTimes = t.getAllOnsetTimes();
-		List<List<Note>> ch = t.getChords();
-//		List<List<TabSymbol>> tabChords = null;
-////		List<Rational[]> onsetsAndMinDurs = null;
-//		List<Rational> minDurs = null;
-//		if (tab != null) {
-//			tabChords = tab.getChords(); 
-////			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations();
-//			minDurs = tab.getMinimumDurationPerChord();
-//		}
-
-		Piece origP = t.getOriginalPiece();
-		// Make a copy of notationSystem so that pOrig is not affected
-		NotationSystem nsCopy = copyNotationSystem(origP.getScore());
-		
-		// For each voice
-		NotationSystem nsDeorn = new NotationSystem();
-		List<Integer> removed = new ArrayList<>();
-//		int voice = 0;
-		for (NotationStaff nst : nsCopy) {
-//			System.out.println("voice = " + voice);
-			NotationStaff nstDeorn = new NotationStaff();
-			for (NotationVoice nv : nst) {
-				NotationVoice nvDeorn = new NotationVoice();
-				NotationChord pre = null;
-				Rational durPre = null;
-				for (int i = 0; i < nv.size(); i++) {
-					NotationChord nc = nv.get(i);
-					Rational onset = nc.getMetricTime();
-					int ind = onsetTimes.indexOf(onset);
-
-//					boolean isOrn; 
-//					if (tabChords != null) { 
-//						isOrn = tabChords.get(ind).size() == 1 && 
-//							minDurs.get(ind).isLess(dur);
-////							onsetsAndMinDurs.get(ind)[1].isLess(dur);
-//					}
-//					else {
-//					isOrn = nc.size() == 1 && ch.get(ind).size() == 1 &&
-//						nc.getMetricDuration().isLess(dur);
-//					}
-					boolean isOrn = 
-						nc.size() == 1 && ch.get(ind).size() == 1 && 
-						nc.getMetricDuration().isLess(dur);
-					// If currNc is ornamental
-					// NB: In case of a single-event SNU, the note will be removed from both voices
-					if (isOrn) {
-						removed.add(ind);
-						// Determine pre, if it has not yet been determined
-						if (pre == null) {
-							NotationChord ncPrev = nv.get(i-1);
-							pre = ncPrev;
-							durPre = ncPrev.getMetricDuration(); // all notes in a NotationChord have the same duration 
-						}
-						// Increment durPre
-						durPre = durPre.add(nc.getMetricDuration());
-					}
-					// If currNc is the first after a sequence of one or more ornamental notes
-					// (i.e., it does not meet the if condition above but pre != null)
-					else if (pre != null) {
-						// Adapt duration of pre
-						for (Note n : pre) {
-//							n.setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), 
-//								n.getMetricTime(), durPre));
-							n = createNote(n.getMidiPitch(), n.getMetricTime(), durPre, mtl);
-						}
-						// Add currNc
-						nvDeorn.add(nc);
-						// Reset
-						pre = null;
-					}
-					else {
-						nvDeorn.add(nc);
-					}
-				}
-				nstDeorn.add(nvDeorn);
-			}
-//			voice++;
-			nsDeorn.add(nstDeorn);
-		}
-
-		pDeorn.setScore(nsDeorn);
-		pDeorn.setMetricalTimeLine(mtl);
-		pDeorn.setHarmonyTrack(origP.getHarmonyTrack());		
-		pDeorn.setName(t.getPiece().getName());
-		return pDeorn;
 	}
 
 
@@ -3967,7 +2727,7 @@ public class Transcription implements Serializable {
 				else {
 					metricDuration = DataConverter.convertIntoDuration(durationLabels.get(i))[0]; // TODO [0] is possible because each element in durations currently contains only one Rational
 				}
-				Note note = createNote(pitch, metricTime, metricDuration, null);
+				Note note = ScorePiece.createNote(pitch, metricTime, metricDuration, null);
 			
 				// Add the Note to each voice in currentVoices
 				List<Integer> currentVoices = DataConverter.convertIntoListOfVoices(voiceLabels.get(i)); //voices.get(i);
@@ -3988,7 +2748,7 @@ public class Transcription implements Serializable {
 					new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM]);
 				Rational metricDuration = 
 					new Rational(bnp[i][DUR_NUMER], bnp[i][DUR_DENOM]);
-				Note note = createNote(pitch, metricTime, metricDuration, null);
+				Note note = ScorePiece.createNote(pitch, metricTime, metricDuration, null);
 				// Add the Note to each voice in currentVoices
 				List<Integer> currentVoices = DataConverter.convertIntoListOfVoices(voiceLabels.get(i));
 				for (int v : currentVoices) {
@@ -3998,49 +2758,6 @@ public class Transcription implements Serializable {
 			}
 		}
 		return piece;
-	}
-
-
-	/**
-	 * Creates a Note with the given pitch, MetricTime, and MetricDuration. 
-	 * 
-	 * @param pitch
-	 * @param metricTime
-	 * @param metricDuration
-	 * @return
-	 */
-	// TODO test
-	public static Note createNote(int pitch, Rational metricTime, Rational metricDuration, MetricalTimeLine mtl) {
-		// A Note consists of a ScoreNote and a PerformanceNote; each need to be created 
-		// separately first 
-		// 1. Create the ScoreNote
-		ScorePitch scorePitch = new ScorePitch(pitch);
-		ScoreNote scoreNote = new ScoreNote(scorePitch, metricTime, metricDuration);
-		// 2. Create the PerformanceNote. The argumentless constructor can be used; after 
-		// the creation only the object variable pitch needs to be set: the others 
-		// (duration, velocity, and generated) are irrelevant here
-		
-		PerformanceNote performanceNote;
-		if (mtl == null) {
-			performanceNote = new PerformanceNote(-1, -1, -1, pitch);
-		}
-		else {
-			performanceNote = scoreNote.toPerformanceNote(mtl);
-//			System.out.println(performanceNote.getPitch());
-//			System.out.println(performanceNote.getTime());
-//			System.out.println(performanceNote.getVelocity());
-//			System.out.println(performanceNote.getDuration());
-			performanceNote = MidiNote.convert(performanceNote);
-		}
-//		PerformanceNote performanceNote = new PerformanceNote();
-//		performanceNote.setPitch(pitch);
-
-		Note note = new Note(scoreNote, performanceNote);
-		// TODO? OR, as PerformanceNote does not really apply in our case:
-//		MidiNote midiNote = MidiNote.convert(performanceNote);
-//		Note note = new Note(scoreNote, midiNote);
-
-		return note;
 	}
 
 
@@ -4506,7 +3223,7 @@ public class Transcription implements Serializable {
 //		for (int i = 0; i < noteSeq.size(); i++) {
 			Note originalNote = notes.get(i);
 //			Note originalNote = noteSeq.getNoteAt(i);
-			Note transposedNote = createNote(originalNote.getMidiPitch() + transposition,
+			Note transposedNote = ScorePiece.createNote(originalNote.getMidiPitch() + transposition,
 				originalNote.getMetricTime(), originalNote.getMetricDuration(), null);
 			notes.set(i, transposedNote);
 //			noteSeq.replaceNoteAt(i, transposedNote);
@@ -4514,7 +3231,7 @@ public class Transcription implements Serializable {
 //		setNoteSequence(noteSeq);
 		
 		// 2. Transpose piece
-		NotationSystem system = getPiece().getScore(); 
+		NotationSystem system = getScorePiece().getScore(); 
 		for (int i = 0; i < system.size(); i++) {
 			NotationStaff staff = system.get(i);
 			NotationVoice voice = staff.get(0);  
@@ -4531,7 +3248,7 @@ public class Transcription implements Serializable {
 		}
 
 		// 3. Transpose HarmonyTrack
-		SortedContainer<Marker> keySigs = getPiece().getHarmonyTrack();
+		SortedContainer<Marker> keySigs = getScorePiece().getHarmonyTrack();
 		for (int i = 0; i < keySigs.size(); i++) {
 			KeyMarker km = (KeyMarker) keySigs.get(i);
 			km.setAlterationNum(transposeNumAccidentals(transposition, km.getAlterationNum()));
@@ -8122,7 +6839,7 @@ public class Transcription implements Serializable {
 	// TESTED (non-tab only, for one voice)
 	public List<List<Rational[]>> listNotesPerVoice() {
 		List<List<Rational[]>> notesPerVoice = new ArrayList<>();
-		NotationSystem nSys = getPiece().getScore();
+		NotationSystem nSys = getScorePiece().getScore();
 		// For each voice i
 		for (int i = 0; i < nSys.size(); i ++) {
 			NotationVoice nv = nSys.get(i).get(0);
@@ -8256,7 +6973,7 @@ public class Transcription implements Serializable {
 	Integer[][] getLowestAndHighestPitchPerVoice() {
 		Integer[][] lowestAndHighest = new Integer[MAX_NUM_VOICES][2];
 
-		NotationSystem system = piece.getScore();
+		NotationSystem system = getScorePiece().getScore();
 		// For every voice in the Transcription
 		for (int i = 0; i < system.size(); i++) {
 			NotationStaff staff = system.get(i);
@@ -8349,7 +7066,7 @@ public class Transcription implements Serializable {
 	 */
 	// TESTED (for both tablature- and non-tablature case)
 	public int getNumberOfVoices() {
-		NotationSystem system = piece.getScore();
+		NotationSystem system = getScorePiece().getScore();
 		int numberOfVoices = system.size();
 
 		// Check how many voices contain no Notes and decrement numberOfVoices accordingly 
@@ -8391,7 +7108,7 @@ public class Transcription implements Serializable {
 	 */
   // TESTED (for both tablature- and non-tablature case)
 	public void addNote(Note note, int voiceNumber, Rational metricTime) {
-	  NotationSystem system = piece.getScore();
+	  NotationSystem system = getScorePiece().getScore();
 	  NotationStaff staff = system.get(voiceNumber);
 	  NotationVoice voice = staff.get(0);
 		NotationChord chord = new NotationChord();
@@ -8410,7 +7127,7 @@ public class Transcription implements Serializable {
 	 */
 	// TESTED (for both tablature and non-tablature case)
 	public void removeNote(int midiPitch, int voiceNumber, Rational metricTime) {
-		NotationSystem system = piece.getScore();
+		NotationSystem system = getScorePiece().getScore();
 	  NotationStaff staff = system.get(voiceNumber);
 	  NotationVoice voice = staff.get(0);
 		int chordNumber = voice.find(metricTime); 
@@ -8451,7 +7168,7 @@ public class Transcription implements Serializable {
 	private JFrame visualise(TimeSignature timeSig, /*KeyMarker keyMarker,*/ boolean showAsScore, int numberOfVoices) {
 
 		String windowTitle = getName();
-		Piece argPiece = getPiece();
+		Piece argPiece = getScorePiece();
 
 		Piece piece = new Piece(); 
 		NotationSystem notationSystem = piece.createNotationSystem();
@@ -8680,9 +7397,9 @@ public class Transcription implements Serializable {
 	public List<Integer[]> getVoiceRangeInformation() {
 		List<Integer[]> ranges = new ArrayList<>();
 		
-		NotationSystem nSys = getPiece().getScore();
+		NotationSystem nSys = getScorePiece().getScore();
 		// For each voice i
-		for (int i = 0; i < getPiece().getScore().size(); i ++) {
+		for (int i = 0; i < getScorePiece().getScore().size(); i ++) {
 			int lowestPitch = Integer.MAX_VALUE;
 			int highestPitch = Integer.MIN_VALUE;
 			NotationVoice nv = nSys.get(i).get(0);
@@ -9207,7 +7924,7 @@ public class Transcription implements Serializable {
 		// Create the Transcription based on the predicted Piece
 //		boolean normaliseTuning = true; // is only used in the tablature case
 //		boolean isGroundTruthTranscription = false;
-		init(predictedPiece, argEncoding, null, /*normaliseTuning, isGroundTruthTranscription,*/ 
+		init(new ScorePiece(predictedPiece), argEncoding, null, /*normaliseTuning, isGroundTruthTranscription,*/ 
 			argVoiceLabels, argDurationLabels, Type.PREDICTED);
 			
 //		// Set the predicted class fields. When creating a ground truth Transcription, this happens inside
@@ -10273,7 +8990,7 @@ public class Transcription implements Serializable {
 			.comparing(Note::getMetricTime)
 			.thenComparing(Note::getMidiPitch)
 			.thenComparing(this::findVoice, Comparator.reverseOrder()));
-		getPiece().getScore().getContentsRecursiveList(null).stream()
+		getScorePiece().getScore().getContentsRecursiveList(null).stream()
 		.filter(c -> c instanceof Note)
 		.forEach(c -> noteSeq.add((Note) c));
 		return noteSeq;
@@ -10682,7 +9399,7 @@ public class Transcription implements Serializable {
 		// NB If no Comparator is used, it is not guaranteed that the NoteSequence will 
 		// contain the notes in the sequence they are added
 		NoteSequence noteSeq = new NoteSequence(new NoteTimePitchComparator());
-		getPiece().getScore().getContentsRecursiveList(null).stream()
+		getScorePiece().getScore().getContentsRecursiveList(null).stream()
 			.filter(c -> c instanceof Note)
 			.forEach(c -> noteSeq.add((Note) c));
 		return noteSeq; 
@@ -11232,6 +9949,280 @@ public class Transcription implements Serializable {
 		}
 		return nsResc;
 	}
+
+
+	/**
+	 * Gets, for the given accidentals (i.e., the number of flats if negative, and the number of
+	 * sharps if positive), the index of the root char and the root alteration.
+	 * 
+	 * @param accidentals
+	 * @return An <code>Integer[]</code> containing
+	 *         <ul>
+	 *         <li>As element 0: the index in "ABCDEFG" of the root that goes with the number of accidentals.</li>
+	 *         <li>As element 1: the root alteration, i.e., the number of alterations (sharps/flats) to 
+	 *             be added to the root. If the given number of accidentals is negative, the alterations
+	 *             are flats; else, they are sharps.</li>
+	 *         </ul>
+	 */
+	private static Integer[] getRootIndexAndRootAlteration(int accidentals) {
+		Map<Integer, Integer[]> rootMap = new LinkedHashMap<Integer, Integer[]>();
+		rootMap.put(0, new Integer[]{2, 0});
+		// Sharps
+		rootMap.put(1, new Integer[]{6, 0}); // G
+		rootMap.put(2, new Integer[]{3, 0}); // D
+		rootMap.put(3, new Integer[]{0, 0}); // A
+		rootMap.put(4, new Integer[]{4, 0}); // E
+		rootMap.put(5, new Integer[]{1, 0}); // B
+		rootMap.put(6, new Integer[]{5, 0}); // F#
+		rootMap.put(7, new Integer[]{2, 1}); // C#
+		rootMap.put(8, new Integer[]{6, 1}); // G#
+		rootMap.put(9, new Integer[]{3, 1}); // D#
+		rootMap.put(10, new Integer[]{0, 1}); // A#
+		rootMap.put(11, new Integer[]{4, 1}); // E#
+		// Flats
+		rootMap.put(-1, new Integer[]{5, 0}); // F
+		rootMap.put(-2, new Integer[]{1, 1}); // Bb
+		rootMap.put(-3, new Integer[]{4, 1}); // Eb
+		rootMap.put(-4, new Integer[]{0, 1}); // Ab
+		rootMap.put(-5, new Integer[]{3, 1}); // Db
+		rootMap.put(-6, new Integer[]{6, 1}); // Gb
+		rootMap.put(-7, new Integer[]{2, 1}); // Cb
+		rootMap.put(-8, new Integer[]{5, 1}); // Fb
+		rootMap.put(-9, new Integer[]{1, 2}); // Bbb
+		rootMap.put(-10, new Integer[]{4, 2}); // Ebb
+		rootMap.put(-11, new Integer[]{0, 2}); // Abb
+
+		return rootMap.get(accidentals);
+	}
+
+
+//	/**
+//	 * Returns a reversed version of the Transcription.
+//	 * 
+//	 * @param t
+//	 * @param tab
+//	 * @return
+//	 */
+//	// NOT TESTED (wrapper method)
+//	public static Transcription reverse(Transcription t, Tablature tab) {
+//		Piece pRev = reversePiece(t/*, tab*/);
+//
+//		Encoding eRev = null;
+//		if (tab != null) {
+//			eRev = tab.getEncoding().reverse(tab.getTimeline().getMeterInfo()); // NB The value of normaliseTuning is irrelevant
+//		}
+//		return new Transcription(pRev, eRev);
+//	}
+
+
+//	/**
+//	 * Reverses the <code>Transcription</code>'s <code>Piece</code>. 
+//	 * NB: Handles the _unadapted_ <code>Piece</code>. 
+//	 * 
+//	 * @param t
+//	 * @return
+//	 */
+//	// NOT TESTED (wrapper method)
+//	static Piece reversePiece(Transcription t/*, Tablature tab*/) { // TODO name reverse()
+//		Piece pRev = new Piece();
+//
+//		MetricalTimeLine mtl = t.getScorePiece().getMetricalTimeLine();
+//		Rational mp = t.getMirrorPoint();
+////		List<Rational[]> onsetsAndMinDurs = null;
+////		List<Rational> onsets = null;
+////		List<Rational> minDurs = null;
+////		if (tab != null) {
+////			onsets = ToolBox.getItemsAtIndex(tab.getMetricTimePerChord(false), 0);
+////			minDurs = tab.getMinimumDurationPerChord();
+////			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations();
+////		}
+//
+//		Piece pOrig = t.getOriginalPiece();
+//		// Make a copy of notationSystem so that pOrig is not affected
+//		NotationSystem nsCopy = copyNotationSystem(pOrig.getScore());
+//
+////		// For each voice
+////		NotationSystem nsRev = new NotationSystem();
+////		for (NotationStaff nst : nsCopy) {	
+////			NotationStaff nstRev = new NotationStaff();
+////			for (NotationVoice nv : nst) {
+////				NotationVoice nvRev = new NotationVoice();
+////				for (NotationChord nc : nv) {
+////					NotationChord ncRev = new NotationChord();
+////					for (Note n : nc) {
+////						// Calculate the Note's new onset time (mirrorPoint - offset time)
+////						Rational dur = n.getMetricDuration();
+//////						// In tablature case: use minimum duration
+//////						if (tab != null) {
+//////							for (Rational[] item : onsetsAndMinDurs) {
+//////								if (item[0].equals(n.getMetricTime())) {
+//////									dur = item[1];
+//////									dur.reduce();
+//////									break;
+//////								}
+//////							}
+//////							
+//////							// NB: onsets and minDurs are corresponding lists and can be 
+//////							//     indexed concurrently
+//////							for (int i = 0; i < onsets.size(); i++) {
+//////								if (onsets.get(i).equals(n.getMetricTime())) {
+//////									dur = minDurs.get(i);
+//////									dur.reduce();
+//////									break;
+//////								}
+//////							}
+//////						}
+////						Rational offset = n.getMetricTime().add(dur);
+////						Rational mt = mirrorPoint.sub(offset);
+////						
+////						// Error in barbetta-1582_1-il_nest.tbp: last chord should be co1 
+////						// (and not co2), leading to newOnsetTime being -1/2 
+////						if (pOrig.getName().equals("barbetta-1582_1-il_nest.mid") && 
+////							mt.equals(new Rational(-1, 2))) {
+////							mt = Rational.ZERO;
+////							dur = new Rational(1, 2);
+////						}
+////
+////						ncRev.add(createNote(n.getMidiPitch(), mt, dur, mtl));
+////					}
+////					nc = ncRev;
+////					nvRev.add(ncRev);
+////				}
+////				nstRev.add(nvRev);
+////			}
+////			nsRev.add(nstRev);
+////		}
+//
+//		pRev.setScore(reverseNotationSystem(nsCopy, mtl, mp, pOrig.getName()));
+//		pRev.setMetricalTimeLine(reverseMetricalTimeLine(mtl, mp, t.getMeterInfo()));
+//		pRev.setHarmonyTrack(reverseHarmonyTrack(pOrig.getHarmonyTrack(), mtl, mp, t.getKeyInfo()));
+//		pRev.setName(t.getScorePiece().getName());
+//		return pRev;
+//	}
+	
+	
+//	/**
+//	 * Returns a deornamented version of the Transcription.
+//	 * 
+//	 * @param t
+//	 * @param tab
+//	 * @param dur Only (single-event) notes with a duration shorter than this duration are 
+//	 *            considered ornamental.
+//	 * @return
+//	 */
+//	// NOT TESTED (wrapper method)
+//	public static Transcription deornament(Transcription t, Tablature tab, Rational dur) {
+//		Piece pDeorn = deornamentPiece(t, /*tab,*/ dur);
+//		Encoding eDeorn = null;
+//		if (tab != null) {
+//			eDeorn = tab.getEncoding().deornament(Tablature.getTabSymbolDur(dur)); // NB The value of normaliseTuning is irrelevant
+//		}
+//		return new Transcription(pDeorn, eDeorn);
+//	}
+
+
+//	/**
+//	 * Removes all sequences of single-note events shorter than the given duration from the
+//	 * encoding, and lengthens the duration of the event preceding the sequence by the total 
+//	 * length of the removed sequence. NB: Handles the _unadapted_ Piece.
+//	 *
+//	 * @param t
+//	 * @param tab
+//	 * @param dur
+//	 * @return
+//	 */
+//	// TESTED
+//	static Piece deornamentPiece(Transcription t, /*Tablature tab,*/ Rational dur) {
+//		Piece pDeorn = new Piece();
+//
+//		MetricalTimeLine mtl = t.getScorePiece().getMetricalTimeLine();
+//		List<Rational> onsetTimes = t.getAllOnsetTimes();
+//		List<List<Note>> ch = t.getChords();
+////		List<List<TabSymbol>> tabChords = null;
+//////		List<Rational[]> onsetsAndMinDurs = null;
+////		List<Rational> minDurs = null;
+////		if (tab != null) {
+////			tabChords = tab.getChords(); 
+//////			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations();
+////			minDurs = tab.getMinimumDurationPerChord();
+////		}
+//
+//		Piece origP = t.getOriginalPiece();
+//		// Make a copy of notationSystem so that pOrig is not affected
+//		NotationSystem nsCopy = copyNotationSystem(origP.getScore());
+//		
+//		// For each voice
+//		NotationSystem nsDeorn = new NotationSystem();
+//		List<Integer> removed = new ArrayList<>();
+////		int voice = 0;
+//		for (NotationStaff nst : nsCopy) {
+////			System.out.println("voice = " + voice);
+//			NotationStaff nstDeorn = new NotationStaff();
+//			for (NotationVoice nv : nst) {
+//				NotationVoice nvDeorn = new NotationVoice();
+//				NotationChord pre = null;
+//				Rational durPre = null;
+//				for (int i = 0; i < nv.size(); i++) {
+//					NotationChord nc = nv.get(i);
+//					Rational onset = nc.getMetricTime();
+//					int ind = onsetTimes.indexOf(onset);
+//
+////					boolean isOrn; 
+////					if (tabChords != null) { 
+////						isOrn = tabChords.get(ind).size() == 1 && 
+////							minDurs.get(ind).isLess(dur);
+//////							onsetsAndMinDurs.get(ind)[1].isLess(dur);
+////					}
+////					else {
+////					isOrn = nc.size() == 1 && ch.get(ind).size() == 1 &&
+////						nc.getMetricDuration().isLess(dur);
+////					}
+//					boolean isOrn = 
+//						nc.size() == 1 && ch.get(ind).size() == 1 && 
+//						nc.getMetricDuration().isLess(dur);
+//					// If currNc is ornamental
+//					// NB: In case of a single-event SNU, the note will be removed from both voices
+//					if (isOrn) {
+//						removed.add(ind);
+//						// Determine pre, if it has not yet been determined
+//						if (pre == null) {
+//							NotationChord ncPrev = nv.get(i-1);
+//							pre = ncPrev;
+//							durPre = ncPrev.getMetricDuration(); // all notes in a NotationChord have the same duration 
+//						}
+//						// Increment durPre
+//						durPre = durPre.add(nc.getMetricDuration());
+//					}
+//					// If currNc is the first after a sequence of one or more ornamental notes
+//					// (i.e., it does not meet the if condition above but pre != null)
+//					else if (pre != null) {
+//						// Adapt duration of pre
+//						for (Note n : pre) {
+////							n.setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), 
+////								n.getMetricTime(), durPre));
+//							n = createNote(n.getMidiPitch(), n.getMetricTime(), durPre, mtl);
+//						}
+//						// Add currNc
+//						nvDeorn.add(nc);
+//						// Reset
+//						pre = null;
+//					}
+//					else {
+//						nvDeorn.add(nc);
+//					}
+//				}
+//				nstDeorn.add(nvDeorn);
+//			}
+////			voice++;
+//			nsDeorn.add(nstDeorn);
+//		}
+//
+//		pDeorn.setScore(nsDeorn);
+//		pDeorn.setMetricalTimeLine(mtl);
+//		pDeorn.setHarmonyTrack(origP.getHarmonyTrack());		
+//		pDeorn.setName(t.getScorePiece().getName());
+//		return pDeorn;
+//	}
 
 
 //	/**
@@ -12245,5 +11236,69 @@ public class Transcription implements Serializable {
 //		}	
 //		return equalDurationUnisons;
 //	}
+	
+	
+//	public static MetricalTimeLine reverseMetricalTimeLineOLD(MetricalTimeLine mtl, Rational mp, List<Integer[]> mi) {
+//	// This method is called on an existing Transcription, so meterInfo exists and mtl
+//	// is clean. So arguments can be inside method and method non-static
+//	
+//	// mt: mp     - mt of timeSig + (bars in timeSig * timeSig) 
+//	// t : mpTime - t  of (mt of timeSig + (bars in timeSig * timeSig))
+//	// long time = mtl.getTime(m.getMetricTime());
+//
+////	List<Integer[]> mi = getMeterInfo();
+////	MetricalTimeLine mtl = getPiece().getMetricalTimeLine();
+////	Rational mp = getMirrorPoint();
+//	long mpTime = mtl.getTime(mp);
+//	System.out.println("---> " + mp);
+//	System.out.println(mpTime);
+//	
+//	for (Marker m : mtl) {
+//		System.out.println(m);
+//	}
+//	System.out.println("----");
+//
+//	for (Marker m : mtl) {
+////		System.out.println(m);
+//		Rational mt = m.getMetricTime();
+//		int indInMi = -1;
+//		for (int i = 0; i < mi.size(); i++) {
+//			Rational currMt = 
+//				new Rational(mi.get(i)[Timeline.MI_NUM_MT_FIRST_BAR], 
+//				mi.get(i)[Timeline.MI_DEN_MT_FIRST_BAR]);
+//			if (currMt.equals(mt)) {
+//				indInMi = i;
+//				break;
+//			}
+//		}
+//		// Adapt mt
+//		if (m instanceof TimeSignatureMarker) {
+//			System.out.println("time sig");
+//			Integer[] currMi = mi.get(indInMi);
+//			int currBars = (currMi[Timeline.MI_LAST_BAR] - currMi[Timeline.MI_FIRST_BAR]) + 1;
+//			Rational currMeter = new Rational(currMi[Timeline.MI_NUM], currMi[Timeline.MI_DEN]);
+//			Rational mtRev = mp.sub(mt.add(currMeter.mul(currBars)));
+//			((TimeSignatureMarker) m).setMetricTime(mtRev);
+//			System.out.println("--> " + mtl.getTime(mt.add(currMeter.mul(currBars))));
+//			System.out.println("--> " + (mpTime - mtl.getTime(mt.add(currMeter.mul(currBars)))));
+//		}
+//		// Adapt mt and t
+//		if (m instanceof TimedMetrical) {
+//			// Has mt and time
+//			if (!(m instanceof TempoMarker)) {
+////				System.out.println("timed metrical");
+//			}
+//			else {
+////				System.out.println("tempomarker");
+//				// t : mpTime - t  of (mt of timeSig + (bars in timeSig * timeSig))
+//				
+//			}
+//		}
+//	}
+//	
+//	
+////	System.out.println(numTimeSigs == mi.size());
+//	return null;
+//}
 
 }

@@ -2496,7 +2496,7 @@ public class MEIExport {
 		List<Integer[]> mi, List<Integer[]> ki, List<Rational[]> tripletOnsetPairs) {
 		System.out.println("\r\n>>> getData() called");
 
-		Piece p = trans.getPiece();
+		Piece p = trans.getScorePiece();
 		int numVoices = p.getScore().size();
 		Integer[][] btp = tab == null ? null : tab.getBasicTabSymbolProperties();
 		Rational gridVal = 

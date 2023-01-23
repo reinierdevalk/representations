@@ -7,8 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.ArrayUtils;
-
+import de.uos.fmt.musitech.data.performance.MidiNote;
 import de.uos.fmt.musitech.data.performance.PerformanceNote;
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationSystem;
@@ -22,7 +21,6 @@ import path.Path;
 import representations.Tablature.Tuning;
 import tbp.Encoding;
 import tbp.RhythmSymbol;
-import tbp.Symbol;
 import tbp.TabSymbol;
 import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
@@ -419,7 +417,7 @@ public class TablatureTest extends TestCase {
 			12, 6, 6, 6, 
 			48, 12, 6, 6, 24	
 		});
-		// b. Diminuted
+		// b. Diminuted // TODO should note exist
 		List<Integer> minDursTestGetMeterInfoDim = Arrays.asList(new Integer[]{
 			24, 24, 24, 
 			72, 24, 96, 
@@ -800,7 +798,7 @@ public class TablatureTest extends TestCase {
 
 		List<List<Rational>> actual = new ArrayList<List<Rational>>();
 		Integer[][] btp = tab.getBasicTabSymbolProperties();
-		NotationSystem system = trans.getPiece().getScore();
+		NotationSystem system = trans.getScorePiece().getScore();
 		for (int i = 0; i < system.size(); i++) {
 			List<Rational> curr = new ArrayList<Rational>();
 			NotationVoice nv = system.get(i).get(0);
@@ -849,9 +847,10 @@ public class TablatureTest extends TestCase {
 					new Rational(in[Tablature.ONSET_TIME], Tablature.SRV_DEN), 
 					new Rational(in[Tablature.MIN_DURATION], Tablature.SRV_DEN)
 				), 
-				new PerformanceNote(
-					0, 120000, 90, // default instance variable values; see PerformanceNote()
-					in[Tablature.PITCH] 
+				MidiNote.convert(new PerformanceNote(
+					0, 0, 127,
+//					0, 120000, 90, // default instance variable values; see PerformanceNote()
+					in[Tablature.PITCH]) 
 				)
 			));
 		}
@@ -1098,12 +1097,16 @@ public class TablatureTest extends TestCase {
 		
 		// testGetMeterInfo
 		List<Rational> md2 = new ArrayList<>();
-		getMinimumDurationPerChord(true).get(1).forEach(i -> md2.add(new Rational(i, Tablature.SRV_DEN)));
+		getMinimumDurationPerChord(false).get(1).forEach(i -> md2.add(new Rational(i, Tablature.SRV_DEN)));
 		expected.addAll(md2);
 
 		List<Rational> actual = t1.getMinimumDurationPerChord();
 		actual.addAll(t2.getMinimumDurationPerChord());
 
+		System.out.println(expected);
+		System.out.println("----");
+		System.out.println(actual);
+		
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));
@@ -1189,7 +1192,8 @@ public class TablatureTest extends TestCase {
 
 
 	public void testGetNumberOfTabBars() {
-		List<Integer> expected = Arrays.asList(new Integer[]{9, 4, 96});
+		List<Integer> expected = Arrays.asList(9, 4, 96);
+
 		List<Integer> actual = new ArrayList<>();
 		// No decorative opening barlines and non-metric barlines
 		actual.add(new Tablature(encodingTestGetMeterInfo, false).getNumberOfTabBars());

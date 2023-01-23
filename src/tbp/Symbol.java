@@ -40,6 +40,7 @@ public class Symbol {
 	public static final MensurationSign TWO	= new MensurationSign("M2", "2", new Integer[]{2, 4});
 	public static final MensurationSign THREE = new MensurationSign("M3", "3", new Integer[]{3, 4});
 	public static final MensurationSign FOUR = new MensurationSign("M4", "4", new Integer[]{4, 4});
+	public static final MensurationSign FIVE = new MensurationSign("M5", "4", new Integer[]{5, 4});
 	public static final MensurationSign SIX	= new MensurationSign("M6", "6", new Integer[]{6, 4});
 	public static final MensurationSign O = new MensurationSign("MO", "O", new Integer[]{3, 4});
 	public static final MensurationSign C = new MensurationSign("MC", "C", new Integer[]{4, 4});
@@ -47,13 +48,16 @@ public class Symbol {
 	public static final Map<String, MensurationSign> MENSURATION_SIGNS;
 	static {
 		List<MensurationSign> mss = Arrays.asList(new MensurationSign[]{
-			TWO, THREE,FOUR, SIX, O, C, CUT_C,
+			TWO, THREE, FOUR, SIX, O, C, CUT_C,
 			THREE.makeVariant(-1, 4),
 			THREE.makeVariant(2, -1),
 			FOUR.makeVariant(2, -1),
 			SIX.makeVariant(2, -1),
 			TWO.makeVariant(1, -1),
-			THREE.makeVariant(1, -1)
+			THREE.makeVariant(1, -1),
+			THREE.makeVariant(8, -1),
+			TWO.makeVariant(4, -1),
+			FIVE.makeVariant(16, -1)
 		}); 
 		MENSURATION_SIGNS = new LinkedHashMap<String, MensurationSign>();
 		mss.forEach(ms -> MENSURATION_SIGNS.put(ms.getEncoding(), ms));
@@ -168,6 +172,16 @@ public class Symbol {
 	// TESTED
 	public static MensurationSign getMensurationSign(String e) {
 		return !MENSURATION_SIGNS.containsKey(e) ? null : MENSURATION_SIGNS.get(e);
+	}
+
+
+	public static MensurationSign getMensurationSign(Integer[] m) {
+		for (MensurationSign ms : MENSURATION_SIGNS.values()) {
+		    if (ms.getMeter()[0] == m[0] && ms.getMeter()[1] == m[1]) {
+		    	return ms;
+		    }
+		}
+		return null;
 	}
 
 

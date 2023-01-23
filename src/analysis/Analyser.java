@@ -1016,7 +1016,7 @@ public class Analyser {
 		List<Integer[]> meterInfo = transcription.getMeterInfo();
 
 		// For each voice
-		NotationSystem notationSystem = transcription.getPiece().getScore();
+		NotationSystem notationSystem = transcription.getScorePiece().getScore();
 		for (int i = 0; i < notationSystem.size(); i++) {
 			NotationStaff staff = notationSystem.get(i);
 			if (staff.size() != 1) {

@@ -30,6 +30,7 @@ import de.uos.fmt.musitech.performance.midi.MidiReader;
 import de.uos.fmt.musitech.utility.math.Rational;
 import representations.Tablature;
 import representations.Transcription;
+import structure.ScorePiece;
 import tools.ToolBox;
 
 public class MIDIImport {
@@ -221,7 +222,7 @@ public class MIDIImport {
 							durQuantised = durQuantised.mul(new Rational(1, srv));
 						}
 						if (!onsetQuantised.equals(onset) || !durQuantised.equals(dur)) {
-							Note quantisedNote = Transcription.createNote(
+							Note quantisedNote = ScorePiece.createNote(
 								originalNote.getMidiPitch(), onsetQuantised, durQuantised, null);
 							notationChord.remove(originalNote);
 							notationChord.add(quantisedNote);
