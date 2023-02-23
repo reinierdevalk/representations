@@ -43,7 +43,7 @@ public class DataConverter {
 	public static List<Double> convertIntoVoiceLabel(List<Integer> listOfVoices) {
 		// Create a voice label and initialise it with only 0.0s
 		List<Double> voiceLabel = new ArrayList<Double>();
-		for (int i = 0; i < Transcription.MAXIMUM_NUMBER_OF_VOICES; i++) {
+		for (int i = 0; i < Transcription.MAX_NUM_VOICES; i++) {
 			voiceLabel.add(0.0);
 		}
 
@@ -68,7 +68,7 @@ public class DataConverter {
 	public static List<Double> convertIntoDurationLabel(List<Integer> listOfDurations) {
 		// Create a duration label and initialise it with only 0.0s
 		List<Double> durationLabel = new ArrayList<Double>();
-		for (int i = 0; i < Transcription.DURATION_LABEL_SIZE; i++) {
+		for (int i = 0; i < Transcription.MAX_TABSYMBOL_DUR; i++) {
 			durationLabel.add(0.0);
 		}
 
@@ -171,7 +171,7 @@ public class DataConverter {
 		// Initialise an empty voice label
 		List<Double> emptyVoiceLabel = new ArrayList<Double>();
 
-		for (int i = 0; i < Transcription.MAXIMUM_NUMBER_OF_VOICES; i++) {
+		for (int i = 0; i < Transcription.MAX_NUM_VOICES; i++) {
 			emptyVoiceLabel.add(0.0);
 		}
 		// Create voice labels for each onset in the chord. The number of onsets is the highest number contained by
@@ -240,14 +240,14 @@ public class DataConverter {
 		int shorterDuration = (durationLabel.indexOf(1.0) + 1)*3; // *3 trp dur
 		int longerDuration = (durationLabel.lastIndexOf(1.0) + 1)*3; // *3 trp dur
 		if (shorterDuration == longerDuration) {
-			Rational dur = new Rational(shorterDuration, Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+			Rational dur = new Rational(shorterDuration, Tablature.SRV_DEN);
 			dur.reduce();
 			return new Rational[]{dur};
 		}
 		else {
-			Rational longerDur = new Rational(longerDuration, Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+			Rational longerDur = new Rational(longerDuration, Tablature.SRV_DEN);
 			longerDur.reduce();
-			Rational shorterDur = new Rational(shorterDuration, Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+			Rational shorterDur = new Rational(shorterDuration, Tablature.SRV_DEN);
 			shorterDur.reduce();
 			return new Rational[]{longerDur, shorterDur};
 		}
@@ -266,7 +266,7 @@ public class DataConverter {
 	// TESTED
 	public static int getIntegerEncoding(Rational dur) {
 		dur.reduce();
-		int multiplier = Transcription.DURATION_LABEL_SIZE / dur.getDenom();
+		int multiplier = Transcription.MAX_TABSYMBOL_DUR / dur.getDenom();
 		return dur.getNumer() * multiplier;
 	}
 

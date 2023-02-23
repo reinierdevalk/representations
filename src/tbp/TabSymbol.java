@@ -1,185 +1,172 @@
 package tbp;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-import representations.Encoding;
-import representations.Encoding.Tuning;
-import representations.Encoding.TuningBassCourses;
+import representations.Tablature.Tuning;
 
+public class TabSymbol extends Symbol implements Serializable {
 
-public class TabSymbol implements Serializable {
+	private static final long serialVersionUID = 1L;
 
-	private String encoding;
+	public static final String FINGERING_DOT_ENCODING = "'";
+
 	private int fret;
 	private int course;
-	private int midiNumber;
+	private int fingeringDots;
 
+	public static enum TabSymbolSet  {
+		FRENCH("French", "French", 8, null),
+		ITALIAN("Italian", "Italian", 8, null),
+		SPANISH("Spanish", "Spanish", 8, null),
+		JUDENKUENIG_1523("Judenkuenig1523", "German", 6, new String[]{"A", "B", "C", "D", "E", "F", "G", "H"}),
+		NEWSIDLER_1536("Newsidler1536", "German", 6, new String[]{"+", "A", "B", "C", "D", "E", "F", "G", "H"}),
+		OCHSENKUN_1558("Ochsenkun1558", "German", 6, new String[]{"+", "2-", "3-", "4-", "5-", "6-", "7-", "8-", "9-", "10-", "11-"}),
+		HECKEL_1562("Heckel1562", "German", 6, new String[]{"+", "A-", "F-", "L-", "Q-", "X-"});
 
-	/**
-	 * Constructor. Creates a new TabSymbol with the specified attributes and adds this 
-	 * to the specified TabSymbolSet.
-	 * 
-	 * @param encoding
-	 * @param fret
-	 * @param course
-	 * @param midiNumber
-	 * @param aTabSymbolSet
-	 * @return
-	 */
-	public TabSymbol(String encoding, int fret, int course, int midiNumber) {
-		this.encoding = encoding;
-		this.fret = fret;
-		this.course = course;
-		this.midiNumber = midiNumber;
+		public static final int FRETS_FRENCH = 0;
+		public static final int FRETS_GERMAN = 1;
+		public static final List<String[][]> FRETS;
+		static {
+			FRETS = new ArrayList<>();
+			FRETS.add(new String[][] {
+				{"a", "b", "c", "d", "e", "f", "g", "h", "i", "k", "l"} // 11 frets per course
+			});
+			FRETS.add(new String[][] {
+				{"5", "e", "k", "p", "v", "9", "e-", "k-", "p-", "v-", "9-"}, // 11 frets per course
+				{"4", "d", "i", "o", "t", "7", "d-", "i-", "o-", "t-", "7-"},
+				{"3", "c", "h", "n", "s", "z", "c-", "h-", "n-", "s-", "z-"},
+				{"2", "b", "g", "m", "r", "y", "b-", "g-", "m-", "r-", "y-"},
+				{"1", "a", "f", "l", "q", "x", "a-", "f-", "l-", "q-", "x-"}
+			});
+		}
+
+		private String name;
+		private String type;
+		private int maxNumberOfCourses;
+		private String[] fretsSixthCourse;
+
+		TabSymbolSet(String s, String t, int m, String[] sc) {
+			name = s;
+			type = t;
+			maxNumberOfCourses = m;
+			fretsSixthCourse = sc;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public String getType() {
+			return type;
+		}
+
+		public int getMaxNumberOfCourses() {
+			return maxNumberOfCourses;
+		}
+
+		public String[] getFretsSixthCourse() {
+			return fretsSixthCourse; 
+		}
+
+		public static TabSymbolSet getTabSymbolSet(String n, String t) {
+			if (n != null) {
+				for (TabSymbolSet tss : TabSymbolSet.values()) { 
+					if (tss.getName().equals(n)) {
+						return tss;
+					}
+				}
+			}
+			if (t != null) {
+				return t.equals("German") ? TabSymbolSet.NEWSIDLER_1536 : getTabSymbolSet(t, null);
+			}
+			return null;
+		}
 	}
 
 
-	/**
-	 * Returns the TabSymbol's encoding.
-	 * 
-	 * @return
-	 */  
-	public String getEncoding() {
-		return encoding;
+	public TabSymbol(String e, String s, int f, int c) {
+		setEncoding(e);
+		setSymbol(s);
+		setFret(f);
+		setCourse(c);
+		setFingeringDots();
 	}
 
 
-	/**
-	 * Returns the position (fret) the TabSymbol is in.
-	 * 
-	 * @return 
-	 */
+	void setFret(int f) {
+		fret = f;
+	}
+
+
+	void setCourse(int c) {
+		course = c;
+	}
+
+
+	void setFingeringDots() {
+		fingeringDots = (int) getEncoding().chars().filter(c -> c == FINGERING_DOT_ENCODING.charAt(0)).count();
+	}
+
+
 	public int getFret() {
 		return fret;
 	}
 
 
-	/**
-	 * Returns the course the TabSymbol is on.
-	 * 
-	 * @return 
-	 */
 	public int getCourse() {
 		return course;
 	}
- 
+
+
+	public int getFingeringDots() {
+		return fingeringDots;
+	}
+
 
 	/**
-	 * Returns the TabSymbol's pitch, as a MIDI number, in the specified tunings.
+	 * Makes a variant (RH-dotted) of the TS.
 	 * 
-	 * @param aTuning
-	 * @param aTuningBassCourses
+	 * @param fingeringDots
+	 * @return
+	 */
+	// TESTED
+	public TabSymbol makeVariant(int fingeringDots) {
+		String e = getEncoding() + FINGERING_DOT_ENCODING.repeat(fingeringDots); 
+		return new TabSymbol(e, getSymbol(), getFret(), getCourse());
+	}
+
+
+	/**
+	 * Returns the TabSymbol's pitch, as a MIDI number, in the given tuning.
+	 * 
+	 * @param t
 	 * @return 
 	 */
-	// TODO test
-	public int getPitch(Tuning aTuning, TuningBassCourses aTuningBassCourses) {
-		int pitch = midiNumber;
-		final int semitone = 1;
-		
-		int avallee = 0;
-		if (getCourse() == 6 && aTuning.isAvallee()) {
-			avallee = 2;
-		}
-		
-		pitch = pitch + ((aTuning.getTransposition() - avallee) * semitone);
-//		// Upon creation of the TS, each TS is given the MIDI number that goes with the 
-//		// G tuning, where any seventh course is assumed to be a major second below the sixth.
-//		// pitch must thus only be adapted if one of these two settings is changed; else, 
-//		// it retain its initial value (midiNumber)
-//		switch (aTuning) {
-//			case G:
-//				break;
-//			case G_AVALLEE:
-//				if (getCourse() == 6) {
-//					pitch -= 2*semitone;
-//				}
-//				break;
-//			case F:
-//				pitch -= 2*semitone;
-//				break;
-//			case A:
-//				pitch += 2*semitone;
-//				break;
-//			case D:
-//				pitch -= 5*semitone;
-//				break;
-//			case A_AVALLEE:
-//				if (getCourse() == 6) {
-//					pitch -= 0*semitone;
-//				}
-//				else {
-//					pitch += 2*semitone;
-//				}
-//				break;
-//			case C_AVALLEE:
-//				if (getCourse() == 6) {
-//					pitch -= 9*semitone;
-//				}
-//				else {
-//					pitch -= 7*semitone;
-//				}
-//				break;
-//		}
-		if (course > 6) {
-			switch (aTuningBassCourses) {
-				case SECOND:
-					break;	
-				case FOURTH:
-					pitch -= 3*semitone;
-					break;	
-				case P4M2:
-					// TODO
-					break;
-				case P5P4M3M2:
-					// TODO
-					break;
-				case P5P4m3M2:
-					// TODO
-					break;
-			}
-		}
-		return pitch;
+	// TESTED
+	public int getPitch(Tuning t) {
+		List<Integer> openCourses = t.getPitches();
+		Collections.reverse(openCourses);
+		return openCourses.get(getCourse() - 1) + getFret();
 	}
 
 
-	/**
-	 * Returns the TabSymbol's pitch, as a String, in the specified tunings.
-	 * 
-	 * @param aTuning
-	 * @param aTuningSeventhCourse
-	 * @return
-	 */
-	public String getPitchAsString (Encoding.Tuning aTuning, Encoding.TuningBassCourses aTuningSeventhCourse) {
-		final String[] pitches = {
-			"G1", "G#1", "A1", "Bb1", "B1", "C", "C#", "D", "Eb", "E", "F", "F#", 
-			"G", "G#", "A", "Bb", "B", "c", "c#", "d", "eb", "e", "f", "f#", 
-			"g", "g#", "a", "bb", "b", "c1", "c#1", "d1", "eb1", "e1", "f1", "f#1", 
-			"g1", "g#1", "a1", "bb1", "b1", "c2", "c#2", "d2", "eb2", "e2"}; 
-
-		// Correction necessary to set MIDI number equal to index in array
-		final int correction = 31;
-		int pitch = getPitch(aTuning, aTuningSeventhCourse); 
-		String pitchAsString = pitches[pitch - correction]; 
-		return pitchAsString;    
-	}
-
-
-	/**
-	 * Searches the specified TabSymbolSet for the TabSymbol whose attribute encoding
-	 * equals the specified encoding. Returns null if the TabSymbolSet does not contain
-	 * such a TabSymbol.
-	 * 
-	 * @param anEncoding
-	 * @param aTabSymbolSet
-	 * @return
-	 */
-	public static TabSymbol getTabSymbol(String anEncoding, TabSymbolSet aTabSymbolSet) {
-		for (TabSymbol t: aTabSymbolSet) {
-			if (t.encoding.equals(anEncoding)) {
-				return t;
-			}
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) {
+			return true;
 		}
-		return null;
+		if (!(o instanceof TabSymbol)) {
+			return false;
+		}
+		TabSymbol t = (TabSymbol) o;
+		return 
+			getEncoding().equals(t.getEncoding()) &&
+			getSymbol().equals(t.getSymbol()) &&
+			getFret() == t.getFret() &&
+			getCourse() == t.getCourse() &&
+			getFingeringDots() == t.getFingeringDots();
 	}
-
 }

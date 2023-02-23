@@ -4,18 +4,24 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
+import javax.swing.WindowConstants;
 
+import org.apache.commons.lang3.SerializationUtils;
+
+import de.uos.fmt.musitech.data.performance.MidiNote;
 import de.uos.fmt.musitech.data.performance.PerformanceNote;
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationStaff;
@@ -27,54 +33,70 @@ import de.uos.fmt.musitech.data.score.ScoreNote;
 import de.uos.fmt.musitech.data.score.ScorePitch;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.Piece;
-import de.uos.fmt.musitech.data.structure.container.Containable;
 import de.uos.fmt.musitech.data.structure.container.NoteSequence;
 import de.uos.fmt.musitech.data.structure.container.SortedContainer;
 import de.uos.fmt.musitech.data.structure.harmony.KeyMarker;
 import de.uos.fmt.musitech.data.time.Marker;
+import de.uos.fmt.musitech.data.time.MetricalComparator;
 import de.uos.fmt.musitech.data.time.MetricalTimeLine;
+import de.uos.fmt.musitech.data.time.TempoMarker;
 import de.uos.fmt.musitech.data.time.TimeSignature;
 import de.uos.fmt.musitech.data.time.TimeSignatureMarker;
+import de.uos.fmt.musitech.data.time.TimedMetrical;
 import de.uos.fmt.musitech.score.ScoreEditor;
 import de.uos.fmt.musitech.score.ScoreEditor.Mode;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
-import exports.MIDIExport;
 import imports.MIDIImport;
+import structure.ScoreMetricalTimeLine;
+import structure.ScorePiece;
+import structure.Timeline;
+import structure.metric.Utils;
+import tbp.Encoding;
 import tbp.TabSymbol;
 import tools.ToolBox;
 import utility.DataConverter;
 import utility.NoteTimePitchComparator;
 
 public class Transcription implements Serializable {
-	
-//	private static final long serialVersionUID = -8586909984652950201L;
-	public static int MAXIMUM_NUMBER_OF_VOICES = 5;
-	public static int DURATION_LABEL_SIZE = (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3)*2; // trp dur; *3 for JosquIntab; *2 for Byrd
+
+	private static final long serialVersionUID = 1L;
+	public static int MAX_NUM_VOICES = 5;
+	public static int DUR_LABEL_MULTIPLIER = 1; // TODO set to 2 for Byrd and 3 for JosquIntab
+	public static int MAX_TABSYMBOL_DUR = (Tablature.SRV_DEN / 3) * DUR_LABEL_MULTIPLIER; // trp dur
 	public static final int INCORRECT_IND = 0;
 	public static final int ORNAMENTATION_IND = 1;
 	public static final int REPETITION_IND = 2;
 	public static final int FICTA_IND = 3;
 	public static final int OTHER_IND = 4;
-	
-	private List<File> files;
-	private Piece piece;
-	private Piece unadaptedGTPiece;
-	private String pieceName;
-	private NoteSequence noteSequence;
+
+	private ScorePiece scorePiece;
+	private Piece originalPiece;
+	private String name;
+	private List<Integer[]> meterInfo;
+	private List<Integer[]> keyInfo;
+	private List<TaggedNote> taggedNotes;
+	private List<Note> notes;
+	private List<List<Note>> chords;
 	private List<List<Double>> voiceLabels;
 	private List<List<List<Double>>> chordVoiceLabels;
 	private List<List<Double>> durationLabels;
-	private List<List<List<Double>>> durationLabelsOLD;
-	private List<Integer[]> voicesCoDNotes = null;
-	private List<Integer[]> equalDurationUnisonsInfo;
+	private List<List<Double>> minimumDurationLabels;	
+	private List<Integer[]> voicesSNU;
+	private List<Integer[]> voicesUnison;
+	private List<Integer[]> voicesEDU;
+	private List<Integer[]> voicesIDU;
 	private Integer[][] basicNoteProperties;
-	List<List<Note>> transcriptionChordsFinal;
-	List<Integer> numberOfNewNotesPerChord;
-	private List<Integer[]> meterInfo;
-	private List<Integer[]> keyInfo;
-	private List<List<Integer>> colourIndices;
+	private List<Integer> numberOfNewNotesPerChord;
+	
+//	private NoteSequence noteSequence;
+//	private List<List<List<Double>>> durationLabelsOLD;
+//	private List<List<Integer>> colourIndices;
+	private static String chordCheck;
+	static String alignmentCheck;
+	private String handledNotes;
 
+	// For basicNoteProperties
 	public static final int PITCH = 0;
 	public static final int ONSET_TIME_NUMER = 1;
 	public static final int ONSET_TIME_DENOM = 2;
@@ -84,270 +106,361 @@ public class Transcription implements Serializable {
 	public static final int CHORD_SIZE_AS_NUM_ONSETS = 6;
 	public static final int NOTE_SEQ_NUM = 7;
 
-	private String adaptations = "Adaptations:" + "\n";
-	private String chordsSpecification = "Chord error details:" + "\n";
-	private String alignmentDetails = "Alignment details:" + "\n"; 
-	private static boolean reversePiece = false;
+	// For meterInfo
+	public static final int MI_NUM = 0; // TODO 0-5 also in Tablature
+	public static final int MI_DEN = 1;
+	public static final int MI_FIRST_BAR = 2;
+	public static final int MI_LAST_BAR = 3;
+	public static final int MI_NUM_MT_FIRST_BAR = 4;
+	public static final int MI_DEN_MT_FIRST_BAR = 5;	
+	public static final int MI_SIZE_TRANS = 6;
 
-	public static final List<Double> THIRTYSECOND = createDurationLabel(1*3);
-	public static final List<Double> SIXTEENTH = createDurationLabel(2*3);
-	public static final List<Double> DOTTED_SIXTEENTH = createDurationLabel(3*3);
-	public static final List<Double> EIGHTH = createDurationLabel(4*3);
-	public static final List<Double> EIGHTH_AND_THIRTYSECOND = createDurationLabel(5*3);
-	public static final List<Double> DOTTED_EIGHTH = createDurationLabel(6*3);
-	public static final List<Double> DOUBLE_DOTTED_EIGHTH = createDurationLabel(7*3);
-	public static final List<Double> QUARTER = createDurationLabel(8*3);
-	public static final List<Double> QUARTER_AND_THIRTYSECOND = createDurationLabel(9*3);
-	public static final List<Double> QUARTER_AND_SIXTEENTH = createDurationLabel(10*3);
-	public static final List<Double> QUARTER_AND_DOTTED_SIXTEENTH = createDurationLabel(11*3);
-	public static final List<Double> DOTTED_QUARTER = createDurationLabel(12*3);
-	public static final List<Double> DOTTED_QUARTER_AND_THIRTYSECOND = createDurationLabel(13*3);
-	public static final List<Double> DOUBLE_DOTTED_QUARTER = createDurationLabel(14*3);
-	public static final List<Double> TRIPLE_DOTTED_QUARTER = createDurationLabel(15*3);
-	public static final List<Double> HALF = createDurationLabel(16*3);
-	public static final List<Double> DOTTED_HALF = createDurationLabel(24*3);
-	public static final List<Double> WHOLE = createDurationLabel(32*3);
+	// For keyInfo
+	public static final int KI_KEY = 0;
+	public static final int KI_MODE = 1;
+	public static final int KI_FIRST_BAR = 2;
+	public static final int KI_LAST_BAR = 3;
+	public static final int KI_NUM_MT_FIRST_BAR = 4;
+	public static final int KI_DEN_MT_FIRST_BAR = 5;
+	private static final int KI_SIZE = 6;
 
-	private static final List<Double> VOICE_EMPTY = Arrays.asList(new Double[]{0.0, 0.0, 0.0, 0.0, 0.0});
-	private static final List<Double> VOICE_EMPTY_SIX = Arrays.asList(new Double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
-	public static final List<Double> VOICE_0 = Arrays.asList(new Double[]{1.0, 0.0, 0.0, 0.0, 0.0});
-	public static final List<Double> VOICE_1 = Arrays.asList(new Double[]{0.0, 1.0, 0.0, 0.0, 0.0});
-	public static final List<Double> VOICE_2 = Arrays.asList(new Double[]{0.0, 0.0, 1.0, 0.0, 0.0});
-	public static final List<Double> VOICE_3 = Arrays.asList(new Double[]{0.0, 0.0, 0.0, 1.0, 0.0});
-	public static final List<Double> VOICE_4 = Arrays.asList(new Double[]{0.0, 0.0, 0.0, 0.0, 1.0});
+//	public static final List<Double> THIRTYSECOND = createDurationLabel(new Integer[]{1*3});
+//	public static final List<Double> SIXTEENTH = createDurationLabel(new Integer[]{2*3});
+//	public static final List<Double> DOTTED_SIXTEENTH = createDurationLabel(new Integer[]{3*3});
+//	public static final List<Double> EIGHTH = createDurationLabel(new Integer[]{4*3});
+//	public static final List<Double> EIGHTH_AND_THIRTYSECOND = createDurationLabel(new Integer[]{5*3});
+//	public static final List<Double> DOTTED_EIGHTH = createDurationLabel(new Integer[]{6*3});
+//	public static final List<Double> DOUBLE_DOTTED_EIGHTH = createDurationLabel(new Integer[]{7*3});
+//	public static final List<Double> QUARTER = createDurationLabel(new Integer[]{8*3});
+//	public static final List<Double> QUARTER_AND_THIRTYSECOND = createDurationLabel(new Integer[]{9*3});
+//	public static final List<Double> QUARTER_AND_SIXTEENTH = createDurationLabel(new Integer[]{10*3});
+//	public static final List<Double> QUARTER_AND_DOTTED_SIXTEENTH = createDurationLabel(new Integer[]{11*3});
+//	public static final List<Double> DOTTED_QUARTER = createDurationLabel(new Integer[]{12*3});
+//	public static final List<Double> DOTTED_QUARTER_AND_THIRTYSECOND = createDurationLabel(new Integer[]{13*3});
+//	public static final List<Double> DOUBLE_DOTTED_QUARTER = createDurationLabel(new Integer[]{14*3});
+//	public static final List<Double> TRIPLE_DOTTED_QUARTER = createDurationLabel(new Integer[]{15*3});
+//	public static final List<Double> HALF = createDurationLabel(new Integer[]{16*3});
+//	public static final List<Double> DOTTED_HALF = createDurationLabel(new Integer[]{24*3});
+//	public static final List<Double> WHOLE = createDurationLabel(new Integer[]{32*3});
 
-	private final static int SUPERIUS = 0;
-	private final static int ALTUS = 1;
-	private final static int TENOR = 2;
-	private final static int BASSUS = 3;
+//	public static final List<Double> VOICE_0 = createVoiceLabel(new Integer[]{0});
+//	public static final List<Double> VOICE_1 = createVoiceLabel(new Integer[]{1});
+//	public static final List<Double> VOICE_2 = createVoiceLabel(new Integer[]{2});
+//	public static final List<Double> VOICE_3 = createVoiceLabel(new Integer[]{3});
+//	public static final List<Double> VOICE_4 = createVoiceLabel(new Integer[]{4});
+	
+	public static enum Type {
+		GROUND_TRUTH("ground truth", 0), PREDICTED("predicted", 2), 
+		MAPPING("mapping", 3), AUGMENTED("augmented", 3);
 
-//  /**
-//   * Constructor. Creates a new Transcription out of the encoding in the given File. Sets the class fields
-//   * file, piece, noteSequence and voiceLabels, and 
-//   *   In the tablature case: sets the class field durationLabels, aligns the Tablature and Transcription,
-//   *     and checks the encoding for alignment errors. If any are found, a runTimeException is thrown;
-//   *   In the non-tablature case: sets the class fields meterInfo and basicNoteProperties. In this case,
-//   *     argEncodingFile is <code>null</code>.
-//   *                              
-//   * @param argMidiFile
-//   * @param argPiece
-//   * @param argEncodingFile
-//   */
-//  public Transcription(File argMidiFile, Piece argPiece, File argEncodingFile) {
-//  	
-//    // Verify that either argMidiFile or argPiece == null
-// 		if ((argMidiFile != null && argPiece != null) ||
-// 		  (argMidiFile == null && argPiece == null)) {
-// 		  System.out.println("ERROR: if argMidiFile == null, argPiece must not be, and vice versa" + "\n");
-// 		   throw new RuntimeException("ERROR (see console for details)");
-// 		}
-//  	
-//  	if (argMidiFile != null) {
-//  	  setFile(argMidiFile);
-//  	  setPiece(); // needs file
-//  	}
-//  	else {
-//  		setPiece(argPiece);
-//  	}
-//  	
-//  	if (reversePiece) {
-//  		setMeterInfo(); // needs file
-//  	  reversePiece(); // needs piece and meterInfo
-//  	}
-//    initialiseNoteSequence(); // needs piece
-//    initialiseVoiceLabels(); // needs piece and noteSequence
-//    // a. In the tablature case
-//    if (argEncodingFile != null) {
-//    	initialiseDurationLabels(); // needs noteSequence
-//    	// 1. Check chords
-//    	Tablature tablature = new Tablature(argEncodingFile);
-//    	if (checkChords(tablature) == false) { // needs noteSequence
-//    		System.out.println(chordsSpecification);
-//      	throw new RuntimeException("ERROR: Chord error (see console).");
-//      }
-//      // 2. Align tablature and transcription
-//      handleCoDNotes(tablature); // needs noteSequence, voiceLabels, and durationLabels
-//      handleCourseCrossings(tablature); // needs noteSequence, voiceLabels, and durationLabels
-//      // 3. Do final alignment check
-//      if (checkAlignment(tablature) == false) {
-//      	System.out.println(alignmentDetails);
-//    		throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
-//      }
-//    }
-//    // b. In the non-tablature case
-//    else {
-//    	setMeterInfo(); // needs file
-//    	handleUnisons(); // needs noteSequence and voiceLabels (WAS: and basicNoteProperties??)
-//    	setBasicNoteProperties(); // needs noteSequence
-//    }
-//  }
+		private String stringRep; 
+		private int intRep;
+		Type(String s, int i) {
+			this.stringRep = s;
+			this.intRep = i;
+		}
 
-	public static void setMaxNumVoices(int num) {
-		MAXIMUM_NUMBER_OF_VOICES = num;
+		@Override
+	    public String toString() {
+	        return getStringRep();
+	    }
+
+		public int getIntRep() {
+			return intRep;
+		}
+
+		public String getStringRep() {
+			return stringRep;
+		}
 	}
 
 
-	// a. Constructors and methods that have to do with the completion of a fully operational Transcription 
+	public class TaggedNote implements Serializable {
+		private static final long serialVersionUID = 1L;
+		private Note note;
+		private Integer[] voices;
+		private Rational[] durations;
+		private int indexOtherUnisonNote = -1;
+
+		public TaggedNote(Note n, Integer[] v, Rational[] d, int i) {
+			note = n;
+			voices = v;
+			durations = d;
+			indexOtherUnisonNote = i;
+		}
+
+		public TaggedNote(Note n) {
+			note = n;
+		}
+
+		public Note getNote() {
+			return note;
+		}
+
+		public Integer[] getVoices() {
+			return voices;
+		}
+
+		public Rational[] getDurations() {
+			return durations;
+		}
+
+		public int getIndexOtherUnisonNote() {
+			return indexOtherUnisonNote;
+		}
+
+		public boolean isEDU() {
+			Rational[] d = getDurations();
+			return d[0].isEqual(d[1]);
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (o == this) {
+				return true;
+			}
+			if (!(o instanceof TaggedNote)) {
+				return false;
+			}
+			TaggedNote t = (TaggedNote) o;
+			return 
+				getNote().equals(t.getNote()) &&
+				getVoices() == null ? t.getVoices() == null : 
+					Arrays.equals(getVoices(), t.getVoices()) &&
+				getDurations() == null ? t.getDurations() == null : 
+					Arrays.equals(getDurations(), t.getDurations()) &&
+				getIndexOtherUnisonNote() == t.getIndexOtherUnisonNote();
+		}
+	}
+
+
+	///////////////////////////////
+	//
+	//  C O N S T R U C T O R S
+	//
 	public Transcription() {
 	}
 
 
-//	private void prepareTranscription(Piece groundTruthPiece, Encoding encoding) {
-//		setPiece(groundTruthPiece);
-//
-//		// Create the Transcription based on the ground truth Piece
+	/**
+	 * Copy constructor. Creates a deep copy of the given <code>Transcription</code>.
+	 * 
+	 * @param t
+	 */
+	public Transcription(Transcription t) {
+		init(t.getScorePiece(), null, null, null, Type.GROUND_TRUTH);
+	}
+
+
+	/**
+	 * Constructor for a ground truth <code>Transcription</code>. 
+	 * Creates a <code>Transcription</code> from a <code>.mid</code> and a <code>.tbp</code> file.
+	 *                              
+	 * @param argFiles A <code>.mid</code> file and a <code>.tbp</code> file (optional; tablature 
+	 *                 case only).
+	 */
+	public Transcription(File... argFiles) {
+//		setFiles(Arrays.asList(new File[]{argMidiFile, argEncodingFile}));
+
+		File argMidiFile = argFiles.length == 1 ? argFiles[0] : 
+			(argFiles[0].getName().endsWith(MIDIImport.EXTENSION) ? argFiles[0] : argFiles[1]);
+		File argEncodingFile = argFiles.length == 1 ? null : 
+			(argFiles[0].getName().endsWith(Encoding.EXTENSION) ? argFiles[0] : argFiles[1]);
+		
+		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(argMidiFile));
+//		MetricalTimeLine mtl = groundTruthPiece.getMetricalTimeLine();
+//		mtl = cleanMetricalTimeLine(mtl);
+//		SortedContainer<Marker> ht = groundTruthPiece.getHarmonyTrack();
+//		ht = cleanHarmonyTrack(ht);
+//		groundTruthPiece.setMetricalTimeLine(mtl);
+//		groundTruthPiece.setHarmonyTrack(ht);
+		Encoding encoding = argEncodingFile != null ? new Encoding(argEncodingFile) : null;
 //		boolean normaliseTuning = false;
 //		boolean isGroundTruthTranscription = true;
-////		createTranscription(argMidiFile.getName(), argEncodingFile, normaliseTuning, isGroundTruthTranscription);
-//		createTranscription(groundTruthPiece.getName(), encoding, normaliseTuning, isGroundTruthTranscription);
+		init(sp, encoding, /*null,*/ /*normaliseTuning, isGroundTruthTranscription,*/ 
+			null, null, Type.GROUND_TRUTH);	
+	}
+
+
+	/**
+	 * Constructor for a mapping Transcription.
+	 * Creates a <code>Transcription</code> from a <code>.mid</code> and a <code>.tbp</code> file.
+	 * 
+	 * @param argMidiFile
+	 * @param argTimeline
+	 */
+	public Transcription(Type t, File... argFiles /*argMidiFile,*/ /*Timeline argTimeline*/) {
+//		setFiles(Arrays.asList(new File[]{argMidiFile, null}));
+
+		File argMidiFile =  
+			(argFiles[0].getName().endsWith(MIDIImport.EXTENSION) ? argFiles[0] : argFiles[1]);
+		File argEncodingFile = 
+			(argFiles[0].getName().endsWith(Encoding.EXTENSION) ? argFiles[0] : argFiles[1]);
+
+		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(argMidiFile));
+		Encoding encoding = new Encoding(argEncodingFile);
+//		MetricalTimeLine mtl = groundTruthPiece.getMetricalTimeLine();
+//		mtl = cleanMetricalTimeLine(mtl);
+//		mtl = alignMetricalTimeLine(mtl, tl);
+//		SortedContainer<Marker> ht = groundTruthPiece.getHarmonyTrack();
+//		ht = cleanHarmonyTrack(ht);
+//		groundTruthPiece.setMetricalTimeLine(mtl);
+//		groundTruthPiece.setHarmonyTrack(ht);
+//		groundTruthPiece = diminutePiece(groundTruthPiece, tl);
+
+//		Encoding encoding = null; //new Encoding(argEncodingFile);	
+//		boolean normaliseTuning = false;
+//		boolean isGroundTruthTranscription = true;
+		init(sp, encoding, /*argTimeline,*/ 
+			/*normaliseTuning, isGroundTruthTranscription,*/  
+			null, null, Type.MAPPING);	
+	}
+
+
+//	/**
+//	 * Constructor for a derivation of a ground truth Transcription (used for data augmentation).
+//	 * Creates a <code>Transcription</code> from an existing <code>Piece</code> and <code>Encoding</code>. 
+//	 *                              
+//	 * @param argPiece
+//	 * @param argEncoding
+//	 */
+//	public Transcription(Piece argPiece, Encoding argEncoding) {
+////		boolean normaliseTuning = false;
+////		boolean isGroundTruthTranscription = true;
+//		init(new ScorePiece(argPiece), argEncoding, /*null,*/ 
+//			/*normaliseTuning, isGroundTruthTranscription,*/
+//			null, null, Type.AUGMENTED);
 //	}
 
 
 	/**
-	 * Constructor for the ground truth Transcription.
-	 *                              
-	 * @param argMidiFile
-	 * @param argEncodingFile
-	 */
-	public Transcription(File argMidiFile, File argEncodingFile) {
-		setFiles(Arrays.asList(new File[]{argMidiFile, argEncodingFile}));
-
-		Piece groundTruthPiece = MIDIImport.importMidiFile(argMidiFile);
-		Encoding encoding = null;
-		if (argEncodingFile != null) {
-			encoding = new Encoding(argEncodingFile);
-		}
-//		long[][] rah = groundTruthPiece.getMetricalTimeLine().getTimeSignature();
-//		for (long[] l : rah) {
-//			System.out.println(Arrays.toString(l));
-//		}
-//		KeyMarker r = groundTruthPiece.getMetricalTimeLine().getKeyMarker(new Rational(0, 4));
-//		System.out.println(r);
-//		System.exit(0);
-
-		// Create the Transcription based on the ground truth Piece
-		boolean normaliseTuning = false;
-		boolean isGroundTruthTranscription = true;
-		createTranscription(groundTruthPiece, encoding, normaliseTuning, isGroundTruthTranscription);	
-	}
-
-
-	/**
-	 * Constructor for a derivation of the ground truth Transcription (used for data augmentation).
-	 *                              
-	 * @param groundTruthPiece
-	 * @param encoding
-	 */
-	public Transcription(Piece groundTruthPiece, Encoding encoding) {
-		// Create the Transcription based on the ground truth Piece
-		boolean normaliseTuning = false;
-		boolean isGroundTruthTranscription = true;
-		createTranscription(groundTruthPiece, encoding, normaliseTuning, isGroundTruthTranscription);
-	}
-
-
-	/**
-	 * Constructor for the ground truth Transcription.
-	 *                              
-	 * @param argMidiFile
-	 * @param argEncodingFile
-	 */
-	private Transcription(File argMidiFile, File argEncodingFile, boolean bla) {
-		// Create and set the ground truth Piece
-		Piece groundTruthPiece = MIDIImport.importMidiFile(argMidiFile);
-//		long[][] rah = groundTruthPiece.getMetricalTimeLine().getTimeSignature();
-//		for (long[] l : rah) {
-//			System.out.println(Arrays.toString(l));
-//		}
-//		KeyMarker r = groundTruthPiece.getMetricalTimeLine().getKeyMarker(new Rational(0, 4));
-//		System.out.println(r);
-//		System.exit(0);		
-		setPiece(groundTruthPiece);
-		
-		// Create the Transcription based on the ground truth Piece
-		boolean normaliseTuning = false;
-		boolean isGroundTruthTranscription = true;
-//		createTranscription(argMidiFile.getName(), argEncodingFile, normaliseTuning, isGroundTruthTranscription);
-	}
-
-
-	/**
 	 * Constructor for a predicted Transcription.
+	 * Creates a <code>Transcription</code> from an existing <code>Piece</code> and <code>Encoding</code>. 
 	 * 
-	 * @param argMidiFile
-	 * @param argEncodingFile
-	 * @param argPiece
+	 * @param argPredictedPiece
+	 * @param argEncoding
 	 * @param argVoiceLabels
 	 * @param argDurationLabels
 	 */
-	public Transcription(String name, File argEncodingFile, Integer[][] argBtp, 
-		Integer[][] argBnp, int argHiNumVoices, List<List<Double>> argVoiceLabels, 
-		List<List<Double>> argDurationLabels, MetricalTimeLine mtl, SortedContainer<Marker> ks) {
+	public Transcription(ScorePiece argPredictedPiece, Encoding argEncoding,  
+		List<List<Double>> argVoiceLabels, List<List<Double>> argDurationLabels) {
 		
-		Encoding encoding = null;
-		if (argEncodingFile != null) {
-			encoding = new Encoding(argEncodingFile);
-		}
-		// Create and set the predicted Piece
-		Piece predictedPiece = 
-			createPiece(argBtp, argBnp, argVoiceLabels, argDurationLabels, argHiNumVoices, 
-			mtl, ks);
-/////		setPiece(predictedPiece);
-		predictedPiece.setName(name);
+//		Encoding argEncoding = argEncoding != null ? new Encoding(argEncoding) : null;
 
-		// Create the Transcription based on the predicted Piece
-		boolean normaliseTuning = true; // is only used in the tablature case
-		boolean isGroundTruthTranscription = false;
-		createTranscription(predictedPiece, encoding, normaliseTuning, isGroundTruthTranscription);
-		
-		// Set the predicted class fields. When creating a ground truth Transcription, this happens inside
-		// handleCoDNotes() and handleCourseCrossings(), but when creating a predicted Transcription this step
-		// is skipped in those methods because the voice labels and duration labels are already ready-to-use. In 
-		// the tablature case, only voicesCoDNotes must still be created from them
-		setVoiceLabels(argVoiceLabels);
-		// a. In the tablature case
-		if (argEncodingFile != null) {
-			// Set durationLabels
-			// NB: The durationLabels created in createTranscription are overwritten by argDurationLabels. Thus, 
-			// when not modelling duration (when argDurationLabels == null), they are reset to null
-			setDurationLabels(argDurationLabels);
-			// Create voicesCoDNotes
-			// NB: currently, only one duration is always predicted; both CoDnotes thus have the same duration. In
-			// this case, the lower CoDnote (i.e., the one in the lower voice that comes first in the NoteSequence) 
-			// is placed at element 0 (see Javadoc handleCoDNotes()) TODO 
-			List<Integer[]> voicesCoDNotes = new ArrayList<Integer[]>();
-			// For each predicted voiceLabel
-			for (int i = 0; i < argVoiceLabels.size(); i++) {
-				List<Double> currLabel = argVoiceLabels.get(i);
-				List<Integer> voices = 
-					DataConverter.convertIntoListOfVoices(currLabel);
-				// If a CoD is predicted
-				if (voices.size() > 1) {
-					Integer[] currVoicesCoDNotes = new Integer[2];
-					// Voices will contain two elements: the highest predicted voice will be the first element, and
-					// the lowest predicted voice the second
-					currVoicesCoDNotes[0] = voices.get(1);
-					currVoicesCoDNotes[1] = voices.get(0);
-					voicesCoDNotes.add(currVoicesCoDNotes);
-				}
-				// If no CoD is predicted
-				else {
-					voicesCoDNotes.add(null);
-				}
-			}	
-			setVoicesCoDNotes(voicesCoDNotes);
-		}
-		// b. In the non-tablature case
+//		// Create and set the predicted Piece
+//		Piece predictedPiece = 
+//			createPiece(argBtp, argBnp, argVoiceLabels, argDurationLabels, argHiNumVoices, mtl, ks);
+//		predictedPiece.setName(name);
+
+//		boolean normaliseTuning = true; // is only used in the tablature case
+//		boolean isGroundTruthTranscription = false;
+		init(argPredictedPiece, argEncoding, /*null,*/ 
+			/*normaliseTuning, isGroundTruthTranscription,*/
+			argVoiceLabels, argDurationLabels, Type.PREDICTED);
+			
+//		// Set the predicted class fields. When creating a ground truth Transcription, this happens inside
+//		// handleCoDNotes() and handleCourseCrossings(), but when creating a predicted Transcription this step
+//		// is skipped in those methods because the voice labels and duration labels are already ready-to-use. In 
+//		// the tablature case, only voicesCoDNotes must still be created from them
+//		setVoiceLabels(argVoiceLabels);
+//		// a. In the tablature case
+//		if (argEncodingFile != null) {
+//			// Set durationLabels
+//			// NB: The durationLabels created in createTranscription are overwritten by argDurationLabels. Thus, 
+//			// when not modelling duration (when argDurationLabels == null), they are reset to null
+//			setDurationLabels(argDurationLabels);
+//			// Create voicesCoDNotes
+//			// NB: currently, only one duration is always predicted; both CoDnotes thus have the same duration. In
+//			// this case, the lower CoDnote (i.e., the one in the lower voice that comes first in the NoteSequence) 
+//			// is placed at element 0 (see Javadoc handleCoDNotes())
+//			List<Integer[]> voicesCoDNotes = new ArrayList<Integer[]>();
+//			// For each predicted voiceLabel
+//			for (int i = 0; i < argVoiceLabels.size(); i++) {
+//				List<Double> currLabel = argVoiceLabels.get(i);
+//				// IN case of a CoD, voices contain two elements: the highest predicted voice as element 0, 
+//				// and the lowest predicted voice as element 1 
+//				List<Integer> voices = DataConverter.convertIntoListOfVoices(currLabel);
+//				// If a CoD is predicted
+//				if (voices.size() > 1) {
+//					Integer[] currVoicesCoDNotes = new Integer[2];
+//					currVoicesCoDNotes[0] = voices.get(1); // lowest predicted voice
+//					currVoicesCoDNotes[1] = voices.get(0); // highest predicted voice
+//					voicesCoDNotes.add(currVoicesCoDNotes);
+//				}
+//				// If no CoD is predicted
+//				else {
+//					voicesCoDNotes.add(null);
+//				}
+//			}	
+//			setVoicesSNU(voicesCoDNotes);
+//		}	
+//		// b. In the non-tablature case
 //		else {
-//			setEqualDurationUnisonsInfo(argEqualDurationUnisonsInfo); // TODO 1 mei
+//			setEqualDurationUnisonsInfo(argEqualDurationUnisonsInfo);
 //		}  	  	
 	}
 
 
 	/**
-	 * Creates a new Transcription from the given Piece and Encoding. 
+	 * Makes an empty Transcription with the given time signature, key signature, and number of voices.
 	 *
-	 * NBs for the tablature case 
+	 * @param mtl
+	 * @param numVoices
+	 * @return
+	 */
+	// TODO copied from TestManager(); replace by simpler list method in TestManager
+	public Transcription (MetricalTimeLine mtl, /*TimeSignature timeSig,
+	 	KeyMarker keyMarker,*/ int numVoices) {
+//		newTranscription = new Transcription();
+//		Transcription newTranscription = new Transcription();
+//		NotationSystem notationSystem = newTranscription.createNotationSystem();
+
+		Piece p = new Piece();
+		p.setMetricalTimeLine(mtl); // TODO
+		setPiece(new ScorePiece(p));
+//		newTranscription.setPiece(p);
+		NotationSystem notationSystem = getScorePiece().createNotationSystem();
+//		NotationSystem notationSystem = newTranscription.getPiece().createNotationSystem();
+
+		// Add time and key signatures
+//		MetricalTimeLine mtl = newTranscription.getPiece().getMetricalTimeLine();
+
+//		TimeSignatureMarker timeSigMarker = 
+//			new TimeSignatureMarker(timeSig.getNumerator(), timeSig.getDenominator(), 
+//			new Rational(0, 1));
+//		timeSigMarker.setTimeSignature(timeSig);
+//		mtl.add(timeSigMarker);
+//		mtl.add(keyMarker);
+
+		// Create staves
+		for (int i = 0; i < numVoices; i++) { 
+			NotationStaff staff = new NotationStaff(notationSystem);
+			// Ensure correct cleffing for each staff: G-clef for the upper two and F-clef for the lower three
+			if (i < 2) {
+				staff.setClefType('g', -1, 0);
+			}
+			else {
+				staff.setClefType('f', 1, 0);
+			}
+			notationSystem.add(staff);
+			NotationVoice notationVoice = new NotationVoice(staff);
+			staff.add(notationVoice);
+		}
+
+		// Set the initial NoteSequence and voice labels
+		makeNoteSequence();
+//		newTranscription.initialiseNoteSequence();
+		initialiseVoiceLabels(null);
+//		newTranscription.initialiseVoiceLabels(null);
+
+//		return newTranscription;
+	}
+
+
+	/**
+	 * Creates a new Transcription from the given arguments. 
+	 *
+	 * NBs for the tablature case TODO
 	 * (1) If isGroundTruthTranscription is <code>true</code>, which is only not the case for a 
 	 *     predicted Transcription, the Transcription is transposed.
 	 * (2) The Tablature object as used in this method (which is NOT the Tablature object that 
@@ -361,1322 +474,954 @@ public class Transcription implements Serializable {
 	 *       has already been normalised/transposed correctly because it was created from a 
 	 *       normalised Tablature (in TrainingManager.prepareTraining())
 	 * 
-	 * @param p
-	 * @param encodingFile
-	 * @param normaliseTuning    
-	 * @param isGroundTruthTranscription                        
-	 */
-	private void createTranscription(Piece p, Encoding encoding, boolean normaliseTuning, 
-		boolean isGroundTruthTranscription) {
-				
-		// TODO make copy rather than store and retrieve
-		String fPath = "C:/Users/Reinier/Desktop/copy.mid";
-		fPath = MEIExport.rootDir + "copy.mid";
-		MIDIExport.exportMidiFile(p, Arrays.asList(new Integer[]{MIDIExport.DEFAULT_INSTR}),
-			fPath);
-		Piece pUn = MIDIImport.importMidiFile(new File(fPath));
-		new File(fPath).delete();
-
-		setPiece(p);
-		setUnadaptedGTPiece(pUn);
-		String pName = p.getName();
-		
-//		setPieceName(fName.substring(0, fName.indexOf(".mid")));
-		setPieceName(pName.contains(".mid") ? pName.substring(0, pName.indexOf(".mid")) : pName);		
-				
-		initialiseNoteSequence(); // needs piece
-		initialiseVoiceLabels(); // needs piece and noteSequence
-		Tablature tab = null;
-		// a. In the tablature case
-		if (encoding != null) {
-			initialiseDurationLabels(); // needs noteSequence
-			// 1. Check chords 
-			// NB: normaliseTuning is false when creating a ground truth Transcription and true 
-			// when creating a predicted Transcription (see Javadoc for this method)
-			tab = new Tablature(encoding, normaliseTuning);
-			if (checkChords(tab) == false) { // needs noteSequence
-				System.out.println(chordsSpecification);
-				throw new RuntimeException("ERROR: Chord error (see console).");
-			}
-			// 2. Align tablature and transcription
-			handleCoDNotes(tab, isGroundTruthTranscription); // needs noteSequence, voiceLabels, and durationLabels
-			handleCourseCrossings(tab, isGroundTruthTranscription); // needs noteSequence, voiceLabels, and durationLabels
-			// 3. Do final alignment check
-			if (checkAlignment(tab) == false) {
-				System.out.println(alignmentDetails);
-				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
-			}
-			// 4. Transpose (only if ground truth Transcription; see Javadoc for this method)
-			if (isGroundTruthTranscription) {
-				transpose(tab.getTranspositionInterval());
-			}
-			setMeterInfo(tab.getMeterInfo());
-			setKeyInfo(/*tab.getMeterInfo()*/); // must be done after possible transpose()
-			setTranscriptionChordsFinal(); // sets the final version of the transcription chords
-		}
-		// b. In the non-tablature case
-		else {
-			setMeterInfo();
-			setKeyInfo();
-//			setKeyInfo(null);
-			handleUnisons(isGroundTruthTranscription); // needs noteSequence and voiceLabels
-			setBasicNoteProperties(); // needs noteSequence	
-			// Added 3-9-2015
-			setTranscriptionChordsFinal(); // sets the final version of the transcription chords
-			setNumberOfNewNotesPerChord(); // needs transcriptionChords
-		}
-		// c. In both
-		if (isGroundTruthTranscription) {
-			setChordVoiceLabels(tab); // needs transcriptionChords
-		}
-		else {
-			// TODO Currently no chordVoiceLabels needed in bidir model
-		}
-	}
-
-
-	/**
-	 * Constructor. Creates a new Transcription out of the given arguments; sets the class fields pieceName, file, 
-	 * piece, noteSequence, voiceLabels, and
-	 *  In the tablature case: sets the class field durationLabels, aligns the Tablature and Transcription (and 
-	 *     sets the class field voicesCoDNotes), checks the encoding for alignment errors (if any are found, 
-	 *     a RuntimeException is thrown), and transposes the Transcription.
-	 *   In the non-tablature case (where argEncodingFile is <code>null</code>): sets the class fields meterInfo,
-	 *   handles unisons (and sets the class field equalDurationUnisonsInfo), and sets the class field 
-	 *   basicNoteProperties.
-	 *  
-	 * Applies to the bi-directional model only.
-	 *
-	 * @param argMidiFile
-	 * @param argEncodingFile
 	 * @param argPiece
-	 * @param argVoiceLabels
-	 * @param argDurationLabels
-	 * @param argVoicesCoDNotes
-	 * @param argEqualDurationUnisonsInfo 
+	 * @param argEncoding Always <code>non-null</code> if <code>t</code> is <code>Type.MAPPING</code>; 
+	 *                    else, non-<code>null</code> in the tablature case.
+	 * @param argTimeline Always <code>null</code> if <code>t</code> is not <code>Type.MAPPING</code>;
+	 *                    else, non-<code>null</code>.
+	 * @param argVoiceLabels Only none-<code>null</code> if <code>t</code> is <code>Type.PREDICTED</code>.
+	 * @param argDurLabels Only none-<code>null</code> if <code>t</code> is <code>Type.PREDICTED</code>.
+	 * @param argType
 	 */
-	private Transcription(File argMidiFile, File argEncodingFile, Piece argPiece, List<List<Double>> argVoiceLabels,
-		List<List<Double>> argDurationLabels, List<Integer[]> argVoicesCoDNotes, List<Integer[]> 
-		argEqualDurationUnisonsInfo, boolean bla) {
+	private void init(ScorePiece argPiece, Encoding argEncoding, /*Timeline argTimeline,*/ 
+		/*boolean argnNormaliseTuning, boolean isGrousndTruthTranscription,*/ 
+		List<List<Double>> argVoiceLabels, List<List<Double>> argDurLabels, Type argType) {
+		
+//		// NB: normaliseTuning is false when creating a ground truth Transcription and true 
+//		// when creating a predicted Transcription (see Javadoc for this method)
+		
+		// The Tablature is used for alignment of the Transcription (transposition, SNUs, CCs) and
+		// for setting the minimumDurationLabels. It is NOT the Tablature object that forms a 
+		// TablatureTranscriptionPair with the Transcription
+		Tablature tab = argEncoding != null ? new Tablature(argEncoding, true) : null;
+//		Tablature tab = encoding != null ? new Tablature(encoding, normaliseTuning) : null;
 
-		setPieceName(argMidiFile.getName()); 
-//		setFile(argMidiFile);
-		setPiece(argPiece);
+		setScorePiece(argPiece, tab, /*argTimeline,*/ argType);
+		setOriginalPiece();
+		setName();
+		setMeterInfo();
+		setKeyInfo();
+		setTaggedNotes(tab);
+		setNotes();
+		setChords();
 
-		initialiseNoteSequence(); // needs piece    
-		setVoiceLabels(argVoiceLabels);
-		// a. In the tablature case
-		if (argEncodingFile != null) {
-			setDurationLabels(argDurationLabels);
-			// 1. Check chords. The argument normaliseTuning must be set to true (because argPiece
-			// has already been normalised) for the final alignment check below
-			Tablature tablature = new Tablature(argEncodingFile, true);
-			if (checkChords(tablature) == false) { // needs noteSequence
-				System.out.println(chordsSpecification);
+		setVoiceLabels((argType != Type.PREDICTED ? null : argVoiceLabels), tab != null);
+//		if (t != Type.PREDICTED) {
+//			setVoiceLabels(null, tab != null);
+////			initialiseVoiceLabels(null);
+//		}
+//		else {
+//			setVoiceLabels(argVoiceLabels, tab != null);
+////			initialiseVoiceLabels(argVoiceLabels);
+//		}
+		setChordVoiceLabels(tab);
+		// a. Tablature case
+		if (tab != null) {
+//			setVoicesSNU();
+			setDurationLabels(argType != Type.PREDICTED ? null : argDurLabels);
+			setMinimumDurationLabels(tab);
+//			if (t != Type.PREDICTED) {
+//				setDurationLabels(null);
+////				initialiseDurationLabels(null); // needs <noteSequence>
+//			}
+//			else {
+//				setDurationLabels(argDurLabels);
+////				initialiseDurationLabels(argDurLabels); // labels have their final form 
+//			}
+			setVoicesSNU();
+
+//			// 1. Check chords 
+//			// NB: normaliseTuning is false when creating a ground truth Transcription and true 
+//			// when creating a predicted Transcription (see Javadoc for this method)
+//			tab = new Tablature(encoding, normaliseTuning);
+//			if (checkChords(tab) == false) { // needs <noteSequence>
+//				System.out.println(chordCheck);
+//				throw new RuntimeException("ERROR: Chord error (see console).");
+//			}
+//			// 2. Align tablature and transcription
+//			handleSNUs(tab, t); // needs <noteSequence>, <voiceLabels>, and <durationLabels> (and changes these)
+//			handleCourseCrossings(tab, t); // needs <noteSequence>, <voiceLabels>, and <durationLabels> (and changes these)
+//			// 3. Do final alignment check
+//			if (checkAlignment(tab) == false) {
+//				System.out.println(alignmentCheck);
+//				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
+//			}
+//			// 4. Transpose (only if ground truth Transcription; see Javadoc for this method)
+//			if (t != Type.PREDICTED) {
+//				transpose(tab.getTranspositionInterval());
+//			}
+//			setChords(); // needs <noteSequence> (finalised)
+//			setMeterInfo(tab.getTimeline().getMeterInfo());
+//			setKeyInfo(); // must be done after possible transpose()
+//			setMinimumDurationLabels(tab);
+		}
+		// b. Non-tablature case
+		else {
+			setVoicesUnison();
+			setVoicesEDU();
+			setVoicesIDU();
+//			setMeterInfo();
+//			setKeyInfo();
+//			handleUnisonsss(t); // needs <noteSequence> and <voiceLabels> (and changes these)
+//			setChords(); // needs <noteSequence> (finalised)
+			setBasicNoteProperties();
+			setNumberOfNewNotesPerChord();
+		}
+//		// c. In both
+//		if (t != Type.PREDICTED) {
+//			setChordVoiceLabels(tab); // needs <chords>
+//		}
+//		else {
+//			// Currently no chordVoiceLabels needed in bidir model
+//		}
+	}
+
+
+	//////////////////////////////
+	//
+	//  S E T T E R S  
+	//  for instance variables
+	//
+	public void setPiece(ScorePiece argPiece) { // TODO make access package
+		scorePiece = argPiece;
+	}
+
+
+	void setScorePiece(ScorePiece argPiece, Tablature tab, /*Timeline tl,*/  Type t) {
+		scorePiece = makeScorePiece(argPiece, tab, /*tl,*/ t);
+	}
+
+
+	// NOT TESTED (wrapper method)
+	ScorePiece makeScorePiece(ScorePiece argPiece, Tablature tab, /*Timeline tl,*/ Type t) {
+		if (t == Type.GROUND_TRUTH) {
+			// Clean mtl
+//			MetricalTimeLine mtl = argPiece.getMetricalTimeLine();
+//			mtl = ScorePiece.cleanMetricalTimeLine(mtl);
+			// Clean ht
+//			SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
+//			ht = ScorePiece.cleanHarmonyTrack(ht);
+			// Transpose ht and ns
+			if (tab != null) {
+				argPiece.transpose(tab.getTranspositionInterval());
+//				int transposition = tab.getTranspositionInterval();
+//				SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
+//				ht = ScorePiece.transposeHarmonyTrack(ht, transposition);
+//				argPiece.setHarmonyTrack(ht);
+//				NotationSystem ns = argPiece.getScore();
+//				ns = ScorePiece.transposeNotationSystem(ns, transposition);
+//				argPiece.setScore(ns);
+			}
+			// Set mtl and ht
+//			argPiece.setMetricalTimeLine(mtl);
+//			argPiece.setScoreMetricalTimeLine(new ScoreMetricalTimeLine(mtl));
+//			argPiece.setHarmonyTrack(ht);
+		}
+		else if (t == Type.MAPPING) {
+			argPiece.diminute(tab.getMeterInfo());
+//			// Clean, align, and diminute mtl
+//			List<Integer[]> mi = tab.getMeterInfo();
+//			MetricalTimeLine mtl = argPiece.getScoreMetricalTimeLine();
+////			mtl = ScorePiece.cleanMetricalTimeLine(mtl);
+//			mtl = ScorePiece.alignMetricalTimeLine(mtl, mi);
+//			ScoreMetricalTimeLine smtl = new ScoreMetricalTimeLine(mtl);
+//			MetricalTimeLine mtlDim = ScorePiece.diminuteMetricalTimeLine(mtl, mi);
+//			ScoreMetricalTimeLine smtlDim = new ScoreMetricalTimeLine(mtlDim);
+//			// Clean and diminute ht
+//			SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
+////			ht = ScorePiece.cleanHarmonyTrack(ht);
+//			ht = ScorePiece.diminuteHarmonyTrack(ht, mi, smtl, smtlDim);
+//			// Diminute ns
+//			NotationSystem ns = argPiece.getScore();
+//			ns = ScorePiece.diminuteNotationSystem(ns, mi, smtl, smtlDim);
+//			// Set ns, mtl, and ht
+//			argPiece.setScore(ns);
+//			argPiece.setMetricalTimeLine(mtlDim);
+//			argPiece.setScoreMetricalTimeLine(smtlDim);
+//			argPiece.setHarmonyTrack(ht);
+		}
+		else if (t == Type.AUGMENTED || t == Type.PREDICTED) {
+			return argPiece;
+		}
+		return argPiece;
+	}
+
+
+	void setOriginalPiece() {
+		originalPiece = SerializationUtils.clone(getScorePiece());
+	}
+
+
+	void setName() {
+		String n = getScorePiece().getName(); 
+		name = 
+			n.contains(MIDIImport.EXTENSION) ? n.substring(0, n.indexOf(MIDIImport.EXTENSION)) : n;
+	}
+
+
+	void setMeterInfo() {
+		meterInfo = makeMeterInfo();
+	}
+
+
+	// TESTED
+	List<Integer[]> makeMeterInfo() {
+		long[][] timeSigs = getScorePiece().getMetricalTimeLine().getTimeSignature();
+
+		int numTimeSigs = timeSigs.length;
+		int start = 1;
+//		// If there is an anacrusis, start should be 0
+//		if (numTimeSigs > 1) {
+//			Rational firstTimeSig = new Rational((int)timeSigs[0][0], (int)timeSigs[0][1]);
+//			Rational secondMetricTime = new Rational((int)timeSigs[1][3], (int)timeSigs[1][4]);
+//			Rational secondTimeSig = new Rational((int)timeSigs[1][0], (int)timeSigs[1][1]);
+//			// An anacrusis is assumed when the first time sig is smaller than the second and 
+//			// the metric time of the second time sig equals the first time sig
+//			// NB: When exporting a .sib file with a real anacrusis to MIDI, the anacrusis bar
+//			// is padded with rests. To get a real anacrusis in a MIDI file, the anacrusis bar
+//			// must thus be given its own meter
+//			if (firstTimeSig.isLess(secondTimeSig) && secondMetricTime.equals(firstTimeSig)) {
+//				start = 0;
+//			}
+//		}
+		List<Integer[]> mi = new ArrayList<Integer[]>();
+
+		int numBars;
+		for (int i = 0; i < numTimeSigs; i++) {
+			Integer[] currMeterInfo = new Integer[MI_SIZE_TRANS];
+			long[] curr = timeSigs[i];
+			Rational currMeter = new Rational(curr[0], curr[1]);
+			Rational currMetricTime = new Rational(curr[3], curr[4]);
+			// If there is a next time sig
+			if ((i+1) < numTimeSigs) {
+				long[] next = timeSigs[i+1];
+				Rational nextMetricTime = new Rational(next[3], next[4]);
+				numBars = (int) (nextMetricTime.sub(currMetricTime)).div(currMeter).toDouble();
+			}
+			// If there is no next time sig
+			else {
+				// Determine the offset of the last note of the piece
+				Rational end = Rational.ZERO;
+				for (NotationStaff ns : getScorePiece().getScore()) {
+					NotationVoice nv = ns.get(0);
+					NotationChord lastNc = nv.get(nv.size() - 1);
+					Rational currEnd = lastNc.getMetricTime().add(lastNc.getMetricDuration());
+					if (currEnd.isGreater(end)) {
+						end = currEnd;
+					}
+				}
+				// Determine the remaining time in bars
+				Rational rem = end.sub(currMetricTime);
+				numBars = (rem.div(currMeter)).ceil();
+			}
+			currMeterInfo[MI_NUM] = (int)curr[0];
+			currMeterInfo[MI_DEN] = (int)curr[1];
+			currMeterInfo[MI_FIRST_BAR] = start;
+			currMeterInfo[MI_LAST_BAR] = start + (numBars - 1);
+			currMeterInfo[MI_NUM_MT_FIRST_BAR] = currMetricTime.getNumer();
+			currMeterInfo[MI_DEN_MT_FIRST_BAR] = currMetricTime.getNumer() == 0 ? 1 : currMetricTime.getDenom();
+			mi.add(currMeterInfo);
+			start += numBars;
+		}		
+		return mi;
+	}
+
+
+	void setKeyInfo() {
+		keyInfo = makeKeyInfo();
+	}
+
+
+	// TESTED
+	List<Integer[]> makeKeyInfo() {
+		List<Integer[]> keyInfo = new ArrayList<Integer[]>();
+
+//		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
+		SortedContainer<Marker> keySigs = getScorePiece().getHarmonyTrack();
+		List<Integer[]> meterInfo = getMeterInfo();
+		ScoreMetricalTimeLine smtl = getScorePiece().getScoreMetricalTimeLine();
+		int numKeySigs = keySigs.size();
+		for (int i = 0; i < numKeySigs; i++) {
+			Integer[] currKeyInfo = new Integer[KI_SIZE];
+			KeyMarker km = (KeyMarker) keySigs.get(i);
+			int key = km.getAlterationNum(); 
+			// Reverse KeyMarker.Mode labels (minor = 0; major = 1)
+			int mode = Math.abs(km.getMode().getCode() -1);
+			Rational mt = km.getMetricTime();
+			// It is assumed that key signature changes only occur at the beginning of a bar
+			int firstBar = 
+				smtl.getMetricPosition(mt)[0].getNumer();	
+//				ScoreMetricalTimeLine.getMetricPosition(mtl, mt)[0].getNumer();	
+//				Utils.getMetricPosition(mt, meterInfo)[0].getNumer();
+			int lastBar = -1;
+			// If there is a next keysig
+			if ((i+1) < numKeySigs) {
+				KeyMarker next = (KeyMarker) keySigs.get(i+1);
+				Rational mtNext = next.getMetricTime();
+				int firstBarNext = 
+					smtl.getMetricPosition(mtNext)[0].getNumer();	
+//					ScoreMetricalTimeLine.getMetricPosition(mtl, mtNext)[0].getNumer();
+//					Utils.getMetricPosition(mtNext, meterInfo)[0].getNumer();
+				lastBar = firstBarNext - 1;
+			}
+			else {
+				lastBar = meterInfo.get(meterInfo.size() -1)[MI_LAST_BAR];
+			}
+			currKeyInfo[KI_KEY] = key;
+			currKeyInfo[KI_MODE] = mode;
+			currKeyInfo[KI_FIRST_BAR] = firstBar;
+			currKeyInfo[KI_LAST_BAR] = lastBar;
+			currKeyInfo[KI_NUM_MT_FIRST_BAR] = mt.getNumer();
+			currKeyInfo[KI_DEN_MT_FIRST_BAR] = mt.getNumer() == 0 ? 1 : mt.getDenom();
+			keyInfo.add(currKeyInfo);
+		}
+		return keyInfo;
+	}
+
+
+	void setTaggedNotes(Tablature tab) {
+		taggedNotes = makeTaggedNotes(tab);
+	}
+
+
+	/**
+	 * Makes the list of <code>TaggedNote</code>s, in which all notes from the <code>Piece</code> are 
+	 * added as a <code>TaggedNote</code>, ordered hierarchically by<br>
+	 * <ol>
+	 * <li>Onset time (lower first).</li>
+	 * <li>If two notes have the same onset time: pitch (lower first).</li>
+	 * <li>If two notes have the same onset time and the same pitch: voice (lower first).</li>
+	 * </ol>
+	 * 
+	 * In the list returned, any SNUs (tablature case), course crossings (tablature case), 
+	 * and unisons (non-tablature case) are handled, i.e.,
+	 * <ul>
+	 * <li>SNU notes are merged; the SNU voices and durations are set in the <code>TaggedNote</code> 
+	 *     (see <code>handleSNUs()</code>).</li>
+	 * <li>Course crossing notes are swapped so that they are in the correct order (see 
+	 *     <code>handleCourseCrossings()</code>).</li>
+	 * <li>Unisons notes are swapped (if necessary) so that they are in the correct order; the 
+	 *     unison voices and durations, as well as the index of the respective complementary 
+	 *     unison note are set in the <code>TaggedNote</code>s (see <code>handleUnisons()</code>).</li>
+	 *      
+	 * </ul>
+	 *  
+	 * NB: Any unison notes (tablature case) need no further handling, as the lower-course unison
+	 * note automatically always comes first.
+	 */
+	// NOT TESTED (wrapper method)
+	List<TaggedNote> makeTaggedNotes(Tablature tab) {
+		List<TaggedNote> argTaggedNotes;
+
+		// Make unhandled notes
+		List<Note> argNotes = makeUnhandledNotes();
+
+		// In the tablature case: handle SNUs and course crossings
+		if (tab != null) {
+			// Check tablature chords
+			if (checkChords(tab, argNotes) == false) {
+				System.out.println(chordCheck);
 				throw new RuntimeException("ERROR: Chord error (see console).");
 			}
-			// 2. Align tablature and transcription
-			handleCoDNotes(tablature, false); // needs noteSequence, voiceLabels, and durationLabels 
-			setVoicesCoDNotes(argVoicesCoDNotes);
-			handleCourseCrossings(tablature, false); // needs noteSequence, voiceLabels, and durationLabels
-			// 3. Do final alignment check
-			if (checkAlignment(tablature) == false) {
-				System.out.println(alignmentDetails);
-					throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
-			}
-			// 4. Transpose
-//			transpose(tablature.getTranspositionInterval());
-		}
-		// b. In the non-tablature case
-		else {
-//			setMeterInfo(argMidiFile); // needs file
-			handleUnisons(false); // needs noteSequence and voiceLabels
-			setEqualDurationUnisonsInfo(argEqualDurationUnisonsInfo);
-			setBasicNoteProperties(); // needs noteSequence
-		}   
-	}
 
-
-	/**
-	 * Constructor. Creates a new Transcription out of the given arguments; sets the class fields piece, 
-	 * noteSequence, voiceLabels, and
-	 *  In the tablature case: sets the class field durationLabels, aligns the Tablature and Transcription (and 
-	 *     sets the class field voicesCoDNotes), checks the encoding for alignment errors (if any are found, 
-	 *     a runTimeException is thrown), and transposes the Transcription.
-	 *   In the non-tablature case: sets the class fields meterInfo, handles unisons (and sets the class field
-	 *     equalDurationUnisonsInfo), and sets the class field basicNoteProperties.
-	 *  
-	 * Applies to the bi-directional model only.
-	 *
-	 * @param tablature
-	 * @param argPiece
-	 * @param argVoiceLabels
-	 * @param argDurationLabels
-	 * @param argVoicesCoDNotes
-	 * @param argMeterInfo
-	 * @param argEqualDurationUnisonsInfo 
-	 */
-	private Transcription(Tablature tablature, Piece argPiece, List<List<Double>> argVoiceLabels, List<List<Double>> 
-		argDurationLabels, List<Integer[]> argVoicesCoDNotes, List<Integer[]> argMeterInfo, List<Integer[]> 
-		argEqualDurationUnisonsInfo) {
-		setPieceName("");
-		setPiece(argPiece);
-		initialiseNoteSequence(); // needs piece    
-		setVoiceLabels(argVoiceLabels);
-		// a. In the tablature case
-		if (tablature != null) {
-			setDurationLabels(argDurationLabels);
-			// 1. Check chords
-			if (checkChords(tablature) == false) { // needs noteSequence
-				System.out.println(chordsSpecification);
-				throw new RuntimeException("ERROR: Chord error (see console).");
-			}
-			// 2. Align tablature and transcription
-			handleCoDNotes(tablature, false); // needs noteSequence, voiceLabels, and durationLabels 
-			setVoicesCoDNotes(argVoicesCoDNotes);
-			handleCourseCrossings(tablature, false); // needs noteSequence, voiceLabels, and durationLabels
-			// 3. Do final alignment check
-			if (checkAlignment(tablature) == false) {
-				System.out.println(alignmentDetails);
-				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
-			}
-			// 4. Transpose
-			transpose(tablature.getTranspositionInterval());
-		}
-		// b. In the non-tablature case
-		else {
-			setMeterInfo(argMeterInfo);
-			handleUnisons(false); // needs noteSequence and voiceLabels
-			setEqualDurationUnisonsInfo(argEqualDurationUnisonsInfo);
-			setBasicNoteProperties(); // needs noteSequence
-		}   
-	}
-
-
-	public Transcription(Piece argPiece, List<List<Double>> voiceLabels, List<List<Double>> durationLabels) {
-		setPiece(argPiece);
-		initialiseNoteSequence();    
-		setVoiceLabels(voiceLabels);
-		setDurationLabels(durationLabels);
-//		handleCoDNotes(tablature, false);
-//		setVoicesCoDNotes(voicesCoDNotes);
-//		handleCourseCrossings(tablature, false);
-	}
-
-
-//  /**
-//   * Turns the given Tablature into a Transcription, using the given voices and durations.
-//   *  
-//   * @param tablature
-//   * @param voices
-//   * @param durations
-//   * @param numberOfVoices
-//   */
-//  //
-//  public Transcription(Tablature tablature, List<List<Integer>> voices, List<Rational[]> durations,
-//  	int numberOfVoices) {
-//  	
-//  	// Make an empty Piece with the given number of voices
-//  	Piece piece = new Piece();
-//    NotationSystem system = piece.createNotationSystem();
-//    for (int i = 0; i < numberOfVoices; i++) {
-//      NotationStaff staff = new NotationStaff(system); 
-//      system.add(staff);
-//      NotationVoice voice = new NotationVoice(staff); 
-//      staff.add(voice);
-//      
-//      Note voice0n0 = Transcription.createNote(67, new Rational(0, 4), new Rational(1, 2));
-//      voice.add(voice0n0); 
-//    }
-//    
-//    // Iterate through the Tablature, convert each TabSymbol into a note, and add it to the given voice
-//    Integer[][] btp = tablature.getBasicTabSymbolProperties();
-//    for (int i = 0; i < btp.length; i++) {
-//    	// Create a Note from the TabSymbol at index i
-//    	int pitch = btp[i][Tablature.PITCH];
-//    	Rational metricTime = new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-//    	Rational metricDuration = durations.get(i)[0]; // [0] is possible because each element in durations currently contains only one Rational
-//    	Note note = createNote(pitch, metricTime, metricDuration);
-//    	
-//    	// Add the Note to each voice in currentVoices
-//    	List<Integer> currentVoices = voices.get(i);
-//    	for (int v : currentVoices) {
-//    		NotationVoice voice = piece.getScore().get(v).get(0);
-//    		voice.add(note);
-//    	}	
-//    }
-//    
-//    // Set the Piece in the Transcription
-//    setPiece(piece);
-//  }
-
-
-	public static void setMaximumNumberOfVoices(int arg) {
-		MAXIMUM_NUMBER_OF_VOICES = arg;
-	}
-
-
-	public void setFiles(List<File> arg) {
-		files = arg;
-	}
-
-
-	public void setPieceName(String argString) {
-		this.pieceName = argString;
-	}
-
-
-	public void setPiece(Piece argPiece) {
-		piece = argPiece;
-	}
-
-
-	public void setUnadaptedGTPiece(Piece argPiece) {
-		unadaptedGTPiece = argPiece;
-	}
-
-
-	public Piece getUnadaptedGTPiece() {
-		return unadaptedGTPiece;
-	}
-
-
-	/**
-	 * Returns a reversed version of the Transcription.
-	 * 
-	 * @param trans
-	 * @param tab
-	 * @return
-	 */
-	// TESTED
-	public static Transcription reverse(Transcription trans, Tablature tab) {
-		Piece pRev = reversePiece(trans, tab);
-
-		Encoding eRev = null;
-		if (tab != null) {
-			eRev = tab.getEncoding().reverseEncoding(tab.getMeterInfo()); // NB The value of normaliseTuning is irrelevant
-		}
-		return new Transcription(pRev, eRev);
-	}
-
-
-	/**
-	 * Returns a deornamented version of the Transcription.
-	 * 
-	 * @param trans
-	 * @param tab
-	 * @param dur Only (single-event) notes with a duration shorter than this duration are 
-	 *            considered ornamental.
-	 * @return
-	 */
-	// TESTED
-	public static Transcription deornament(Transcription trans, Tablature tab, Rational dur) {
-		Piece pDeorn = deornamentPiece(trans, tab, dur);
-		Encoding eDeorn = null;
-		if (tab != null) {
-			eDeorn = tab.getEncoding().deornamentEncoding(Tablature.rationalToIntDur(dur)); // NB The value of normaliseTuning is irrelevant
-		}
-		return new Transcription(pDeorn, eDeorn);
-	}
-
-
-	/**
-	 * Returns a copy of the given NotationSystem.
-	 * @param ns
-	 * @return
-	 */
-	private static NotationSystem copyNotationSystem(NotationSystem ns) {
-		NotationSystem copy = new NotationSystem();
-
-		for (NotationStaff notationStaff : ns) {
-			NotationStaff copyNs = new NotationStaff();
-			for (NotationVoice nv : notationStaff) {
-				NotationVoice copyNv = new NotationVoice();
-				for (NotationChord nc : nv) {
-					NotationChord copyNc = new NotationChord();
-					for (Note n : nc) {
-						copyNc.add(Transcription.createNote(n.getMidiPitch(), n.getMetricTime(), n.getMetricDuration()));
-					}
-					copyNv.add(copyNc);
-				}
-				copyNs.add(copyNv);
-			}
-			copy.add(copyNs);
-		}
-		return copy;
-	}
-
-
-	/**
-	 * Reverses each voice in the Transcription's Piece. NB: Handles the _unadapted_ Piece. 
-	 * 
-	 * @param trans
-	 * @param tab
-	 * @return
-	 */
-	// TESTED (through reverse())
-	static Piece reversePiece(Transcription trans, Tablature tab) {
-		Piece reversedPiece = new Piece();
-
-		Rational mirrorPoint = trans.getMirrorPoint(trans.getMeterInfo());
-		List<Rational[]> onsetsAndMinDurs = null;
-		if (tab != null) {
-			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations(); // NB The value of normaliseTuning is irrelevant
-		}
-		
-		Piece origP = trans.getUnadaptedGTPiece();
-		// Make a copy of notationSystem so that origP does not get affected
-		NotationSystem copyOfNotationSystem = copyNotationSystem(origP.getScore());
-
-		// For each voice
-		NotationSystem reversedNotationSystem = new NotationSystem();
-		for (NotationStaff notationStaff : copyOfNotationSystem) {	
-			NotationStaff reversedNotationStaff = new NotationStaff();
-			for (NotationVoice notationVoice : notationStaff) {
-				NotationVoice reversedNotationVoice = new NotationVoice();
-				for (NotationChord notationChord : notationVoice) {
-					NotationChord newNotationChord = new NotationChord();
-					for (Note n : notationChord) {
-						// Calculate the Note's new onset time (mirrorPoint - offset time)
-						Rational duration = n.getMetricDuration();
-						// In tablature case: use minimum duration
-						if (tab != null) {
-							for (Rational[] item : onsetsAndMinDurs) {
-								if (item[0].equals(n.getMetricTime())) {
-									duration = item[1];
-									duration.reduce();
-									break;
-								}
-							}
-						}
-						Rational offsetTime = n.getMetricTime().add(duration);
-						Rational newOnsetTime = mirrorPoint.sub(offsetTime); 
-						
-						// TODO Error in barbetta-1582_1-il_nest.tbp: last chord should be co1 
-						// (and not co2), leading to newOnsetTime being -1/2 
-						if (origP.getName().equals("barbetta-1582_1-il_nest.mid") && 
-							newOnsetTime.equals(new Rational(-1, 2))) {
-							newOnsetTime = Rational.ZERO;
-							duration = new Rational(1, 2);
-						}
-
-						newNotationChord.add(Transcription.createNote(n.getMidiPitch(), newOnsetTime, duration));
-					}
-					notationChord = newNotationChord;
-					reversedNotationVoice.add(newNotationChord);
-				}
-				reversedNotationStaff.add(reversedNotationVoice);
-			}
-			reversedNotationSystem.add(reversedNotationStaff);
-		}
-
-		reversedPiece.setHarmonyTrack(origP.getHarmonyTrack());
-		reversedPiece.setScore(reversedNotationSystem);
-		reversedPiece.setName(trans.getPiece().getName());
-		return reversedPiece;
-	}
-
-
-	/**
-	 * Removes all sequences of single-note events shorter than the given duration from the
-	 * encoding, and lengthens the duration of the event preceding the sequence by the total 
-	 * length of the removed sequence. NB: Handles the _unadapted_ Piece.
-	 *
-	 * @param trans
-	 * @param tab
-	 * @param dur
-	 * @return
-	 */
-	// TESTED (through deornament())
-	static Piece deornamentPiece(Transcription trans, Tablature tab, Rational dur) {
-		Piece deornamentedPiece = new Piece();
-
-		List<Rational> onsetTimes = trans.getAllOnsetTimes();
-		List<List<Note>> chords = trans.getTranscriptionChords();
-		List<List<TabSymbol>> tabChords = null;
-		List<Rational[]> onsetsAndMinDurs = null;
-		if (tab != null) {
-			tabChords = tab.getTablatureChords(); 
-			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations();
-		}
-
-		Piece origP = trans.getUnadaptedGTPiece();
-		// Make a copy of notationSystem so that origP does not get affected
-		NotationSystem copyOfNotationSystem = copyNotationSystem(origP.getScore());
-		
-		// For each voice
-		NotationSystem deornamentedNotationSystem = new NotationSystem();
-		List<Integer> removed = new ArrayList<>();
-		int voice = 0;
-		for (NotationStaff notationStaff : copyOfNotationSystem) {
-//			System.out.println("voice = " + voice);
-			NotationStaff deornamentedNs = new NotationStaff();
-			for (NotationVoice nv : notationStaff) {
-				NotationVoice deornamentedNv = new NotationVoice();
-				NotationChord pre = null;
-				Rational durPre = null;
-				for (int i = 0; i < nv.size(); i++) {
-					NotationChord currNc = nv.get(i);
-					Rational onset = currNc.getMetricTime();
-					int ind = onsetTimes.indexOf(onset);
-
-					boolean isOrn; 
-					if (tabChords != null) { 
-						isOrn = tabChords.get(ind).size() == 1 && onsetsAndMinDurs.get(ind)[1].isLess(dur);
-					}
-					else {
-						isOrn = currNc.size() == 1 && chords.get(ind).size() == 1 &&
-							currNc.getMetricDuration().isLess(dur);
-					}
-					// If currNc is ornamental
-					// NB In case of a single-event SNU, the note will be removed from both voices
-					if (isOrn) {
-						removed.add(ind);
-						// Determine pre, if it has not yet been determined
-						if (pre == null) {
-							NotationChord ncPrev = nv.get(i-1);
-							pre = ncPrev;
-							durPre = ncPrev.getMetricDuration(); // all notes in a NotationChord need to have the same duration 
-						}
-						// Increment durPre
-						durPre = durPre.add(currNc.getMetricDuration());
-					}
-					// If currNc is the first after a sequence of one or more ornamental notes
-					// (i.e., it does not meet the if conditions above but pre != null)
-					else if (pre != null) {
-						// Adapt duration of pre
-						for (Note n : pre) {
-							n.setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), 
-								n.getMetricTime(), durPre));
-						}
-						// Add currNc
-						deornamentedNv.add(currNc);
-						// Reset
-						pre = null;
-					}
-					else {
-						deornamentedNv.add(currNc);
-					}
-				}
-				deornamentedNs.add(deornamentedNv);
-			}
-			voice++;
-			deornamentedNotationSystem.add(deornamentedNs);
-		}
-
-		deornamentedPiece.setHarmonyTrack(origP.getHarmonyTrack());
-		deornamentedPiece.setScore(deornamentedNotationSystem);
-		deornamentedPiece.setName(trans.getPiece().getName());
-		return deornamentedPiece;
-	}
-
-
-	/**
-	 * Finds the voice the given Note in the given NotationSystem belongs to.
-	 *  
-	 * @param note 
-	 * @param notationSystem
-	 * @return
-	 */
-	// TODO test
-	public int findVoice(Note note, NotationSystem notationSystem) {
-		int voice = -1;
-		// NB: A NotationSystem has as many Staffs as the Transcription it belongs to has voices; each Staff thus 
-		// represents a voice. The Staffs are numbered from top (no. 0) to bottom (no. 4, depending on 
-		// MAXIMUM_NUMBER_OF_VOICES).
-		// For each Staff in the NotationSystem: 
-		outerLoop: for (int i = 0; i < notationSystem.size(); i++) {
-			NotationStaff staff = notationSystem.get(i);
-			// a. Get the contents of the Staff
-			Containable[] contentsOfStaff = staff.getContentsRecursive();
-			// b. Look at each Containable in the contents. If a Containable matches the (unique) note: return i, the
-			// number of the Staff that note is on (and thus the number of the voice it belongs to), and break from the
-			// outer loop
-			for (int j = 0; j < contentsOfStaff.length; j++) {
-				if (contentsOfStaff[j] == note) {
-					voice = i;
-					break outerLoop;
-				}
-			}
-		}
-		return voice;
-	}
-
-
-	/**
-	 * Initialises noteSequence with the initial, unadapted NoteSequence from the Transcription,
-	 * in which the Notes are ordered hierarchically according to
-	 * (1) onset time (lower first);
-	 * (2) if two Notes have the same onset time: pitch (lower first);
-	 * (3) if two Notes have the same onset time and the same pitch: voice (lower first)
-	 *     Thus, 
-	 *       a. in the tablature case: 
-	 *            unison notes are automatically ordered correctly (the one on the lower course comes first)
-	 *            CoDnotes are not (i.e., with the one with the longer duration first); these are handled in
-	 *            handleCoDNotes()      
-	 *       b. in the non-tablature case:
-	 *            unison notes are not necessarily ordered correctly (i.e., with the one with the longer duration
-	 *            first; these are handled in handleUnisons(). 
-	 *              
-	 * NB: Must be called before initialiseVoiceLabels().
-	 *   
-	 */
-	// TESTED (for both tablature- and non-tablature case simultaneously)
-	public void initialiseNoteSequence() {
-		NoteSequence initialNoteSeq = new NoteSequence(new NoteTimePitchComparator());
-		NotationSystem notationSystem = piece.getScore();
-
-		// 1. Fill initialNoteSeq; the NoteTimePitchComparator orders the Notes chord per chord,
-		// from low to high
-		Collection<Containable> contents = notationSystem.getContentsRecursiveList(null);
-		for (Containable c : contents) {
-			if (c instanceof Note) { 
-				initialNoteSeq.add((Note) c);
-			}
-		}	
-
-		// 2. Check for all equal-pitch-pairs whether the Notes are added to the NoteSequence in the correct order.
-		// This is necessary because the NoteTimePitchComparator does not handle unisons and CoDs consistently in 
-		// that sometimes the note in the lower voice is added first, and sometimes the note in the upper voice
-		if (initialNoteSeq.size() != 0) {
-			// For each note but the last:
-			for (int currentNoteIndex = 0; currentNoteIndex < (initialNoteSeq.size() - 1); currentNoteIndex++) {
-				// 1. Get the Note's pitch, onsetTime, and the voice it belongs to 
-				Note currentNote = initialNoteSeq.getNoteAt(currentNoteIndex);
-				int currentNotePitch = currentNote.getMidiPitch();
-				Rational currentNoteOnsetTime = currentNote.getMetricTime();
-				double currentNoteVoice = findVoice(currentNote, notationSystem);
-
-				// 2. Check the remainder of initialNoteSeq for another Note with the same onsetTime and pitch. Break 
-				// from inner for-loop when the onsetTime of nextNote becomes greater than that of currentNote
-				for (int nextNoteIndex = currentNoteIndex + 1; nextNoteIndex < initialNoteSeq.size(); nextNoteIndex++) {
-					Note nextNote = initialNoteSeq.getNoteAt(nextNoteIndex);
-					// Same onsetTime? Check whether pitch is also the same  
-					if (nextNote.getMetricTime().equals(currentNoteOnsetTime)) {
-						// Same pitch? nextNote is the complement sought; swap if necessary and break
-						// NB: since an event may contain more than one equal-pitch-pair, the ENTIRE process must be repeated
-						// from the start until the sequence is correct. (E.g., an event with three equal pitches that are
-						// added to the NoteSequence in voice order 1-2-3 becomes 2-1-3 after one iteration of both for-loops,
-						// then 3-1-2, and finally 3-2-1.) Thus, when notes are swapped: break from inner for-loop and start
-						// again in outer for-loop
-						if (nextNote.getMidiPitch() == currentNotePitch) {
-							int nextNoteVoice = findVoice(nextNote, notationSystem);	  
-							// If currentNote is in the higher voice (has the lower voice number): swap 
-							if (currentNoteVoice < nextNoteVoice) {
-								initialNoteSeq.swapNotes(currentNoteIndex, nextNoteIndex);
-								currentNoteIndex = -1;
-								break;
-							}    		    
-						}
-					}
-					// Is onsetTime of nextNote greater than that of currentNote? Break and continue with the next currentNote
-					else {
-						break; 
-					}
-				}
-			}
-		}
-		// 3. Set noteSequence 
-		setNoteSequence(initialNoteSeq);
-	}
-
-
-	/** 
-	 * Initialises the voice labels from the NoteSequence. Each voice label is a binary
-	 * double vector containing MAXIMUM_NUMBER_OF_VOICES elements, where the position of
-	 * the 1.0 indicates the voice encoded.  
-	 * 
-	 * NB1: The voice labels are initialised using the initial, unadapted NoteSequence. 
-	 * NB2: Must be called after initialiseNoteSequence(). 
-	 */
-	// TESTED (for both tablature- and non-tablature case simultaneously)
-	public void initialiseVoiceLabels() {
-		NoteSequence initialNoteSeq = getNoteSequence();
-		List<List<Double>> initialVoiceLabels = new ArrayList<List<Double>>(); 
-
-		// For every Note in noteSeq: 
-		for (int i = 0; i < initialNoteSeq.size(); i++) {
-			Note note = initialNoteSeq.getNoteAt(i);
-			// 1. Create a voice label for the Note
-			List<Double> currentVoiceLabel = new ArrayList<Double>();
+			// Handle SNUs
+			argTaggedNotes = handleSNUs(argNotes, tab);
+			// Handle course crossings
+			argTaggedNotes = handleCourseCrossings(argTaggedNotes, tab);
 			
-			// 2. Extract the voice the Note is in and fill currentVoiceLabel
-			NotationSystem system = piece.getScore();
-			int voice = findVoice(note, system);
-			for (int j = 0; j < MAXIMUM_NUMBER_OF_VOICES; j++) {
-				if (voice == j) {
-					currentVoiceLabel.add(j, 1.0);
-				}
-				else {
-					currentVoiceLabel.add(j, 0.0);
-				}
+			// Check alignment
+			if (checkAlignment(tab, argTaggedNotes) == false) {
+				System.out.println(alignmentCheck);
+				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
 			}
-
-			// 3. Add currentVoiceLabel to initialVoiceLabels 
-			initialVoiceLabels.add(currentVoiceLabel);
 		}
-		// Set voiceLabels
-		setVoiceLabels(initialVoiceLabels);
-//		voiceLabels = initialVoiceLabels;
+		// In the non-tablature case: handle unisons
+		else {
+			argTaggedNotes = handleUnisons(argNotes);
+		}
+//		System.out.println(argTaggedNotes.get(0).getNote());
+//		System.out.println(argTaggedNotes.get(0).getNote().getPerformanceNote());
+		return argTaggedNotes;
+	}
+
+
+	// TESTED
+	List<Note> makeUnhandledNotes() {
+		List<Note> notes = new ArrayList<>();
+		getScorePiece().getScore().getContentsRecursiveList(null).stream()
+			.filter(c -> c instanceof Note)
+			.forEach(c -> notes.add((Note) c));
+//		System.out.println(notes.get(0));
+//		System.out.println(notes.get(0).getPerformanceNote());
+		Collections.sort(notes, Comparator.comparing(Note::getMetricTime)
+			.thenComparing(Note::getMidiPitch)
+			.thenComparing(this::findVoice, Comparator.reverseOrder()));
+		return notes;
+	}
+
+
+	// TESTED
+	int findVoice(Note note) {
+		NotationSystem ns = getScorePiece().getScore();
+		for (int i = 0; i < ns.size(); i++) {
+			if (ns.get(i).get(0).containsRecursive(note)) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 
 	/**
-	 * Initialises durationLabels with the initial, unadapted voice labels -- i.e., the ones that go with the notes
-	 * in the initial, unadapted NoteSequence. Each duration label is a List<Double> containing Tablature.SMALLEST_
-	 * RHYTHMIC_VALUE.getDenom()/3 elements, one of which has value 1.0 and indicates the encoded full duration (where
-	 * position 0 is a duration of 1/32, position 1 a duration of 2/32, etc.), while the others have value 0.0.  
+	 * Checks whether the given <code>Tablature</code> contains any illegal chords, i.e.,
+	 * <ul>
+	 * <li>Chords with more than one SNU, unison, or course crossing.</li>
+	 * <li>Chords with combinations of SNUs, unisons, and course crossings.</li>
+	 * </ul>
 	 * 
-	 * NB1: Tablature case only; must be called after initialiseNoteSequence().
-	 */
-	// TESTED (for both tablature- and non-tablature case simultaneously)
-	void initialiseDurationLabels() {
-		List<List<Double>> initialDurationLabels = new ArrayList<List<Double>>();
-
-		// Iterate through all notes in the initial NoteSequence, which for each CoD still contains both
-		// CoDnotes. Lower CoDnotes are always in the lower voice and thus come first in the NoteSequence   
-		NoteSequence initialNoteSeq = getNoteSequence();
-		for (Note n : initialNoteSeq) {
-			Rational durationCurrentNote = n.getMetricDuration();
-			int numer = durationCurrentNote.getNumer();
-			int denom = durationCurrentNote.getDenom();
-			// Determine the duration in 32nd/3 notes
-			// NB: Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom will always be divisible by denom 
-			// because denom will always be a fraction of Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3: 
-			// 32, 16, 8, 4, 2, or 1
-			int duration = numer * (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom);
-			// Create the durationLabel for n and add it to initialDurationLabels
-			initialDurationLabels.add(createDurationLabel(duration));
-		}
-		// Set durationLabels
-		setDurationLabels(initialDurationLabels);
-	}
-
-
-	void setNoteSequence(NoteSequence argNoteSequence) {
-		noteSequence = argNoteSequence;
-	}
-
-
-	public void setVoiceLabels(List<List<Double>> argVoiceLabels) {
-		voiceLabels = argVoiceLabels;
-	}
-
-
-	void setDurationLabels(List<List<Double>> argDurationLabels) {
-		durationLabels = argDurationLabels;
-	}
-
-
-	/**
-	 * (1) Checks whether the Tablature and Transcription contain the same number of chords.
-	 * (2) Checks whether the Tablature contains no chords with more than one CoD, unison, or course crossing, or 
-	 *     with combinations of these. 
-	 * Returns <code>true</code> if both (1) and (2) are met, and <code>false</code> if not. If either (1) or (2)
-	 * are not met, sets chordErrorDetails with further information on
-	 *     when (1) is not met: the number of chords;
-	 *     when (2) is not met:
-	 *       a. Information on the number of notes, chords, and rest events;
-	 *       b. Information on all special chords, i.e., all chords containing one or more CoDs, unisons, or course 
-	 *          crossings; 
-	 *       c. Information on all chords containing duplicates or combinations of CoDs, unisons, or course crossings. 
+	 * Adds a summary of the findings to <code>chordCheck</code>.<br><br>
+	 *   
+	 * NB: Tablature case only; must be called before handling of SNUs and course crossings.
 	 *  
-	 * NB: Tablature case only.
-	 *  
-	 * @param tablature
-	 * @return
+	 * @param tab
+	 * @param argNotes
+	 * @return <code>true</code> if no illegal chords are found; else <code>false</code>.
 	 */
-	// TODO test
-	boolean checkChords(Tablature tablature) {  
+	// NOT TESTED
+	static boolean checkChords(Tablature tab, List<Note> argNotes) {  
 		boolean checkPassed = true;
 
-		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
-		List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
+		List<List<TabSymbol>> tabCh = tab.getChords();
+		List<List<Note>> argChords = getChordsFromNotes(argNotes);
+		Timeline tl = tab.getEncoding().getTimeline();
 
-		// 0. Check for equality of chord numbers
-		if (tablatureChords.size() != transcriptionChords.size()) {
-			chordsSpecification = chordsSpecification.concat("The Tablature contains " + tablatureChords.size() +
-				" chords, and the Transcription " + transcriptionChords.size() + ".");
+		// 0. Check equality of number of chords
+		if (tabCh.size() != argChords.size()) {
+			chordCheck = tabCh.size() + " chords in Tablature, " + argChords.size() + " in Transcription";
 			return false;
 		}
 
-		// 1. Create noteAndChordNumbers
-		List<Integer> isRestEvent = 
-			tablature.getEncoding().getListsOfStatistics().get(Encoding.IS_REST_EVENT_IND);
-		int numberOfRestEvents = Collections.frequency(isRestEvent, 1);
-		String noteAndChordNumbers = "Note and chord numbers:" + "\n";
-		noteAndChordNumbers = noteAndChordNumbers.concat("  Number of notes: " + tablature.getNumberOfNotes() + "\n" +
-			"  Number of chords: " + tablatureChords.size() + "\n" +
-			"  Number of restEvents: " + numberOfRestEvents + "\n");
+		// 1. Counts
+		String counts = "the Tablature/Transcription contains" + "\n";
+		counts = counts.concat(
+			"- " + tab.getNumberOfNotes() + "/" + 
+				argChords.stream().flatMap(List::stream).collect(Collectors.toList()).size() + " notes" + "\n" +
+			"- " + tabCh.size() + "/" + argChords.size() + " chords" + "\n" +
+			"- " + Collections.frequency(tab.getEncoding().getListsOfStatistics()
+				.get(Encoding.IS_REST_EVENT_IND), 1) + " rest events (Tablature)" + "\n"
+		);
 
-		// 2. For each chord: check whether it is a special chord. If so, list it
-		List<String> chordsWithOneEqualPitchPair = new ArrayList<String>();
-		List<String> chordsWithTwoEqualPitchPairs = new ArrayList<String>();
-		List<String> chordsWithEqualPitchTriplets = new ArrayList<String>();
-		List<String> chordsWithOneCoD = new ArrayList<String>();
-		List<String> chordsWithTwoCoDs = new ArrayList<String>();
-		List<String> chordsWithThreeCoDs = new ArrayList<String>();
-		List<String> chordsWithOneUnison = new ArrayList<String>();
-		List<String> chordsWithTwoUnisons = new ArrayList<String>();
-		List<String> chordsWithThreeUnisons = new ArrayList<String>();
-		List<String> chordsWithOneCourseCrossing = new ArrayList<String>();
-		List<String> chordsWithTwoCourseCrossings = new ArrayList<String>();
-		List<String> chordsWithThreeCourseCrossings = new ArrayList<String>();
-
-//		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
-//		List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
-		for (int i = 0; i < tablatureChords.size(); i++) {
-			// Get the metric position of the chord
-			Integer[][] basicTabSymbolPropertiesChord = tablature.getBasicTabSymbolPropertiesChord(i);
-			Rational onsetTime = new Rational(basicTabSymbolPropertiesChord[0][Tablature.ONSET_TIME], 
-				Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-			Rational[] metricPosition = Tablature.getMetricPosition(onsetTime, tablature.getMeterInfo());
-			String bar = String.valueOf(metricPosition[0].getNumer());
-			String positionWithinBar = " " + String.valueOf(metricPosition[1]);
-			if (metricPosition[1].getNumer() == 0) {
-				positionWithinBar = ""; 
-			}
-			String metricPosAsString = bar + positionWithinBar;
-
-			// a. Check for equal-pitch-pairs. If occurrences contains the number 2 twice, there is one equal-pitch-pair;
-			// if it contains the number 2 four times, there are two equal-pitch-pairs; if it contains the number 3, 
-			// there is an equal-pitch-triplet.
-			List<Integer> occurrences = getOccurrencesOfPitchesInChord(i);
-			if (Collections.frequency(occurrences, 2) == 2) {
-				chordsWithOneEqualPitchPair.add(metricPosAsString);
-			}
-			if (Collections.frequency(occurrences, 2) == 4) {
-				chordsWithTwoEqualPitchPairs.add(metricPosAsString);
-			}
-			if (occurrences.contains(3)) {
-				chordsWithEqualPitchTriplets.add(metricPosAsString);
-			} 	  
-			// b. Check for (a) CoD(s)
-			if (transcriptionChords.get(i).size() != tablatureChords.get(i).size()) {
-				if (transcriptionChords.get(i).size() == (tablatureChords.get(i).size() + 1)) {					
-					chordsWithOneCoD.add(metricPosAsString);
+		// 2. Special chords
+		String special = "chords with SNUs, unisons, or course crossings" + "\n"; 
+		List<String> specialChords = new ArrayList<String>();
+		List<String> oneEqualPitchPair = new ArrayList<String>();
+		List<String> twoEqualPitchPairs = new ArrayList<String>();
+		List<String> equalPitchTriplet = new ArrayList<String>();
+		List<String> oneSNU = new ArrayList<String>();
+		List<String> twoSNUs = new ArrayList<String>();
+		List<String> threeSNUs = new ArrayList<String>();
+		List<String> oneUnison = new ArrayList<String>();
+		List<String> twoUnisons = new ArrayList<String>();
+		List<String> threeUnisons = new ArrayList<String>();
+		List<String> oneCC = new ArrayList<String>();
+		List<String> twoCCs = new ArrayList<String>();
+		List<String> threeCCs = new ArrayList<String>();
+		for (int i = 0; i < tabCh.size(); i++) {
+			Rational[] metPos = 
+				tl.getMetricPosition(tab.getBasicTabSymbolPropertiesChord(i)[0][Tablature.ONSET_TIME])
+//				Utils.getMetricPosition(
+//				new Rational(tab.getBasicTabSymbolPropertiesChord(i)[0][Tablature.ONSET_TIME], 
+//				Tablature.SRV_DEN), tab.getMeterInfo())
+			;
+			String metPosAsString = 
+				String.valueOf(metPos[0].getNumer()) + 
+				(metPos[1].getNumer() == 0 ? "" : " " + String.valueOf(metPos[1]));
+			// a. Check for equal-pitch-pairs
+			List<Integer> pitches = getPitchesInChord(argChords.get(i));
+			if (pitches.stream().distinct().collect(Collectors.toList()).size() < pitches.size()) {
+				List<Integer> pitchFreq = getPitchFrequency(argChords.get(i));
+				if (Collections.frequency(pitchFreq, 2) == 2) {
+					oneEqualPitchPair.add(metPosAsString);
 				}
-				if (transcriptionChords.get(i).size() == (tablatureChords.get(i).size() + 2)) {
-					chordsWithTwoCoDs.add(metricPosAsString);
+				if (Collections.frequency(pitchFreq, 2) == 4) {
+					twoEqualPitchPairs.add(metPosAsString);
 				}
-				if (transcriptionChords.get(i).size() == (tablatureChords.get(i).size() + 3)) {
-					chordsWithThreeCoDs.add(metricPosAsString);
+				if (pitchFreq.contains(3)) { 
+					equalPitchTriplet.add(metPosAsString);
+				}
+				if (!specialChords.contains(metPosAsString)) {
+					specialChords.add(metPosAsString);
+				}
+			}
+			// b. Check for any SNUs
+			if (argChords.get(i).size() != tabCh.get(i).size()) {
+				if (argChords.get(i).size() == (tabCh.get(i).size() + 1)) {					
+					oneSNU.add(metPosAsString);
+				}
+				if (argChords.get(i).size() == (tabCh.get(i).size() + 2)) {
+					twoSNUs.add(metPosAsString);
+				}
+				if (argChords.get(i).size() == (tabCh.get(i).size() + 3)) {
+					threeSNUs.add(metPosAsString);
+				}
+				if (!specialChords.contains(metPosAsString)) {
+					specialChords.add(metPosAsString);
 				}
 			}	     
-			// c. Check for (a) unison(s)
-			if (tablature.getUnisonInfo(i) != null) {
-				if (tablature.getUnisonInfo(i).length == 1) {
-					chordsWithOneUnison.add(metricPosAsString);
+			// c. Check for any unisons
+			if (tab.getUnisonInfo(i) != null) {
+				if (tab.getUnisonInfo(i).size() == 1) {
+					oneUnison.add(metPosAsString);
 				}
-				if (tablature.getUnisonInfo(i).length == 2) {
-					chordsWithTwoUnisons.add(metricPosAsString);
+				if (tab.getUnisonInfo(i).size() == 2) {
+					twoUnisons.add(metPosAsString);
 				}
-				if (tablature.getUnisonInfo(i).length == 3) {
-					chordsWithThreeUnisons.add(metricPosAsString);
+				if (tab.getUnisonInfo(i).size() == 3) {
+					threeUnisons.add(metPosAsString);
+				}
+				if (!specialChords.contains(metPosAsString)) {
+					specialChords.add(metPosAsString);
 				}
 			}
-			// d. Check for (a) course crossing(s)
-			if (tablature.getCourseCrossingInfo(i) != null) {
-				if (tablature.getCourseCrossingInfo(i).length == 1) {
-					chordsWithOneCourseCrossing.add(metricPosAsString);
+			// d. Check for any course crossings
+			if (tab.getCourseCrossingInfo(tabCh.get(i)) != null) {
+				if (tab.getCourseCrossingInfo(tabCh.get(i)).size() == 1) {
+					oneCC.add(metPosAsString);
 				}
-				if (tablature.getCourseCrossingInfo(i).length == 2) {
-					chordsWithTwoCourseCrossings.add(metricPosAsString);
+				if (tab.getCourseCrossingInfo(tabCh.get(i)).size() == 2) {
+					twoCCs.add(metPosAsString);
 				}
-				if (tablature.getCourseCrossingInfo(i).length == 3) {
-					chordsWithThreeCourseCrossings.add(metricPosAsString);
+				if (tab.getCourseCrossingInfo(tabCh.get(i)).size() == 3) {
+					threeCCs.add(metPosAsString);
+				}
+				if (!specialChords.contains(metPosAsString)) {
+					specialChords.add(metPosAsString);
 				}
 			}
 		}
-
-		// 3. Find any illegal duplicates or combinations. Chords cannot contain 
-		// (i) more than one unison, CoD, or course crossing
-		// (ii) any combinations of unisons, CoDs, or course crossings
-		String details = "";
-		// a. Does the piece contain any chords with more than one CoD, unison, or course crossing?  
-		if (chordsWithTwoCoDs.size() != 0 || chordsWithThreeCoDs.size() != 0 || chordsWithTwoUnisons.size() != 0 ||
-			chordsWithThreeUnisons.size() != 0 ||	chordsWithTwoCourseCrossings.size() != 0 || chordsWithThreeCourseCrossings.size() != 0) {
+		special = special.concat(
+			"- equal-pitch pairs" + "\n" +
+			"  - one in bar(s)   " + oneEqualPitchPair + "\n" +
+			"  - two in bar(s)   " + twoEqualPitchPairs + "\n" +  	
+			"  - three in bar(s) " + equalPitchTriplet + "\n" +
+			"- SNUs" + "\n" +
+			"  - one in bar(s)   " + oneSNU + "\n" +
+			"  - two in bar(s)   " + twoSNUs + "\n" +
+			"  - three in bar(s) " + threeSNUs + "\n" +
+			"- unisons" + "\n" +
+			"  - one in bar(s)   " + oneUnison + "\n" +
+			"  - two in bar(s)   " + twoUnisons + "\n" +
+			"  - three in bar(s) " + threeUnisons + "\n" +
+			"- course crossings" + "\n" +
+			"  - one in bar(s)   " + oneCC + "\n" +
+			"  - two in bar(s)   " + twoCCs + "\n" +
+			"  - three in bar(s) " + threeCCs + "\n" +
+			"- duplicates or combinations" + "\n"
+		);
+		// Find any illegal duplicates or combinations, i.e., chords containing (a) more than one SNU, 
+		// unison, or course crossing; (b) any combination of SNUs, unisons, or course crossings
+		String details = "  (none)";
+		// a. More than one SNU, unison, or course crossing
+		if (twoSNUs.size() != 0 || threeSNUs.size() != 0 || twoUnisons.size() != 0 ||
+			threeUnisons.size() != 0 ||	twoCCs.size() != 0 || threeCCs.size() != 0) {
+			details = "";
 			checkPassed = false;
-			// Add to details
-			if (chordsWithTwoCoDs.size() != 0) {
-				details = details.concat("      Chord(s) at bar(s) " + chordsWithTwoCoDs + " contain(s) two CoDs \n");
+			if (twoSNUs.size() != 0) {
+				details = details.concat("  - two SNUs in bar(s) " + twoSNUs + "\n");
 			}
-			if (chordsWithThreeCoDs.size() != 0) {
-				details = details.concat("      Chord(s) at bar(s) " + chordsWithThreeCoDs + " contain(s) three CoDs \n");
+			if (threeSNUs.size() != 0) {
+				details = details.concat("  - three SNUs in bar(s) " + threeSNUs + "\n");
 			}
-			if (chordsWithTwoUnisons.size() != 0) {
-				details = details.concat("      Chord(s) at bar(s) " + chordsWithTwoUnisons + " contain(s) two unisons \n");
+			if (twoUnisons.size() != 0) {
+				details = details.concat("  - two unisons in bar(s) " + twoUnisons + "\n");
 			}
-			if (chordsWithThreeUnisons.size() != 0) {
-				details = details.concat("      Chord(s) at bar(s) " + chordsWithThreeUnisons + " contain(s) three unisons \n");
+			if (threeUnisons.size() != 0) {
+				details = details.concat("  - three unisons in bar(s) " + threeUnisons + "\n");
 			}
-			if (chordsWithTwoCourseCrossings.size() != 0) {
-				details = details.concat("      Chord(s) at bar(s) " + chordsWithTwoCourseCrossings + " contain(s) two course crossings \n");
+			if (twoCCs.size() != 0) {
+				details = details.concat("  - two course crossings in bar(s) " + twoCCs + "\n");
 			}
-			if (chordsWithThreeCourseCrossings.size() != 0) {
-				details = details.concat("      Chord(s) at bar(s) " + chordsWithThreeCourseCrossings + " contain(s) three course crossings \n");
-			}
-		}
-
-		// b. Does the piece contain any chords with any combination of CoDs, unisons, and course crossings? 
-		// Turn all the Lists into one big List  
-		List<String> allSpecialChords = new ArrayList<String>();
-		allSpecialChords.addAll(chordsWithOneCoD); allSpecialChords.addAll(chordsWithTwoCoDs);
-		allSpecialChords.addAll(chordsWithThreeCoDs); 
-		allSpecialChords.addAll(chordsWithOneUnison);	allSpecialChords.addAll(chordsWithTwoUnisons);
-		allSpecialChords.addAll(chordsWithThreeUnisons);
-		allSpecialChords.addAll(chordsWithOneCourseCrossing);	allSpecialChords.addAll(chordsWithTwoCourseCrossings);
-		allSpecialChords.addAll(chordsWithThreeCourseCrossings);
-
-		// Find which chord appears more than once in allSpecialChords and add that to chordsWithCombinations
-		List<String> chordsWithCombination = new ArrayList<String>();
-		for (int i = 0; i < allSpecialChords.size(); i++) {
-			String specialChordIndex = allSpecialChords.get(i);
-			if (Collections.frequency(allSpecialChords, specialChordIndex) > 1) {
-				checkPassed = false;
-				// To avoid unnecessary duplicates: add to chordsWithCombination only once 
-				if (!chordsWithCombination.contains(specialChordIndex)) {
-					chordsWithCombination.add(specialChordIndex);
-				}
+			if (threeCCs.size() != 0) {
+				details = details.concat("  - three course crossings in bar(s) " + threeCCs + "\n");
 			}
 		}
-
-		// If combinations are found: add to details
-		if (chordsWithCombination.size() != 0) {
-			// Combine the sublists
-			List<String> chordsWithCoDs = new ArrayList<String>();
-			chordsWithCoDs.addAll(chordsWithOneCoD); chordsWithCoDs.addAll(chordsWithTwoCoDs);
-			chordsWithCoDs.addAll(chordsWithThreeCoDs);
-			List<String> chordsWithUnisons = new ArrayList<String>();
-			chordsWithUnisons.addAll(chordsWithOneUnison); chordsWithUnisons.addAll(chordsWithTwoUnisons);
-			chordsWithUnisons.addAll(chordsWithThreeUnisons);
-			List<String> chordsWithCourseCrossings = new ArrayList<String>();
-			chordsWithCourseCrossings.addAll(chordsWithOneCourseCrossing); chordsWithCourseCrossings.addAll(chordsWithTwoCourseCrossings);
-			chordsWithCourseCrossings.addAll(chordsWithThreeCourseCrossings);
-
-			for (int j = 0; j < chordsWithCombination.size(); j++) {	
-				String metricPosition = chordsWithCombination.get(j);
-
+		// b. Combinations of SNUs, unisons, and course crossings 
+		// Find which chord appears more than once in specialChords and add that to combiChords
+		List<String> combiChords = new ArrayList<String>();
+		specialChords.stream()
+			.filter(c -> Collections.frequency(specialChords, c) > 1)
+			.forEach(c -> { if (!combiChords.contains(c)) {combiChords.add(c);} });
+		if (combiChords.size() != 0) {
+			details = "";
+			checkPassed = false;
+			List<String> allSNUs = 
+				Stream.concat(Stream.concat(oneSNU.stream(), twoSNUs.stream()), threeSNUs.stream())
+				.collect(Collectors.toList());
+			List<String> allUnisons = 
+				Stream.concat(Stream.concat(oneUnison.stream(), twoUnisons.stream()), threeUnisons.stream())
+				.collect(Collectors.toList());
+			List<String> allCCs = 
+				Stream.concat(Stream.concat(oneCC.stream(), twoCCs.stream()), threeCCs.stream())
+				.collect(Collectors.toList());
+			for (String metPos : combiChords) {
 				// There are four possible combinations:
-				// 1. CoDs and unisons (= unisons and CoDs)  
-				// 2. CoDs and course crossings (= course crossings and CoDs)
+				// 1. SNUs and unisons (= unisons and SNUs)  
+				// 2. SNUs and course crossings (= course crossings and SNUs)
 				// 3. unisons and course crossings (= course crossings and unisons)
-				// 4. CoDs, unisons, and course crossings
-				if (chordsWithCoDs.contains(metricPosition) && chordsWithUnisons.contains(metricPosition)) {
-					details = details.concat("      Chord at bar " + metricPosition + " contains (a) CoD(s) and (a) unison(s)." + "\n");
+				// 4. SNUs, unisons, and course crossings
+				if (allSNUs.contains(metPos) && allUnisons.contains(metPos)) {
+					details = details.concat("  - SNU(s) and unison(s) in bar " + metPos + "\n");
 				}
-				if (chordsWithCoDs.contains(metricPosition) && chordsWithCourseCrossings.contains(metricPosition)) {
-					details = details.concat("      Chord at bar " + metricPosition + " contains (a) CoD(s) and (a) course crossing(s)." + "\n");	
+				if (allSNUs.contains(metPos) && allCCs.contains(metPos)) {
+					details = details.concat("  - SNU(s) and course crossing(s) in bar " + metPos + "\n");	
 				}
-				if (chordsWithUnisons.contains(metricPosition) && chordsWithCourseCrossings.contains(metricPosition)) {
-					details = details.concat("      Chord at bar " + metricPosition + " contains (a) unison(s) and (a) course crossing(s)." + "\n");
+				if (allUnisons.contains(metPos) && allCCs.contains(metPos)) {
+					details = details.concat("  - unison(s) and course crossing(s) in bar " + metPos + "\n");
 				}	 
-				if (chordsWithCoDs.contains(metricPosition) && chordsWithUnisons.contains(metricPosition) &&
-					chordsWithCourseCrossings.contains(metricPosition)) {
-					details = details.concat("      Chord at bar " + metricPosition + " contains (a) CoD(s), (a) unison(s), and (a) course crossing(s)." + "\n");
+				if (allSNUs.contains(metPos) && allUnisons.contains(metPos) && allCCs.contains(metPos)) {
+					details = details.concat("  - SNU(s), unison(s), and course crossing(s) in bar " + metPos + "\n");
 				}
 			}
 		}
-
-		// 4. Create listsOfSpecialChords
-		String listsOfSpecialChords = "Special chords:" + "\n"; 
-		listsOfSpecialChords = listsOfSpecialChords.concat(
-			"  Equal pitch:" + "\n" +	
-			"    Transcription chords with one equal-pitch-pair at bar(s):    " + chordsWithOneEqualPitchPair + "\n" +
-			"    Transcription chords with two equal-pitch-pairs at bar(s):   " + chordsWithTwoEqualPitchPairs + "\n" +  	
-			"    Transcription chords with three equal-pitch-pairs at bar(s): " + chordsWithEqualPitchTriplets + "\n" +
-			"    (a) CoDs" + "\n" +
-			"    Transcription chords with one CoD at bar(s):                 " + chordsWithOneCoD + "\n" +
-			"    Transcription chords with two CoDs at bar(s):                " + chordsWithTwoCoDs + "\n" +
-			"    Transcription chords with three CoDs at bar(s):              " + chordsWithThreeCoDs + "\n" +
-			"    (b) Unisons" + "\n" +
-			"    Tablature chords with one unison at bar(s):                  " + chordsWithOneUnison + "\n" +
-			"    Tablature chords with two unisons at bar(s):                 " + chordsWithTwoUnisons + "\n" +
-			"    Tablature chords with three unisons at bar(s):               " + chordsWithThreeUnisons + "\n" +
-			"  Course crossing:" + "\n" +
-			"    Tablature chords with one course crossing at bar(s):         " + chordsWithOneCourseCrossing + "\n" +
-			"    Tablature chords with two course crossings at bar(s):        " + chordsWithTwoCourseCrossings + "\n" +
-			"    Tablature chords with three course crossings at bar(s):      " + chordsWithThreeCourseCrossings + "\n" +
-			"  COMBINATIONS:" + "\n" + 
-			"    Chords with duplicates or combinations of the above: \n" + details + "\n");
-
-		chordsSpecification = chordsSpecification.concat(noteAndChordNumbers + listsOfSpecialChords);
-
+		if (chordCheck == null) {
+			chordCheck = "";
+		}
+		chordCheck = chordCheck.concat(counts + special + details);
 		return checkPassed; 
 	}
 
 
-	public String getChordsSpecification() {
-		return chordsSpecification;
+	/**
+	 * Returns a list of the same size of the chord given, containing the frequency of 
+	 * each pitch within the chord.
+	 *
+	 * @param chord
+	 * @return
+	 */
+	// TESTED
+	static List<Integer> getPitchFrequency(List<Note> chord) {
+		List<Integer> frequencies = new ArrayList<Integer>();
+		List<Integer> pitchesInChord = getPitchesInChord(chord);
+		for (int p : pitchesInChord) {
+			frequencies.add(Collections.frequency(pitchesInChord, p));
+		}
+		return frequencies;
+
+//		// Create occurrences with default values 1
+//		List<Integer> occurrences = new ArrayList<Integer>();
+//		for (int j = 0; j < pitchesInChord.size(); j++) {
+//			occurrences.add(1);
+//		}
+//		// Determine how often each individual pitch appears in chord
+//		for (int j = 0; j < pitchesInChord.size(); j++) {
+//			int currentPitch = pitchesInChord.get(j);
+//			int occurrencesOfCurrentPitch = 1;
+//			// Set index j of pitchesInChord temporarily to 0 and search pitchesInChord for other occurrences of 
+//			// currentPitch
+//			pitchesInChord.set(j, 0);
+//			for (int k = 0; k < pitchesInChord.size(); k++) {
+//				if (pitchesInChord.get(k) == currentPitch) {
+//					occurrencesOfCurrentPitch++;
+//				}
+//			}
+//			// Set element j of occurences to occurenceOfCurrentPitch
+//			occurrences.set(j, occurrencesOfCurrentPitch);
+//			// Reset index j of pitchesInChord and proceed with the next iteration of the outer for
+//			pitchesInChord.set(j, currentPitch);
+//		}
+//		return occurrences;
+	}
+
+
+	/**
+	 * Gets the chords from the given list of <code>Note</code>s.
+	 * NB: If <code>notes</code> is not <code>null</code>, <code>getChords()</code> should be called.
+	 * 
+	 * @param argNotes 
+	 * @return
+	 */
+	// TESTED
+	static List<List<Note>> getChordsFromNotes(List<Note> argNotes) {
+		List<List<Note>> argChords = new ArrayList<List<Note>>();
+
+		List<Note> currChord = new ArrayList<Note>();
+		Rational onsetPrevNote = argNotes.get(0).getMetricTime();
+		for (int i = 0; i < argNotes.size(); i++) {
+			Note currNote = argNotes.get(i);
+			Rational onsetCurrNote = currNote.getMetricTime();
+			if (onsetCurrNote.equals(onsetPrevNote)) {
+				currChord.add(currNote);
+			}
+			else {
+				argChords.add(currChord);
+				currChord = new ArrayList<Note>();
+				currChord.add(currNote);
+			}
+			if (i == argNotes.size() - 1) {
+				argChords.add(currChord);
+			}
+			onsetPrevNote = onsetCurrNote;
+		}
+		return argChords;
 	}
 
 
 	/** 
-	 * Finds for all CoDnotes (i.e., notes representing a Note that is shared by two voices) in
-	 * the Tablature the corresponding Notes in the Transcription, and
-	 * (1) removes the CoDnote with the shorter duration from noteSequence
-	 * (2) combines the voice labels of both CoDnotes into a List<Double> with two 1.0s, sets 
-	 *     the label of the lower CoDnote to the result in voiceLabels, and removes the label 
-	 *     of the upper from voiceLabels
-	 * (3) combines the duration labels of both CoDnotes into a List<Double> with two 1.0s, sets
-	 *     the label of the lower CoDnote to the result in durationLabels, and removes the label
-	 *     of the upper from durationLabels 
-	 *
-	 * Also sets voicesCoDNotes, a List<Integer[]> the size of the number of notes in the 
-	 * Transcription, containing for each element:
-	 *   a. if the note at that index is not a CoDnote: <code>null</code>; 
-	 *   b. if the the note at that index is a CoDnote: an Integer[] containing 
-	 *        as element 0: the voice the longer CoDnote is in;
-	 *        as element 1: the voice the shorter CoDnote is in.
-	 *      In case both CoDnotes have the same duration, the lower CoDnote (i.e., the one in
-	 *      the lower voice that comes first in the NoteSequence) is placed at element 0.
+	 * Handles single-note unisons (SNUs). Iterates through the given list of unhandled <code>Note</code>s
+	 * and checks for SNU note pairs. If a <code>Note</code> in the list is not part of a SNU note pair, it 
+	 * is added to the list of <code>TaggedNote</code>s returned as a simple <code>TaggedNote</code>; else, 
+	 * the SNU note pair is handled at once:
 	 * 
-	 * If isGroundTruthTranscription is <code>false</code>, i.e., when the method is applied to
-	 * a predicted Transcription, only noteSequence is adapted. This is because the predicted 
-	 * voiceLabels and durationLabels are already ready-to-use (only the voicesCoDNotes still 
-	 * need to be created from them).
+	 * <ul>
+	 * <li>One SNU note is added as a full <code>TaggedNote</code> (the complementary SNU note is excluded)
+	 *     <ul>
+	 *     <li>If the SNU notes have the same duration: the lower (lower-voice) SNU note.</li>
+	 *     <li>If the SNU notes have different durations: the SNU note that has the longer duration.</li>
+	 *     </ul>
+	 * </li>
+	 * <li>The SNU voices are set in the full <code>TaggedNote</code>
+	 *     <ul>
+	 *     <li>If the SNU notes have the same duration: with the lower voice first.</li>
+	 *     <li>If the SNU notes have different durations: with the voice that contains the note that has 
+	 *         the longer duration first.</li>
+	 *     </ul>
+	 * </li>         
+	 * <li>The SNU durations are set in the full <code>TaggedNote</code>, with the longer 
+	 *     duration first.</li>
+	 * </ul>
 	 * 
-	 * NB1: This method presumes that a chord contains only one CoD, and neither a unison nor
-	 *      a course crossings.
+	 * If <code>t == Type.PREDICTED</code>, the SNU notes always have the same duration: i.e., if no 
+	 * duration is predicted, the (minimum) duration for the Tablature note; else, the duration that 
+	 * is predicted (only one duration is predicted).<br><br>
+	 * 
+	 * Adds a summary of the findings to <code>handledNotes</code>.<br><br>
+	 * 
+	 * NB1: This method presumes that a chord contains only one SNU, and neither a course crossing nor a 
+	 *      unison.<br>
 	 * NB2: Tablature case only; must be called before handleCourseCrossings().
 	 * 
-	 * @param tablature
-	 * @param isGroundTruthTranscription
+	 * @param argNotes
+	 * @param argTabChords
 	 */
 	// TESTED
-	void handleCoDNotes(Tablature tablature, boolean isGroundTruthTranscription) {
-		NoteSequence noteSeq = getNoteSequence();
-		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
+	List<TaggedNote> handleSNUs(List<Note> argNotes, Tablature tab) {
+		List<TaggedNote> argTaggedNotes = new ArrayList<>();
+		argNotes.forEach(n -> argTaggedNotes.add(new TaggedNote(n)));
 
-		List<List<Double>> voiceLab = new ArrayList<List<Double>>(); // getVoiceLabels();
-		List<List<Double>> durationLab = new ArrayList<List<Double>>(); // getDurationLabels();
-		List<Integer[]> voicesCoD = new ArrayList<Integer[]>();
-		if (isGroundTruthTranscription) {
-			voiceLab = getVoiceLabels();
-			durationLab = getDurationLabels();
-			// Initialise voicesCoD with all elements set to null
-			for (int i = 0; i < tablature.getBasicTabSymbolProperties().length; i++) {
-				voicesCoD.add(null);
-			}
-			// Set voicesCoD (in case the pieces contains no SNUs and the setting does not 
-			// happen in the for-loop below
-			setVoicesCoDNotes(voicesCoD);
-		}
+		List<List<Note>> argChords = getChordsFromNotes(argNotes);
+		List<List<TabSymbol>> argTabChords = tab.getChords();
+		int notesPreceding = 0;
+		for (int i = 0; i < argTabChords.size(); i++) {
+			// If the chord contains a SNU note pair
+			Integer[][] SNUInfo = getSNUInfo(argChords.get(i), argTabChords.get(i));			
+			if (SNUInfo != null) {
+				// For each SNU note pair in the chord (there should only be one)
+				int notesRemovedFromChord = 0;
+				for (Integer[] in : SNUInfo) {
+					// 1. Determine indices
+					// a. Indices of the lower and upper SNU note
+					int indLower = notesPreceding + (in[1] - notesRemovedFromChord);
+					int indUpper = notesPreceding + (in[2] - notesRemovedFromChord);
+					// b. Indices of the longer and shorter SNU note
+					Rational durLower = argNotes.get(indLower).getMetricDuration();
+					Rational durUpper = argNotes.get(indUpper).getMetricDuration();
 
-		// For every chord
-		for (int i = 0; i < tablatureChords.size(); i++) {
-			// If the chord contains a CoD
-			if (getCoDInfo(tablatureChords, i) != null) {
-				Integer[][] coDInfo = getCoDInfo(tablatureChords, i);
-				// Get the (most recent! needed for calculating notesPreceding) transcription chords
-				List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
-				// For each CoD in the chord 
-				int notesAlreadyRemovedFromChord = 0;
-				for (int j = 0; j < coDInfo.length; j++) {
-					// 1. Determine the indices in noteSeq, voiceLab, and durationLab of the lower and upper CoDnotes
-					// a. Calculate the number of Notes preceding the CoD chord by summing the size of all previous chords
-					int notesPreceding = 0;
-					for (int k = 0; k < i; k++) {
-						notesPreceding += transcriptionChords.get(k).size();
+					// 2. Set argTaggedNotes
+					// a. If the SNU notes have the same duration
+					int removeInd;
+					if (durLower.isEqual(durUpper)) {
+//						argVoicesSNU.set(indLower, new Integer[]{
+//							findVoice(argNotes.get(indLower)), findVoice(argNotes.get(indUpper)),
+//							durLower.getNumer(), durLower.getDenom(), 
+//							durUpper.getNumer(), durUpper.getDenom()
+//						});
+						argTaggedNotes.set(indLower, new TaggedNote(
+							argNotes.get(indLower), 
+							new Integer[]{findVoice(argNotes.get(indLower)), findVoice(argNotes.get(indUpper))},
+							new Rational[]{durLower, durUpper}, -1)
+						);
+						removeInd = indUpper;
 					}
-					// b. Calculate the indices
-					int indexOfLowerCoDNote = notesPreceding + (coDInfo[j][1] - notesAlreadyRemovedFromChord);
-					int indexOfUpperCoDNote = notesPreceding + (coDInfo[j][2] - notesAlreadyRemovedFromChord);
-
-					// 2. Adapt noteSeq, voiceLab, and durationLab; also adapt voicesCoD
-					// a. noteSeq: remove the CoDnote with the shorter duration
-					Rational durationLower = noteSeq.getNoteAt(indexOfLowerCoDNote).getMetricDuration();
-					Rational durationUpper = noteSeq.getNoteAt(indexOfUpperCoDNote).getMetricDuration();
-					// Assume that the lower note has the longer duration. If this is so or if both notes have the
-					// same duration, indexOfLongerCoDNote == indexOfLowerCoDNote; otherwise, indexOfLongerCoDNote == 
-					// indexOfUpperCoDNote 
-					int indexOfLongerCoDNote = indexOfLowerCoDNote;
-					int indexOfShorterCoDNote = indexOfUpperCoDNote;
-					if (durationLower.isLess(durationUpper)) {
-						indexOfShorterCoDNote = indexOfLowerCoDNote;
-						indexOfLongerCoDNote = indexOfUpperCoDNote;
+					// b. If the SNU notes have different durations
+					else {
+						int indLonger = durLower.isGreater(durUpper) ? indLower : indUpper;
+						int indShorter = durLower.isGreater(durUpper) ? indUpper : indLower;	
+//						argVoicesSNU.set(indLower, new Integer[]{
+//							findVoice(argNotes.get(indLonger)), findVoice(argNotes.get(indShorter)),
+//							durLonger.getNumer(), durLonger.getDenom(),
+//							durShorter.getNumer(), durShorter.getDenom(),
+//						});
+						argTaggedNotes.set(indLower, new TaggedNote(
+							argNotes.get(indLonger), 
+							new Integer[]{findVoice(argNotes.get(indLonger)), findVoice(argNotes.get(indShorter))},
+							new Rational[]{durLower.max(durUpper), durLower.min(durUpper)}, -1)
+						);
+						removeInd = indShorter;
 					}
-					noteSeq.deleteNoteAt(indexOfShorterCoDNote);
-					if (isGroundTruthTranscription) { 
-						// The voices that go with the longer and shorter CoDnote, needed for setting voicesCoD, must  
-						// be determined before voiceLab is adapted   
-						List<Double> voiceLabelOfLongerCoDNote = new ArrayList<Double>(voiceLab.get(indexOfLongerCoDNote));
-						int voiceLonger = DataConverter.convertIntoListOfVoices(voiceLabelOfLongerCoDNote).get(0);
-						List<Double> voiceLabelOfShorterCoDNote = new ArrayList<Double>(voiceLab.get(indexOfShorterCoDNote));
-						int voiceShorter = DataConverter.convertIntoListOfVoices(voiceLabelOfShorterCoDNote).get(0);
-						// b. voiceLab: combine the labels of both CoDnotes, set the label at indexOfLowerCoDNote to 
-						// the result, and remove the label of the upper CoDnote from voiceLab
-						List<Double> voiceLabelOfLowerCoDNote = voiceLab.get(indexOfLowerCoDNote);			    
-						List<Double> voiceLabelOfUpperCoDNote = voiceLab.get(indexOfUpperCoDNote);
-						List<Double> combinedVoiceLabel = combineLabels(voiceLabelOfLowerCoDNote, voiceLabelOfUpperCoDNote);
-						voiceLab.set(indexOfLowerCoDNote, combinedVoiceLabel);
-						voiceLab.remove(indexOfUpperCoDNote);
-						// c. durationLab: combine the labels of both CoDnotes, set the label at indexOfLowerCoDNote to the 
-						// result, and remove the label of the upper CoDnote from durationLab
-						List<Double> durationLabelOfLowerCoDNote = durationLab.get(indexOfLowerCoDNote);
-						List<Double> durationLabelOfUpperCoDNote = durationLab.get(indexOfUpperCoDNote);
-						List<Double> combinedDurationLabel = 
-							combineLabels(durationLabelOfLowerCoDNote, durationLabelOfUpperCoDNote);
-						durationLab.set(indexOfLowerCoDNote, combinedDurationLabel);
-						durationLab.remove(indexOfUpperCoDNote);
-						// d. Set the element at index indexOfLowerCoDNote in voicesCoD: set the first element to the
-						// voice that goes with the longer CoDnote, and the second to the voice that goes with the shorter 
-						voicesCoD.set(indexOfLowerCoDNote, new Integer[]{voiceLonger, voiceShorter});
-					}
-					// 3. Increase notesAlreadyRemovedFromChord in case the chord contains more than one CoD and another
-					// iteration through the inner for-loop is necessary
-					notesAlreadyRemovedFromChord++;
+					Note removeNote = argNotes.get(removeInd);
+					argNotes.remove(removeInd); // TODO not needed (but clearer?)
+					argTaggedNotes.remove(indUpper);
+					notesRemovedFromChord++;
 
-					// 4. Reset noteSequence, voiceLabels, and durationLabels; set voicesCoDNotes
-					setNoteSequence(noteSeq);
-					if (isGroundTruthTranscription) {
-						setVoiceLabels(voiceLab);
-						setDurationLabels(durationLab);
-						setVoicesCoDNotes(voicesCoD);
+					if (handledNotes == null) {
+						handledNotes = "";
 					}
-
-					// 5. Concat information to adaptations
-					adaptations = adaptations.concat("  CoD found in chord " + i + ": note no. " + (indexOfShorterCoDNote	
-						- notesPreceding) +	" (pitch " + coDInfo[j][0]	+	") in that chord removed from the NoteSequence; " + 
-						"list of voice labels and list of durations adapted accordingly." + "\n");
+					// TODO Without the below, this method can be static
+					handledNotes = handledNotes.concat(
+						"SNU found in chord " + i + ": note " + (removeInd - notesPreceding) + 
+						" (" + removeNote +	") excluded from list of tagged notes" + "\n");
 				}
 			}
+			notesPreceding += argTabChords.get(i).size();
 		}
+		return argTaggedNotes;
 	}
 
 
 	/**
-	 * Finds for all CoDnotes (i.e., notes representing a Note that is shared by two voices) in the Tablature the
-	 * corresponding Notes in the Transcription, and
-	 * (1) removes the CoDnote with the shorter duration from noteSequence
-	 * (2) combines the voice labels of both CoDnotes into a List<Double> with two 1.0s, sets the label of the lower
-	 *     CoDnote to the result in voiceLabels, and removes the label of the upper from voiceLabels
-	 * (3) combines the duration labels of both CoDnotes into a List<Double> with two 1.0s, sets the label of the 
-	 *     lower CoDnote to the result in durationLabels, and removes the label of the upper from durationLabels 
+	 * Gets information on the single-note unison (SNU) notes in the given chord. 
+	 * A SNU occurs when a single Tablature note is shared by two Transcription Notes.
 	 *
-	 * Also sets voicesCoDNotes, a List<Integer[]> the size of the number of notes in the Transcription, 
-	 * containing for each element:
-	 *   a. if the note at that index is not a CoDnote: <code>null</code>; 
-	 *   b. If the the note at that index is a CoDnote: an Integer[] containing 
-	 *      as element 0: the voice the longer CoDnote is in;
-	 *      as element 1: the voice the shorter CoDnote is in.
-	 *      In case both CoDnotes have the same duration, the lower CoDnote (i.e., the one in the lower voice
-	 *      that comes first in the NoteSequence) is placed at element 0.
-	 * 
-	 * NB1: This method presumes that a chord contains only one CoD, and neither a unison nor a course crossings.
-	 * NB2: Tablature case only; must be called before handleCourseCrossings().
-	 * 
-	 * @param tablature
+	 * NB1: This method presumes that a chord contains only one SNU, and neither a course crossing nor a 
+	 *      unison.<br>
+	 * NB2: Tablature case only. 
+	 *
+	 * @param argChord
+	 * @param argTabChord
+	 * @return An Integer[][], each element of which represents a SNU note pair (starting from below 
+	 *         in the chord) containing
+	 *         <ul>
+	 *         <li>As element 0: the pitch (as a MIDInumber) of the SNU notes.</li>
+	 *         <li>As element 1: the sequence number in the chord of the lower SNU note.</li>
+	 *         <li>As element 2: the sequence number in the chord of the upper SNU note.</li> 
+	 *         </ul>
+	 *         or <code>null</code> if the chord does not contain any SNUs.   
 	 */
 	// TESTED
-	private void handleCoDNotesOUD(Tablature tablature) {				
-		NoteSequence noteSeq = getNoteSequence();
-		List<List<Double>> voiceLab = getVoiceLabels();
-		List<List<Double>> durationLab = getDurationLabels();
-		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
-		List<Integer[]> voicesCoD = new ArrayList<Integer[]>();  
-		// Initialise voicesCoD with all elements set to null
-		for (int i = 0; i < tablature.getBasicTabSymbolProperties().length; i++) {
-			voicesCoD.add(null);
-		}
+	static Integer[][] getSNUInfo(List<Note> argChord, List<TabSymbol> argTabChord) {
+		Integer[][] SNUInfo = null;
 
-		// For every chord
-		for (int i = 0; i < tablatureChords.size(); i++) {
-			// If the chord contains a CoD
-			if (getCoDInfo(tablatureChords, i) != null) {
-				Integer[][] coDInfo = getCoDInfo(tablatureChords, i);
-				// Get the (most recent! needed for calculating notesPreceding) transcription chords
-				List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
-				// For each CoD in the chord 
-				int notesAlreadyRemovedFromChord = 0;
-				for (int j = 0; j < coDInfo.length; j++) {
-					// 1. Determine the indices in noteSeq, voiceLab, and durationLab of the lower and upper CoDnotes
-					// a. Calculate the number of Notes preceding the CoD chord by summing the size of all previous chords
-					int notesPreceding = 0;
-					for (int k = 0; k < i; k++) {
-						notesPreceding += transcriptionChords.get(k).size();
+		List<Integer> pitchesInChord = getPitchesInChord(argChord);
+		int numSNUs = argChord.size() - argTabChord.size();
+		if (numSNUs > 0) { 
+			SNUInfo = new Integer[numSNUs][3];
+			// For each pitch: search the remainder of pitchesInChord for the same pitch 
+			// (the upper SNU note) 
+			int currRow = 0;
+			for (int i = 0; i < pitchesInChord.size(); i++) {
+				int currPitch = pitchesInChord.get(i); 
+				for (int j = i + 1; j < pitchesInChord.size(); j++) {
+					if (pitchesInChord.get(j) == currPitch) {
+						SNUInfo[currRow] = new Integer[]{currPitch, i, j};
+						currRow++;
+						break; 
 					}
-					// b. Calculate the indices
-					int indexOfLowerCoDNote = notesPreceding + (coDInfo[j][1] - notesAlreadyRemovedFromChord);
-					int indexOfUpperCoDNote = notesPreceding + (coDInfo[j][2] - notesAlreadyRemovedFromChord);
-
-					// 2. Adapt noteSeq, voiceLab, and durationLab; also adapt voicesCoD
-					// a. noteSeq: remove the CoDnote with the shorter duration
-					Rational durationLower = noteSeq.getNoteAt(indexOfLowerCoDNote).getMetricDuration();
-					Rational durationUpper = noteSeq.getNoteAt(indexOfUpperCoDNote).getMetricDuration();
-					// Assume that the lower note has the longer duration. If this is so or if both notes have the
-					// same duration, indexOfLongerCoDNote == indexOfLowerCoDNote; otherwise, indexOfLongerCoDNote == 
-					// indexOfUpperCoDNote 
-					int indexOfLongerCoDNote = indexOfLowerCoDNote;
-					int indexOfShorterCoDNote = indexOfUpperCoDNote;
-					if (durationLower.isLess(durationUpper)) {
-						indexOfShorterCoDNote = indexOfLowerCoDNote;
-						indexOfLongerCoDNote = indexOfUpperCoDNote;
-					}
-					noteSeq.deleteNoteAt(indexOfShorterCoDNote);
-					// The voices that go with the longer and shorter CoDnote, needed for setting voicesCoD, must be 
-					// determined before voiceLab is adapted   
-					List<Double> voiceLabelOfLongerCoDNote = new ArrayList<Double>(voiceLab.get(indexOfLongerCoDNote));
-					int voiceLonger = DataConverter.convertIntoListOfVoices(voiceLabelOfLongerCoDNote).get(0);
-					List<Double> voiceLabelOfShorterCoDNote = new ArrayList<Double>(voiceLab.get(indexOfShorterCoDNote));
-					int voiceShorter = DataConverter.convertIntoListOfVoices(voiceLabelOfShorterCoDNote).get(0);
-					// b. voiceLab: combine the labels of both CoDnotes, set the label at indexOfLowerCoDNote to the 
-					// result, and remove the label of the upper CoDnote from voiceLab
-					List<Double> voiceLabelOfLowerCoDNote = voiceLab.get(indexOfLowerCoDNote);			    
-					List<Double> voiceLabelOfUpperCoDNote = voiceLab.get(indexOfUpperCoDNote);
-					List<Double> combinedVoiceLabel = combineLabels(voiceLabelOfLowerCoDNote, voiceLabelOfUpperCoDNote);
-					voiceLab.set(indexOfLowerCoDNote, combinedVoiceLabel);
-					voiceLab.remove(indexOfUpperCoDNote);
-					// c. durationLab: combine the labels of both CoDnotes, set the label at indexOfLowerCoDNote to the 
-					// result, and remove the label of the upper CoDnote from durationLab
-					List<Double> durationLabelOfLowerCoDNote = durationLab.get(indexOfLowerCoDNote);
-					List<Double> durationLabelOfUpperCoDNote = durationLab.get(indexOfUpperCoDNote);
-					List<Double> combinedDurationLabel = combineLabels(durationLabelOfLowerCoDNote, durationLabelOfUpperCoDNote);
-					durationLab.set(indexOfLowerCoDNote, combinedDurationLabel);
-					durationLab.remove(indexOfUpperCoDNote);
-					// d. Set the element at index indexOfLowerCoDNote in voicesCoD: set the first element to the
-					// voice that goes with the longer CoDnote, and the second to the voice that goes with the shorter 
-					voicesCoD.set(indexOfLowerCoDNote, new Integer[]{voiceLonger, voiceShorter});
-
-					// 3. Increase notesAlreadyRemovedFromChord in case the chord contains more than one CoD and another
-					// iteration through the inner for-loop is necessary
-					notesAlreadyRemovedFromChord++;
-
-					// 4. Reset noteSequence, voiceLabels, and durationLabels; set voicesCoDNotes
-					setNoteSequence(noteSeq);
-					setVoiceLabels(voiceLab);
-					setDurationLabels(durationLab);
-					setVoicesCoDNotes(voicesCoD);
-
-					// 5. Concat information to adaptations
-					adaptations = adaptations.concat("  CoD found in chord " + i + ": note no. " + (indexOfShorterCoDNote
-						- notesPreceding) +	" (pitch " + coDInfo[j][0]	+	") in that chord removed from the NoteSequence; " + 
-						"list of voice labels and list of durations adapted accordingly." + "\n");
-				}
-			} 
+				} 
+			}
 		}
+		return SNUInfo;
 	}
 
 
-	// TESTED (together with getVoicesCoDNotes())
-	public void setVoicesCoDNotes(List<Integer[]> argVoicesCoDNotes) {
-		voicesCoDNotes = argVoicesCoDNotes;
-	}
-
-
-	/**
-	 * Finds for all course-crossing notes (i.e., notes pairs where the note on the lower course has the higher
-	 * pitch) in the Tablature the corresponding Notes in the Transcription, and 
-	 * (1) swaps these Notes in noteSequence;
-	 * (2) swaps the corresponding voice labels in voiceLabels;
-	 * (3) swaps the corresponding duration labels in durationLabels. 
+	/** 
+	 * Handles course crossings (CCs). Iterates through the given list of <code>TaggedNote</code>s and checks
+	 * for course crossing note pairs. If a <code>TaggedNote</code> in the list is part of a course 
+	 * crossing note pair, the course crossing note pair is handled at once:
 	 * 
-	 * If isGroundTruthTranscription is <code>false</code>, i.e., when the method is applied to a predicted 
-	 * Transcription, only noteSequence is adapted. This is because the predicted voiceLabels and durationLabels 
-	 * are already ready-to-use (only the voicesCoDNotes still need to be created from them).
-	 * 
-	 * NB1: This method presumes that a chord contains only one course crossing, and neither a CoD nor a unison.
-	 * NB2: Tablature case only; must be called after handleCoDNotes().
-	 * 
-	 * @param tablature
-	 * @param isGroundTruthTranscription
+	 * <ul>
+	 * <li>The <code>TaggedNote</code>s are swapped so that the lower-course (i.e., higher-pitch) course 
+	 *     crossing note comes first.</li>
+	 * </ul>
+	 *  
+	 * Adds a summary of the findings to <code>handledNotes</code>.<br><br>
+	 *   
+	 * NB1: This method presumes that a chord contains only one course crossing, and neither a SNU 
+	 *      nor a unison.<br>
+	 * NB2: Tablature case only; must be called after handleSNUs().
+	 * 	  
+	 * @param argTaggedNotes
+	 * @param tab
 	 */
 	// TESTED
-	void handleCourseCrossings(Tablature tablature, boolean isGroundTruthTranscription) {
-		NoteSequence noteSeq = getNoteSequence();
-		List<List<Double>> voiceLab = new ArrayList<List<Double>>(); // getVoiceLabels();
-		List<List<Double>> durationLab = new ArrayList<List<Double>>(); // getDurationLabels();
-		if (isGroundTruthTranscription) {
-			voiceLab = getVoiceLabels();
-			durationLab = getDurationLabels();
-		}
-		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
-		List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
+	List<TaggedNote> handleCourseCrossings(List<TaggedNote> argTaggedNotes, Tablature tab) {
+		List<List<TabSymbol>> tabChords = tab.getChords();
+		int notesPreceding = 0;
+		for (int i = 0; i < tabChords.size(); i++) {
+			List<Integer[]> CCInfo = tab.getCourseCrossingInfo(tabChords.get(i));
+			// If the chord contains a course crossing note pair
+			if (CCInfo != null) {
+				// For each course crossing note pair in the chord (there should be only one)
+				for (Integer[] in : CCInfo) {
+					// 1. Determine indices of the lower and upper course crossing note
+					int indLower = notesPreceding + in[2];
+					int indUpper = notesPreceding + in[3];
+					Note noteLower = argTaggedNotes.get(indLower).getNote();
+					Note noteUpper = argTaggedNotes.get(indUpper).getNote();
 
-		// For every chord
-		for (int i = 0; i < tablatureChords.size(); i++) {
-			// If the chord contains a course crossing
-			if (tablature.getCourseCrossingInfo(i) != null) {
-				Integer[][] chordCrossingInfo = tablature.getCourseCrossingInfo(i);
-				// For each course crossing in the chord
-				for (int j = 0; j < chordCrossingInfo.length; j++) {
-					// 1. Determine the indices in noteSeq, voiceLab, and durationLab of the lower and upper CCnotes
-					// a. Calculate the number of Notes preceding the CC chord by summing the size of all previous chords
-					int notesPreceding = 0;
-					for (int k = 0; k < i; k++) {
-						notesPreceding += transcriptionChords.get(k).size();
-					}
-					// b. Calculate the indices
-					int indexOfLowerCCNote = notesPreceding + chordCrossingInfo[j][2];
-					int indexOfUpperCCNote = notesPreceding + chordCrossingInfo[j][3];
+					// 2. Adapt argTaggedNotes
+					Collections.swap(argTaggedNotes, indLower, indUpper);
 
-					// 2. Swap
-					noteSeq.swapNotes(indexOfLowerCCNote, indexOfUpperCCNote);
-					if (isGroundTruthTranscription) {
-						Collections.swap(voiceLab, indexOfLowerCCNote, indexOfUpperCCNote);
-						Collections.swap(durationLab, indexOfLowerCCNote, indexOfUpperCCNote);
-					}
-
-					// 3. Concat information to adaptations
-					adaptations = adaptations.concat("  Course crossing found in chord " + i + ": notes no. " + 
-						chordCrossingInfo[j][2] + " (pitch " + chordCrossingInfo[j][0]	+ ") and " + chordCrossingInfo[j][3] +
-						" (pitch " + chordCrossingInfo[j][1] + ") in that chord swapped in the NoteSequence; "+ "list of " + 
-						"voice labels and list of durations adapted accordingly." + "\n");
+					// TODO Without the below, this method can be static
+					handledNotes = handledNotes.concat(
+						"course crossing found in chord " + i + ": notes " + (indLower - notesPreceding) + 
+						" (" + noteLower + ") and " + (indUpper - notesPreceding) + " (" + noteUpper + 
+						") swapped in list of tagged notes" + "\n");
 				}
 			}
-		}			
-		// Reset noteSequence, voiceLabels, and durationLabels
-		setNoteSequence(noteSeq);
-		if (isGroundTruthTranscription) {
-			setVoiceLabels(voiceLab);
-			setDurationLabels(durationLab);
+			notesPreceding += tabChords.get(i).size();
 		}
+		return argTaggedNotes;
 	}
 
 
 	/**
-	 * Checks whether the Transcription and Tablature are aligned by 
-	 * (1) comparing their number of notes;
-	 * (2) comparing the order of pitches and onset times in the Transcription's NoteSequence and in the 
-	 *     Tablature's basicTabSymbolProperties.
-	 * Returns <code>true</code> if both (1) and (2) are met, and <code>false</code> if not.     
+	 * Checks whether, after handling of SNUs and course crossings, the <code>Transcription</code> is 
+	 * aligned with the given <code>Tablature</code>, i.e., whether
+	 * <ol>
+	 * <li>They contain the same number of notes.</li>
+	 * <li>The notes are in the same order (in <code>notes</code> and in the <code>Tablature</code>'s 
+	 * <code>basicTabSymbolProperties</code>).</li>
+	 * </ol>
 	 * 
-	 * NB: Tablature case only; must be called after handleCourseCrossings().
+	 * Adds a summary of the findings to <code>alignmentCheck</code>.<br><br>     
 	 * 
-	 * @param tablature
-	 * @return
+	 * NB: Tablature case only; must be called after handling of SNUs and course crossings.
+	 * 
+	 * @param tab
+	 * @param argTaggedNotes
+	 * @return <code>true</code> if both conditions are met; else <code>false</code>.
 	 */
-	// TESTED
-	boolean checkAlignment(Tablature tablature) {
-		Integer[][] basicTabSymbolProperties = tablature.getBasicTabSymbolProperties();
-		NoteSequence noteSeq = getNoteSequence();
+	// NOT TESTED
+	static boolean checkAlignment(Tablature tab, List<TaggedNote> argTaggedNotes) {
+		Integer[][] btp = tab.getBasicTabSymbolProperties();
 
 		// 1. Check equality of number of notes
-		if (basicTabSymbolProperties.length != noteSeq.size()) {
-			alignmentDetails = alignmentDetails.concat("The Tablature contains " + basicTabSymbolProperties.length + 
-				" notes, and the Transcription contains " + noteSeq.size() + " notes.");		
+		if (btp.length != argTaggedNotes.size()) {
+			alignmentCheck = btp.length + " notes in Tablature, " + argTaggedNotes.size() + " in Transcription" + "\r\n";		
 			return false;
 		}
 
 		// 2. Check alignment
-		for (int i = 0; i < basicTabSymbolProperties.length; i++) {	
+		for (int i = 0; i < btp.length; i++) {	
 			// Get the pitch and onset time of the TS at index i
-			int pitchCurrentTabSymbol = basicTabSymbolProperties[i][Tablature.PITCH];
-			Rational onsetTimeCurrentTabSymbol = 
-				new Rational(basicTabSymbolProperties[i][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-			onsetTimeCurrentTabSymbol.reduce();
-			// Get the pitch and onset time of the Note at index i in noteSeq
-			Note currentNote = noteSeq.getNoteAt(i);
-			int pitchCurrentNote = currentNote.getMidiPitch();
-			Rational onsetTimeCurrentNote = currentNote.getMetricTime();
-			onsetTimeCurrentNote.reduce();
+			int pitchCurrTS = btp[i][Tablature.PITCH];
+			Rational onsetTimeCurrTS = new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN);
+			onsetTimeCurrTS.reduce();
+			// Get the pitch and onset time of the Note at index i
+			Note currNote = argTaggedNotes.get(i).getNote();
+			int pitchCurrNote = currNote.getMidiPitch();
+			Rational onsetTimeCurrNote = currNote.getMetricTime();
+			onsetTimeCurrNote.reduce();
 			// Compare
-			if (pitchCurrentTabSymbol != pitchCurrentNote || !onsetTimeCurrentTabSymbol.equals(onsetTimeCurrentNote)) {
-				alignmentDetails = alignmentDetails.concat("Misalignment found at note index " + i + " (chord index " + 
-					basicTabSymbolProperties[i][Tablature.CHORD_SEQ_NUM] + "; " + "sequence number " + 
-					basicTabSymbolProperties[i][Tablature.NOTE_SEQ_NUM] + "): pitch and onset time in " + 
-					"tablature are " + pitchCurrentTabSymbol + " and " + onsetTimeCurrentTabSymbol + "; pitch and onset " +
-					"time in transcription are " + pitchCurrentNote + " and " + onsetTimeCurrentNote + ".");
+			if (pitchCurrTS != pitchCurrNote || !onsetTimeCurrTS.equals(onsetTimeCurrNote)) {
+				if (alignmentCheck == null) {
+					alignmentCheck = "";
+				}
+				alignmentCheck = alignmentCheck.concat("Misalignment found at note index " + i + " (chord index " + 
+					btp[i][Tablature.CHORD_SEQ_NUM] + "; " + "sequence number " + 
+					btp[i][Tablature.NOTE_SEQ_NUM] + "): pitch and onset time in " + 
+					"tablature are " + pitchCurrTS + " and " + onsetTimeCurrTS + "; pitch and onset " +
+					"time in transcription are " + pitchCurrNote + " and " + onsetTimeCurrNote + "."  + "\r\n");
 				return false;
 			}
 		}
@@ -1685,58 +1430,774 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Sets meterInfo.
+	 * Handles unisons. Iterates through the given list of unhandled <code>Note</code>s and
+	 * checks for unison note pairs. If a <code>Note</code> in the list is not part of a unison 
+	 * note pair, it is added to the list of <code>TaggedNote</code>s returned as a simple 
+	 * <code>TaggedNote</code>; else, the unison note pair is handled at once:
 	 * 
-	 * NB: Non-tablature case only.
+	 * <ul>
+	 * <li>The unison notes are added as full <code>TaggedNote</code>s 
+	 *     <ul>
+	 *     <li>If the unison notes have the same duration: the lower (lower-voice) unison note 
+	 *         first.</li>
+	 *     <li>If the unison notes have different durations: the unison note that has the longer
+	 *         duration first.</li>
+	 *     </ul>
+	 * </li>
+	 * <li>The unison voices are set in the full <code>TaggedNote</code>s
+	 *     <ul>
+	 *     <li>If the unison notes have the same duration: with the lower voice first.</li>
+	 *     <li>If the unison notes have different durations: with the voice that contains 
+	 *         the note that has the longer duration first.</li>
+	 *     </ul>
+	 * </li>         
+	 * <li>The unison durations are set in the full <code>TaggedNote</code>s, with the longer 
+	 *     duration first.</li>
+	 * <li>The index of the respective complementary unison note is set in the full <code>TaggedNote</code>s.</li>
+	 * </ul>
+	 * 
+	 * Adds a summary of the findings to <code>handledNotes</code>.<br><br>
+	 * 
+	 * NB1: This method presumes that a chord contains only one unison.<br>
+	 * NB2: The notes in a unison note pair do not necessarily have successive indices.<br>
+	 * NB3: Non-tablature case only.
+	 * 
+	 * @param argNotes
+	 * @return
 	 */
-	private void setMeterInfo(File file) {
-//		File file = getFile();
-		String[] contents = file.list();
-		for (String s: contents) {
-			if (s.endsWith(".txt")) {
-				File meterFile = new File(file + "/" + s);
-				String meterInfoString = ToolBox.readTextFile(meterFile);
-//				meterInfo = Tablature.createMeterInfo(meterInfoString);
+	// TESTED
+	List<TaggedNote> handleUnisons(List<Note> argNotes) {
+		List<TaggedNote> argTaggedNotes = new ArrayList<>();
+		argNotes.forEach(n -> argTaggedNotes.add(new TaggedNote(n)));
+
+		List<List<Note>> argChords = getChordsFromNotes(argNotes);
+		int notesPreceding = 0;
+		for (int i = 0; i < argChords.size(); i++) {
+			Integer[][] unisonInfo = getUnisonInfo(argChords.get(i));
+			// If the chord contains a unison note pair
+			if (unisonInfo != null) {
+				// For each unison note pair in the chord (there should be only one)
+				for (Integer[] in : unisonInfo) {
+					// 1. Determine indices
+					// a. Indices of the lower and upper unison note   
+					int indLower = notesPreceding + in[1];
+					int indUpper = notesPreceding + in[2];
+					Note noteLower = argNotes.get(indLower);
+					Note noteUpper = argNotes.get(indUpper);
+					// b. Indices of the longer and shorter unison note
+					Rational durLower = argNotes.get(indLower).getMetricDuration();
+					Rational durUpper = argNotes.get(indUpper).getMetricDuration();
+
+					// 2. Set argTaggedNotes
+					// a. If the unison notes have the same duration
+					if (durLower.isEqual(durUpper)) {
+//						argVoicesUnison.set(indLower, new Integer[]{
+//							findVoice(argNotes.get(indLower)), findVoice(argNotes.get(indUpper)),
+//							indUpper, isEDU
+//						});
+//						argVoicesUnison.set(indUpper, new Integer[]{
+//							findVoice(argNotes.get(indLower)), findVoice(argNotes.get(indUpper)),
+//							indLower, isEDU
+//						});
+						Integer[] argVoicesUnison = 
+							new Integer[]{findVoice(argNotes.get(indLower)), 
+							findVoice(argNotes.get(indUpper))};
+						Rational[] argDurationsUnison = new Rational[]{durLower, durUpper};
+						argTaggedNotes.set(indLower, new TaggedNote(
+							argNotes.get(indLower), argVoicesUnison, argDurationsUnison, indUpper)
+						);
+						argTaggedNotes.set(indUpper, new TaggedNote(
+							argNotes.get(indUpper), argVoicesUnison, argDurationsUnison, indLower)
+						);
+						
+					}
+					// b. If the unison notes have different durations
+					else {
+						int indLonger = durLower.isGreater(durUpper) ? indLower : indUpper;
+						int indShorter = durLower.isGreater(durUpper) ? indUpper : indLower;
+//						argVoicesUnison.set(indLower, new Integer[]{
+//							findVoice(argNotes.get(indLonger)), findVoice(argNotes.get(indShorter)),
+//							indUpper, isEDU
+//						});
+//						argVoicesUnison.set(indUpper, new Integer[]{
+//							findVoice(argNotes.get(indLonger)), findVoice(argNotes.get(indShorter)),
+//							indLower, isEDU
+//						});
+						Integer[] argVoicesUnison = 
+							new Integer[]{findVoice(argNotes.get(indLonger)), 
+							findVoice(argNotes.get(indShorter))}; 
+						Rational[] argDurationsUnison = 
+							new Rational[]{durLower.max(durUpper), durLower.min(durUpper)};
+						argTaggedNotes.set(indLower, new TaggedNote(
+							argNotes.get(indLonger), argVoicesUnison, argDurationsUnison, indUpper));
+						argTaggedNotes.set(indUpper, new TaggedNote(
+							argNotes.get(indShorter), argVoicesUnison, argDurationsUnison, indLower));
+						// TODO not needed (but clearer?)
+						if (durLower.isLess(durUpper)) {
+							Collections.swap(argNotes, indLower, indUpper);
+						}
+					}
+
+					if (handledNotes == null) {
+						handledNotes = "";
+					}
+					handledNotes = handledNotes.concat(
+						"unison found in chord " + i + ": notes " + (indLower - notesPreceding) + 
+						" (" + noteLower +	") and " + (indUpper - notesPreceding) + " (" + noteUpper +
+						")" + (durLower.isLess(durUpper) ? " swapped in list of tagged notes" : 
+						"in correct order") + "\n");
+				}
+			}
+			notesPreceding += argChords.get(i).size();
+		}
+		return argTaggedNotes;
+	}
+
+
+	/**
+	 * Gets information on the unison notes in the given chord. A unison occurs when two different 
+	 * notes in the same chord have the same pitch.  
+	 *
+	 * NB1: This method presumes that a chord contains only one unison.<br>
+	 * NB2: Non-tablature case only.
+	 *
+	 * @param argChord
+	 * @return An Integer[][], each element of which represents a unison note pair (starting from below 
+	 *         in the chord) containing
+	 *         <ul>
+	 *         <li>As element 0: the pitch (as a MIDInumber) of the unison notes.</li>
+	 *         <li>As element 1: the sequence number in the chord of the lower unison note.</li>
+	 *         <li>As element 2: the sequence number in the chord of the upper unison note.</li>
+	 *         </ul>
+	 *         or <code>null</code> if the chord does not contain any unisons.
+	 */
+	// TESTED
+	static Integer[][] getUnisonInfo(List<Note> argChord) {
+		Integer[][] unisonInfo = null;
+
+		List<Integer> pitchesInChord = getPitchesInChord(argChord);
+		List<Integer> uniquePitchesInChord = 
+			pitchesInChord.stream().distinct().collect(Collectors.toList());
+		int numUnisons = pitchesInChord.size() - uniquePitchesInChord.size();
+		if (numUnisons > 0) {
+			unisonInfo = new Integer[numUnisons][3];
+			// For each pitch: search the remainder of pitchesInChord for the same pitch
+			// (the upper unison note) 
+			int currRow = 0;
+			for (int i = 0; i < pitchesInChord.size(); i++) {
+				int currentPitch = pitchesInChord.get(i);        
+				for (int j = i + 1; j < pitchesInChord.size(); j++) {
+					if (pitchesInChord.get(j) == currentPitch) {
+						unisonInfo[currRow] = new Integer[]{currentPitch, i, j};
+						currRow++;
+						break;
+					}
+				} 
 			}
 		}
+		return unisonInfo;
 	}
-	
-	
+
+
+	void setNotes() {
+		notes = makeNotes();
+	}
+
+
+	// TESTED
+	List<Note> makeNotes() {
+		List<Note> argNotes = new ArrayList<>();
+		getTaggedNotes().forEach(tn -> argNotes.add(tn.getNote()));
+//		System.out.println(argNotes.get(0));
+//		System.out.println(argNotes.get(0).getPerformanceNote());
+//		System.out.println(argNotes.get(0).getPerformanceNote() instanceof MidiNote);
+//		System.exit(0);
+		return argNotes;
+	}
+
+
+	void setChords() {
+		chords = getChordsFromNotes(getNotes());
+	}
+
+
+	void setVoiceLabels(List<List<Double>> argVoiceLabels, boolean argIsTablatureCase) {
+		voiceLabels = 
+			argVoiceLabels == null ? makeVoiceLabels(argIsTablatureCase) : argVoiceLabels;
+	}
+
+
+	// TESTED
+	List<List<Double>> makeVoiceLabels(boolean argIsTablatureCase) {
+		List<List<Double>> argVoiceLabels = new ArrayList<List<Double>>(); 
+		getTaggedNotes().forEach(tn -> {
+			if (argIsTablatureCase) {
+				argVoiceLabels.add(createVoiceLabel(
+					tn.getVoices() == null ? new Integer[]{findVoice(tn.getNote())} : 
+					tn.getVoices()));
+			}
+			else {
+				argVoiceLabels.add(createVoiceLabel(new Integer[]{findVoice(tn.getNote())}));
+			}
+		});
+		return argVoiceLabels;
+	}
+
+
+	void setChordVoiceLabels(Tablature tab) {
+		chordVoiceLabels = makeChordVoiceLabels(getVoiceLabels(), 
+			tab != null ? tab.getChords() : null, getChords());
+	}
+
+
+	// TESTED
+	static List<List<List<Double>>> makeChordVoiceLabels(List<List<Double>> argVoiceLabels, 
+		List<List<TabSymbol>> argTabChords, List<List<Note>> argChords) {
+		List<List<List<Double>>> argChordVoiceLabels = new ArrayList<List<List<Double>>>();
+		int lowestNoteInd = 0;
+		for (int i = 0; i < (argTabChords != null ? argTabChords.size() : argChords.size()); i++) {
+			int currChordSize = 
+				argTabChords != null ? argTabChords.get(i).size() : argChords.get(i).size();
+			argChordVoiceLabels.add(new ArrayList<List<Double>>(
+				argVoiceLabels.subList(lowestNoteInd, lowestNoteInd + currChordSize)));
+			lowestNoteInd += currChordSize;
+		}
+		return argChordVoiceLabels;
+	}
+
+
+	void setDurationLabels(List<List<Double>> argDurLabels) {
+		durationLabels = argDurLabels == null ? makeDurationLabels() : argDurLabels;
+	}
+
+
+	// TESTED 
+	List<List<Double>> makeDurationLabels() {
+		List<List<Double>> argDurLabels = new ArrayList<List<Double>>(); 
+		getTaggedNotes().forEach(tn -> 	
+			argDurLabels.add(createDurationLabel(
+				tn.getDurations() == null ? 
+					new Integer[]{Tablature.getTabSymbolDur(tn.getNote().getMetricDuration())} :
+				new Integer[]{Tablature.getTabSymbolDur(tn.getDurations()[0]), 
+					Tablature.getTabSymbolDur(tn.getDurations()[1])}	
+//				(Integer[]) Arrays.stream(tn.getDurations()).map(d -> Tablature.getTabSymbolDur(d)).toArray()
+		)));
+		return argDurLabels;
+	}
+
+
+	void setMinimumDurationLabels(Tablature tab) {
+		minimumDurationLabels = makeMinimumDurationLabels(tab);
+	}
+
+
+	// TESTED
+	static List<List<Double>> makeMinimumDurationLabels(Tablature tab) {
+		List<List<Double>> minDurLabels = new ArrayList<>();
+		Arrays.stream(tab.getBasicTabSymbolProperties()).forEach(in -> 
+			minDurLabels.add(createDurationLabel(new Integer[]{in[Tablature.MIN_DURATION]})));
+//		for (Integer[] in : tab.getBasicTabSymbolProperties()) {
+//			minDurLabels.add(createDurationLabel(new Integer[]{in[Tablature.MIN_DURATION]}));
+//		}
+		return minDurLabels;
+	}
+
+
+	void setVoicesSNU() {
+		voicesSNU = makeVoicesSNU();
+	}
+
+
+	// TESTED
+	List<Integer[]> makeVoicesSNU() {
+		List<Integer[]> argVoicesSNU = new ArrayList<>();
+		getTaggedNotes().forEach(tn -> argVoicesSNU.add(tn.getVoices()));
+		return argVoicesSNU;
+	}
+
+
+	void setVoicesUnison() {
+		voicesUnison = makeVoicesUnison();
+	}
+
+
+	// TESTED
+	List<Integer[]> makeVoicesUnison() {
+		List<Integer[]> argVoicesUnison = new ArrayList<>();
+		getTaggedNotes().forEach(tn -> 
+			argVoicesUnison.add(tn.getVoices() == null ? null :
+				new Integer[]{tn.getVoices()[0], tn.getVoices()[1], 
+				tn.getIndexOtherUnisonNote(), tn.isEDU() ? 1 : 0}));
+		return argVoicesUnison;
+	}
+
+
+	void setVoicesEDU() {
+		voicesEDU = makeVoicesEDU();
+	}
+
+
+	// TESTED
+	List<Integer[]> makeVoicesEDU() {
+		List<Integer[]> argVoicesEDU = new ArrayList<>();
+		getVoicesUnison().forEach(in ->
+			argVoicesEDU.add(in == null ? null : 
+			(in[3] == 1 ? Arrays.copyOfRange(in, 0, 3) : null)));
+		return argVoicesEDU;
+	}
+
+
+	void setVoicesIDU() {
+		voicesIDU = makeVoicesIDU();
+	}
+
+
+	// TESTED
+	List<Integer[]> makeVoicesIDU() {
+		List<Integer[]> argVoicesIDU = new ArrayList<>();
+		getVoicesUnison().forEach(in ->
+			argVoicesIDU.add(in == null ? null : 
+			(in[3] == 0 ? Arrays.copyOfRange(in, 0, 3) : null)));
+		return argVoicesIDU;
+	}
+
+
+	void setBasicNoteProperties() {
+		basicNoteProperties = makeBasicNoteProperties();
+	}
+
+
+	// TESTED
+	Integer[][] makeBasicNoteProperties() {
+		List<Note> argNotes = getNotes();
+		List<List<Note>> argChords = getChords();
+		Integer[][] argBnp = new Integer[argNotes.size()][8];
+
+		int chordNum = 0;
+		Rational mt = new Rational(argNotes.get(0).getMetricTime());
+		for (int i = 0; i < argNotes.size(); i++) {
+			Note currNote = argNotes.get(i);
+			Integer[] bnpCurr = new Integer[8];
+
+			// 0. Pitch
+			bnpCurr[PITCH] = currNote.getMidiPitch();
+			// 1-2. Metric time
+			bnpCurr[ONSET_TIME_NUMER] = currNote.getMetricTime().getNumer();
+			bnpCurr[ONSET_TIME_DENOM] = currNote.getMetricTime().getDenom();
+			// 3-4. Duration
+			bnpCurr[DUR_NUMER] = currNote.getMetricDuration().getNumer();
+			bnpCurr[DUR_DENOM] = currNote.getMetricDuration().getDenom();
+			// 5. Chord number
+			if (currNote.getMetricTime().isGreater(mt)) {
+				chordNum += 1;
+				mt = currNote.getMetricTime();
+			}
+			bnpCurr[CHORD_SEQ_NUM] = chordNum;
+			// 6. The size of the chord the Note is in
+			int size = argChords.get(chordNum).size();
+			bnpCurr[CHORD_SIZE_AS_NUM_ONSETS] = size;
+			// 7. Sequence number in chord
+			bnpCurr[NOTE_SEQ_NUM] = argChords.get(chordNum).indexOf(currNote);
+
+			argBnp[i] = bnpCurr;
+		}
+		return argBnp;
+	}
+
+
+	void setNumberOfNewNotesPerChord() { 
+		numberOfNewNotesPerChord = makeNumberOfNewNotesPerChord();
+	}
+
+
+	// TESTED
+	List<Integer> makeNumberOfNewNotesPerChord() { 
+		List<Integer> argNumNewNotesPerChord = new ArrayList<Integer>();
+		getChords().forEach(ch -> argNumNewNotesPerChord.add(ch.size()));
+		return argNumNewNotesPerChord;
+	}
+
+
+	//////////////////////////////
+	//
+	//  G E T T E R S
+	//  for instance variables
+	//
+	public ScorePiece getScorePiece() {
+		return scorePiece;
+	}
+
+
+	public Piece getOriginalPiece() {
+		return originalPiece;
+	}
+
+
+	public String getName() {
+		return name; 
+	}
+
+
 	/**
-	 * Sets meterInfo.
+	 * Gets the meterInfo.
+	 * 
+	 * @return A list whose elements represent the meters in the piece. Each element contains<br>
+	 *         <ul>
+	 *         <li> As element 0: the numerator of the meter.</li>
+	 *         <li> As element 1: the denominator of the meter.</li>
+	 *         <li> As element 2: the first bar in the meter.</li>
+	 *         <li> As element 3: the last bar in the meter.</li>
+	 *         <li> As element 4: the numerator of the metric time of that first bar.</li>
+	 *         <li> As element 5: the denominator of the metric time of that first bar.</li>
+	 *         </ul>
+	 *    
+	 *         An anacrusis bar would be denoted with bar number 0; however, the current 
+	 *         approach is to pre-pad an anacrusis bar with rests, making it a complete bar.
+	 */
+	public List<Integer[]> getMeterInfo() {
+		return meterInfo;
+	}
+
+
+	/**
+	 * Gets the <i>keyInfo</i>.
+	 * 
+	 * @return A list whose elements represent the keys in the piece. Each element contains<br>
+	 *   <ul>
+	 *   <li> As element 0: the key, as a number of sharps (positive) or flats (negative).</li>
+	 *   <li> As element 1: the mode, where major = 0 and minor = 1.</li>
+	 *   <li> As element 2: the first bar in the key.</li>
+	 *   <li> As element 3: the last bar in the key.</li>
+	 *   <li> As element 4: the numerator of the metric time of that first bar.</li>
+	 *   <li> As element 5: the denominator of the metric time of that first bar.</li>
+	 *   </ul>
+	 */
+	public List<Integer[]> getKeyInfo() {
+		return keyInfo;
+	}
+
+
+	public List<TaggedNote> getTaggedNotes() {
+		return taggedNotes;
+	}
+
+
+	public List<Note> getNotes() {
+		return notes;
+	}
+
+
+	public List<List<Note>> getChords() {
+		return chords == null ? getChordsFromNotes(getNotes()) : chords;
+	}
+
+
+	/**
+	 * Gets the voice labels. Each voice label is a one-hot vector containing <code>MAX_NUM_VOICES</code>
+	 * elements; the index of the 1.0 indicates the voice encoded (where 0 denotes the highest voice). 
+	 * NB: In the case of a SNU, there are two voices encoded (i.e., the vector is a 'two-hot' vector). 
+	 * 
+	 * @return
+	 */
+	public List<List<Double>> getVoiceLabels() {
+		return voiceLabels;
+	}
+
+
+	public List<List<List<Double>>> getChordVoiceLabels() {
+		return chordVoiceLabels;
+	}
+
+
+	/**
+	 * Gets the duration labels. Each duration label is a one-hot vector containing <code>MAX_DUR</code>
+	 * elements; the index of the 1.0 indicates the full duration (as a TabSymbol duration) encoded 
+	 * (where 0 denotes the shortest TabSymbol duration, i.e., that of a semifusa (3)). 
+	 * NB: In the case of a SNU, if the SNU note has two durations, there are two durations encoded 
+	 * (i.e., the vector is a 'two-hot' vector). 
+	 * 
+	 * @return
+	 */
+	public List<List<Double>> getDurationLabels() {
+		return durationLabels;
+	}
+
+
+	public List<List<Double>> getMinimumDurationLabels() {
+		return minimumDurationLabels;
+	}
+
+
+	/**
+	 * Gets, for each SNU note, the voices, organised by the durations that the note has. 
+	 *  
+	 * @return A list containing for each non-SNU note <code>null</code>, and for each SNU note 
+	 *         an Integer[] containing
+	 * 	       <ul>
+	 *         <li>If the SNU note has two durations
+	 *             <ul>
+	 *             <li>As element 0: the voice that contains the SNU note having its longer duration.</li>
+	 *             <li>As element 1: the voice that contains the SNU note having its shorter duration.</li>
+	 *             </ul>
+	 *         </li>
+	 *         <li>If the SNU note has one duration
+	 * 		       <ul>
+	 *             <li>As element 0: the lower voice.</li>
+	 *             <li>As element 1: the higher voice.</li>
+	 *             </ul>
+	 *         </li> 
+	 *         </ul>
+	 */
+	public List<Integer[]> getVoicesSNU() {
+		return voicesSNU;
+	}
+
+
+	/**
+	 * Gets, for each unison note, the voices for it and the complementary unison note, organised 
+	 * by the durations that the notes have, as well as the index of the complementary unison note.
+	 *   
+	 * @return A list containing for each non-unison note <code>null</code>, and for each unison note
+	 *         an Integer[] containing
+	 *         <ul>
+	 *         <li>If the unison note and its complement have different durations
+	 *             <ul>
+	 *             <li>As element 0: the voice that contains the unison note that has the longer duration.</li>
+	 *             <li>As element 1: the voice that contains the unison note that has the shorter duration.</li>
+	 *             <li>As element 2: the index of the complementary unison note.</li>
+	 *             <li>As element 3: 0 (is not an EDU).</li>
+	 *             </ul>
+	 *         </li>
+	 *         <li>If the unison note and its complement have the same duration
+	 * 		       <ul>
+	 *             <li>As element 0: the lower voice.</li>
+	 *             <li>As element 1: the higher voice.</li>
+	 *             <li>As element 2: the index of the complementary unison note.</li>
+	 *             <li>As element 3: 1 (is an EDU).</li>
+	 *             </ul>
+	 *         </li>
+	 *         </ul>
+	 */
+	public List<Integer[]> getVoicesUnison() {
+		return voicesUnison;
+	}
+
+
+	/**
+	 * Gets, for each equal-duration unison (EDU) note, the voices for it and the complementary 
+	 * EDU note, as well as the index of the complementary EDU note.
+	 *   
+	 * @return A list containing for each non-EDU note <code>null</code>, and for each EDU note
+	 *         an <code>Integer[]</code> containing
+	 *         <ul>
+	 *             <li>As element 0: the lower voice.</li>
+	 *             <li>As element 1: the higher voice.</li>
+	 *             <li>As element 2: the index of the complementary EDU note.</li>
+	 *         </ul>
+	 */
+	public List<Integer[]> getVoicesEDU() {
+		return voicesEDU;
+	}
+
+
+	/**
+	 * Gets, for each inequal-duration unison (IDU) note, the voices for it and the complementary 
+	 * IDU note, as well as the index of the complementary IDU note.
+	 *   
+	 * @return A list containing for each non-IDU note <code>null</code>, and for each IDU note
+	 *         an <code>Integer[]</code> containing
+	 *         <ul>
+	 *             <li>As element 0: the voice that contains the IDU note that has the longer duration.</li>
+	 *             <li>As element 1: the voice that contains the IDU note that has the shorter duration.</li>
+	 *             <li>As element 2: the index of the complementary IDU note.</li>
+	 *         </ul>
+	 */
+	public List<Integer[]> getVoicesIDU() {
+		return voicesIDU;
+	}
+
+
+	/**
+	 * Gets the <i>basicNoteProperties</i>.
+	 *              
+	 * NB: Non-tablature case only.
+	 * 
+	 * @return An Integer[][], each element of which represents a note, and contains 
+	 *         <ul>
+	 *         <li>As element 0   : the Note's pitch (as a MIDInumber).</li>
+	 *         <li>As elements 1-2: the numerator and denominator of the Note's metric time 
+	 *                              (both reduced as much as possible).</li>
+	 *         <li>As elements 3-4: the numerator and denominator of the Note's metric duration 
+	 *                              (both reduced as much as possible).</li>
+	 *         <li>As element 5   : the sequence number of the chord the Note is in.</li>
+	 *         <li>As element 6   : the size of the chord the Note is in (as new onsets only, so not 
+	 *                              including any sustained Notes).</li>
+	 *         <li>As element 7   : the Note's sequence number in the chord, not including any sustained 
+	 *                              notes. The sequence number is based on pitch only; voice crossing are 
+	 *                              left out of consideration. Where two notes have the same pitch, the one 
+	 *                              with the longer duration is listed first.</li>
+	 * </ul>
+	 */
+	public Integer[][] getBasicNoteProperties() {
+		return basicNoteProperties;
+	}
+
+
+	/**
+	 * Gets the number of notes (new onsets only) per chord. 
 	 * 
 	 * NB: Non-tablature case only.
-	 */
-	void setMeterInfo() {
-		meterInfo = createMeterInfo(getPiece());
-	}
-	
-	
-	/**
-	 * Sets keyInfo.
 	 * 
-	 * @param argMeterInfo <code>null</code> in the non-tablature case.
+	 * @return
 	 */
-	void setKeyInfo(/*List<Integer[]> argMeterInfo*/) {
-////		if (meterInfo == null) {
-////			keyInfo = createKeyInfo(getPiece(), getMeterInfo());
-////		}
-//		keyInfo = (argMeterInfo == null) ? createKeyInfo(getPiece(), getMeterInfo()) : 
-//			createKeyInfo(getPiece(), argMeterInfo);
-		keyInfo = createKeyInfo(getPiece(), getMeterInfo());
+	public List<Integer> getNumberOfNewNotesPerChord() {
+		return numberOfNewNotesPerChord;
 	}
 
 
-	public void setColourIndices(List<List<Integer>> arg) {
-		colourIndices = arg;
+	public String getChordCheck() { // TODO remove?
+		return chordCheck;
 	}
 
 
-	public List<List<Integer>> getColourIndices() {
-		return colourIndices;
+	public String getAlignmentCheck() { // TODO remove?
+		return alignmentCheck;
 	}
 
 
+	////////////////////////////////
+	//
+	//  C L A S S  M E T H O D S
+	//  for class variables
+	//
+	public static void setMaxNumVoices(int arg) {
+		MAX_NUM_VOICES = arg;
+	}
+
+
+	////////////////////////////////
+	//
+	//  C L A S S  M E T H O D S
+	//  augmentation
+	//
+	/**
+	 * Augments the <code>Transcription</code>. There are three types of augmentation:
+	 * <ul>
+	 * <li>Reverse   : reverses the <code>Transcription</code>.</li>
+	 * <li>Deornament: removes all sequences of single-note chords shorter than the given
+	 *                 threshold duration from the <code>Transcription</code>, and lengthens 
+	 *                 the duration of the chord preceding a sequence by the total length 
+	 *                 of the removed sequence.</li>
+	 * <li>Rescale   : rescales (up or down) the <code>Transcription</code> durationally by the 
+	 *                 given rescale factor.</li>
+	 * </ul>
+	 * 
+	 * NB: See also <code>Tablature.augment()</code>.<br><br>
+	 * 
+	 * @param argEncoding   An augmented <code>Encoding</code>.
+	 * @param thresholdDur  Applies only if augmentation is "deornament". The threshold duration; 
+	 *                      all single-note chords with a duration shorter than this duration are 
+	 *                      considered ornamental and are removed.
+	 * @param rescaleFactor Applies only if augmentation is "rescale". A positive value doubles
+	 *                      all durations (e.g., 4/4 becomes 4/2); a negative value halves them 
+	 *                      (4/4 becomes 4/8).
+	 * @param augmentation  One of "reverse", "deornament", or "rescale".
+	 */
+	// NOT TESTED (wrapper method)
+	public void augment(Encoding argEncoding, Rational thresholdDur, int rescaleFactor, String augmentation) {
+		ScorePiece sp = getScorePiece();
+		sp.augment(getMirrorPoint(), getChords(), getAllOnsetTimes(), thresholdDur, 
+			rescaleFactor, augmentation);
+		this.init(sp, argEncoding, /*null,*/ null, null, Type.AUGMENTED);
+	}
+
+
+	/**
+	 * Gets the mirrorPoint, i.e., the start time of the fictional bar after the last bar, which is 
+	 * needed for reversing the piece. If the piece has an anacrusis, the last bar will be a full 
+	 * bar (i.e., the original, shortened last bar to which the length of the anacrusis is added).
+	 * 
+	 * @return
+	 */
+	// TESTED
+	public Rational getMirrorPoint() {
+		Rational mirrorPoint = Rational.ZERO;
+
+		List<Integer[]> mi = getMeterInfo();
+
+		ScoreMetricalTimeLine smtl = getScorePiece().getScoreMetricalTimeLine();
+//		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
+		// For each voice
+		for (NotationStaff ns : getScorePiece().getScore()) {	
+			for (NotationVoice nv : ns) {
+				Rational currMirrorPoint = Rational.ZERO;
+				// 1. Determine the onset- and offset time of the last note in the voice
+				NotationChord lastNc = nv.get(nv.size() - 1);
+				Rational onsetTimeLastNote = lastNc.getMetricTime();
+				Rational offsetTimeLastNote = Rational.ZERO;
+				for (Note n : lastNc) {
+					Rational offsetTime = n.getMetricTime().add(n.getMetricDuration());
+					if (offsetTime.isGreater(offsetTimeLastNote)) {
+						offsetTimeLastNote = offsetTime;	
+					}
+				}
+
+				// 2. Get the metric position of the onset and offset of the last note and determine
+				// the onset- and offset bar(s) as well as the onset meter 
+				// NB: The offset time of the last note must be reduced to ensure that it falls with the bar 
+				// (if it coincides with the final barline, offsetTimeLastNote will not have a metric position)
+				Rational[] metPosOnset = 
+					smtl.getMetricPosition(onsetTimeLastNote);
+//					ScoreMetricalTimeLine.getMetricPosition(mtl, onsetTimeLastNote);
+//					Utils.getMetricPosition(onsetTimeLastNote, mi);
+				Rational reduction = new Rational(1, 128);
+				Rational[] metPosOffset = 
+					smtl.getMetricPosition(offsetTimeLastNote.sub(reduction));	
+//					ScoreMetricalTimeLine.getMetricPosition(mtl, offsetTimeLastNote.sub(reduction));	
+//					Utils.getMetricPosition(offsetTimeLastNote.sub(reduction), mi);
+				// Onset- and offset bar(s)
+				int barNumOnset = metPosOnset[0].getNumer();
+				int barNumOffset = metPosOffset[0].getNumer();
+				// Onset bar meter
+				Rational meterOnset = null;
+				for (Integer[] currMeter : mi) {
+					if (barNumOnset >= currMeter[MI_FIRST_BAR] && barNumOnset <= currMeter[MI_LAST_BAR]) {
+						meterOnset = new Rational(currMeter[MI_NUM], currMeter[MI_DEN]);
+					}
+				}
+
+				// 3. Determine currMirrorPoint
+				// Determine the distance of the note's onset to the beginning of the (possibly fictional) next bar 
+				Rational distanceFromOnsetToNextBar = meterOnset.sub(metPosOnset[1]);
+				// If the note's onset and offset are not in the same bar: determine the total duration of all 
+				// succeeding bars	
+				Rational durSucceedingBars = Rational.ZERO;
+				if (barNumOffset > barNumOnset) {     	
+					for (int i = barNumOnset + 1; i <= barNumOffset; i++) {
+						for (Integer[] currMeter : mi) {
+							if (i >= currMeter[MI_FIRST_BAR] && i <= currMeter[MI_LAST_BAR]) { 
+								durSucceedingBars = 
+									durSucceedingBars.add(new Rational(currMeter[MI_NUM], currMeter[MI_DEN]));
+							}
+						}
+					}
+				}
+				currMirrorPoint = 
+					onsetTimeLastNote.add(distanceFromOnsetToNextBar).add(durSucceedingBars);
+				if (currMirrorPoint.isGreater(mirrorPoint)) {
+					mirrorPoint = currMirrorPoint;
+				}
+			}
+		}
+		return mirrorPoint;
+	}
+
+
+	////////////////////////////////
+	//
+	//  C L A S S  M E T H O D S
+	//  for class variables
+	//
 	/**
 	 * Returns the meter at the given metric time.
 	 * 
@@ -1745,11 +2206,12 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED
+	// TODO make instance method
 	public static Rational getMeter(Rational mt, List<Integer[]> meterInfo) {
-		for (Integer[] i : meterInfo) {
-			Rational curr = new Rational(i[0], i[1]);
-			Rational start = new Rational(i[4], i[5]);
-			int numBarsInMeter = (i[3] - i[2]) + 1; 
+		for (Integer[] in : meterInfo) {
+			Rational curr = new Rational(in[MI_NUM], in[MI_DEN]);
+			Rational start = new Rational(in[MI_NUM_MT_FIRST_BAR], in[MI_DEN_MT_FIRST_BAR]);
+			int numBarsInMeter = (in[MI_LAST_BAR] - in[MI_FIRST_BAR]) + 1; 
 			Rational end = start.add(curr.mul(numBarsInMeter));
 			if (mt.isGreaterOrEqual(start) && mt.isLess(end)) {
 				return curr;
@@ -1767,599 +2229,14 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED
+	// TODO make instance method
 	public static Rational getMeter(int bar, List<Integer[]> meterInfo) {
 		for (Integer[] in : meterInfo) {
-			if (bar >= in[2] && bar < in[3]+1) {
-				return new Rational(in[0], in[1]);
+			if (bar >= in[MI_FIRST_BAR] && bar < in[MI_LAST_BAR]+1) {
+				return new Rational(in[MI_NUM], in[MI_DEN]);
 			}
 		}
 		return null;
-	}
-
-
-	/**
-	 * Creates the meterInfo from the Transcription's Piece.
-	 *  
-	 * @return A list, each element of which represents a meter in the piece and contains:
-	 *   <ul>
-	 *   <li> as element 0: the numerator of the meter </li>
-	 *   <li> as element 1: the denominator of the meter </li>
-	 *   <li> as element 2: the first bar in the meter </li>
-	 *   <li> as element 3: the last bar in the meter </li>
-	 *   <li> as element 4: the numerator of the metric time of that first bar </li>
-	 *   <li> as element 5: the denominator of the metric time of that first bar </li>
-	 *   </ul>
-	 *   An anacrusis will be denoted with bar numbers 0-0.
-	 */
-	// TESTED
-	public static List<Integer[]> createMeterInfo(Piece piece) {		
-//		long[][] timeSigs = getPiece().getMetricalTimeLine().getTimeSignature();
-		long[][] timeSigs = piece.getMetricalTimeLine().getTimeSignature();
-		
-		int numTimeSigs = timeSigs.length;
-		int start = 1;
-		// If there is an anacrusis, start should be 0
-		if (numTimeSigs > 1) {
-			Rational firstTimeSig = new Rational((int)timeSigs[0][0], (int)timeSigs[0][1]);
-			Rational secondMetricTime = new Rational((int)timeSigs[1][3], (int)timeSigs[1][4]);
-			Rational secondTimeSig = new Rational((int)timeSigs[1][0], (int)timeSigs[1][1]);
-			// An anacrusis is assumed when first time sig is smaller than the second and the 
-			// metric time of the second time sig equals the first time sig
-			// NB When exporting a .sib file with a real anacrusis to MIDI, the anacrusis bar
-			// is padded with rests. To get a real anacrusis in a MIDI file, the anacrusis bar
-			// must thus be given its own meter
-			if (firstTimeSig.isLess(secondTimeSig) && secondMetricTime.equals(firstTimeSig)) {
-				start = 0;
-			}
-		}
-		List<Integer[]> mInfo = new ArrayList<Integer[]>();
-		
-		int numBars;
-		for (int i = 0; i < numTimeSigs; i++) {
-			long[] curr = timeSigs[i];
-			Rational currMeter = new Rational(curr[0], curr[1]);
-			Rational currMetricTime = new Rational(curr[3], curr[4]);
-			// If there is a next timesig
-			if ((i+1) < numTimeSigs) {
-				long[] next = timeSigs[i+1];
-				Rational nextMetricTime = new Rational(next[3], next[4]);
-				numBars = (int) (nextMetricTime.sub(currMetricTime)).div(currMeter).toDouble();
-			}
-			// If there is no next time sig
-			else {
-				// Determine the offset of the last note of the piece
-				Rational end = Rational.ZERO;
-//				for (NotationStaff ns : getPiece().getScore()) {
-				for (NotationStaff ns : piece.getScore()) {
-					NotationVoice nv = ns.get(0);
-					NotationChord lastNc = nv.get(nv.size() - 1);
-					Rational currEnd = lastNc.getMetricTime().add(lastNc.getMetricDuration());
-					if (currEnd.isGreater(end)) {
-						end = currEnd;
-					}
-				}
-				// Determine the remaining time in bars
-				Rational rem = end.sub(currMetricTime);
-				numBars = (rem.div(currMeter)).ceil();
-			}
-			mInfo.add(new Integer[]{(int)curr[0], (int)curr[1], start, start + (numBars - 1),
-				currMetricTime.getNumer(), currMetricTime.getDenom()});
-			start += numBars;
-		}		
-		return mInfo;
-	}
-
-
-	/**
-	 * Creates the keyInfo from the Transcription's Piece.
-	 *  
-	 * @return A list, each element of which represents a key in the piece and contains:
-	 *   <ul>
-	 *   <li> as element 0: the key, as a number of sharps (positive) or flats (negative) </li>
-	 *   <li> as element 1: the mode, where major = 0 and minor = 1 </li>
-	 *   <li> as element 2: the first bar in the key </li>
-	 *   <li> as element 3: the last bar in the key </li>
-	 *   <li> as element 4: the numerator of the metric time of that first bar </li>
-	 *   <li> as element 5: the denominator of the metric time of that first bar </li>
-	 *   </ul>
-	 */
-	// TESTED
-	public static List<Integer[]> createKeyInfo(Piece p, List<Integer[]> meterInfo) {
-		List<Integer[]> keyInfo = new ArrayList<Integer[]>();
-		
-		SortedContainer<Marker> keySigs = p.getHarmonyTrack();
-		int numKeySigs = keySigs.size();
-		for (int i = 0; i < numKeySigs; i++) {
-			KeyMarker km = (KeyMarker) keySigs.get(i);
-			int key = km.getAlterationNum(); 
-			// Reverse KeyMarker.Mode labels (minor = 0; major = 1)
-			int mode = Math.abs(km.getMode().getCode() -1);
-			Rational mt = km.getMetricTime();
-			// It is assumed that key signature changes only occur at the beginning of a bar
-			int firstBar = Tablature.getMetricPosition(mt, meterInfo)[0].getNumer();
-			int lastBar = -1;
-			// If there is a next keysig
-			if ((i+1) < numKeySigs) {
-				KeyMarker next = (KeyMarker) keySigs.get(i+1);
-				Rational mtNext = next.getMetricTime();
-				int firstBarNext = Tablature.getMetricPosition(mtNext, meterInfo)[0].getNumer();
-				lastBar = firstBarNext - 1;
-			}
-			else {
-				lastBar = meterInfo.get(meterInfo.size() -1)[3];
-			}
-			keyInfo.add(new Integer[]{key, mode, firstBar, lastBar, mt.getNumer(), mt.getDenom()});
-		}
-		return keyInfo;
-	}
-
-
-	void setMeterInfo(List<Integer[]> argMeterInfo) {
-		meterInfo = argMeterInfo;
-	}
-
-
-	/** 
-	 * Finds all unison notes in the Transcription, and if these are not listed in the correct order (i.e., 
-	 * with the unison note with the longer duration first)
-	 * (1) swaps these Notes in noteSequence;
-	 * (2) swaps the corresponding voice labels in voiceLabels.
-	 *      
-	 * Also sets equalDurationUnisonsInfo, a list the size of the number of notes in the Transcription, containing
-	 * for each element:
-	 *   a. if the note at that index is not a unison note or if the note at that index is part of a unison
-	 *      whose notes are of inequal length: <code>null</code>  
-	 *   b. if the note at that index is part of a unison whose notes are of equal length: an Integer[] containing
-	 *        as element 0: the voice of the lower unison note (which will be the lower voice; see initialiseNoteSequence())
-	 *        as element 1: the voice of the upper unison note (which will be the higher voice; see initialiseNoteSequence())
-	 *        as element 2: the index of the complementary (i.e., upper/lower) unison note    
-	 *  
-	 * If isGroundTruthTranscription is <code>false</code>, i.e., when the method is applied to a predicted 
-	 * Transcription, only noteSequence is adapted. 
-	 *  
-	 * NB: Non-tablature case only.
-	 */
-	// TESTED
-	void handleUnisons(boolean isGroundTruthTranscription) {
-		NoteSequence noteSeq = getNoteSequence();
-		List<List<Double>> voiceLab = getVoiceLabels();
-		List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
-
-		List<Integer[]> equalDurUnisonsInfo = new ArrayList<Integer[]>();
-		if (isGroundTruthTranscription) {
-			// Initialise equalDurUnisonsInfo with all elements set to null
-			for (int i = 0; i < noteSeq.size(); i++) {
-				equalDurUnisonsInfo.add(null);
-			}
-		}
-
-		// For every chord
-		for (int i = 0; i < transcriptionChords.size(); i++) {
-			// If the chord contains a unison
-			if (getUnisonInfo(i) != null) {
-				Integer[][] unisonChordInfo = getUnisonInfo(i);
-				// For each unison in the chord
-				for (int j = 0; j < unisonChordInfo.length; j++) {
-					// 1. Determine the indices in noteSeq and voiceLab of the lower and upper unison notes
-					// a. Calculate the number of Notes preceding the unison chord by summing the size of all previous chords
-					int notesPreceding = 0;
-					for (int k = 0; k < i; k++) {
-						notesPreceding += transcriptionChords.get(k).size();
-					}
-					// b. Calculate the indices in the noteSeq
-					int indexOfLowerUnisonNote = notesPreceding + unisonChordInfo[j][1];
-					int indexOfUpperUnisonNote = notesPreceding + unisonChordInfo[j][2];
-
-					// 2. Determine the durations of the unison notes
-					Rational durationLower = noteSeq.getNoteAt(indexOfLowerUnisonNote).getMetricDuration();
-					Rational durationUpper = noteSeq.getNoteAt(indexOfUpperUnisonNote).getMetricDuration();
-					// a. If the durations are the same: set appropriate elements of equalDurUnisonsInfo 
-					if (durationLower.equals(durationUpper)) {
-						if (isGroundTruthTranscription) { // EEND
-							List<Double> voiceLabelLower = voiceLab.get(indexOfLowerUnisonNote);
-							List<Double> voiceLabelUpper = voiceLab.get(indexOfUpperUnisonNote);
-							int voiceLower = voiceLabelLower.indexOf(1.0);
-							int voiceUpper = voiceLabelUpper.indexOf(1.0);
-							equalDurUnisonsInfo.set(indexOfLowerUnisonNote, new Integer[]{voiceLower, voiceUpper, indexOfUpperUnisonNote});
-							equalDurUnisonsInfo.set(indexOfUpperUnisonNote, new Integer[]{voiceLower, voiceUpper, indexOfLowerUnisonNote});
-						}
-					}
-					// b. If not, and the lower unison note is not the one with the longer duration: swap
-					else if (durationLower.isLess(durationUpper)) {
-						noteSeq.swapNotes(indexOfLowerUnisonNote, indexOfUpperUnisonNote);
-						if (isGroundTruthTranscription) {
-							Collections.swap(voiceLab, indexOfLowerUnisonNote, indexOfUpperUnisonNote);
-						}
-						// Concat information to adaptations
-						adaptations = adaptations.concat("  Unison found in chord " + i + ": notes no. " + unisonChordInfo[j][1] +
-							" (pitch " + unisonChordInfo[j][0] + ", duration " + durationLower + ") and " + unisonChordInfo[j][2] 
-							+ " (pitch " + unisonChordInfo[j][0] + ", duration " + durationUpper +
-								") in that chord swapped in the NoteSequence; list of voice labels adapted accordingly.");
-					}  
-				}
-			}
-		}		
-		// Reset noteSequence, voiceLabels; set equalDurationUnisonsInfo
-		setNoteSequence(noteSeq);
-		if (isGroundTruthTranscription) {
-			setVoiceLabels(voiceLab);
-			setEqualDurationUnisonsInfo(equalDurUnisonsInfo);
-		}
-	}
-
-
-	//TESTED (together with getEqualDurationUnisonsInfo())
-	void setEqualDurationUnisonsInfo(List<Integer[]> argEqualDurationUnisonsInfo) {
-		equalDurationUnisonsInfo = argEqualDurationUnisonsInfo;
-	}
-
-
-//	/**
-//	 * Sets equalDurationUnisonsInfo, a list the size of the number of notes in the Transcription, containing
-//	 *   a. if the note at that index is not a unison note or if the note at that index is part of a unison
-//	 *      whose notes are of inequal length: <code>null</code>  
-//	 *   b. if the note at that index is part of a unison whose notes are of equal length: a voice label (i.e.,
-//	 *      a List<Double>) containing two 1.0s, thus representing both correct voices.
-//	 * 
-//	 * NB: Non-tablature case only.
-//	 */
-//	void setEqualDurationUnisonsInfoBLA() {
-//		List<List<Double>> equalDurationUnisons = new ArrayList<List<Double>>();
-//		NoteSequence noteSeq = getNoteSequence(); 
-//		List<List<Double>> voiceLabels = getVoiceLabels();
-//		// Initialise equalDurationUnisons with all elements set to null
-//		for (int i = 0; i < noteSeq.size(); i++) {
-//			equalDurationUnisons.add(null);
-//		}
-//			
-//		// For all chords
-//		List<List<Note>> transcriptionChords = getTranscriptionChords();  
-//		for (int i = 0; i < transcriptionChords.size(); i++) {
-//			// If the chord contains a unison
-//			Integer[][] currentUnisonInfo = getUnisonInfo(i);
-//			if (currentUnisonInfo != null) {
-//				// For each unison
-//				for (int j = 0; j < currentUnisonInfo.length; j++) {
-//				  // 1. Determine the indices in noteSeq and voiceLabels of the lower and upper unison notes
-//		      // a. Calculate the number of Notes preceding the unison chord by summing the size of all previous chords
-//		   		int notesPreceding = 0;
-//		      for (int k = 0; k < i; k++) {
-//		      	notesPreceding += transcriptionChords.get(k).size();
-//		      }
-//		      // b. Calculate the indices in the NoteSequence
-//		      int indexOfLowerUnisonNote = notesPreceding + currentUnisonInfo[j][1];
-//		      int indexOfUpperUnisonNote = notesPreceding + currentUnisonInfo[j][2];
-//		      		      
-//		      // 2. If the unison notes have the same duration
-//		      Rational durationLower = noteSeq.getNoteAt(indexOfLowerUnisonNote).getMetricDuration();
-//		      Rational durationUpper = noteSeq.getNoteAt(indexOfUpperUnisonNote).getMetricDuration();
-//		      List<Double> voiceLabelLower = voiceLabels.get(indexOfLowerUnisonNote);
-//		      List<Double> voiceLabelUpper = voiceLabels.get(indexOfUpperUnisonNote);
-//		      if (durationLower.equals(durationUpper)) {
-//		        // Combine the voice labels
-//			      int indexOfOneInUpper = voiceLabelUpper.indexOf(1.0);
-//			      List<Double> correctVoices = new ArrayList<Double>(voiceLabelLower);
-//			      correctVoices.set(indexOfOneInUpper, 1.0);
-//		      	equalDurationUnisons.set(indexOfLowerUnisonNote, correctVoices);
-//		      	equalDurationUnisons.set(indexOfUpperUnisonNote, correctVoices);
-//		      }
-//				}
-//			}
-//		}	
-////		return equalDurationUnisons;
-//		equalDurationUnisonsInfo = equalDurationUnisons;
-//	}
-
-
-	/**
-	 * Sets <i>basicNoteProperties</i>, a two-dimensional Array in which the basic Note properties are stored.
-	 * It contains for each Note in row i the following properties:
-	 * in column 0: the Note's pitch (as a MIDInumber)
-	 * in column 1-2: the numerator and denominator of the Note's MetricTime (both reduced as much as possible)
-	 * in column 3-4: the numerator and denominator of the Note's MetricDuration (both reduced as much as possible)
-	 * in column 5: the sequence number of the chord the Note is in
-	 * in column 6: the size of the chord the Note is in (as new onsets only, so not including any sustained Notes)
-	 * in column 7: the Note's sequence number in the chord, not including any sustained notes. The sequence number
-	 *              is based on pitch only; voice crossing are left out of consideration. Where two notes have the 
-	 *              same pitch, the one with the longer duration is listed first.
-	 *              
-	 * NB: Non-tablature case only.
-	 */
-	// TESTED (together with getBasicNoteProperties())
-	void setBasicNoteProperties() {
-		NoteSequence noteSeq = getNoteSequence();
-		List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
-		basicNoteProperties = new Integer[noteSeq.size()][8];
-
-		// For each Note in noteSeq
-		for (int i = 0; i < noteSeq.size(); i++) {
-			Note currentNote = noteSeq.get(i);
-			Integer[] bnpCurrent = new Integer[8];
-
-			// 0. Pitch
-			bnpCurrent[PITCH] = currentNote.getMidiPitch();
-			// 1-2. MetricTime (i.e., the numerator and the denominator of the Rational MetricTime)
-			bnpCurrent[ONSET_TIME_NUMER] = currentNote.getMetricTime().getNumer();
-			bnpCurrent[ONSET_TIME_DENOM] = currentNote.getMetricTime().getDenom();
-			// 3-4. Duration (i.e., the numerator and the denominator of the Rational MetricDuration)
-			bnpCurrent[DUR_NUMER] = currentNote.getMetricDuration().getNumer();
-			bnpCurrent[DUR_DENOM] = currentNote.getMetricDuration().getDenom();
-			// 5. Chord number			
-			int chordNum = 0;
-			int seqNum = 0;
-			// Find the chord n is in; then determine chordNum (and seqNum)
-			for (int j = 0; j < transcriptionChords.size(); j++) {
-				List<Note> currentChord = transcriptionChords.get(j);
-				if (currentChord.contains(currentNote)) {
-					chordNum = j;
-					seqNum = currentChord.indexOf(currentNote);
-					break;
-				}
-			}
-			bnpCurrent[CHORD_SEQ_NUM] = chordNum;
-			// 6. The size of the chord the Note is in
-			int size = transcriptionChords.get(chordNum).size();
-			bnpCurrent[CHORD_SIZE_AS_NUM_ONSETS] = size;
-			// 7. Sequence number in chord
-			bnpCurrent[NOTE_SEQ_NUM] = seqNum;
-
-			// Add to currentBasicNoteProperties to basicNoteProperties
-			basicNoteProperties[i] = bnpCurrent;
-		}
-	}
-
-
-	/**
-	 * Arranges all Notes in the Transcription in chords. The Transcription is traversed from left to right, 
-	 * and the chords themselves are arranged starting with the lowest-voice Note. Rest events are not included
-	 * in the returned list.
-	 * NB: Is only called in the Transcription creation. On a complete Transcription, getTranscriptionChords()
-	 *     must be called. 
-	 *  
-	 * @return
-	 */
-	// TESTED (through getTranscriptionChords())
-	List<List<Note>> getTranscriptionChordsInternal() {
-		List<List<Note>> transcriptionChords = new ArrayList<List<Note>>();
-		NoteSequence noteSeq = getNoteSequence();
-
-		List<Note> currentChord = new ArrayList<Note>();
-		Note firstNote = noteSeq.getNoteAt(0);
-		Rational onsetTimeOfFirstNote = firstNote.getMetricTime();
-		currentChord.add(firstNote);
-		Rational onsetTimeOfPreviousNote = onsetTimeOfFirstNote;
-		// For each Note in noteSeq. The Notes are ordered according to (1) onset time, (2) lowest pitch first (if
-		// notes have the same onset time), (3) if the Notes have the same onset time and pitch: a. lowest voice 
-		// first (if thy have the same duration); b. longest duration first (if they have different durations
-		for (int i = 1; i < noteSeq.size(); i++) {
-			Note currentNote = noteSeq.getNoteAt(i);
-			Rational onsetTimeOfCurrentNote = currentNote.getMetricTime();
-			// If currentNote has the same onset time as previousNote, they belong to the same chord: add 
-			// currentNote to currentChord
-			if (onsetTimeOfCurrentNote.equals(onsetTimeOfPreviousNote)) {
-				currentChord.add(currentNote);
-			}
-			// If currentNote has a different onset time than previousNote, currentNote is the first note of the 
-			// next chord. Add currentChord to transcriptionChords, create a new currentChord, and add currentNote to it  
-			else {
-				transcriptionChords.add(currentChord);
-				currentChord = new ArrayList<Note>();
-				currentChord.add(currentNote);
-			}
-			onsetTimeOfPreviousNote = onsetTimeOfCurrentNote;
-		}
-		// Add the last chord to transcriptionChords
-		transcriptionChords.add(currentChord);
-		return transcriptionChords;
-	}
-
-
-	// TESTED (together with getTranscriptionChords())
-	void setTranscriptionChordsFinal() {
-		transcriptionChordsFinal = getTranscriptionChordsInternal();
-	}
-
-
-	/**
-	 * Gets the final version of the transcription chords. This method must only be used when the 
-	 * following conditions are satisified:
-	 * a) it is called directly on a completed transcription;
-	 * b) it is called after setTranscriptionChordsFinal() in createTranscription(). 
-	 * Otherwise, getTranscriptionChordsInternal() must be used. 
-	 * 
-	 * @return
-	 */
-	// TESTED (together with setTranscriptionChordsFinal()) (for both tablature- and non-tablature case)
-	public List<List<Note>> getTranscriptionChords() {
-		return transcriptionChordsFinal;
-	}
-
-
-	/**
-	 * Sets numberOfNewOnsetsPerChord, a List containing the number of new notes (new note onsets) in each 
-	 * Transcription chord.
-	 * NB: Non-tablature case only.
-	 * 
-	 * @return 
-	 */
-	// TESTED (together with getNumberOfNewNotesPerChord())
-	void setNumberOfNewNotesPerChord() { 
-//		public List<Integer> getNumberOfNewNotesPerChord() {
-		numberOfNewNotesPerChord = new ArrayList<Integer>();
-
-		List<List<Note>> transcriptionChords = getTranscriptionChords(); // conditions satisfied; external version OK
-		for (List<Note> l : transcriptionChords) {
-			numberOfNewNotesPerChord.add(l.size());
-		}
-//		return numberOfNewNotesPerChord;
-	}
-
-
-	/**
-	 * Gets the number of notes (new onsets) per chord. 
-	 * NB: Non-tablature case only.
-	 * 
-	 * @return
-	 */
-	// TESTED (together with setNumberOfNewNotesPerChord())
-	public List<Integer> getNumberOfNewNotesPerChord() {
-		return numberOfNewNotesPerChord;
-	}
-
-
-	/**
-	 * Sets chordVoiceLabels, the voice labels grouped per chord.
-	 * 
-	 * @param tablature Is <code>null</code> in the non-tablature case
-	 * @return
-	 */
-	// TESTED (together with getChordVoiceLabels()) (for both tablature- and non-tablature case)
-	void setChordVoiceLabels(Tablature tablature) {
-//		public List<List<List<Double>>> getChordVoiceLabels(Tablature tablature) {
-//		List<List<List<Double>>> chordVoiceLabels = new ArrayList<List<List<Double>>>();
-		chordVoiceLabels = new ArrayList<List<List<Double>>>();
-
-		// Get the most recent voice labels
-		List<List<Double>> voiceLabels = getVoiceLabels();
-
-		// a. In the tablature case
-		if (tablature != null) {
-			// Get the tablature chords 
-			List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
-
-			// Add the voice labels for each chord to chordVoiceLabels
-			int lowestNoteIndex = 0;
-			for (int j = 0; j < tablatureChords.size(); j++) {
-				List<TabSymbol> currentChord = tablatureChords.get(j); 
-				int currentChordSize = currentChord.size();
-				chordVoiceLabels.add(new ArrayList<List<Double>>(voiceLabels.subList(lowestNoteIndex, 
-					lowestNoteIndex + currentChordSize)));
-				lowestNoteIndex += currentChordSize;
-			}
-		}
-		// b. In the non-tablature case
-		else {
-			List<List<Note>> transcriptionChords = getTranscriptionChords(); // conditions satisfied; external version OK
-
-			// Add the voice labels for each chord to chordVoiceLabels
-			int lowestNoteIndex = 0;
-			for (int j = 0; j < transcriptionChords.size(); j++) {
-//			for (int j = 0; j < getNumberOfChords(); j++) {
-				List<Note> currentChord = transcriptionChords.get(j); 
-				int currentChordSize = currentChord.size();
-				chordVoiceLabels.add(new ArrayList<List<Double>>(voiceLabels.subList(lowestNoteIndex, 
-					lowestNoteIndex + currentChordSize)));
-				lowestNoteIndex += currentChordSize;
-			}
-		}
-//			return chordVoiceLabels;
-	}
-
-
-	// 2. Methods to be called when the Transcription is fully operational
-	// a. Methods applying to the tablature case only
-	// b. Methods applying to both the tablature and the non-tablature case
-	// c. Methods applying to the non-tablature case only
-	public Piece getPiece() {
-		return piece;
-	}
-
-
-	public String getPieceName() {
-		return pieceName; 
-	}
-
-
-	// TESTED (for both tablature- and non-tablature case)
-	public NoteSequence getNoteSequence() {
-		return noteSequence;
-	}
-
-
-	// TESTED (for both tablature- and non-tablature case)
-	public List<List<Double>> getVoiceLabels() {
-		return voiceLabels;
-	}
-
-
-	// TESTED (together with setChordVoiceLabels()) (for both tablature- and non-tablature case)
-	public List<List<List<Double>>> getChordVoiceLabels() {
-		return chordVoiceLabels;
-	}
-
-
-	// TESTED
-	public List<List<Double>> getDurationLabels() {
-		return durationLabels;
-	}
-
-
-	public List<Integer[]> getMeterInfo() {
-		return meterInfo;
-	}
-	
-	
-	public List<Integer[]> getKeyInfo() {
-		return keyInfo;
-	}
-
-
-	// TESTED (together with setBasicNoteProperties)
-	public Integer[][] getBasicNoteProperties() {
-		return basicNoteProperties;
-	}
-
-
-	// TESTED (together with setVoicesCoDNotes())
-	public List<Integer[]> getVoicesCoDNotes() {
-		return voicesCoDNotes;
-	}
-
-
-	//TESTED (together with setEqualDurationUnisonsInfo())
-	public List<Integer[]> getEqualDurationUnisonsInfo() {
-		return equalDurationUnisonsInfo;
-	}
-
-
-	/**
-	 * Gets the basicNoteProperties of the chord at the given index in the Transcription, i.e., the elements of 
-	 * <i>basicNoteProperties</i> corresponding to the Notes within that chord. 
-	 * 
-	 * NB: Non-tablature case only.
-	 * 
-	 * @param chordIndex 
-	 * @return
-	 */
-	// TESTED
-	Integer[][] getBasicNotePropertiesChord(int chordIndex) { // TODO not in use
-
-		// Determine the size of the chord at chordIndex and the index of the lowest note in it
-		int chordSize = 0;
-		int lowestNoteIndex = 0;
-		for (int i = 0; i < basicNoteProperties.length; i++) {
-			if (basicNoteProperties[i][CHORD_SEQ_NUM] == chordIndex) {
-				lowestNoteIndex = i;
-				chordSize = basicNoteProperties[i][CHORD_SIZE_AS_NUM_ONSETS];
-				break;
-			}
-		}
-
-		// Make basicNotePropertiesChord
-		Integer[][] basicNotePropertiesChord = 
-			Arrays.copyOfRange(basicNoteProperties, lowestNoteIndex, lowestNoteIndex + chordSize);    
-		return basicNotePropertiesChord;
-	}
-	
-	
-	public void transposeNonTab(int transpositionInterval) {
-		transpose(transpositionInterval);
-		// Redo the part in createTranscription() from setBasicNoteProperties() on. 
-		// setNumberOfNewNotesPerChord() and setChordVoiceLabels() need not be called again after
-		// setTranscriptionChordsFinal(), as there are no pitches involved in these methods
-		transcriptionChordsFinal = null;
-		setBasicNoteProperties();
-		setTranscriptionChordsFinal();	
 	}
 
 
@@ -2410,11 +2287,11 @@ public class Transcription implements Serializable {
 		List<List<Integer[]>> pitchesPerChordTrans = new ArrayList<>();
 		chord = new ArrayList<>();
 		for (int i = 0; i < bnp.length; i++) {
-			int pitch = bnp[i][Transcription.PITCH];
+			int pitch = bnp[i][PITCH];
 			chord.add(new Integer[]{i, pitch});
 			// Any but last note
 			if (i < bnp.length-1) {
-				if (bnp[i+1][Transcription.CHORD_SEQ_NUM] > bnp[i][Transcription.CHORD_SEQ_NUM]) {
+				if (bnp[i+1][CHORD_SEQ_NUM] > bnp[i][CHORD_SEQ_NUM]) {
 					pitchesPerChordTrans.add(chord);
 					chord = new ArrayList<>();
 				}
@@ -2611,8 +2488,7 @@ public class Transcription implements Serializable {
 		if (btp != null) {
 			for (int i = 0; i < btp.length; i++) {
 				int pitchCurr = btp[i][0];
-				Rational onsetCurr = 
-					new Rational(btp[i][3], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+				Rational onsetCurr = new Rational(btp[i][3], Tablature.SRV_DEN);
 //				Rational offsetCurr = onsetCurr.add(
 //					new Rational(btp[i][4], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()));
 				Rational offsetCurr = 
@@ -2629,6 +2505,743 @@ public class Transcription implements Serializable {
 			}
 		}
 		return tpm;
+	}
+
+
+	/**
+	 * Gets the pitches in the chord. Element 0 of the List represents the lowest note's pitch, element 1 the
+	 * second-lowest note's, etc. Sustained previous notes are NOT included. 
+	 * 
+	 * NB1: The List will always be in numerical order.
+	 * NB2: This method applies only to the non-tablature case
+	 * 
+	 * @param bnp
+	 * @param lowestNoteIndex
+	 * @return
+	 */
+	// TESTED
+	public static List<Integer> getPitchesInChord(Integer[][] bnp, int lowestNoteIndex) {
+		List<Integer> pitchesInChord = new ArrayList<Integer>();	
+		int chordSize = bnp[lowestNoteIndex][CHORD_SIZE_AS_NUM_ONSETS];
+		for (int i = lowestNoteIndex; i < lowestNoteIndex + chordSize; i++) {
+			Integer[] currentBasicNoteProperties = bnp[i];
+			int currentPitch = currentBasicNoteProperties[PITCH];
+			pitchesInChord.add(currentPitch);
+		}
+		return pitchesInChord;
+	}
+
+
+	/**
+	 * Gets the pitches in the given chord. Element 0 of the List represents the lowest note's pitch,
+	 * element 1 the second-lowest note's, etc. Sustained notes are not included. 
+	 * 
+	 * @param chord
+	 * @return
+	 */
+	// TODO test
+	public static List<Integer> getPitchesInChord(List<Note> chord) {
+		List<Integer> pitchesInChord = new ArrayList<Integer>();
+
+//		List<Note> transcriptionChord = null;
+//		// Use the no-final version of the chords when called in Transcription creation
+//		if (getChords() == null) {
+////		if (transcriptionChordsFinal == null) {
+//			transcriptionChord = getNoteSequenceChords().get(chordIndex);
+//		}
+//		// Otherwise use external version
+//		else {
+//			transcriptionChord = getChords().get(chordIndex);
+//		}
+
+		chord.forEach(n -> pitchesInChord.add(n.getMidiPitch()));
+//		for (Note n : chord) {
+//			pitchesInChord.add(n.getMidiPitch());
+//		}
+		return pitchesInChord;
+	}
+
+
+	/**
+	 * Convert input into a csv String, where each row is a 3D list representing a note (a list),
+	 * which consists of voices (each a list or null), which consist of notes (each a list).
+	 * 
+	 * @param lastNNotesPerVoicePerNote
+	 * @return
+	 */
+	public static String getLastNotesInVoicesString(List<List<List<Rational[]>>> 
+		lastNNotesPerVoicePerNote, String meter) {
+		StringBuffer testData = new StringBuffer();
+		// For each note
+		for (int i = 0; i < lastNNotesPerVoicePerNote.size(); i++) {
+			testData.append("[");
+			List<List<Rational[]>> allSeqsCurrNote = lastNNotesPerVoicePerNote.get(i);
+			// For each voice
+			for (int j = 0; j < allSeqsCurrNote.size(); j++) {
+				if (allSeqsCurrNote.get(j) == null) {
+					testData.append("None");
+				}
+				else {
+					testData.append("[");
+					List<Rational[]> seqCurrNote = allSeqsCurrNote.get(j);
+					// For each note in the voice
+					for (int k = 0; k < seqCurrNote.size(); k++) {
+						Rational[] note = seqCurrNote.get(k);
+						testData.append("[" + 
+							note[0].getNumer() + "," + // pitch
+							note[1] + "," + // onset
+							note[2] + "," + // dur
+							note[3] + "," + // metpos
+							meter // meter
+							);
+						testData.append("]");
+						if (k < seqCurrNote.size()-1) {
+							testData.append(",");
+						}
+					}
+					testData.append("]");
+				}
+				if (j < allSeqsCurrNote.size()-1) {
+					testData.append(",");
+				}
+			}
+			testData.append("]" + "\r\n");
+		}
+		return testData.toString();
+	}
+
+
+	/**
+	 * Using the given voice labels, lists for each voice the notes that belong to that voice. Returns a 
+	 * List<List>>, the first element of which corresponds to voice 0, the second to voice 1, etc. 
+	 * 
+	 * @param voiceLabels
+	 * @return
+	 */
+	// TESTED (for both tablature- and non-tablature case)
+	public static List<List<Integer>> listNotesPerVoice(List<List<Double>> voiceLabels) {
+		List<List<Integer>> notesPerVoice = new ArrayList<List<Integer>>();
+
+		// For each voice
+		for (int i = 0; i < MAX_NUM_VOICES; i++) {
+			int currentVoice = i;
+			List<Integer> notesInCurrentVoice = new ArrayList<Integer>();
+			// For each note: check whether the note at index j belongs to currentVoice. If so, add it to notesInCurrentVoice 
+			for (int j = 0; j < voiceLabels.size(); j++) {
+				List<Double> actualVoiceLabel = voiceLabels.get(j);
+				List<Integer> actualVoices = DataConverter.convertIntoListOfVoices(actualVoiceLabel);
+				if (actualVoices.contains(currentVoice)) {
+					notesInCurrentVoice.add(j);
+				}
+			}
+			notesPerVoice.add(notesInCurrentVoice);
+		}		
+		return notesPerVoice;
+	}
+
+
+	/**
+	 * Combines the two given labels into one label, containing the value 1.0 twice.
+	 * 
+	 * @param labelOne
+	 * @param labelTwo
+	 * @return
+	 */
+	// TESTED
+	public static List<Double> combineLabels(List<Double> labelOne, List<Double> labelTwo) { // TODO only used in testing: remove?
+		List<Double> combined = new ArrayList<Double>(labelOne);
+		int voiceTwo = labelTwo.indexOf(1.0);
+		combined.set(voiceTwo, 1.0);
+		return combined;
+	}
+
+
+	/**
+	 * Verifies that either basicTabSymbolProperties or basicNoteProperties == null (i.e., 
+	 * that the non-tablature case or the tablature case applies, respectively).
+	 * 
+	 * @param btp
+	 * @param bnp
+	 */
+	public static void verifyCase(Integer[][] btp, Integer[][] bnp) {
+		if ((btp != null && bnp != null) || (btp == null && bnp == null)) {
+			System.out.println("ERROR: if btp == null, bnp must not be, and vice versa" + "\n");
+			throw new RuntimeException("ERROR (see console for details)");
+		}
+	}
+
+
+	/**
+	 * Creates a voice label encoding the given voice(s).
+	 *   
+	 * @param voice The voices, integers ranging from 0 (the highest voice) to 
+	 *              MAX_NUM_VOICES - 1 (the lowest voice). 
+	 * @return
+	 */
+	// TESTED
+	public static List<Double> createVoiceLabel(Integer[] voices) {
+		Double[] voiceLabel = new Double[MAX_NUM_VOICES];
+		Arrays.setAll(voiceLabel, ind -> Arrays.asList(voices).contains(ind) ? 1.0 : 0.0);
+		return Arrays.asList(voiceLabel);
+	}
+
+
+	/**
+	 * Creates a duration label encoding the given duration(s).
+	 * 
+	 * NB: Tablature case only.
+	 *  
+	 * @param durations The durations as TabSymbol durations (brevis = whole note = 96, 
+	 * 				    semibrevis = half note = 48, etc.), integers ranging from 0 (the 
+	 *                  shortest duration) to MAX_TABSYMBOL_DUR - 1 (the longest duration). 
+	 *                  TabSymbol durations are always divisible by 3.
+	 * @return
+	 */
+	// TESTED
+	public static List<Double> createDurationLabel(Integer[] durations) {
+		List<Integer> durs = 
+			Arrays.asList(durations).stream().map(d -> ((d/3) - 1)).collect(Collectors.toList());
+		Double[] durLabel = new Double[MAX_TABSYMBOL_DUR];
+		Arrays.setAll(durLabel, ind -> durs.contains(ind) ? 1.0 : 0.0);
+		return Arrays.asList(durLabel);
+	}
+
+
+	/**
+	 * Given a Note with a pitch and a metricTime (its metricDuration is not taken into consideration), determines the
+	 * previous or next (depending on the value of the argument direction) Note in the given NotationVoice. There are 
+	 * two possibilities: 
+	 * 1. If voice contains note, the actual previous Note (or <code>null</code> if there is none) is returned;  
+	 * 2. If voice does not contain note, a fictional previous Note, i.e., a Note closest in onset time to note 
+	 *    (or <code>null</code> if there is none), is returned.
+	 *    
+	 * NB: This method presumes that a voice can contain only one Note at each metric time.
+	 * 
+	 * @param voice
+	 * @param note
+	 * @param directionIsLeft
+	 * @return
+	 */
+	// TESTED (for both fwd and bwd model)
+	public static Note getAdjacentNoteInVoice(NotationVoice voice, Note note, 
+		/*Direction direction*/ boolean directionIsLeft) {
+		Note adjacentNote = null;
+
+		// List all the Notes in voice
+		List<Note> notesInVoice = new ArrayList<Note>();
+		int seqNumOfCurrNote = -1;
+		for (int i = 0; i < voice.size(); i++) {
+			Note currNote = voice.get(i).get(0); 
+			notesInVoice.add(currNote);
+			if (currNote.getMidiPitch() == note.getMidiPitch() && currNote.getMetricTime().equals(note.getMetricTime())) {
+				seqNumOfCurrNote = i;
+			}
+		}
+
+		// Get the adjacent Note. There are two possibilities:
+		// a. If seqNumOfCurrNote is not -1, note is in voice; determine adjacentNote
+		// b. If seqNumOfCurrNote is -1, note is not in voice. In this case, a fictional adjacent note, i.e., the note
+		// closest in onset time to note, must be returned
+		if (directionIsLeft) {
+//		if (direction == Direction.LEFT) {
+			// a.
+			if (seqNumOfCurrNote != -1) {
+				// adjacentNote only exists if note is not the first Note in the voice
+				if (seqNumOfCurrNote != 0) {
+					adjacentNote = notesInVoice.get(seqNumOfCurrNote - 1);
+				}
+			}
+			// b.
+			else {
+				Note closest = null;
+				for (Note n : notesInVoice) {
+					if (n.getMetricTime().isLess(note.getMetricTime())) {
+						closest = n;
+					}
+					// Break when the onset time of n becomes equal to or greater than that of note; closest is now the last 
+					// smaller onset time
+					else {
+						break;
+					}
+				}
+				adjacentNote = closest;
+			}
+		}
+		else {
+//		else if (direction == Direction.RIGHT) {
+			// a.
+			if (seqNumOfCurrNote != -1) {
+				// adjacentNote only exists if note is not the last Note in the voice
+				if (seqNumOfCurrNote != (voice.size() - 1)) {
+					adjacentNote = notesInVoice.get(seqNumOfCurrNote + 1);
+				}
+			}
+			// b. 
+			else {
+				Note closest = null;
+				for (Note n : notesInVoice) {
+					// Break when the onset time of n becomes greater than that of note; closest is now the first greater 
+					// onset time
+					if (n.getMetricTime().isGreater(note.getMetricTime())) {
+						closest = n;
+						break;
+					}
+				}
+				adjacentNote = closest;
+			}
+		}
+		return adjacentNote;
+	}
+
+
+	/**
+	 * Gets the indices of all previous notes that are still sounding at the onset time of the
+	 * note at noteIndex, i.e., all previous notes whose offset time is greater than the 
+	 * onset time of the note at noteIndex.
+	 * 
+	 * @param btp
+	 * @param durationLabels
+	 * @param bnp
+	 * @param noteIndex
+	 * @return
+	 */
+	// TESTED (for both tablature- and non-tablature case) 
+	public static List<Integer> getIndicesOfSustainedPreviousNotes(Integer[][] btp, 
+		List<List<Double>> durationLabels, Integer[][] bnp, int noteIndex) {
+
+		verifyCase(btp, bnp);
+		List<Integer> indicesOfSustainedPreviousNotes = new ArrayList<Integer>();
+
+		// 1. Determine the onset time of the current note and the index of the first note in the chord
+		Rational onsetTimeCurrentNote = null;
+		int lowestNoteIndex = -1;
+		// a. In the tablature case
+		if (btp != null) {
+			onsetTimeCurrentNote = new Rational(btp[noteIndex][Tablature.ONSET_TIME],
+				Tablature.SRV_DEN);
+			lowestNoteIndex = noteIndex - btp[noteIndex][Tablature.NOTE_SEQ_NUM];
+		}
+		// b. In the non-tablature case
+		else if (bnp != null) {
+			onsetTimeCurrentNote = 
+				new Rational(bnp[noteIndex][ONSET_TIME_NUMER], bnp[noteIndex][ONSET_TIME_DENOM]);
+			lowestNoteIndex = noteIndex - bnp[noteIndex][NOTE_SEQ_NUM];		
+		}
+
+		// 2. For all notes in the previous chord(s): add indices of the notes with an offset
+		// time greater than onsetTimeCurrentNote to indicesOfSustainedPreviousNotes
+		for (int i = 0; i < lowestNoteIndex; i++) {
+			// 1. Determine the metric time and the metric duration of the current previous note
+			Rational metricTimeCurrentPreviousNote = null;
+			Rational durationCurrentPreviousNote = null;
+			// a. In the tablature case
+			if (btp != null) {
+				// Determine the metric time
+				metricTimeCurrentPreviousNote = new Rational(btp[i][Tablature.ONSET_TIME],	
+					Tablature.SRV_DEN);
+				// Determine the duration. In the case of a CoD, the longer duration of the CoDnote must be considered:
+				// if this duration does not cause note overlap, the CoDnote will not cause note overlap at all). In 
+				// both cases this is the first element of durationCurrentPreviousNote
+				List<Double> durationLabelCurrentPreviousNote = durationLabels.get(i);
+				durationCurrentPreviousNote = 
+					DataConverter.convertIntoDuration(durationLabelCurrentPreviousNote)[0];
+			}
+			// b. In the non-tablature case
+			else if (bnp != null) {
+				// Determine the metric time
+				metricTimeCurrentPreviousNote = 
+					new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM]);
+				// Determine the duration
+				durationCurrentPreviousNote = 
+					new Rational(bnp[i][DUR_NUMER], bnp[i][DUR_DENOM]);
+			}
+			// 2. Determine the offset time of the current previous note; add i to indicesOfSustainedPreviousNotes if
+			// the offset time is larger than the onset time of the note at noteIndex
+			Rational offsetTimeCurrentPreviousNote = metricTimeCurrentPreviousNote.add(durationCurrentPreviousNote);
+			if (offsetTimeCurrentPreviousNote.isGreater(onsetTimeCurrentNote)) {
+				indicesOfSustainedPreviousNotes.add(i);
+			}
+		}
+		return indicesOfSustainedPreviousNotes;
+	}
+
+
+	/**
+	 * Gets the pitches of all previous notes that are still sounding at the onset time of the chord, i.e., all
+	 * previous notes whose offset time is greater than the onset time of the note at lowestNoteIndex. These
+	 * pitches are listed in the sequence in which the notes are encountered; thus, the List returned is not 
+	 * necessarily sorted numerically.
+	 *  
+	 * @param btp
+	 * @param durationLabels 
+	 * @param bnp
+	 * @param lowestNoteIndex
+	 * @return
+	 */
+	// TESTED (for both tablature- and non-tablature case)
+	public static List<Integer> getPitchesOfSustainedPreviousNotesInChord(Integer[][] btp, List<List<Double>> durationLabels,
+		Integer[][] bnp, int lowestNoteIndex) {
+
+		verifyCase(btp, bnp);
+
+		List<Integer> pitchesOfSustainedPreviousNotes = new ArrayList<Integer>();
+
+		// Get the indices of the sustained previous notes
+		List<Integer> indicesOfSustainedPreviousNotes = getIndicesOfSustainedPreviousNotes(btp, durationLabels,
+			bnp, lowestNoteIndex);
+
+		// Create the list of pitches
+		for (int i : indicesOfSustainedPreviousNotes) {
+			// a. In the tablature case
+			if (btp != null) {
+				pitchesOfSustainedPreviousNotes.add(btp[i][Tablature.PITCH]);
+			}
+			// b. In the non-tablature case
+			if (bnp != null) {
+				pitchesOfSustainedPreviousNotes.add(bnp[i][PITCH]);
+			}
+		}
+		return pitchesOfSustainedPreviousNotes;
+	}
+
+
+	/**
+	 * Gets the voices of all previous Notes that are still sounding at the onset time of the chord, i.e., all
+	 * previous Notes whose offset time is greater than the onset time of the Note at lowestNoteIndex. These
+	 * pitches are listed in the sequence in which the Notes are encountered; thus, the List returned is not 
+	 * necessarily sorted numerically.
+	 * 
+	 * @param btp
+	 * @param durationLabels
+	 * @param voicesCoDNotes
+	 * @param bnp
+	 * @param allVoiceLabels
+	 * @param lowestNoteIndex
+	 * @return
+	 */
+	// TESTED (for both tablature- and non-tablature case)
+	public static List<Integer> getVoicesOfSustainedPreviousNotesInChord(Integer[][] btp, List<List<Double>> durationLabels,
+		List<Integer[]> voicesCoDNotes, Integer[][] bnp, List<List<Double>> allVoiceLabels, int lowestNoteIndex) {
+		List<Integer> voicesOfSustainedPreviousNotes = new ArrayList<Integer>();
+
+		List<Integer> indicesOfSustainedPreviousNotes = 
+			getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, lowestNoteIndex);
+
+		for (int i : indicesOfSustainedPreviousNotes) {
+			List<Double> currentVoiceLabel = allVoiceLabels.get(i);
+			List<Integer> currentVoices = DataConverter.convertIntoListOfVoices(currentVoiceLabel);
+
+			// Take into account CoD
+			if (currentVoices.size() > 1) {
+				Rational[] duration = DataConverter.convertIntoDuration(durationLabels.get(i));
+				// If both CoDnotes have the same duration: offset time of both exceeds onset time of chord; add both
+				if (duration.length == 1) {
+					voicesOfSustainedPreviousNotes.add(currentVoices.get(0));
+					voicesOfSustainedPreviousNotes.add(currentVoices.get(1));
+				}
+				// If both CoDnotes do not have the same duration: check offset times and add only voice(s) for the
+				// note(s) whose offset time exceeds onset time of chord
+				else {
+					// If the offset of the shorter CoDnote (whose voice is listed second in voicesCoDNotes) exceeds the
+					// chord's onset, the offset of both notes will; if not, only the offset of the longer CoDnote will
+					// Determine the offset of the shorter CoDnote
+					Rational shorter = duration[0];
+					if (duration[1].isLess(duration[0])) {
+						shorter = duration[1];
+					}
+					Rational onsetShorter = 
+						new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN);
+					Rational offsetShorter = onsetShorter.add(shorter);
+					Rational onsetCurr = 
+						new Rational(btp[lowestNoteIndex][Tablature.ONSET_TIME], Tablature.SRV_DEN);
+					// If offsetShorter exceeds the onset of the currentChord: add both voices
+					if (offsetShorter.isGreater(onsetCurr)) {
+						voicesOfSustainedPreviousNotes.add(currentVoices.get(0));
+						voicesOfSustainedPreviousNotes.add(currentVoices.get(1));
+					}
+					// If not: add only the voice for the longer CoDnote
+					else {
+						voicesOfSustainedPreviousNotes.add(voicesCoDNotes.get(i)[0]);
+					}
+				}
+			}
+			else {
+				voicesOfSustainedPreviousNotes.add(currentVoices.get(0));
+			}
+		}	
+		return voicesOfSustainedPreviousNotes;
+	}
+
+
+	/**
+	 * Gets any sustained pitches and voices for the current chord and inserts them at the right position into
+	 * pitchesInChord and voicesInChord. Returns a List<List<Integer>> the size of the complete chord (so including
+	 * any sustained notes), containing
+	 *   as element 0: a List of all pitches in the chord
+	 *   as element 1: a List of all the corresponding voices 
+	 * The List<List>> is ordered according to pitch, so with the lowest note first.
+	 * 
+	 * @param bnp
+	 * @param pitchesInChord
+	 * @param voicesInChord
+	 * @param allVoiceLabels
+	 * @param lowestNoteIndex
+	 * @return
+	 */
+	// TESTED
+	// TODO works only for the non-tablature case (and is currently only called in that case)
+	static public List<List<Integer>> getAllPitchesAndVoicesInChord(Integer[][] bnp, List<Integer> pitchesInChord, 
+		List<List<Integer>>	voicesInChord, List<List<Double>> allVoiceLabels, int lowestNoteIndex ) {
+
+		// 1. For the pitches and voices for the new onsets in the chord
+		// a. Unwrap voicesInChord, i.e., turn it into a List<Integer>. This is possible because in the non-tablature
+		// case, a note will never contain more than one voice (i.e., there are no CoDs)
+		List<Integer> voicesInChordUnwrapped = new ArrayList<Integer>();
+		for (List<Integer> l : voicesInChord) {
+			voicesInChordUnwrapped.add(l.get(0));
+		}
+		// b. Combine pitchesInChord and VoicesInChordUnwrapped into pitchesAndVoices. pitchesAndVoices contains as 
+		// many elements as there are new onsets in the chord; each element contains the pitch (at position 0) and the
+		// voice (as position 1) of each note in the chord. 
+		// NB: Both pitchesInChord and VoicesInChordUnwrapped are based on the sequence of the notes as they appear in
+		// the NoteSequence; therefore, they are always aligned
+		List<List<Integer>> pitchesAndVoices = ToolBox.combineLists(pitchesInChord, voicesInChordUnwrapped);
+
+		// 2. For the sustained pitches and voices
+		// a. Get the sustained pitches and voices
+		List<Integer> sustainedPitches = 
+//			getPitchesOfSustainedPreviousNotesInChordMUSCI(bnp, lowestNoteIndex);
+			getPitchesOfSustainedPreviousNotesInChord(null, null, bnp, lowestNoteIndex); // TODO all the nulls work because the method is only called in the non-tablature case
+		List<Integer> sustainedVoices = 
+//			getVoicesOfSustainedPreviousNotesInChordMUSCI(bnp, allVoiceLabels, lowestNoteIndex);
+			getVoicesOfSustainedPreviousNotesInChord(null, null, null, bnp, allVoiceLabels, lowestNoteIndex);	
+
+		// b. Combine sustainedPitches and sustainedVoices into sustainedPitchesAndVoices. sustainedPitchesAndVoices
+		// contains as many elements as there are sustained notes in the chord; each element contains the pitch (at 
+		// position 0) and the voice (as position 1) of each sustained note. 
+		// NB: Both sustainedPitches and sustainedVoices are made with getIndicesOfSustainedPreviousNotes() (which in
+		// turn uses the sequence of the notes as they appear in the NoteSequence); therefore, they are always aligned
+		List<List<Integer>> sustainedPitchesAndVoices =	ToolBox.combineLists(sustainedPitches, sustainedVoices);
+
+		// 3. Get the pitches and voices for the complete chord and sort them numerically using the pitch as guide
+		List<List<Integer>> allPitchesAndVoices = new ArrayList<List<Integer>>(pitchesAndVoices);
+		allPitchesAndVoices.addAll(sustainedPitchesAndVoices);
+		allPitchesAndVoices = ToolBox.bubbleSort(allPitchesAndVoices, 0);
+
+		// 4. Extract pitchesInChord and voicesInChord from allPitchesAndVoices. 
+		List<Integer> pitches = new ArrayList<Integer>();
+		List<Integer> voices = new ArrayList<Integer>();
+		for (List<Integer> l : allPitchesAndVoices) {
+			int currentPitch = l.get(0);
+			pitches.add(currentPitch);
+			int currentVoice = l.get(1);
+			voices.add(currentVoice);
+		}
+		allPitchesAndVoices = new ArrayList<List<Integer>>();
+		allPitchesAndVoices.add(pitches);
+		allPitchesAndVoices.add(voices);
+
+		return allPitchesAndVoices;
+	}
+
+
+	/**
+	 * Calculates the voice crossing information for the chord represented by the lists of pitches and voices. 
+	 * Returns an Integer[] containing
+	 * as element 0: the voices involved in voice crossing
+	 * as element 1: the voice crossing pairs
+	 * as element 2: the pitch distances (in semitones) between the notes that go with each voice crossing pair
+	 *
+	 * Example 1: given a four-voice/four-note chord with pitches [10, 20, 30, 40] and voices
+	 * [2, 1, 0, 3] (both from low to high), the method will return an Integer with: 
+	 * as element 0: [2, 3, 1, 0]: all four voices are involved in a voice crossing
+	 * as element 1: [2, 3, 1, 3, 0, 3]: there are three voice crossing pairs: 2-3, 1-3, and 0-3 (i.e., the lowest
+	 *               voice (3) crosses voices 2, 1, and 0)
+	 * as element 2: [30, 20, 10]: the pitch distances between the notes that go with each pair (2-3, 1-3, and 0-3) 
+	 
+	 * Example 2: given a four-voice/three-note chord (i.e., a chord with a CoD) with pitches [10, 20, 30] and
+	 * voices [1, 2, 3/0] (both from low to high), the method will return an Integer with:
+	 * as element 0: [1, 2, 3]: voices 1, 2, and 3 are involved in a voice crossing
+	 * as element 1: [1, 2, 1, 3, 2, 3]: there are three voice crossing pairs: 1-2, 1-3, and 2-3 
+	 * as element 2: [10, 20, 10]: the pitch distances between the notes that go with each pair (1-2, 1-3, and 2-3) 
+	 *  
+	 * Example 3: given a four-voice/three-note chord (i.e., a chord with a CoD) with pitches [10, 20, 30] and
+	 * voices [0/1, 2, 3] (both from low to high), the method will return an Integer with:
+	 * as element 0: [0, 2, 3, 1]: all four voices are involved in a voice crossing
+	 * as element 1: [0, 2, 0, 3, 1, 2, 1, 3, 2, 3]: there are five voice crossing pairs: 0-2, 0-3, 1-2, 1-3, and 2-3 
+	 * as element 2: [10, 20, 10, 20, 10]: the pitch distances between the notes that go with each pair (0-2, 0-3,
+	 *               1-2, 1-3, and 2-3)
+	 *  
+	 * @param pitchesInChord
+	 * @param voicesInChord
+	 * @return 
+	 */ 
+	// TESTED (for both tablature- and non-tablature case)
+	public static List<List<Integer>> getVoiceCrossingInformationInChord(List<Integer> pitchesInChord, 
+		List<List<Integer>> voicesInChord) {
+
+		List<List<Integer>> voiceCrossingInformation = new ArrayList<List<Integer>>();
+
+		// Default values for chords consisting of a single note, when there is no voice crossing possible  
+		List<Integer> voicesInvolvedInVoiceCrossing = new ArrayList<Integer>();
+		List<Integer> voiceCrossingPairs = new ArrayList<Integer>();
+		List<Integer> pitchDistancesOfVoiceCrossingPairs = new ArrayList<Integer>();
+
+		// Determine the size of the chord; if it consists of multiple notes: calculate values
+		int chordSize = pitchesInChord.size();
+		if (chordSize > 1) {		
+			// For each note, get the voice(s) assigned to it and its pitch, and compare them to those of the following
+			// notes in the chord. Voice crossings occur when, compared to the current onset, a following note 
+			// a) is assigned a voice that is higher, but has a pitch that is lower
+			// b) is assigned a voice that is lower, but has a pitch that is higher
+			for (int i = 0; i < chordSize; i++) {
+				// Get the voice(s) and pitch of the current note
+				List<Integer> currentVoices = voicesInChord.get(i);
+				int currentPitch = pitchesInChord.get(i);
+				// The current note may contain a CoD; check for each of its CoD voices
+				for (int j = 0; j < currentVoices.size(); j++) {
+					int currentVoice = currentVoices.get(j);
+					// Compare the current note's pitch and current voice with those of all the following notes in the chord
+					int indexOfNextOnset = i + 1; 
+					for (int k = indexOfNextOnset; k < chordSize; k++) {
+						List<Integer> currentNextVoices = voicesInChord.get(k);
+						int currentNextPitch = pitchesInChord.get(k);
+						// The current next note may contain a CoD; check for each of its CoD voices
+						for (int l = 0; l < currentNextVoices.size(); l++) {
+							int currentNextVoice = currentNextVoices.get(l);
+							// If the current next note is assigned a voice that is higher, but it has a pitch that is lower, or 
+							// vice versa: increase numberOfVoiceCrossings; add the pitch difference to totalSizeOfVoiceCrossings
+							// NB: Since the highest voice has voice number 0, a higher voice implies a lower voice number   
+							if ((currentNextVoice < currentVoice && currentNextPitch < currentPitch) || (currentNextVoice > 
+								currentVoice && currentNextPitch > currentPitch)) {
+								// Add currentVoice and currentNextVoice to voicesInvolvedInVoiceCrossing, but only if they have
+								// not been added already
+								if (!voicesInvolvedInVoiceCrossing.contains(currentVoice)) {
+									voicesInvolvedInVoiceCrossing.add(currentVoice);
+								}
+								if (!voicesInvolvedInVoiceCrossing.contains(currentNextVoice)) {
+									voicesInvolvedInVoiceCrossing.add(currentNextVoice);
+								}
+								// Add the current pair to voiceCrossingPairs
+								voiceCrossingPairs.add(currentVoice);
+								voiceCrossingPairs.add(currentNextVoice);
+								// Add the pitch distance between the onsets that go with the current pair to pitchDistancesOfVoiceCrossingPairs
+								pitchDistancesOfVoiceCrossingPairs.add(Math.abs(currentNextPitch - currentPitch));
+							}
+						}
+					}				
+				}
+			}
+		}
+		// Set and return voiceCrossingInformation
+		voiceCrossingInformation.add(voicesInvolvedInVoiceCrossing);
+		voiceCrossingInformation.add(voiceCrossingPairs);
+		voiceCrossingInformation.add(pitchDistancesOfVoiceCrossingPairs);
+		return voiceCrossingInformation;
+	}
+
+
+	// TODO delete
+	public void transposeNonTab(int transpositionInterval) {
+		transpose(transpositionInterval);
+		// Redo the part in createTranscription() from setBasicNoteProperties() on. 
+		// setNumberOfNewNotesPerChord() and setChordVoiceLabels() need not be called again after
+		// setTranscriptionChordsFinal(), as there are no pitches involved in these methods
+		chords = null;
+		setBasicNoteProperties();
+		setChords();	
+	}
+
+
+	/**
+	 * Transposes the given transcription by the given interval (in semitones).
+	 * 
+	 * NB: Tablature case only.
+	 * 
+	 * @param transposition
+	 */
+	// TESTED TODO delete
+	void transpose(int transposition) {
+		// 1. Transpose all the notes in noteSequence and reset noteSequence
+		List<Note> notes = getNotes();
+//		NoteSequence noteSeq = getNoteSequence();
+		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
+		for (int i = 0; i < notes.size(); i++) {
+//		for (int i = 0; i < noteSeq.size(); i++) {
+			Note originalNote = notes.get(i);
+//			Note originalNote = noteSeq.getNoteAt(i);
+			Note transposedNote = ScorePiece.createNote(originalNote.getMidiPitch() + transposition,
+				originalNote.getMetricTime(), originalNote.getMetricDuration(), originalNote.getVelocity(), 
+				mtl);
+			notes.set(i, transposedNote);
+//			noteSeq.replaceNoteAt(i, transposedNote);
+		}
+//		setNoteSequence(noteSeq);
+		
+		// 2. Transpose piece
+		NotationSystem system = getScorePiece().getScore(); 
+		for (int i = 0; i < system.size(); i++) {
+			NotationStaff staff = system.get(i);
+			NotationVoice voice = staff.get(0);  
+			for (int j = 0; j < voice.size(); j++) {
+				NotationChord notationChord = voice.get(j);
+				for (int k = 0; k < notationChord.size(); k++) {
+					Note originalNote = notationChord.get(k);
+					Note transposedNote = ScorePiece.createNote(originalNote.getMidiPitch() + transposition,
+						originalNote.getMetricTime(), originalNote.getMetricDuration(), 
+						originalNote.getVelocity(), mtl);
+					notationChord.remove(originalNote);
+					notationChord.add(transposedNote);   	    
+				}
+			}
+		}
+
+		// 3. Transpose HarmonyTrack
+		SortedContainer<Marker> keySigs = getScorePiece().getHarmonyTrack();
+		for (int i = 0; i < keySigs.size(); i++) {
+			KeyMarker km = (KeyMarker) keySigs.get(i);
+			km.setAlterationNum(ScorePiece.transposeNumAccidentals(transposition, km.getAlterationNum()));
+		}
+
+//		// 3. In the non-tablature case
+//		if (!isTablatureCase) {
+//			transcriptionChordsFinal = null;
+//			setBasicNoteProperties();
+//			setTranscriptionChordsFinal();
+//			// setNumberOfNewNotesPerChord() and setChordVoiceLabels() need not be
+//			// called again after setTranscriptionChordsFinal() (as in (see createTranscription)), as there
+//			// are no pitches involved in these methods
+//		}
+	}
+
+
+	/**
+	 * Gets the basicNoteProperties of the chord at the given index in the Transcription, i.e., the elements of 
+	 * <i>basicNoteProperties</i> corresponding to the Notes within that chord. 
+	 * 
+	 * NB: Non-tablature case only.
+	 * 
+	 * @param chordIndex 
+	 * @return
+	 */
+	// TESTED
+	public Integer[][] getBasicNotePropertiesChord(int chordIndex) {
+
+		// Determine the size of the chord at chordIndex and the index of the lowest note in it
+		int chordSize = 0;
+		int lowestNoteIndex = 0;
+		for (int i = 0; i < basicNoteProperties.length; i++) {
+			if (basicNoteProperties[i][CHORD_SEQ_NUM] == chordIndex) {
+				lowestNoteIndex = i;
+				chordSize = basicNoteProperties[i][CHORD_SIZE_AS_NUM_ONSETS];
+				break;
+			}
+		}
+
+		// Make basicNotePropertiesChord
+		Integer[][] basicNotePropertiesChord = 
+			Arrays.copyOfRange(basicNoteProperties, lowestNoteIndex, lowestNoteIndex + chordSize);    
+		return basicNotePropertiesChord;
 	}
 
 
@@ -3836,8 +4449,6 @@ public class Transcription implements Serializable {
 		final int durDen = 2;
 		final int isHMN = 3;
 		
-		int srv = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
-
 //		Integer[][] bnp = getBasicNoteProperties(); // in 2020
 
 		List<Integer> lowestNoteIndicesFirstChords = new ArrayList<Integer>();
@@ -3868,8 +4479,8 @@ public class Transcription implements Serializable {
 			int pitchMvmt;
 			if (btp != null) {
 				ioiHeadMotif.add(
-					new Rational(btp[i+1][Tablature.ONSET_TIME], srv).sub(
-					new Rational(btp[i][Tablature.ONSET_TIME], srv)));
+					new Rational(btp[i+1][Tablature.ONSET_TIME], Tablature.SRV_DEN).sub(
+					new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN)));
 				pitchMvmt = btp[i+1][Tablature.PITCH] - btp[i][Tablature.PITCH];
 			}
 			else {
@@ -3890,8 +4501,8 @@ public class Transcription implements Serializable {
 			if (noteDensities.get(i) > density) {
 				System.out.println("density increase");
 				System.out.println( 
-					((btp != null) ? "onset time " + new Rational(btp[i][Tablature.ONSET_TIME], srv) :
-					"bar " + ToolBox.getMetricPositionAsString(getAllMetricPositions().get(i))));
+					((btp != null) ? "onset time " + new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
+					"bar " + Utils.getMetricPositionAsString(getAllMetricPositions().get(i))));
 				System.out.println("new density = " + noteDensities.get(i));
 				density = noteDensities.get(i);
 				int config = -1;
@@ -3918,7 +4529,7 @@ public class Transcription implements Serializable {
 				// maximum time window has been covered, or when there are no more notes left
 				if (!firstHMNInFirstChord) {
 					Rational onsetOfInitialI = 
-						(btp != null) ? new Rational(btp[i][Tablature.ONSET_TIME], srv) :	
+						(btp != null) ? new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN) :	
 						new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM]);
 					Rational timeWindowCovered = Rational.ZERO;
 					Rational maxTimeWindow = new Rational(1, 4);
@@ -3938,7 +4549,7 @@ public class Transcription implements Serializable {
 									(btp != null) ? btp[j][Tablature.CHORD_SEQ_NUM] :
 									bnp[j][CHORD_SEQ_NUM];
 								onsetOfNewI = 
-									(btp != null) ? new Rational(btp[j][Tablature.ONSET_TIME], srv) :
+									(btp != null) ? new Rational(btp[j][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
 									new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);
 								// Find the index of the lowest note in the chord at chordInd
 								for (int k = j; k >=0; k--) {
@@ -3968,13 +4579,13 @@ public class Transcription implements Serializable {
 						int ind = 1;
 						List<Boolean> hits = new ArrayList<Boolean>();
 						Rational onsetOfChordAtNewI = 
-							(btp != null) ? new Rational(btp[newI][Tablature.ONSET_TIME], srv) : 
+							(btp != null) ? new Rational(btp[newI][Tablature.ONSET_TIME], Tablature.SRV_DEN) : 
 							new Rational(bnp[newI][ONSET_TIME_NUMER], bnp[newI][ONSET_TIME_DENOM]);
 						Rational nextOns = onsetOfChordAtNewI.add(ioiHeadMotif.get(ind - 1));
 						System.out.println("nextOns = " + nextOns);
 						for (int j = newI; j < ((btp != null) ? btp.length : bnp.length); j++) {
 							Rational currOns = 
-								(btp != null) ? new Rational(btp[j][Tablature.ONSET_TIME], srv) :
+								(btp != null) ? new Rational(btp[j][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
 								new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);
 							if (currOns.equals(nextOns)) {
 								Rational currDur = 
@@ -4019,7 +4630,7 @@ public class Transcription implements Serializable {
 				// a. Determine the onsets of the HMNs
 				List<Rational> onsetsOfHMNChords = new ArrayList<Rational>();	
 				onsetsOfHMNChords.add(
-					(btp != null) ? new Rational(btp[i][Tablature.ONSET_TIME], srv) :	
+					(btp != null) ? new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN) :	
 					new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM]));
 				for (int j = 0; j < ioiHeadMotif.size(); j++) { 
 					Rational lastAdded = onsetsOfHMNChords.get(j);
@@ -4031,7 +4642,7 @@ public class Transcription implements Serializable {
 				List<Integer> indOfMotifNotesChords = new ArrayList<Integer>();
 				for (int j = i; j < ((btp != null) ? btp.length : bnp.length); j++) {
 					Rational currOnset = 
-						(btp != null) ?	new Rational(btp[j][Tablature.ONSET_TIME], srv) :
+						(btp != null) ?	new Rational(btp[j][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
 						new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);	
 					if (onsetsOfHMNChords.contains(currOnset)) {
 						indOfMotifNotesChords.add(j);
@@ -4474,7 +5085,7 @@ public class Transcription implements Serializable {
 				//   
 				// x x   x x     x   
 				// x x     x   x x
-				//   x   x x   x x
+				//   x)   x x   x x
 				//   
 				// x x   x x   x x     x
 				// x x   x x     x   x x
@@ -4493,7 +5104,7 @@ public class Transcription implements Serializable {
 				// If there are multiple motif candidates (which will be in parallel 
 				// motion): determine which one is in the newly inserted voice
 				else if (numMotifCand > 1) {
-					System.out.println("multiple motif candidates for " + pieceName);
+					System.out.println("multiple motif candidates for " + name);
 					// List all m left chords (i.e., those with the previous density), 
 					// each as a list of pitches, and make average chord 
 					List<List<Integer>> leftChords = new ArrayList<List<Integer>>();	
@@ -4686,7 +5297,7 @@ public class Transcription implements Serializable {
 		if ((ToolBox.sumListInteger(configs) == -configs.size()) ||
 			((double)minusOnes/configs.size() > 0.5)) {
 			System.out.println(configs);
-			System.out.println("==========>>> null: no or not enough motifs found for " + getPieceName());
+			System.out.println("==========>>> null: no or not enough motifs found for " + getName());
 			return null;
 		}
 		// Get the voicing that corresponds to the (corrected) determined config
@@ -6042,168 +6653,38 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Given a number of accidentals and a transposition, returns the smallest new number of 
-	 * accidentals (there are always two outcomes, sharps and flats.
-	 * 
-	 * Examples: 
-	 * Transposition 2 semitones down from F major: transp = -2 (or +10); accid = -1;
-	 * new number is -1 + -2 = -3 (3b, i.e., Eb major) OR -1 + 10 = 9 (9#, i.e., D# major) 
-	 * --> -3 is returned
-	 * Transposition 1 semitone down from B major: transp = -1 (or +11); accid = 5;
-	 * new number is 5 + 5 = 10 (10#, i.e., A#) OR 5 + (-7) = -2 (2b, i.e., Bb major) 
-	 * --> -2 is returned
-	 * 
-	 * @param transposition
-	 * @param accid
-	 * @return
-	 */
-	// TESTED
-	static int transposeNumAccidentals(int transposition, int accid) {
-		// transposition	#accidentals
-		// -1 or 11			+5/-7
-		// -2 or 10			-2/+10
-		// -3 or 9			+3/-9
-		// -4 or 8			-4/+8
-		// -5 or 7			+1/-11
-		// -6 or 6			-6/+6
-		// -7 or 5			-1/+11
-		// -8 or 4			+4/-8
-		// -9 or 3			-3/+9
-		// -10 or 2			+2/-10
-		// -11 or 1			-5/+7
-		//
-		// The 1st and 2nd row elements are the transposition; the 3rd and 4th are the 
-		// two ways by which accid can be altered
-		List<Integer[]> transpMatrix = new ArrayList<>();
-		transpMatrix.add(new Integer[]{0, 0, 0, 0});
-		transpMatrix.add(new Integer[]{-1, 11, 5, -7});
-		transpMatrix.add(new Integer[]{-2, 10, -2, 10});
-		transpMatrix.add(new Integer[]{-3, 9, 3, -9});
-		transpMatrix.add(new Integer[]{-4, 8, -4, 8});
-		transpMatrix.add(new Integer[]{-5, 7, 1, -11});
-		transpMatrix.add(new Integer[]{-6, 6, -6, 6});
-		transpMatrix.add(new Integer[]{-7, 5, -1, 11});
-		transpMatrix.add(new Integer[]{-8, 4, 4, -8});
-		transpMatrix.add(new Integer[]{-9, 3, -3, 9});
-		transpMatrix.add(new Integer[]{-10, 2, 2, -10});
-		transpMatrix.add(new Integer[]{-11, 1, -5, 7});
-		
-		int col = (transposition < 0) ? 0 : 1;
-		int	rowInd = ToolBox.getItemsAtIndex(transpMatrix, col).indexOf(transposition);
-		Integer[] in = transpMatrix.get(rowInd);
-		int optionA = accid + in[2];
-		int optionB = accid + in[3];
-		if (Math.abs(optionA) <= Math.abs(optionB)) {
-			return optionA;
-		}
-		else {
-			return optionB;
-		}
-	}
-
-
-	/**
-	 * Transposes the given transcription by the given interval (in semitones).
-	 * 
-	 * NB: Tablature case only.
-	 * 
-	 * @param transposition
-	 */
-	// TESTED
-	void transpose(int transposition) {
-		// 1. Transpose all the notes in noteSequence and reset noteSequence
-		NoteSequence noteSeq = getNoteSequence();
-		for (int i = 0; i < noteSeq.size(); i++) {
-			Note originalNote = noteSeq.getNoteAt(i);
-			Note transposedNote = Transcription.createNote(originalNote.getMidiPitch() + transposition,
-				originalNote.getMetricTime(), originalNote.getMetricDuration());
-			noteSeq.replaceNoteAt(i, transposedNote);
-		}
-		setNoteSequence(noteSeq);
-		
-		// 2. Transpose piece
-		NotationSystem system = getPiece().getScore(); 
-		for (int i = 0; i < system.size(); i++) {
-			NotationStaff staff = system.get(i);
-			NotationVoice voice = staff.get(0);  
-			for (int j = 0; j < voice.size(); j++) {
-				NotationChord notationChord = voice.get(j);
-				for (int k = 0; k < notationChord.size(); k++) {
-					Note originalNote = notationChord.get(k);
-					Note transposedNote = Transcription.createNote(originalNote.getMidiPitch() + transposition,
-						originalNote.getMetricTime(), originalNote.getMetricDuration());
-					notationChord.remove(originalNote);
-					notationChord.add(transposedNote);   	    
-				}
-			}
-		}
-
-		// 3. Transpose HarmonyTrack
-		SortedContainer<Marker> keySigs = getPiece().getHarmonyTrack();
-		for (int i = 0; i < keySigs.size(); i++) {
-			KeyMarker km = (KeyMarker) keySigs.get(i);
-			km.setAlterationNum(transposeNumAccidentals(transposition, km.getAlterationNum()));
-		}
-
-//		// 3. In the non-tablature case
-//		if (!isTablatureCase) {
-//			transcriptionChordsFinal = null;
-//			setBasicNoteProperties();
-//			setTranscriptionChordsFinal();
-//			// setNumberOfNewNotesPerChord() and setChordVoiceLabels() need not be
-//			// called again after setTranscriptionChordsFinal() (as in (see createTranscription)), as there
-//			// are no pitches involved in these methods
-//		}
-	}
-
-
-	/**
 	 * Lists the individual onset times of the notes in the Transcription, in ascending order.
 	 * 
 	 * @return
 	 */
-	// TESTED (for both tablature and non-tablature case)
+	// TESTED
 	public List<Rational> getAllOnsetTimes() {
 		List<Rational> onsetTimes = new ArrayList<Rational>();
-
-		NotationSystem notationSystem = piece.getScore();
-
-		// For every voice
-		for (int i = 0; i < notationSystem.size(); i++) {
-			NotationStaff staff = notationSystem.get(i);
-			NotationVoice currentVoice = staff.get(0);
-			for (NotationChord notationChord : currentVoice) {
-				// Each NotationChord contains a list of Notes; in practice, this list will only be one Note
-				for (Note n : notationChord) {
-					Rational currentOnsetTime = n.getMetricTime();
-					if (!onsetTimes.contains(currentOnsetTime)) {
-						onsetTimes.add(currentOnsetTime);
-					}
-				}
-			}
-		}
+		getChords().stream().forEach(c -> { 
+			if (!onsetTimes.contains(c.get(0).getMetricTime())) { 
+				onsetTimes.add(c.get(0).getMetricTime());
+			} 
+		});		
+//		NotationSystem notationSystem = getPiece().getScore();
+//
+//		// For every voice
+//		for (int i = 0; i < notationSystem.size(); i++) {
+//			NotationStaff staff = notationSystem.get(i);
+//			NotationVoice currentVoice = staff.get(0);
+//			for (NotationChord notationChord : currentVoice) {
+//				// Each NotationChord contains a list of Notes; in practice, this list will only be one Note
+//				for (Note n : notationChord) {
+//					Rational currentOnsetTime = n.getMetricTime();
+//					if (!onsetTimes.contains(currentOnsetTime)) {
+//						onsetTimes.add(currentOnsetTime);
+//					}
+//				}
+//			}
+//		}
 		Collections.sort(onsetTimes);
 		return onsetTimes;
 	}
 
-
-//	/**
-//	 * Returns the size of the largest chord in the Transcription.
-//	 * 
-//	 * @return
-//	 */
-//	// TESTED
-//	public int getLargestTranscriptionChordOLD() { 
-//		int largestChord = 0;
-//		List<List<Note>> transcriptionChords = getTranscriptionChords();
-//		for (List<Note> l : transcriptionChords) {
-//			int currentSize = l.size();
-//			if (currentSize > largestChord) {
-//				largestChord = currentSize;
-//			}
-//		}
-//		return largestChord;
-//	}
 
 	/**
 	 * NB: Non-tablature case only.
@@ -6224,18 +6705,18 @@ public class Transcription implements Serializable {
 	public List<List<Integer>> getIndicesPerChord(/*ProcessingMode procMode*/ boolean isBwd) {
 		List<List<Integer>> indicesPerChord = new ArrayList<List<Integer>>();
 
-		List<List<Note>> transcriptionChords = getTranscriptionChords(); // conditions satisfied; external version OK
+		List<List<Note>> ch = getChords(); // conditions satisfied; external version OK
 		if (isBwd) {
 //		if (procMode == ProcessingMode.BWD) {
-			Collections.reverse(transcriptionChords);
+			Collections.reverse(ch);
 		}
 
 		int startIndex = 0;
 		// For each chord
-		int numChords = transcriptionChords.size();
+		int numChords = ch.size();
 		for (int i = 0; i < numChords; i++) {
 			List<Integer> indicesCurrChord = new ArrayList<Integer>();
-			int endIndex = startIndex + transcriptionChords.get(i).size();
+			int endIndex = startIndex + ch.get(i).size();
 			// For each note in the chord at index i: add its index to indicesCurrChord
 			for (int j = startIndex; j < endIndex; j++) {
 				indicesCurrChord.add(j);
@@ -6293,34 +6774,6 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Using the given voice labels, lists for each voice the notes that belong to that voice. Returns a 
-	 * List<List>>, the first element of which corresponds to voice 0, the second to voice 1, etc. 
-	 * 
-	 * @param voiceLabels
-	 * @return
-	 */
-	// TESTED (for both tablature- and non-tablature case)
-	public static List<List<Integer>> listNotesPerVoice(List<List<Double>> voiceLabels) {
-		List<List<Integer>> notesPerVoice = new ArrayList<List<Integer>>();
-
-		// For each voice
-		for (int i = 0; i < Transcription.MAXIMUM_NUMBER_OF_VOICES; i++) {
-			int currentVoice = i;
-			List<Integer> notesInCurrentVoice = new ArrayList<Integer>();
-			// For each note: check whether the note at index j belongs to currentVoice. If so, add it to notesInCurrentVoice 
-			for (int j = 0; j < voiceLabels.size(); j++) {
-				List<Double> actualVoiceLabel = voiceLabels.get(j);
-				List<Integer> actualVoices = DataConverter.convertIntoListOfVoices(actualVoiceLabel);
-				if (actualVoices.contains(currentVoice)) {
-					notesInCurrentVoice.add(j);
-				}
-			}
-			notesPerVoice.add(notesInCurrentVoice);
-		}		
-		return notesPerVoice;
-	}
-
-	/**
 	 * Returns, for each voice, a list containing a Rational[], each element of which represents
 	 * a note and contains
 	 * <ul>
@@ -6335,7 +6788,8 @@ public class Transcription implements Serializable {
 	// TESTED (non-tab only, for one voice)
 	public List<List<Rational[]>> listNotesPerVoice() {
 		List<List<Rational[]>> notesPerVoice = new ArrayList<>();
-		NotationSystem nSys = getPiece().getScore();
+		NotationSystem nSys = getScorePiece().getScore();
+		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
 		// For each voice i
 		for (int i = 0; i < nSys.size(); i ++) {
 			NotationVoice nv = nSys.get(i).get(0);
@@ -6345,8 +6799,9 @@ public class Transcription implements Serializable {
 					notes.add(new Rational[]{
 						new Rational(n.getMidiPitch(), 1), 
 						n.getMetricTime(),
-						n.getMetricDuration(), 
-						Tablature.getMetricPosition(n.getMetricTime(), getMeterInfo())[1]});
+						n.getMetricDuration(),
+						ScoreMetricalTimeLine.getMetricPosition(mtl, n.getMetricTime())[1]});
+//						Utils.getMetricPosition(n.getMetricTime(), getMeterInfo())[1]});
 				}
 			}
 			notesPerVoice.add(notes);
@@ -6423,414 +6878,19 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Convert input into a csv String, where each row is a 3D list representing a note (a list),
-	 * which consists of voices (each a list or null), which consist of notes (each a list).
-	 * 
-	 * @param lastNNotesPerVoicePerNote
-	 * @return
-	 */
-	public static String getLastNotesInVoicesString(List<List<List<Rational[]>>> 
-		lastNNotesPerVoicePerNote, String meter) {
-		StringBuffer testData = new StringBuffer();
-		// For each note
-		for (int i = 0; i < lastNNotesPerVoicePerNote.size(); i++) {
-			testData.append("[");
-			List<List<Rational[]>> allSeqsCurrNote = lastNNotesPerVoicePerNote.get(i);
-			// For each voice
-			for (int j = 0; j < allSeqsCurrNote.size(); j++) {
-				if (allSeqsCurrNote.get(j) == null) {
-					testData.append("None");
-				}
-				else {
-					testData.append("[");
-					List<Rational[]> seqCurrNote = allSeqsCurrNote.get(j);
-					// For each note in the voice
-					for (int k = 0; k < seqCurrNote.size(); k++) {
-						Rational[] note = seqCurrNote.get(k);
-						testData.append("[" + 
-							note[0].getNumer() + "," + // pitch
-							note[1] + "," + // onset
-							note[2] + "," + // dur
-							note[3] + "," + // metpos
-							meter // meter
-							);
-						testData.append("]");
-						if (k < seqCurrNote.size()-1) {
-							testData.append(",");
-						}
-					}
-					testData.append("]");
-				}
-				if (j < allSeqsCurrNote.size()-1) {
-					testData.append(",");
-				}
-			}
-			testData.append("]" + "\r\n");
-		}
-		return testData.toString();
-	}
-
-
-	/**
-	 * Gets the pitches in the chord at the given index. Element 0 of the List represents the lowest note's pitch,
-	 * element 1 the second-lowest note's, etc. Sustained notes are not included. 
-	 * 
-	 * NB: This method applies only to the non-tablature case
-	 * 
-	 * @param chordIndex
-	 * @return
-	 */
-	// TESTED
-	public List<Integer> getPitchesInChord(int chordIndex) {
-		List<Integer> pitchesInChord = new ArrayList<Integer>();
-
-		List<Note> transcriptionChord = null;
-		// Use internal version of getTranscriptionChords() when the method is called in Transcription creation
-		if (transcriptionChordsFinal == null) {
-			transcriptionChord = getTranscriptionChordsInternal().get(chordIndex);
-		}
-		// Otherwise use external version
-		else {
-			transcriptionChord = getTranscriptionChords().get(chordIndex);
-		}
-
-		for (Note n : transcriptionChord) {
-			pitchesInChord.add(n.getMidiPitch());
-		}
-		return pitchesInChord;
-	}
-
-
-	/**
-	 * Gets the pitches in the chord. Element 0 of the List represents the lowest note's pitch, element 1 the
-	 * second-lowest note's, etc. Sustained previous notes are NOT included. 
-	 * 
-	 * NB1: The List will always be in numerical order.
-	 * NB2: This method applies only to the non-tablature case
-	 * 
-	 * @param bnp
-	 * @param lowestNoteIndex
-	 * @return
-	 */
-	// TESTED
-	public static List<Integer> getPitchesInChord(Integer[][] bnp, int lowestNoteIndex) {
-		List<Integer> pitchesInChord = new ArrayList<Integer>();	
-		int chordSize = bnp[lowestNoteIndex][CHORD_SIZE_AS_NUM_ONSETS];
-		for (int i = lowestNoteIndex; i < lowestNoteIndex + chordSize; i++) {
-			Integer[] currentBasicNoteProperties = bnp[i];
-			int currentPitch = currentBasicNoteProperties[PITCH];
-			pitchesInChord.add(currentPitch);
-		}
-		return pitchesInChord;
-	}
-
-
-//  /**
-//   * Returns the number of CoDs the chord at the given index contains.
-//   * 
-//   * NB: Tablature case only; must be called before getCoDInfo().
-//   * 
-//   * @param tablatureChords
-//   * @param chordIndex
-//   * @return 
-//   */
-//  // TESTED
-//  int getNumberOfCoDsInChord(List<List<TabSymbol>> tablatureChords, int chordIndex) {
-//  	List<List<Note>> transcriptionChords = getTranscriptionChords();
-//  	int numberOfCoDsInChord = 0;
-//  	if (transcriptionChords.get(chordIndex).size() == (tablatureChords.get(chordIndex).size() + 1)) {
-//			numberOfCoDsInChord = 1;
-//		}
-//		else if (transcriptionChords.get(chordIndex).size() == (tablatureChords.get(chordIndex).size() + 2)) {
-//    	numberOfCoDsInChord = 2;
-//		}
-//		else if (transcriptionChords.get(chordIndex).size() == (tablatureChords.get(chordIndex).size() + 3)) {
-//    	numberOfCoDsInChord = 3;
-//		}
-//  	
-//  	return transcriptionChords.get(chordIndex).size() - tablatureChords.get(chordIndex).size();
-////  	return numberOfCoDsInChord;
-//  }
-
-
-	/**
-	 * Gets information on the concept-of-duality-Note(s) in the chord at the given index in the given list. A
-	 * CoD occurs when a single Tablature note is shared by two Transcription Notes. Returns an Integer[][]
-	 * in which each row represents a CoD-pair (starting from below in the chords), and each column
-	 * at index (0) the pitch (as a MIDInumber) of both CoDnotes;
-	 * at index (1) the sequence number in the chord of the lower CoDnote;
-	 * at index (2) the sequence number in the chord of the upper CoDnote. 
-	 * If the chord does not contain (a) CoD(s), <code>null</code> is returned.  
-	 *
-	 * NB1: This method presumes that a chord contains only one CoD, and neither a unison nor a course crossing.
-	 * NB2: Tablature case only; must be called before handleCoDNotes(). 
-	 *
-	 * @param tablatureChords 
-	 * @param chordIndex 
-	 * @return    
-	 */
-	// TESTED
-	public Integer[][] getCoDInfo(List<List<TabSymbol>> tablatureChords, int chordIndex) {
-		Integer[][] coDInfo = null;
-
-		List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
-		// Determine the number of CoDs in the chord
-		int numCoDs = transcriptionChords.get(chordIndex).size() - tablatureChords.get(chordIndex).size();
-
-		// If chord contains (a) CoD(s)
-		if (numCoDs > 0) { 
-//		if (getNumberOfCoDsInChord(tablatureChords, chordIndex) > 0) {
-			coDInfo = new Integer[numCoDs][3];
-//			coDInfo = new Integer[getNumberOfCoDsInChord(tablatureChords, chordIndex)][3];
-
-//			List<Note> chord = getTranscriptionChordsInternal().get(chordIndex);
-			List<Note> chord = transcriptionChords.get(chordIndex);
-
-			// Gather the pitches of the Notes in chord in a list
-			List<Integer> pitchesInChord = new ArrayList<Integer>();
-			for (int i = 0; i < chord.size(); i++) {
-				int pitch = chord.get(i).getMidiPitch();
-				pitchesInChord.add(pitch);
-			}
-			// For each pitch in pitchesInChord
-			int currentRowInCoDInfo = 0;
-			for (int i = 0; i < pitchesInChord.size(); i++) {
-				int currentPitch = pitchesInChord.get(i);        
-				// Search the remainder of pitchesInChord for a note with the same pitch (the upper CoDnote)
-				for (int j = i + 1; j < pitchesInChord.size(); j++) {
-					// Same pitch found? upper CoDnote found; fill the currentRowInCoDInfo-th row of coDInfo, increase
-					// currentRowInCoDInfo, break from inner for, and continue with the next iteration of the outer
-					// for (the next pitch)
-					if (pitchesInChord.get(j) == currentPitch) {
-						coDInfo[currentRowInCoDInfo][0] = currentPitch;
-						coDInfo[currentRowInCoDInfo][1] = i;
-						coDInfo[currentRowInCoDInfo][2] = j;
-						currentRowInCoDInfo++;
-						break; 
-					}
-				} 
-			}
-		}
-		return coDInfo;
-	}
-
-
-	public static void setReversePiece(boolean argReverse) {
-		reversePiece = argReverse;
-	}
-
-
-//  /**
-//   * Determines the number of unisons in the chord at the given index. A unison occurs when two different notes
-//   * in the same chord have the same pitch.  
-//   * 
-//   * NB: Non-tablature case only; must be called before getUnisonInfo().
-//   * 
-//   * @param chordIndex
-//   * @return
-//   */
-//  // TESTED
-//  int getNumberOfUnisonsInChord(int chordIndex) {
-//  	int numberOfUnisons = 0;
-//  	
-////  	List<List<Note>> transcriptionChords = getTranscriptionChords();
-//  	List<Note> transcriptionChord = getTranscriptionChords().get(chordIndex);
-//    
-//  	// Only relevant if transcriptionChord contains multiple notes
-//    if (transcriptionChord.size() > 1) {
-//      // List all the unique pitches in tablatureChord
-//      List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
-//      List<Integer> uniquePitchesInChord = new ArrayList<Integer>();
-//      for (int pitch : pitchesInChord) {
-//      	if (!uniquePitchesInChord.contains(pitch)) {
-//      		uniquePitchesInChord.add(pitch);
-//      	}
-//      }
-////      // Compare the sizes of pitchesInChord and uniquePitchesInChord; if they are not the same the chord
-////      // contains (a) unison(s)
-////      if (pitchesInChord.size() == (uniquePitchesInChord.size() + 1)) {
-////      	numberOfUnisons = 1;
-////      }
-////      if (pitchesInChord.size() == (uniquePitchesInChord.size() + 2)) {
-////      	numberOfUnisons = 2;
-////      }
-////      if (pitchesInChord.size() == (uniquePitchesInChord.size() + 3)) {
-////      	numberOfUnisons = 3;
-////      }
-//      numberOfUnisons = pitchesInChord.size() - uniquePitchesInChord.size();
-//    }
-//  	return numberOfUnisons;
-//  }
-
-
-	/**
-	 * Gets information on the unison(s) in the chord at the given index. A unison occurs when two different 
-	 * notes in the same chord have the same pitch.  
-	 *
-	 * Returns an Integer[][], each element of which represents a unison pair (starting from below), each element
-	 * of which contains:
-	 *   as element 0: the pitch (as a MIDInumber) of the unison note
-	 *   as element 1: the sequence number in the chord of the lower unison note (i.e., the one appearing first in the chord)
-	 *   as element 2: the sequence number in the chord of the upper unison note 
-	 * If the chord does not contain (a) unison(s), <code>null</code> is returned. 
-	 *
-	 * NB1: This method presumes that a chord will not contain more than two of the same pitches in a chord.
-	 * NB2: Non-tablature case only; must be called before handleUnisons().
-	 *
-	 * @param chordIndex
-	 * @return
-	 */
-	// TESTED
-	public Integer[][] getUnisonInfo(int chordIndex) {
-		Integer[][] unisonInfo = null;
-
-		// Determine the number of unisons in the chord  
-		List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
-		List<Integer> uniquePitchesInChord = new ArrayList<Integer>();
-		for (int pitch : pitchesInChord) {
-			if (!uniquePitchesInChord.contains(pitch)) {
-				uniquePitchesInChord.add(pitch);
-			}
-		}
-		int numUnisons = pitchesInChord.size() - uniquePitchesInChord.size();
-
-		// If the chord at chordIndex contains (a) unison(s)
-		if (numUnisons > 0) {
-			unisonInfo = new Integer[numUnisons][3];
-
-			// For each pitch in pitchesInChord 
-			int currentRowInUnisonInfo = 0;
-			for (int i = 0; i < pitchesInChord.size(); i++) {
-				int currentPitch = pitchesInChord.get(i);        
-				// Search the remainder of pitchesInChord for an onset with the same pitch
-				for (int j = i + 1; j < pitchesInChord.size(); j++) {
-					// Same pitch found? Unison found; fill the currentRowInUnisonInfo-th row of unisonInfo, increase
-					// currentRowInUnisonInfo, break from inner for, and continue with the next iteration of the outer
-					// for (the next pitch)
-					if (pitchesInChord.get(j) == currentPitch) {
-						unisonInfo[currentRowInUnisonInfo][0] = currentPitch;
-						unisonInfo[currentRowInUnisonInfo][1] = i;
-						unisonInfo[currentRowInUnisonInfo][2] = j;
-						currentRowInUnisonInfo++;
-						break; // See NB1 for reason of break
-					}
-				} 
-			}
-		}
-		return unisonInfo;
-	}
-
-
-	/**
-	 * Sets <i>noteProperties</i>, a List containing the Note properties for each Note: (0) pitch; 
-	 * (1) duration; (2) size of the chord the Note is in; (3) whether the Note's duration is shorter than 
-	 * an 8th note. 
-	 * 
-	 */
-//  public void setNoteProperties() {
-//    noteProperties = new ArrayList<List<Double>>();
-////    Integer[][] basicNoteProperties = getBasicNoteProperties();
-//    
-//    // Iterate through basicNoteProperties and create noteProperties for each Note   
-//    for (int i = 0; i < basicNoteProperties.length; i++) {
-//      Integer[] currentBasicNoteProperties = basicNoteProperties[i];
-//      List<Double> currentNoteProperties = new ArrayList<Double>();
-//    	// 0. Pitch
-//      double pitch = currentBasicNoteProperties[PITCH];
-//      currentNoteProperties.add(0, pitch);
-//      
-//      // 1. Duration
-//      double duration = (double) currentBasicNoteProperties[DURATION_NUMER] / 
-//      	currentBasicNoteProperties[DURATION_DENOM]; 
-////      System.out.println("currentBasicNoteProperties[1] = " + currentBasicNoteProperties[1]);
-////      System.out.println("currentBasicNoteProperties[2] = " + currentBasicNoteProperties[2]);
-////      System.exit(0);
-//      currentNoteProperties.add(1, duration);
-//      
-//      // 2. The size of the chord the current Note is in
-//      double size = currentBasicNoteProperties[CHORD_SIZE_AS_NUM_ONSETS];
-//      currentNoteProperties.add(2, size);
-//      
-//      // 3. Is the current Note's duration shorter than an 8th note? Flag as short note
-//      if (duration < 1.0/8) {
-//      	currentNoteProperties.add(3, 1.0);
-//      }
-//      else {
-//      	currentNoteProperties.add(3, 0.0);
-//      }
-//      
-//      // Add onsetProperties at index i to allProperties and proceed to the next TS 
-//      noteProperties.add(i, currentNoteProperties);
-//    }
-//  }
-
-
-	/**
-	 * Gets  <i>noteProperties</i>.
-	 * 
-	 * @return
-	 */
-//  public List<List<Double>> getNoteProperties() {
-//  	return noteProperties;
-//  }
-
-
-	/**
-	 * Returns a list of the same size of the event containing the number of occurrences of each pitch within
-	 * the event. E.g., an event with the pitches G-G-b-d-d will yield [2, 2, 1, 2, 2]. 
-	 *
-	 * @param transcriptionChords
-	 * @param chordIndex
-	 * @return
-	 */
-	public List<Integer> getOccurrencesOfPitchesInChord(int chordIndex) {
-		List<Note> chord = getTranscriptionChordsInternal().get(chordIndex);
-		// List the pitches of every Note in chord
-		List<Integer> pitchesInChord = new ArrayList<Integer>();
-		for (int i = 0; i < chord.size(); i++) {
-			int pitch = chord.get(i).getMidiPitch();
-			pitchesInChord.add(pitch);
-		}
-
-		// Create occurrencesOfPitches with default values 1
-		List<Integer> occurrencesOfPitches = new ArrayList<Integer>();
-		for (int j = 0; j < pitchesInChord.size(); j++) {
-			occurrencesOfPitches.add(1);
-		}
-		// Determine how often each individual pitch appears in chord
-		for (int j = 0; j < pitchesInChord.size(); j++) {
-			int currentPitch = pitchesInChord.get(j);
-			int occurrencesOfCurrentPitch = 1;
-			// Set index j of pitchesInChord temporarily to 0 and search pitchesInChord for other occurrences of 
-			// currentPitch
-			pitchesInChord.set(j, 0);
-			for (int k = 0; k < pitchesInChord.size(); k++) {
-				if (pitchesInChord.get(k) == currentPitch) {
-					occurrencesOfCurrentPitch++;
-				}
-			}
-			// Set element j of occurencesOfPitches to occurenceOfCurrentPitch
-			occurrencesOfPitches.set(j, occurrencesOfCurrentPitch);
-			// Reset index j of pitchesInChord and proceed with the next iteration of the outer for
-			pitchesInChord.set(j, currentPitch);
-		}
-		return occurrencesOfPitches;
-	}
-
-
-	/**
 	 * Determines whether a chord contains a voice crossing.
 	 * @return
 	 */
 	private boolean chordContainsVoiceCrossing(int chordIndex) {
 		boolean chordContainsVoiceCrossing = false;
-		NotationSystem notationSystem = piece.getScore();
-		List<Note> currentChord = getTranscriptionChords().get(chordIndex); // conditions satisfied; external version OK
+//		NotationSystem notationSystem = piece.getScore();
+		List<Note> currentChord = getChords().get(chordIndex); // conditions satisfied; external version OK
 		List<Integer> voicesInCurrentChord = new ArrayList<Integer>();
 		// List the voices in the chord 
 		for (int j = 0; j < currentChord.size(); j++) {
 			Note currentNote = currentChord.get(j);
-			int currentVoice = findVoice(currentNote, notationSystem);
+			int currentVoice = findVoice(currentNote);
+//			int currentVoice = findVoice(currentNote, notationSystem);
 			voicesInCurrentChord.add(currentVoice);
 		}
 //		System.out.println("chordIndex = " + chordIndex);
@@ -6862,9 +6922,9 @@ public class Transcription implements Serializable {
 	 */
 	// TESTED (for both tablature- and non-tablature case) 
 	Integer[][] getLowestAndHighestPitchPerVoice() {
-		Integer[][] lowestAndHighest = new Integer[MAXIMUM_NUMBER_OF_VOICES][2];
+		Integer[][] lowestAndHighest = new Integer[MAX_NUM_VOICES][2];
 
-		NotationSystem system = piece.getScore();
+		NotationSystem system = getScorePiece().getScore();
 		// For every voice in the Transcription
 		for (int i = 0; i < system.size(); i++) {
 			NotationStaff staff = system.get(i);
@@ -6953,82 +7013,11 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Gets the mirrorPoint, i.e., the start time of the fictional bar after the last bar, which is 
-	 * needed for reversing the piece. If the piece has an anacrusis, the last bar will be a full 
-	 * bar (i.e., the original, shortened last bar to which the length of the anacrusis is added).
-	 * 
-	 * @param meterInfo
-	 * @return
-	 */
-	// TESTED
-	Rational getMirrorPoint(List<Integer[]> meterInfo) {
-		Rational mirrorPoint = Rational.ZERO;
-
-		NotationSystem notationSystem = getPiece().getScore();
-		// For each voice
-		for (NotationStaff notationStaff : notationSystem) {	
-			for (NotationVoice notationVoice : notationStaff) {
-				Rational currentMirrorPoint = Rational.ZERO;
-				// 1. Determine the onset- and offset time and the duration of the last note in the voice
-				NotationChord lastNotationChord = notationVoice.get(notationVoice.size() - 1);
-				Rational onsetTimeLastNote = lastNotationChord.getMetricTime();
-				Rational offsetTimeLastNote = Rational.ZERO;
-				for (Note n : lastNotationChord) {
-					Rational duration = n.getMetricDuration();
-					Rational offsetTime = n.getMetricTime().add(duration);
-					if (offsetTime.isGreater(offsetTimeLastNote)) {
-						offsetTimeLastNote = offsetTime;	
-					}
-				}
-				// 2. Get the metric position of the onset and offset of the last note and determine
-				// the onset- and offset bar(s) as well as the onset meter 
-				// NB: The offset time of the last note must be reduced to ensure that it falls with the bar 
-				// (if it coincides with the final barline, offsetTimeLastNote will not have a metric position)
-				Rational[] metricPositionOnset = Tablature.getMetricPosition(onsetTimeLastNote, meterInfo);
-				Rational reduction = new Rational(1, 128);
-				Rational[] metricPositionOffset = Tablature.getMetricPosition(offsetTimeLastNote.sub(reduction), meterInfo);
-				// Onset- and offset bar(s)
-				int barNumberOnset = metricPositionOnset[0].getNumer();
-				int barNumberOffset = metricPositionOffset[0].getNumer();
-				// Onset bar meter
-				Rational meterOnset = null;
-				for (Integer[] currentMeter : meterInfo) {
-					if (barNumberOnset >= currentMeter[2] && barNumberOnset <= currentMeter[3]) {
-						meterOnset = new Rational(currentMeter[0], currentMeter[1]);
-					}
-				}
-				// 3. Determine currentMirrorPoint
-				// Determine the distance of the note's onset to the beginning of the (possibly fictional) next bar 
-				Rational distanceFromOnsetToNextBar = meterOnset.sub(metricPositionOnset[1]);
-				// If the note's onset and offset are not in the same bar: determine the total duration of all 
-				// succeeding bars	
-				Rational durationSucceedingBars = Rational.ZERO;
-				if (barNumberOffset > barNumberOnset) {     	
-					for (int i = barNumberOnset + 1; i <= barNumberOffset; i++) {
-						for (Integer[] currentMeter : meterInfo) {
-							if (i >= currentMeter[2] && i <= currentMeter[3]) { 
-								durationSucceedingBars = durationSucceedingBars.add(new Rational(currentMeter[0], currentMeter[1]));
-							}
-						}
-					}
-				}
-				// Determine currentMirrorPoint; reset mirrorPoint if necessary
-				currentMirrorPoint = onsetTimeLastNote.add(distanceFromOnsetToNextBar).add(durationSucceedingBars);
-				if (currentMirrorPoint.isGreater(mirrorPoint)) {
-					mirrorPoint = currentMirrorPoint;
-				}
-			}
-		}
-		return mirrorPoint;
-	}
-
-
-	/**
 	 * Gets the number of active voices in the Transcription.
 	 */
 	// TESTED (for both tablature- and non-tablature case)
 	public int getNumberOfVoices() {
-		NotationSystem system = piece.getScore();
+		NotationSystem system = getScorePiece().getScore();
 		int numberOfVoices = system.size();
 
 		// Check how many voices contain no Notes and decrement numberOfVoices accordingly 
@@ -7044,298 +7033,26 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Combines the two given labels into one label, containing the value 1.0 twice.
-	 * 
-	 * @param labelOne
-	 * @param labelTwo
-	 * @return
-	 */
-	// TESTED
-	public static List<Double> combineLabels(List<Double> labelOne, List<Double> labelTwo) {
-		List<Double> combined = new ArrayList<Double>(labelOne);
-		int voiceTwo = labelTwo.indexOf(1.0);
-		combined.set(voiceTwo, 1.0);
-		return combined;
-	}
-
-
-	/**
 	 * Non-tablature case only.
 	 * 
 	 * @return
 	 */
-	//TESTED
+	// TESTED
 	public List<Rational[]> getAllMetricPositions() {
 		List<Rational[]> allMetricPositions = new ArrayList<Rational[]>();
-		List<Integer[]> meterInf = getMeterInfo();
+//		List<Integer[]> meterInf = getMeterInfo();
 		Integer[][] bnp = getBasicNoteProperties();
+//		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
+		ScoreMetricalTimeLine smtl = getScorePiece().getScoreMetricalTimeLine();
 		for (Integer[] b : bnp) {
-			Rational currentMetricTime = 
-				new Rational(b[ONSET_TIME_NUMER], b[ONSET_TIME_DENOM]);
-			allMetricPositions.add(Tablature.getMetricPosition(currentMetricTime, meterInf)); 
+			Rational currMetricTime = new Rational(b[ONSET_TIME_NUMER], b[ONSET_TIME_DENOM]);
+			allMetricPositions.add(
+				smtl.getMetricPosition(currMetricTime)
+//				ScoreMetricalTimeLine.getMetricPosition(mtl, currMetricTime)
+//				Utils.getMetricPosition(currMetricTime, meterInf)
+			); 
 		}
 		return allMetricPositions;	
-	}
-
-
-	/**
-	 * Verifies that either basicTabSymbolProperties or basicNoteProperties == null (i.e., 
-	 * that the non-tablature case or the tablature case applies, respectively).
-	 * 
-	 * @param btp
-	 * @param bnp
-	 */
-	public static void verifyCase(Integer[][] btp, Integer[][] bnp) {
-		if ((btp != null && bnp != null) || (btp == null && bnp == null)) {
-			System.out.println("ERROR: if basicTabSymbolProperties == null, basicNoteProperties must not be, and vice versa" + "\n");
-			throw new RuntimeException("ERROR (see console for details)");
-		}
-	}
-
-
-	/**
-	 * Creates a duration label encoding the given durational value (in Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()).
-	 * 
-	 * NB: Tablature case only.
-	 *  
-	 * @param duration
-	 * @return
-	 */
-	// TESTED
-	public static List<Double> createDurationLabel(int duration) {
-		List<Double> durationLabel = new ArrayList<Double>();
-		for (int i = 0; i < DURATION_LABEL_SIZE; i++) {
-			durationLabel.add(0.0);
-		}
-		int posInLabel = (duration - 1) / 3;
-//		durationLabel.set((duration - 1), 1.0);
-		durationLabel.set(posInLabel, 1.0); // trp dur
-		return durationLabel;
-	}
-
-
-	/**
-	 * Determines whether the given voice label represents a CoD.
-	 * 
-	 * @param voiceLabel
-	 * @return
-	 */
-	// TESTED
-	public static boolean containsCoD(List<Double> voiceLabel) {
-		if (Collections.frequency(voiceLabel, 1.0) == 2) {
-			return true;
-		}
-		else {
-			return false;
-		}
-	}
-
-
-//  /**
-//   * Creates a Piece from the given arguments.
-//   *  
-//   * @param voiceLabels
-//   * @param numberOfVoices
-//   */
-//  // TESTED
-//  public Piece createPiece(List<List<Double>> voiceLabels, int numberOfVoices) { 
-//  	DataConverter dataConverter = new DataConverterTab();
-//  	
-//  	// Make an empty Piece with the given number of voices
-//  	Piece piece = new Piece();
-//  	NotationSystem system = piece.createNotationSystem();
-//    for (int i = 0; i < numberOfVoices; i++) {
-//      NotationStaff staff = new NotationStaff(system); 
-//      system.add(staff); 
-//      staff.add(new NotationVoice(staff));
-//    }
-//          
-//    // Iterate through the Transcription, convert each note into a Note, and add it to the given voice
-//  	Integer[][] bnp = getBasicNoteProperties();
-//    for (int i = 0; i < bnp.length; i++) {
-//    	// Create a Note from the note at index i
-//    	int pitch = bnp[i][Transcription.PITCH];
-//    	Rational metricTime =	
-//    		new Rational(bnp[i][Transcription.ONSET_TIME_NUMER], bnp[i][Transcription.ONSET_TIME_DENOM]);
-//    	Rational metricDuration = 
-//    		new Rational(bnp[i][Transcription.DURATION_NUMER], bnp[i][Transcription.DURATION_DENOM]);
-//    	Note note = Transcription.createNote(pitch, metricTime, metricDuration);
-//    	
-//    	// Add the Note to each voice in currentVoices
-//    	List<Integer> currentVoices = dataConverter.convertIntoListOfVoices(voiceLabels.get(i));
-//    	for (int v : currentVoices) {
-//    		NotationVoice voice = piece.getScore().get(v).get(0);
-//    		voice.add(note);
-//    	}	
-//    }
-//      
-//    return piece;
-//  }
-
-
-	/**
-	 * Creates a Piece from the given arguments.
-	 *  
-	 * @param btp
-	 * @param bnp 
-	 * @param voiceLabels
-	 * @param durationLabels
-	 * @param numberOfVoices
-	 */
-	// TESTED (for both tablature- and non-tablature case)
-	public static Piece createPiece(Integer[][] btp, Integer[][] bnp, List<List<Double>> voiceLabels, 
-		List<List<Double>> durationLabels, int numberOfVoices, MetricalTimeLine mtl,
-		SortedContainer<Marker> keySigs) {
-
-		verifyCase(btp, bnp);
-
-		// Make an empty Piece with the given number of voices
-		Piece piece = new Piece();
-		NotationSystem system = piece.createNotationSystem();
-		for (int i = 0; i < numberOfVoices; i++) {
-			NotationStaff staff = new NotationStaff(system); 
-			system.add(staff); 
-			staff.add(new NotationVoice(staff));
-		}
-		piece.setMetricalTimeLine(mtl);
-		piece.setHarmonyTrack(keySigs);
-
-		// a. In the tablature case
-		if (btp != null) {
-			// Iterate through the Tablature, convert each TabSymbol into a note, and add it to the given voice    
-			for (int i = 0; i < btp.length; i++) {
-				// Create a Note from the TabSymbol at index i
-				int pitch = btp[i][Tablature.PITCH];
-				Rational metricTime = 
-					new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-				Rational metricDuration = null;
-				// If durationLabels == null (which is the case when not modelling duration): give notes their 
-				// minimum duration 
-				if (durationLabels == null) {
-					metricDuration = 
-						new Rational(btp[i][Tablature.MIN_DURATION], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-				}
-				// Else: give notes their predicted duration
-				else {
-					metricDuration = DataConverter.convertIntoDuration(durationLabels.get(i))[0]; // TODO [0] is possible because each element in durations currently contains only one Rational
-				}
-				Note note = Transcription.createNote(pitch, metricTime, metricDuration);
-			
-				// Add the Note to each voice in currentVoices
-				List<Integer> currentVoices = DataConverter.convertIntoListOfVoices(voiceLabels.get(i)); //voices.get(i);
-				for (int v : currentVoices) {
-					NotationVoice voice = piece.getScore().get(v).get(0);
-					voice.add(note);
-				}	
-			}
-		}
-		// b. In the non-tablature case
-		else if (bnp != null) {
-			// Iterate through the Transcription, convert each note into a Note, and add it to 
-			// the given voice
-			for (int i = 0; i < bnp.length; i++) {
-				// Create a Note from the note at index i
-				int pitch = bnp[i][PITCH];
-				Rational metricTime =	
-					new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM]);
-				Rational metricDuration = 
-					new Rational(bnp[i][DUR_NUMER], bnp[i][DUR_DENOM]);
-				Note note = Transcription.createNote(pitch, metricTime, metricDuration);
-				// Add the Note to each voice in currentVoices
-				List<Integer> currentVoices = DataConverter.convertIntoListOfVoices(voiceLabels.get(i));
-				for (int v : currentVoices) {
-					NotationVoice voice = piece.getScore().get(v).get(0);
-					voice.add(note);
-				}
-			}
-		}
-		return piece;
-	}
-
-
-  /**
-   * Creates a Note with the given pitch, MetricTime, and MetricDuration. 
-   * 
-   * @param pitch
-   * @param metricTime
-   * @param metricDuration
-   * @return
-   */
-  public static Note createNote(int pitch, Rational metricTime, Rational metricDuration) {
-  	// A Note consists of a ScoreNote and a PerformanceNote; each need to be created separately first 
-  	// 1. Create the ScoreNote
-  	ScorePitch scorePitch = new ScorePitch(pitch);
-  	ScoreNote scoreNote = new ScoreNote(scorePitch, metricTime, metricDuration);
-	  // 2. Create the PerformanceNote. The argumentless constructor can be used; after the creation only the
-   	// object variable pitch needs to be set: the others (duration, velocity, and generated) are irrelevant here
-  	PerformanceNote performanceNote = new PerformanceNote();
-	  performanceNote.setPitch(pitch);
-	  
-	  Note note = new Note(scoreNote, performanceNote);
-    // TODO? OR, as PerformanceNote does not really apply in our case:
-//	  MidiNote midiNote = MidiNote.convert(performanceNote);
-//    Note note = new Note(scoreNote, midiNote);
-	  
-		return note;
-	}
-  
-  
-  /** Adds a Note to the Transcription in the given voice at the given metricTime.
-	 * 
-	 * @param note
-	 * @param voiceNumber 
-	 * @param metricTime
-	 */
-  // TESTED (for both tablature- and non-tablature case)
-	public void addNote(Note note, int voiceNumber, Rational metricTime) {
-	  NotationSystem system = piece.getScore();
-	  NotationStaff staff = system.get(voiceNumber);
-	  NotationVoice voice = staff.get(0);
-		NotationChord chord = new NotationChord();
-		chord.add(note);
-		chord.setMetricTime(metricTime);
-		voice.add(chord);
-	} 
-	
-		 
-  /** Removes the Note with the given midiPitch from the NotationChord in the given voice at the given metric
-   *  time. If no such Note exists, a RuntimeException is thrown. 
-	 * 
-	 * @param midiPitch
-	 * @param voiceNumber  
-	 * @param metricTime 
-	 */
-	// TESTED (for both tablature and non-tablature case)
-	public void removeNote(int midiPitch, int voiceNumber, Rational metricTime) {
-		NotationSystem system = piece.getScore();
-	  NotationStaff staff = system.get(voiceNumber);
-	  NotationVoice voice = staff.get(0);
-		int chordNumber = voice.find(metricTime); 
-		if (chordNumber < 0) {
-			throw new RuntimeException("No Note found at the given metricTime.");
-		}
-	  NotationChord chord = voice.get(chordNumber);
-	  if (chord.size() == 1) {
-	    voice.remove(chordNumber);
-	  } 
-	  else {
-	    // NB: getContent() does not always give the contents of the NotationChord in the same sequence; 
-	  	// this has to do with the way the Notes are added when the Transcription is made 
-	  	// TODO fix or just use solution comparing with pitch (as below)?
-	    List<Note> notesInChord = chord.getContent(); 
-	    boolean noteFound = false;
-	    for (int i = 0; i < notesInChord.size(); i++) {
-	      Note currentNote = notesInChord.get(i);
-	    	if (currentNote.getMidiPitch() == midiPitch) {
-	    		chord.remove(currentNote);
-	    		noteFound = true;
-	    		break;
-	    	}
-	    }
-	    if (noteFound == false) {
-	    	throw new RuntimeException("No Note found with the given midiPitch.");
-	    }
-	  }
 	}
 
 
@@ -7345,10 +7062,10 @@ public class Transcription implements Serializable {
 	 * @param showAsScore
 	 * @param numberOfVoices
 	 */
-	public JFrame visualise(TimeSignature timeSig, /*KeyMarker keyMarker,*/ boolean showAsScore, int numberOfVoices) {
+	private JFrame visualise(TimeSignature timeSig, /*KeyMarker keyMarker,*/ boolean showAsScore, int numberOfVoices) {
 
-		String windowTitle = getPieceName();
-		Piece argPiece = getPiece();
+		String windowTitle = getName();
+		Piece argPiece = getScorePiece();
 
 		Piece piece = new Piece(); 
 		NotationSystem notationSystem = piece.createNotationSystem();
@@ -7362,31 +7079,35 @@ public class Transcription implements Serializable {
 		metricalTimeLine.add(timeSigMarker);
 //		metricalTimeLine.add(keyMarker);
 		
+		int superius = 0;
+		int altus = 1;
+		int tenor = 2;
+		int bassus = 3;
 		
 		int lowestVoice = -1; 
 		if (numberOfVoices == 3) {
-			lowestVoice = TENOR;
+			lowestVoice = tenor;
 		}
 		else if (numberOfVoices == 4) {
-			lowestVoice = BASSUS;
+			lowestVoice = bassus;
 		}
 		
-		for (int voice = SUPERIUS; voice <= lowestVoice; voice++) {
+		for (int voice = superius; voice <= lowestVoice; voice++) {
 			NotationStaff notationStaff = null;
-			if (voice == SUPERIUS || voice == TENOR) {
+			if (voice == superius || voice == tenor) {
 				notationStaff = new NotationStaff(notationSystem);
-				if (voice == TENOR) {
+				if (voice == tenor) {
 					notationStaff.setClefType('f', 1, 0);
 				}
 			}
-			if (voice == ALTUS || voice == BASSUS) {
+			if (voice == altus || voice == bassus) {
 				if (!showAsScore) {
 					// If j == ALTUS, notationSystem contains one staff; if j == BASSUS it contains two staves
 					notationStaff = notationSystem.get((notationSystem.size() - voice) * -1);
 				}
 				else {
 					notationStaff = new NotationStaff(notationSystem);
-					if (voice == BASSUS) {
+					if (voice == bassus) {
 						notationStaff.setClefType('f', 1, 0);
 					}
 				}
@@ -7470,7 +7191,7 @@ public class Transcription implements Serializable {
 		fullScoreFrame.add(new JScrollPane(scoreEditor));
 		fullScoreFrame.setSize(800, 600);
 //		fullScoreFrame.setSize(1200, 1200);
-		fullScoreFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		fullScoreFrame.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
 //		fullScoreFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		fullScoreFrame.setVisible(true);
 		scoreEditor.setSize(20000, 20000);
@@ -7489,6 +7210,7 @@ public class Transcription implements Serializable {
 			JMenuItem openFile = new JMenuItem("Open"); 
 			fileMenu.add(openFile); 
 			openFile.addActionListener(new java.awt.event.ActionListener() {
+				@Override
 				public void actionPerformed(java.awt.event.ActionEvent e) {
 //					openFileAction();
 				}
@@ -7497,6 +7219,7 @@ public class Transcription implements Serializable {
 			JMenuItem saveFile = new JMenuItem("Save");
 			fileMenu.add(saveFile);
 			saveFile.addActionListener(new java.awt.event.ActionListener() {
+				@Override
 				public void actionPerformed(java.awt.event.ActionEvent e) {
 //					saveFileAction();
 				}
@@ -7508,6 +7231,7 @@ public class Transcription implements Serializable {
 			JMenuItem blaFile = new JMenuItem("Bla"); 
 			editMenu.add(blaFile); 
 			blaFile.addActionListener(new java.awt.event.ActionListener() {
+				@Override
 				public void actionPerformed(java.awt.event.ActionEvent e) {
 //					openFileAction();
 				}
@@ -7519,6 +7243,7 @@ public class Transcription implements Serializable {
 			JMenuItem scoreViewFile = new JMenuItem("Score View"); 
 			viewMenu.add(scoreViewFile); 
 			scoreViewFile.addActionListener(new java.awt.event.ActionListener() {
+				@Override
 				public void actionPerformed(java.awt.event.ActionEvent e) {
 //					openFileAction();
 				}
@@ -7527,6 +7252,7 @@ public class Transcription implements Serializable {
 			JMenuItem grandStaffViewFile = new JMenuItem("Grand Staff View"); 
 			viewMenu.add(grandStaffViewFile); 
 			grandStaffViewFile.addActionListener(new java.awt.event.ActionListener() {
+				@Override
 				public void actionPerformed(java.awt.event.ActionEvent e) {
 //					openFileAction();
 				}
@@ -7534,26 +7260,6 @@ public class Transcription implements Serializable {
 
 		}
 		return encodingWindowMenubar;
-	}
-
-
-	/**
-	 * Visualises the Transcription; the given name is the one shown in the JFrame. 
-	 * 
-	 * @param windowTitle
-	 */
-	public JFrame visualise(String windowTitle) {
-		ScoreEditor scoreEditor = new ScoreEditor(getPiece().getScore());
-		scoreEditor.setModus(Mode.SELECT_AND_EDIT);
-
-		JFrame fullScoreFrame = new JFrame(windowTitle);
-		fullScoreFrame.add(new JScrollPane(scoreEditor));
-		fullScoreFrame.setSize(800, 600);
-//		fullScoreFrame.setSize(1200, 1200);
-	    fullScoreFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	    fullScoreFrame.setVisible(true);
-	    scoreEditor.setSize(20000, 20000);
-	    return fullScoreFrame;
 	}
 
 
@@ -7581,6 +7287,415 @@ public class Transcription implements Serializable {
 		}		
 		return voiceAssignments;
 	}
+
+
+	/**
+	 * Gets the ranges (in MIDI pitches) of the individual voices, starting with the highest
+	 * voice (voice 0).
+	 *  
+	 * @return
+	 */
+	// TESTED
+	public List<Integer[]> getVoiceRangeInformation() {
+		List<Integer[]> ranges = new ArrayList<>();
+		
+		NotationSystem nSys = getScorePiece().getScore();
+		// For each voice i
+		for (int i = 0; i < getScorePiece().getScore().size(); i ++) {
+			int lowestPitch = Integer.MAX_VALUE;
+			int highestPitch = Integer.MIN_VALUE;
+			NotationVoice nv = nSys.get(i).get(0);
+			for (NotationChord nc : nv) {
+				for (Note n : nc) {
+					if (n.getMidiPitch() < lowestPitch) {
+						lowestPitch = n.getMidiPitch();
+					}
+					if (n.getMidiPitch() > highestPitch) {
+						highestPitch = n.getMidiPitch();
+					}
+				}
+			}
+			ranges.add(new Integer[]{lowestPitch, highestPitch});
+		}
+		return ranges;
+	}
+
+
+	/**
+	 * Gets information on the voice crossings in the Transcription. Returns an Integer[] containing
+	 * <ul>
+	 * <li>as element 0: the number of notes in the piece.</li>
+	 * <li>as element 1: the number of voice crossings where the crossing voice and the crossed 
+	 *                   voice have the same onset time (Type 1 vc)</li>
+	 * <li>as element 2: the number of voice crossings where the crossing voice has a later onset 
+	 *                   time than the crossed voice (Type 2 vc)</li>
+	 * <li>as element 3: the total of Type 1 and 2 vc</li>
+	 * <li>as element 4: for each voice (starting at 0): the number of instances this voice is 
+	 *                   involved in a voice crossing. Instances are counted for each voice that 
+	 *                   is crossed (e.g., the superius going under the altus and tenor are two 
+	 *                	 voice crossings). In the case of Type 2 vc, a voice is involved both if 
+	 *                	 it is the crossing and the crossed voice. </li>
+	 * <li>as element 5: for each voice (starting at 0): the number of notes in that voice.</li>               
+	 * </ul>
+	 * @param tab Is <code>null</code> in the non-tablature case.
+	 * @return
+	 */
+	public Integer[] getVoiceCrossingInformation(Tablature tab) {
+		String voiceCrossingInformation = "voice crossing information for " + getName() + "\r\n";
+		int totalTypeOne = 0;
+		int totalTypeTwo = 0;
+
+		// For each note
+		List<Note> notes = getNotes();
+//		NoteSequence noteSeq = getNoteSequence();
+		List<List<List<Double>>> chordVoiceLabels = getChordVoiceLabels();
+		List<List<Double>> voiceLabels = getVoiceLabels();
+		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
+
+		Integer[][] basicTabSymbolProperties = null;
+		Integer[][] basicNoteProperties = null;
+		int numChords = 0;
+		int numNotes = 0;
+		// a. In the tablature case
+		if (tab != null) {
+			basicTabSymbolProperties = tab.getBasicTabSymbolProperties();
+			numChords = tab.getChords().size();
+			numNotes = tab.getNumberOfNotes();
+		}
+		// b. in the non-tablature case
+		else {
+			basicNoteProperties = getBasicNoteProperties();
+			numChords = getChords().size(); // conditions satisfied; external version OK
+			numNotes = getNumberOfNotes();
+		}
+
+		Integer[] timesInvolved = new Integer[getNumberOfVoices()];
+		Arrays.fill(timesInvolved, 0);
+
+		// For each chord
+		int lowestNoteIndex = 0;
+		for (int i = 0; i < numChords; i++) { // i is index of current chord  	
+			// Get current chord size and meterinfo, and find current onset time
+			int currentChordSize = 0; 
+//			List<Integer[]> meterInfo = null;
+			Rational onsetCurrNote = null;
+			List<Integer> pitchesInChord;
+			// a. in the tablature case
+			if (tab != null) {
+				currentChordSize = tab.getChords().get(i).size();
+//				meterInfo = tab.getMeterInfo();
+//				meterInfo = tablature.getTimeline().getMeterInfoOBS();
+				for (Integer[] btp : basicTabSymbolProperties) {
+					if (btp[Tablature.CHORD_SEQ_NUM] == i) {
+						onsetCurrNote = 
+							new Rational(btp[Tablature.ONSET_TIME], Tablature.SRV_DEN);
+						break;
+					}
+				}
+				pitchesInChord = tab.getPitchesInChord(i); 
+			}
+			// b. In the non-tablature case
+			else {
+				List<Note> currChord = getChords().get(i);
+				currentChordSize = currChord.size(); // conditions satisfied; external version OK
+//				meterInfo = getMeterInfo();
+				for (Integer[] bnp : basicNoteProperties) {
+					if (bnp[CHORD_SEQ_NUM] == i) {
+						onsetCurrNote = new Rational(bnp[ONSET_TIME_NUMER], bnp[ONSET_TIME_DENOM]);
+						break;
+					}
+				}
+				pitchesInChord = getPitchesInChord(currChord);
+			}
+
+			Timeline tl = tab != null ? tab.getEncoding().getTimeline() : null;
+			String currMeasure = "" + 
+				tab != null ? 
+				(tl.getMetricPosition((int) onsetCurrNote.mul(Tablature.SRV_DEN).toDouble())[0].getNumer() + " " +
+				tl.getMetricPosition((int) onsetCurrNote.mul(Tablature.SRV_DEN).toDouble())[1]) // multiplication necessary because of division when making onsetCurrNote above		
+				:
+				(ScoreMetricalTimeLine.getMetricPosition(mtl, onsetCurrNote)[0].getNumer() + " " +	
+//				(Utils.getMetricPosition(onsetCurrNote, meterInfo)[0].getNumer() + " " +
+				ScoreMetricalTimeLine.getMetricPosition(mtl, onsetCurrNote)[1]);
+//				Utils.getMetricPosition(onsetCurrNote, meterInfo)[1]);
+
+			// a. Get the voice crossing information within the chord (Type 1)
+			List<List<Double>> currentChordVoiceLabels = chordVoiceLabels.get(i);
+			List<List<Integer>> voicesInChord = DataConverter.getVoicesInChord(currentChordVoiceLabels);
+			List<List<Integer>> vcInfo = 
+				getVoiceCrossingInformationInChord(pitchesInChord, voicesInChord);
+			if (vcInfo.get(0).size() != 0) {
+				voiceCrossingInformation = 
+					voiceCrossingInformation.concat("Type 1 voice crossing at chordindex " +
+					i + " (b. " + currMeasure + "); voices involved are " + vcInfo.get(0) + "\n");
+				for (int v : vcInfo.get(0)) {
+					timesInvolved[v]++;
+				}
+//				for (int j = 0; j < vcInfo.get(1).size(); j++) {
+//					if (Math.abs(vcInfo.get(1).get(j) - vcInfo.get(1).get(j + 1)) > 1) {
+//						voiceCrossingInformation = voiceCrossingInformation.concat("  --> HIER1" + "\n");
+//					}
+//					j++;
+//				}
+				totalTypeOne++;
+			}
+
+			// b. For each note in the chord: get the voice crossing information with any previous 
+			// sustained notes (Type 2)
+			for (int j = lowestNoteIndex; j < lowestNoteIndex + currentChordSize; j++) { // j is index of current note
+				int pitchCurrNote = 0;
+				// a. In the tablature case
+				if (tab != null) {
+					pitchCurrNote = basicTabSymbolProperties[j][Tablature.PITCH];
+				}
+				// b. In the non-tablature case
+				else {
+					pitchCurrNote = basicNoteProperties[j][PITCH];
+				}
+				List<Double> voiceLabelCurrNote = voiceLabels.get(j);
+				List<Integer> voicesCurrNote = DataConverter.convertIntoListOfVoices(voiceLabelCurrNote);
+				// Find sustained notes
+				for (int k = 0; k < notes.size(); k++) { // k is index of note before current note 
+//				for (int k = 0; k < noteSeq.size(); k++) { // k is index of note before current note 
+					Note n = notes.get(k);
+//					Note n = noteSeq.getNoteAt(k);
+					Rational onsetPrevNote = n.getMetricTime();
+					Rational durationPrevNote = n.getMetricDuration();
+					Rational offsetPrevNote = onsetPrevNote.add(durationPrevNote);
+					// Stop searching if the note is no longer a previous note
+					if (onsetPrevNote.isEqual(onsetCurrNote)) {
+						break;
+					}
+					else {
+						// Sustained note?
+						if (offsetPrevNote.isGreater(onsetCurrNote)) {
+							// Get pitch and voices of previous note
+							int pitchPrevNote = n.getMidiPitch();
+							List<Double> voiceLabelPrevNote = voiceLabels.get(k);
+							List<Integer> voicesPrevNote = 
+								DataConverter.convertIntoListOfVoices(voiceLabelPrevNote);
+							// For each note in the chord: voice crossing with sustained note if that sustained note
+							// -has a lower voice number (i.e., is in a higher voice) and a lower pitch
+							// -has a higher voice number (i.e., is in a lower voice) and a higher pitch
+							// Two for-loops necessary to take into account CoDs
+							for (int currVoice : voicesCurrNote) {
+								for (int prevVoice : voicesPrevNote) {
+									if ((prevVoice < currVoice && pitchPrevNote < pitchCurrNote) ||
+										(prevVoice > currVoice && pitchPrevNote > pitchCurrNote)) {
+//										double prevMeasure = onsetPrevNote.toDouble() + 1.0;
+										String prevMeasure = "" + 
+											tab != null ? 
+											(tl.getMetricPosition((int) onsetPrevNote.mul(Tablature.SRV_DEN).toDouble())[0].getNumer() + 
+											" " + tl.getMetricPosition((int) onsetPrevNote.mul(Tablature.SRV_DEN).toDouble())[1])
+											:
+											(ScoreMetricalTimeLine.getMetricPosition(mtl, onsetPrevNote)[0].getNumer() + " " +	
+//											(Utils.getMetricPosition(onsetPrevNote, meterInfo)[0].getNumer() + " " + 
+											ScoreMetricalTimeLine.getMetricPosition(mtl, onsetPrevNote)[1]);
+//											Utils.getMetricPosition(onsetPrevNote, meterInfo)[1]);
+										voiceCrossingInformation = 
+											voiceCrossingInformation.concat("Type 2 voice crossing at chordIndex " + i + "; notes involved are:" + "\n" + 
+											"  note at index " + j + " (m. " + currMeasure + "; pitch " + pitchCurrNote + "; voice " + currVoice + ")" + "\n" +  
+											"  note at index " + k + " (m. " + prevMeasure + "; pitch " + pitchPrevNote + "; voice " + prevVoice + ")" + "\n");
+										totalTypeTwo++;
+										timesInvolved[currVoice]++;
+										timesInvolved[prevVoice]++;
+//										if (Math.abs(currVoice - prevVoice) > 1) {
+//											voiceCrossingInformation = voiceCrossingInformation.concat("  --> HIER2" + "\n");
+//										}
+									}
+								}
+							}					
+						}
+					}
+				}
+			}
+			lowestNoteIndex += currentChordSize;
+		}
+		voiceCrossingInformation += "total type 1: " + totalTypeOne + "\r\n";
+		voiceCrossingInformation += "total type 2: " + totalTypeTwo + "\r\n";
+		voiceCrossingInformation += "total       : " + (totalTypeOne+totalTypeTwo) + "\r\n";
+		voiceCrossingInformation += "times each voice is involved" + "\r\n";
+		voiceCrossingInformation += Arrays.toString(timesInvolved);
+		System.out.println(voiceCrossingInformation);
+		// res contains numNotes + totalTypeOne + totalTypeTwo + all + involved (per voice) + 
+		// voice size (per voice)
+		Integer[] res = new Integer[4 + timesInvolved.length + getNumberOfVoices()];
+		res[0] = numNotes;
+		res[1] = totalTypeOne;
+		res[2] = totalTypeTwo;
+		res[3] = totalTypeOne + totalTypeTwo;
+		for (int i = 0; i < timesInvolved.length; i++) {
+			res[4+i] = timesInvolved[i];
+		}
+		// Note per voice
+		List<List<Integer>> notesPerVoice = listNotesPerVoice(getVoiceLabels());
+		List<Integer> numNotesPerVoice = new ArrayList<>();
+		for (int i = 0; i < notesPerVoice.size(); i++) {
+			if (notesPerVoice.get(i).size() > 0) {
+				numNotesPerVoice.add(notesPerVoice.get(i).size());
+			}
+			else {
+				int numVoices = getNumberOfVoices();
+				if (numVoices == 4) {
+					// Only voice 4 is allowed to be empty
+					if (i != MAX_NUM_VOICES-1) {
+						throw new RuntimeException("Voice " + i + " does not contain any notes.");
+					}
+				}
+				if (numVoices == 3) {
+					// Only voice 3 and 4 are allowed to be empty
+					if (i != MAX_NUM_VOICES-1 && i != MAX_NUM_VOICES-2) {
+						throw new RuntimeException("Voice " + i + " does not contain any notes.");
+					}
+				}
+				if (numVoices == 2) {
+					// Only voice 2, 3 and 4 are allowed to be empty
+					if (i != MAX_NUM_VOICES-1 && i != MAX_NUM_VOICES-2 &&
+						i != MAX_NUM_VOICES-3) {
+						throw new RuntimeException("Voice " + i + " does not contain any notes.");
+					}
+				}
+			}
+		}
+		for (int i = 0; i < numNotesPerVoice.size(); i++) {
+			res[(res.length-numNotesPerVoice.size())+i] = numNotesPerVoice.get(i); 
+		}
+		System.out.println(Arrays.toString(res));
+		return res;
+	}
+
+
+	/**
+	 * Lists all the unique chords in the Transcription in the order they are encountered. Each chord is 
+	 * represented as a series of pitches, with the lowest pitch listed first. Chords with voice crossings 
+	 * are therefore rearranged so that their pitches are sorted numerically.
+	 * 
+	 * @return
+	 */
+	// TESTED
+	public List<List<Integer>> generateChordDictionary() {
+		List<List<Integer>> chordDictionary = new ArrayList<List<Integer>>();
+
+		// For each chord 
+//		List<List<Note>> chords = getTranscriptionChords();
+		Integer[][] bnp = getBasicNoteProperties();
+		int numChords = bnp[bnp.length - 1][CHORD_SEQ_NUM] + 1;
+		List<List<Note>> ch = getChords();
+//		int numChords = basicNoteProperties[basicNoteProperties.length - 1][CHORD_SEQ_NUM] + 1;
+//		for (int i = 0; i < chords.size(); i++) {  		
+		for (int i = 0; i < numChords; i++) {
+			// List the pitches in the chord
+			List<Integer> pitchesInCurrentChord = getPitchesInChord(ch.get(i));
+//			List<Integer> pitchesInCurrentChord = getPitchesInChord(i);
+			// Sort the pitches numerically
+			Collections.sort(pitchesInCurrentChord);
+			// If chordDictionary does not contain pitchesInCurrentChord: add
+			if (!chordDictionary.contains(pitchesInCurrentChord)) {
+				chordDictionary.add(pitchesInCurrentChord);
+			}
+		}	
+		return chordDictionary;
+	}
+
+
+	/**
+	 * Lists all the unique (chord) voice assignments in the transcription in the order they are encountered.
+	 * The parameter highestNumberOfVoices controls the size of the voice assignments returned.
+	 * 
+	 * @param highestNumberOfVoices
+	 * @return
+	 */
+	// TESTED (for both tablature and non-tablature case)
+	public List<List<Integer>> generateVoiceAssignmentDictionary(int highestNumberOfVoices) {
+		List<List<Integer>> voiceAssignmentDictionary = new ArrayList<List<Integer>>();
+		List<List<Integer>> voiceAssignments = getVoiceAssignments(/*tablature,*/ highestNumberOfVoices);
+
+		// For each voice assignment
+		for (int i = 0; i < voiceAssignments.size(); i++) {
+			List<Integer> currentVoiceAssignment = voiceAssignments.get(i);
+//			if (currentVoiceAssignment.equals(Arrays.asList(new Integer[]{1, 0, -1, -1}))) {
+//				System.out.println("num = " + i);
+//				for (int j = 0; j < getBasicNoteProperties().length; j++) {
+//					if (getBasicNoteProperties()[j][CHORD_SEQ_NUM] == 327) {
+//						Rational metricTime = new Rational(getBasicNoteProperties()[j][Transcription.ONSET_TIME_NUMER],
+//							getBasicNoteProperties()[j][Transcription.ONSET_TIME_DENOM]);	
+//						Rational[] metricPosition = Tablature.getMetricPosition(metricTime, getMeterInfo());
+//						System.out.println(metricPosition[0] + ", " + metricPosition[1]);
+//						System.out.println(getBasicNoteProperties()[j][ONSET_TIME_NUMER] / 
+//							getBasicNoteProperties()[j][ONSET_TIME_DENOM]);
+//						System.out.println(getBasicNoteProperties()[j][PITCH]);
+//					}
+//				}
+//
+//			}
+			// If voiceAssignmentDictionary does not contain currentVoiceAssignment: add
+			if (!voiceAssignmentDictionary.contains(currentVoiceAssignment)) {
+				voiceAssignmentDictionary.add(currentVoiceAssignment);
+			}
+		}		
+		return voiceAssignmentDictionary;
+	}
+
+
+	public void setColourIndices(List<List<Integer>> arg) {
+//		colourIndices = arg;
+	}
+
+
+	public void setVoiceLabels(List<List<Double>> argVoiceLabels) {
+		voiceLabels = argVoiceLabels;
+	}
+
+
+	// COMMENTED OUT 10.2022
+	/**
+	 * Gets the pitches in the chord at the given index. Element 0 of the List represents the lowest note's pitch,
+	 * element 1 the second-lowest note's, etc. Sustained notes are not included. 
+	 * 
+	 * NB: This method applies only to the non-tablature case
+	 * 
+	 * @param chordIndex
+	 * @return
+	 */
+	// TESTED
+	private List<Integer> getPitchesInChordOLD(int chordIndex) {
+		List<Integer> pitchesInChord = new ArrayList<Integer>();
+
+		List<Note> transcriptionChord = null;
+		// Use the no-final version of the chords when called in Transcription creation
+		if (getChords() == null) {
+//		if (transcriptionChordsFinal == null) {
+			transcriptionChord = getChordsFromNoteSequence().get(chordIndex);
+		}
+		// Otherwise use external version
+		else {
+			transcriptionChord = getChords().get(chordIndex);
+		}
+
+		for (Note n : transcriptionChord) {
+			pitchesInChord.add(n.getMidiPitch());
+		}
+		return pitchesInChord;
+	}
+
+
+//	/**
+//	 * Returns the size of the largest chord in the Transcription.
+//	 * 
+//	 * @return
+//	 */
+//	// TESTED
+//	public int getLargestTranscriptionChordOLD() { 
+//		int largestChord = 0;
+//		List<List<Note>> transcriptionChords = getTranscriptionChords();
+//		for (List<Note> l : transcriptionChords) {
+//			int currentSize = l.size();
+//			if (currentSize > largestChord) {
+//				largestChord = currentSize;
+//			}
+//		}
+//		return largestChord;
+//	}
 
 
 //	/**
@@ -7648,1045 +7763,3593 @@ public class Transcription implements Serializable {
 //	  return coDVoicesInfo;
 //	}
 
-	
+
+//	/**
+//	 * Sets <i>noteProperties</i>, a List containing the Note properties for each Note: (0) pitch; 
+//	 * (1) duration; (2) size of the chord the Note is in; (3) whether the Note's duration is shorter than 
+//	 * an 8th note. 
+//	 * 
+//	 */
+//  public void setNoteProperties() {
+//    noteProperties = new ArrayList<List<Double>>();
+////    Integer[][] basicNoteProperties = getBasicNoteProperties();
+//    
+//    // Iterate through basicNoteProperties and create noteProperties for each Note   
+//    for (int i = 0; i < basicNoteProperties.length; i++) {
+//      Integer[] currentBasicNoteProperties = basicNoteProperties[i];
+//      List<Double> currentNoteProperties = new ArrayList<Double>();
+//    	// 0. Pitch
+//      double pitch = currentBasicNoteProperties[PITCH];
+//      currentNoteProperties.add(0, pitch);
+//      
+//      // 1. Duration
+//      double duration = (double) currentBasicNoteProperties[DURATION_NUMER] / 
+//      	currentBasicNoteProperties[DURATION_DENOM]; 
+////      System.out.println("currentBasicNoteProperties[1] = " + currentBasicNoteProperties[1]);
+////      System.out.println("currentBasicNoteProperties[2] = " + currentBasicNoteProperties[2]);
+////      System.exit(0);
+//      currentNoteProperties.add(1, duration);
+//      
+//      // 2. The size of the chord the current Note is in
+//      double size = currentBasicNoteProperties[CHORD_SIZE_AS_NUM_ONSETS];
+//      currentNoteProperties.add(2, size);
+//      
+//      // 3. Is the current Note's duration shorter than an 8th note? Flag as short note
+//      if (duration < 1.0/8) {
+//      	currentNoteProperties.add(3, 1.0);
+//      }
+//      else {
+//      	currentNoteProperties.add(3, 0.0);
+//      }
+//      
+//      // Add onsetProperties at index i to allProperties and proceed to the next TS 
+//      noteProperties.add(i, currentNoteProperties);
+//    }
+//  }
+
+
+//	/**
+//	 * Gets  <i>noteProperties</i>.
+//	 * 
+//	 * @return
+//	 */
+//  public List<List<Double>> getNoteProperties() {
+//  	return noteProperties;
+//  }
+
+
 	/**
-	 * Given a Note with a pitch and a metricTime (its metricDuration is not taken into consideration), determines the
-	 * previous or next (depending on the value of the argument direction) Note in the given NotationVoice. There are 
-	 * two possibilities: 
-	 * 1. If voice contains note, the actual previous Note (or <code>null</code> if there is none) is returned;  
-	 * 2. If voice does not contain note, a fictional previous Note, i.e., a Note closest in onset time to note 
-	 *    (or <code>null</code> if there is none), is returned.
-	 *    
-	 * NB: This method presumes that a voice can contain only one Note at each metric time.
+	 * Constructor for a predicted Transcription.
 	 * 
-	 * @param voice
-	 * @param note
-	 * @param directionIsLeft
-	 * @return
+	 * @param argMidiFile
+	 * @param argEncodingFile
+	 * @param argPiece
+	 * @param argVoiceLabels
+	 * @param argDurationLabels
 	 */
-	// TESTED (for both fwd and bwd model)
-	public static Note getAdjacentNoteInVoice(NotationVoice voice, Note note, 
-		/*Direction direction*/ boolean directionIsLeft) {
-		Note adjacentNote = null;
+	private Transcription(String name, Encoding argEncoding, /*File argEncodingFile,*/ Integer[][] argBtp, 
+		Integer[][] argBnp, int argHiNumVoices, List<List<Double>> argVoiceLabels, 
+		List<List<Double>> argDurationLabels, MetricalTimeLine mtl, SortedContainer<Marker> ks) {
+		
+//		Encoding argEncoding = argEncodingFile != null ? new Encoding(argEncodingFile) : null;
 
-		// List all the Notes in voice
-		List<Note> notesInVoice = new ArrayList<Note>();
-		int seqNumOfCurrNote = -1;
-		for (int i = 0; i < voice.size(); i++) {
-			Note currNote = voice.get(i).get(0); 
-			notesInVoice.add(currNote);
-			if (currNote.getMidiPitch() == note.getMidiPitch() && currNote.getMetricTime().equals(note.getMetricTime())) {
-				seqNumOfCurrNote = i;
-			}
-		}
+		// Create and set the predicted Piece
+		Piece predictedPiece = 
+			createPiece(argBtp, argBnp, argVoiceLabels, argDurationLabels, argHiNumVoices, mtl, ks, name);
+//		predictedPiece.setName(name);
 
-		// Get the adjacent Note. There are two possibilities:
-		// a. If seqNumOfCurrNote is not -1, note is in voice; determine adjacentNote
-		// b. If seqNumOfCurrNote is -1, note is not in voice. In this case, a fictional adjacent note, i.e., the note
-		// closest in onset time to note, must be returned
-		if (directionIsLeft) {
-//		if (direction == Direction.LEFT) {
-			// a.
-			if (seqNumOfCurrNote != -1) {
-				// adjacentNote only exists if note is not the first Note in the voice
-				if (seqNumOfCurrNote != 0) {
-					adjacentNote = notesInVoice.get(seqNumOfCurrNote - 1);
-				}
-			}
-			// b.
-			else {
-				Note closest = null;
-				for (Note n : notesInVoice) {
-					if (n.getMetricTime().isLess(note.getMetricTime())) {
-						closest = n;
-					}
-					// Break when the onset time of n becomes equal to or greater than that of note; closest is now the last 
-					// smaller onset time
-					else {
-						break;
-					}
-				}
-				adjacentNote = closest;
-			}
-		}
-		else {
-//		else if (direction == Direction.RIGHT) {
-			// a.
-			if (seqNumOfCurrNote != -1) {
-				// adjacentNote only exists if note is not the last Note in the voice
-				if (seqNumOfCurrNote != (voice.size() - 1)) {
-					adjacentNote = notesInVoice.get(seqNumOfCurrNote + 1);
-				}
-			}
-			// b. 
-			else {
-				Note closest = null;
-				for (Note n : notesInVoice) {
-					// Break when the onset time of n becomes greater than that of note; closest is now the first greater 
-					// onset time
-					if (n.getMetricTime().isGreater(note.getMetricTime())) {
-						closest = n;
-						break;
-					}
-				}
-				adjacentNote = closest;
-			}
-		}
-		return adjacentNote;
+		// Create the Transcription based on the predicted Piece
+//		boolean normaliseTuning = true; // is only used in the tablature case
+//		boolean isGroundTruthTranscription = false;
+		init(new ScorePiece(predictedPiece), argEncoding, null, /*normaliseTuning, isGroundTruthTranscription,*/ 
+			argVoiceLabels, argDurationLabels, Type.PREDICTED);
+			
+//		// Set the predicted class fields. When creating a ground truth Transcription, this happens inside
+//		// handleCoDNotes() and handleCourseCrossings(), but when creating a predicted Transcription this step
+//		// is skipped in those methods because the voice labels and duration labels are already ready-to-use. In 
+//		// the tablature case, only voicesCoDNotes must still be created from them
+//		setVoiceLabels(argVoiceLabels);
+//		// a. In the tablature case
+//		if (argEncodingFile != null) {
+//			// Set durationLabels
+//			// NB: The durationLabels created in createTranscription are overwritten by argDurationLabels. Thus, 
+//			// when not modelling duration (when argDurationLabels == null), they are reset to null
+//			setDurationLabels(argDurationLabels);
+//			// Create voicesCoDNotes
+//			// NB: currently, only one duration is always predicted; both CoDnotes thus have the same duration. In
+//			// this case, the lower CoDnote (i.e., the one in the lower voice that comes first in the NoteSequence) 
+//			// is placed at element 0 (see Javadoc handleCoDNotes())
+//			List<Integer[]> voicesCoDNotes = new ArrayList<Integer[]>();
+//			// For each predicted voiceLabel
+//			for (int i = 0; i < argVoiceLabels.size(); i++) {
+//				List<Double> currLabel = argVoiceLabels.get(i);
+//				// IN case of a CoD, voices contain two elements: the highest predicted voice as element 0, 
+//				// and the lowest predicted voice as element 1 
+//				List<Integer> voices = DataConverter.convertIntoListOfVoices(currLabel);
+//				// If a CoD is predicted
+//				if (voices.size() > 1) {
+//					Integer[] currVoicesCoDNotes = new Integer[2];
+//					currVoicesCoDNotes[0] = voices.get(1); // lowest predicted voice
+//					currVoicesCoDNotes[1] = voices.get(0); // highest predicted voice
+//					voicesCoDNotes.add(currVoicesCoDNotes);
+//				}
+//				// If no CoD is predicted
+//				else {
+//					voicesCoDNotes.add(null);
+//				}
+//			}	
+//			setVoicesSNU(voicesCoDNotes);
+//		}	
+//		// b. In the non-tablature case
+//		else {
+//			setEqualDurationUnisonsInfo(argEqualDurationUnisonsInfo);
+//		}  	  	
 	}
 
 
-	/**
-	 * Gets the indices of all previous notes that are still sounding at the onset time of the
-	 * note at noteIndex, i.e., all previous notes whose offset time is greater than the 
-	 * onset time of the note at noteIndex.
-	 * 
-	 * @param btp
-	 * @param durationLabels
-	 * @param bnp
-	 * @param noteIndex
-	 * @return
-	 */
-	// TESTED (for both tablature- and non-tablature case) 
-	public static List<Integer> getIndicesOfSustainedPreviousNotes(Integer[][] btp, 
-		List<List<Double>> durationLabels, Integer[][] bnp, int noteIndex) {
+	private List<List<List<Double>>> makeChordVoiceLabelsOLD(Tablature tab) {
+		List<List<List<Double>>> argChordVoiceLabels = new ArrayList<List<List<Double>>>();
+		argChordVoiceLabels = new ArrayList<List<List<Double>>>();
 
-		verifyCase(btp, bnp);
-		List<Integer> indicesOfSustainedPreviousNotes = new ArrayList<Integer>();
-
-		// 1. Determine the onset time of the current note and the index of the first note in the chord
-		Rational onsetTimeCurrentNote = null;
-		int lowestNoteIndex = -1;
+		List<List<Double>> argVoiceLabels = getVoiceLabels();
+	
 		// a. In the tablature case
-		if (btp != null) {
-			onsetTimeCurrentNote = new Rational(btp[noteIndex][Tablature.ONSET_TIME],
-				Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-			lowestNoteIndex = noteIndex - btp[noteIndex][Tablature.NOTE_SEQ_NUM];
+		if (tab != null) {
+			// Get the tablature chords 
+			List<List<TabSymbol>> argTabChords = tab.getChords();
+
+			// Add the voice labels for each chord to chordVoiceLabels
+			int lowestNoteIndex = 0;
+			for (int j = 0; j < argTabChords.size(); j++) {
+				List<TabSymbol> currentChord = argTabChords.get(j); 
+				int currentChordSize = currentChord.size();
+				argChordVoiceLabels.add(new ArrayList<List<Double>>(argVoiceLabels.subList(lowestNoteIndex, 
+					lowestNoteIndex + currentChordSize)));
+				lowestNoteIndex += currentChordSize;
+			}
 		}
 		// b. In the non-tablature case
-		else if (bnp != null) {
-			onsetTimeCurrentNote = new Rational(bnp[noteIndex][Transcription.ONSET_TIME_NUMER],
-				bnp[noteIndex][Transcription.ONSET_TIME_DENOM]);
-			lowestNoteIndex = noteIndex - bnp[noteIndex][Transcription.NOTE_SEQ_NUM];		
-		}
-
-		// 2. For all notes in the previous chord(s): add indices of the notes with an offset
-		// time greater than onsetTimeCurrentNote to indicesOfSustainedPreviousNotes
-		for (int i = 0; i < lowestNoteIndex; i++) {
-			// 1. Determine the metric time and the metric duration of the current previous note
-			Rational metricTimeCurrentPreviousNote = null;
-			Rational durationCurrentPreviousNote = null;
-			// a. In the tablature case
-			if (btp != null) {
-				// Determine the metric time
-				metricTimeCurrentPreviousNote = new Rational(btp[i][Tablature.ONSET_TIME],	
-					Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-				// Determine the duration. In the case of a CoD, the longer duration of the CoDnote must be considered:
-				// if this duration does not cause note overlap, the CoDnote will not cause note overlap at all). In 
-				// both cases this is the first element of durationCurrentPreviousNote
-				List<Double> durationLabelCurrentPreviousNote = durationLabels.get(i);
-				durationCurrentPreviousNote = 
-					DataConverter.convertIntoDuration(durationLabelCurrentPreviousNote)[0];
-			}
-			// b. In the non-tablature case
-			else if (bnp != null) {
-				// Determine the metric time
-				metricTimeCurrentPreviousNote = new Rational(bnp[i][Transcription.ONSET_TIME_NUMER],	
-					bnp[i][Transcription.ONSET_TIME_DENOM]);
-				// Determine the duration
-				durationCurrentPreviousNote = new Rational(bnp[i][Transcription.DUR_NUMER],
-					bnp[i][Transcription.DUR_DENOM]);
-			}
-			// 2. Determine the offset time of the current previous note; add i to indicesOfSustainedPreviousNotes if
-			// the offset time is larger than the onset time of the note at noteIndex
-			Rational offsetTimeCurrentPreviousNote = metricTimeCurrentPreviousNote.add(durationCurrentPreviousNote);
-			if (offsetTimeCurrentPreviousNote.isGreater(onsetTimeCurrentNote)) {
-				indicesOfSustainedPreviousNotes.add(i);
-			}
-		}
-		return indicesOfSustainedPreviousNotes;
-	}
-
-
-	/**
-	 * Gets the pitches of all previous notes that are still sounding at the onset time of the chord, i.e., all
-	 * previous notes whose offset time is greater than the onset time of the note at lowestNoteIndex. These
-	 * pitches are listed in the sequence in which the notes are encountered; thus, the List returned is not 
-	 * necessarily sorted numerically.
-	 *  
-	 * @param btp
-	 * @param durationLabels 
-	 * @param bnp
-	 * @param lowestNoteIndex
-	 * @return
-	 */
-	// TESTED (for both tablature- and non-tablature case)
-	public static List<Integer> getPitchesOfSustainedPreviousNotesInChord(Integer[][] btp, List<List<Double>> durationLabels,
-		Integer[][] bnp, int lowestNoteIndex) {
-
-		verifyCase(btp, bnp);
-
-		List<Integer> pitchesOfSustainedPreviousNotes = new ArrayList<Integer>();
-
-		// Get the indices of the sustained previous notes
-		List<Integer> indicesOfSustainedPreviousNotes = getIndicesOfSustainedPreviousNotes(btp, durationLabels,
-			bnp, lowestNoteIndex);
-
-		// Create the list of pitches
-		for (int i : indicesOfSustainedPreviousNotes) {
-			// a. In the tablature case
-			if (btp != null) {
-				pitchesOfSustainedPreviousNotes.add(btp[i][Tablature.PITCH]);
-			}
-			// b. In the non-tablature case
-			if (bnp != null) {
-				pitchesOfSustainedPreviousNotes.add(bnp[i][Transcription.PITCH]);
-			}
-		}
-		return pitchesOfSustainedPreviousNotes;
-	}
-
-
-	/**
-	 * Gets the voices of all previous Notes that are still sounding at the onset time of the chord, i.e., all
-	 * previous Notes whose offset time is greater than the onset time of the Note at lowestNoteIndex. These
-	 * pitches are listed in the sequence in which the Notes are encountered; thus, the List returned is not 
-	 * necessarily sorted numerically.
-	 * 
-	 * @param btp
-	 * @param durationLabels
-	 * @param voicesCoDNotes
-	 * @param bnp
-	 * @param allVoiceLabels
-	 * @param lowestNoteIndex
-	 * @return
-	 */
-	// TESTED (for both tablature- and non-tablature case)
-	public static List<Integer> getVoicesOfSustainedPreviousNotesInChord(Integer[][] btp, List<List<Double>> durationLabels,
-		List<Integer[]> voicesCoDNotes, Integer[][] bnp, List<List<Double>> allVoiceLabels, int lowestNoteIndex) {
-		List<Integer> voicesOfSustainedPreviousNotes = new ArrayList<Integer>();
-
-		List<Integer> indicesOfSustainedPreviousNotes = 
-			getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, lowestNoteIndex);
-
-		for (int i : indicesOfSustainedPreviousNotes) {
-			List<Double> currentVoiceLabel = allVoiceLabels.get(i);
-			List<Integer> currentVoices = DataConverter.convertIntoListOfVoices(currentVoiceLabel);
-
-			// Take into account CoD
-			if (currentVoices.size() > 1) {
-				Rational[] duration = DataConverter.convertIntoDuration(durationLabels.get(i));
-				// If both CoDnotes have the same duration: offset time of both exceeds onset time of chord; add both
-				if (duration.length == 1) {
-					voicesOfSustainedPreviousNotes.add(currentVoices.get(0));
-					voicesOfSustainedPreviousNotes.add(currentVoices.get(1));
-				}
-				// If both CoDnotes do not have the same duration: check offset times and add only voice(s) for the
-				// note(s) whose offset time exceeds onset time of chord
-				else {
-					// If the offset of the shorter CoDnote (whose voice is listed second in voicesCoDNotes) exceeds the
-					// chord's onset, the offset of both notes will; if not, only the offset of the longer CoDnote will
-					// Determine the offset of the shorter CoDnote
-					Rational shorter = duration[0];
-					if (duration[1].isLess(duration[0])) {
-						shorter = duration[1];
-					}
-					Rational onsetShorter = 
-						new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-					Rational offsetShorter = onsetShorter.add(shorter);
-					Rational onsetCurr = 
-						new Rational(btp[lowestNoteIndex][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-					// If offsetShorter exceeds the onset of the currentChord: add both voices
-					if (offsetShorter.isGreater(onsetCurr)) {
-						voicesOfSustainedPreviousNotes.add(currentVoices.get(0));
-						voicesOfSustainedPreviousNotes.add(currentVoices.get(1));
-					}
-					// If not: add only the voice for the longer CoDnote
-					else {
-						voicesOfSustainedPreviousNotes.add(voicesCoDNotes.get(i)[0]);
-					}
-				}
-			}
-			else {
-				voicesOfSustainedPreviousNotes.add(currentVoices.get(0));
-			}
-		}	
-		return voicesOfSustainedPreviousNotes;
-	}
-
-
-	/**
-	 * Gets any sustained pitches and voices for the current chord and inserts them at the right position into
-	 * pitchesInChord and voicesInChord. Returns a List<List<Integer>> the size of the complete chord (so including
-	 * any sustained notes), containing
-	 *   as element 0: a List of all pitches in the chord
-	 *   as element 1: a List of all the corresponding voices 
-	 * The List<List>> is ordered according to pitch, so with the lowest note first.
-	 * 
-	 * @param bnp
-	 * @param pitchesInChord
-	 * @param voicesInChord
-	 * @param allVoiceLabels
-	 * @param lowestNoteIndex
-	 * @return
-	 */
-	// TESTED
-	// TODO works only for the non-tablature case (and is currently only called in that case)
-	static public List<List<Integer>> getAllPitchesAndVoicesInChord(Integer[][] bnp, List<Integer> pitchesInChord, 
-		List<List<Integer>>	voicesInChord, List<List<Double>> allVoiceLabels, int lowestNoteIndex ) {
-
-		// 1. For the pitches and voices for the new onsets in the chord
-		// a. Unwrap voicesInChord, i.e., turn it into a List<Integer>. This is possible because in the non-tablature
-		// case, a note will never contain more than one voice (i.e., there are no CoDs)
-		List<Integer> voicesInChordUnwrapped = new ArrayList<Integer>();
-		for (List<Integer> l : voicesInChord) {
-			voicesInChordUnwrapped.add(l.get(0));
-		}
-		// b. Combine pitchesInChord and VoicesInChordUnwrapped into pitchesAndVoices. pitchesAndVoices contains as 
-		// many elements as there are new onsets in the chord; each element contains the pitch (at position 0) and the
-		// voice (as position 1) of each note in the chord. 
-		// NB: Both pitchesInChord and VoicesInChordUnwrapped are based on the sequence of the notes as they appear in
-		// the NoteSequence; therefore, they are always aligned
-		List<List<Integer>> pitchesAndVoices = ToolBox.combineLists(pitchesInChord, voicesInChordUnwrapped);
-
-		// 2. For the sustained pitches and voices
-		// a. Get the sustained pitches and voices
-		List<Integer> sustainedPitches = 
-//			getPitchesOfSustainedPreviousNotesInChordMUSCI(bnp, lowestNoteIndex);
-			getPitchesOfSustainedPreviousNotesInChord(null, null, bnp, lowestNoteIndex); // TODO all the nulls work because the method is only called in the non-tablature case
-		List<Integer> sustainedVoices = 
-//			getVoicesOfSustainedPreviousNotesInChordMUSCI(bnp, allVoiceLabels, lowestNoteIndex);
-			getVoicesOfSustainedPreviousNotesInChord(null, null, null, bnp, allVoiceLabels, lowestNoteIndex);	
-
-		// b. Combine sustainedPitches and sustainedVoices into sustainedPitchesAndVoices. sustainedPitchesAndVoices
-		// contains as many elements as there are sustained notes in the chord; each element contains the pitch (at 
-		// position 0) and the voice (as position 1) of each sustained note. 
-		// NB: Both sustainedPitches and sustainedVoices are made with getIndicesOfSustainedPreviousNotes() (which in
-		// turn uses the sequence of the notes as they appear in the NoteSequence); therefore, they are always aligned
-		List<List<Integer>> sustainedPitchesAndVoices =	ToolBox.combineLists(sustainedPitches, sustainedVoices);
-
-		// 3. Get the pitches and voices for the complete chord and sort them numerically using the pitch as guide
-		List<List<Integer>> allPitchesAndVoices = new ArrayList<List<Integer>>(pitchesAndVoices);
-		allPitchesAndVoices.addAll(sustainedPitchesAndVoices);
-		allPitchesAndVoices = ToolBox.bubbleSort(allPitchesAndVoices, 0);
-
-		// 4. Extract pitchesInChord and voicesInChord from allPitchesAndVoices. 
-		List<Integer> pitches = new ArrayList<Integer>();
-		List<Integer> voices = new ArrayList<Integer>();
-		for (List<Integer> l : allPitchesAndVoices) {
-			int currentPitch = l.get(0);
-			pitches.add(currentPitch);
-			int currentVoice = l.get(1);
-			voices.add(currentVoice);
-		}
-		allPitchesAndVoices = new ArrayList<List<Integer>>();
-		allPitchesAndVoices.add(pitches);
-		allPitchesAndVoices.add(voices);
-
-		return allPitchesAndVoices;
-	}
-
-
-	/**
-	 * Calculates the voice crossing information for the chord represented by the lists of pitches and voices. 
-	 * Returns an Integer[] containing
-	 * as element 0: the voices involved in voice crossing
-	 * as element 1: the voice crossing pairs
-	 * as element 2: the pitch distances (in semitones) between the notes that go with each voice crossing pair
-	 *
-	 * Example 1: given a four-voice/four-note chord with pitches [10, 20, 30, 40] and voices
-	 * [2, 1, 0, 3] (both from low to high), the method will return an Integer with: 
-	 * as element 0: [2, 3, 1, 0]: all four voices are involved in a voice crossing
-	 * as element 1: [2, 3, 1, 3, 0, 3]: there are three voice crossing pairs: 2-3, 1-3, and 0-3 (i.e., the lowest
-	 *               voice (3) crosses voices 2, 1, and 0)
-	 * as element 2: [30, 20, 10]: the pitch distances between the notes that go with each pair (2-3, 1-3, and 0-3) 
-	 
-	 * Example 2: given a four-voice/three-note chord (i.e., a chord with a CoD) with pitches [10, 20, 30] and
-	 * voices [1, 2, 3/0] (both from low to high), the method will return an Integer with:
-	 * as element 0: [1, 2, 3]: voices 1, 2, and 3 are involved in a voice crossing
-	 * as element 1: [1, 2, 1, 3, 2, 3]: there are three voice crossing pairs: 1-2, 1-3, and 2-3 
-	 * as element 2: [10, 20, 10]: the pitch distances between the notes that go with each pair (1-2, 1-3, and 2-3) 
-	 *  
-	 * Example 3: given a four-voice/three-note chord (i.e., a chord with a CoD) with pitches [10, 20, 30] and
-	 * voices [0/1, 2, 3] (both from low to high), the method will return an Integer with:
-	 * as element 0: [0, 2, 3, 1]: all four voices are involved in a voice crossing
-	 * as element 1: [0, 2, 0, 3, 1, 2, 1, 3, 2, 3]: there are five voice crossing pairs: 0-2, 0-3, 1-2, 1-3, and 2-3 
-	 * as element 2: [10, 20, 10, 20, 10]: the pitch distances between the notes that go with each pair (0-2, 0-3,
-	 *               1-2, 1-3, and 2-3)
-	 *  
-	 * @param pitchesInChord
-	 * @param voicesInChord
-	 * @return 
-	 */ 
-	// TESTED (for both tablature- and non-tablature case)
-	public static List<List<Integer>> getVoiceCrossingInformationInChord(List<Integer> pitchesInChord, 
-		List<List<Integer>> voicesInChord) {
-
-		List<List<Integer>> voiceCrossingInformation = new ArrayList<List<Integer>>();
-
-		// Default values for chords consisting of a single note, when there is no voice crossing possible  
-		List<Integer> voicesInvolvedInVoiceCrossing = new ArrayList<Integer>();
-		List<Integer> voiceCrossingPairs = new ArrayList<Integer>();
-		List<Integer> pitchDistancesOfVoiceCrossingPairs = new ArrayList<Integer>();
-
-		// Determine the size of the chord; if it consists of multiple notes: calculate values
-		int chordSize = pitchesInChord.size();
-		if (chordSize > 1) {		
-			// For each note, get the voice(s) assigned to it and its pitch, and compare them to those of the following
-			// notes in the chord. Voice crossings occur when, compared to the current onset, a following note 
-			// a) is assigned a voice that is higher, but has a pitch that is lower
-			// b) is assigned a voice that is lower, but has a pitch that is higher
-			for (int i = 0; i < chordSize; i++) {
-				// Get the voice(s) and pitch of the current note
-				List<Integer> currentVoices = voicesInChord.get(i);
-				int currentPitch = pitchesInChord.get(i);
-				// The current note may contain a CoD; check for each of its CoD voices
-				for (int j = 0; j < currentVoices.size(); j++) {
-					int currentVoice = currentVoices.get(j);
-					// Compare the current note's pitch and current voice with those of all the following notes in the chord
-					int indexOfNextOnset = i + 1; 
-					for (int k = indexOfNextOnset; k < chordSize; k++) {
-						List<Integer> currentNextVoices = voicesInChord.get(k);
-						int currentNextPitch = pitchesInChord.get(k);
-						// The current next note may contain a CoD; check for each of its CoD voices
-						for (int l = 0; l < currentNextVoices.size(); l++) {
-							int currentNextVoice = currentNextVoices.get(l);
-							// If the current next note is assigned a voice that is higher, but it has a pitch that is lower, or 
-							// vice versa: increase numberOfVoiceCrossings; add the pitch difference to totalSizeOfVoiceCrossings
-							// NB: Since the highest voice has voice number 0, a higher voice implies a lower voice number   
-							if ((currentNextVoice < currentVoice && currentNextPitch < currentPitch) || (currentNextVoice > 
-								currentVoice && currentNextPitch > currentPitch)) {
-								// Add currentVoice and currentNextVoice to voicesInvolvedInVoiceCrossing, but only if they have
-								// not been added already
-								if (!voicesInvolvedInVoiceCrossing.contains(currentVoice)) {
-									voicesInvolvedInVoiceCrossing.add(currentVoice);
-								}
-								if (!voicesInvolvedInVoiceCrossing.contains(currentNextVoice)) {
-									voicesInvolvedInVoiceCrossing.add(currentNextVoice);
-								}
-								// Add the current pair to voiceCrossingPairs
-								voiceCrossingPairs.add(currentVoice);
-								voiceCrossingPairs.add(currentNextVoice);
-								// Add the pitch distance between the onsets that go with the current pair to pitchDistancesOfVoiceCrossingPairs
-								pitchDistancesOfVoiceCrossingPairs.add(Math.abs(currentNextPitch - currentPitch));
-							}
-						}
-					}				
-				}
-			}
-		}
-		// Set and return voiceCrossingInformation
-		voiceCrossingInformation.add(voicesInvolvedInVoiceCrossing);
-		voiceCrossingInformation.add(voiceCrossingPairs);
-		voiceCrossingInformation.add(pitchDistancesOfVoiceCrossingPairs);
-		return voiceCrossingInformation;
-	}
-
-
-	/**
-	 * Gets the ranges (in MIDI pitches) of the individual voices, starting with the highest
-	 * voice (voice 0).
-	 *  
-	 * @return
-	 */
-	// TESTED
-	public List<Integer[]> getVoiceRangeInformation() {
-		List<Integer[]> ranges = new ArrayList<>();
-		
-		NotationSystem nSys = getPiece().getScore();
-		// For each voice i
-		for (int i = 0; i < getPiece().getScore().size(); i ++) {
-			int lowestPitch = Integer.MAX_VALUE;
-			int highestPitch = Integer.MIN_VALUE;
-			NotationVoice nv = nSys.get(i).get(0);
-			for (NotationChord nc : nv) {
-				for (Note n : nc) {
-					if (n.getMidiPitch() < lowestPitch) {
-						lowestPitch = n.getMidiPitch();
-					}
-					if (n.getMidiPitch() > highestPitch) {
-						highestPitch = n.getMidiPitch();
-					}
-				}
-			}
-			ranges.add(new Integer[]{lowestPitch, highestPitch});
-		}
-		return ranges;
-	}
-
-
-	/**
-	 * Gets information on the voice crossings in the Transcription. Returns an Integer[] containing
-	 * <ul>
-	 * <li>as element 0: the number of notes in the piece.</li>
-	 * <li>as element 1: the number of voice crossings where the crossing voice and the crossed 
-	 *                   voice have the same onset time (Type 1 vc)</li>
-	 * <li>as element 2: the number of voice crossings where the crossing voice has a later onset 
-	 *                   time than the crossed voice (Type 2 vc)</li>
-	 * <li>as element 3: the total of Type 1 and 2 vc</li>
-	 * <li>as element 4: for each voice (starting at 0): the number of instances this voice is 
-	 *                   involved in a voice crossing. Instances are counted for each voice that 
-	 *                   is crossed (e.g., the superius going under the altus and tenor are two 
-	 *                	 voice crossings). In the case of Type 2 vc, a voice is involved both if 
-	 *                	 it is the crossing and the crossed voice. </li>
-	 * <li>as element 5: for each voice (starting at 0): the number of notes in that voice.</li>               
-	 * </ul>
-	 * @param tablature Is <code>null</code> in the non-tablature case.
-	 * @return
-	 */
-	public Integer[] getVoiceCrossingInformation(Tablature tablature) {
-		String voiceCrossingInformation = "voice crossing information for " + getPieceName() + "\r\n";
-		int totalTypeOne = 0;
-		int totalTypeTwo = 0;
-
-		// For each note
-		NoteSequence noteSeq = getNoteSequence();
-		List<List<List<Double>>> chordVoiceLabels = getChordVoiceLabels();
-		List<List<Double>> voiceLabels = getVoiceLabels();
-
-		Integer[][] basicTabSymbolProperties = null;
-		Integer[][] basicNoteProperties = null;
-		int numbChords = 0;
-		int numNotes = 0;
-		// a. In the tablature case
-		if (tablature != null) {
-			basicTabSymbolProperties = tablature.getBasicTabSymbolProperties();
-			numbChords = tablature.getTablatureChords().size();
-			numNotes = tablature.getNumberOfNotes();
-		}
-		// b. in the non-tablature case
 		else {
-			basicNoteProperties = getBasicNoteProperties();
-			numbChords = getTranscriptionChords().size(); // conditions satisfied; external version OK
-			numNotes = getNumberOfNotes();
+			List<List<Note>> argChords = getChords();
+
+			// Add the voice labels for each chord to chordVoiceLabels
+			int lowestNoteIndex = 0;
+			for (int j = 0; j < argChords.size(); j++) {
+//			for (int j = 0; j < getNumberOfChords(); j++) {
+				List<Note> currentChord = argChords.get(j); 
+				int currentChordSize = currentChord.size();
+				argChordVoiceLabels.add(new ArrayList<List<Double>>(argVoiceLabels.subList(lowestNoteIndex, 
+					lowestNoteIndex + currentChordSize)));
+				lowestNoteIndex += currentChordSize;
+			}
 		}
+		return argChordVoiceLabels;
+	}
 
-		Integer[] timesInvolved = new Integer[getNumberOfVoices()];
-		Arrays.fill(timesInvolved, 0);
 
-		// For each chord
-		int lowestNoteIndex = 0;
-		for (int i = 0; i < numbChords; i++) { // i is index of current chord  	
-			// Get current chord size and meterinfo, and find current onset time
-			int currentChordSize = 0; 
-			List<Integer[]> meterInfo = null;
-			Rational onsetCurrNote = null;
-			List<Integer> pitchesInChord;
-			// a. in the tablature case
-			if (tablature != null) {
-				currentChordSize = tablature.getTablatureChords().get(i).size();
-				meterInfo = tablature.getMeterInfo();
-				for (Integer[] btp : basicTabSymbolProperties) {
-					if (btp[Tablature.CHORD_SEQ_NUM] == i) {
-						onsetCurrNote = new Rational(btp[Tablature.ONSET_TIME], 
-							Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
-						break;
+	/**
+	 * Creates a duration label encoding the given durational value (in Tablature.SRV_DEN).
+	 * 
+	 * NB: Tablature case only.
+	 *  
+	 * @param duration
+	 * @return
+	 */
+	// TESTED
+	private static List<Double> createDurationLabelOLD(int duration) {		
+		List<Double> durationLabel = new ArrayList<Double>();
+		for (int i = 0; i < MAX_TABSYMBOL_DUR; i++) {
+			durationLabel.add(0.0);
+		}
+		int posInLabel = (duration - 1) / 3;
+//		durationLabel.set((duration - 1), 1.0);
+		durationLabel.set(posInLabel, 1.0); // trp dur
+		return durationLabel;
+	}
+
+
+	/**
+	 * Determines whether the given voice label represents a CoD.
+	 * 
+	 * @param voiceLabel
+	 * @return
+	 */
+	// TESTED
+	private static boolean containsCoD(List<Double> voiceLabel) {
+		if (Collections.frequency(voiceLabel, 1.0) == 2) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+
+//  /**
+//   * Creates a Piece from the given arguments.
+//   *  
+//   * @param voiceLabels
+//   * @param numberOfVoices
+//   */
+//  // TESTED
+//  public Piece createPiece(List<List<Double>> voiceLabels, int numberOfVoices) { 
+//  	DataConverter dataConverter = new DataConverterTab();
+//  	
+//  	// Make an empty Piece with the given number of voices
+//  	Piece piece = new Piece();
+//  	NotationSystem system = piece.createNotationSystem();
+//    for (int i = 0; i < numberOfVoices; i++) {
+//      NotationStaff staff = new NotationStaff(system); 
+//      system.add(staff); 
+//      staff.add(new NotationVoice(staff));
+//    }
+//          
+//    // Iterate through the Transcription, convert each note into a Note, and add it to the given voice
+//  	Integer[][] bnp = getBasicNoteProperties();
+//    for (int i = 0; i < bnp.length; i++) {
+//    	// Create a Note from the note at index i
+//    	int pitch = bnp[i][Transcription.PITCH];
+//    	Rational metricTime =	
+//    		new Rational(bnp[i][Transcription.ONSET_TIME_NUMER], bnp[i][Transcription.ONSET_TIME_DENOM]);
+//    	Rational metricDuration = 
+//    		new Rational(bnp[i][Transcription.DURATION_NUMER], bnp[i][Transcription.DURATION_DENOM]);
+//    	Note note = Transcription.createNote(pitch, metricTime, metricDuration);
+//    	
+//    	// Add the Note to each voice in currentVoices
+//    	List<Integer> currentVoices = dataConverter.convertIntoListOfVoices(voiceLabels.get(i));
+//    	for (int v : currentVoices) {
+//    		NotationVoice voice = piece.getScore().get(v).get(0);
+//    		voice.add(note);
+//    	}	
+//    }
+//      
+//    return piece;
+//  }
+
+
+//  /**
+//  * Returns the number of CoDs the chord at the given index contains.
+//  * 
+//  * NB: Tablature case only; must be called before getCoDInfo().
+//  * 
+//  * @param tablatureChords
+//  * @param chordIndex
+//  * @return 
+//  */
+// // TESTED
+// int getNumberOfCoDsInChord(List<List<TabSymbol>> tablatureChords, int chordIndex) {
+// 	List<List<Note>> transcriptionChords = getTranscriptionChords();
+// 	int numberOfCoDsInChord = 0;
+// 	if (transcriptionChords.get(chordIndex).size() == (tablatureChords.get(chordIndex).size() + 1)) {
+//			numberOfCoDsInChord = 1;
+//		}
+//		else if (transcriptionChords.get(chordIndex).size() == (tablatureChords.get(chordIndex).size() + 2)) {
+//   	numberOfCoDsInChord = 2;
+//		}
+//		else if (transcriptionChords.get(chordIndex).size() == (tablatureChords.get(chordIndex).size() + 3)) {
+//   	numberOfCoDsInChord = 3;
+//		}
+// 	
+// 	return transcriptionChords.get(chordIndex).size() - tablatureChords.get(chordIndex).size();
+//// 	return numberOfCoDsInChord;
+// }
+
+
+	/**
+	 * Gets information on the single-note unison (SNU) notes in the chord at the given index in the given list. 
+	 * A SNU occurs when a single Tablature note is shared by two Transcription Notes. Returns an Integer[][],
+	 * each element of which represents a SNU pair (starting from below in the chord) containing
+	 * <ul>
+	 * <li>As element 0: the pitch (as a MIDInumber) of both SNU notes.</li>
+	 * <li>As element 1: the sequence number in the chord of the lower SNU note.</li>
+	 * <li>As element 2: the sequence number in the chord of the upper SNU note.</li> 
+	 * </ul>
+	 * If the chord does not contain any SNUs, <code>null</code> is returned.  
+	 *
+	 * NB1: This method presumes that a chord contains only one SNU, and neither a unison nor a course crossing.
+	 * NB2: Tablature case only; must be called before handleSNUs(). 
+	 *
+	 * @param tablatureChords 
+	 * @param chordIndex 
+	 * @return    
+	 */
+	// TESTED
+	private Integer[][] getSNUInfoOLD(List<List<TabSymbol>> tablatureChords, int chordIndex) {
+		Integer[][] SNUInfo = null;
+
+		List<List<Note>> ch = getChordsFromNoteSequence();
+		// Determine the number of SNUs in the chord
+		int numCoDs = ch.get(chordIndex).size() - tablatureChords.get(chordIndex).size();
+
+		// If chord contains any SNUs
+		if (numCoDs > 0) { 
+//		if (getNumberOfCoDsInChord(tablatureChords, chordIndex) > 0) {
+			SNUInfo = new Integer[numCoDs][3];
+//			coDInfo = new Integer[getNumberOfCoDsInChord(tablatureChords, chordIndex)][3];
+
+			List<Note> chord = ch.get(chordIndex);
+
+			// Gather the pitches of the Notes in chord in a list
+			List<Integer> pitchesInChord = new ArrayList<Integer>();
+			for (int i = 0; i < chord.size(); i++) {
+				int pitch = chord.get(i).getMidiPitch();
+				pitchesInChord.add(pitch);
+			}
+			// For each pitch in pitchesInChord
+			int currentRowInCoDInfo = 0;
+			for (int i = 0; i < pitchesInChord.size(); i++) {
+				int currentPitch = pitchesInChord.get(i);        
+				// Search the remainder of pitchesInChord for a note with the same pitch (the upper SNU note)
+				for (int j = i + 1; j < pitchesInChord.size(); j++) {
+					// Same pitch found? upper SNU note found; fill the currentRowInCoDInfo-th row of SNUInfo, increase
+					// currentRowInCoDInfo, break from inner for, and continue with the next iteration of the outer
+					// for (the next pitch)
+					if (pitchesInChord.get(j) == currentPitch) {
+						SNUInfo[currentRowInCoDInfo][0] = currentPitch;
+						SNUInfo[currentRowInCoDInfo][1] = i;
+						SNUInfo[currentRowInCoDInfo][2] = j;
+						currentRowInCoDInfo++;
+						break; 
 					}
-				}
-				pitchesInChord = tablature.getPitchesInChord(i); 
+				} 
 			}
-			// b. In the non-tablature case
-			else {
-				currentChordSize = getTranscriptionChords().get(i).size(); // conditions satisfied; external version OK
-				meterInfo = getMeterInfo();
-				for (Integer[] bnp : basicNoteProperties) {
-					if (bnp[Transcription.CHORD_SEQ_NUM] == i) {
-						onsetCurrNote = new Rational(bnp[Transcription.ONSET_TIME_NUMER], 
-							bnp[Transcription.ONSET_TIME_DENOM]);
-						break;
+		}
+		return SNUInfo;
+	}
+
+
+// /**
+//  * Determines the number of unisons in the chord at the given index. A unison occurs when two different notes
+//  * in the same chord have the same pitch.  
+//  * 
+//  * NB: Non-tablature case only; must be called before getUnisonInfo().
+//  * 
+//  * @param chordIndex
+//  * @return
+//  */
+// // TESTED
+// int getNumberOfUnisonsInChord(int chordIndex) {
+// 	int numberOfUnisons = 0;
+// 	
+//// 	List<List<Note>> transcriptionChords = getTranscriptionChords();
+// 	List<Note> transcriptionChord = getTranscriptionChords().get(chordIndex);
+//   
+// 	// Only relevant if transcriptionChord contains multiple notes
+//   if (transcriptionChord.size() > 1) {
+//     // List all the unique pitches in tablatureChord
+//     List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
+//     List<Integer> uniquePitchesInChord = new ArrayList<Integer>();
+//     for (int pitch : pitchesInChord) {
+//     	if (!uniquePitchesInChord.contains(pitch)) {
+//     		uniquePitchesInChord.add(pitch);
+//     	}
+//     }
+////     // Compare the sizes of pitchesInChord and uniquePitchesInChord; if they are not the same the chord
+////     // contains (a) unison(s)
+////     if (pitchesInChord.size() == (uniquePitchesInChord.size() + 1)) {
+////     	numberOfUnisons = 1;
+////     }
+////     if (pitchesInChord.size() == (uniquePitchesInChord.size() + 2)) {
+////     	numberOfUnisons = 2;
+////     }
+////     if (pitchesInChord.size() == (uniquePitchesInChord.size() + 3)) {
+////     	numberOfUnisons = 3;
+////     }
+//     numberOfUnisons = pitchesInChord.size() - uniquePitchesInChord.size();
+//   }
+// 	return numberOfUnisons;
+// }
+
+
+	/**
+	 * Gets information on the unison(s) in the chord at the given index. A unison occurs when two different 
+	 * notes in the same chord have the same pitch.  
+	 *
+	 * Returns an Integer[][], each element of which represents a unison pair (starting from below), each element
+	 * of which contains:
+	 *   as element 0: the pitch (as a MIDInumber) of the unison note
+	 *   as element 1: the sequence number in the chord of the lower unison note (i.e., the one appearing first in the chord)
+	 *   as element 2: the sequence number in the chord of the upper unison note 
+	 * If the chord does not contain (a) unison(s), <code>null</code> is returned. 
+	 *
+	 * NB1: This method presumes that a chord will not contain more than two of the same pitches in a chord.
+	 * NB2: Non-tablature case only; must be called before handleUnisons().
+	 *
+	 * @param chordIndex
+	 * @return
+	 */
+	// TESTED
+	private Integer[][] getUnisonInfoOLD(int chordIndex) {
+		Integer[][] unisonInfo = null;
+
+		// Determine the number of unisons in the chord
+		List<Integer> pitchesInChord = getPitchesInChord(getChordsFromNoteSequence().get(chordIndex));
+//		List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
+		List<Integer> uniquePitchesInChord = new ArrayList<Integer>();
+		for (int pitch : pitchesInChord) {
+			if (!uniquePitchesInChord.contains(pitch)) {
+				uniquePitchesInChord.add(pitch);
+			}
+		}
+		int numUnisons = pitchesInChord.size() - uniquePitchesInChord.size();
+
+		// If the chord at chordIndex contains (a) unison(s)
+		if (numUnisons > 0) {
+			unisonInfo = new Integer[numUnisons][3];
+
+			// For each pitch in pitchesInChord 
+			int currentRowInUnisonInfo = 0;
+			for (int i = 0; i < pitchesInChord.size(); i++) {
+				int currentPitch = pitchesInChord.get(i);        
+				// Search the remainder of pitchesInChord for an onset with the same pitch
+				for (int j = i + 1; j < pitchesInChord.size(); j++) {
+					// Same pitch found? Unison found; fill the currentRowInUnisonInfo-th row of unisonInfo, increase
+					// currentRowInUnisonInfo, break from inner for, and continue with the next iteration of the outer
+					// for (the next pitch)
+					if (pitchesInChord.get(j) == currentPitch) {
+						unisonInfo[currentRowInUnisonInfo][0] = currentPitch;
+						unisonInfo[currentRowInUnisonInfo][1] = i;
+						unisonInfo[currentRowInUnisonInfo][2] = j;
+						currentRowInUnisonInfo++;
+						break; // See NB1 for reason of break
 					}
-				}
-				pitchesInChord = getPitchesInChord(i);
+				} 
 			}
+		}
+		return unisonInfo;
+	}
 
-			String currMeasure = 
-				"" + Tablature.getMetricPosition(onsetCurrNote, meterInfo)[0].getNumer() + " " +
-				Tablature.getMetricPosition(onsetCurrNote, meterInfo)[1];
 
-			// a. Get the voice crossing information within the chord (Type 1)
-			List<List<Double>> currentChordVoiceLabels = chordVoiceLabels.get(i);
-			List<List<Integer>> voicesInChord = DataConverter.getVoicesInChord(currentChordVoiceLabels);
-			List<List<Integer>> vcInfo = 
-				getVoiceCrossingInformationInChord(pitchesInChord, voicesInChord);
-			if (vcInfo.get(0).size() != 0) {
-				voiceCrossingInformation = 
-					voiceCrossingInformation.concat("Type 1 voice crossing at chordindex " +
-					i + " (b. " + currMeasure + "); voices involved are " + vcInfo.get(0) + "\n");
-				for (int v : vcInfo.get(0)) {
-					timesInvolved[v]++;
+	/**
+	 * Undiminutes the given Piece, i.e., sets the duration and onset values back to the values as 
+	 * found in the tablature.
+	 * 
+	 * @param bnp Piece, diminuted (w.r.t. metric time and duration).
+	 * @param mi meterInfo (from tablature), diminuted (w.r.t. metric time and duration).
+	 * @return
+	 */
+	private static Piece undiminutePiece(Piece p, List<Integer[]> mi) {		
+		return null;
+	}
+
+
+//	public NoteSequence getNoteSequence() {
+//		return noteSequence;
+//	}
+
+
+	/**
+	 * Undiminutes the given basic note properties, i.e., sets the duration and onset values back to 
+	 * the values as found in the tablature.
+	 * 
+	 * @param bnp Basic note properties, diminuted (w.r.t. metric time and duration).
+	 * @param mi meterInfo (from tablature), diminuted (w.r.t. metric time and duration).
+	 * @return
+	 */
+	// TESTED
+	private static Integer[][] undiminuteBasicNotePropertiesOBS(Integer[][] bnp, List<Integer[]> mi) {
+		Integer[][] undiminutedBnp = new Integer[bnp.length][bnp[0].length];
+		Rational prevMt = null;
+		Rational prevMtDim = null;
+
+		int prevDim = 0;
+		// For each first note in a chord
+		for (int i = 0 ; i < bnp.length; i++) {
+			Integer[] currNote = bnp[i];
+			int chordInd = currNote[CHORD_SEQ_NUM];
+			int currChordSize = currNote[CHORD_SIZE_AS_NUM_ONSETS];
+			// Get original metric time and diminution
+			Rational currMt = 
+				new Rational(currNote[ONSET_TIME_NUMER], currNote[ONSET_TIME_DENOM]);
+			int currDim = Utils.getDiminution(currMt, mi);
+			// Get the diminuted metric time for the chord the note at index i is in
+			Rational currMtDim;
+			// If the chord is the first chord of the piece
+			if (chordInd == 0) {
+				if (currMt.equals(Rational.ZERO)) {
+					currMtDim = currMt;
 				}
-//				for (int j = 0; j < vcInfo.get(1).size(); j++) {
-//					if (Math.abs(vcInfo.get(1).get(j) - vcInfo.get(1).get(j + 1)) > 1) {
-//						voiceCrossingInformation = voiceCrossingInformation.concat("  --> HIER1" + "\n");
-//					}
-//					j++;
-//				}
-				totalTypeOne++;
-			}
-
-			// b. For each note in the chord: get the voice crossing information with any previous 
-			// sustained notes (Type 2)
-			for (int j = lowestNoteIndex; j < lowestNoteIndex + currentChordSize; j++) { // j is index of current note
-				int pitchCurrNote = 0;
-				// a. In the tablature case
-				if (tablature != null) {
-					pitchCurrNote = basicTabSymbolProperties[j][Tablature.PITCH];
-				}
-				// b. In the non-tablature case
 				else {
-					pitchCurrNote = basicNoteProperties[j][Transcription.PITCH];
+					currMtDim = Utils.diminute(currMt, currDim);
+//						(currDim > 0) ? currMt.div(currDim) : currMt.mul(Math.abs(currDim));							
 				}
-				List<Double> voiceLabelCurrNote = voiceLabels.get(j);
-				List<Integer> voicesCurrNote = DataConverter.convertIntoListOfVoices(voiceLabelCurrNote);
-				// Find sustained notes
-				for (int k = 0; k < noteSeq.size(); k++) { // k is index of note before current note 
-					Note n = noteSeq.getNoteAt(k);
-					Rational onsetPrevNote = n.getMetricTime();
-					Rational durationPrevNote = n.getMetricDuration();
-					Rational offsetPrevNote = onsetPrevNote.add(durationPrevNote);
-					// Stop searching if the note is no longer a previous note
-					if (onsetPrevNote.isEqual(onsetCurrNote)) {
-						break;
+			}
+			// If the chord is a chord after the first: to get currMtDim, add the
+			// diminuted difference between currMt and prevMt to prevMtDim
+			else {
+				Rational mtIncrease = Utils.diminute(currMt.sub(prevMt), prevDim);
+//					prevDim > 0 ? (currMt.sub(prevMt)).div(prevDim) : 
+//					(currMt.sub(prevMt)).mul(Math.abs(prevDim));
+				currMtDim = prevMtDim.add(mtIncrease);
+			}
+
+			// Adapt metric time and duration for all notes in the chord
+			for (int j = i; j < i + currChordSize; j++) {
+				Integer[] curr = bnp[j];
+				// Metric time
+				curr[ONSET_TIME_NUMER] = currMtDim.getNumer();
+				curr[ONSET_TIME_DENOM] = currMtDim.getDenom();
+				// Duration
+				Rational currDur = new Rational(curr[DUR_NUMER], curr[DUR_DENOM]);
+				Rational currDurDim = Utils.diminute(currDur, currDim);
+//					(currDim > 0) ? currDur.div(currDim) : currDur.mul(Math.abs(currDim));
+				curr[DUR_NUMER] = currDurDim.getNumer();
+				curr[DUR_DENOM] = currDurDim.getDenom();
+				undiminutedBnp[j] = curr;
+			}
+			// Increment variables
+			prevMt = currMt;
+			prevDim = currDim;
+			prevMtDim = currMtDim;
+			i = (i + currChordSize) - 1;
+		}
+		return undiminutedBnp;
+	}
+
+
+	private void setChordsOLD() {
+		chords = getChordsFromNoteSequence();
+	}
+
+
+	private static List<Integer> getChordSizesFromNoteSeq(NoteSequence noteSeq) {
+		List<Integer> notesPerChord = new ArrayList<>();
+		int chordSize = 0;
+		Rational mt = noteSeq.get(0).getMetricTime();
+		for (int i = 0; i < noteSeq.size(); i++) {
+			Rational currMt = noteSeq.get(i).getMetricTime(); 
+			if (currMt.equals(mt)) {
+				chordSize++;
+				if (i == noteSeq.size() - 1) {
+					notesPerChord.add(chordSize);
+				}
+			}
+			else {
+				notesPerChord.add(chordSize);
+				chordSize = 0;
+				chordSize++;
+				mt = currMt;
+			}
+		}
+		return notesPerChord;
+	}
+
+
+	/**
+	 * Handles unisons. For each unison note pair,
+	 * 
+	 * <ul>
+	 * <li>Swaps the unison notes in the NoteSequence if they have different durations and the unison note 
+	 *     that has the longer duration does not come first.</li>
+	 * <li>Swaps the voice labels of the unison notes if they have different durations and the unison note 
+	 *     that has the longer duration does not come first. 
+	 *     NB: Not if t == Type.PREDICTED (in which case the labels already have their final form).</li>
+	 * <li>Lists the unison voices with the voice that contains the note that has the longer duration (or, 
+	 *     if they have the same duration, the lower voice) first. A consistent ordering of the unison 
+	 *     voices is necessary for a consistent evaluation.</li>        
+	 * </ul>
+	 * 
+	 * NB: Non-tablature case only.
+	 * 
+	 * @param t
+	 * @return The list of unison voices.
+	 */
+	// TESTED
+	private List<Integer[]> handleUnisons(Type t) {
+		NoteSequence noteSeq = null; // getNoteSequence();
+		List<List<Double>> voiceLab = getVoiceLabels();
+		List<Integer[]> voicesUnison = new ArrayList<Integer[]>(Collections.nCopies(noteSeq.size(), null));
+//		List<Integer[]> voicesEDU = new ArrayList<Integer[]>(Collections.nCopies(noteSeq.size(), null));
+//		List<Integer[]> voicesIDU = new ArrayList<Integer[]>(Collections.nCopies(noteSeq.size(), null));
+
+		boolean adaptLabels = t != Type.PREDICTED;
+		
+//		System.out.println(noteSeq.get(12));
+//		System.out.println(noteSeq.get(13));
+
+		// 1. Adapt NoteSequence, voice labels
+		int notesPreceding = 0;
+//		List<Integer> notesPerChord = getChordSizesFromNoteSeq(noteSeq);
+		List<List<Note>> ch = getChords();
+//		List<List<Note>> chords = getNoteSequenceChords();
+		for (int i = 0; i < ch.size(); i++) {
+			Integer[][] unisonInfo = getUnisonInfo(ch.get(i));
+//			Integer[][] unisonInfo = getUnisonInfo(getPitchesInChord(i));
+			// If the chord contains a unison note pair
+			if (unisonInfo != null) {
+//				Integer[][] unisonInfo = getUnisonInfo(getPitchesInChord(i));
+				// For each unison note pair in the chord (there should be only one)
+				for (int j = 0; j < unisonInfo.length; j++) {					
+					// 1. Determine indices
+					// a. Indices of the lower and upper unison note   
+					int indLower = notesPreceding + unisonInfo[j][1];
+					int indUpper = notesPreceding + unisonInfo[j][2];					
+					// b. Indices of the longer and shorter unison note
+					Rational durLower = noteSeq.getNoteAt(indLower).getMetricDuration();
+					Rational durUpper = noteSeq.getNoteAt(indUpper).getMetricDuration();
+					int indLonger = 
+						durLower.isGreater(durUpper) ? indLower : (durLower.isLess(durUpper) ? indUpper : -1);
+					int indShorter = 
+						durLower.isGreater(durUpper) ? indUpper : (durLower.isLess(durUpper) ? indLower : -1);
+
+					// 2. Set voicesUnison
+					int first, second;
+					int isEDU;
+					if (!durLower.isEqual(durUpper)) {
+						int indFirst = indLonger;
+						int indSecond = indShorter;
+						isEDU = 0;
+						first = DataConverter.convertIntoListOfVoices(voiceLab.get(indFirst)).get(0);
+						second = DataConverter.convertIntoListOfVoices(voiceLab.get(indSecond)).get(0);
+//						voicesIDU.set(indLower, new Integer[]{first, second, indUpper, 0});
+//						voicesIDU.set(indUpper, new Integer[]{first, second, indLower, 0});
+//						voicesUnison.set(indLower, new Integer[]{first, second, indUpper, 0});
+//						voicesUnison.set(indUpper, new Integer[]{first, second, indLower, 0});
 					}
 					else {
-						// Sustained note?
-						if (offsetPrevNote.isGreater(onsetCurrNote)) {
-							// Get pitch and voices of previous note
-							int pitchPrevNote = n.getMidiPitch();
-							List<Double> voiceLabelPrevNote = voiceLabels.get(k);
-							List<Integer> voicesPrevNote = 
-								DataConverter.convertIntoListOfVoices(voiceLabelPrevNote);
-							// For each note in the chord: voice crossing with sustained note if that sustained note
-							// -has a lower voice number (i.e., is in a higher voice) and a lower pitch
-							// -has a higher voice number (i.e., is in a lower voice) and a higher pitch
-							// Two for-loops necessary to take into account CoDs
-							for (int currVoice : voicesCurrNote) {
-								for (int prevVoice : voicesPrevNote) {
-									if ((prevVoice < currVoice && pitchPrevNote < pitchCurrNote) ||
-										(prevVoice > currVoice && pitchPrevNote > pitchCurrNote)) {
-//										double prevMeasure = onsetPrevNote.toDouble() + 1.0;
-										String prevMeasure = "" + Tablature.getMetricPosition(onsetPrevNote, meterInfo)[0].getNumer() + 
-											" " + Tablature.getMetricPosition(onsetPrevNote, meterInfo)[1];
-										voiceCrossingInformation = 
-											voiceCrossingInformation.concat("Type 2 voice crossing at chordIndex " + i + "; notes involved are:" + "\n" + 
-											"  note at index " + j + " (m. " + currMeasure + "; pitch " + pitchCurrNote + "; voice " + currVoice + ")" + "\n" +  
-											"  note at index " + k + " (m. " + prevMeasure + "; pitch " + pitchPrevNote + "; voice " + prevVoice + ")" + "\n");
-										totalTypeTwo++;
-										timesInvolved[currVoice]++;
-										timesInvolved[prevVoice]++;
-//										if (Math.abs(currVoice - prevVoice) > 1) {
-//											voiceCrossingInformation = voiceCrossingInformation.concat("  --> HIER2" + "\n");
-//										}
-									}
-								}
-							}					
+						int indFirst = indLower;
+						int indSecond = indUpper;
+						isEDU = 1;
+						first = DataConverter.convertIntoListOfVoices(voiceLab.get(indFirst)).get(0);
+						second = DataConverter.convertIntoListOfVoices(voiceLab.get(indSecond)).get(0);
+//						voicesEDU.set(indLower, new Integer[]{first, second, indUpper, 1});
+//						voicesEDU.set(indUpper, new Integer[]{first, second, indLower, 1});
+//						voicesUnison.set(indLower, new Integer[]{first, second, indUpper, 1});
+//						voicesUnison.set(indUpper, new Integer[]{first, second, indLower, 1});
+					}
+					voicesUnison.set(indLower, new Integer[]{first, second, indUpper, isEDU});
+					voicesUnison.set(indUpper, new Integer[]{first, second, indLower, isEDU});
+
+					// 3. Adapt NoteSequence
+					if (durLower.isLess(durUpper)) {
+						noteSeq.swapNotes(indLower, indUpper);
+					}
+
+					// 4. Adapt voice labels
+					if (durLower.isLess(durUpper)) {
+						if (adaptLabels) {
+							Collections.swap(voiceLab, indLower, indUpper);
 						}
 					}
 				}
 			}
-			lowestNoteIndex += currentChordSize;
+			notesPreceding += ch.get(i).size();
 		}
-		voiceCrossingInformation += "total type 1: " + totalTypeOne + "\r\n";
-		voiceCrossingInformation += "total type 2: " + totalTypeTwo + "\r\n";
-		voiceCrossingInformation += "total       : " + (totalTypeOne+totalTypeTwo) + "\r\n";
-		voiceCrossingInformation += "times each voice is involved" + "\r\n";
-		voiceCrossingInformation += Arrays.toString(timesInvolved);
-		System.out.println(voiceCrossingInformation);
-		// res contains numNotes + totalTypeOne + totalTypeTwo + all + involved (per voice) + 
-		// voice size (per voice)
-		Integer[] res = new Integer[4 + timesInvolved.length + getNumberOfVoices()];
-		res[0] = numNotes;
-		res[1] = totalTypeOne;
-		res[2] = totalTypeTwo;
-		res[3] = totalTypeOne + totalTypeTwo;
-		for (int i = 0; i < timesInvolved.length; i++) {
-			res[4+i] = timesInvolved[i];
-		}
-		// Note per voice
-		List<List<Integer>> notesPerVoice = listNotesPerVoice(getVoiceLabels());
-		List<Integer> numNotesPerVoice = new ArrayList<>();
-		for (int i = 0; i < notesPerVoice.size(); i++) {
-			if (notesPerVoice.get(i).size() > 0) {
-				numNotesPerVoice.add(notesPerVoice.get(i).size());
-			}
-			else {
-				int numVoices = getNumberOfVoices();
-				if (numVoices == 4) {
-					// Only voice 4 is allowed to be empty
-					if (i != Transcription.MAXIMUM_NUMBER_OF_VOICES-1) {
-						throw new RuntimeException("Voice " + i + " does not contain any notes.");
-					}
-				}
-				if (numVoices == 3) {
-					// Only voice 3 and 4 are allowed to be empty
-					if (i != Transcription.MAXIMUM_NUMBER_OF_VOICES-1 &&
-						i != Transcription.MAXIMUM_NUMBER_OF_VOICES-2) {
-						throw new RuntimeException("Voice " + i + " does not contain any notes.");
-					}
-				}
-				if (numVoices == 2) {
-					// Only voice 2, 3 and 4 are allowed to be empty
-					if (i != Transcription.MAXIMUM_NUMBER_OF_VOICES-1 &&
-						i != Transcription.MAXIMUM_NUMBER_OF_VOICES-2 &&
-						i != Transcription.MAXIMUM_NUMBER_OF_VOICES-3) {
-						throw new RuntimeException("Voice " + i + " does not contain any notes.");
-					}
-				}
-			}
-		}
-		for (int i = 0; i < numNotesPerVoice.size(); i++) {
-			res[(res.length-numNotesPerVoice.size())+i] = numNotesPerVoice.get(i); 
-		}
-		System.out.println(Arrays.toString(res));
-		return res;
-	}
 
+		// Reset noteSequence, voice labels; set voicesEDU, voicesIDU, voicesUnison
+//		System.out.println(noteSeq.get(12));
+//		System.out.println(noteSeq.get(13));
+//		System.out.println(getNoteSequence().get(12));
+//		System.out.println(getNoteSequence().get(13));
+//		setNoteSequence(noteSeq);
+//		if (adaptLabels) {
+//			setVoiceLabels(voiceLab);
+//		}
 
-	/**
-	 * Lists all the unique chords in the Transcription in the order they are encountered. Each chord is 
-	 * represented as a series of pitches, with the lowest pitch listed first. Chords with voice crossings 
-	 * are therefore rearranged so that their pitches are sorted numerically.
-	 * 
-	 * @return
-	 */
-	// TESTED
-	public List<List<Integer>> generateChordDictionary() {
-		List<List<Integer>> chordDictionary = new ArrayList<List<Integer>>();
-
-		// For each chord 
-//		List<List<Note>> chords = getTranscriptionChords();
-		int numChords = basicNoteProperties[basicNoteProperties.length - 1][CHORD_SEQ_NUM] + 1;
-//		for (int i = 0; i < chords.size(); i++) {  		
-		for (int i = 0; i < numChords; i++) {
-			// List the pitches in the chord
-			List<Integer> pitchesInCurrentChord = getPitchesInChord(i);
-			// Sort the pitches numerically
-			Collections.sort(pitchesInCurrentChord);
-			// If chordDictionary does not contain pitchesInCurrentChord: add
-			if (!chordDictionary.contains(pitchesInCurrentChord)) {
-				chordDictionary.add(pitchesInCurrentChord);
-			}
-		}	
-		return chordDictionary;
-	}
-
-
-	/**
-	 * Lists all the unique (chord) voice assignments in the transcription in the order they are encountered.
-	 * The parameter highestNumberOfVoices controls the size of the voice assignments returned.
-	 * 
-	 * @param highestNumberOfVoices
-	 * @return
-	 */
-	// TESTED (for both tablature and non-tablature case)
-	public List<List<Integer>> generateVoiceAssignmentDictionary(int highestNumberOfVoices) {
-		List<List<Integer>> voiceAssignmentDictionary = new ArrayList<List<Integer>>();
-		List<List<Integer>> voiceAssignments = getVoiceAssignments(/*tablature,*/ highestNumberOfVoices);
-
-		// For each voice assignment
-		for (int i = 0; i < voiceAssignments.size(); i++) {
-			List<Integer> currentVoiceAssignment = voiceAssignments.get(i);
-//			if (currentVoiceAssignment.equals(Arrays.asList(new Integer[]{1, 0, -1, -1}))) {
-//				System.out.println("num = " + i);
-//				for (int j = 0; j < getBasicNoteProperties().length; j++) {
-//					if (getBasicNoteProperties()[j][CHORD_SEQ_NUM] == 327) {
-//						Rational metricTime = new Rational(getBasicNoteProperties()[j][Transcription.ONSET_TIME_NUMER],
-//							getBasicNoteProperties()[j][Transcription.ONSET_TIME_DENOM]);	
-//						Rational[] metricPosition = Tablature.getMetricPosition(metricTime, getMeterInfo());
-//						System.out.println(metricPosition[0] + ", " + metricPosition[1]);
-//						System.out.println(getBasicNoteProperties()[j][ONSET_TIME_NUMER] / 
-//							getBasicNoteProperties()[j][ONSET_TIME_DENOM]);
-//						System.out.println(getBasicNoteProperties()[j][PITCH]);
-//					}
-//				}
-//
+//		setVoicesEDU(voicesEDU);
+//		setVoicesIDU(voicesIDU);
+//		for (int i = 0; i < voicesUnison.size(); i++) {
+//			if (voicesEDU.get(i) != null) {
+//				voicesUnison.set(i, voicesEDU.get(i));
 //			}
-			// If voiceAssignmentDictionary does not contain currentVoiceAssignment: add
-			if (!voiceAssignmentDictionary.contains(currentVoiceAssignment)) {
-				voiceAssignmentDictionary.add(currentVoiceAssignment);
-			}
-		}		
-		return voiceAssignmentDictionary;
+//			else if (voicesIDU.get(i) != null) {
+//				voicesUnison.set(i, voicesIDU.get(i));
+//			}
+//		}
+//		setVoicesUnison(voicesUnison);
+
+		return voicesUnison;
 	}
 
 
-  /**
-   * Initialises durationLabels with the initial, unadapted voice labels -- i.e., the ones that go with the notes
-   * in the initial, unadapted NoteSequence. Each duration label is a List<Double> containing Tablature.SMALLEST_
-   * RHYTHMIC_VALUE.getDenom() elements, one of which has value 1.0 and indicates the encoded full duration (where
-   * position 0 is a duration of 1/32, position 1 a duration of 2/32, etc.), while the others have value 0.0.  
-   * 
-   * NB1: Tablature case only; must be called after initialiseNoteSequence().
-	 */
-  private void initialiseDurationLabelsOLD() {
-    List<List<List<Double>>> initialDurationLabels = new ArrayList<List<List<Double>>>();
-    Double[] emptyLabelArray = new Double[Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()];
-    Arrays.fill(emptyLabelArray, 0.0);
-    List<Double> emptyLabel = Arrays.asList(emptyLabelArray);
-	              
-    // Iterate through all notes in the initial NoteSequence, which for each CoD still contains both
-    // CoDnotes. Lower CoDnotes are always in the lower voice and thus come first in the NoteSequence   
-    NoteSequence initialNoteSeq = getNoteSequence();
-    for (Note n : initialNoteSeq) {
-  	  List<List<Double>> currentDurationLabels = new ArrayList<List<Double>>();
-    	List<Double> durationLabelCurrentNote = new ArrayList<Double>(emptyLabel);
-    	Rational durationCurrentNote = n.getMetricDuration();
-    	int numer = durationCurrentNote.getNumer();
-	    int denom = durationCurrentNote.getDenom();
-	    // Set the correct element of durationLabelCurrentNote to 1.0
-	    int indexToSet = numer - 1;
-	    if (denom != Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()) {
-	    	indexToSet = (numer * (Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/denom)) - 1;
-	    }
-  	  durationLabelCurrentNote.set(indexToSet, 1.0);
-  	  // Add durationLabelCurrentNote to currentDurationLabels; add currentDurationLabels to initialDurationLabels
-  	  currentDurationLabels.add(durationLabelCurrentNote);
-  	  initialDurationLabels.add(currentDurationLabels);
-    }
-    // Set durationLabels
-    setDurationLabelsOLD(initialDurationLabels);
-//    durationLabels = initialDurationLabels;
-  }
-  
-  
-  private void setDurationLabelsOLD(List<List<List<Double>>> argDurationLabels) {
-  	durationLabelsOLD = argDurationLabels;
-  }
-  
-  
-  private List<List<List<Double>>> getDurationLabelsOLD() {
-	  return durationLabelsOLD;
-  }
-  
-  
-  /**
-	 * Finds for all CoDnotes (i.e., notes representing a Note that is shared by two voices) in the Tablature the
-	 * corresponding Notes in the Transcription, and
-	 * (1) removes the CoDnote with the shorter duration from noteSequence
-	 * (2) combines the voice labels of both CoDnotes into a List<Double> with two 1.0s, sets the label of the 
-	 *     lower CoDnote to the result in voiceLabels, and removes the label of the upper from voiceLabels
-	 * (3) combines the duration labels of both CoDnotes into a List<List<Double>>, the first element of which 
-	 *     represents the duration of the longer note, sets the label of the lower CoDnote to the result in 
-	 *     durationLabels, and removes the label of the upper from durationLabels 
-	 *          
-	 * Also sets voicesCoDNotes, a List<Integer[]> the size of the number of notes in the Transcription, 
-	 * containing for each element:
-	 *   a. if the note at that index is not a CoDnote: <code>null</code>; 
-	 *   b. If the the note at that index is a CoDnote: an Integer[] containing 
-	 *      as element 0: the voice the longer CoDnote is in;
-	 *      as element 1: the voice the shorter CoDnote is in.
-	 *      In case both CoDnotes have the same duration, the lower CoDnote (i.e., the one in the lower voice
-	 *      that comes first in the NoteSequence) is placed at element 0.
+	private List<Integer[]> makeVoicesUnisonOLD() {
+		// Get indices of upper and lower unison note as above
+		// Get notes (in noteseq) and voices (in voiceLabels)
+		// If duration the same: lower voice first in noteSeq and voiceLabels
+		// voicesUnison.set(indLower, new Integer[]{voiceLabels.get(indLower), voiceLabels.get(indUpper), indUpper, 1}); 
+		// voicesUnison.set(indUpper, new Integer[]{voiceLabels.get(indLower), voiceLabels.get(indUpper), indLower, 1}); 
+		// If duration different: voice with longer note first in noteSeq and voiceLabels
+		// voicesUnison.set(indLower, new Integer[]{voiceLabels.get(indLower), voiceLabels.get(indUpper), indUpper, 0}); 
+		// voicesUnison.set(indUpper, new Integer[]{voiceLabels.get(indLower), voiceLabels.get(indUpper), indLower, 0}); 
+		NoteSequence noteSeq = null; //getNoteSequence();
+		List<List<Double>> voiceLab = getVoiceLabels();
+		List<Integer[]> voicesUnison = new ArrayList<Integer[]>(Collections.nCopies(noteSeq.size(), null));
+		int notesPreceding = 0;
+		List<List<Note>> ch = getChords();
+		for (int i = 0; i < ch.size(); i++) {
+			Integer[][] unisonInfo = getUnisonInfo(ch.get(i));
+			// If the chord contains a unison note pair
+			if (unisonInfo != null) {
+				// For each unison note pair in the chord (there should be only one)
+				for (int j = 0; j < unisonInfo.length; j++) {					
+					// 1. Determine indices
+					// a. Indices of the lower and upper unison note   
+					int indLower = notesPreceding + unisonInfo[j][1];
+					int indUpper = notesPreceding + unisonInfo[j][2];
+					int voiceLower = DataConverter.convertIntoListOfVoices(voiceLab.get(indLower)).get(0);
+					int voiceUpper = DataConverter.convertIntoListOfVoices(voiceLab.get(indUpper)).get(0); 
+					boolean isEDU = 
+						noteSeq.get(indLower).getMetricDuration().equals(noteSeq.get(indUpper).getMetricDuration());
+					voicesUnison.set(indLower, new Integer[]{voiceLower, voiceUpper, indUpper, isEDU ? 1 : 0});
+					voicesUnison.set(indUpper, new Integer[]{voiceLower, voiceUpper, indLower, isEDU ? 1 : 0});
+				}
+			}
+			notesPreceding += ch.get(i).size();
+		}
+		return voicesUnison;
+	}
+
+
+	private void setVoicesEDU(List<Integer[]> arg) {
+		voicesEDU = arg;
+	}
+
+
+	private void setVoicesIDU(List<Integer[]> arg) {
+		voicesIDU = arg;
+	}
+
+
+	private void setMeterInfo(List<Integer[]> argMeterInfo) {
+		meterInfo = argMeterInfo;
+	}
+
+
+	private void setVoicesSNU(List<Integer[]> argVoicesCoDNotes) {
+		voicesSNU = argVoicesCoDNotes;
+	}
+
+
+	/** 
+	 * Handles single-note unisons (SNUs). For each SNU note pair,
 	 * 
-	 * NB1: This method presumes that a chord contains only one CoD, and neither a unison nor a course crossings.
+	 * <ul>
+	 * <li>Removes one SNU note from the NoteSequence
+	 *     <ul>
+	 *     <li>If the SNU notes have different durations: the SNU note that has the shorter duration.</li> 
+	 *     <li>If the SNU notes have the same duration: the upper (higher-voice) SNU note.</li> 
+	 *     </ul>
+	 * </li>
+	 * <li>Combines the voice labels of the SNU notes into one label and adapts the list of voice
+	 *     labels accordingly: sets the label of the lower SNU note to the result, and removes the 
+	 *     label of the upper SNU note. 
+	 *     NB: Not if t == Type.PREDICTED (in which case the labels already have their final form).</li>
+	 * <li>Combines the duration labels of the SNU notes into one label and adapts the list of duration
+	 *     labels accordingly: sets the label of the lower SNU note to the result, and removes the 
+	 *     label of the upper SNU note. 
+	 *     NB: Not if t == Type.PREDICTED (in which case the labels already have their final form).</li>
+	 * <li>Lists the SNU voices with the voice that contains the note that has the longer duration (or, 
+	 *     if they have the same duration, the lower voice) first, and sets voicesSNU accordingly. A 
+	 *     consistent ordering of the SNU voices is necessary for a consistent evaluation.</li>
+	 * </ul>
+	 * 
+	 * NB1: This method presumes that a chord contains only one SNU, and neither a unison nor a 
+	 *      course crossing.<br>
 	 * NB2: Tablature case only; must be called before handleCourseCrossings().
 	 * 
 	 * @param tablature
-	 */
-	private void handleCoDNotesOLD(Tablature tablature) {				
-		NoteSequence noteSeq = getNoteSequence();
-		List<List<Double>> voiceLab = getVoiceLabels();
-		List<List<List<Double>>> durationLab = getDurationLabelsOLD();
-    List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
-    List<Integer[]> voicesCoD = new ArrayList<Integer[]>();  
-    // Initialise voicesCoD with all elements set to null
-    for (int i = 0; i < tablature.getBasicTabSymbolProperties().length; i++) {
-    	voicesCoD.add(null);
-    }
-    				
-	  // For every chord
-		for (int i = 0; i < tablatureChords.size(); i++) {
-			// If the chord contains a CoD
-			if (getCoDInfo(tablatureChords, i) != null) {
-			  Integer[][] coDInfo = getCoDInfo(tablatureChords, i);
-			  // Get the (most recent! needed for calculating notesPreceding) transcription chords
-			  List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
-			  // For each CoD in the chord 
-			  int notesAlreadyRemovedFromChord = 0;
-			  for (int j = 0; j < coDInfo.length; j++) {
-			  	// 1. Determine the indices in noteSeq, voiceLab, and durationLab of the lower and upper CoDnotes
-			    // a. Calculate the number of Notes preceding the CoD chord by summing the size of all previous chords
-			    int notesPreceding = 0;
-			    for (int k = 0; k < i; k++) {
-		  	  	notesPreceding += transcriptionChords.get(k).size();
-	  		  }
-			    // b. Calculate the indices
-			    int indexOfLowerCoDNote = notesPreceding + (coDInfo[j][1] - notesAlreadyRemovedFromChord);
-			    int indexOfUpperCoDNote = notesPreceding + (coDInfo[j][2] - notesAlreadyRemovedFromChord);
-			    
-			    // 2. Adapt noteSeq, voiceLab, and durationLab; also adapt voicesCoD
-			    // a. noteSeq: remove the CoDnote with the shorter duration
-			    Rational durationLower = noteSeq.getNoteAt(indexOfLowerCoDNote).getMetricDuration();
-			    Rational durationUpper = noteSeq.getNoteAt(indexOfUpperCoDNote).getMetricDuration();
-			    // Assume that the lower note has the longer duration. If this is so or if both notes have the
-			    // same duration, indexOfLongerCoDNote == indexOfLowerCoDNote; otherwise, indexOfLongerCoDNote == 
-			    // indexOfUpperCoDNote 
-			    int indexOfLongerCoDNote = indexOfLowerCoDNote;
-			    int indexOfShorterCoDNote = indexOfUpperCoDNote;
-		  	  if (durationLower.isLess(durationUpper)) {
-		  	  	indexOfShorterCoDNote = indexOfLowerCoDNote;
-		  	  	indexOfLongerCoDNote = indexOfUpperCoDNote;
-		  	  }
-		  	  noteSeq.deleteNoteAt(indexOfShorterCoDNote);
-		  	  // The voices that go with the longer and shorter CoDnote, needed for setting voicesCoD, must be 
-		  	  // determined before voiceLab is adapted   
-		  	  List<Double> voiceLabelOfLongerCoDNote = new ArrayList<Double>(voiceLab.get(indexOfLongerCoDNote));
-		  	  int voiceLonger = DataConverter.convertIntoListOfVoices(voiceLabelOfLongerCoDNote).get(0);
-		  	  List<Double> voiceLabelOfShorterCoDNote = new ArrayList<Double>(voiceLab.get(indexOfShorterCoDNote));
-		  	  int voiceShorter = DataConverter.convertIntoListOfVoices(voiceLabelOfShorterCoDNote).get(0);
-			    // b. voiceLab: combine the labels of both CoDnotes, set the label at indexOfLowerCoDNote to the 
-		  	  // result, and remove the label of the upper CoDnote from voiceLab
-			    List<Double> voiceLabelOfLowerCoDNote = voiceLab.get(indexOfLowerCoDNote);			    
-		  	  List<Double> voiceLabelOfUpperCoDNote = voiceLab.get(indexOfUpperCoDNote);
-		  	  int voiceNumberToAdd = voiceLabelOfUpperCoDNote.indexOf(1.0);
-			    voiceLabelOfLowerCoDNote.set(voiceNumberToAdd, 1.0);
-			    voiceLab.set(indexOfLowerCoDNote, voiceLabelOfLowerCoDNote);
-		  		voiceLab.remove(indexOfUpperCoDNote);
-			    // c. durationLab: add the label of the shorter CoDnote to that of the longer, set the label at 
-		  		// indexOfLowerCoDNote to the result, and remove the label of the upper CoDnote from durationLab
-			    List<List<Double>> durationLabelOfLongerCoDNote = durationLab.get(indexOfLongerCoDNote);
-		  		List<List<Double>> durationLabelOfShorterCoDNote = durationLab.get(indexOfShorterCoDNote);
-			    durationLabelOfLongerCoDNote.add(durationLabelOfShorterCoDNote.get(0)); 
-			    durationLab.set(indexOfLowerCoDNote, durationLabelOfLongerCoDNote);
-		  		durationLab.remove(indexOfUpperCoDNote);
-		  		// d. Set the element at index indexOfLowerCoDNote in voicesCoD: set the first element to the
-		  		// voice that goes with the longer CoDnote, and the second to the voice that goes with the shorter 
-		  		voicesCoD.set(indexOfLowerCoDNote, new Integer[]{voiceLonger, voiceShorter});
-		  		
-		  		// 3. Increase notesAlreadyRemovedFromChord in case the chord contains more than one CoD and another
-	  			// iteration through the inner for-loop is necessary
-	  			notesAlreadyRemovedFromChord++;
-												
-	  		  // 4. Reset noteSequence, voiceLabels, and durationLabels; set voicesCoDNotes
-	  			setNoteSequence(noteSeq);
-	  			setVoiceLabels(voiceLab);
-	  			setDurationLabelsOLD(durationLab);
-	  			setVoicesCoDNotes(voicesCoD);
-				
-	  			// 5. Concat information to adaptations
-	  			adaptations = adaptations.concat("  CoD found in chord " + i + ": note no. " + (indexOfShorterCoDNote	
-	  				- notesPreceding)	+	" (pitch " + coDInfo[j][0]	+	") in that chord removed from the NoteSequence; " + 
-	  				"list of voice labels and list of durations adapted accordingly." + "\n");
-	  	  }
-	  	} 
-		}
-	}
-	
-	
-	/**
-	 * Finds for all course-crossing notes (i.e., notes pairs where the note on the lower course has the higher
-	 * pitch) in the Tablature the corresponding Notes in the Transcription, and 
-	 * (1) swaps these Notes in noteSequence;
-	 * (2) swaps the corresponding voice labels in voiceLabels;
-	 * (3) swaps the corresponding duration labels in durationLabels. 
-	 * 
-	 * NB1: This method presumes that a chord contains only one course crossing, and neither a CoD nor a unison.
-	 * NB2: Tablature case only; must be called after handleCoDNotes().
-	 * 
-	 * @param tablature
+	 * @param t
 	 */
 	// TESTED
-	private void handleCourseCrossingsOLD(Tablature tablature) {
-	  NoteSequence noteSeq = getNoteSequence();
+	private void handleSNUsOLD(Tablature tablature, Type t) {
+		NoteSequence noteSeq = null; //getNoteSequence();
 		List<List<Double>> voiceLab = getVoiceLabels();
-		List<List<List<Double>>> durationLab = getDurationLabelsOLD();
-	  List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
-	  List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
-	    		
-	  // For every chord
+		List<List<Double>> durationLab = getDurationLabels();
+		List<Integer[]> voicesSNU = 
+			new ArrayList<Integer[]>(Collections.nCopies(tablature.getBasicTabSymbolProperties().length, null));
+
+		boolean adaptLabels = t != Type.PREDICTED;
+
+		// 1. Adapt NoteSequence, voice and duration labels; set voicesSNU
+		int notesPreceding = 0;
+		List<List<TabSymbol>> tablatureChords = tablature.getChords();
+		// NB If any SNUs are found in the for-loop, chord becomes outdated. If it is to be used
+		// after the for-loop, it must therefore be recalculated
+		List<List<Note>> ch = getChords();
+//		List<List<Note>> chords = getNoteSequenceChords();
 		for (int i = 0; i < tablatureChords.size(); i++) {
-			// If the chord contains a course crossing
-			if (tablature.getCourseCrossingInfo(i) != null) {
-				Integer[][] chordCrossingInfo = tablature.getCourseCrossingInfo(i);
-			 	// For each course crossing in the chord
-				for (int j = 0; j < chordCrossingInfo.length; j++) {
-					// 1. Determine the indices in noteSeq, voiceLab, and durationLab of the lower and upper CCnotes
-			    // a. Calculate the number of Notes preceding the CC chord by summing the size of all previous chords
-			 		int notesPreceding = 0;
-			    for (int k = 0; k < i; k++) {
-			    	notesPreceding += transcriptionChords.get(k).size();
-			    }
-			    // b. Calculate the indices
-			    int indexOfLowerCCNote = notesPreceding + chordCrossingInfo[j][2];
-			    int indexOfUpperCCNote = notesPreceding + chordCrossingInfo[j][3];
-			    
-			    // 2. Swap
-			    noteSeq.swapNotes(indexOfLowerCCNote, indexOfUpperCCNote);
-			    Collections.swap(voiceLab, indexOfLowerCCNote, indexOfUpperCCNote);
-			    Collections.swap(durationLab, indexOfLowerCCNote, indexOfUpperCCNote);
-					
-			    // 3. Concat information to adaptations
-					adaptations = adaptations.concat("  Course crossing found in chord " + i + ": notes no. " + 
-			      chordCrossingInfo[j][2] + " (pitch " + chordCrossingInfo[j][0]	+ ") and " + chordCrossingInfo[j][3] +
-			      " (pitch " + chordCrossingInfo[j][1]	+ ") in that chord swapped in the NoteSequence; "+ "list of " + 
-			      "voice labels and list of durations adapted accordingly." + "\n");
-			  }
+			Integer[][] SNUInfo = getSNUInfo(ch.get(i), tablatureChords.get(i));
+			// If the chord contains a SNU note pair
+			if (SNUInfo != null) {
+//			if (getSNUInfo(tablatureChords, i) != null) {
+//				Integer[][] SNUInfo = getSNUInfo(tablatureChords, i);
+				// For each SNU note pair in the chord (there should only be one)
+				int notesRemovedFromChord = 0;
+				for (int j = 0; j < SNUInfo.length; j++) {
+					// 1. Determine indices
+					// a. Indices of the lower and upper SNU note
+					int indLower = notesPreceding + (SNUInfo[j][1] - notesRemovedFromChord);
+					int indUpper = notesPreceding + (SNUInfo[j][2] - notesRemovedFromChord);
+					// b. Indices of the longer and shorter SNU note
+					Rational durLower = noteSeq.getNoteAt(indLower).getMetricDuration();
+					Rational durUpper = noteSeq.getNoteAt(indUpper).getMetricDuration();
+					int indLonger = 
+						durLower.isGreater(durUpper) ? indLower : (durLower.isLess(durUpper) ? indUpper : -1);
+					int indShorter = 
+						durLower.isGreater(durUpper) ? indUpper : (durLower.isLess(durUpper) ? indLower: -1);
+
+					// 2. Set voicesSNU
+					int first, second;
+					if (t != Type.PREDICTED) {
+						// Determine first and second voice from uncombined voice labels. The SNU notes can 
+						// have different durations.
+						int indFirst = !durLower.equals(durUpper) ? indLonger : indLower;
+						int indSecond = !durLower.equals(durUpper) ? indShorter : indUpper;
+						first = DataConverter.convertIntoListOfVoices(voiceLab.get(indFirst)).get(0);
+						second = DataConverter.convertIntoListOfVoices(voiceLab.get(indSecond)).get(0);
+					}
+					else {
+						// Determine first and second voice from combined voice label. The SNU notes always 
+						// have the same duration (only one duration is predicted), so the first voice is the  
+						// lower voice from the combined voice label
+						int indFirst = indLower;
+						int indSecond = indFirst;
+						first = DataConverter.convertIntoListOfVoices(voiceLab.get(indFirst)).get(1);
+						second = DataConverter.convertIntoListOfVoices(voiceLab.get(indSecond)).get(0);
+					}
+					voicesSNU.set(indLower, new Integer[]{first, second});
+
+					// 3. Adapt NoteSequence
+					noteSeq.deleteNoteAt(!durLower.equals(durUpper) ? indShorter : indUpper);
+
+					// 4. Adapt voice and duration labels
+					if (adaptLabels) {
+						voiceLab.set(indLower, combineLabels(voiceLab.get(indLower), voiceLab.get(indUpper)));
+						voiceLab.remove(indUpper);
+						durationLab.set(indLower, combineLabels(durationLab.get(indLower), durationLab.get(indUpper)));
+						durationLab.remove(indUpper);
+					}
+					// In case the chord contains multiple SNUs 
+					notesRemovedFromChord++;
+
+					handledNotes = handledNotes.concat("  SNU found in chord " + i + ": note no. " + (indShorter	
+						- notesPreceding) +	" (pitch " + SNUInfo[j][0]	+	") in that chord removed from the NoteSequence; " + 
+						"list of voice labels and list of durations adapted accordingly." + "\n");
+				}
 			}
-		}			
-	  // Reset noteSequence, voiceLabels, and durationLabels
-		setNoteSequence(noteSeq);
-		setVoiceLabels(voiceLab);
-		setDurationLabelsOLD(durationLab);
+			notesPreceding += tablatureChords.get(i).size();
+		}
+
+		// Reset NoteSequence, voice labels, duration labels; set voicesSNU
+//		setNoteSequence(noteSeq);
+		if (adaptLabels) {
+			setVoiceLabels(voiceLab);
+			setDurationLabels(durationLab);
+		}
+		setVoicesSNU(voicesSNU);
 	}
-	
-	
-	/**
-	 * Checks for each note in the Transcription whether it is part of a unison of two notes with equal duration.
-	 * Returns a list the size of the number of notes in the Transcription, containing
-	 *   a. if the note at that index is not a unison note or if the note at that index is part of a unison
-	 *      whose notes are of inequal length: <code>null</code>  
-	 *   b. if the note at that index is part of a unison whose notes are of equal length: a voice label (i.e.,
-	 *      a List<Double>) containing two 1.0s, thus representing both correct voices.
+
+
+	/** 
+	 * Handles course crossing notes. For each course crossing note pair,
 	 * 
-	 * NB: Non-tablature case only.
+	 * <ul>
+	 * <li>Swaps the course crossing notes in the NoteSequence so that the course crossing note that has 
+	 *     the higher pitch (the lower-course course crossing note) comes first.</li>
+	 * <li>Swaps the voice labels of the course crossing notes. 
+	 *     NB: Not if t == Type.PREDICTED (in which case the labels already have their final form).</li>
+	 * <li>Swaps the duration labels of the course crossing notes. 
+	 *     NB: Not if t == Type.PREDICTED (in which case the labels already have their final form).</li>
+	 * </ul>
 	 *  
+	 * NB1: This method presumes that a chord contains only one course crossing, and neither a SNU nor 
+	 *      a unison.<br>
+	 * NB2: Tablature case only; must be called after handleSNUs().
+	 * 	  
+	 * @param tablature
+	 * @param t
+	 */
+	// TESTED
+	private void handleCourseCrossingsOLD(Tablature tablature, Type t) {
+		NoteSequence noteSeq = null; //getNoteSequence();
+		List<List<Double>> voiceLab = getVoiceLabels();
+		List<List<Double>> durationLab = getDurationLabels();
+
+		boolean adaptLabels = t != Type.PREDICTED;
+
+		// 1. Adapt NoteSequence, voice and duration labels
+		int notesPreceding = 0;
+		List<List<TabSymbol>> tabChords = tablature.getChords();
+		for (int i = 0; i < tabChords.size(); i++) {
+			List<Integer[]> courseCrossingInfo = null; //tablature.getCourseCrossingInfo(i);
+			// If the chord contains a course crossing note pair
+			if (courseCrossingInfo != null) {
+				// For each course crossing note pair in the chord (there should be only one)
+				for (int j = 0; j < courseCrossingInfo.size(); j++) {					
+					// 1. Determine indices of the lower and upper course crossing note
+					int indLower = notesPreceding + courseCrossingInfo.get(j)[2];
+					int indUpper = notesPreceding + courseCrossingInfo.get(j)[3];
+
+					// 2. Adapt NoteSequence
+					noteSeq.swapNotes(indLower, indUpper);
+
+					// 3. Adapt voice and duration labels
+					if (adaptLabels) {
+						Collections.swap(voiceLab, indLower, indUpper);
+						Collections.swap(durationLab, indLower, indUpper);
+					}
+
+					handledNotes = handledNotes.concat("  Course crossing found in chord " + i + ": notes no. " + 
+						courseCrossingInfo.get(j)[2] + " (pitch " + courseCrossingInfo.get(j)[0]	+ ") and " + courseCrossingInfo.get(j)[3] +
+						" (pitch " + courseCrossingInfo.get(j)[1] + ") in that chord swapped in the NoteSequence; "+ "list of " + 
+						"voice labels and list of durations adapted accordingly." + "\n");
+				}
+			}
+			notesPreceding += tabChords.get(i).size();
+		}
+		// Reset NoteSequence, voice labels, duration labels
+//		setNoteSequence(noteSeq);
+		if (adaptLabels) {
+			setVoiceLabels(voiceLab);
+			setDurationLabels(durationLab);
+		}
+	}
+
+
+	/** 
+	 * Sets the primary and secondary voice for each SNU. If the two voices involved in the SNU have a note 
+	 * with the same duration, the lower voice is set as the primary SNU voice; else, the voice that has the 
+	 * note with the longer duration is set as the primary SNU voice.
+	 *  
+	 * @param vl
+	 * @param dl
+	 * @param voiceLongerShorter Contains, for each SNUnote, an Integer[] containing <br>
+	 *        <ul>
+	 *        <li>As element 0: of the two voices involved in the SNU, the voice that has the SNU note with the 
+	 *                          longer duration</li>
+	 *        <li>As element 1: of the two voices involved in the SNU, the voice that has the SNU note with the 
+	 *                          shorter duration</li>
+	 *        </ul>
+	 * @return A List<Integer[]> containing, for each note <br>
+	 *         <ul>
+	 *         <li>if the note is not a SNU, <code>null</code></li>
+	 *         <li>if the note is a SNU, an Integer[] containing</li>
+	 * 	           <ul>
+	 *             <li>As element 0: if the two voices involved in the SNU have a note with the same duration, 
+	 *                               the lower voice; else, the voice that has the note with the longer duration</li>
+	 *             <li>As element 1: if the two voices involved in the SNU have a note with the same duration, 
+	 *                               the higher voice; else, the voice that has the note with the shorter duration</li>
+	 *             </ul>
+	 *         </ul>
+	 */
+	// TESTED
+	private static List<Integer[]> determineVoicesSNU(List<List<Double>> vl, List<List<Double>> dl, 
+		List<Integer[]> voiceLongerShorter) {
+		List<Integer[]> voicesSNU = new ArrayList<>();
+		for (int i = 0; i < vl.size(); i++) {
+			List<Double> voiceLbl = vl.get(i);
+			List<Double> durLbl = dl.get(i);
+			Integer[] vls = voiceLongerShorter.get(i);
+			// Default case
+			if (Collections.frequency(voiceLbl, 1.0) == 1) {
+				voicesSNU.add(null);
+			}
+			// SNU case
+			else {
+				// If the voices involved in the SNU have the same duration: add lower voice first
+				if (Collections.frequency(durLbl, 1.0) == 1) {
+					voicesSNU.add(new Integer[]{voiceLbl.lastIndexOf(1.0), voiceLbl.indexOf(1.0)});
+				}
+				// If not: add voice that has the note with the longer duration first 
+				else {
+					voicesSNU.add(vls);
+//					voicesSNU.add(new Integer[]{vls[0], vls[1]});
+				}
+			}
+		}
+		return voicesSNU;
+	}
+
+
+	/** 
+	 * Initialises the voice labels<br>
+	 * <ul>
+	 * <li>If no argument (i.e., <code>null</code>) is given: from the initialised NoteSequence.</li>
+	 * <li>Else, with the given labels.</li>
+	 * </ul> 
+	 *
+	 * NB: Must be called after initialiseNoteSequence().
+	 * 
+	 * @param argVl The voice labels to initialise with.
+	 */
+	// TESTED
+	private void initialiseVoiceLabels(List<List<Double>> argVl) {
+		if (argVl == null) {
+			List<List<Double>> vl = new ArrayList<List<Double>>(); 
+//			getNoteSequence().forEach(n -> vl.add(createVoiceLabel(findVoice(n))));
+			setVoiceLabels(vl);
+		}
+		else {
+			setVoiceLabels(argVl);
+		}
+	}
+
+
+	/**
+	 * Initialises the duration labels<br>
+	 * <ul>
+	 * <li>If no argument (i.e., <code>null</code>) is given: from the initialised NoteSequence.</li>
+	 * <li>Else, with the given labels.</li>
+	 * </ul> 
+	 * 
+	 * NB: Tablature case only; must be called after initialiseNoteSequence().
+	 * 
+	 * @param argDl The duration labels to initialise with.
+	 */
+	// TESTED
+	private void initialiseDurationLabels(List<List<Double>> argDl) {
+		if (argDl == null) {
+			List<List<Double>> dl = new ArrayList<List<Double>>();
+//			getNoteSequence().forEach(n -> 
+//				dl.add(createDurationLabel(Tablature.getTabSymbolDur(n.getMetricDuration()))));
+			setDurationLabels(dl);
+		}
+		else {
+			setDurationLabels(argDl);
+		}
+	}
+
+
+	/**
+	 * Initialises the duration labels.
+	 * 
+	 * If <code>null</code> is given as argument, the duration labels are initiated from the initial, 
+	 * unadapted NoteSequence; else, they are initialised with the given labels.
+	 * 
+	 * Each duration label is binary vector containing n = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3 
+	 * elements, where the position of the 1.0 indicates the full duration encoded (index 0 denotes a 
+	 * duration of 1/n, position 1 a duration of 2/n, etc.).  
+	 * 
+	 * NB: Tablature case only; must be called after initialiseNoteSequence().
+	 * 
+	 * @param dl The duration labels to initialise with.
+	 */
+	// TESTED (for both tablature- and non-tablature case simultaneously)
+	private void initialiseDurationLabelsOLD(List<List<Double>> dl) {
+		if (dl == null) {
+			List<List<Double>> initialDurationLabels = new ArrayList<List<Double>>();
+
+			// Iterate through all notes in the initial NoteSequence, which for each CoD still contains both
+			// CoDnotes. Lower CoDnotes are always in the lower voice and thus come first in the NoteSequence   
+			NoteSequence initialNoteSeq = null; //getNoteSequence();
+			for (Note n : initialNoteSeq) {
+				Rational durationCurrentNote = n.getMetricDuration();
+				int numer = durationCurrentNote.getNumer();
+				int denom = durationCurrentNote.getDenom();
+				// Determine the duration in 32nd/3 notes
+				// NB: Tablature.SRV_DEN/denom will always be divisible by denom because denom 
+				// will always be a fraction of Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()/3: 
+				// 32, 16, 8, 4, 2, or 1
+				int duration = numer * (Tablature.SRV_DEN/denom);
+				// Create the durationLabel for n and add it to initialDurationLabels
+//				initialDurationLabels.add(createDurationLabel(duration));
+			}
+			// Set durationLabels
+			setDurationLabels(initialDurationLabels);
+		}
+		else {
+			setDurationLabels(dl);
+		}
+	}
+
+
+//	private void setNoteSequence(NoteSequence arg) {
+//		noteSequence = arg;
+//	}
+
+
+	/**
+	 * Transposes the given <code>Piece</code> by the given interval.
+	 *  
+	 * @param argPiece
+	 * @param transposition
+	 * @return
+	 */
+	private static Piece transposePiece(Piece argPiece, int transposition) {
+		argPiece.setHarmonyTrack(transposeHarmonyTrack(argPiece.getHarmonyTrack(), 
+			transposition));
+		argPiece.setScore(transposeNotationSystem(argPiece.getScore(), transposition));
+		return argPiece;
+	}
+
+
+	/**
+	 * Diminutes the given <code>Piece</code> according to the given <code>Timeline</code> 
+	 * from the <code>Tablature</code>.
+	 * 
+	 * @param argPiece
+	 * @param tl
+	 * @return
+	 */
+	private static Piece diminutePiece(Piece argPiece, Timeline tl) {
+		Piece pieceDim = new Piece();
+		MetricalTimeLine mtl = argPiece.getMetricalTimeLine();		
+		MetricalTimeLine mtlDim = diminuteMetricalTimeLine(mtl, tl);
+		argPiece.setMetricalTimeLine(mtlDim);
+		argPiece.setHarmonyTrack(diminuteHarmonyTrack(argPiece.getHarmonyTrack(), tl, mtl, mtlDim));
+		argPiece.setScore(diminuteNotationSystem(argPiece.getScore(), tl, mtl, mtlDim));
+		return argPiece;
+	}
+
+
+	private void setNoteSequence() {
+//		noteSequence = makeNoteSequence();
+	}
+
+
+	/**
+	 * Makes the NoteSequence, in which all notes from the Piece are ordered hierarchically by<br>
+	 * <ul>
+	 * <li>(1) Onset time (lower first).</li>
+	 * <li>(2) If two notes have the same onset time: pitch (lower first).</li>
+	 * <li>(3) If two notes have the same onset time and the same pitch: voice (lower first).</li>
+	 * </ul>
+	 * 
+	 * After initialisation, any SNU notes (tablature case), course crossing notes (tablature case), 
+	 * and unison notes (non-tablature case) need further handling. 
+	 * <ul>
+	 * <li>SNU notes must be merged; this is done in <code>handleSNUs()</code>.</li> 
+	 * <li>Course crossing notes must be swapped so that the course crossing note that has the 
+	 *     higher pitch (the lower-course course crossing note) comes first; this is done 
+	 *     in <code>handleCourseCrossings()</code>.</li>
+	 * <li>Unison notes must be swapped so that the unison note that has the longer duration 
+	 *     comes first; this is done in <code>handleUnisons()</code>.</li>
+	 * </ul>
+	 * 
+	 * Any unison notes (tablature case) need no further handling, as the lower-course unison
+	 * note automatically always comes first.
+	 *               
+	 * NB: Must be called before initialiseVoiceLabels().
+	 */
+	// TESTED
+	private NoteSequence makeNoteSequence() {
+		NoteSequence noteSeq = new NoteSequence(Comparator
+			.comparing(Note::getMetricTime)
+			.thenComparing(Note::getMidiPitch)
+			.thenComparing(this::findVoice, Comparator.reverseOrder()));
+		getScorePiece().getScore().getContentsRecursiveList(null).stream()
+		.filter(c -> c instanceof Note)
+		.forEach(c -> noteSeq.add((Note) c));
+		return noteSeq;
+	}
+
+
+	/**
+	 * Gets the chords from the NoteSequence.
+	 * NB If the NoteSequence is in its final form, getChords() should be called.
+	 * 
 	 * @return
 	 */
 	// TESTED
-	private List<List<Double>> getEqualDurationUnisonsInfoOLD() {
-		List<List<Double>> equalDurationUnisons = new ArrayList<List<Double>>();
-		NoteSequence noteSeq = getNoteSequence();
-		List<List<Double>> voiceLabels = getVoiceLabels();
-		// Initialise equalDurationUnisons with all elements set to null
+	private List<List<Note>> getChordsFromNoteSequence() {
+		List<List<Note>> ch = new ArrayList<List<Note>>();
+
+		NoteSequence noteSeq = null; //getNoteSequence();
+		List<Note> currChord = new ArrayList<Note>();
+//		Note firstNote = noteSeq.getNoteAt(0);
+//		Rational onsetFirstNote = firstNote.getMetricTime();
+//		currChord.add(firstNote);
+		Rational onsetPrevNote = noteSeq.getNoteAt(0).getMetricTime();
+//		// For each Note in noteSeq. The Notes are ordered according to (1) onset time, (2) lowest pitch first (if
+//		// notes have the same onset time), (3) if the Notes have the same onset time and pitch: a. lowest voice 
+//		// first (if they have the same duration); b. longest duration first (if they have different durations)
 		for (int i = 0; i < noteSeq.size(); i++) {
-			equalDurationUnisons.add(null);
-		}
-			
-		// For all chords
-		List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();  
-		for (int i = 0; i < transcriptionChords.size(); i++) {
-			// If the chord contains a unison
-			Integer[][] currentUnisonInfo = getUnisonInfo(i);
-			if (currentUnisonInfo != null) {
-				// For each unison
-				for (int j = 0; j < currentUnisonInfo.length; j++) {
-				  // 1. Determine the indices in noteSeq and voiceLabels of the lower and upper unison notes
-		      // a. Calculate the number of Notes preceding the unison chord by summing the size of all previous chords
-		   		int notesPreceding = 0;
-		      for (int k = 0; k < i; k++) {
-		      	notesPreceding += transcriptionChords.get(k).size();
-		      }
-		      // b. Calculate the indices in the NoteSequence
-		      int indexOfLowerUnisonNote = notesPreceding + currentUnisonInfo[j][1];
-		      int indexOfUpperUnisonNote = notesPreceding + currentUnisonInfo[j][2];
-		      		      
-		      // 2. If the unison notes have the same duration
-		      Rational durationLower = noteSeq.getNoteAt(indexOfLowerUnisonNote).getMetricDuration();
-		      Rational durationUpper = noteSeq.getNoteAt(indexOfUpperUnisonNote).getMetricDuration();
-		      List<Double> voiceLabelLower = voiceLabels.get(indexOfLowerUnisonNote);
-		      List<Double> voiceLabelUpper = voiceLabels.get(indexOfUpperUnisonNote);
-		      if (durationLower.equals(durationUpper)) {
-		        // Combine the voice labels
-			      int indexOfOneInUpper = voiceLabelUpper.indexOf(1.0);
-			      List<Double> correctVoices = new ArrayList<Double>(voiceLabelLower);
-			      correctVoices.set(indexOfOneInUpper, 1.0);
-		      	equalDurationUnisons.set(indexOfLowerUnisonNote, correctVoices);
-		      	equalDurationUnisons.set(indexOfUpperUnisonNote, correctVoices);
-		      }
+			Note currNote = noteSeq.getNoteAt(i);
+			Rational onsetCurrNote = currNote.getMetricTime();
+			if (onsetCurrNote.equals(onsetPrevNote)) {
+				currChord.add(currNote);
+				if (i == noteSeq.size() - 1) {
+					ch.add(currChord);
 				}
 			}
-		}	
-		return equalDurationUnisons;
+			else {
+				ch.add(currChord);
+				currChord = new ArrayList<Note>();
+				currChord.add(currNote);
+			}
+			onsetPrevNote = onsetCurrNote;
+		}
+//		// Add the last chord to ch
+//		ch.add(currChord);
+		return ch;
 	}
-    
+	
+	
+	/**
+	 * Initialises durationLabels with the initial, unadapted voice labels -- i.e., the ones that go with the notes
+	 * in the initial, unadapted NoteSequence. Each duration label is a List<Double> containing Tablature.SMALLEST_
+	 * RHYTHMIC_VALUE.getDenom() elements, one of which has value 1.0 and indicates the encoded full duration (where
+	 * position 0 is a duration of 1/32, position 1 a duration of 2/32, etc.), while the others have value 0.0.  
+	 * 
+	 * NB1: Tablature case only; must be called after initialiseNoteSequence().
+	 */
+	private void initialiseDurationLabelsOLD() {
+		List<List<List<Double>>> initialDurationLabels = new ArrayList<List<List<Double>>>();
+		Double[] emptyLabelArray = new Double[Tablature.SRV_DEN];
+		Arrays.fill(emptyLabelArray, 0.0);
+		List<Double> emptyLabel = Arrays.asList(emptyLabelArray);
+
+		// Iterate through all notes in the initial NoteSequence, which for each CoD still contains both
+		// CoDnotes. Lower CoDnotes are always in the lower voice and thus come first in the NoteSequence   
+		NoteSequence initialNoteSeq = null; //getNoteSequence();
+		for (Note n : initialNoteSeq) {
+			List<List<Double>> currentDurationLabels = new ArrayList<List<Double>>();
+			List<Double> durationLabelCurrentNote = new ArrayList<Double>(emptyLabel);
+			Rational durationCurrentNote = n.getMetricDuration();
+			int numer = durationCurrentNote.getNumer();
+			int denom = durationCurrentNote.getDenom();
+			// Set the correct element of durationLabelCurrentNote to 1.0
+			int indexToSet = numer - 1;
+			if (denom != Tablature.SRV_DEN) {
+				indexToSet = (numer * (Tablature.SRV_DEN/denom)) - 1;
+			}
+			durationLabelCurrentNote.set(indexToSet, 1.0);
+			// Add durationLabelCurrentNote to currentDurationLabels; add currentDurationLabels to initialDurationLabels
+			currentDurationLabels.add(durationLabelCurrentNote);
+			initialDurationLabels.add(currentDurationLabels);
+		}
+		// Set durationLabels
+		setDurationLabelsOLD(initialDurationLabels);
+//		durationLabels = initialDurationLabels;
+	}
+
+
+	private void setDurationLabelsOLD(List<List<List<Double>>> argDurationLabels) {
+//		durationLabelsOLD = argDurationLabels;
+	}
+
+
+//	private List<List<List<Double>>> getDurationLabelsOLD() {
+//		return durationLabelsOLD;
+//	}
+	
+	
+	
+	/**
+	 * Constructor for the ground truth Transcription.
+	 *                              
+	 * @param argMidiFile
+	 * @param argEncodingFile
+	 */
+	private Transcription(File argMidiFile, File argEncodingFile, boolean bla) {
+		// Create and set the ground truth Piece
+		Piece groundTruthPiece = MIDIImport.importMidiFile(argMidiFile);
+//		long[][] rah = groundTruthPiece.getMetricalTimeLine().getTimeSignature();
+//		for (long[] l : rah) {
+//			System.out.println(Arrays.toString(l));
+//		}
+//		KeyMarker r = groundTruthPiece.getMetricalTimeLine().getKeyMarker(new Rational(0, 4));
+//		System.out.println(r);
+//		System.exit(0);		
+		setPiece(groundTruthPiece);
+		
+		// Create the Transcription based on the ground truth Piece
+		boolean normaliseTuning = false;
+		boolean isGroundTruthTranscription = true;
+//		createTranscription(argMidiFile.getName(), argEncodingFile, normaliseTuning, isGroundTruthTranscription);
+	}
+
+
+//	/**
+//	 * Turns the given Tablature into a Transcription, using the given voices and durations.
+//	 *  
+//	 * @param tablature
+//	 * @param voices
+//	 * @param durations
+//	 * @param numberOfVoices
+//	 */
+//	public Transcription(Tablature tablature, List<List<Integer>> voices, List<Rational[]> durations,
+//		int numberOfVoices) {
+//
+//		// Make an empty Piece with the given number of voices
+//		Piece piece = new Piece();
+//		NotationSystem system = piece.createNotationSystem();
+//		for (int i = 0; i < numberOfVoices; i++) {
+//			NotationStaff staff = new NotationStaff(system); 
+//			system.add(staff);
+//			NotationVoice voice = new NotationVoice(staff); 
+//			staff.add(voice);
+//
+//			Note voice0n0 = Transcription.createNote(67, new Rational(0, 4), new Rational(1, 2));
+//			voice.add(voice0n0); 
+//		}
+//
+//		// Iterate through the Tablature, convert each TabSymbol into a note, and add it to the given voice
+//		Integer[][] btp = tablature.getBasicTabSymbolProperties();
+//		for (int i = 0; i < btp.length; i++) {
+//			// Create a Note from the TabSymbol at index i
+//			int pitch = btp[i][Tablature.PITCH];
+//			Rational metricTime = new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom());
+//			Rational metricDuration = durations.get(i)[0]; // [0] is possible because each element in durations currently contains only one Rational
+//			Note note = createNote(pitch, metricTime, metricDuration);
+//
+//			// Add the Note to each voice in currentVoices
+//			List<Integer> currentVoices = voices.get(i);
+//			for (int v : currentVoices) {
+//				NotationVoice voice = piece.getScore().get(v).get(0);
+//				voice.add(note);
+//			}	
+//		}
+//
+//		// Set the Piece in the Transcription
+//		setPiece(piece);
+//	}
+
+
+	/**
+	 * Constructor. Creates a new Transcription out of the given arguments; sets the class fields pieceName, file, 
+	 * piece, noteSequence, voiceLabels, and
+	 *  In the tablature case: sets the class field durationLabels, aligns the Tablature and Transcription (and 
+	 *     sets the class field voicesCoDNotes), checks the encoding for alignment errors (if any are found, 
+	 *     a RuntimeException is thrown), and transposes the Transcription.
+	 *   In the non-tablature case (where argEncodingFile is <code>null</code>): sets the class fields meterInfo,
+	 *   handles unisons (and sets the class field equalDurationUnisonsInfo), and sets the class field 
+	 *   basicNoteProperties.
+	 *  
+	 * Applies to the bi-directional model only.
+	 *
+	 * @param argMidiFile
+	 * @param argEncodingFile
+	 * @param argPiece
+	 * @param argVoiceLabels
+	 * @param argDurationLabels
+	 * @param argVoicesCoDNotes
+	 * @param argEqualDurationUnisonsInfo 
+	 */
+	private Transcription(File argMidiFile, File argEncodingFile, Piece argPiece, List<List<Double>> argVoiceLabels,
+		List<List<Double>> argDurationLabels, List<Integer[]> argVoicesCoDNotes, List<Integer[]> 
+		argEqualDurationUnisonsInfo, boolean bla) {
+
+		setName(); 
+//		setFile(argMidiFile);
+		setPiece(argPiece);
+
+		makeNoteSequence(); // needs piece    
+		setVoiceLabels(argVoiceLabels);
+		// a. In the tablature case
+		if (argEncodingFile != null) {
+			setDurationLabels(argDurationLabels);
+			// 1. Check chords. The argument normaliseTuning must be set to true (because argPiece
+			// has already been normalised) for the final alignment check below
+			Tablature tablature = new Tablature(argEncodingFile, true);
+			if (checkChords(tablature, null) == false) { // needs noteSequence
+				System.out.println(chordCheck);
+				throw new RuntimeException("ERROR: Chord error (see console).");
+			}
+			// 2. Align tablature and transcription
+			handleSNUsOLD(tablature, null); // needs noteSequence, voiceLabels, and durationLabels 
+//			handleCoDNotes(tablature, false); // needs noteSequence, voiceLabels, and durationLabels 
+			setVoicesSNU(argVoicesCoDNotes);
+			handleCourseCrossingsOLD(tablature, null); // needs noteSequence, voiceLabels, and durationLabels
+//			handleCourseCrossings(tablature, false); // needs noteSequence, voiceLabels, and durationLabels
+			// 3. Do final alignment check
+			if (checkAlignment(tablature, null) == false) {
+				System.out.println(alignmentCheck);
+					throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
+			}
+			// 4. Transpose
+//			transpose(tablature.getTranspositionInterval());
+		}
+		// b. In the non-tablature case
+		else {
+//			setMeterInfo(argMidiFile); // needs file
+			handleUnisons((List<Note>) null); // needs noteSequence and voiceLabels
+//			handleUnisons(false); // needs noteSequence and voiceLabels
+			setVoicesEDU(argEqualDurationUnisonsInfo);
+			setBasicNoteProperties(); // needs noteSequence
+		}   
+	}
+
+
+	/**
+	 * Constructor. Creates a new Transcription out of the given arguments; sets the class fields piece, 
+	 * noteSequence, voiceLabels, and
+	 *  In the tablature case: sets the class field durationLabels, aligns the Tablature and Transcription (and 
+	 *     sets the class field voicesCoDNotes), checks the encoding for alignment errors (if any are found, 
+	 *     a runTimeException is thrown), and transposes the Transcription.
+	 *   In the non-tablature case: sets the class fields meterInfo, handles unisons (and sets the class field
+	 *     equalDurationUnisonsInfo), and sets the class field basicNoteProperties.
+	 *  
+	 * Applies to the bi-directional model only.
+	 *
+	 * @param tablature
+	 * @param argPiece
+	 * @param argVoiceLabels
+	 * @param argDurationLabels
+	 * @param argVoicesCoDNotes
+	 * @param argMeterInfo
+	 * @param argEqualDurationUnisonsInfo 
+	 */
+	private Transcription(Tablature tablature, Piece argPiece, List<List<Double>> argVoiceLabels, List<List<Double>> 
+		argDurationLabels, List<Integer[]> argVoicesCoDNotes, List<Integer[]> argMeterInfo, List<Integer[]> 
+		argEqualDurationUnisonsInfo) {
+		setName();
+		setPiece(argPiece);
+		makeNoteSequence(); // needs piece    
+		setVoiceLabels(argVoiceLabels);
+		// a. In the tablature case
+		if (tablature != null) {
+			setDurationLabels(argDurationLabels);
+			// 1. Check chords
+			if (checkChords(tablature, null) == false) { // needs noteSequence
+				System.out.println(chordCheck);
+				throw new RuntimeException("ERROR: Chord error (see console).");
+			}
+			// 2. Align tablature and transcription
+			handleSNUsOLD(tablature, null); // needs noteSequence, voiceLabels, and durationLabels 
+//			handleCoDNotes(tablature, false); // needs noteSequence, voiceLabels, and durationLabels 
+			setVoicesSNU(argVoicesCoDNotes);
+			handleCourseCrossingsOLD(tablature, null); // needs noteSequence, voiceLabels, and durationLabels
+//			handleCourseCrossings(tablature, false); // needs noteSequence, voiceLabels, and durationLabels
+			// 3. Do final alignment check
+			if (checkAlignment(tablature, null) == false) {
+				System.out.println(alignmentCheck);
+				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
+			}
+			// 4. Transpose
+			transpose(tablature.getTranspositionInterval());
+		}
+		// b. In the non-tablature case
+		else {
+			setMeterInfo(argMeterInfo);
+			handleUnisons((List<Note>) null); // needs noteSequence and voiceLabels
+//			handleUnisons(false); // needs noteSequence and voiceLabels
+			setVoicesEDU(argEqualDurationUnisonsInfo);
+			setBasicNoteProperties(); // needs noteSequence
+		}   
+	}
+
+
+	private Transcription(Piece argPiece, List<List<Double>> voiceLabels, List<List<Double>> durationLabels) {
+		setPiece(argPiece);
+		makeNoteSequence();    
+		setVoiceLabels(voiceLabels);
+		setDurationLabels(durationLabels);
+//		handleCoDNotes(tablature, false);
+//		setVoicesCoDNotes(voicesCoDNotes);
+//		handleCourseCrossings(tablature, false);
+	}
+
+
+	/**
+	 * Creates a new Transcription from the given Piece and Encoding. 
+	 *
+	 * NBs for the tablature case 
+	 * (1) If isGroundTruthTranscription is <code>true</code>, which is only not the case for a 
+	 *     predicted Transcription, the Transcription is transposed.
+	 * (2) The Tablature object as used in this method (which is NOT the Tablature object that 
+	 *     forms a TablatureTranscriptionPair with the Transcription!), which serves for alignment
+	 *     checking, must be in the same key as the Transcription's piece in order for the alignment
+	 *     (done in handleCoDNotes(), handleCourseCrossings(), and checkAlignment()) to succeed.
+	 *     Therefore, the argument normaliseTuning, needed to create this Tablature object, is 
+	 *     <code>false</code> when creating the ground truth Transcription: the Transcription's
+	 *       Piece is only normalised/transposed after the alignment (in transpose())
+	 *     <code>true</code> when creating a predicted Transcription: the Transcription's Piece 
+	 *       has already been normalised/transposed correctly because it was created from a 
+	 *       normalised Tablature (in TrainingManager.prepareTraining())
+	 * 
+	 * @param p
+	 * @param encoding
+	 * @param normaliseTuning    
+	 * @param isGroundTruthTranscription                        
+	 */
+	private void createTranscriptionOLD(Piece p, Encoding encoding, boolean normaliseTuning, 
+		boolean isGroundTruthTranscription) {
+
+		// TODO Make copy rather than store and retrieve
+		String fPath = "C:/Users/Reinier/Desktop/copy.mid";
+		fPath = MEIExport.rootDir + "copy.mid";
+//		MIDIExport.exportMidiFile(p, Arrays.asList(new Integer[]{MIDIExport.DEFAULT_INSTR}), fPath);
+		Piece pUn = MIDIImport.importMidiFile(new File(fPath));
+		new File(fPath).delete();
+
+		setPiece(p);
+		setOriginalPiece();
+		String pName = p.getName();
+		setName();
+//		setName(pName.contains(MIDIImport.EXTENSION) ? 
+//			pName.substring(0, pName.indexOf(MIDIImport.EXTENSION)) : pName);
+				
+		makeNoteSequence(); // needs piece	
+		initialiseVoiceLabels(null); // needs piece and noteSequence
+		Tablature tab = null;
+		// a. In the tablature case
+		if (encoding != null) {
+			// The duration labels have their final form when t == Type.PREDICTED
+			if (isGroundTruthTranscription) {
+				initialiseDurationLabels(null); // needs noteSequence
+			}
+
+			// 1. Check chords 
+			// NB: normaliseTuning is false when creating a ground truth Transcription and true 
+			// when creating a predicted Transcription (see Javadoc for this method)
+			tab = new Tablature(encoding, normaliseTuning);
+			if (checkChords(tab, null) == false) { // needs noteSequence
+				System.out.println(chordCheck);
+				throw new RuntimeException("ERROR: Chord error (see console).");
+			}
+			// 2. Align tablature and transcription
+			handleSNUsOLD(tab, null); // needs noteSequence, voiceLabels, and durationLabels
+			handleCourseCrossingsOLD(tab, null); // needs noteSequence, voiceLabels, and durationLabels
+			// 3. Do final alignment check
+			if (checkAlignment(tab, null) == false) {
+				System.out.println(alignmentCheck);
+				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
+			}
+			// 4. Transpose (only if ground truth Transcription; see Javadoc for this method)
+			if (isGroundTruthTranscription) {
+				transpose(tab.getTranspositionInterval());
+			}
+			setMeterInfo(tab.getMeterInfo());
+//			setMeterInfo(tab.getTimeline().getMeterInfoOBS());
+			setKeyInfo(); // must be done after possible transpose()
+			setChords(); // sets the final version of the transcription chords
+			setMinimumDurationLabels(tab);
+		}
+		// b. In the non-tablature case
+		else {
+			setMeterInfo();
+			setKeyInfo();
+			handleUnisons((List<Note>) null); // needs noteSequence and voiceLabels
+			setBasicNoteProperties(); // needs noteSequence	
+			setChords(); // sets the final version of the transcription chords
+			setNumberOfNewNotesPerChord(); // needs transcriptionChords
+		}
+		// c. In both
+		if (isGroundTruthTranscription) {
+			setChordVoiceLabels(tab); // needs transcriptionChords
+		}
+		else {
+			// Currently no chordVoiceLabels needed in bidir model
+		}
+	}
+
+
+	/**
+	 * Populates the NoteSequence, i.e, adds the notes from the Piece ordered (1) by onset 
+	 * time (lower first), and (2) by pitch (lower first).
+	 */
+	// TESTED
+	private NoteSequence makeInitialNoteSequence() {
+		// The NoteTimePitchComparator ensures that, when adding a note to the NoteSequence, 
+		// it is ordered (1) by onset time (lower first), and (2) by pitch (lower first). 
+		// NB If no Comparator is used, it is not guaranteed that the NoteSequence will 
+		// contain the notes in the sequence they are added
+		NoteSequence noteSeq = new NoteSequence(new NoteTimePitchComparator());
+		getScorePiece().getScore().getContentsRecursiveList(null).stream()
+			.filter(c -> c instanceof Note)
+			.forEach(c -> noteSeq.add((Note) c));
+		return noteSeq; 
+	}
+
+
+	/**
+	 * Reverses the <code>NotationSystem</code>.
+	 *  
+	 * @param ns An existing <code>NotationSystem</code>.
+	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
+	 * @param mp The mirror point.
+	 * @return
+	 */
+	private static NotationSystem reverseNotationSystemOLD(NotationSystem ns, MetricalTimeLine mtl, 
+		Rational mp, String name) {
+		// For each voice
+		NotationSystem nsRev = new NotationSystem();
+		for (NotationStaff nst : ns) {	
+			NotationStaff nstRev = new NotationStaff();
+			for (NotationVoice nv : nst) {
+				NotationVoice nvRev = new NotationVoice();
+				for (NotationChord nc : nv) {
+					NotationChord ncRev = new NotationChord();
+					for (Note n : nc) {
+						// Calculate the Note's new onset time (mirrorPoint - offset time)
+						Rational dur = n.getMetricDuration();
+//						// In tablature case: use minimum duration
+//						if (tab != null) {
+//							for (Rational[] item : onsetsAndMinDurs) {
+//								if (item[0].equals(n.getMetricTime())) {
+//									dur = item[1];
+//									dur.reduce();
+//									break;
+//								}
+//							}
+//							
+//							// NB: onsets and minDurs are corresponding lists and can be 
+//							//     indexed concurrently
+//							for (int i = 0; i < onsets.size(); i++) {
+//								if (onsets.get(i).equals(n.getMetricTime())) {
+//									dur = minDurs.get(i);
+//									dur.reduce();
+//									break;
+//								}
+//							}
+//						}
+						Rational offset = n.getMetricTime().add(dur);
+						Rational mt = mp.sub(offset);
+						
+						// Error in barbetta-1582_1-il_nest.tbp: last chord should be co1 
+						// (and not co2), leading to newOnsetTime being -1/2 
+						if (name.equals("barbetta-1582_1-il_nest.mid") && mt.equals(new Rational(-1, 2))) {
+//						if (pOrig.getName().equals("barbetta-1582_1-il_nest.mid") && 
+//							mt.equals(new Rational(-1, 2))) {
+							mt = Rational.ZERO;
+							dur = new Rational(1, 2);
+						}
+
+						ncRev.add(ScorePiece.createNote(n.getMidiPitch(), mt, dur, mtl));
+					}
+					nc = ncRev;
+					nvRev.add(ncRev);
+				}
+				nstRev.add(nvRev);
+			}
+			nsRev.add(nstRev);
+		}
+		return nsRev;
+	}
+
+
+	/**
+	 * Removes all sequences of single-note events shorter than the given duration from the
+	 * encoding, and lengthens the duration of the event preceding the sequence by the total 
+	 * length of the removed sequence. NB: Handles the _unadapted_ Piece. 
+	 *
+	 * @param t
+	 * @param tab
+	 * @param dur
+	 * @return
+	 */
+	private static NotationSystem deornamentNotationSystemOLD(NotationSystem nsCopy, MetricalTimeLine mtl, 
+		/*Transcription t, Tablature tab,*/ 
+		List<List<Note>> ch, List<Rational> onsetTimes, Rational dur) {
+//		Piece pDeorn = new Piece();
+
+//		MetricalTimeLine mtl = t.getPiece().getMetricalTimeLine();
+//		List<Rational> onsetTimes = t.getAllOnsetTimes();
+//		List<List<Note>> ch = t.getChords();
+//		List<List<TabSymbol>> tabChords = null;
+////		List<Rational[]> onsetsAndMinDurs = null;
+//		List<Rational> minDurs = null;
+//		if (tab != null) {
+//			tabChords = tab.getChords(); 
+////			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations();
+//			minDurs = tab.getMinimumDurationPerChord();
+//		}
+
+
+//		Piece origP = t.getOriginalPiece();
+//		// Make a copy of notationSystem so that pOrig is not affected
+//		NotationSystem nsCopy = copyNotationSystem(origP.getScore());
+		
+		// For each voice
+		NotationSystem nsDeorn = new NotationSystem();
+//		List<Integer> removed = new ArrayList<>();
+//		int voice = 0;
+		for (NotationStaff nst : nsCopy) {
+//			System.out.println("voice = " + voice);
+			NotationStaff nstDeorn = new NotationStaff();
+			for (NotationVoice nv : nst) {
+				NotationVoice nvDeorn = new NotationVoice();
+				NotationChord pre = null;
+				Rational durPre = null;
+				for (int i = 0; i < nv.size(); i++) {
+					NotationChord nc = nv.get(i);
+//					System.out.println(nc);
+//					Rational onset = nc.getMetricTime();
+					int ind = onsetTimes.indexOf(nc.getMetricTime());
+
+//					boolean isOrn; 
+//					if (tabChords != null) { 
+//						isOrn = tabChords.get(ind).size() == 1 && 
+//							minDurs.get(ind).isLess(dur);
+////							onsetsAndMinDurs.get(ind)[1].isLess(dur);
+//					}
+//					else {
+//					isOrn = nc.size() == 1 && ch.get(ind).size() == 1 &&
+//						nc.getMetricDuration().isLess(dur);
+//					}
+					boolean isOrn = 
+						nc.size() == 1 && ch.get(ind).size() == 1 && 
+						nc.getMetricDuration().isLess(dur);
+					// If currNc is ornamental
+					// NB: In case of a single-event SNU, the note will be removed from both voices
+					if (isOrn) {
+//						System.out.println(isOrn);
+//						removed.add(ind);
+						// Determine pre, if it has not yet been determined
+						if (pre == null) {
+							NotationChord ncPrev = nv.get(i-1);
+							pre = ncPrev;
+							durPre = ncPrev.getMetricDuration(); // all notes in a NotationChord have the same duration 
+						}
+						// Increment durPre
+						durPre = durPre.add(nc.getMetricDuration());
+//						System.out.println(durPre);
+					}
+					// If currNc is the first after a sequence of one or more ornamental notes
+					// (i.e., it does not meet the if condition above but pre != null)
+					else if (pre != null) {
+//						// Adapt pre
+//						pre.setMetricDuration(durPre);
+//						for (int j = 0; j < pre.size(); j++) {
+////						for (Note n : pre) {
+//							Note n = pre.get(j);
+//							pre.remove(j);
+////							n.setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), 
+////								n.getMetricTime(), durPre));
+//							n = createNote(n.getMidiPitch(), n.getMetricTime(), durPre, mtl);
+//						}
+
+						// Add adapted pre
+						NotationChord preDeorn = new NotationChord();
+						for (Note n : pre) {
+							preDeorn.add(ScorePiece.createNote(n.getMidiPitch(), n.getMetricTime(), durPre, mtl));
+						}
+						nvDeorn.remove(pre);
+						nvDeorn.add(preDeorn);
+						
+						// Add currNc
+						nvDeorn.add(nc);
+						System.out.println(pre);
+						// Reset
+						pre = null;
+//						System.exit(0);
+					}
+					else {
+						nvDeorn.add(nc);
+					}
+				}
+				nstDeorn.add(nvDeorn);
+//				nvDeorn.forEach(nc -> System.out.println(nc));
+//				System.exit(0);
+			}
+//			voice++;
+			nsDeorn.add(nstDeorn);
+		}
+
+		return nsDeorn;
+
+//		pDeorn.setScore(nsDeorn);
+//		pDeorn.setMetricalTimeLine(mtl);
+//		pDeorn.setHarmonyTrack(origP.getHarmonyTrack());		
+//		pDeorn.setName(t.getPiece().getName());
+//		return pDeorn;
+	}
+
+
+	/**
+	 * Reverses the given harmony track.
+	 *  
+	 * @param ht An existing (clean) harmony track.
+	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
+	 * @param mp The mirror point.
+	 * @param ki An existing keyInfo.
+	 * @return
+	 */
+	private static SortedContainer<Marker> reverseHarmonyTrackOLD(SortedContainer<Marker> ht, 
+		MetricalTimeLine mtl, Rational mp, List<Integer[]> ki) {
+		SortedContainer<Marker> htRev = 
+			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
+
+		int ind = 0; // equals index in ki
+		long mpTime = mtl.getTime(mp);
+		for (Marker m : ht) {
+			if (m instanceof KeyMarker) {
+				KeyMarker km = (KeyMarker) m;
+				// Calculate reversed mt and t (mirror point - mt/t of next meter section)
+				Rational mtNextKeySec = 
+					ind == (ki.size() - 1) ? mp : 
+					new Rational(ki.get(ind + 1)[KI_NUM_MT_FIRST_BAR], 
+					ki.get(ind + 1)[KI_DEN_MT_FIRST_BAR]);
+				Rational mtRev = mp.sub(mtNextKeySec);
+				long tRev = mpTime - mtl.getTime(mtNextKeySec);
+				km.setMetricTime(mtRev);
+				km.setTime(tRev);
+				htRev.add(km);
+				ind++;
+			}
+		}
+		return htRev;
+	}
+
+
+	/**
+	 * Rescales the given harmony track.
+	 *  
+	 * @param ht An existing (clean) harmony track.
+	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
+	 * @param rescaleFactor
+	 * @return
+	 */
+	private static SortedContainer<Marker> rescaleHarmonyTrackOLD(SortedContainer<Marker> ht, 
+		MetricalTimeLine mtl, int rescaleFactor) {
+		SortedContainer<Marker> htResc = 
+			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
+
+		for (Marker m : ht) {
+			if (m instanceof KeyMarker) {
+				KeyMarker km = (KeyMarker) m;
+				Rational mt = km.getMetricTime();
+				long t = mtl.getTime(mt);
+				km.setMetricTime(
+					rescaleFactor > 0 ? mt.mul(rescaleFactor) : mt.div(Math.abs(rescaleFactor)) 
+				);
+				km.setTime(
+					rescaleFactor > 0 ? t * rescaleFactor : t / Math.abs(rescaleFactor) 
+				);
+				htResc.add(km);
+			}
+		}
+		return htResc;
+	}
+
+
+	/**
+	 * Reverses the given <code>MetricalTimeLine</code>.
+	 * 
+	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
+	 * @param mp The mirror point.
+	 * @param mi An existing meterInfo.
+	 * @return
+	 */
+	private static MetricalTimeLine reverseMetricalTimeLineOLD(MetricalTimeLine mtl, Rational mp, 
+		List<Integer[]> mi) {
+		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
+		// zeroMarker, and endMarker) 
+		MetricalTimeLine mtlReversed = new MetricalTimeLine();
+		mtlReversed.clear();
+		// Add zeroMarker
+		mtlReversed.add((Marker) new TimedMetrical(0, Rational.ZERO));
+
+		// Add TimeSignatureMarkers and TempoMarkers 
+		int ind = 0; // equals index in mi
+		Rational mtRevLastTimedMetrical = Rational.ZERO;
+		long mpTime = mtl.getTime(mp);
+		for (Marker m : mtl) {
+			if (m instanceof TimeSignatureMarker) {				
+				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
+				TimeSignature ts = tsm.getTimeSignature();
+				// Calculate reversed mt and t (mirror point - mt/t of next meter section)
+				Rational mtNextMeterSec = 
+					ind == (mi.size() - 1) ? mp : 
+					new Rational(mi.get(ind + 1)[MI_NUM_MT_FIRST_BAR], 
+					mi.get(ind + 1)[MI_DEN_MT_FIRST_BAR]);
+				Rational mtRev = mp.sub(mtNextMeterSec);
+				long tRev = mpTime - mtl.getTime(mtNextMeterSec);
+				mtlReversed.add(new TimeSignatureMarker(ts, mtRev));
+				if (mtRev.isGreater(Rational.ZERO)) {
+					mtlReversed.add(new TempoMarker(tRev, mtRev));
+					if (mtRev.isGreater(mtRevLastTimedMetrical)) {
+						mtRevLastTimedMetrical = mtRev;
+					}
+				}
+				ind++;
+			}
+		}
+
+		// If TempoMarkers (and through them, endMarker(s)) have been added: 
+		// remove all TimedMetricals but the zeroMarker	
+		if (mtRevLastTimedMetrical.isGreater(Rational.ZERO)) {
+			mtlReversed = cleanTimedMetricals(mtlReversed);
+		}
+
+		// Add endMarker
+		long tRevLastTimedMetrical = mtlReversed.getTime(mtRevLastTimedMetrical);
+		TimedMetrical end = 
+			calculateEndMarker(tRevLastTimedMetrical, mtl.getTempo(tRevLastTimedMetrical), 
+			mtRevLastTimedMetrical, 1);
+		mtlReversed.add((Marker) end);		
+
+		return mtlReversed;
+	}
+
+
+	/**
+	 * Rescales the given <code>MetricalTimeLine</code>.
+	 * 
+	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
+	 * @param mp The rescaling factor.
+	 * @return
+	 */
+	private static MetricalTimeLine rescaleMetricalTimeLineOLD(MetricalTimeLine mtl, int rescaleFactor) {
+		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
+		// zeroMarker, and endMarker) 
+		MetricalTimeLine mtlRescaled = new MetricalTimeLine();
+		mtlRescaled.clear();
+		// Add zeroMarker
+		mtlRescaled.add((Marker) new TimedMetrical(0, Rational.ZERO));
+
+		// Add TimeSignatureMarkers and TempoMarkers 
+		Rational mtRescLastTimedMetrical = Rational.ZERO;
+		for (Marker m : mtl) {
+			if (m instanceof TimeSignatureMarker) {				
+				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
+				TimeSignature ts = tsm.getTimeSignature();
+
+				// Calculate rescaled ts, mt and t
+				Rational mt = m.getMetricTime();
+				long t = mtl.getTime(mt);				
+//				Rational meter = new Rational(ts.getNumerator(), ts.getDenominator());
+//				Rational meterResc = rescaleFactor > 0 ? meter.mul(rescaleFactor) : meter.div(Math.abs(rescaleFactor));
+				Rational meter = new Rational(ts.getNumerator(), ts.getDenominator());
+				Rational meterResc;
+				// Excpetion case where meter is x/1 and rescaling is lengthening
+				if (ts.getDenominator() == 1 && rescaleFactor > 1) {
+					meterResc = new Rational(meter.getNumer() * rescaleFactor, meter.getDenom());
+				}
+				else {
+					meterResc = Utils.undiminuteMeter(meter, rescaleFactor);
+				}
+				TimeSignature tsResc = new TimeSignature(meterResc);
+				Rational mtResc = 
+					rescaleFactor > 0 ? mt.mul(rescaleFactor) : mt.div(Math.abs(rescaleFactor));
+				long tResc = rescaleFactor > 0 ? t * rescaleFactor : t / Math.abs(rescaleFactor);
+				
+//				Rational mtNextMeterSec = 
+//					ind == (mi.size() - 1) ? mp : 
+//					new Rational(mi.get(ind + 1)[Timeline.MI_NUM_MT_FIRST_BAR], 
+//					mi.get(ind + 1)[Timeline.MI_DEN_MT_FIRST_BAR]);
+//				Rational mtRev = mp.sub(mtNextMeterSec);
+//				long tRev = mpTime - mtl.getTime(mtNextMeterSec);
+				mtlRescaled.add(new TimeSignatureMarker(tsResc, mtResc));
+				if (mtResc.isGreater(Rational.ZERO)) {
+					mtlRescaled.add(new TempoMarker(tResc, mtResc));
+					if (mtResc.isGreater(mtRescLastTimedMetrical)) {
+						mtRescLastTimedMetrical = mtResc;
+					}
+				}
+//				ind++;
+			}
+		}
+
+		// If TempoMarkers (and through them, endMarker(s)) have been added: 
+		// remove all TimedMetricals but the zeroMarker	
+		if (mtRescLastTimedMetrical.isGreater(Rational.ZERO)) {
+			mtlRescaled = cleanTimedMetricals(mtlRescaled);
+		}
+
+		// Add endMarker
+		long tRevLastTimedMetrical = mtlRescaled.getTime(mtRescLastTimedMetrical);
+		TimedMetrical end = 
+			calculateEndMarker(tRevLastTimedMetrical, mtl.getTempo(tRevLastTimedMetrical), 
+			mtRescLastTimedMetrical, -rescaleFactor);
+		mtlRescaled.add((Marker) end);		
+
+		return mtlRescaled;
+	}
+
+
+	/**
+	 * Reverses the <code>NotationSystem</code>.
+	 *  
+	 * @param ns An existing <code>NotationSystem</code>.
+	 * @param mtl An existing (clean) <code>MetricalTimeLine</code>.
+	 * @param mp The mirror point.
+	 * @return
+	 */
+	private static NotationSystem reverseNotationSystemOLDBetter(NotationSystem ns, MetricalTimeLine mtl, 
+		Rational mp, String name) {
+
+		NotationSystem nsRev = new NotationSystem();
+		for (NotationStaff nst : ns) {	
+			NotationStaff nstRev = new NotationStaff();
+			for (NotationVoice nv : nst) {
+				NotationVoice nvRev = new NotationVoice();
+				for (NotationChord nc : nv) {
+					NotationChord ncRev = new NotationChord();
+					if (!name.equals("barbetta-1582_1-il_nest.mid")) {
+						// Recalculate the onset time (mirrorPoint - offset time)
+						nc.forEach(n -> { 
+							Rational dur = n.getMetricDuration();
+							ncRev.add(ScorePiece.createNote(n.getMidiPitch(), mp.sub(n.getMetricTime().add(dur)), dur, mtl));
+						});
+					}
+					// Error in barbetta-1582_1-il_nest.tbp: last chord should be cosb (and not cobr), 
+					// leading to mt being -1/2 TODO fix and remove else (and if open and close above) 
+					else {
+						for (Note n : nc) {
+							Rational dur = n.getMetricDuration();
+							Rational mt = mp.sub(n.getMetricTime().add(dur));
+							if (mt.equals(new Rational(-1, 2))) {
+								mt = Rational.ZERO;
+								dur = new Rational(1, 2);
+							}
+							ncRev.add(ScorePiece.createNote(n.getMidiPitch(), mt, dur, mtl));
+						}
+					}
+					nvRev.add(ncRev);
+				}
+				nstRev.add(nvRev);
+			}
+			nsRev.add(nstRev);
+		}
+		return nsRev;
+	}
+
+
+	/**
+	 * Deornaments the <code>NotationSystem</code>.
+	 * 
+	 * @param ns
+	 * @param mtl
+	 * @param ch
+	 * @param onsetTimes
+	 * @param thresholdDur
+	 * @return
+	 */
+	private static NotationSystem deornamentNotationSystemOLDBetter(NotationSystem ns, MetricalTimeLine mtl, 
+		List<List<Note>> ch, List<Rational> onsetTimes, Rational thresholdDur) {
+
+		NotationSystem nsDeorn = new NotationSystem();
+		for (NotationStaff nst : ns) {
+			NotationStaff nstDeorn = new NotationStaff();
+			for (NotationVoice nv : nst) {
+				NotationVoice nvDeorn = new NotationVoice();
+				for (int i = 0; i < nv.size(); i++) {
+					NotationChord nc = nv.get(i);
+					int ind = onsetTimes.indexOf(nc.getMetricTime());
+					// If nc is ornamental and not part of an ornamental sequence at 
+					// the beginning of nv (in which case nvDeorn is still empty):					
+					// calculate the total duration of the ornamental sequence; create 
+					// ncPrevDeorn with the result; replace ncPrev with ncPrevDeorn
+					// NB: It is assumed that an ornamental sequence is not interrupted by (ornamental) rests 
+					if ((ch.get(ind).size() == 1 && nc.size() == 1 && 
+						nc.getMetricDuration().isLess(thresholdDur)) && nvDeorn.size() > 0) {
+						Rational durOrnSeq = nc.getMetricDuration();
+						for (int j = i+1; j < nv.size(); j++) {
+							NotationChord ncNext = nv.get(j);
+							int indNext = onsetTimes.indexOf(ncNext.getMetricTime());
+							// If ncNext is ornamental: increment duration of ornamental sequence
+							if (ch.get(indNext).size() == 1 && ncNext.size() == 1 && 
+								ncNext.getMetricDuration().isLess(thresholdDur)) {
+								durOrnSeq = durOrnSeq.add(ncNext.getMetricDuration());
+							}
+							// If not: replace ncPrev with ncPrevDeorn 
+							else {
+								NotationChord ncPrev = nv.get(i-1);
+								NotationChord ncPrevDeorn = new NotationChord();
+								for (Note n : ncPrev) {
+									ncPrevDeorn.add(ScorePiece.createNote(n.getMidiPitch(), n.getMetricTime(), 
+										ncPrev.getMetricDuration().add(durOrnSeq), mtl));
+								}
+								nvDeorn.remove(ncPrev);
+								nvDeorn.add(ncPrevDeorn);
+								i = j-1;
+								break;
+							}
+						}
+					}
+					// If nc is not ornamental
+					else {
+						nvDeorn.add(nc);
+					}
+				}
+				nstDeorn.add(nvDeorn);
+			}
+			nsDeorn.add(nstDeorn);
+		}
+		return nsDeorn;
+	}
+
+
+	/**
+	 * Rescales the <code>NotationSystem</code>.
+	 * 
+	 * @param ns
+	 * @param mtl
+	 * @param rescaleFactor
+	 * @return
+	 */
+	private static NotationSystem rescaleNotationSystemOLD(NotationSystem ns, MetricalTimeLine mtl, int rescaleFactor) {
+		NotationSystem nsResc = new NotationSystem();
+		for (NotationStaff nst : ns) {	
+			NotationStaff nstResc = new NotationStaff();
+			for (NotationVoice nv : nst) {
+				NotationVoice nvResc = new NotationVoice();
+				for (NotationChord nc : nv) {
+					NotationChord ncResc = new NotationChord();
+					nc.forEach(n -> { 
+						Rational dur = n.getMetricDuration();
+						Rational mt = n.getMetricTime();
+						ncResc.add(ScorePiece.createNote(
+							n.getMidiPitch(), 
+							rescaleFactor > 0 ? mt.mul(rescaleFactor) : mt.div(Math.abs(rescaleFactor)),
+							rescaleFactor > 0 ? dur.mul(rescaleFactor) : dur.div(Math.abs(rescaleFactor)), 
+							mtl)
+						);
+					});
+					nvResc.add(ncResc);
+				}
+				nstResc.add(nvResc);
+			}
+			nsResc.add(nstResc);
+		}
+		return nsResc;
+	}
+
+
+	/**
+	 * Gets, for the given accidentals (i.e., the number of flats if negative, and the number of
+	 * sharps if positive), the index of the root char and the root alteration.
+	 * 
+	 * @param accidentals
+	 * @return An <code>Integer[]</code> containing
+	 *         <ul>
+	 *         <li>As element 0: the index in "ABCDEFG" of the root that goes with the number of accidentals.</li>
+	 *         <li>As element 1: the root alteration, i.e., the number of alterations (sharps/flats) to 
+	 *             be added to the root. If the given number of accidentals is negative, the alterations
+	 *             are flats; else, they are sharps.</li>
+	 *         </ul>
+	 */
+	private static Integer[] getRootIndexAndRootAlteration(int accidentals) {
+		Map<Integer, Integer[]> rootMap = new LinkedHashMap<Integer, Integer[]>();
+		rootMap.put(0, new Integer[]{2, 0});
+		// Sharps
+		rootMap.put(1, new Integer[]{6, 0}); // G
+		rootMap.put(2, new Integer[]{3, 0}); // D
+		rootMap.put(3, new Integer[]{0, 0}); // A
+		rootMap.put(4, new Integer[]{4, 0}); // E
+		rootMap.put(5, new Integer[]{1, 0}); // B
+		rootMap.put(6, new Integer[]{5, 0}); // F#
+		rootMap.put(7, new Integer[]{2, 1}); // C#
+		rootMap.put(8, new Integer[]{6, 1}); // G#
+		rootMap.put(9, new Integer[]{3, 1}); // D#
+		rootMap.put(10, new Integer[]{0, 1}); // A#
+		rootMap.put(11, new Integer[]{4, 1}); // E#
+		// Flats
+		rootMap.put(-1, new Integer[]{5, 0}); // F
+		rootMap.put(-2, new Integer[]{1, 1}); // Bb
+		rootMap.put(-3, new Integer[]{4, 1}); // Eb
+		rootMap.put(-4, new Integer[]{0, 1}); // Ab
+		rootMap.put(-5, new Integer[]{3, 1}); // Db
+		rootMap.put(-6, new Integer[]{6, 1}); // Gb
+		rootMap.put(-7, new Integer[]{2, 1}); // Cb
+		rootMap.put(-8, new Integer[]{5, 1}); // Fb
+		rootMap.put(-9, new Integer[]{1, 2}); // Bbb
+		rootMap.put(-10, new Integer[]{4, 2}); // Ebb
+		rootMap.put(-11, new Integer[]{0, 2}); // Abb
+
+		return rootMap.get(accidentals);
+	}
+
+
+	/** 
+	 * Adds a Note to the Transcription in the given voice at the given metricTime.
+	 * 
+	 * @param note
+	 * @param voiceNumber 
+	 * @param metricTime
+	 */
+	private void addNoteOLD(Note note, int voiceNumber, Rational metricTime) {
+		NotationSystem system = getScorePiece().getScore();
+		NotationStaff staff = system.get(voiceNumber);
+		NotationVoice voice = staff.get(0);
+		NotationChord chord = new NotationChord();
+		chord.add(note);
+		chord.setMetricTime(metricTime);
+		voice.add(chord);
+	}
+
+
+	/** 
+	 * Removes the Note with the given midiPitch from the NotationChord in the given voice at the given metric
+	 * time. If no such Note exists, a RuntimeException is thrown. 
+	 * 
+	 * @param midiPitch
+	 * @param voiceNumber  
+	 * @param metricTime 
+	 */
+	private void removeNoteOLD(int midiPitch, int voiceNumber, Rational metricTime) {
+		NotationSystem system = getScorePiece().getScore();
+		NotationStaff staff = system.get(voiceNumber);
+		NotationVoice voice = staff.get(0);
+		int chordNumber = voice.find(metricTime); 
+		if (chordNumber < 0) {
+			throw new RuntimeException("No Note found at the given metricTime.");
+		}
+		NotationChord chord = voice.get(chordNumber);
+		if (chord.size() == 1) {
+			voice.remove(chordNumber);
+		}
+		else {
+			// NB: getContent() does not always give the contents of the NotationChord in the same sequence; 
+			// this has to do with the way the Notes are added when the Transcription is made 
+			// TODO fix or just use solution comparing with pitch (as below)?
+			List<Note> notesInChord = chord.getContent(); 
+			boolean noteFound = false;
+			for (int i = 0; i < notesInChord.size(); i++) {
+				Note currentNote = notesInChord.get(i);
+				if (currentNote.getMidiPitch() == midiPitch) {
+					chord.remove(currentNote);
+					noteFound = true;
+					break;
+				}
+			}
+			if (noteFound == false) {
+				throw new RuntimeException("No Note found with the given midiPitch.");
+			}
+		}
+	}
+
+
+	/**
+	 * Creates a Piece from the given arguments.
+	 *  
+	 * @param btp
+	 * @param bnp 
+	 * @param voiceLabels
+	 * @param durLabels
+	 * @param numVoices
+	 * @param mtl
+	 * @param ht
+	 * @param name
+	 */
+	// TESTED (for both tablature- and non-tablature case)
+	static Piece createPiece(Integer[][] btp, Integer[][] bnp, List<List<Double>> voiceLabels, 
+		List<List<Double>> durLabels, int numVoices, MetricalTimeLine mtl, SortedContainer<Marker> ht, 
+		String name) {
+
+		Transcription.verifyCase(btp, bnp);
+
+		Piece piece = new Piece();
+		NotationSystem ns = piece.createNotationSystem();
+		for (int i = 0; i < numVoices; i++) {
+			NotationStaff nst = new NotationStaff(ns); 
+			nst.add(new NotationVoice(nst));
+			ns.add(nst);
+		}
+
+		if (btp != null) {
+			for (int i = 0; i < btp.length; i++) {
+				// Create Note
+//				int pitch = btp[i][Tablature.PITCH];
+				Rational mt = new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN);
+				// When not modelling duration, durLabels == null
+				Rational mDur = 
+					durLabels == null ? new Rational(btp[i][Tablature.MIN_DURATION], Tablature.SRV_DEN) :
+					DataConverter.convertIntoDuration(durLabels.get(i))[0]; // TODO [0] is possible because each element in durations currently contains only one Rational
+				Note note = ScorePiece.createNote(btp[i][Tablature.PITCH], mt, mDur, -1, null);
+				// Add Note to voice(s)
+				DataConverter.convertIntoListOfVoices(voiceLabels.get(i)).forEach(v -> 
+					piece.getScore().get(v).get(0).add(note));
+//				List<Integer> currVoices = DataConverter.convertIntoListOfVoices(voiceLabels.get(i));
+//				for (int v : currVoices) {
+//					piece.getScore().get(v).get(0).add(note);
+//				}	
+			}
+		}
+		else {
+			for (int i = 0; i < bnp.length; i++) {
+				// Create Note 
+//				int pitch = bnp[i][PITCH];
+				Rational mt = new Rational(
+					bnp[i][Transcription.ONSET_TIME_NUMER], 
+					bnp[i][Transcription.ONSET_TIME_DENOM]);
+				Rational mDur = new Rational(
+					bnp[i][Transcription.DUR_NUMER], 
+					bnp[i][Transcription.DUR_DENOM]);
+				Note note = ScorePiece.createNote(bnp[i][Transcription.PITCH], mt, mDur, -1, null);
+				// Add Note voice(s)
+				DataConverter.convertIntoListOfVoices(voiceLabels.get(i)).forEach(v ->
+					piece.getScore().get(v).get(0).add(note));
+//				List<Integer> currentVoices = DataConverter.convertIntoListOfVoices(voiceLabels.get(i));
+//				for (int v : currentVoices) {
+//					NotationVoice voice = piece.getScore().get(v).get(0);
+//					voice.add(note);
+//				}
+			}
+		}
+		piece.setMetricalTimeLine(mtl);
+		piece.setHarmonyTrack(ht);
+		piece.setName(name);
+
+		return piece;
+	}
+
+
+//	/**
+//	 * Returns a reversed version of the Transcription.
+//	 * 
+//	 * @param t
+//	 * @param tab
+//	 * @return
+//	 */
+//	// NOT TESTED (wrapper method)
+//	public static Transcription reverse(Transcription t, Tablature tab) {
+//		Piece pRev = reversePiece(t/*, tab*/);
+//
+//		Encoding eRev = null;
+//		if (tab != null) {
+//			eRev = tab.getEncoding().reverse(tab.getTimeline().getMeterInfo()); // NB The value of normaliseTuning is irrelevant
+//		}
+//		return new Transcription(pRev, eRev);
+//	}
+
+
+//	/**
+//	 * Reverses the <code>Transcription</code>'s <code>Piece</code>. 
+//	 * NB: Handles the _unadapted_ <code>Piece</code>. 
+//	 * 
+//	 * @param t
+//	 * @return
+//	 */
+//	// NOT TESTED (wrapper method)
+//	static Piece reversePiece(Transcription t/*, Tablature tab*/) { // TODO name reverse()
+//		Piece pRev = new Piece();
+//
+//		MetricalTimeLine mtl = t.getScorePiece().getMetricalTimeLine();
+//		Rational mp = t.getMirrorPoint();
+////		List<Rational[]> onsetsAndMinDurs = null;
+////		List<Rational> onsets = null;
+////		List<Rational> minDurs = null;
+////		if (tab != null) {
+////			onsets = ToolBox.getItemsAtIndex(tab.getMetricTimePerChord(false), 0);
+////			minDurs = tab.getMinimumDurationPerChord();
+////			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations();
+////		}
+//
+//		Piece pOrig = t.getOriginalPiece();
+//		// Make a copy of notationSystem so that pOrig is not affected
+//		NotationSystem nsCopy = copyNotationSystem(pOrig.getScore());
+//
+////		// For each voice
+////		NotationSystem nsRev = new NotationSystem();
+////		for (NotationStaff nst : nsCopy) {	
+////			NotationStaff nstRev = new NotationStaff();
+////			for (NotationVoice nv : nst) {
+////				NotationVoice nvRev = new NotationVoice();
+////				for (NotationChord nc : nv) {
+////					NotationChord ncRev = new NotationChord();
+////					for (Note n : nc) {
+////						// Calculate the Note's new onset time (mirrorPoint - offset time)
+////						Rational dur = n.getMetricDuration();
+//////						// In tablature case: use minimum duration
+//////						if (tab != null) {
+//////							for (Rational[] item : onsetsAndMinDurs) {
+//////								if (item[0].equals(n.getMetricTime())) {
+//////									dur = item[1];
+//////									dur.reduce();
+//////									break;
+//////								}
+//////							}
+//////							
+//////							// NB: onsets and minDurs are corresponding lists and can be 
+//////							//     indexed concurrently
+//////							for (int i = 0; i < onsets.size(); i++) {
+//////								if (onsets.get(i).equals(n.getMetricTime())) {
+//////									dur = minDurs.get(i);
+//////									dur.reduce();
+//////									break;
+//////								}
+//////							}
+//////						}
+////						Rational offset = n.getMetricTime().add(dur);
+////						Rational mt = mirrorPoint.sub(offset);
+////						
+////						// Error in barbetta-1582_1-il_nest.tbp: last chord should be co1 
+////						// (and not co2), leading to newOnsetTime being -1/2 
+////						if (pOrig.getName().equals("barbetta-1582_1-il_nest.mid") && 
+////							mt.equals(new Rational(-1, 2))) {
+////							mt = Rational.ZERO;
+////							dur = new Rational(1, 2);
+////						}
+////
+////						ncRev.add(createNote(n.getMidiPitch(), mt, dur, mtl));
+////					}
+////					nc = ncRev;
+////					nvRev.add(ncRev);
+////				}
+////				nstRev.add(nvRev);
+////			}
+////			nsRev.add(nstRev);
+////		}
+//
+//		pRev.setScore(reverseNotationSystem(nsCopy, mtl, mp, pOrig.getName()));
+//		pRev.setMetricalTimeLine(reverseMetricalTimeLine(mtl, mp, t.getMeterInfo()));
+//		pRev.setHarmonyTrack(reverseHarmonyTrack(pOrig.getHarmonyTrack(), mtl, mp, t.getKeyInfo()));
+//		pRev.setName(t.getScorePiece().getName());
+//		return pRev;
+//	}
+	
+	
+//	/**
+//	 * Returns a deornamented version of the Transcription.
+//	 * 
+//	 * @param t
+//	 * @param tab
+//	 * @param dur Only (single-event) notes with a duration shorter than this duration are 
+//	 *            considered ornamental.
+//	 * @return
+//	 */
+//	// NOT TESTED (wrapper method)
+//	public static Transcription deornament(Transcription t, Tablature tab, Rational dur) {
+//		Piece pDeorn = deornamentPiece(t, /*tab,*/ dur);
+//		Encoding eDeorn = null;
+//		if (tab != null) {
+//			eDeorn = tab.getEncoding().deornament(Tablature.getTabSymbolDur(dur)); // NB The value of normaliseTuning is irrelevant
+//		}
+//		return new Transcription(pDeorn, eDeorn);
+//	}
+
+
+//	/**
+//	 * Removes all sequences of single-note events shorter than the given duration from the
+//	 * encoding, and lengthens the duration of the event preceding the sequence by the total 
+//	 * length of the removed sequence. NB: Handles the _unadapted_ Piece.
+//	 *
+//	 * @param t
+//	 * @param tab
+//	 * @param dur
+//	 * @return
+//	 */
+//	// TESTED
+//	static Piece deornamentPiece(Transcription t, /*Tablature tab,*/ Rational dur) {
+//		Piece pDeorn = new Piece();
+//
+//		MetricalTimeLine mtl = t.getScorePiece().getMetricalTimeLine();
+//		List<Rational> onsetTimes = t.getAllOnsetTimes();
+//		List<List<Note>> ch = t.getChords();
+////		List<List<TabSymbol>> tabChords = null;
+//////		List<Rational[]> onsetsAndMinDurs = null;
+////		List<Rational> minDurs = null;
+////		if (tab != null) {
+////			tabChords = tab.getChords(); 
+//////			onsetsAndMinDurs = tab.getAllOnsetTimesAndMinDurations();
+////			minDurs = tab.getMinimumDurationPerChord();
+////		}
+//
+//		Piece origP = t.getOriginalPiece();
+//		// Make a copy of notationSystem so that pOrig is not affected
+//		NotationSystem nsCopy = copyNotationSystem(origP.getScore());
+//		
+//		// For each voice
+//		NotationSystem nsDeorn = new NotationSystem();
+//		List<Integer> removed = new ArrayList<>();
+////		int voice = 0;
+//		for (NotationStaff nst : nsCopy) {
+////			System.out.println("voice = " + voice);
+//			NotationStaff nstDeorn = new NotationStaff();
+//			for (NotationVoice nv : nst) {
+//				NotationVoice nvDeorn = new NotationVoice();
+//				NotationChord pre = null;
+//				Rational durPre = null;
+//				for (int i = 0; i < nv.size(); i++) {
+//					NotationChord nc = nv.get(i);
+//					Rational onset = nc.getMetricTime();
+//					int ind = onsetTimes.indexOf(onset);
+//
+////					boolean isOrn; 
+////					if (tabChords != null) { 
+////						isOrn = tabChords.get(ind).size() == 1 && 
+////							minDurs.get(ind).isLess(dur);
+//////							onsetsAndMinDurs.get(ind)[1].isLess(dur);
+////					}
+////					else {
+////					isOrn = nc.size() == 1 && ch.get(ind).size() == 1 &&
+////						nc.getMetricDuration().isLess(dur);
+////					}
+//					boolean isOrn = 
+//						nc.size() == 1 && ch.get(ind).size() == 1 && 
+//						nc.getMetricDuration().isLess(dur);
+//					// If currNc is ornamental
+//					// NB: In case of a single-event SNU, the note will be removed from both voices
+//					if (isOrn) {
+//						removed.add(ind);
+//						// Determine pre, if it has not yet been determined
+//						if (pre == null) {
+//							NotationChord ncPrev = nv.get(i-1);
+//							pre = ncPrev;
+//							durPre = ncPrev.getMetricDuration(); // all notes in a NotationChord have the same duration 
+//						}
+//						// Increment durPre
+//						durPre = durPre.add(nc.getMetricDuration());
+//					}
+//					// If currNc is the first after a sequence of one or more ornamental notes
+//					// (i.e., it does not meet the if condition above but pre != null)
+//					else if (pre != null) {
+//						// Adapt duration of pre
+//						for (Note n : pre) {
+////							n.setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), 
+////								n.getMetricTime(), durPre));
+//							n = createNote(n.getMidiPitch(), n.getMetricTime(), durPre, mtl);
+//						}
+//						// Add currNc
+//						nvDeorn.add(nc);
+//						// Reset
+//						pre = null;
+//					}
+//					else {
+//						nvDeorn.add(nc);
+//					}
+//				}
+//				nstDeorn.add(nvDeorn);
+//			}
+////			voice++;
+//			nsDeorn.add(nstDeorn);
+//		}
+//
+//		pDeorn.setScore(nsDeorn);
+//		pDeorn.setMetricalTimeLine(mtl);
+//		pDeorn.setHarmonyTrack(origP.getHarmonyTrack());		
+//		pDeorn.setName(t.getScorePiece().getName());
+//		return pDeorn;
+//	}
+
+
+//	/**
+//	 * Sets equalDurationUnisonsInfo, a list the size of the number of notes in the Transcription, containing
+//	 *   a. if the note at that index is not a unison note or if the note at that index is part of a unison
+//	 *      whose notes are of inequal length: <code>null</code>  
+//	 *   b. if the note at that index is part of a unison whose notes are of equal length: a voice label (i.e.,
+//	 *      a List<Double>) containing two 1.0s, thus representing both correct voices.
+//	 * 
+//	 * NB: Non-tablature case only.
+//	 */
+//	void setEqualDurationUnisonsInfoBLA() {
+//		List<List<Double>> equalDurationUnisons = new ArrayList<List<Double>>();
+//		NoteSequence noteSeq = getNoteSequence(); 
+//		List<List<Double>> voiceLabels = getVoiceLabels();
+//		// Initialise equalDurationUnisons with all elements set to null
+//		for (int i = 0; i < noteSeq.size(); i++) {
+//			equalDurationUnisons.add(null);
+//		}
+//			
+//		// For all chords
+//		List<List<Note>> transcriptionChords = getTranscriptionChords();  
+//		for (int i = 0; i < transcriptionChords.size(); i++) {
+//			// If the chord contains a unison
+//			Integer[][] currentUnisonInfo = getUnisonInfo(i);
+//			if (currentUnisonInfo != null) {
+//				// For each unison
+//				for (int j = 0; j < currentUnisonInfo.length; j++) {
+//				  // 1. Determine the indices in noteSeq and voiceLabels of the lower and upper unison notes
+//		      // a. Calculate the number of Notes preceding the unison chord by summing the size of all previous chords
+//		   		int notesPreceding = 0;
+//		      for (int k = 0; k < i; k++) {
+//		      	notesPreceding += transcriptionChords.get(k).size();
+//		      }
+//		      // b. Calculate the indices in the NoteSequence
+//		      int indexOfLowerUnisonNote = notesPreceding + currentUnisonInfo[j][1];
+//		      int indexOfUpperUnisonNote = notesPreceding + currentUnisonInfo[j][2];
+//		      		      
+//		      // 2. If the unison notes have the same duration
+//		      Rational durationLower = noteSeq.getNoteAt(indexOfLowerUnisonNote).getMetricDuration();
+//		      Rational durationUpper = noteSeq.getNoteAt(indexOfUpperUnisonNote).getMetricDuration();
+//		      List<Double> voiceLabelLower = voiceLabels.get(indexOfLowerUnisonNote);
+//		      List<Double> voiceLabelUpper = voiceLabels.get(indexOfUpperUnisonNote);
+//		      if (durationLower.equals(durationUpper)) {
+//		        // Combine the voice labels
+//			      int indexOfOneInUpper = voiceLabelUpper.indexOf(1.0);
+//			      List<Double> correctVoices = new ArrayList<Double>(voiceLabelLower);
+//			      correctVoices.set(indexOfOneInUpper, 1.0);
+//		      	equalDurationUnisons.set(indexOfLowerUnisonNote, correctVoices);
+//		      	equalDurationUnisons.set(indexOfUpperUnisonNote, correctVoices);
+//		      }
+//				}
+//			}
+//		}	
+////		return equalDurationUnisons;
+//		equalDurationUnisonsInfo = equalDurationUnisons;
+//	}
+
+
+//	/**
+//	 * 
+//	 * @return
+//	 */
+//	// TESTED
+//	List<TaggedNote> makeNotes(Tablature tab) {
+//		// Unhandled notes
+//		List<Note> argNotes = makeUnhandledNotes();
+//		List<Integer[]> argVoicesSNU = null;
+//		List<Integer[]> argVoicesUnison = null;
+//
+//		// In the tablature case: handle SNUs and course crossings
+//		if (tab != null) {
+//			// a. SNUs
+//			List<TaggedNote> SNUs = handleSNUs(argNotes, tab);
+//			argNotes = (List<Note>) SNUs.get(0);
+//			argVoicesSNU = (List<Integer[]>) SNUs.get(1);
+//			// b. Course crossings
+//			argNotes = handleCourseCrossings(argNotes, tab);
+//		}
+//		// In the non-tablature case: handle unisons
+//		else {
+//			List<Object> unisons = handleUnisons(argNotes);
+//			argNotes = (List<Note>) unisons.get(0);
+//			argVoicesUnison = (List<Integer[]>) unisons.get(1);
+//		}	
+//		return Arrays.asList(new Object[]{argNotes, argVoicesSNU, argVoicesUnison});
+//	}
+
+
+//	/**
+//	 * Uniformises the NoteSequence, i.e., orders any equal-pitch notes that have the same 
+//	 * onset time by voice (lower first).  
+//	 */
+//	// TESTED
+//	NoteSequence uniformiseInitialNoteSequence() {
+//		NoteSequence noteSeq = getNoteSequence();
+//		List<List<Note>> chordsFromNoteSeq = getChordsFromNoteSequence();
+//		for (List<Note> chord: chordsFromNoteSeq) {
+//			// If the chord contains equal-pitch notes: swap incorrectly ordered ones. 
+//			// Example for chord with pitches [10 20 10 10] and voices [1 0 2 3] (should be [3 0 2 1])
+//			// i = 0, j = 1: OK
+//			//        j = 2: swap to [2 0 1 3]; restart at i = 0
+//			//        j = 1, 2: OK
+//			//        j = 3: swap to [3 0 1 2]; restart at i = 0
+//			//        j = 1, 2, 3: OK
+//			// i = i, j = 2, 3: OK
+//			// i = 2, j = 3: swap to: [3 0 2 1]; restart at i = 2 
+//			// i = 2, j = 3: OK
+//			if (chord.size() > getPitchesInChord(chord).stream().distinct().collect(Collectors.toList()).size()) {
+//				for (int i = 0; i < chord.size() - 1; i++) {
+//					Note n = chord.get(i);
+//					int v = findVoice(n);
+//					for (int j = i+1; j < chord.size(); j++) {
+//						Note nextN = chord.get(j);
+//						if (n.getMidiPitch() == nextN.getMidiPitch() && v < findVoice(nextN)) {
+//							Collections.swap(chord, i, j);
+//							noteSeq.swapNotes(noteSeq.indexOf(n), noteSeq.indexOf(nextN));
+//							i = i-1; // start again at first note of chord 
+//							break;
+//						}
+//					}				
+//				}
+//			}
+//		}
+//		return noteSeq;
+//	}
+
+
+//	/** 
+//	 * Initialises the voice labels. 
+//	 * 
+//	 * If <code>null</code> is given as argument, the voice labels are initialised from the initial, 
+//	 * unadapted NoteSequence; else, they are initialised with the given labels.
+//	 * 
+//	 * Each voice label is a binary vector containing MAXIMUM_NUMBER_OF_VOICES elements, where the 
+//	 * position of the 1.0 indicates the voice encoded (index 0 denotes the highest voice).
+//	 * 
+//	 * NB: Must be called after initialiseNoteSequence().
+//	 * 
+//	 * @param vl The voice labels to initialise with.
+//	 */
+//	// TESTED (for both tablature- and non-tablature case simultaneously)
+//	void initialiseVoiceLabelsOLD(List<List<Double>> vl) {
+//		if (vl == null) {
+//			List<List<Double>> voiceLabels = new ArrayList<List<Double>>(); 
+//
+//			NoteSequence noteSeq = getNoteSequence();
+//			for (int i = 0; i < noteSeq.size(); i++) {
+//				Note n = noteSeq.getNoteAt(i);
+//				
+//				// 1. Create a voice label for the Note
+//				List<Double> currVoiceLabel = new ArrayList<Double>();
+//				
+//				// 2. Extract the voice the Note is in and fill currentVoiceLabel
+//				int voice = findVoice(n);
+//				for (int j = 0; j < MAXIMUM_NUMBER_OF_VOICES; j++) {
+//					if (voice == j) {
+//						currVoiceLabel.add(j, 1.0);
+//					}
+//					else {
+//						currVoiceLabel.add(j, 0.0);
+//					}
+//				}
+//
+//				// 3. Add currentVoiceLabel to initialVoiceLabels 
+//				voiceLabels.add(currVoiceLabel);
+//			}
+//			setVoiceLabels(voiceLabels);
+//		}
+//		else {
+//			setVoiceLabels(vl);
+//		}
+//	}
+
+//	/**
+//	 * Initialises the NoteSequence, in which all notes from the Piece are ordered hierarchically by<br>
+//	 * <ul>
+//	 * <li>(1) Onset time (lower first).</li>
+//	 * <li>(2) If two notes have the same onset time: pitch (lower first).</li>
+//	 * <li>(3) If two notes have the same onset time and the same pitch: voice (lower first).</li>
+//	 * </ul>
+//	 * 
+//	 * After initialisation, any SNU notes (tablature case), course crossing notes (tablature case), 
+//	 * and unison notes (non-tablature case) need further handling. 
+//	 * <ul>
+//	 * <li>SNU notes must be merged; this is done in <code>handleSNUs()</code>.</li> 
+//	 * <li>Course crossing notes must be swapped so that the course crossing note that has the 
+//	 *     higher pitch (the lower-course course crossing note) comes first; this is done 
+//	 *     in <code>handleCourseCrossings()</code>.</li>
+//	 * <li>Unison notes must be swapped so that the unison note that has the longer duration 
+//	 *     comes first; this is done in <code>handleUnisons()</code>.</li>
+//	 * </ul>
+//	 * 
+//	 * Any unison notes (tablature case) need no further handling, as the lower-course unison
+//	 * note automatically always comes first.
+//	 *               
+//	 * NB: Must be called before initialiseVoiceLabels().
+//	 */
+//	// TESTED (for both tablature- and non-tablature case simultaneously)
+//	private void initialiseNoteSequenceOLD() {
+//		// 1. Populate a NoteSequence that orders the Notes chord per chord, from low to high
+//		// (ensured by the comparator)
+//		NoteSequence initialNoteSeq = new NoteSequence(new NoteTimePitchComparator());
+//		NotationSystem ns = getPiece().getScore();
+////		Collection<Containable> contents = ns.getContentsRecursiveList(null);
+//		ns.getContentsRecursiveList(null).stream().filter(c -> c instanceof Note).forEach(c -> initialNoteSeq.add((Note) c));		
+////		for (Containable c : contents) {
+////			if (c instanceof Note) { 
+////				initialNoteSeq.add((Note) c);
+////			}
+////		}
+//
+//		// 2. Check for all equal-pitch pairs whether the Notes are added to the NoteSequence in the correct order.
+//		// This is necessary because the NoteTimePitchComparator does not handle unisons and SNUs consistently in 
+//		// that sometimes the note in the lower voice is added first, and sometimes the note in the upper voice
+//		if (initialNoteSeq.size() != 0) {
+//			// For each note but the last:
+//			for (int currNoteInd = 0; currNoteInd < (initialNoteSeq.size() - 1); currNoteInd++) {
+//				// 1. Get the Note's pitch, onsetTime, and the voice it belongs to 
+//				Note currNote = initialNoteSeq.getNoteAt(currNoteInd);
+//				int currNotePitch = currNote.getMidiPitch();
+//				Rational currNoteOnsetTime = currNote.getMetricTime();
+//				int currNoteVoice = findVoice(currNote);
+//
+//				// 2. Check the remainder of initialNoteSeq for another Note with the same onsetTime and pitch. Break 
+//				// from inner for-loop when the onsetTime of nextNote becomes greater than that of currNote
+//				for (int nextNoteInd = currNoteInd + 1; nextNoteInd < initialNoteSeq.size(); nextNoteInd++) {
+//					Note nextNote = initialNoteSeq.getNoteAt(nextNoteInd);
+//					// Same onsetTime? Check whether pitch is also the same  
+//					if (nextNote.getMetricTime().equals(currNoteOnsetTime)) {
+//						// Same pitch? nextNote is the complement sought; swap if necessary and break
+//						// NB: since an event may contain more than one equal-pitch-pair, the ENTIRE process must be repeated
+//						// from the start until the sequence is correct. (E.g., an event with three equal pitches that are
+//						// added to the NoteSequence in voice order 1-2-3 becomes 2-1-3 after one iteration of both for-loops,
+//						// then 3-1-2, and finally 3-2-1.) Thus, when notes are swapped: break from inner for-loop and start
+//						// again in outer for-loop
+//						if (nextNote.getMidiPitch() == currNotePitch) {
+//							int nextNoteVoice = findVoice(nextNote);
+//							// If currentNote is in the higher voice (has the lower voice number): swap 
+//							if (currNoteVoice < nextNoteVoice) {								
+//								initialNoteSeq.swapNotes(currNoteInd, nextNoteInd);
+//								currNoteInd = -1;
+//								break;
+//							}    		    
+//						}
+//					}
+//					// Is onsetTime of nextNote greater than that of currNote? Break and continue with the next currNote
+//					else {
+//						break; 
+//					}
+//				}
+//			}
+//		}
+//		// 3. Set noteSequence 
+//		setNoteSequence(initialNoteSeq);
+//	}
+
+
+//	/**
+//	 * Finds the voice the given Note in the given NotationSystem belongs to.
+//	 *  
+//	 * @param note 
+//	 * @param ns
+//	 * @return
+//	 */
+//	private int findVoiceOLD(Note note, NotationSystem ns) {
+//		int voice = -1;
+//		// NB: A NotationSystem has as many Staffs as the Transcription it belongs to has voices; each Staff thus 
+//		// represents a voice. The Staffs are numbered from top (no. 0) to bottom (no. 4, depending on 
+//		// MAXIMUM_NUMBER_OF_VOICES).
+//		// For each Staff in the NotationSystem: 
+//		outerLoop: for (int i = 0; i < ns.size(); i++) {
+//			NotationStaff staff = ns.get(i);
+//			// a. Get the contents of the Staff
+//			Containable[] contentsOfStaff = staff.getContentsRecursive();
+//			// b. Look at each Containable in the contents. If a Containable matches the (unique) note: return i, the
+//			// number of the Staff that note is on (and thus the number of the voice it belongs to), and break from the
+//			// outer loop
+//			for (int j = 0; j < contentsOfStaff.length; j++) {
+//				if (contentsOfStaff[j] == note) {
+//					voice = i;
+//					break outerLoop;
+//				}
+//			}
+//		}
+//		return voice;
+//	}
+
+//	/** 
+//	 * Finds for all CoDnotes (i.e., notes representing a Note that is shared by two voices) in
+//	 * the Tablature the corresponding Notes in the Transcription, and
+//	 * (1) removes the CoDnote with the shorter duration from noteSequence
+//	 * (2) combines the voice labels of both CoDnotes into a List<Double> with two 1.0s, sets 
+//	 *     the label of the lower CoDnote to the result in voiceLabels, and removes the label 
+//	 *     of the upper from voiceLabels
+//	 * (3) combines the duration labels of both CoDnotes into a List<Double> with two 1.0s, sets
+//	 *     the label of the lower CoDnote to the result in durationLabels, and removes the label
+//	 *     of the upper from durationLabels 
+//	 *
+//	 * Also sets voicesCoDNotes, a List<Integer[]> the size of the number of notes in the 
+//	 * Transcription, containing for each element:
+//	 *   a. if the note at that index is not a CoDnote: <code>null</code>; 
+//	 *   b. if the the note at that index is a CoDnote: an Integer[] containing 
+//	 *        as element 0: the voice the longer CoDnote is in;
+//	 *        as element 1: the voice the shorter CoDnote is in.
+//	 *      In case both CoDnotes have the same duration, the lower CoDnote (i.e., the one in
+//	 *      the lower voice that comes first in the NoteSequence) is placed at element 0.
+//	 * 
+//	 * If isGroundTruthTranscription is <code>false</code>, i.e., when the method is applied to
+//	 * a predicted Transcription, only noteSequence is adapted. This is because the predicted 
+//	 * voiceLabels and durationLabels are already ready-to-use (only the voicesCoDNotes still 
+//	 * need to be created from them).
+//	 * 
+//	 * NB1: This method presumes that a chord contains only one CoD, and neither a unison nor
+//	 *      a course crossings.
+//	 * NB2: Tablature case only; must be called before handleCourseCrossings().
+//	 * 
+//	 * @param tablature
+//	 * @param isGroundTruthTranscription
+//	 */
+//	// TESTED
+//	void handleCoDNotesOUD(Tablature tablature, boolean isGroundTruthTranscription) {
+//		NoteSequence noteSeq = getNoteSequence();
+//		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
+//
+//		List<List<Double>> voiceLab = new ArrayList<List<Double>>(); // getVoiceLabels();
+//		List<List<Double>> durationLab = new ArrayList<List<Double>>(); // getDurationLabels();
+//		List<Integer[]> voicesCoD = new ArrayList<Integer[]>();
+//		if (isGroundTruthTranscription) {
+//			voiceLab = getVoiceLabels();
+//			durationLab = getDurationLabels();
+//			// Initialise voicesCoD with all elements set to null
+//			for (int i = 0; i < tablature.getBasicTabSymbolProperties().length; i++) {
+//				voicesCoD.add(null);
+//			}
+//			// Set voicesCoD (in case the pieces contains no SNUs and the setting does not 
+//			// happen in the for-loop below
+//			setVoicesSNU(voicesCoD);
+//		}
+//
+//		// For every chord
+//		for (int i = 0; i < tablatureChords.size(); i++) {
+//			// If the chord contains a CoD
+//			if (getSNUInfo(tablatureChords, i) != null) {
+//				Integer[][] coDInfo = getSNUInfo(tablatureChords, i);
+//				// Get the (most recent! needed for calculating notesPreceding) transcription chords
+//				List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
+//				// For each CoD in the chord 
+//				int notesAlreadyRemovedFromChord = 0;
+//				for (int j = 0; j < coDInfo.length; j++) {
+//					// 1. Determine the indices in noteSeq, voiceLab, and durationLab of the lower and upper CoDnotes
+//					// a. Calculate the number of Notes preceding the CoD chord by summing the size of all previous chords
+//					int notesPreceding = 0;
+//					for (int k = 0; k < i; k++) {
+//						notesPreceding += transcriptionChords.get(k).size();
+//					}
+//					// b. Calculate the indices
+//					int indexOfLowerCoDNote = notesPreceding + (coDInfo[j][1] - notesAlreadyRemovedFromChord);
+//					int indexOfUpperCoDNote = notesPreceding + (coDInfo[j][2] - notesAlreadyRemovedFromChord);
+//
+//					// 2. Adapt noteSeq, voiceLab, and durationLab; also adapt voicesCoD
+//					// a. noteSeq: remove the CoDnote with the shorter duration
+//					Rational durationLower = noteSeq.getNoteAt(indexOfLowerCoDNote).getMetricDuration();
+//					Rational durationUpper = noteSeq.getNoteAt(indexOfUpperCoDNote).getMetricDuration();
+//					// Assume that the lower note has the longer duration. If this is so or if both notes have the
+//					// same duration, indexOfLongerCoDNote == indexOfLowerCoDNote; otherwise, indexOfLongerCoDNote == 
+//					// indexOfUpperCoDNote 
+//					int indexOfLongerCoDNote = indexOfLowerCoDNote;
+//					int indexOfShorterCoDNote = indexOfUpperCoDNote;
+//					if (durationLower.isLess(durationUpper)) {
+//						indexOfShorterCoDNote = indexOfLowerCoDNote;
+//						indexOfLongerCoDNote = indexOfUpperCoDNote;
+//					}
+//					noteSeq.deleteNoteAt(indexOfShorterCoDNote);
+//					if (isGroundTruthTranscription) { 
+//						// The voices that go with the longer and shorter CoDnote, needed for setting voicesCoD, must  
+//						// be determined before voiceLab is adapted   
+//						List<Double> voiceLabelOfLongerCoDNote = new ArrayList<Double>(voiceLab.get(indexOfLongerCoDNote));
+//						int voiceLonger = DataConverter.convertIntoListOfVoices(voiceLabelOfLongerCoDNote).get(0);
+//						List<Double> voiceLabelOfShorterCoDNote = new ArrayList<Double>(voiceLab.get(indexOfShorterCoDNote));
+//						int voiceShorter = DataConverter.convertIntoListOfVoices(voiceLabelOfShorterCoDNote).get(0);
+//						// b. voiceLab: combine the labels of both CoDnotes, set the label at indexOfLowerCoDNote to 
+//						// the result, and remove the label of the upper CoDnote from voiceLab
+//						List<Double> voiceLabelOfLowerCoDNote = voiceLab.get(indexOfLowerCoDNote);			    
+//						List<Double> voiceLabelOfUpperCoDNote = voiceLab.get(indexOfUpperCoDNote);
+//						List<Double> combinedVoiceLabel = combineLabels(voiceLabelOfLowerCoDNote, voiceLabelOfUpperCoDNote);
+//						voiceLab.set(indexOfLowerCoDNote, combinedVoiceLabel);
+//						voiceLab.remove(indexOfUpperCoDNote);
+//						// c. durationLab: combine the labels of both CoDnotes, set the label at indexOfLowerCoDNote to the 
+//						// result, and remove the label of the upper CoDnote from durationLab
+//						List<Double> durationLabelOfLowerCoDNote = durationLab.get(indexOfLowerCoDNote);
+//						List<Double> durationLabelOfUpperCoDNote = durationLab.get(indexOfUpperCoDNote);
+//						List<Double> combinedDurationLabel = 
+//							combineLabels(durationLabelOfLowerCoDNote, durationLabelOfUpperCoDNote);
+//						durationLab.set(indexOfLowerCoDNote, combinedDurationLabel);
+//						durationLab.remove(indexOfUpperCoDNote);
+//						// d. Set the element at index indexOfLowerCoDNote in voicesCoD: set the first element to the
+//						// voice that goes with the longer CoDnote, and the second to the voice that goes with the shorter 
+//						voicesCoD.set(indexOfLowerCoDNote, new Integer[]{voiceLonger, voiceShorter});
+//					}
+//					// 3. Increase notesAlreadyRemovedFromChord in case the chord contains more than one CoD and another
+//					// iteration through the inner for-loop is necessary
+//					notesAlreadyRemovedFromChord++;
+//
+//					// 4. Reset noteSequence, voiceLabels, and durationLabels; set voicesCoDNotes
+//					setNoteSequence(noteSeq);
+//					if (isGroundTruthTranscription) {
+//						setVoiceLabels(voiceLab);
+//						setDurationLabels(durationLab);
+//						setVoicesSNU(voicesCoD);
+//					}
+//
+//					// 5. Concat information to adaptations
+//					adaptations = adaptations.concat("  CoD found in chord " + i + ": note no. " + (indexOfShorterCoDNote	
+//						- notesPreceding) +	" (pitch " + coDInfo[j][0]	+	") in that chord removed from the NoteSequence; " + 
+//						"list of voice labels and list of durations adapted accordingly." + "\n");
+//				}
+//			}
+//		}
+//	}
+
+
+//	/**
+//	 * Finds for all CoDnotes (i.e., notes representing a Note that is shared by two voices) in the Tablature the
+//	 * corresponding Notes in the Transcription, and
+//	 * (1) removes the CoDnote with the shorter duration from noteSequence
+//	 * (2) combines the voice labels of both CoDnotes into a List<Double> with two 1.0s, sets the label of the lower
+//	 *     CoDnote to the result in voiceLabels, and removes the label of the upper from voiceLabels
+//	 * (3) combines the duration labels of both CoDnotes into a List<Double> with two 1.0s, sets the label of the 
+//	 *     lower CoDnote to the result in durationLabels, and removes the label of the upper from durationLabels 
+//	 *
+//	 * Also sets voicesCoDNotes, a List<Integer[]> the size of the number of notes in the Transcription, 
+//	 * containing for each element:
+//	 *   a. if the note at that index is not a CoDnote: <code>null</code>; 
+//	 *   b. If the the note at that index is a CoDnote: an Integer[] containing 
+//	 *      as element 0: the voice the longer CoDnote is in;
+//	 *      as element 1: the voice the shorter CoDnote is in.
+//	 *      In case both CoDnotes have the same duration, the lower CoDnote (i.e., the one in the lower voice
+//	 *      that comes first in the NoteSequence) is placed at element 0.
+//	 * 
+//	 * NB1: This method presumes that a chord contains only one CoD, and neither a unison nor a course crossings.
+//	 * NB2: Tablature case only; must be called before handleCourseCrossings().
+//	 * 
+//	 * @param tablature
+//	 */
+//	// TESTED
+//	private void handleCoDNotesOUDSTE(Tablature tablature) {				
+//		NoteSequence noteSeq = getNoteSequence();
+//		List<List<Double>> voiceLab = getVoiceLabels();
+//		List<List<Double>> durationLab = getDurationLabels();
+//		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
+//		List<Integer[]> voicesCoD = new ArrayList<Integer[]>();  
+//		// Initialise voicesCoD with all elements set to null
+//		for (int i = 0; i < tablature.getBasicTabSymbolProperties().length; i++) {
+//			voicesCoD.add(null);
+//		}
+//
+//		// For every chord
+//		for (int i = 0; i < tablatureChords.size(); i++) {
+//			// If the chord contains a CoD
+//			if (getSNUInfo(tablatureChords, i) != null) {
+//				Integer[][] coDInfo = getSNUInfo(tablatureChords, i);
+//				// Get the (most recent! needed for calculating notesPreceding) transcription chords
+//				List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
+//				// For each CoD in the chord 
+//				int notesAlreadyRemovedFromChord = 0;
+//				for (int j = 0; j < coDInfo.length; j++) {
+//					// 1. Determine the indices in noteSeq, voiceLab, and durationLab of the lower and upper CoDnotes
+//					// a. Calculate the number of Notes preceding the CoD chord by summing the size of all previous chords
+//					int notesPreceding = 0;
+//					for (int k = 0; k < i; k++) {
+//						notesPreceding += transcriptionChords.get(k).size();
+//					}
+//					// b. Calculate the indices
+//					int indexOfLowerCoDNote = notesPreceding + (coDInfo[j][1] - notesAlreadyRemovedFromChord);
+//					int indexOfUpperCoDNote = notesPreceding + (coDInfo[j][2] - notesAlreadyRemovedFromChord);
+//
+//					// 2. Adapt noteSeq, voiceLab, and durationLab; also adapt voicesCoD
+//					// a. noteSeq: remove the CoDnote with the shorter duration
+//					Rational durationLower = noteSeq.getNoteAt(indexOfLowerCoDNote).getMetricDuration();
+//					Rational durationUpper = noteSeq.getNoteAt(indexOfUpperCoDNote).getMetricDuration();
+//					// Assume that the lower note has the longer duration. If this is so or if both notes have the
+//					// same duration, indexOfLongerCoDNote == indexOfLowerCoDNote; otherwise, indexOfLongerCoDNote == 
+//					// indexOfUpperCoDNote 
+//					int indexOfLongerCoDNote = indexOfLowerCoDNote;
+//					int indexOfShorterCoDNote = indexOfUpperCoDNote;
+//					if (durationLower.isLess(durationUpper)) {
+//						indexOfShorterCoDNote = indexOfLowerCoDNote;
+//						indexOfLongerCoDNote = indexOfUpperCoDNote;
+//					}
+//					noteSeq.deleteNoteAt(indexOfShorterCoDNote);
+//					// The voices that go with the longer and shorter CoDnote, needed for setting voicesCoD, must be 
+//					// determined before voiceLab is adapted   
+//					List<Double> voiceLabelOfLongerCoDNote = new ArrayList<Double>(voiceLab.get(indexOfLongerCoDNote));
+//					int voiceLonger = DataConverter.convertIntoListOfVoices(voiceLabelOfLongerCoDNote).get(0);
+//					List<Double> voiceLabelOfShorterCoDNote = new ArrayList<Double>(voiceLab.get(indexOfShorterCoDNote));
+//					int voiceShorter = DataConverter.convertIntoListOfVoices(voiceLabelOfShorterCoDNote).get(0);
+//					// b. voiceLab: combine the labels of both CoDnotes, set the label at indexOfLowerCoDNote to the 
+//					// result, and remove the label of the upper CoDnote from voiceLab
+//					List<Double> voiceLabelOfLowerCoDNote = voiceLab.get(indexOfLowerCoDNote);			    
+//					List<Double> voiceLabelOfUpperCoDNote = voiceLab.get(indexOfUpperCoDNote);
+//					List<Double> combinedVoiceLabel = combineLabels(voiceLabelOfLowerCoDNote, voiceLabelOfUpperCoDNote);
+//					voiceLab.set(indexOfLowerCoDNote, combinedVoiceLabel);
+//					voiceLab.remove(indexOfUpperCoDNote);
+//					// c. durationLab: combine the labels of both CoDnotes, set the label at indexOfLowerCoDNote to the 
+//					// result, and remove the label of the upper CoDnote from durationLab
+//					List<Double> durationLabelOfLowerCoDNote = durationLab.get(indexOfLowerCoDNote);
+//					List<Double> durationLabelOfUpperCoDNote = durationLab.get(indexOfUpperCoDNote);
+//					List<Double> combinedDurationLabel = combineLabels(durationLabelOfLowerCoDNote, durationLabelOfUpperCoDNote);
+//					durationLab.set(indexOfLowerCoDNote, combinedDurationLabel);
+//					durationLab.remove(indexOfUpperCoDNote);
+//					// d. Set the element at index indexOfLowerCoDNote in voicesCoD: set the first element to the
+//					// voice that goes with the longer CoDnote, and the second to the voice that goes with the shorter 
+//					voicesCoD.set(indexOfLowerCoDNote, new Integer[]{voiceLonger, voiceShorter});
+//
+//					// 3. Increase notesAlreadyRemovedFromChord in case the chord contains more than one CoD and another
+//					// iteration through the inner for-loop is necessary
+//					notesAlreadyRemovedFromChord++;
+//
+//					// 4. Reset noteSequence, voiceLabels, and durationLabels; set voicesCoDNotes
+//					setNoteSequence(noteSeq);
+//					setVoiceLabels(voiceLab);
+//					setDurationLabels(durationLab);
+//					setVoicesSNU(voicesCoD);
+//
+//					// 5. Concat information to adaptations
+//					adaptations = adaptations.concat("  CoD found in chord " + i + ": note no. " + (indexOfShorterCoDNote
+//						- notesPreceding) +	" (pitch " + coDInfo[j][0]	+	") in that chord removed from the NoteSequence; " + 
+//						"list of voice labels and list of durations adapted accordingly." + "\n");
+//				}
+//			} 
+//		}
+//	}
+
+
+//	/**
+//	 * Finds for all CoDnotes (i.e., notes representing a Note that is shared by two voices) in the Tablature the
+//	 * corresponding Notes in the Transcription, and
+//	 * (1) removes the CoDnote with the shorter duration from noteSequence
+//	 * (2) combines the voice labels of both CoDnotes into a List<Double> with two 1.0s, sets the label of the 
+//	 *     lower CoDnote to the result in voiceLabels, and removes the label of the upper from voiceLabels
+//	 * (3) combines the duration labels of both CoDnotes into a List<List<Double>>, the first element of which 
+//	 *     represents the duration of the longer note, sets the label of the lower CoDnote to the result in 
+//	 *     durationLabels, and removes the label of the upper from durationLabels 
+//	 *          
+//	 * Also sets voicesCoDNotes, a List<Integer[]> the size of the number of notes in the Transcription, 
+//	 * containing for each element:
+//	 *   a. if the note at that index is not a CoDnote: <code>null</code>; 
+//	 *   b. If the the note at that index is a CoDnote: an Integer[] containing 
+//	 *      as element 0: the voice the longer CoDnote is in;
+//	 *      as element 1: the voice the shorter CoDnote is in.
+//	 *      In case both CoDnotes have the same duration, the lower CoDnote (i.e., the one in the lower voice
+//	 *      that comes first in the NoteSequence) is placed at element 0.
+//	 * 
+//	 * NB1: This method presumes that a chord contains only one CoD, and neither a unison nor a course crossings.
+//	 * NB2: Tablature case only; must be called before handleCourseCrossings().
+//	 * 
+//	 * @param tablature
+//	 */
+//	private void handleCoDNotesOLD(Tablature tablature) {				
+//		NoteSequence noteSeq = getNoteSequence();
+//		List<List<Double>> voiceLab = getVoiceLabels();
+//		List<List<List<Double>>> durationLab = getDurationLabelsOLD();
+//		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
+//		List<Integer[]> voicesCoD = new ArrayList<Integer[]>();  
+//		// Initialise voicesCoD with all elements set to null
+//		for (int i = 0; i < tablature.getBasicTabSymbolProperties().length; i++) {
+//			voicesCoD.add(null);
+//		}
+//
+//		// For every chord
+//		for (int i = 0; i < tablatureChords.size(); i++) {
+//			// If the chord contains a CoD
+//			if (getSNUInfo(tablatureChords, i) != null) {
+//				Integer[][] coDInfo = getSNUInfo(tablatureChords, i);
+//				// Get the (most recent! needed for calculating notesPreceding) transcription chords
+//				List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
+//				// For each CoD in the chord 
+//				int notesAlreadyRemovedFromChord = 0;
+//				for (int j = 0; j < coDInfo.length; j++) {
+//					// 1. Determine the indices in noteSeq, voiceLab, and durationLab of the lower and upper CoDnotes
+//					// a. Calculate the number of Notes preceding the CoD chord by summing the size of all previous chords
+//					int notesPreceding = 0;
+//					for (int k = 0; k < i; k++) {
+//						notesPreceding += transcriptionChords.get(k).size();
+//					}
+//					// b. Calculate the indices
+//					int indexOfLowerCoDNote = notesPreceding + (coDInfo[j][1] - notesAlreadyRemovedFromChord);
+//					int indexOfUpperCoDNote = notesPreceding + (coDInfo[j][2] - notesAlreadyRemovedFromChord);
+//
+//					// 2. Adapt noteSeq, voiceLab, and durationLab; also adapt voicesCoD
+//					// a. noteSeq: remove the CoDnote with the shorter duration
+//					Rational durationLower = noteSeq.getNoteAt(indexOfLowerCoDNote).getMetricDuration();
+//					Rational durationUpper = noteSeq.getNoteAt(indexOfUpperCoDNote).getMetricDuration();
+//					// Assume that the lower note has the longer duration. If this is so or if both notes have the
+//					// same duration, indexOfLongerCoDNote == indexOfLowerCoDNote; otherwise, indexOfLongerCoDNote == 
+//					// indexOfUpperCoDNote 
+//					int indexOfLongerCoDNote = indexOfLowerCoDNote;
+//					int indexOfShorterCoDNote = indexOfUpperCoDNote;
+//					if (durationLower.isLess(durationUpper)) {
+//						indexOfShorterCoDNote = indexOfLowerCoDNote;
+//						indexOfLongerCoDNote = indexOfUpperCoDNote;
+//					}
+//					noteSeq.deleteNoteAt(indexOfShorterCoDNote);
+//					// The voices that go with the longer and shorter CoDnote, needed for setting voicesCoD, must be 
+//					// determined before voiceLab is adapted   
+//					List<Double> voiceLabelOfLongerCoDNote = new ArrayList<Double>(voiceLab.get(indexOfLongerCoDNote));
+//					int voiceLonger = DataConverter.convertIntoListOfVoices(voiceLabelOfLongerCoDNote).get(0);
+//					List<Double> voiceLabelOfShorterCoDNote = new ArrayList<Double>(voiceLab.get(indexOfShorterCoDNote));
+//					int voiceShorter = DataConverter.convertIntoListOfVoices(voiceLabelOfShorterCoDNote).get(0);
+//					// b. voiceLab: combine the labels of both CoDnotes, set the label at indexOfLowerCoDNote to the 
+//					// result, and remove the label of the upper CoDnote from voiceLab
+//					List<Double> voiceLabelOfLowerCoDNote = voiceLab.get(indexOfLowerCoDNote);			    
+//					List<Double> voiceLabelOfUpperCoDNote = voiceLab.get(indexOfUpperCoDNote);
+//					int voiceNumberToAdd = voiceLabelOfUpperCoDNote.indexOf(1.0);
+//					voiceLabelOfLowerCoDNote.set(voiceNumberToAdd, 1.0);
+//					voiceLab.set(indexOfLowerCoDNote, voiceLabelOfLowerCoDNote);
+//					voiceLab.remove(indexOfUpperCoDNote);
+//					// c. durationLab: add the label of the shorter CoDnote to that of the longer, set the label at 
+//					// indexOfLowerCoDNote to the result, and remove the label of the upper CoDnote from durationLab
+//					List<List<Double>> durationLabelOfLongerCoDNote = durationLab.get(indexOfLongerCoDNote);
+//					List<List<Double>> durationLabelOfShorterCoDNote = durationLab.get(indexOfShorterCoDNote);
+//					durationLabelOfLongerCoDNote.add(durationLabelOfShorterCoDNote.get(0)); 
+//					durationLab.set(indexOfLowerCoDNote, durationLabelOfLongerCoDNote);
+//					durationLab.remove(indexOfUpperCoDNote);
+//					// d. Set the element at index indexOfLowerCoDNote in voicesCoD: set the first element to the
+//					// voice that goes with the longer CoDnote, and the second to the voice that goes with the shorter 
+//					voicesCoD.set(indexOfLowerCoDNote, new Integer[]{voiceLonger, voiceShorter});
+//
+//					// 3. Increase notesAlreadyRemovedFromChord in case the chord contains more than one CoD and another
+//					// iteration through the inner for-loop is necessary
+//					notesAlreadyRemovedFromChord++;
+//
+//					// 4. Reset noteSequence, voiceLabels, and durationLabels; set voicesCoDNotes
+//					setNoteSequence(noteSeq);
+//					setVoiceLabels(voiceLab);
+//					setDurationLabelsOLD(durationLab);
+//					setVoicesSNU(voicesCoD);
+//
+//					// 5. Concat information to adaptations
+//					adaptations = adaptations.concat("  CoD found in chord " + i + ": note no. " + (indexOfShorterCoDNote	
+//						- notesPreceding)	+	" (pitch " + coDInfo[j][0]	+	") in that chord removed from the NoteSequence; " + 
+//						"list of voice labels and list of durations adapted accordingly." + "\n");
+//				}
+//			} 
+//		}
+//	}
+
+
+//	/**
+//	 * Finds for all course-crossing notes (i.e., notes pairs where the note on the lower course has the higher
+//	 * pitch) in the Tablature the corresponding Notes in the Transcription, and 
+//	 * (1) swaps these Notes in noteSequence;
+//	 * (2) swaps the corresponding voice labels in voiceLabels;
+//	 * (3) swaps the corresponding duration labels in durationLabels. 
+//	 * 
+//	 * If isGroundTruthTranscription is <code>false</code>, i.e., when the method is applied to a predicted 
+//	 * Transcription, only noteSequence is adapted. This is because the predicted voiceLabels and durationLabels 
+//	 * are already ready-to-use (only the voicesCoDNotes still need to be created from them).
+//	 * 
+//	 * NB1: This method presumes that a chord contains only one course crossing, and neither a CoD nor a unison.
+//	 * NB2: Tablature case only; must be called after handleCoDNotes().
+//	 * 
+//	 * @param tablature
+//	 * @param isGroundTruthTranscription
+//	 */
+//	// TESTED
+//	void handleCourseCrossingsOLD(Tablature tablature, boolean isGroundTruthTranscription) {
+//		NoteSequence noteSeq = getNoteSequence();
+//		List<List<Double>> voiceLab = new ArrayList<List<Double>>();
+//		List<List<Double>> durationLab = new ArrayList<List<Double>>();
+//		if (isGroundTruthTranscription) {
+//			voiceLab = getVoiceLabels();
+//			durationLab = getDurationLabels();
+//		}
+//		List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
+//
+//		// For every chord
+//		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
+//		for (int i = 0; i < tablatureChords.size(); i++) {
+//			// If the chord contains a course crossing
+//			if (tablature.getCourseCrossingInfo(i) != null) {
+//				List<Integer[]> chordCrossingInfo = tablature.getCourseCrossingInfo(i);
+//				// For each course crossing in the chord
+//				for (int j = 0; j < chordCrossingInfo.size(); j++) {
+//					// 1. Determine the indices in noteSeq, voiceLab, and durationLab of the lower and upper CCnotes
+//					// a. Calculate the number of Notes preceding the CC chord by summing the size of all previous chords
+//					int notesPreceding = 0;
+//					for (int k = 0; k < i; k++) {
+//						notesPreceding += transcriptionChords.get(k).size();
+//					}
+//					// b. Calculate the indices
+//					int indexOfLowerCCNote = notesPreceding + chordCrossingInfo.get(j)[2];
+//					int indexOfUpperCCNote = notesPreceding + chordCrossingInfo.get(j)[3];
+//
+//					// 2. Swap
+//					noteSeq.swapNotes(indexOfLowerCCNote, indexOfUpperCCNote);
+//					if (isGroundTruthTranscription) {
+//						Collections.swap(voiceLab, indexOfLowerCCNote, indexOfUpperCCNote);
+//						Collections.swap(durationLab, indexOfLowerCCNote, indexOfUpperCCNote);
+//					}
+//
+//					// 3. Concat information to adaptations
+//					adaptations = adaptations.concat("  Course crossing found in chord " + i + ": notes no. " + 
+//						chordCrossingInfo.get(j)[2] + " (pitch " + chordCrossingInfo.get(j)[0]	+ ") and " + chordCrossingInfo.get(j)[3] +
+//						" (pitch " + chordCrossingInfo.get(j)[1] + ") in that chord swapped in the NoteSequence; "+ "list of " + 
+//						"voice labels and list of durations adapted accordingly." + "\n");
+//				}
+//			}
+//		}			
+//		// Reset noteSequence, voiceLabels, and durationLabels
+//		setNoteSequence(noteSeq);
+//		if (isGroundTruthTranscription) {
+//			setVoiceLabels(voiceLab);
+//			setDurationLabels(durationLab);
+//		}
+//	}
+
+
+//	/**
+//	 * Finds for all course-crossing notes (i.e., notes pairs where the note on the lower course has the higher
+//	 * pitch) in the Tablature the corresponding Notes in the Transcription, and 
+//	 * (1) swaps these Notes in noteSequence;
+//	 * (2) swaps the corresponding voice labels in voiceLabels;
+//	 * (3) swaps the corresponding duration labels in durationLabels. 
+//	 * 
+//	 * NB1: This method presumes that a chord contains only one course crossing, and neither a CoD nor a unison.
+//	 * NB2: Tablature case only; must be called after handleCoDNotes().
+//	 * 
+//	 * @param tablature
+//	 */
+//	// TESTED
+//	private void handleCourseCrossingsOLD(Tablature tablature) {
+//		NoteSequence noteSeq = getNoteSequence();
+//		List<List<Double>> voiceLab = getVoiceLabels();
+//		List<List<List<Double>>> durationLab = getDurationLabelsOLD();
+//		List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
+//		List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
+//		
+//		// For every chord
+//		for (int i = 0; i < tablatureChords.size(); i++) {
+//			// If the chord contains a course crossing
+//			if (tablature.getCourseCrossingInfo(i) != null) {
+//				List<Integer[]> chordCrossingInfo = tablature.getCourseCrossingInfo(i);
+//				// For each course crossing in the chord
+//				for (int j = 0; j < chordCrossingInfo.size(); j++) {
+//					// 1. Determine the indices in noteSeq, voiceLab, and durationLab of the lower and upper CCnotes
+//					// a. Calculate the number of Notes preceding the CC chord by summing the size of all previous chords
+//					int notesPreceding = 0;
+//					for (int k = 0; k < i; k++) {
+//			 			notesPreceding += transcriptionChords.get(k).size();
+//			 		}
+//					// b. Calculate the indices
+//					int indexOfLowerCCNote = notesPreceding + chordCrossingInfo.get(j)[2];
+//					int indexOfUpperCCNote = notesPreceding + chordCrossingInfo.get(j)[3];
+//
+//					// 2. Swap
+//					noteSeq.swapNotes(indexOfLowerCCNote, indexOfUpperCCNote);
+//					Collections.swap(voiceLab, indexOfLowerCCNote, indexOfUpperCCNote);
+//					Collections.swap(durationLab, indexOfLowerCCNote, indexOfUpperCCNote);
+//
+//					// 3. Concat information to adaptations
+//					adaptations = adaptations.concat("  Course crossing found in chord " + i + ": notes no. " + 
+//						chordCrossingInfo.get(j)[2] + " (pitch " + chordCrossingInfo.get(j)[0]	+ ") and " + chordCrossingInfo.get(j)[3] +
+//						" (pitch " + chordCrossingInfo.get(j)[1]	+ ") in that chord swapped in the NoteSequence; "+ "list of " + 
+//						"voice labels and list of durations adapted accordingly." + "\n");
+//				}
+//			}
+//		}			
+//		// Reset noteSequence, voiceLabels, and durationLabels
+//		setNoteSequence(noteSeq);
+//		setVoiceLabels(voiceLab);
+//		setDurationLabelsOLD(durationLab);
+//	}
+
+
+//	/**
+//	 * <ul>
+//	 * <li>If the unison notes are of inequal duration
+//	 *     <ul>
+//	 *     <li>If they are not set in the correct order (i.e., with the unison note with the longer duration first): 
+//	 *         swaps the unison notes in the NoteSequence.</li>
+//	 *     <li>If they are not set in the correct order (i.e., with the unison note with the longer duration first): 
+//	 *         swaps the voice labels of the unison notes. NB: Not if t == Type.PREDICTED (in which case the labels 
+//	 *         already have their final form).</li>    
+//	 *     <li>Determines the primary and secondary voice for the IDU.</li>
+//	 *     </ul> 
+//	 * </li>
+//	 * <li>If the unison notes are of equal duration</li>
+//	 *     <ul>
+//	 *     <li>Determines the primary and secondary voice for the EDU.</li>
+//	 *     </ul>
+//	 * </li>
+//	 * </ul>
+//	 * 
+//	 * When all Transcription notes are traversed, resets NoteSequence and voice labels, and sets 
+//	 * the primary and secondary EDU and IDU voices.
+//	 *  
+//	 * NB: Non-tablature case only.
+//	 * 
+//	 * @param t
+//	 */
+//	// TESTED
+//	void handleUnisonsOLD(Type t) {
+//		NoteSequence noteSeq = getNoteSequence();
+//		List<List<Double>> voiceLab = getVoiceLabels();
+////		List<Integer[]> equalDurUnisonsInfo = new ArrayList<Integer[]>();
+////		if (t != Type.PREDICTED) {
+////			// Initialise equalDurUnisonsInfo with all elements set to null
+////			for (int i = 0; i < noteSeq.size(); i++) {
+////				equalDurUnisonsInfo.add(null);
+////			}
+////		}
+//		List<Integer[]> voicesEDU = new ArrayList<Integer[]>(Collections.nCopies(noteSeq.size(), null));
+//		List<Integer[]> voicesIDU = new ArrayList<Integer[]>(Collections.nCopies(noteSeq.size(), null));
+//
+//		boolean adaptLabels = t != Type.PREDICTED;
+//
+//		// 1. Adapt NoteSequence, voice labels; set voicesEDU, voicesIDU 
+//		int notesPreceding = 0;
+//		List<Integer> notesPerChord = getChordSizesFromNoteSeq(noteSeq);
+////		List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();
+////		List<Integer> sizes = new ArrayList<>();
+////		for (List<Note> l : transcriptionChords) {
+////			sizes.add(l.size());
+////		}
+////		System.out.println(notesPerChord.equals(sizes));
+//		
+//		for (int i = 0; i < notesPerChord.size(); i++) {
+////		for (int i = 0; i < transcriptionChords.size(); i++) {
+//			// If the chord contains a unison
+//			if (getUnisonInfo(i) != null) {
+//				Integer[][] unisonInfo = getUnisonInfo(i);
+//				// For each unison in the chord (there should be only one)
+//				for (int j = 0; j < unisonInfo.length; j++) {
+////					// 1. Determine indices of the lower and upper unison note
+////					// a. Calculate the number of Notes preceding the unison chord by summing the size of all previous chords
+////					notesPreceding = 0;
+////					for (int k = 0; k < i; k++) {
+////						notesPreceding += transcriptionChords.get(k).size();
+////					}
+////					// b. Calculate the indices in the noteSeq
+//					
+//					// 1. Determine indices
+//					// a. Indices of the lower and upper unison note   
+//					int indLower = notesPreceding + unisonInfo[j][1];
+//					int indUpper = notesPreceding + unisonInfo[j][2];
+//
+/////					// 2. Determine the duration of the lower and upper unison note
+//					
+//					// b. Indices of the longer and shorter unison note
+//					Rational durLower = noteSeq.getNoteAt(indLower).getMetricDuration();
+//					Rational durUpper = noteSeq.getNoteAt(indUpper).getMetricDuration();
+//					int indLonger = 
+//						durLower.isGreater(durUpper) ? indLower : (durLower.isLess(durUpper) ? indUpper : -1);
+//					int indShorter = 
+//						durLower.isGreater(durUpper) ? indUpper : (durLower.isLess(durUpper) ? indLower : -1);
+//
+//					// 2. Set IDU and EDU
+//					int first, second;
+//					if (!durLower.isEqual(durUpper)) {
+//						int indFirst = indLonger;
+//						int indSecond = indShorter;
+//						first = DataConverter.convertIntoListOfVoices(voiceLab.get(indFirst)).get(0);
+//						second = DataConverter.convertIntoListOfVoices(voiceLab.get(indSecond)).get(0);
+//						voicesIDU.set(indLower, new Integer[]{first, second, indUpper});
+//						voicesIDU.set(indUpper, new Integer[]{first, second, indLower});
+//					}
+//					else {
+//						int indFirst = indLower;
+//						int indSecond = indUpper;
+//						first = DataConverter.convertIntoListOfVoices(voiceLab.get(indFirst)).get(0);
+//						second = DataConverter.convertIntoListOfVoices(voiceLab.get(indSecond)).get(0);
+//						voicesEDU.set(indLower, new Integer[]{first, second, indUpper});
+//						voicesEDU.set(indUpper, new Integer[]{first, second, indLower});
+//					}
+//					
+//					// 3. Adapt NoteSequence (if necessary)
+//					if (durLower.isLess(durUpper)) {
+//						noteSeq.swapNotes(indLower, indUpper);
+//					}
+//					
+//					// 4. Adapt voice labels (if necessary)
+//					if (durLower.isLess(durUpper)) {
+//						if (adaptLabels) {
+//							Collections.swap(voiceLab, indLower, indUpper);
+//						}
+//					}
+//					
+//					boolean oud = false;
+//					if (oud) {
+//						// a. IDU
+//						if (!durLower.isEqual(durUpper)) {
+//							// Swap the lower and upper unison notes; swap lower and upper unison notes' labels
+//							if (durLower.isLess(durUpper)) {
+//								noteSeq.swapNotes(indLower, indUpper);
+//								if (adaptLabels) {
+//									Collections.swap(voiceLab, indLower, indUpper);
+//								}
+//							}
+//							int voiceLower = voiceLab.get(indLower).indexOf(1.0);
+//							int voiceUpper = voiceLab.get(indUpper).indexOf(1.0);
+//							voicesIDU.set(indLower, new Integer[]{voiceLower, voiceUpper, indUpper});
+//							voicesIDU.set(indUpper, new Integer[]{voiceLower, voiceUpper, indLower});
+//						}
+//						// b. EDU
+//						else {
+//							int voiceLower = voiceLab.get(indLower).indexOf(1.0);
+//							int voiceUpper = voiceLab.get(indUpper).indexOf(1.0);
+//							voicesEDU.set(indLower, new Integer[]{voiceLower, voiceUpper, indUpper});
+//							voicesEDU.set(indUpper, new Integer[]{voiceLower, voiceUpper, indLower});
+//						}
+//					}
+//
+////					if (durationLower.isLess(durationUpper)) {
+////						noteSeq.swapNotes(indLower, indUpper);
+////						if (adaptLabels) {
+////							Collections.swap(voiceLab, indLower, indUpper);
+////						}
+////						int voiceLower = voiceLab.get(indLower).indexOf(1.0);
+////						int voiceUpper = voiceLab.get(indUpper).indexOf(1.0);
+////						voicesNEDU.set(indLower, new Integer[]{voiceLower, voiceUpper, indUpper});
+////						voicesNEDU.set(indUpper, new Integer[]{voiceLower, voiceUpper, indLower});
+////						
+////						// Concat information to adaptations
+////						adaptations = adaptations.concat("  Unison found in chord " + i + ": notes no. " + unisonInfo[j][1] +
+////							" (pitch " + unisonInfo[j][0] + ", duration " + durationLower + ") and " + unisonInfo[j][2] 
+////							+ " (pitch " + unisonInfo[j][0] + ", duration " + durationUpper +
+////								") in that chord swapped in the NoteSequence; list of voice labels adapted accordingly.");
+////					}
+////					// 4. Set voicesEDU
+////					if (durationLower.equals(durationUpper)) {
+//////						List<Double> voiceLabelLower = voiceLab.get(indexLower);
+//////						List<Double> voiceLabelUpper = voiceLab.get(indUpper);
+////						int voiceLower = voiceLab.get(indLower).indexOf(1.0);
+////						int voiceUpper = voiceLab.get(indUpper).indexOf(1.0);
+////						voicesEDU.set(indLower, new Integer[]{voiceLower, voiceUpper, indUpper});
+////						voicesEDU.set(indUpper, new Integer[]{voiceLower, voiceUpper, indLower});
+////					}					  
+//				}
+//			}
+//			notesPreceding += notesPerChord.get(i);
+////			notesPreceding += transcriptionChords.get(i).size();
+//		}		
+//		// Reset noteSequence, voice labels; set voicesEDU
+//		setNoteSequence(noteSeq);
+//		if (adaptLabels) {
+//			setVoiceLabels(voiceLab);
+////			setEqualDurationUnisonsInfo(equalDurUnisonsInfo);
+//		}
+//		setVoicesEDU(voicesEDU);
+//		setVoicesIDU(voicesIDU);
+//	}
+
+
+//	/**
+//	 * Checks for each note in the Transcription whether it is part of a unison of two notes with equal duration.
+//	 * Returns a list the size of the number of notes in the Transcription, containing
+//	 *   a. if the note at that index is not a unison note or if the note at that index is part of a unison
+//	 *      whose notes are of inequal length: <code>null</code>  
+//	 *   b. if the note at that index is part of a unison whose notes are of equal length: a voice label (i.e.,
+//	 *      a List<Double>) containing two 1.0s, thus representing both correct voices.
+//	 * 
+//	 * NB: Non-tablature case only.
+//	 *  
+//	 * @return
+//	 */
+//	// TESTED
+//	private List<List<Double>> getEqualDurationUnisonsInfoOLD() {
+//		List<List<Double>> equalDurationUnisons = new ArrayList<List<Double>>();
+//		NoteSequence noteSeq = getNoteSequence();
+//		List<List<Double>> voiceLabels = getVoiceLabels();
+//		// Initialise equalDurationUnisons with all elements set to null
+//		for (int i = 0; i < noteSeq.size(); i++) {
+//			equalDurationUnisons.add(null);
+//		}
+//			
+//		// For all chords
+//		List<List<Note>> transcriptionChords = getTranscriptionChordsInternal();  
+//		for (int i = 0; i < transcriptionChords.size(); i++) {
+//			// If the chord contains a unison
+//			Integer[][] currentUnisonInfo = getUnisonInfo(i);
+//			if (currentUnisonInfo != null) {
+//				// For each unison
+//				for (int j = 0; j < currentUnisonInfo.length; j++) {
+//				  // 1. Determine the indices in noteSeq and voiceLabels of the lower and upper unison notes
+//		      // a. Calculate the number of Notes preceding the unison chord by summing the size of all previous chords
+//		   		int notesPreceding = 0;
+//		      for (int k = 0; k < i; k++) {
+//		      	notesPreceding += transcriptionChords.get(k).size();
+//		      }
+//		      // b. Calculate the indices in the NoteSequence
+//		      int indexOfLowerUnisonNote = notesPreceding + currentUnisonInfo[j][1];
+//		      int indexOfUpperUnisonNote = notesPreceding + currentUnisonInfo[j][2];
+//		      		      
+//		      // 2. If the unison notes have the same duration
+//		      Rational durationLower = noteSeq.getNoteAt(indexOfLowerUnisonNote).getMetricDuration();
+//		      Rational durationUpper = noteSeq.getNoteAt(indexOfUpperUnisonNote).getMetricDuration();
+//		      List<Double> voiceLabelLower = voiceLabels.get(indexOfLowerUnisonNote);
+//		      List<Double> voiceLabelUpper = voiceLabels.get(indexOfUpperUnisonNote);
+//		      if (durationLower.equals(durationUpper)) {
+//		        // Combine the voice labels
+//			      int indexOfOneInUpper = voiceLabelUpper.indexOf(1.0);
+//			      List<Double> correctVoices = new ArrayList<Double>(voiceLabelLower);
+//			      correctVoices.set(indexOfOneInUpper, 1.0);
+//		      	equalDurationUnisons.set(indexOfLowerUnisonNote, correctVoices);
+//		      	equalDurationUnisons.set(indexOfUpperUnisonNote, correctVoices);
+//		      }
+//				}
+//			}
+//		}	
+//		return equalDurationUnisons;
+//	}
+	
+	
+//	public static MetricalTimeLine reverseMetricalTimeLineOLD(MetricalTimeLine mtl, Rational mp, List<Integer[]> mi) {
+//	// This method is called on an existing Transcription, so meterInfo exists and mtl
+//	// is clean. So arguments can be inside method and method non-static
+//	
+//	// mt: mp     - mt of timeSig + (bars in timeSig * timeSig) 
+//	// t : mpTime - t  of (mt of timeSig + (bars in timeSig * timeSig))
+//	// long time = mtl.getTime(m.getMetricTime());
+//
+////	List<Integer[]> mi = getMeterInfo();
+////	MetricalTimeLine mtl = getPiece().getMetricalTimeLine();
+////	Rational mp = getMirrorPoint();
+//	long mpTime = mtl.getTime(mp);
+//	System.out.println("---> " + mp);
+//	System.out.println(mpTime);
+//	
+//	for (Marker m : mtl) {
+//		System.out.println(m);
+//	}
+//	System.out.println("----");
+//
+//	for (Marker m : mtl) {
+////		System.out.println(m);
+//		Rational mt = m.getMetricTime();
+//		int indInMi = -1;
+//		for (int i = 0; i < mi.size(); i++) {
+//			Rational currMt = 
+//				new Rational(mi.get(i)[Timeline.MI_NUM_MT_FIRST_BAR], 
+//				mi.get(i)[Timeline.MI_DEN_MT_FIRST_BAR]);
+//			if (currMt.equals(mt)) {
+//				indInMi = i;
+//				break;
+//			}
+//		}
+//		// Adapt mt
+//		if (m instanceof TimeSignatureMarker) {
+//			System.out.println("time sig");
+//			Integer[] currMi = mi.get(indInMi);
+//			int currBars = (currMi[Timeline.MI_LAST_BAR] - currMi[Timeline.MI_FIRST_BAR]) + 1;
+//			Rational currMeter = new Rational(currMi[Timeline.MI_NUM], currMi[Timeline.MI_DEN]);
+//			Rational mtRev = mp.sub(mt.add(currMeter.mul(currBars)));
+//			((TimeSignatureMarker) m).setMetricTime(mtRev);
+//			System.out.println("--> " + mtl.getTime(mt.add(currMeter.mul(currBars))));
+//			System.out.println("--> " + (mpTime - mtl.getTime(mt.add(currMeter.mul(currBars)))));
+//		}
+//		// Adapt mt and t
+//		if (m instanceof TimedMetrical) {
+//			// Has mt and time
+//			if (!(m instanceof TempoMarker)) {
+////				System.out.println("timed metrical");
+//			}
+//			else {
+////				System.out.println("tempomarker");
+//				// t : mpTime - t  of (mt of timeSig + (bars in timeSig * timeSig))
+//				
+//			}
+//		}
+//	}
+//	
+//	
+////	System.out.println(numTimeSigs == mi.size());
+//	return null;
+//}
+
 }

@@ -17,20 +17,31 @@ public class DataConverterTest extends TestCase {
 
 //	private File midiTestpiece1 = new File(Runner.midiPathTest + "testpiece.mid");
 //	private File encodingTestpiece1 = new File(Runner.encodingsPathTest + "testpiece.tbp");
-	private File midiTestpiece1 = new File(MEIExport.rootDir + "data/MIDI/test/" + "testpiece.mid");
-	private File encodingTestpiece1 = new File(MEIExport.rootDir + "data/encodings/test/" + "testpiece.tbp");
+	private File midiTestpiece1 = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "testpiece.mid");
+	private File encodingTestpiece1 = new File(MEIExport.rootDir + "data/annotated/encodings/test/" + "testpiece.tbp");
 
+	private static final List<Double> V_0 = Transcription.createVoiceLabel(new Integer[]{0});
+	private static final List<Double> V_1 = Transcription.createVoiceLabel(new Integer[]{1});
+	private static final List<Double> V_2 = Transcription.createVoiceLabel(new Integer[]{2});
+	private static final List<Double> V_3 = Transcription.createVoiceLabel(new Integer[]{3});
+	private static final List<Double> V_4 = Transcription.createVoiceLabel(new Integer[]{4});
+	private static final List<Double> QUARTER = Transcription.createDurationLabel(new Integer[]{8*3});
+	private static final List<Double> DOTTED_QUARTER = Transcription.createDurationLabel(new Integer[]{12*3});
+	private static final List<Double> SIXTEENTH_EIGHTH = Transcription.createDurationLabel(new Integer[]{2*3, 4*3});
+	
 
 	public DataConverterTest(String name) {
 		super(name);
 	}
 
 
+	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 	}
 
 
+	@Override
 	protected void tearDown() throws Exception {
 		super.tearDown();
 	}
@@ -43,11 +54,9 @@ public class DataConverterTest extends TestCase {
 		expected.add(Arrays.asList(new Integer[]{3, 4}));
 
 		List<List<Integer>> actual = new ArrayList<List<Integer>>();
-		actual.add(DataConverter.convertIntoListOfVoices(Transcription.combineLabels(Transcription.VOICE_0, 
-			Transcription.VOICE_1)));
-		actual.add(DataConverter.convertIntoListOfVoices(Transcription.VOICE_2));
-		actual.add(DataConverter.convertIntoListOfVoices(Transcription.combineLabels(Transcription.VOICE_3, 
-			Transcription.VOICE_4)));
+		actual.add(DataConverter.convertIntoListOfVoices(Transcription.combineLabels(V_0, V_1)));
+		actual.add(DataConverter.convertIntoListOfVoices(V_2));
+		actual.add(DataConverter.convertIntoListOfVoices(Transcription.combineLabels(V_3, V_4)));
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -65,9 +74,9 @@ public class DataConverterTest extends TestCase {
 		List<Integer> predictedVoices3 = Arrays.asList(new Integer[]{3, 4});
 
 		List<List<Double>> expected = new ArrayList<List<Double>>();
-		expected.add(Transcription.combineLabels(Transcription.VOICE_0,	Transcription.VOICE_1));
-		expected.add(Transcription.VOICE_2); 
-		expected.add(Transcription.combineLabels(Transcription.VOICE_3,	Transcription.VOICE_4)); 
+		expected.add(Transcription.combineLabels(V_0, V_1));
+		expected.add(V_2); 
+		expected.add(Transcription.combineLabels(V_3, V_4)); 
 
 		List<List<Double>> actual = new ArrayList<List<Double>>();
 		actual.add(DataConverter.convertIntoVoiceLabel(predictedVoices1));
@@ -90,11 +99,9 @@ public class DataConverterTest extends TestCase {
 		List<Integer> predictedDurations3 = Arrays.asList(new Integer[]{2, 4});
 
 		List<List<Double>> expected = new ArrayList<List<Double>>();
-		expected.add(Transcription.QUARTER);
-		expected.add(Transcription.DOTTED_QUARTER); 
-		List<Double> sixteenthAndEighth = new ArrayList<Double>(Transcription.SIXTEENTH);
-		sixteenthAndEighth.set(3, 1.0);
-		expected.add(sixteenthAndEighth); 
+		expected.add(QUARTER);
+		expected.add(DOTTED_QUARTER); 
+		expected.add(SIXTEENTH_EIGHTH);
 
 		List<List<Double>> actual = new ArrayList<List<Double>>();
 		actual.add(DataConverter.convertIntoDurationLabel(predictedDurations1));
@@ -137,8 +144,8 @@ public class DataConverterTest extends TestCase {
 		List<List<Double>> voiceLabels = transcription.getVoiceLabels();
 		int largestNumberOfChordVoices = transcription.getNumberOfVoices();
 		int lowestOnsetIndex = 0;
-		for (int i = 0; i < tablature.getTablatureChords().size(); i++) {
-			List<TabSymbol> currentChord = tablature.getTablatureChords().get(i);
+		for (int i = 0; i < tablature.getChords().size(); i++) {
+			List<TabSymbol> currentChord = tablature.getChords().get(i);
 			List<List<Double>> currentChordVoiceLabels = 
 				voiceLabels.subList(lowestOnsetIndex, lowestOnsetIndex + currentChord.size());
 			actual.add(DataConverter.getVoiceAssignment(currentChordVoiceLabels, largestNumberOfChordVoices));
@@ -209,55 +216,55 @@ public class DataConverterTest extends TestCase {
 		List<List<List<Double>>> expected = new ArrayList<List<List<Double>>>();
 		// Chord 0
 		List<List<Double>> expected0 = new ArrayList<List<Double>>();
-		expected0.add(Transcription.VOICE_3); expected0.add(Transcription.VOICE_2); 
-		expected0.add(Transcription.VOICE_1); expected0.add(Transcription.VOICE_0);
+		expected0.add(V_3); expected0.add(V_2); 
+		expected0.add(V_1); expected0.add(V_0);
 		// Chord 1
 		List<List<Double>> expected1 = new ArrayList<List<Double>>();
-		expected1.add(Transcription.VOICE_3); expected1.add(Transcription.VOICE_2); 
-		expected1.add(Transcription.VOICE_0); expected1.add(Transcription.VOICE_1);
+		expected1.add(V_3); expected1.add(V_2); 
+		expected1.add(V_0); expected1.add(V_1);
 		// Chord 2
 		List<List<Double>> expected2 = new ArrayList<List<Double>>();
-		expected2.add(Transcription.VOICE_3); 
+		expected2.add(V_3); 
 		// Chord 3
 		List<List<Double>> expected3 = new ArrayList<List<Double>>();
-		expected3.add(Transcription.VOICE_4); expected3.add(Transcription.VOICE_3); 
-		expected3.add(Transcription.VOICE_2); expected3.add(Transcription.combineLabels(Transcription.VOICE_0, Transcription.VOICE_1)); 
+		expected3.add(V_4); expected3.add(V_3); 
+		expected3.add(V_2); expected3.add(Transcription.combineLabels(V_0, V_1)); 
 		// Chord 4
 		List<List<Double>> expected4 = new ArrayList<List<Double>>();
-		expected4.add(Transcription.VOICE_4);  
+		expected4.add(V_4);  
 		// Chord 5
 		List<List<Double>> expected5 = new ArrayList<List<Double>>();
-		expected5.add(Transcription.VOICE_4); expected5.add(Transcription.VOICE_3); 
-		expected5.add(Transcription.VOICE_2); expected5.add(Transcription.VOICE_1); 
-		expected5.add(Transcription.VOICE_0); 
+		expected5.add(V_4); expected5.add(V_3); 
+		expected5.add(V_2); expected5.add(V_1); 
+		expected5.add(V_0); 
 		// Chord 6
 		List<List<Double>> expected6 = new ArrayList<List<Double>>();
-		expected6.add(Transcription.VOICE_4); expected6.add(Transcription.VOICE_2); 
-		expected6.add(Transcription.VOICE_0); expected6.add(Transcription.VOICE_1);
+		expected6.add(V_4); expected6.add(V_2); 
+		expected6.add(V_0); expected6.add(V_1);
 		// Chord 7
 		List<List<Double>> expected7 = new ArrayList<List<Double>>();
-		expected7.add(Transcription.VOICE_2); expected7.add(Transcription.VOICE_0); 
+		expected7.add(V_2); expected7.add(V_0); 
 		// Chord 8
 		List<List<Double>> expected8 = new ArrayList<List<Double>>();
-		expected8.add(Transcription.VOICE_3); expected8.add(Transcription.VOICE_2); 
-		expected8.add(Transcription.VOICE_1); expected8.add(Transcription.VOICE_0); 
+		expected8.add(V_3); expected8.add(V_2); 
+		expected8.add(V_1); expected8.add(V_0); 
 		// Chords 9-14
 		List<List<Double>> expected9 = new ArrayList<List<Double>>();
-		expected9.add(Transcription.VOICE_0);
+		expected9.add(V_0);
 		List<List<Double>> expected10 = new ArrayList<List<Double>>();
-		expected10.add(Transcription.VOICE_0);
+		expected10.add(V_0);
 		List<List<Double>> expected11 = new ArrayList<List<Double>>();
-		expected11.add(Transcription.VOICE_0);
+		expected11.add(V_0);
 		List<List<Double>> expected12 = new ArrayList<List<Double>>();
-		expected12.add(Transcription.VOICE_0);
+		expected12.add(V_0);
 		List<List<Double>> expected13 = new ArrayList<List<Double>>();
-		expected13.add(Transcription.VOICE_0);
+		expected13.add(V_0);
 		List<List<Double>> expected14 = new ArrayList<List<Double>>();
-		expected14.add(Transcription.VOICE_0);
+		expected14.add(V_0);
 		// Chord 15
 		List<List<Double>> expected15 = new ArrayList<List<Double>>();
-		expected15.add(Transcription.VOICE_3); expected15.add(Transcription.VOICE_2); 
-		expected15.add(Transcription.VOICE_1); expected15.add(Transcription.VOICE_0);
+		expected15.add(V_3); expected15.add(V_2); 
+		expected15.add(V_1); expected15.add(V_0);
 
 		expected.add(expected0); expected.add(expected1); expected.add(expected2); expected.add(expected3); 
 		expected.add(expected4); expected.add(expected5); expected.add(expected6); expected.add(expected7);
@@ -269,7 +276,7 @@ public class DataConverterTest extends TestCase {
 		List<List<List<Double>>> actual = new ArrayList<List<List<Double>>>();
 		int highestNumberOfVoices = transcription.getNumberOfVoices();
 		List<List<Integer>> voiceAssignments = transcription.getVoiceAssignments(/*tablature,*/ highestNumberOfVoices);
-		for (int i = 0; i < transcription.getTranscriptionChords().size(); i++) {
+		for (int i = 0; i < transcription.getChords().size(); i++) {
 			actual.add(DataConverter.getChordVoiceLabels(voiceAssignments.get(i)));
 		}
 
@@ -352,8 +359,8 @@ public class DataConverterTest extends TestCase {
 		List<List<List<Integer>>> actual = new ArrayList<List<List<Integer>>>();
 		List<List<Double>> voiceLabels = transcription.getVoiceLabels();
 		int lowestOnsetIndex = 0;
-		for (int i = 0; i < tablature.getTablatureChords().size(); i++) {
-			List<TabSymbol> currentChord = tablature.getTablatureChords().get(i);
+		for (int i = 0; i < tablature.getChords().size(); i++) {
+			List<TabSymbol> currentChord = tablature.getChords().get(i);
 			List<List<Double>> currentChordVoiceLabels = 
 				voiceLabels.subList(lowestOnsetIndex, lowestOnsetIndex + currentChord.size());
 			actual.add(DataConverter.getVoicesInChord(currentChordVoiceLabels));
@@ -436,7 +443,14 @@ public class DataConverterTest extends TestCase {
 			new Rational(13, 16)
 		});
 		
-		List<Integer> expected = Arrays.asList(new Integer[]{2, 4, 20, 26});
+		List<Integer> expected = null;
+//		List<Integer> expected = Arrays.asList(new Integer[]{2, 4, 20, 26});
+		if (Transcription.MAX_TABSYMBOL_DUR == 64) {
+			expected = Arrays.asList(new Integer[]{4, 8, 40, 52});
+		}
+		else if (Transcription.MAX_TABSYMBOL_DUR == 96) {
+			
+		}
 		
 		List<Integer> actual = new ArrayList<Integer>();
 		for (Rational r : durs) {

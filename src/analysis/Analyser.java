@@ -15,11 +15,14 @@ import de.uos.fmt.musitech.data.score.NotationStaff;
 import de.uos.fmt.musitech.data.score.NotationSystem;
 import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.data.structure.Note;
-import de.uos.fmt.musitech.data.structure.container.NoteSequence;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
+import imports.MIDIImport;
 import representations.Tablature;
 import representations.Transcription;
+import structure.ScoreMetricalTimeLine;
+import structure.metric.Utils;
+import tbp.Encoding;
 import tbp.TabSymbol;
 import tools.ToolBox;
 import utility.DataConverter;
@@ -366,7 +369,7 @@ public class Analyser {
 		List<String> bla = new ArrayList<String>();
 		bla.add("Abondante 1548 - mais mamignone");
 
-		folderName = MEIExport.rootDir + "data/MIDI/tab-int/4vv/"; 
+		folderName = MEIExport.rootDir + "data/MIDI/thesis-int/4vv/"; 
 
 		for (String s : threeVoiceFuguesPieceNames) {
 			getNumberOfVoiceCrossingPairs(folderName, s, 0);
@@ -439,7 +442,7 @@ public class Analyser {
 
 		// Create output
 		for (int i = 0; i < pieces.size(); i++) {
-			Transcription trans = new Transcription(new File(path + pieces.get(i) + ".mid"), null);
+			Transcription trans = new Transcription(new File(path + pieces.get(i) + MIDIImport.EXTENSION));
 			String shortName = shortPieceNames.get(i);
 
 			outputSpreadsheet += shortName + "\t";
@@ -549,7 +552,7 @@ public class Analyser {
 
 		// Create output
 		for (int i = 0; i < pieces.size(); i++) {
-			Transcription trans = new Transcription(new File(path + pieces.get(i) + ".mid"), null);
+			Transcription trans = new Transcription(new File(path + pieces.get(i) + MIDIImport.EXTENSION));
 			String shortName = shortPieceNames.get(i); 
 
 			outputSpreadsheet += shortName + "\t";
@@ -634,7 +637,7 @@ public class Analyser {
 		boolean includeAvg = true;
 		int numVoices = voiceNames.size();
 //		int numVoices = // it is assumed that every piece in the dataset has the same number of voices 
-//			new Transcription(new File(path + pieces.get(0) + ".mid"), null).getNumberOfVoices();
+//			new Transcription(new File(path + pieces.get(0) + MIDIImport.EXTENSION), null).getNumberOfVoices();
 
 		// Spreadsheet output
 		String outputSpreadsheet = 
@@ -675,7 +678,7 @@ public class Analyser {
 
 		// Create output
 		for (int i = 0; i < pieces.size(); i++) {
-			Transcription trans = new Transcription(new File(path + pieces.get(i) + ".mid"), null);
+			Transcription trans = new Transcription(new File(path + pieces.get(i) + MIDIImport.EXTENSION));
 			String shortName = shortPieceNames.get(i);
 
 			outputSpreadsheet += shortName + "\t";
@@ -705,7 +708,7 @@ public class Analyser {
 				}
 				// double (avg percentage)
 				else {
-					double avgPerc = percSum / (double) numVoices;
+					double avgPerc = percSum / numVoices;
 					doublesToAvg[j+1] += avgPerc;
 					String formatted = ToolBox.formatDouble(avgPerc, 2, 5); 
 					outputSpreadsheet += formatted + "\r\n";
@@ -807,12 +810,13 @@ public class Analyser {
 	private static String hasMoreThanOneUnison(String folderName, String pieceName) {
 		String results = folderName + pieceName + ":" + "\n";
 
-		Transcription transcription = new Transcription(new File(folderName + pieceName), null);
-		List<Integer[]> meterInfo = transcription.getMeterInfo();
+		Transcription transcription = new Transcription(new File(folderName + pieceName));
+//		List<Integer[]> meterInfo = transcription.getMeterInfo();
 		Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
 		int totalNumUnisons = 0;
 		int numUnisonsEqualDuration = 0;
 		int numUnisonsDifferentDuration = 0;
+		ScoreMetricalTimeLine smtl = transcription.getScorePiece().getScoreMetricalTimeLine();
 
 //		System.out.println(transcription.getNoteSequence().size());
 //		System.out.println(transcription.getVoiceLabels().size());
@@ -825,11 +829,13 @@ public class Analyser {
 //		}
 //		System.exit(0);
 
-		for (int i = 0; i < transcription.getTranscriptionChords().size(); i++) {
-			List<Note> currentChord = transcription.getTranscriptionChords().get(i);
+		List<List<Note>> chords = transcription.getChords();
+		for (int i = 0; i < chords.size(); i++) {
+			List<Note> currentChord = chords.get(i);
 
 			Rational currentOnsetTime = currentChord.get(0).getMetricTime();
-			Rational[] metricPos = Tablature.getMetricPosition(currentOnsetTime, meterInfo);
+			Rational[] metricPos = smtl.getMetricPosition(currentOnsetTime);		
+//				Utils.getMetricPosition(currentOnsetTime, meterInfo);
 			String barNum = String.valueOf(metricPos[0].getNumer());
 			String posInBar = "";
 			if (metricPos[1].getNumer() != 0) {
@@ -838,15 +844,15 @@ public class Analyser {
 			String metricPosAsString = barNum + posInBar;
 
 			// a. Determine number of unisons
-			if (transcription.getUnisonInfo(i) != null) {
+			Integer[][] unisonInfo = null; //Transcription.getUnisonInfo(currentChord);
+			if (unisonInfo != null) {
 				totalNumUnisons++;
-				if (transcription.getUnisonInfo(i).length == 1) {
+				if (unisonInfo.length == 1) {
 					results = results.concat("  chord at index " + i + " (metric position " + metricPosAsString + 
-//						") has more than one unison." + "\n");
 						") has a unison." + "\n");
 				}
-				int indexLower = transcription.getUnisonInfo(i)[0][1];
-				int indexUpper = transcription.getUnisonInfo(i)[0][2];
+				int indexLower = unisonInfo[0][1];
+				int indexUpper = unisonInfo[0][2];
 				int notesPreceding = 0;
 				for (int j = 0; j < basicNoteProperties.length; j++) {
 					int num = basicNoteProperties[j][Transcription.ONSET_TIME_NUMER];
@@ -859,8 +865,10 @@ public class Analyser {
 				}
 				indexLower += notesPreceding;
 				indexUpper += notesPreceding;
-				Rational durationLower = transcription.getNoteSequence().getNoteAt(indexLower).getMetricDuration();
-				Rational durationUpper = transcription.getNoteSequence().getNoteAt(indexUpper).getMetricDuration();
+				Rational durationLower = transcription.getNotes().get(indexLower).getMetricDuration();
+//				Rational durationLower = transcription.getNoteSequence().getNoteAt(indexLower).getMetricDuration();
+				Rational durationUpper = transcription.getNotes().get(indexUpper).getMetricDuration();
+//				Rational durationUpper = transcription.getNoteSequence().getNoteAt(indexUpper).getMetricDuration();
 				if (durationLower.equals(durationUpper)) {
 					numUnisonsEqualDuration++;
 				}
@@ -876,7 +884,6 @@ public class Analyser {
 				for (int pitch : pitchesInChord) {
 					if (Collections.frequency(pitchesInChord, pitch) == 2) {
 						results = results.concat("  chord at index " + i + " (metric position " + metricPosAsString + 
-//							") has more than two notes with pitch " + pitch + "." + "\n");
 							") has two notes with pitch " + pitch + "." + "\n");}	
 				}
 			}
@@ -901,10 +908,11 @@ public class Analyser {
 	private static String chordSizeChecker(String folderName, String pieceName) {	
 		String chordSizeInformation = "";
 
-		Transcription transcription = new Transcription(new File(folderName + pieceName), null);
+		Transcription transcription = new Transcription(new File(folderName + pieceName));
 //		preprocessor.preprocess(null, transcription, false, new Integer(0));
 
-		List<Integer[]> meterInfo = transcription.getMeterInfo();
+//		List<Integer[]> meterInfo = transcription.getMeterInfo();
+		ScoreMetricalTimeLine smtl = transcription.getScorePiece().getScoreMetricalTimeLine();
 
 		int maxNumVoices = -1;
 //		if (folderName.contains("fugues")) { // for checking for overlap in individual voices
@@ -925,7 +933,7 @@ public class Analyser {
 
 		// For each chord
 		Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
-		List<List<Note>> transcriptionChords = transcription.getTranscriptionChords();
+		List<List<Note>> transcriptionChords = transcription.getChords();
 //		int numChords = transcription.getNumberOfChords();
 		chordSizeInformation = chordSizeInformation.concat(pieceName + "\r\n");
 		chordSizeInformation = chordSizeInformation.concat("number of notes = " + basicNoteProperties.length + "\r\n");
@@ -947,7 +955,8 @@ public class Analyser {
 
 			if (size > maxNumVoices) {
 				// Determine onsetTimeAsString
-				Rational[] metricPosition = Tablature.getMetricPosition(onsetTimeCurrentNote, meterInfo);
+				Rational[] metricPosition = smtl.getMetricPosition(onsetTimeCurrentNote);
+//					Utils.getMetricPosition(onsetTimeCurrentNote, meterInfo);
 				String onsetTimeAsString = "" + metricPosition[0].getNumer();
 				if (metricPosition[1].getNumer() != 0) {
 					onsetTimeAsString += " " + metricPosition[1]; 
@@ -976,10 +985,11 @@ public class Analyser {
 	 * @param pieceName
 	 */
 	private static void checkOnsetTimeLastNote(String folderName, String pieceName) {
-		Transcription transcription = new Transcription(new File(folderName + pieceName), null);
+		Transcription transcription = new Transcription(new File(folderName + pieceName));
 //		preprocessor.preprocess(null, transcription, false, new Integer(0));
+		ScoreMetricalTimeLine smtl = transcription.getScorePiece().getScoreMetricalTimeLine();
 
-		List<Integer[]> meterInfo = transcription.getMeterInfo();
+//		List<Integer[]> meterInfo = transcription.getMeterInfo();
 
 		Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
 		int numNotes = basicNoteProperties.length;
@@ -987,7 +997,8 @@ public class Analyser {
 		Rational mt = new Rational(basicNoteProperties[numNotes - 1][Transcription.ONSET_TIME_NUMER],
 			basicNoteProperties[numNotes - 1][Transcription.ONSET_TIME_DENOM]);
 
-		Rational[] metricPosition = Tablature.getMetricPosition(mt, meterInfo);
+		Rational[] metricPosition = smtl.getMetricPosition(mt);
+//		Rational[] metricPosition = Utils.getMetricPosition(mt, meterInfo);
 		System.out.println("bar no   = " + (double) metricPosition[0].getNumer() / metricPosition[0].getDenom());
 		System.out.println("position = " + (double) metricPosition[1].getNumer() / metricPosition[1].getDenom());
 	}
@@ -1005,13 +1016,14 @@ public class Analyser {
 	 */
 	private static String hasDoubleNote(String folderName, String pieceName) {	
 		String doubleNoteInformation = "";
-		Transcription transcription = new Transcription(new File(folderName + pieceName), null);
+		Transcription transcription = new Transcription(new File(folderName + pieceName));
 //		preprocessor.preprocess(null, transcription, false, new Integer(0));
 
-		List<Integer[]> meterInfo = transcription.getMeterInfo();
+//		List<Integer[]> meterInfo = transcription.getMeterInfo();
+		ScoreMetricalTimeLine smtl = transcription.getScorePiece().getScoreMetricalTimeLine();
 
 		// For each voice
-		NotationSystem notationSystem = transcription.getPiece().getScore();
+		NotationSystem notationSystem = transcription.getScorePiece().getScore();
 		for (int i = 0; i < notationSystem.size(); i++) {
 			NotationStaff staff = notationSystem.get(i);
 			if (staff.size() != 1) {
@@ -1041,9 +1053,11 @@ public class Analyser {
 			// Print out
 			doubleNoteInformation += "Voice = " + i + "\r\n";
 			for (Note n: metricTimeMoreThanOnce) {
+				Rational[] mp = smtl.getMetricPosition(n.getMetricTime());
+//					Utils.getMetricPosition(n.getMetricTime(), meterInfo);
 				doubleNoteInformation += "More than one note in voice " + i + " in bar " + 
-					Tablature.getMetricPosition(n.getMetricTime(), meterInfo)[0].getNumer() + ", beat " + 
-					Tablature.getMetricPosition(n.getMetricTime(), meterInfo)[1] + " (pitch = " + n.getMidiPitch() + "))" + "\r\n";
+					mp[0].getNumer() + ", beat " + 
+					mp[1] + " (pitch = " + n.getMidiPitch() + "))" + "\r\n";
 			}    
 		}
 		return doubleNoteInformation;
@@ -1073,19 +1087,23 @@ public class Analyser {
 				folderName = "tests/"; 
 			}
 			File midiFile = new File("F/PhD/data" + "MIDI/" + folderName + pieceName);
-			Transcription transcription = new Transcription(midiFile, null);
+			Transcription transcription = new Transcription(midiFile);
 
-			NoteSequence noteSeq = transcription.getNoteSequence();
+			List<Note> notes = transcription.getNotes();
+//			NoteSequence noteSeq = transcription.getNoteSequence();
 			Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
 
 			// Security check
-			if (noteSeq.size() != basicNoteProperties.length) {
+			if (notes.size() != basicNoteProperties.length) {
+//			if (noteSeq.size() != basicNoteProperties.length) {
 				System.out.println("noteSeq and basicNoteProperties do not have the same size");
 				System.exit(0);
 			}
 
-			for (int j = 0; j < noteSeq.size(); j++) {
-				Note currentNote = noteSeq.getNoteAt(j);
+			for (int j = 0; j < notes.size(); j++) {
+//			for (int j = 0; j < noteSeq.size(); j++) {
+				Note currentNote = notes.get(j);
+//				Note currentNote = noteSeq.getNoteAt(j);
 				numNotes++;
 				Rational currentDuration = currentNote.getMetricDuration();
 				Integer[] currentBNP = basicNoteProperties[j];
@@ -1117,8 +1135,8 @@ public class Analyser {
 
 					int numer = currentDuration.getNumer();
 					int denom = currentDuration.getDenom();
-					if (denom != Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()) {
-						numer *= Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom() / denom;
+					if (denom != Tablature.SRV_DEN) {
+						numer *= Tablature.SRV_DEN / denom;
 					}
 					freqOfAllDurations[numer - 1]++; 	  	
 				}	  
@@ -1178,10 +1196,11 @@ public class Analyser {
 		System.out.println(pieceName);
 
 		File midiFile = new File(folderName + pieceName);
-		Transcription transcription = new Transcription(midiFile, null);
-		List<Integer[]> meterInfo = transcription.getMeterInfo();
+		Transcription transcription = new Transcription(midiFile);
+//		List<Integer[]> meterInfo = transcription.getMeterInfo();
+		ScoreMetricalTimeLine smtl = transcription.getScorePiece().getScoreMetricalTimeLine();
 		Integer[][] basicNoteProperties = transcription.getBasicNoteProperties();
-		List<List<Note>> transChords = transcription.getTranscriptionChords();
+		List<List<Note>> transChords = transcription.getChords();
 		List<List<Double>> allVoiceLabels = transcription.getVoiceLabels();
 		List<List<List<Double>>> chordVoiceLabels = transcription.getChordVoiceLabels();
 		int lowestNoteIndex = 0;
@@ -1210,7 +1229,8 @@ public class Analyser {
 				}
 				Rational onsetTime = new Rational(basicNoteProperties[noteIndex][Transcription.ONSET_TIME_NUMER],
 					basicNoteProperties[noteIndex][Transcription.ONSET_TIME_DENOM]);	
-				Rational[] metricPos = Tablature.getMetricPosition(onsetTime, meterInfo);
+				Rational[] metricPos = smtl.getMetricPosition(onsetTime);
+//					Utils.getMetricPosition(onsetTime, meterInfo);
 				System.out.println("More than " + maxNumVoiceCrossingPairs + " voice crossing pair(s) in chord " + i + " (bar " + metricPos[0].getNumer() + 
 					" " + metricPos[1] + ")");	
 			}
@@ -1237,12 +1257,13 @@ public class Analyser {
 
 		for (int i = 0; i < pieceNames.size(); i++) {
 			String pieceName = pieceNames.get(i);
-			File tablatureEncoding = new File(MEIExport.rootDir + "data/encodings/" + pieceName + ".tbp");
+			File tablatureEncoding = 
+				new File(MEIExport.rootDir + "data/encodings/" + pieceName + Encoding.EXTENSION);
 
 			Tablature tablature = new Tablature(tablatureEncoding, false);
 //			preprocessor.prepareInitialInformation(tablature, null, true);
 			Integer[][] basicTabSymbolProperties = tablature.getBasicTabSymbolProperties();
-			List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
+			List<List<TabSymbol>> tablatureChords = tablature.getChords();
 
 			// For each chord
 			int lowestNoteIndex = 0;

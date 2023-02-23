@@ -19,7 +19,9 @@ import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.data.score.ScoreNote;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.Piece;
+import imports.MIDIImport;
 import representations.Transcription;
+import tbp.Encoding;
 import tools.ToolBox;
 
 
@@ -48,13 +50,14 @@ public class MIDIExport {
 //		String piece = "phalese-1547_7-tant_que-a3";
 		String piece = "newsidler-1544_2-nun_volget";
 		
-		Transcription t = new Transcription(new File(path + piece + ".mid"), 
-			new File("F:/research/data/encodings/intabulations/3vv/" + piece + ".tbp"));
+		Transcription t = new Transcription(new File(path + piece + MIDIImport.EXTENSION), 
+			new File("F:/research/data/encodings/intabulations/3vv/" + piece + 
+			Encoding.EXTENSION));
 		ToolBox.storeObjectBinary(t, new File(path + piece + ".ser"));
 			
 		Transcription stored =	
 			ToolBox.getStoredObjectBinary(new Transcription(), new File(path + piece + ".ser"));
-		Piece p = stored.getPiece();
+		Piece p = stored.getScorePiece();
 		
 		List<Integer> instruments = null; // Arrays.asList(new Integer[]{h, h, h, h});
 		String s = "C:/Users/Reinier/Desktop/MIDI-test/midifile2.mid";
@@ -116,11 +119,13 @@ public class MIDIExport {
 	/**
 	 * Returns a MIDI sequence of the given Piece.
 	 * 
-	 * @param 
+	 * @param p The Piece.
 	 * @param instruments The instrument for each voice. If the list contains only one element, 
 	 *        this instrument is used for all tracks.
+	 * @param meterInfo The meterInfo for the Piece.       
 	 */
-	private static Sequence exportMidiFile(Piece p, List<Integer> instruments) {
+	private static Sequence exportMidiFile(Piece p, List<Integer> instruments, List<Integer[]> meterInfo,
+		List<Integer[]> keyInfo) { // 05.12 added meterInfo and keyInfo
 		
 		NotationSystem ns = p.getScore();
 		int numVoices = ns.size();
@@ -170,7 +175,7 @@ public class MIDIExport {
 			// General MIDI SysEx to turn on General MIDI sound set (0xF0)
 			byte[] b = {(byte)0xF0, 0x7E, 0x7F, 0x09, 0x01, (byte)0xF7};
 			sm.setMessage(b, 6);
-			tracks.get(0).add(new MidiEvent(sm,(long)0));
+			tracks.get(0).add(new MidiEvent(sm,0));
 			
 			// META MESSAGES
 			// See http://www.recordingblogs.com/sa/Wiki/topic/MIDI-meta-messages
@@ -182,36 +187,38 @@ public class MIDIExport {
 			mt = new MetaMessage();
 			byte[] bt = {0x07, (byte)0xA1, 0x20}; // 0x07A120 = 500,000 --> tempo = 60/0.5=120 
 			mt.setMessage(0x51, bt, 3);
-			tracks.get(0).add(new MidiEvent(mt,(long)0));
+			tracks.get(0).add(new MidiEvent(mt,0));
 			
 			// Time signature (0x58)
 			// The four bytes in bts (nn, dd, cc, bb) indicate num, den (as 2^dd), per how many 
 			// MIDI clock ticks a metronome click is given (the standard MIDI clock has 24 ticks
 			// per quarter note), and the number of 32nd notes per quarter note
-			List<Integer[]> meterInfo = Transcription.createMeterInfo(p);
+//			List<Integer[]> meterInfo = Transcription.createMeterInfo(p); // 05.12 commented out
 			List<Integer[]> timeSigTicks = getTimeSigTicks(meterInfo, TICKS_PER_BEAT);
 			for (int i = 0; i < meterInfo.size(); i++) {
 				Integer[] mi = meterInfo.get(i);
 				Integer[] tst = timeSigTicks.get(i);
 				mt = new MetaMessage();
 				// 2^x = den --> x = log_2(den) = log_e(den)/log_e(2)
-				double dd = Math.log(mi[1])/Math.log(2);
-				byte[] bts = {(byte)(int)mi[0], (byte)dd, 0x18, 0x08}; // nn=in[0], cc=24, bb=8
+				double dd = Math.log(mi[Transcription.MI_DEN])/Math.log(2);
+				byte[] bts = {(byte)(int)mi[Transcription.MI_NUM], (byte)dd, 0x18, 0x08}; // nn=in[0], cc=24, bb=8
 				mt.setMessage(0x58, bts, 4);			
-				tracks.get(0).add(new MidiEvent(mt,(long)tst[0]));
+				tracks.get(0).add(new MidiEvent(mt,tst[0]));
 			}
 			
 			byte[] sigs = new byte[]{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
 			byte[] majMin = new byte[]{0x00, 0x01};
 			
 			// Key signature (0x59)
-			List<Integer[]> keyInfo = Transcription.createKeyInfo(p, meterInfo);
+//			List<Integer[]> keyInfo = Transcription.createKeyInfo(p, meterInfo); // 05.12 commented out
 			for (int i = 0; i < keyInfo.size(); i++) {
 				Integer[] ki = keyInfo.get(i);
 				mt = new MetaMessage();
-				byte[] bts = {(byte)(int)ki[0], (byte)(int)ki[1]};
+				byte[] bts = 
+					{(byte)(int)ki[Transcription.KI_KEY], 
+					 (byte)(int)ki[Transcription.KI_MODE]};
 				mt.setMessage(0x59, bts, 2);
-				tracks.get(0).add(new MidiEvent(mt,(long)0));
+				tracks.get(0).add(new MidiEvent(mt,0));
 			}
 
 			// Track name (0x03)
@@ -219,11 +226,11 @@ public class MIDIExport {
 				mt = new MetaMessage();
 				String TrackName = new String("track " + i);
 				mt.setMessage(0x03, TrackName.getBytes(), TrackName.length()); 
-				tracks.get(i).add(new MidiEvent(mt,(long)0));
+				tracks.get(i).add(new MidiEvent(mt,0));
 			}
 		
 			// End of track (0x2F)
-			long lastOffTick = (long)timeSigTicks.get(timeSigTicks.size() - 1)[1];
+			long lastOffTick = timeSigTicks.get(timeSigTicks.size() - 1)[1];
 			mt = new MetaMessage();
 			byte[] bet = {}; 
 			mt.setMessage(0x2F, bet, 0);
@@ -233,10 +240,10 @@ public class MIDIExport {
 			ShortMessage mm = new ShortMessage();
 			// Continuous controller (0xB_) 
 			mm.setMessage(0xB0, 0x7D, 0x00); // 0x7D = Omni Mode on
-			tracks.get(0).add(new MidiEvent(mm, (long)0)); 
+			tracks.get(0).add(new MidiEvent(mm, 0)); 
 			mm = new ShortMessage();
 			mm.setMessage(0xB0, 0x7F, 0x00); // 0x7F = Polyphonic Mode on 
-			tracks.get(0).add(new MidiEvent(mm, (long)0));
+			tracks.get(0).add(new MidiEvent(mm, 0));
 
 			// Instrument (0xC_)
 			// For a list see https://en.wikipedia.org/wiki/General_MIDI
@@ -249,7 +256,7 @@ public class MIDIExport {
 					instr = instruments.get(i);
 				}
 				mm.setMessage(0xC0+(i-1), instr, 0x00); // -1 needed because of start at 1
-				tracks.get(i).add(new MidiEvent(mm,(long)0));
+				tracks.get(i).add(new MidiEvent(mm,0));
 			}
 		
 			// Note on- and off (0x9_ and 0x8_)		
@@ -297,11 +304,14 @@ public class MIDIExport {
 	 * @param p The piece
 	 * @param instruments The instrument for each voice. If the list contains only one element, 
 	 *        this instrument is used for all tracks.
+	 * @param meterInfo The meterInfo for the Piece.       
 	 * @param path The path where the MIDI file is saved 
 	 */
-	public static void exportMidiFile(Piece p, List<Integer> instruments, String path) {
-		Sequence seq = exportMidiFile(p, instruments);
-		
+	public static void exportMidiFile(Piece p, List<Integer> instruments, List<Integer[]> meterInfo, 
+		List<Integer[]> keyInfo, String path) { // 05.12 added meterInfo and keyInfo
+
+		Sequence seq = exportMidiFile(p, instruments, meterInfo, keyInfo);
+
 		File f = new File(path);
 		f.getParentFile().mkdirs();
 		try {

@@ -1,149 +1,114 @@
 package tbp;
 
 import java.util.Arrays;
-import java.util.List;
 
-public class MensurationSign {
+public class MensurationSign extends Symbol {
 
-	private String encoding;
-	private String symbol;
-	private int staffLine;
+	public static final int DEFAULT_STAFFLINE = 3; 
+
 	private Integer[] meter;
+	private int staffLine;
 
-	public static MensurationSign O = new MensurationSign("MO", "O", 3, new Integer[]{3, 4});
-	public static MensurationSign three = new MensurationSign("M3", "3", 3, new Integer[]{3, 4});
-	public static MensurationSign two = new MensurationSign("M2", "2", 3, new Integer[]{2, 4});
-	public static MensurationSign crossedC = new MensurationSign("McC", "\u00A2", 3, new Integer[]{2, 2}); 
-	public static MensurationSign C = new MensurationSign("MC", "C", 3, new Integer[]{4, 4});
-	public static MensurationSign doubleCrossedC = new MensurationSign("McC2", "\u00A2", 3, new Integer[]{2, 1});
-	
-	
-	public static MensurationSign threeTwo = new MensurationSign("M3:2", "3", 3, new Integer[]{3, 2});
-	public static MensurationSign threeOne = new MensurationSign("M3:1", "3", 3, new Integer[]{3, 1});
-	public static MensurationSign oneTwo = new MensurationSign("M1:2", "1", 3, new Integer[]{1, 2});
-	public static MensurationSign fourTwo = new MensurationSign("M4:2", "4", 3, new Integer[]{4, 2});
-	public static MensurationSign sixTwo = new MensurationSign("M6:2", "6", 3, new Integer[]{6, 2});
-	public static MensurationSign twoOne = new MensurationSign("M2:1", "\u00A2", 3, new Integer[]{2, 1});
 
-	public static List<MensurationSign> mensurationSigns;
-	static { mensurationSigns = Arrays.asList(new MensurationSign[]{
-		// C
-		MensurationSign.C,
-		new MensurationSign("MC6", "C", 6, new Integer[]{4, 4}),
-		new MensurationSign("MC5", "C", 5, new Integer[]{4, 4}),
-		new MensurationSign("MC4", "C", 4, new Integer[]{4, 4}),
-		new MensurationSign("MC3", "C", 3, new Integer[]{4, 4}),
-		new MensurationSign("MC2", "C", 2, new Integer[]{4, 4}),
-		new MensurationSign("MC1", "C", 1, new Integer[]{4, 4}),
-		// O
-		MensurationSign.O,
-		new MensurationSign("MO6", "O", 6, new Integer[]{3, 4}),
-		new MensurationSign("MO5", "O", 5, new Integer[]{3, 4}),
-		new MensurationSign("MO4", "O", 4, new Integer[]{3, 4}),
-		new MensurationSign("MO3", "O", 3, new Integer[]{3, 4}),
-		new MensurationSign("MO2", "O", 2, new Integer[]{3, 4}),
-		new MensurationSign("MO1", "O", 1, new Integer[]{3, 4}),
-		// 3
-		MensurationSign.three,
-		new MensurationSign("M36", "3", 6, new Integer[]{3, 4}),
-		new MensurationSign("M35", "3", 5, new Integer[]{3, 4}),
-		new MensurationSign("M34", "3", 4, new Integer[]{3, 4}),
-		new MensurationSign("M33", "3", 3, new Integer[]{3, 4}),
-		new MensurationSign("M32", "3", 2, new Integer[]{3, 4}),
-		new MensurationSign("M31", "3", 1, new Integer[]{3, 4}),
-		// Crossed C
-		MensurationSign.crossedC,
-		new MensurationSign("McC6", "\u00A2", 6, new Integer[]{2, 2}),
-		new MensurationSign("McC5", "\u00A2", 5, new Integer[]{2, 2}),
-		new MensurationSign("McC4", "\u00A2", 4, new Integer[]{2, 2}),
-		new MensurationSign("McC3", "\u00A2", 3, new Integer[]{2, 2}),
-		new MensurationSign("McC2", "\u00A2", 2, new Integer[]{2, 2}),
-		new MensurationSign("McC1", "\u00A2", 1, new Integer[]{2, 2}),
-		// 3/2, 4/2, 6/2, 2/1
-		MensurationSign.threeTwo,
-		MensurationSign.fourTwo,
-		MensurationSign.sixTwo,
-		MensurationSign.twoOne,
-		MensurationSign.threeOne,
-		MensurationSign.oneTwo, 
-		// 2
-		MensurationSign.two});
-	}
-	
-
-	/**
-	 * Constructor. Creates a new MensurationSign with the specified attributes and 
-	 * adds this to the specified list.
-	 * 
-	 * @param encoding
-	 * @param symbol
-	 * @param staffLine
-	 * @return
-	 */
-	public MensurationSign (String encoding, String symbol, int staffLine, Integer[] meter) {
-		this.encoding = encoding;
-		this.symbol = symbol;
-		this.staffLine = staffLine;
-		this.meter = meter;
+	public MensurationSign() {
 	}
 
 
-	/**
-	 * Returns the MensurationSign's encoding.
-	 * 
-	 * @return
-	 */  
-	public String getEncoding() {
-		return encoding;
+	public MensurationSign(String e, String s, Integer[] m) {
+		// The basic type (M2, M3, ..., MC\) has beat unit 4 and staffline 3, and is encoded as  
+		// M<n> or M<n>\ (cut MS), where <n> is a number or a symbol
+		// A variant type may have a different beat unit or staffline, and is encoded as 
+		// M<n>:<b><l> or M<n>\\:<b><l> (cut MS), where <b> is the beat unit and <l> the staffline
+		setEncoding(e);
+		setSymbol(s);
+		setMeter(m);
+		setStaffLine();
 	}
 
 
-	/**
-	 * Returns the MensurationSign's tablature representation.
-	 * 
-	 * @return
-	 */
-	public String getSymbol() {
-		return symbol;  
+	void setMeter(Integer[] m) {
+		meter = m;
 	}
-	
-	
-	/**
-	 * Returns the MensurationSign's meter.
-	 * 
-	 * @return
-	 */
+
+
+	void setStaffLine() {
+		staffLine = makeStaffLine();
+	}
+
+
+	// TESTED
+	int makeStaffLine() {
+		String e = getEncoding();
+		// Basic M<n> or M<n>\ type
+		if ((!e.contains("\\") && e.length() == 2) || e.endsWith("\\")) {
+			return DEFAULT_STAFFLINE;
+		}
+		// Variant type
+		else {
+			// Default beat
+			if (!e.contains(":")) {
+				return Integer.parseInt(e.substring(e.length()-1));
+			}
+			// Non-default beat
+			else {
+				String end =  ":" + String.valueOf(getMeter()[1]);
+				return 
+					e.endsWith(end) ? DEFAULT_STAFFLINE : 
+					Integer.parseInt(e.substring(e.indexOf(end) + end.length()));
+			}
+		}
+	}
+
+
 	public Integer[] getMeter() {
 		return meter;  
 	}
 
 
-	/**
-	 * Returns the staff line the MensurationSign is placed on.
-	 * 
-	 * @return
-	 */
 	public int getStaffLine() {
-		return staffLine;
+		return staffLine;  
 	}
 
 
 	/**
-	 * Searches the specified list for the MensurationSign whose attribute encoding
-	 * equals the specified encoding. Returns null if the list does not contain such
-	 * a MensurationSign.
+	 * Makes a variant (beat unit, staff line, or combined) of the MS.
 	 * 
-	 * @param anEncoding
-	 * @param aList
+	 * @param beatUnit
+	 * @param staffLine
 	 * @return
 	 */
-	public static MensurationSign getMensurationSign(String anEncoding) {
-		for (MensurationSign m: mensurationSigns) {
-			if (m.encoding.equals(anEncoding)) {
-				return m;
-			}
+	// TESTED
+	public MensurationSign makeVariant(int beatUnit, int staffLine) {
+		String e = getEncoding();
+		Integer[] m = getMeter();
+		Integer[] newM = Arrays.copyOf(m, m.length);
+		if (beatUnit != -1) {
+			newM[1] = beatUnit;
 		}
-		return null;
+		if (beatUnit != -1) {
+			e += ":" + String.valueOf(beatUnit);
+		}
+		if (staffLine != -1) {
+			e += String.valueOf(staffLine);
+		}
+		return new MensurationSign(e, getSymbol(), newM);
+	}
+
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) {
+			return true;
+		}
+		if (!(o instanceof MensurationSign)) {
+			return false;
+		}
+		MensurationSign m = (MensurationSign) o;
+		return 
+			getEncoding().equals(m.getEncoding()) &&
+			getSymbol().equals(m.getSymbol()) &&
+			Arrays.equals(getMeter(), m.getMeter()) &&
+			getStaffLine() == m.getStaffLine();
 	}
 
 }

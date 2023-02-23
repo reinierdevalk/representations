@@ -9,22 +9,26 @@ import representations.Transcription;
 
 public class MIDIExportTest extends TestCase {
 
-	private File midiTestGetMeterInfo; // = new File(Runner.midiPathTest + "test_get_meter_info.mid");
-	
+	private File midiTestGetMeterInfoDiminuted;
+	private File midiTestGetMeterInfo;
+
+	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 //		Runner.setPathsToCodeAndData(UI.getRootDir(), false);
-//		midiTestGetMeterInfo = new File(Runner.midiPathTest + "test_get_meter_key_info.mid");
-		midiTestGetMeterInfo = new File(MEIExport.rootDir + "data/MIDI/test/" + "test_get_meter_key_info.mid");
+//		midiTestGetMeterInfoDiminuted = new File(Runner.midiPathTest + "test_get_meter_key_info_diminuted.mid");
+		midiTestGetMeterInfo = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_get_meter_key_info.mid");
+		midiTestGetMeterInfoDiminuted = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_get_meter_key_info_diminuted.mid");
 	}
 
+	@Override
 	protected void tearDown() throws Exception {
 		super.tearDown();
 	}
 
 
 	public void testGetTimeSigTicks() {
-		Transcription t = new Transcription(midiTestGetMeterInfo, null);
+		Transcription t = new Transcription(midiTestGetMeterInfoDiminuted);
 		
 		List<Integer[]> expected = new ArrayList<Integer[]>();
 		expected.add(new Integer[]{0, 384});

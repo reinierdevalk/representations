@@ -1,19 +1,39 @@
 package exports;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import junit.framework.TestCase;
+import tbp.Encoding;
+import tbp.Event;
+import tbp.Symbol;
 
 public class MEIExportTest extends TestCase {
 
+	private File encodingTestpiece;
+	private final Rational r128 = new Rational(1, 128);
+	private final Rational r64 = new Rational(1, 64);
+	private final Rational r32 = new Rational(1, 32);
+	private final Rational r16 = new Rational(1, 16);
+	private final Rational r8 = new Rational(1, 8);
+	private final Rational r4 = new Rational(1, 4);
+	private final Rational r2 = new Rational(1, 2);
+	private final Rational r1 = new Rational(1, 1);
+		
+	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
+		encodingTestpiece = new File(MEIExport.rootDir + "data/annotated/encodings/test/"  + "testpiece.tbp");
 	}
 
+
+	@Override
 	protected void tearDown() throws Exception {
 		super.tearDown();
 	}
@@ -100,14 +120,6 @@ public class MEIExportTest extends TestCase {
 	}
 
 
-	private final Rational r128 = new Rational(1, 128);
-	private final Rational r64 = new Rational(1, 64);
-	private final Rational r32 = new Rational(1, 32);
-	private final Rational r16 = new Rational(1, 16);
-	private final Rational r8 = new Rational(1, 8);
-	private final Rational r4 = new Rational(1, 4);
-	private final Rational r2 = new Rational(1, 2);
-	private final Rational r1 = new Rational(1, 1);
 	private List<List<Rational>> getTestFractions() {
 		List<List<Rational>> testFractions = new ArrayList<List<Rational>>();
 		testFractions.add(Arrays.asList(new Rational[]{r128}));
@@ -163,8 +175,99 @@ public class MEIExportTest extends TestCase {
 		
 		return testFractions;
 	}
-	
-	
+
+
+	public void testGetDur() {
+		List<Integer> expected = Arrays.asList(new Integer[]{
+			96, 144, 168, // brevis; 0, 1, 2 dots
+			48, 72, 84, // semibrevis; 0, 1, 2 dots 
+			24, 36, 42, // minim; 0, 1, 2 dots
+			12, 18, 21 // semiminim; 0, 1, 2 dots
+		});
+
+		List<Integer> XMLDurs = Arrays.asList(new Integer[]{
+			1, 1, 1, 2, 2, 2, 4, 4, 4, 8, 8, 8});
+		
+		List<Integer> dots = Arrays.asList(new Integer[]{
+			0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2
+		});
+		List<Integer> actual = new ArrayList<>();
+		for (int i = 0; i < XMLDurs.size(); i++) {
+			actual.add(MEIExport.getDur(XMLDurs.get(i), dots.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+		 	assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testGetXMLDur() {
+		Encoding encoding = new Encoding(encodingTestpiece);
+		
+		List<Integer[]> expected = new ArrayList<>();
+		// Bar 1
+		expected.add(null);
+		expected.add(new Integer[]{2, 0});
+		expected.add(new Integer[]{4, 0});
+		expected.add(new Integer[]{4, 0});
+		expected.add(null);
+		// Bar 2
+		expected.add(new Integer[]{8, 1});
+		expected.add(new Integer[]{16, 0});
+		expected.add(new Integer[]{8, 0});
+		expected.add(null);
+		expected.add(new Integer[]{4, 0});
+		expected.add(new Integer[]{8, 0});
+		expected.add(null);
+		expected.add(null);
+		// Bar 3
+		expected.add(new Integer[]{16, 0});
+		expected.add(null);
+		expected.add(new Integer[]{32, 0});
+		expected.add(null);
+		expected.add(null);
+		// Bar 4
+		expected.add(null);
+		expected.add(null);
+		expected.add(new Integer[]{4, 0});		
+		expected.add(new Integer[]{4, 0});
+		expected.add(new Integer[]{4, 0});
+		expected.add(null);
+
+		List<Integer[]> actual = new ArrayList<>();
+		List<String> events = new ArrayList<>();
+//		List<List<String[]>> ebl = encoding.getExtendedEventsPerBar(true);
+		List<Event> ebl = Encoding.removeDecorativeBarlineEvents(encoding.getEvents());
+//		for (List<String[]> l : ebl) {
+		for (Event e : ebl) {
+			events.add(e.getEncoding().substring(0, 
+				e.getEncoding().lastIndexOf(Symbol.SYMBOL_SEPARATOR)));
+		}
+//		}
+		for (String event : events) {
+			if (!event.equals(Symbol.SYSTEM_BREAK_INDICATOR) &&
+				!event.equals(Symbol.END_BREAK_INDICATOR)) {
+				actual.add(MEIExport.getXMLDur(event));
+			}
+		}
+
+		for (int i = 0; i < expected.size(); i++) {
+			if (expected.get(i) != null) {
+				assertEquals(expected.get(i).length, actual.get(i).length);
+				for (int j = 0; j < expected.get(i).length; j++) {
+					assertEquals(expected.get(i)[j], actual.get(i)[j]);
+				}
+			}
+			else {
+				assertEquals(expected.get(i), actual.get(i));
+			}
+		}
+	}
+
+
 	public void testGetUnitFractions() {
 		List<List<Rational>> expected = new ArrayList<List<Rational>>(getTestFractions());
 		List<List<Rational>> actual = new ArrayList<List<Rational>>();
@@ -207,6 +310,82 @@ public class MEIExportTest extends TestCase {
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));
 		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testRoundAlt() {
+		Rational two = new Rational(2, 1);
+		List<Rational> all = Arrays.asList(new Rational[]{
+			// On grid
+			new Rational(0, 96),
+			new Rational(48, 96),
+			new Rational(96, 96),
+			// Between 0/96 and 1/96
+			new Rational(1, 4*96), // closest to 0/96
+			new Rational(2, 4*96), // equally close to both
+			new Rational(3, 4*96), // closest to 1/96
+			// Between 47/96 and 48/96
+			new Rational(47, 96).add(new Rational(1, 4*96)), // closest to 47/96
+			new Rational(47, 96).add(new Rational(2, 4*96)), // equally close to both
+			new Rational(47, 96).add(new Rational(3, 4*96)), // closest to 48/96
+			// Between 95/96 and 96/96
+			new Rational(95, 96).add(new Rational(1, 4*96)), // closest to 95/96
+			new Rational(95, 96).add(new Rational(2, 4*96)), // equally close to both
+			new Rational(95, 96).add(new Rational(3, 4*96)), // closest to 96/96
+			
+			// Between 2 and 2 1/96
+			two.add(new Rational(1, 4*96)), // closest to 2
+			two.add(new Rational(2, 4*96)), // equally close to both
+			two.add(new Rational(3, 4*96)), // closest to 2 1/96
+			// Between 2 47/96 and 2 48/96
+			two.add(new Rational(47, 96).add(new Rational(1, 4*96))), // closest to 2 47/96
+			two.add(new Rational(47, 96).add(new Rational(2, 4*96))), // equally close to both
+			two.add(new Rational(47, 96).add(new Rational(3, 4*96))), // closest to 2 48/96
+			// Between 2 95/96 and 3
+			two.add(new Rational(95, 96).add(new Rational(1, 4*96))), // closest to 2 95/96
+			two.add(new Rational(95, 96).add(new Rational(2, 4*96))), // equally close to both
+			two.add(new Rational(95, 96).add(new Rational(3, 4*96))), // closest to 3
+		});
+		List<Rational> expected = Arrays.asList(new Rational[]{
+			new Rational(0, 96),
+			new Rational(1, 2),
+			new Rational(1, 1),
+			//
+			new Rational(0, 96), 
+			new Rational(1, 96), 
+			new Rational(1, 96),
+			//
+			new Rational(47, 96), 
+			new Rational(48, 96), 
+			new Rational(48, 96),
+			//
+			new Rational(95, 96), 
+			new Rational(96, 96), 
+			new Rational(96, 96),
+			//
+			two.add(new Rational(0, 96)), 
+			two.add(new Rational(1, 96)), 
+			two.add(new Rational(1, 96)),
+			//
+			two.add(new Rational(47, 96)), 
+			two.add(new Rational(48, 96)), 
+			two.add(new Rational(48, 96)),
+			//
+			two.add(new Rational(95, 96)), 
+			two.add(new Rational(96, 96)), 
+			two.add(new Rational(96, 96)),
+		});
+		List<Integer> gridNums = IntStream.rangeClosed(0, 96).boxed().collect(Collectors.toList());
+		List<Rational> actual = new ArrayList<Rational>();
+		for (Rational r : all) {
+			actual.add(MEIExport.round(r, gridNums));
+		}
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
 	}
 	
 	
@@ -280,6 +459,72 @@ public class MEIExportTest extends TestCase {
 					assertEquals(expected.get(i).get(j).get(k), actual.get(i).get(j).get(k));
 				}
 			}
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testGetDottedNoteLength() {
+		List<Rational> expected = Arrays.asList(new Rational[]{
+			// 1/1
+			new Rational(1, 1), // 0 dots
+			new Rational(3, 2), // 1 dot
+			new Rational(7, 4), // 2 dots
+			new Rational(15, 8), // 3 dots
+			// 1/2
+			new Rational(1, 2), // 0 dots
+			new Rational(3, 4), // 1 dot
+			new Rational(7, 8), // 2 dots
+			new Rational(15, 16), // 3 dots
+			// 1/4
+			new Rational(1, 4), // 0 dots
+			new Rational(3, 8), // 1 dot
+			new Rational(7, 16), // 2 dots
+			new Rational(15, 32), // 3 dots
+
+		});
+
+		List<Rational> undotted = Arrays.asList(new Rational[]{
+			new Rational(1, 1), new Rational(1, 1), new Rational(1, 1), new Rational(1, 1),
+			new Rational(1, 2), new Rational(1, 2), new Rational(1, 2), new Rational(1, 2),
+			new Rational(1, 4), new Rational(1, 4), new Rational(1, 4), new Rational(1, 4)
+		});
+		List<Integer> dots = Arrays.asList(new Integer[]{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3});
+		List<Rational> actual = new ArrayList<>();
+		for (int i = 0; i < undotted.size(); i++) {
+			actual.add(MEIExport.getDottedNoteLength(undotted.get(i), dots.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testGetDottedNoteLengthAlt() {
+		List<Integer> expected = Arrays.asList(new Integer[]{
+			// 1/1
+			96, 144, 168, 180, // 0, 1, 2, 3 dots
+			// 1/2
+			48, 72, 84, 90, // 0, 1, 2, 3 dots
+			// 1/4
+			24, 36, 42, 45 // 0, 1, 2, 3 dots
+		});
+
+		List<Integer> undotted = Arrays.asList(new Integer[]{
+			96, 96, 96, 96, 48, 48, 48, 48, 24, 24, 24, 24
+		});
+		List<Integer> dots = Arrays.asList(new Integer[]{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3});
+		List<Integer> actual = new ArrayList<>();
+		for (int i = 0; i < undotted.size(); i++) {
+			actual.add(MEIExport.getDottedNoteLength(undotted.get(i), dots.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
 		}
 		assertEquals(expected, actual);
 	}

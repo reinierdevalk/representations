@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -13,8 +14,6 @@ import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
-import javax.swing.JFrame;
-import javax.swing.JScrollPane;
 
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationStaff;
@@ -28,24 +27,74 @@ import de.uos.fmt.musitech.data.structure.container.Containable;
 import de.uos.fmt.musitech.data.time.MetricalTimeLine;
 import de.uos.fmt.musitech.data.time.TimeSignatureMarker;
 import de.uos.fmt.musitech.performance.midi.MidiReader;
-import de.uos.fmt.musitech.score.ScoreEditor;
 import de.uos.fmt.musitech.utility.math.Rational;
 import representations.Tablature;
-import representations.Transcription;
+import structure.ScorePiece;
 import tools.ToolBox;
 
 public class MIDIImport {
+	
+	public static final String EXTENSION = ".mid";
 
 	public static void main(String[] args) {
-		File dir = new File("F:/research/data/MIDI/tests/testpiece");
-//		MidiImport midiImport = new MidiImport();
-		Piece fullScore = importMidiFile(dir);
-		ScoreEditor scoreEditor = new ScoreEditor(fullScore.getScore());
-		JFrame fullScoreFrame = new JFrame(dir.toString());
-		fullScoreFrame.add(new JScrollPane(scoreEditor));
-		fullScoreFrame.setSize(800, 600);
-		fullScoreFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		fullScoreFrame.setVisible(true);    
+		List<String> pieces = Arrays.asList(new String[]{
+				"bach-WTC1-fuga_4-BWV_849",
+				"bach-WTC1-fuga_4-BWV_849-split_at_44-65-86_1", 
+				"bach-WTC1-fuga_4-BWV_849-split_at_44-65-86_2",
+				"bach-WTC1-fuga_4-BWV_849-split_at_44-65-86_3",
+				"bach-WTC1-fuga_4-BWV_849-split_at_44-65-86_4",
+				"bach-WTC1-fuga_22-BWV_867",
+				"bach-WTC1-fuga_22-BWV_867-split_at_37_1",
+				"bach-WTC1-fuga_22-BWV_867-split_at_37_2",
+			});
+		
+		for (String s : pieces) {
+			String piece = s + ".mid";
+			File curr = new File("F:/research/data/annotated/MIDI/bach-WTC/thesis/5vv/" + piece);
+			File gith = new File("I:/removed_from_research-software-github/data-old/ISMIR-2018/" + piece);
+		
+//			MidiImport midiImport = new MidiImport();
+			String currStr = "";
+			int count = 1;
+			currStr += Arrays.asList(importMidiFile(curr).getHarmonyTrack().getContentsRecursive()) + "\r\n";
+			currStr += importMidiFile(curr).getMetricalTimeLine() + "\r\n";
+			for (NotationStaff ns : importMidiFile(curr).getScore()) {
+				currStr += "staff " + count + "\r\n";
+				count++;
+				for (NotationVoice nss : ns) {
+					for (NotationChord nc : nss) {
+						for (Note n : nc) {
+							currStr += n + "\r\n";
+						}
+					}
+				}
+			}
+//			System.out.println(currStr);
+			String githStr = "";
+			count = 1;
+			githStr += Arrays.asList(importMidiFile(gith).getHarmonyTrack().getContentsRecursive()) + "\r\n";
+			githStr += importMidiFile(gith).getMetricalTimeLine() + "\r\n";
+			for (NotationStaff ns : importMidiFile(gith).getScore()) {
+				githStr += "staff " + count + "\r\n";
+				count++;
+				for (NotationVoice nss : ns) {
+					for (NotationChord nc : nss) {
+						for (Note n : nc) {
+							githStr += n + "\r\n";
+						}
+					}
+				}
+			}
+//			System.out.println(githStr);
+			System.out.println(currStr.equals(githStr));
+		}
+		System.exit(0);
+//		ScoreEditor scoreEditor = new ScoreEditor(fullScore.getScore());
+//		JFrame fullScoreFrame = new JFrame(dir.toString());
+//		fullScoreFrame.add(new JScrollPane(scoreEditor));
+//		fullScoreFrame.setSize(800, 600);
+//		fullScoreFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//		fullScoreFrame.setVisible(true);    
 	}
 
 
@@ -92,7 +141,7 @@ public class MIDIImport {
 	public static Piece importMidiFile(File f) {
 		String fileName = f.getName();
 		URL url;
-		if (!fileName.endsWith(".mid")) {
+		if (!fileName.endsWith(EXTENSION)) {
 			throw new RuntimeException("ERROR: the file is not a MIDI file.");
 		}
 		try {
@@ -138,7 +187,7 @@ public class MIDIImport {
 		Piece p = new MidiReader().getPiece(url);
 		boolean quantiseTriplets = false;
 		if (quantiseTriplets) {
-			int srv = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
+			int srv = Tablature.SRV_DEN;
 			NotationSystem ns = p.getScore(); 
 			for (int i = 0; i < ns.size(); i++) {
 				NotationVoice voice = ns.get(i).get(0);  
@@ -172,8 +221,8 @@ public class MIDIImport {
 							durQuantised = durQuantised.mul(new Rational(1, srv));
 						}
 						if (!onsetQuantised.equals(onset) || !durQuantised.equals(dur)) {
-							Note quantisedNote = Transcription.createNote(
-								originalNote.getMidiPitch(), onsetQuantised, durQuantised);
+							Note quantisedNote = ScorePiece.createNote(
+								originalNote.getMidiPitch(), onsetQuantised, durQuantised, -1, null);
 							notationChord.remove(originalNote);
 							notationChord.add(quantisedNote);
 						}
@@ -222,7 +271,7 @@ public class MIDIImport {
 //				System.out.println(i + "  is leeg" );
 //			}
 //		}
-	
+
 		Rational mltpl = null;
 //		Rational mltpl = new Rational(27, 32);
 		if (mltpl != null) {
@@ -283,7 +332,7 @@ public class MIDIImport {
 		if (f.isDirectory()) {
 			String[] fileNames = f.list();
 			for (String s : fileNames) {
-				if (s.endsWith(".mid")) {
+				if (s.endsWith(EXTENSION)) {
 					midiFileNames.add(s);  
 				}
 			}
@@ -297,7 +346,7 @@ public class MIDIImport {
 		// If f is not a directory, i.e., a MIDI file 
 		else {
 			String s = f.getName();
-			if (s.endsWith(".mid")) {
+			if (s.endsWith(EXTENSION)) {
 				midiFileNames.add(s);  
 			}
 		}
@@ -321,7 +370,7 @@ public class MIDIImport {
 			staff.add(notationVoice);
 			
 			// c. Create a Piece from the MIDI file. The Piece is a single part
-			if (!midiFileName.endsWith(".mid")) {
+			if (!midiFileName.endsWith(EXTENSION)) {
 				continue;
 			}
 			try {
@@ -398,7 +447,7 @@ public class MIDIImport {
 		// Make a list that contains only the MIDI file names in fileNames
 		List<String> midiFileNames = new ArrayList<String>();
 		for (String s : fileNames) {
-			if (s.endsWith(".mid")) {
+			if (s.endsWith(EXTENSION)) {
 				midiFileNames.add(s);  
 			}
 		}
@@ -411,7 +460,7 @@ public class MIDIImport {
 
 		URL url;
 		for (String midiFileName : midiFileNames) {
-			if (!midiFileName.endsWith(".mid")) {
+			if (!midiFileName.endsWith(EXTENSION)) {
 				continue;
 			}
 			try {
