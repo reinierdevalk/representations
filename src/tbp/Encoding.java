@@ -80,6 +80,7 @@ public class Encoding implements Serializable {
 	private String header;
 	private TabSymbolSet tabSymbolSet;
 	private List<Event> events;
+	private Timeline timeline;
 	private List<List<String>> listsOfSymbols;
 	private List<List<Integer>> listsOfStatistics;
 
@@ -127,6 +128,7 @@ public class Encoding implements Serializable {
 		}
 		if (stage == SYNTAX_CHECKED) {
 			setEvents();
+			setTimeline();
 			setListsOfSymbols();
 			setListsOfStatistics();
 		}
@@ -341,6 +343,11 @@ public class Encoding implements Serializable {
 	}
 
 
+	void setTimeline() {
+		timeline = new Timeline(this);
+	}
+
+
 	void setListsOfSymbols() {
 		listsOfSymbols = makeListsOfSymbols();
 	}
@@ -360,13 +367,13 @@ public class Encoding implements Serializable {
 			for (String currSymbol : 
 				events.get(i).getEncoding().split("\\" + Symbol.SYMBOL_SEPARATOR)) {
 				allSymbols.add(currSymbol);
-				if(TabSymbol.getTabSymbol(currSymbol, getTabSymbolSet()) != null) {
+				if(Symbol.getTabSymbol(currSymbol, getTabSymbolSet()) != null) {
 					tabSymbols.add(currSymbol);
 				}
-				else if (RhythmSymbol.getRhythmSymbol(currSymbol) != null) {
+				else if (Symbol.getRhythmSymbol(currSymbol) != null) {
 					rhythmSymbols.add(currSymbol);
 				}
-				else if (MensurationSign.getMensurationSign(currSymbol) != null) {
+				else if (Symbol.getMensurationSign(currSymbol) != null) {
 					mensurationSigns.add(currSymbol);
 				}
 				else if (Symbol.getConstantMusicalSymbol(currSymbol) != null && 
@@ -531,6 +538,11 @@ public class Encoding implements Serializable {
 	 */
 	public List<Event> getEvents() {
 		return events;
+	}
+
+
+	public Timeline getTimeline() {
+		return timeline;
 	}
 
 
@@ -867,10 +879,10 @@ public class Encoding implements Serializable {
 				// Missing symbol found if symbol at i is an empty string (ssInd == i);
 				// unknown symbol found if symbol at i is neither a CMS nor a VMS 
 				if (s.equals("") || 
-					(ConstantMusicalSymbol.getConstantMusicalSymbol(s) == null &&
-					TabSymbol.getTabSymbol(s, tss) == null && 
-					RhythmSymbol.getRhythmSymbol(s) == null && 
-					MensurationSign.getMensurationSign(s) == null)) {
+					(Symbol.getConstantMusicalSymbol(s) == null &&
+					Symbol.getTabSymbol(s, tss) == null && 
+					Symbol.getRhythmSymbol(s) == null && 
+					Symbol.getMensurationSign(s) == null)) {
 					int errorInd = inds.indexOf(i);
 					return new String[]{
 						String.valueOf(errorInd),
@@ -956,8 +968,8 @@ public class Encoding implements Serializable {
 				String.valueOf(errorInd),
 				String.valueOf(errorInd + s.length()),
 				"INVALID ENCODING ERROR -- Insert a space after this " + 
-					(TabSymbol.getTabSymbol(s, tss) != null ? "TabSymbol" :
-					(RhythmSymbol.getRhythmSymbol(s) != null ? "RhythmSymbol" : 
+					(Symbol.getTabSymbol(s, tss) != null ? "TabSymbol" :
+					(Symbol.getRhythmSymbol(s) != null ? "RhythmSymbol" : 
 					"MensurationSign")) + ".",
 				"See " + LR2
 			};
@@ -986,24 +998,24 @@ public class Encoding implements Serializable {
 					// - another TS, in which case both are part of the same chord
 					// - a space, in which case it is the only or last TS of a chord
 					boolean lr4Broken = 
-						TabSymbol.getTabSymbol(s, tss) != null && 
-						TabSymbol.getTabSymbol(nextS, tss) == null && !nextS.equals(sp);
+						Symbol.getTabSymbol(s, tss) != null && 
+						Symbol.getTabSymbol(nextS, tss) == null && !nextS.equals(sp);
 					// LAYOUT RULE 5: A rest (or a rhythm dot at the beginning of system or 
 					// bar) must be succeeded by a space. I.e., a RS can only be succeeded by 
 					// - a TS, in which case it is the first symbol of a chord
 					// - a space, in which case it denotes a rest or a rhythm dot at the 
 					//   beginning of a bar
 					boolean lr5Broken = 
-						RhythmSymbol.getRhythmSymbol(s) != null && 
-						TabSymbol.getTabSymbol(nextS, tss) == null && !nextS.equals(sp); 					
+						Symbol.getRhythmSymbol(s) != null && 
+						Symbol.getTabSymbol(nextS, tss) == null && !nextS.equals(sp); 					
 					// LAYOUT RULE 6: A MensurationSign must be succeeded by a space. I.e., 
 					// a MS can only be succeeded by 
 					// - another MS, in which case it is the first encoded MS of a compound MS
 					// - a space, in which case it is either a single MS or the last 
 					//   encoded MS of a compound MS
 					boolean lr6Broken = 
-						MensurationSign.getMensurationSign(s) != null &&
-						MensurationSign.getMensurationSign(nextS) == null && !nextS.equals(sp);
+						Symbol.getMensurationSign(s) != null &&
+						Symbol.getMensurationSign(nextS) == null && !nextS.equals(sp);
 					if (lr4Broken || lr5Broken || lr6Broken) {
 						int errorInd = 
 							inds.indexOf((cleanEnc.substring(i, i+1).equals(sbi)) ? i+1 : i);
@@ -1033,7 +1045,7 @@ public class Encoding implements Serializable {
 					// Create symbol; remove any SBI (at index leftInd) directly preceding it
 					String s = cleanEnc.substring(leftInd, rightInd).replace(sbi, "");
 					// If symbol is a TS: reconstruct event and check LRs
-					if (TabSymbol.getTabSymbol(s, tss) != null) {
+					if (Symbol.getTabSymbol(s, tss) != null) {
 						String event = s;
 						int leftIndEvent = -1;
 						for (int newRightInd = cleanEnc.lastIndexOf(ss, leftInd); 
@@ -1042,8 +1054,8 @@ public class Encoding implements Serializable {
 							newLeftInd = newLeftInd == -1 ? 0 : newLeftInd + 1;
 							// Create symbol; remove any SBI (at index newleftInd) directly preceding it
 							String prevS = cleanEnc.substring(newLeftInd, newRightInd).replace(sbi,  ""); 
-							if (TabSymbol.getTabSymbol(prevS, tss) != null ||
-								RhythmSymbol.getRhythmSymbol(prevS) != null) {
+							if (Symbol.getTabSymbol(prevS, tss) != null ||
+								Symbol.getRhythmSymbol(prevS) != null) {
 								event = prevS + ss + event;
 								leftIndEvent = newLeftInd;
 							}
@@ -1055,8 +1067,8 @@ public class Encoding implements Serializable {
 						List<String> symbols = Arrays.asList(event.split("\\" + ss));
 						// LAYOUT RULE 7: A vertical sonority can contain only one TabSymbol per course
 						List<Integer> courses = new ArrayList<>();
-						symbols.forEach(item -> { if (TabSymbol.getTabSymbol(item, tss) != null) {
-							courses.add(TabSymbol.getTabSymbol(item, tss).getCourse());}});
+						symbols.forEach(item -> { if (Symbol.getTabSymbol(item, tss) != null) {
+							courses.add(Symbol.getTabSymbol(item, tss).getCourse());}});
 						List<Integer> uniqueCourses = 
 							courses.stream().distinct().collect(Collectors.toList());
 						boolean lr7Broken = courses.size() > uniqueCourses.size();
@@ -1069,7 +1081,7 @@ public class Encoding implements Serializable {
 							Collectors.toList());
 						List<Boolean> symbolIsRs = new ArrayList<>();
 						symbols.forEach(item -> 
-							symbolIsRs.add(RhythmSymbol.getRhythmSymbol(item) != null));					
+							symbolIsRs.add(Symbol.getRhythmSymbol(item) != null));					
 						boolean firstIsNotRs = (symbols.size() > 1 && symbolIsRs.contains(true) && 
 							symbolIsRs.indexOf(true) != 0);
 						boolean lr8Broken = firstIsNotRs || !courses.equals(orderedReversedCourses);
@@ -1124,7 +1136,7 @@ public class Encoding implements Serializable {
 			leftInd = cleanEnc.lastIndexOf(ss, rightInd - 1);
 			leftInd = leftInd == -1 ? 0 : leftInd + 1;
 			String prevS = cleanEnc.substring(leftInd, rightInd);
-			if ((ConstantMusicalSymbol.getConstantMusicalSymbol(prevS) != null) == condition) {
+			if ((Symbol.getConstantMusicalSymbol(prevS) != null) == condition) {
 				break;
 			}
 			i = ind;
@@ -1190,7 +1202,7 @@ public class Encoding implements Serializable {
 						successiveRests.get(successiveRests.size()-1).contains(RhythmSymbol.TRIPLET_CLOSE);
 					int totalDur = 0;
 					for (String s : successiveRests) {
-						totalDur += RhythmSymbol.getRhythmSymbol(s).getDuration();
+						totalDur += Symbol.getRhythmSymbol(s).getDuration();
 					}
 //					System.out.println(combinedIsOpen);
 //					System.out.println(combinedIsClose);
@@ -1199,7 +1211,7 @@ public class Encoding implements Serializable {
 					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
 						// Do not consider coronas
 						if (rs.getDuration() == totalDur && 
-							!rs.getEncoding().startsWith(RhythmSymbol.CORONA_BREVIS.getEncoding().substring(0, 2))) {
+							!rs.getEncoding().startsWith(Symbol.CORONA_BREVIS.getEncoding().substring(0, 2))) {
 							// In case of triplets beginning/ending: make sure the RS's encoding contains the 
 							// correct indicator (open/close) (necessary because tr[<RS> and tr]<RS> have the 
 							// same duration)
@@ -1273,20 +1285,20 @@ public class Encoding implements Serializable {
 
 		if (type.equals("TabSymbol")) {
 			for (String s : event.split("\\" + ss)) {
-				if (TabSymbol.getTabSymbol(s, tss) != null) {
+				if (Symbol.getTabSymbol(s, tss) != null) {
 					return true;
 				}
 			}
 		}
 		else if (type.equals("RhythmSymbol")) {
-			return RhythmSymbol.getRhythmSymbol(event.substring(0, event.indexOf(ss))) != null;
+			return Symbol.getRhythmSymbol(event.substring(0, event.indexOf(ss))) != null;
 		}
 		else if (type.equals("rest")) {
-			return (RhythmSymbol.getRhythmSymbol(event.substring(0, event.indexOf(ss))) != null) &&
+			return (Symbol.getRhythmSymbol(event.substring(0, event.indexOf(ss))) != null) &&
 				(event.indexOf(ss) == event.lastIndexOf(ss));
 		}		
 		else if (type.equals("MensurationSign")) {
-			return MensurationSign.getMensurationSign(event.substring(0, event.indexOf(ss))) != null;
+			return Symbol.getMensurationSign(event.substring(0, event.indexOf(ss))) != null;
 		}
 		else if (type.equals("barline")) {
 			return Symbol.getConstantMusicalSymbol(event.substring(0, event.indexOf(ss))) != null &&
@@ -1358,7 +1370,7 @@ public class Encoding implements Serializable {
 	 * @return
 	 */ 
 	// TESTED
-	public static String recompose(List<String> events) { // TODO move to Tablature class?
+	public static String recompose(List<String> events) {
 		String recomposed = "";
 
 		String ss = Symbol.SYMBOL_SEPARATOR;
@@ -1370,7 +1382,7 @@ public class Encoding implements Serializable {
 			if (!s.equals(sbi) && !s.equals(ebi)	) {
 				String first = s.substring(0, s.indexOf(ss));
 				// Add a line break after each CMS (space, barline) 
-				if (ConstantMusicalSymbol.getConstantMusicalSymbol(first) != null) {
+				if (Symbol.getConstantMusicalSymbol(first) != null) {
 					recomposed += "\r\n";
 				}
 			}
@@ -1399,77 +1411,11 @@ public class Encoding implements Serializable {
 	// NOT TESTED (wrapper method)
 	public void augment(int thresholdDur, int rescaleFactor, String augmentation) {		
 		String rawEncAugm = 
-			augmentHeader(getHeader(), getMetersBarsDiminutions(), getMetadata(), 
-			rescaleFactor, augmentation) + 				
+			augmentHeader(getHeader(), getTimeline(), getMetadata(), rescaleFactor, augmentation) + 				
 			"\r\n\r\n" + 
-			recompose(augmentEvents(decompose(true, true), getMetersBarsDiminutions(), 
-			getTabSymbolSet(), thresholdDur, rescaleFactor, augmentation));
+			recompose(augmentEvents(decompose(true, true), getTimeline(), getTabSymbolSet(), 
+			thresholdDur, rescaleFactor, augmentation));
 		this.init(rawEncAugm, getPiecename(), SYNTAX_CHECKED);
-	}
-
-
-	List<Integer[]> getTimeline() {
-		String tc = getTagContent(getHeader(), METER_INFO_TAG);
-		List<Integer[]> timeline = new ArrayList<>();
-		for (String s : tc.split(";")) {
-			s = s.trim();
-			String meter = s.substring(0, s.indexOf("(")).trim();
-			int meterNum = Integer.valueOf(meter.split("/")[0]);
-			int meterDen = Integer.valueOf(meter.split("/")[1]);
-			String bars = s.substring(s.indexOf("(" + 1, s.indexOf(")"))).trim();
-			int startBar = 
-				bars.contains("-") ? Integer.valueOf(bars.split("-")[0]) : Integer.valueOf(bars);
-			int endBar = 
-				bars.contains("-") ? Integer.valueOf(bars.split("-")[1]) : startBar; 
-//			timeline.add(new Integer[])
-		}
-		return null;
-	}
-
-
-	static String getTasgContent(String argHeader, String argTag) {
-		// makeHeader() guarantees that (i) there is a space after the colon following
-		// argTag, and (ii) the content following that space, which is succeeded by the 
-		// CLOSE_METADATA_BRACKET, is trimmed
-		int startInd = argHeader.indexOf(argTag) + argTag.length() + ": ".length(); 
-		return argHeader.substring(startInd, argHeader.indexOf(CLOSE_METADATA_BRACKET, startInd));
-	}
-
-
-	/**
-	 * Parses the meter information from the metadata. 
-	 * 
-	 * @return A List containing, for each meter, an Integer[] containing
-	 * <ul>
-	 * <li>As element 0: the meter's numerator.</li>
-	 * <li>As element 1: the meter's denominator.</li>
-	 * <li>As element 2: the meter's first bar.</li>
-	 * <li>As element 3: the meter's last bar.</li>
-	 * <li>As element 4: the meter's diminution.</li>
-	 * </ul>
-	 */
-	// TESTED
-	public List<Integer[]> getMetersBarsDiminutions() {
-		List<Integer[]> mbd = new ArrayList<>();
-		List<String> metersBars = new ArrayList<>();
-		Arrays.stream(getMetadata().get(METADATA_TAGS[METER_INFO_IND]).split(";"))
-			.forEach(m -> metersBars.add(m.trim()));
-		List<String> diminutions = new ArrayList<>();
-		Arrays.stream(getMetadata().get(METADATA_TAGS[DIMINUTION_IND]).split(";"))
-			.forEach(m -> diminutions.add(m.trim()));
-		for (int i = 0; i < metersBars.size(); i++) {
-			String m = metersBars.get(i);
-			String meter = m.substring(0, m.indexOf("(")).trim();
-			String bars = m.substring(m.indexOf("(") + 1, m.indexOf(")")).trim();
-			mbd.add(new Integer[]{
-				Integer.valueOf(meter.split("/")[0]), 
-				Integer.valueOf(meter.split("/")[1]), 
-				bars.contains("-") ? Integer.valueOf(bars.split("-")[0]) : Integer.valueOf(bars),
-				bars.contains("-") ? Integer.valueOf(bars.split("-")[1]) : Integer.valueOf(bars),
-				Integer.valueOf(diminutions.get(i)) 		
-			});
-		}		
-		return mbd;
 	}
 
 
@@ -1477,43 +1423,49 @@ public class Encoding implements Serializable {
 	 * Augments the given header according to the given augmentation. 
 	 * 
 	 * @param argHeader
+	 * @param tl
 	 * @param metadata
-	 * @param mbd
 	 * @param rescaleFactor
 	 * @param augmentation
 	 * @return
 	 */
 	// TESTED
-	static String augmentHeader(String argHeader, List<Integer[]> mbd, 
-		Map<String, String> metadata, int rescaleFactor, String augmentation) {
+	static String augmentHeader(String argHeader, Timeline tl, Map<String, String> metadata, 
+		int rescaleFactor, String augmentation) {
+
+		List<Integer[]> ts = tl.getTimeSignatures();
+		List<Integer[]> b = tl.getBars();
+		List<Integer> d = tl.getDiminutions();
 
 		if (!augmentation.equals("deornament")) {
 			// Make augmented content
 			String miAugmContent = "";
 			String dimAugmContent = "";
 			if (augmentation.equals("reverse")) {
-				int lastBar = mbd.get(mbd.size() - 1)[3];
-				for (int i = mbd.size() - 1; i >= 0; i--) {
-					Integer[] curr = mbd.get(i);
+				int lastBar = b.get(b.size() - 1)[1];
+				for (int i = ts.size() - 1; i >= 0; i--) {
+					Integer[] currTs = ts.get(i);
+					Integer[] currB = b.get(i);
 					miAugmContent += 
-						curr[0] + "/" + curr[1] + " " + 
-						"(" + (curr[2] == curr[3] ? (lastBar - curr[2] + 1):
-						(lastBar - (curr[3]) + 1) + "-" + (lastBar - curr[2] + 1)) + 
+						currTs[0] + "/" + currTs[1] + " " + 
+						"(" + (currB[0] == currB[1] ? (lastBar - currB[0] + 1):
+						(lastBar - (currB[1]) + 1) + "-" + (lastBar - currB[0] + 1)) + 
 						(i > 0 ? "); " : ")");
-					dimAugmContent += curr[4] + (i > 0 ? "; " : ""); 
+					dimAugmContent += d.get(i) + (i > 0 ? "; " : "");
 				}
 			}
 			else if (augmentation.equals("rescale")) {
-				for (int i = 0; i < mbd.size(); i++) {
-					Integer[] curr = mbd.get(i);
+				for (int i = 0; i < ts.size(); i++) {
+					Integer[] currTs = ts.get(i);
+					Integer[] currB = b.get(i);
 					miAugmContent += 
-						curr[0] + "/" + (rescaleFactor > 0 ? curr[1]/rescaleFactor : 
-						curr[1]*Math.abs(rescaleFactor)) + " " + 
-						"(" + (curr[2] == curr[3] ? curr[2] : (curr[2] + "-" + curr[3])) + 
-						(i < mbd.size() -1 ? "); " : ")");
+						currTs[0] + "/" + (rescaleFactor > 0 ? currTs[1]/rescaleFactor : 
+						currTs[1]*Math.abs(rescaleFactor)) + " " + 
+						"(" + (currB[0] == currB[1] ? currB[0] : (currB[0] + "-" + currB[1])) + 
+						(i < ts.size() -1 ? "); " : ")");
 				}
 			}
-	
+
 			// Replace original content with augmented content
 			argHeader = argHeader.replace(metadata.get(METADATA_TAGS[METER_INFO_IND]), miAugmContent);
 			if (augmentation.equals("reverse")) {
@@ -1528,7 +1480,7 @@ public class Encoding implements Serializable {
 	 * Augments the given list of events according to the given augmentation.
 	 * 
 	 * @param events List of events with any missing RS complemented.
-	 * @param mbd
+	 * @param tl
 	 * @param tss
 	 * @param thresholdDur
 	 * @param rescaleFactor
@@ -1538,32 +1490,39 @@ public class Encoding implements Serializable {
 	 * @return
 	 */
 	// TESTED
-	static List<String> augmentEvents(List<String> events, List<Integer[]> mbd, TabSymbolSet tss, 
+	static List<String> augmentEvents(List<String> events, Timeline tl, TabSymbolSet tss, 
 		int thresholdDur, int rescaleFactor, String augmentation) {
+
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		String ebi = Symbol.END_BREAK_INDICATOR;
 
 		List<String> eventsAugm = new ArrayList<>();
 		if (augmentation.equals("reverse")) {
-			Collections.reverse(mbd);
+			List<Integer[]> bars = tl.getBars();
+			int lastBar = bars.get(bars.size() - 1)[1];
+			Collections.reverse(bars);
+			// Adapt bar numbers
+			for (int i = 0; i < bars.size(); i++) {
+				Integer[] in = bars.get(i); 
+				bars.set(i, new Integer[]{lastBar - in[1] + 1, in[1] = lastBar - in[0] + 1});
+			}
+
+			List<Integer[]> ts = tl.getTimeSignatures();
+			Collections.reverse(ts);
+			// Adapt onset times
+			for (int i = 0; i < ts.size(); i++) {
+				ts.get(i)[2] = i == 0 ? 0 : Timeline.getTimeSignatureOnset(i, ts, bars);
+			}
+
 			// Get the encodings of the MSs
 			List<String> msEncodings = new ArrayList<>();
-			mbd.forEach(in -> msEncodings.add(MensurationSign.getMensurationSign(in).getEncoding() + 
-				Symbol.SYMBOL_SEPARATOR + Symbol.SPACE.getEncoding() + Symbol.SYMBOL_SEPARATOR));
-			// Get the onsets (in TabSymbol durations) of the MSs
-			// The onset time of a MS is the sum of the durations of all preceding meter sections, 
-			// where the duration of a meter section = (meter * number of bars * a whole note)
-			List<Integer> msOnsets = new ArrayList<>(); // TODO put in getMetersBarsDiminutions()?
-			msOnsets.add(0);
-			for (int i = 1; i < mbd.size(); i++) {
-				Integer[] prev = mbd.get(i-1);
-				msOnsets.add(msOnsets.get(i-1) + 
-					(int) new Rational(prev[0], prev[1])
-					.mul((prev[3] - prev[2]) + 1)
-					.mul(Symbol.BREVIS.getDuration()).toDouble()); 
-			}
+			ts.forEach(in -> msEncodings
+				.add(Symbol.getMensurationSign(new Integer[]{in[0], in[1]}, -1)
+				.getEncoding() + ss + Symbol.SPACE.getEncoding() + ss));
 
 			// 1. Strip events that need to be re-placed from events; reverse events
 			// EBI
-			events = events.subList(0, events.indexOf(Symbol.END_BREAK_INDICATOR));
+			events = events.subList(0, events.indexOf(ebi));
 			// Decorative opening barline
 			String first = events.get(0);
 			if (assertEventType(first, tss, "barline")) {
@@ -1581,12 +1540,13 @@ public class Encoding implements Serializable {
 			Collections.reverse(events);
 
 			// 2. Construct eventsAugm 
-			// Decorative opening barline 
+			// Decorative opening barline
 			if (assertEventType(first, tss, "barline")) {
 				eventsAugm.add(0, first);
 			}			
 			// Events and Mss
 			int mt = 0;
+			List<Integer> msOnsets = ToolBox.getItemsAtIndex(ts, 2);
 			for (int i = 0; i < events.size(); i++) {
 				String e = events.get(i);
 				if (assertEventType(e, tss, "RhythmSymbol")) {
@@ -1594,7 +1554,7 @@ public class Encoding implements Serializable {
 						String ms = msEncodings.get(msOnsets.indexOf(mt));
 						eventsAugm.add(ms);
 					}	
-					mt += Symbol.getRhythmSymbol(e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))).getDuration();
+					mt += Symbol.getRhythmSymbol(e.substring(0, e.indexOf(ss))).getDuration();
 				}
 				eventsAugm.add(e);
 			}
@@ -1602,15 +1562,15 @@ public class Encoding implements Serializable {
 			if (assertEventType(last, tss, "barline")) {
 				eventsAugm.add(last);
 			}
-			eventsAugm.add(Symbol.END_BREAK_INDICATOR);
+			eventsAugm.add(ebi);
 		}
 		else {			
 			for (int i = 0; i < events.size(); i++) {
 				String e = events.get(i);
 				// If e is a RS event
 				if (assertEventType(e, null, "RhythmSymbol")) {
-					String[] symbols = e.split("\\" + Symbol.SYMBOL_SEPARATOR);
-					RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
+					String[] symbols = e.split("\\" + ss);
+					RhythmSymbol r = Symbol.getRhythmSymbol(symbols[0]);
 					if (augmentation.equals("deornament")) {
 						// If e is ornamental (in which case it consists of only a RS, a TS, and a space) and 
 						// not part of an ornamental sequence at the beginning of the Encoding (in which case 
@@ -1622,8 +1582,8 @@ public class Encoding implements Serializable {
 								String eNext = events.get(j);
 								// If eNext is a RS event
 								if (assertEventType(eNext, null, "RhythmSymbol")) {
-									String[] symbolsNext = eNext.split("\\" + Symbol.SYMBOL_SEPARATOR);
-									RhythmSymbol rNext = RhythmSymbol.getRhythmSymbol(symbolsNext[0]);
+									String[] symbolsNext = eNext.split("\\" + ss);
+									RhythmSymbol rNext = Symbol.getRhythmSymbol(symbolsNext[0]);
 									// If eNext is ornamental: increment duration of ornamental sequence
 									if (rNext.getDuration() < thresholdDur && symbolsNext.length == 3) {
 										durOrnSeq += rNext.getDuration();
@@ -1631,15 +1591,15 @@ public class Encoding implements Serializable {
 									// If not: make ePrevDeorn, which replaces ePrev
 									else {
 										String ePrev = events.get(i-1);
-										String[] symbolsPrev = ePrev.split("\\" + Symbol.SYMBOL_SEPARATOR);
-										RhythmSymbol rPrev = RhythmSymbol.getRhythmSymbol(symbolsPrev[0]);
+										String[] symbolsPrev = ePrev.split("\\" + ss);
+										RhythmSymbol rPrev = Symbol.getRhythmSymbol(symbolsPrev[0]);
 										String ePrevDeorn = Symbol.getRhythmSymbol(
 											rPrev.getDuration() + durOrnSeq,
 											rPrev.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR),
 											rPrev.getBeam(),
 											rPrev.isTriplet()
 												).getEncoding();
-										ePrevDeorn += ePrev.substring(ePrev.indexOf(Symbol.SYMBOL_SEPARATOR));
+										ePrevDeorn += ePrev.substring(ePrev.indexOf(ss));
 										eventsAugm.set(eventsAugm.lastIndexOf(ePrev), ePrevDeorn);
 										i = j-1;
 										break;
@@ -1663,7 +1623,7 @@ public class Encoding implements Serializable {
 							r.getBeam(), 
 							r.isTriplet()
 						).getEncoding();
-						eResc += e.substring(e.indexOf(Symbol.SYMBOL_SEPARATOR), e.length());
+						eResc += e.substring(e.indexOf(ss), e.length());
 						eventsAugm.add(eResc);
 					}
 				}
@@ -1745,10 +1705,10 @@ public class Encoding implements Serializable {
 					nextEncSymbol = currSysEnc.substring(nextSsInd + 1, nextNextSsInd);
 				}
 				
-				ConstantMusicalSymbol cms = ConstantMusicalSymbol.getConstantMusicalSymbol(encSymbol);
-				TabSymbol ts = TabSymbol.getTabSymbol(encSymbol, currTss);
-				RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(encSymbol);
-				MensurationSign ms = MensurationSign.getMensurationSign(encSymbol);
+				ConstantMusicalSymbol cms = Symbol.getConstantMusicalSymbol(encSymbol);
+				TabSymbol ts = Symbol.getTabSymbol(encSymbol, currTss);
+				RhythmSymbol rs = Symbol.getRhythmSymbol(encSymbol);
+				MensurationSign ms = Symbol.getMensurationSign(encSymbol);
 				// ConstantMusicalSymbol
 				if (cms != null) {
 					staffContent.add(new String[]{encSymbol, String.valueOf(segment), null, null});
@@ -1946,7 +1906,7 @@ public class Encoding implements Serializable {
 			while (nextSsIndex != -1) {
 				String symbol = system.substring(ssIndex + 1, nextSsIndex);
 				// If symbol is a CMS       
-				if (ConstantMusicalSymbol.getConstantMusicalSymbol(symbol) != null) { 
+				if (Symbol.getConstantMusicalSymbol(symbol) != null) { 
 					// a. If symbol is a space, increment by 2 (space + preceding event)
 					if (symbol.equals(sp)) {
 						lengthCurrSystem += 2;
@@ -2108,7 +2068,7 @@ public class Encoding implements Serializable {
 							String dbld = 
 								toRemove.substring(toRemove.indexOf("/") + 1, toRemove.indexOf(ss));
 							TabSymbol tsInArgTss = 
-								Symbol.getTabSymbolEquivalent(TabSymbol.getTabSymbol(dbld, getTabSymbolSet()),
+								Symbol.getTabSymbolEquivalent(Symbol.getTabSymbol(dbld, getTabSymbolSet()),
 								argTss);
 							String fret = tsInArgTss.getSymbol();
 							int course = tsInArgTss.getCourse();
@@ -2353,7 +2313,7 @@ public class Encoding implements Serializable {
 			boolean isBarline = 
 				Symbol.getConstantMusicalSymbol(firstSymbol) != null && 
 				Symbol.getConstantMusicalSymbol(firstSymbol).isBarline();
-			RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(firstSymbol);
+			RhythmSymbol rs = Symbol.getRhythmSymbol(firstSymbol);
 
 			// If event is a TS event with no RS: prepend RS
 			if (complementRs) {
@@ -2501,14 +2461,14 @@ public class Encoding implements Serializable {
 			if (!t.equals(Symbol.SYSTEM_BREAK_INDICATOR)) {
 				String first = t.substring(0, t.indexOf(Symbol.SYMBOL_SEPARATOR));
 				// RS: set activeRs
-				if (RhythmSymbol.getRhythmSymbol(first) != null) {
+				if (Symbol.getRhythmSymbol(first) != null) {
 					activeRs = first;
 				}
 				// No RS: prepend activeRs to event if applicable  
 				else {
 					// Only if event is not a MS or a CMS (barline)
-					if (MensurationSign.getMensurationSign(first) == null && 
-						ConstantMusicalSymbol.getConstantMusicalSymbol(first) == null) {
+					if (Symbol.getMensurationSign(first) == null && 
+						Symbol.getConstantMusicalSymbol(first) == null) {
 						allEvents.set(j, activeRs + Symbol.SYMBOL_SEPARATOR + t);
 					}
 				}
@@ -3152,7 +3112,7 @@ public class Encoding implements Serializable {
 		}
 		String[] split = event.split("\\" + ss);
 		for (String s : event.split("\\" + ss)) {
-			if (TabSymbol.getTabSymbol(s, tss) != null) {
+			if (Symbol.getTabSymbol(s, tss) != null) {
 				return true;
 			}
 		}
@@ -3172,7 +3132,7 @@ public class Encoding implements Serializable {
 		if (!event.endsWith(ss)) {
 			event += ss;
 		}
-		return RhythmSymbol.getRhythmSymbol(event.substring(0, event.indexOf(ss))) != null;
+		return Symbol.getRhythmSymbol(event.substring(0, event.indexOf(ss))) != null;
 	}
 
 
@@ -3200,7 +3160,7 @@ public class Encoding implements Serializable {
 			return false;
 		}
 		else {
-			return MensurationSign.getMensurationSign(event.substring(0, event.indexOf(ss))) != null;
+			return Symbol.getMensurationSign(event.substring(0, event.indexOf(ss))) != null;
 		}
 	}
 
@@ -3368,7 +3328,7 @@ public class Encoding implements Serializable {
 			// If e is not a barline, a SBI, or an EBI
 			if (!e.equals(sbi) && !e.equals(ebi) && !assertEventType(e, null, "barline")) {
 				String[] symbols = e.split("\\" + ss);
-				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
+				RhythmSymbol r = Symbol.getRhythmSymbol(symbols[0]);
 				// If the event is an ornamentation (which always consists of only a RS, 
 				// a TS, and a space)
 				if (r != null && r.getDuration() < dur && symbols.length == 3) {
@@ -3381,7 +3341,7 @@ public class Encoding implements Serializable {
 							if (!tPrev.equals(sbi) && !assertEventType(tPrev, null, "barline")) {
 								pre = tPrev;
 								durPre = 
-									RhythmSymbol.getRhythmSymbol(tPrev.substring(0, 
+									Symbol.getRhythmSymbol(tPrev.substring(0, 
 									tPrev.indexOf(ss))).getDuration();
 								indPre = j;
 								break;
@@ -3470,7 +3430,7 @@ public class Encoding implements Serializable {
 			// If e is not a barline, a SBI, or an EBI
 			if (!e.equals(sbi) && !e.equals(ebi) && !assertEventType(e, null, "barline")) {
 				String[] symbols = e.split("\\" + ss);
-				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
+				RhythmSymbol r = Symbol.getRhythmSymbol(symbols[0]);
 				String newRs = "";
 				if (r != null) {
 					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
@@ -3515,7 +3475,7 @@ public class Encoding implements Serializable {
 			// If e is not a barline, a SBI, or an EBI
 			if (!e.equals(sbi) && !e.equals(ebi) && !assertEventType(e, null, "barline")) {
 				String[] symbols = e.split("\\" + ss);
-				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
+				RhythmSymbol r = Symbol.getRhythmSymbol(symbols[0]);
 				// If the event is an ornamentation (which always consists of only a RS, 
 				// a TS, and a space)
 				if (r != null && r.getDuration() < thresholdDur && symbols.length == 3) {
@@ -3527,7 +3487,7 @@ public class Encoding implements Serializable {
 							if (!tPrev.equals(sbi) && !assertEventType(tPrev, null, "barline")) {
 								pre = tPrev;
 								durPre = 
-									RhythmSymbol.getRhythmSymbol(tPrev.substring(0, 
+									Symbol.getRhythmSymbol(tPrev.substring(0, 
 									tPrev.indexOf(ss))).getDuration();
 								indPre = j;
 								break;
@@ -3680,7 +3640,7 @@ public class Encoding implements Serializable {
 			// If e is a RS event
 			if (assertEventType(e, null, "RhythmSymbol")) {
 				String[] symbols = e.split("\\" + Symbol.SYMBOL_SEPARATOR);
-				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
+				RhythmSymbol r = Symbol.getRhythmSymbol(symbols[0]);
 				// If e is ornamental (in which case it consists of only a RS, a TS, and a space) and 
 				// not part of an ornamental sequence at the beginning of the Encoding (in which case 
 				// eventsDeorn is still empty)
@@ -3692,7 +3652,7 @@ public class Encoding implements Serializable {
 						// If eNext is a RS event
 						if (assertEventType(eNext, null, "RhythmSymbol")) {
 							String[] symbolsNext = eNext.split("\\" + Symbol.SYMBOL_SEPARATOR);
-							RhythmSymbol rNext = RhythmSymbol.getRhythmSymbol(symbolsNext[0]);
+							RhythmSymbol rNext = Symbol.getRhythmSymbol(symbolsNext[0]);
 							// If eNext is ornamental: increment duration of ornamental sequence
 							if (rNext.getDuration() < thresholdDur && symbolsNext.length == 3) {
 								durOrnSeq += rNext.getDuration();
@@ -3701,7 +3661,7 @@ public class Encoding implements Serializable {
 							else {
 								String ePrev = events.get(i-1);
 								String[] symbolsPrev = ePrev.split("\\" + Symbol.SYMBOL_SEPARATOR);
-								RhythmSymbol rPrev = RhythmSymbol.getRhythmSymbol(symbolsPrev[0]);
+								RhythmSymbol rPrev = Symbol.getRhythmSymbol(symbolsPrev[0]);
 								String ePrevDeorn = Symbol.getRhythmSymbol(
 									rPrev.getDuration() + durOrnSeq,
 									rPrev.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR),
@@ -3748,7 +3708,7 @@ public class Encoding implements Serializable {
 			// If e is a RS event
 			if (assertEventType(e, null, "RhythmSymbol")) {
 				String[] symbols = e.split("\\" + Symbol.SYMBOL_SEPARATOR);
-				RhythmSymbol r = RhythmSymbol.getRhythmSymbol(symbols[0]);
+				RhythmSymbol r = Symbol.getRhythmSymbol(symbols[0]);
 				String eResc = Symbol.getRhythmSymbol(
 					r.getDuration() * rescaleFactor, 
 					r.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR), 
@@ -3829,5 +3789,41 @@ public class Encoding implements Serializable {
 			argHeader = argHeader.replace(dimOrigContent, dimAugmContent);
 		}
 		return argHeader;
+	}
+
+
+	/**
+	 * Parses the meter information from the metadata. 
+	 * 
+	 * @return A List containing, for each meter, an Integer[] containing
+	 * <ul>
+	 * <li>As element 0: the meter's numerator.</li>
+	 * <li>As element 1: the meter's denominator.</li>
+	 * <li>As element 2: the meter's first bar.</li>
+	 * <li>As element 3: the meter's last bar.</li>
+	 * <li>As element 4: the meter's diminution.</li>
+	 * </ul>
+	 */
+	private List<Integer[]> getMetersBarsDiminutions() {
+		List<Integer[]> mbd = new ArrayList<>();
+		List<String> metersBars = new ArrayList<>();
+		Arrays.stream(getMetadata().get(METADATA_TAGS[METER_INFO_IND]).split(";"))
+			.forEach(m -> metersBars.add(m.trim()));
+		List<String> diminutions = new ArrayList<>();
+		Arrays.stream(getMetadata().get(METADATA_TAGS[DIMINUTION_IND]).split(";"))
+			.forEach(m -> diminutions.add(m.trim()));
+		for (int i = 0; i < metersBars.size(); i++) {
+			String m = metersBars.get(i);
+			String meter = m.substring(0, m.indexOf("(")).trim();
+			String bars = m.substring(m.indexOf("(") + 1, m.indexOf(")")).trim();
+			mbd.add(new Integer[]{
+				Integer.valueOf(meter.split("/")[0]), 
+				Integer.valueOf(meter.split("/")[1]), 
+				bars.contains("-") ? Integer.valueOf(bars.split("-")[0]) : Integer.valueOf(bars),
+				bars.contains("-") ? Integer.valueOf(bars.split("-")[1]) : Integer.valueOf(bars),
+				Integer.valueOf(diminutions.get(i)) 		
+			});
+		}
+		return mbd;
 	}
 }

@@ -29,7 +29,6 @@ import de.uos.fmt.musitech.data.time.TimeSignatureMarker;
 import de.uos.fmt.musitech.performance.midi.MidiReader;
 import de.uos.fmt.musitech.utility.math.Rational;
 import representations.Tablature;
-import representations.Transcription;
 import structure.ScorePiece;
 import tools.ToolBox;
 
@@ -223,7 +222,7 @@ public class MIDIImport {
 						}
 						if (!onsetQuantised.equals(onset) || !durQuantised.equals(dur)) {
 							Note quantisedNote = ScorePiece.createNote(
-								originalNote.getMidiPitch(), onsetQuantised, durQuantised, null);
+								originalNote.getMidiPitch(), onsetQuantised, durQuantised, -1, null);
 							notationChord.remove(originalNote);
 							notationChord.add(quantisedNote);
 						}

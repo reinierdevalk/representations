@@ -175,10 +175,14 @@ public class Symbol {
 	}
 
 
-	public static MensurationSign getMensurationSign(Integer[] m) {
+	// TESTED
+	public static MensurationSign getMensurationSign(Integer[] m, int sl) {
 		for (MensurationSign ms : MENSURATION_SIGNS.values()) {
-		    if (ms.getMeter()[0] == m[0] && ms.getMeter()[1] == m[1]) {
-		    	return ms;
+		    if (ms.getMeter()[0] == m[0] && ms.getMeter()[1] == m[1]) { 
+		    	if ((sl != -1 && ms.getStaffLine() == sl) || 
+		    		(sl == -1 && ms.getStaffLine() == MensurationSign.DEFAULT_STAFFLINE)) {
+		    		return ms;
+		    	}
 		    }
 		}
 		return null;

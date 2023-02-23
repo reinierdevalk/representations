@@ -13,12 +13,15 @@ import org.apache.commons.lang3.StringUtils;
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.data.structure.Piece;
+import de.uos.fmt.musitech.data.time.MetricalTimeLine;
 import de.uos.fmt.musitech.utility.math.Rational;
 import imports.MIDIImport;
 import interfaces.PythonInterface;
 import representations.Tablature;
 import representations.Transcription;
+import structure.ScoreMetricalTimeLine;
 import structure.Timeline;
+import structure.metric.Utils;
 import tbp.ConstantMusicalSymbol;
 import tbp.Encoding;
 import tbp.Event;
@@ -265,7 +268,7 @@ public class MEIExport {
 		// If the numerator = 1: add to uf
 		int num = r.getNumer();
 		int den = r.getDenom();
-		if (num == 1 || (num % 2 == 0 && (double) num == num / (double) den)) {
+		if (num == 1 || (num % 2 == 0 && num == num / (double) den)) {
 //			System.out.println("if");
 //			System.out.println(r.getNumer());
 //			System.out.println(r.getNumer() / (double) r.getDenom());
@@ -625,7 +628,7 @@ public class MEIExport {
 				(!e.contains(ss)) ? new String[]{e} : e.split("\\" + ss);
 //			System.out.println(Arrays.asList("css = " + Arrays.toString(currEventSplit)));
 			// If the event is not an MS event (which consist of one or multiple MS)
-			if (MensurationSign.getMensurationSign(currEventSplit[0]) == null) {
+			if (Symbol.getMensurationSign(currEventSplit[0]) == null) {
 				// Determine previous (last active) duration
 				int dur = prevXMLDur[XML_DUR_IND];
 				int dots = prevXMLDur[XML_DOTS_IND];
@@ -654,7 +657,7 @@ public class MEIExport {
 				}
 				// 3. <note>s (rests are covered by the tabDurSym)
 				for (int j = ((currXMLDur != null) ? 1 : 0); j < currEventSplit.length; j++) {
-					TabSymbol ts = TabSymbol.getTabSymbol(currEventSplit[j], tss);
+					TabSymbol ts = Symbol.getTabSymbol(currEventSplit[j], tss);
 //					System.out.println("j = " + j);
 //					System.out.println(currEventSplit[j]);
 //					System.out.println(ts);
@@ -747,8 +750,8 @@ public class MEIExport {
 		boolean includeMeter = currMi != null;
 
 		int diminution = 0;
-		int count = currMi[Timeline.MI_NUM];
-		int unit = currMi[Timeline.MI_DEN];
+		int count = currMi[Transcription.MI_NUM];
+		int unit = currMi[Transcription.MI_DEN];
 //		if (adaptTransDur) {
 //			if (ONLY_TAB || TAB_AND_TRANS) {
 //				diminution = currMi[Timeline.MI_DIM];
@@ -915,9 +918,9 @@ public class MEIExport {
 		}
 		List<Integer[]> tabBarsToMetricBars = (tab != null) ? tab.mapTabBarsToMetricBars() : null;
 		// mi from tab is the same as mi from trans in TAB_AND_TRANS case // TODO still true?
-		List<Integer[]> mi = (tab != null) ? tab.getTimeline().getMeterInfo() : trans.getMeterInfo();
+		List<Integer[]> mi = (tab != null) ? tab.getMeterInfo() : trans.getMeterInfo();
 //		List<Integer[]> mi = (tab != null) ? tab.getTimeline().getMeterInfoOBS() : trans.getMeterInfo();
-		int numMetricBars = mi.get(mi.size()-1)[Timeline.MI_LAST_BAR];
+		int numMetricBars = mi.get(mi.size()-1)[Transcription.MI_LAST_BAR];
 		int numTabBars = (tab != null) ? tabBarsToMetricBars.size() : -1;
 		int numBars = !alignWithMetricBarring ? numTabBars : numMetricBars;
 		Integer[][] btp = tab != null ? tab.getBasicTabSymbolProperties() : null;
@@ -931,7 +934,7 @@ public class MEIExport {
 		List<String[]> tabMensSigns = tab != null ? tab.getMensurationSigns() : null;
 		
 		// List all bars in which the meter, or, if appropriate, the key changes 
-		List<Integer> meterChangeBars = ToolBox.getItemsAtIndex(mi, Timeline.MI_FIRST_BAR);
+		List<Integer> meterChangeBars = ToolBox.getItemsAtIndex(mi, Transcription.MI_FIRST_BAR);
 		// Adapt meterChangeBars if needed
 		if (ONLY_TAB && !alignWithMetricBarring) {
 			List<Integer> meterChangeBarsTab = new ArrayList<>();
@@ -942,7 +945,7 @@ public class MEIExport {
 			meterChangeBars = meterChangeBarsTab;
 		}
 		List<Integer> diminutions = 
-			tab != null ? ToolBox.getItemsAtIndex(mi, Timeline.MI_DIM) : null;
+			tab != null ? ToolBox.getItemsAtIndex(mi, Tablature.MI_DIM) : null;
 		List<Integer> keyChangeBars = 
 			ki != null ? ToolBox.getItemsAtIndex(ki, Transcription.KI_FIRST_BAR) : 
 			new ArrayList<>();
@@ -1226,7 +1229,7 @@ public class MEIExport {
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		String sp = Symbol.SPACE.getEncoding();
 		TabSymbolSet tss = tab.getEncoding().getTabSymbolSet();
-		List<Integer[]> mi = tab.getTimeline().getMeterInfo();
+		List<Integer[]> mi = tab.getMeterInfo();
 //		List<Integer[]> mi = tab.getTimeline().getMeterInfoOBS();
 //		List<String[]> meters = new ArrayList<>();
 //		int meterIndex = 0;
@@ -1339,7 +1342,7 @@ public class MEIExport {
 					Encoding.assertEventType(e.getEncoding(), tss, "rest")) {
 					RhythmSymbol rs = 
 						Symbol.getRhythmSymbol(e.getEncoding().substring(0, 
-						e.getEncoding().indexOf(ConstantMusicalSymbol.SYMBOL_SEPARATOR))); 
+						e.getEncoding().indexOf(Symbol.SYMBOL_SEPARATOR))); 
 					currBarDurs.add(rs.getDuration());
 					prevDur = rs.getDuration();
 				}
@@ -1362,7 +1365,7 @@ public class MEIExport {
 //				currBarEvents.add(events.get(j));
 //			}
 			int currMetricBar = tabBarsToMetricBars.get(currTabBar - 1)[Tablature.METRIC_BAR_IND];
-			int currDim = tab.getTimeline().getDiminution(currMetricBar);
+			int currDim = tab.getEncoding().getTimeline().getDiminution(currMetricBar);
 
 			// For each event
 			Rational barLen = Rational.ZERO;
@@ -1454,7 +1457,7 @@ public class MEIExport {
 						sicList.add(removeTrailingSymbolSeparator(sicEvent));
 						corrList.add(corrEvent);
 						RhythmSymbol rsSic = 
-							RhythmSymbol.getRhythmSymbol(sicEvent.substring(0, sicEvent.indexOf(ss)));
+							Symbol.getRhythmSymbol(sicEvent.substring(0, sicEvent.indexOf(ss)));
 						int durSic; 
 						if (rsSic != null) {
 							durSic = rsSic.getDuration();
@@ -1463,7 +1466,7 @@ public class MEIExport {
 							durSic = -1; // TODO get last specified duration before currEvent
 						}
 						RhythmSymbol rsCorr = 
-							RhythmSymbol.getRhythmSymbol(corrEvent.substring(0, corrEvent.indexOf(ss)));
+							Symbol.getRhythmSymbol(corrEvent.substring(0, corrEvent.indexOf(ss)));
 						int durCorr;
 						if (rsCorr != null) {
 							durCorr = rsCorr.getDuration();
@@ -1489,7 +1492,7 @@ public class MEIExport {
 								// Determine duration of corrected event, increment durCorr,
 								// and update durrCorrToTrack
 								RhythmSymbol nextEventRS = 
-									RhythmSymbol.getRhythmSymbol(nextEvent.substring(0, 
+									Symbol.getRhythmSymbol(nextEvent.substring(0, 
 									nextEvent.indexOf(ss)));
 								int durCorrNext;
 								if (nextEventRS != null) {
@@ -1955,7 +1958,7 @@ public class MEIExport {
 				int diminution = 1;
 				if (TAB_AND_TRANS) {
 //				if (mi.get(0).length == Tablature.MI_SIZE) {
-					diminution = tab.getTimeline().getDiminution(bar);
+					diminution = tab.getEncoding().getTimeline().getDiminution(bar);
 //					diminution = Tablature.getDiminution(bar, mi);
 				}
 				List<String> currNotesAsXML = 
@@ -2008,7 +2011,7 @@ public class MEIExport {
 				int diminution = 1;
 				if (TAB_AND_TRANS) {
 //				if (mi.get(0).length == Tablature.MI_SIZE) {
-					diminution = tab.getTimeline().getDiminution(bar);
+					diminution = tab.getEncoding().getTimeline().getDiminution(bar);
 //					diminution = Tablature.getDiminution(bar, mi);
 				}
 //				System.out.println("-->");
@@ -2497,6 +2500,8 @@ public class MEIExport {
 		System.out.println("\r\n>>> getData() called");
 
 		Piece p = trans.getScorePiece();
+//		MetricalTimeLine mtl = trans.getScorePiece().getMetricalTimeLine();
+		ScoreMetricalTimeLine smtl = trans.getScorePiece().getScoreMetricalTimeLine();
 		int numVoices = p.getScore().size();
 		Integer[][] btp = tab == null ? null : tab.getBasicTabSymbolProperties();
 		Rational gridVal = 
@@ -2629,19 +2634,21 @@ public class MEIExport {
 //		System.exit(0);
 		
 		// Get meter and key TODO assumed is a single key
-		int numBars = mi.get(mi.size()-1)[Timeline.MI_LAST_BAR];
+		int numBars = mi.get(mi.size()-1)[Transcription.MI_LAST_BAR];
 		Rational endOffset = Rational.ZERO;
 		for (Integer[] m : mi) {
-			Rational currMeter = new Rational(m[Timeline.MI_NUM], m[Timeline.MI_DEN]);
-			int barsInCurrMeter = (m[Timeline.MI_LAST_BAR] - m[Timeline.MI_FIRST_BAR]) + 1;
+			Rational currMeter = new Rational(m[Transcription.MI_NUM], m[Transcription.MI_DEN]);
+			int barsInCurrMeter = (m[Transcription.MI_LAST_BAR] - m[Transcription.MI_FIRST_BAR]) + 1;
 			endOffset = endOffset.add(currMeter.mul(barsInCurrMeter));
 		}
 		Integer[] key = ki.get(0);
 		int numAlt = key[Transcription.KI_KEY];
 		// Set initial bar and meter
 		Integer[] initMi = mi.get(0);
-		Rational meter = new Rational(initMi[Timeline.MI_NUM], initMi[Timeline.MI_DEN]);
+		Rational meter = new Rational(initMi[Transcription.MI_NUM], initMi[Transcription.MI_DEN]);
 		Rational barEnd = meter;
+		
+		Timeline tl = tab != null ? tab.getEncoding().getTimeline() : null;
 
 		// Get indices mapping
 		List<List<Integer>> transToTabInd = null, tabToTransInd = null;
@@ -2694,7 +2701,13 @@ public class MEIExport {
 //			Rational[] barMetPos = 
 //				!adaptTransDur ? Tablature.getMetricPosition(onset, mi) :
 //				Tablature.getMetricPosition(onset, tab.getUndiminutedMeterInfo());		
-			Rational[] barMetPos = Timeline.getMetricPosition(onset, mi);	
+			Rational[] barMetPos = 
+				tab != null ? 
+				tl.getMetricPosition((int) onset.mul(Tablature.SRV_DEN).toDouble()) // multiplication necessary because of division when making onset above
+				:
+				smtl.getMetricPosition(onset);	
+//				ScoreMetricalTimeLine.getMetricPosition(mtl, onset);	
+//				Utils.getMetricPosition(onset, mi);	
 				
 //			System.out.println(Arrays.toString(tab.getUndiminutedMeterInfo().get(0)));
 			int bar = barMetPos[0].getNumer();
@@ -2797,7 +2810,13 @@ public class MEIExport {
 				// (see https://en.wikipedia.org/wiki/Note_value)
 				Rational l = new Rational((int)Math.pow(2, dotsPrev) - 1, (int)Math.pow(2, dotsPrev));
 				durPrev = durPrev.add(durPrev.mul(l));
-				metPosPrev = Timeline.getMetricPosition(onsetPrev, mi)[1]; 
+				metPosPrev = 
+					tab != null ?
+					tl.getMetricPosition((int) onsetPrev.mul(Tablature.SRV_DEN).toDouble())[1]
+					:
+					smtl.getMetricPosition(onsetPrev)[1];
+//					ScoreMetricalTimeLine.getMetricPosition(mtl, onsetPrev)[1];	
+//					Utils.getMetricPosition(onsetPrev, mi)[1]; 
 				offsetPrev = onsetPrev.add(durPrev);
 
 				// To tripletise is to give a note its nominal (shown) value instead of its 
@@ -2862,7 +2881,12 @@ public class MEIExport {
 					Rational onsetRest = offsetPrev;
 					Rational metPosRest = 
 						(currVoiceStrings.size() == 0) ? Rational.ZERO :
-						Timeline.getMetricPosition(onsetRest, mi)[1];
+						(tab != null ?
+						tl.getMetricPosition((int) onsetRest.mul(Tablature.SRV_DEN).toDouble())[1]		
+						:
+						smtl.getMetricPosition(onsetRest)[1]);
+//						ScoreMetricalTimeLine.getMetricPosition(mtl, onsetRest)[1]);	
+//						Utils.getMetricPosition(onsetRest, mi)[1]);
 //					Rational durRestTripletised = durRest;
 					List<Boolean> tripletInfo = (tripletOnsetPairs == null) ? null :
 						isTripletOnset(tripletOnsetPairs, onsetRest);
@@ -2884,7 +2908,13 @@ public class MEIExport {
 						subNoteDursOnsets.add(onset.sub(precedingInBar)); // herr man
 					}
 					Rational remainder = durRest.sub(precedingInBar);
-					int beginBar = Timeline.getMetricPosition(offsetPrev, mi)[0].getNumer();
+					int beginBar = 
+						tab != null ?
+						tl.getMetricPosition((int) offsetPrev.mul(Tablature.SRV_DEN).toDouble())[0].getNumer()		
+						: 
+						smtl.getMetricPosition(offsetPrev)[0].getNumer();	
+//						ScoreMetricalTimeLine.getMetricPosition(mtl, offsetPrev)[0].getNumer();	
+//						Utils.getMetricPosition(offsetPrev, mi)[0].getNumer();
 					List<Integer> bars = 
 						IntStream.rangeClosed(beginBar, bar).boxed().collect(Collectors.toList());
 					for (int j = bar-1; j >= beginBar; j--) {
@@ -3079,8 +3109,14 @@ public class MEIExport {
 				if (offset.isGreater(endOffset)) {
 					offset = endOffset;
 				}
-				int endBar = (offset.equals(endOffset)) ? mi.get(mi.size()-1)[Timeline.MI_LAST_BAR] : 
-					Timeline.getMetricPosition(offset, mi)[0].getNumer();
+				int endBar = 
+					(offset.equals(endOffset)) ? mi.get(mi.size()-1)[Transcription.MI_LAST_BAR] : 
+					(tab != null ?
+					tl.getMetricPosition((int) offset.mul(Tablature.SRV_DEN).toDouble())[0].getNumer()		
+					:
+					smtl.getMetricPosition(offset)[0].getNumer());
+//					ScoreMetricalTimeLine.getMetricPosition(mtl, offset)[0].getNumer());
+//					Utils.getMetricPosition(offset, mi)[0].getNumer());
 				
 				List<Integer> bars = 
 					IntStream.rangeClosed(bar, endBar).boxed().collect(Collectors.toList());
@@ -3333,7 +3369,7 @@ public class MEIExport {
 		// for loop breaks at the end of k = 0  
 		for (int k = 0; k < uf.size(); k++) {
 			if (verbose) System.out.println("k = " + k);
-			int currBar = Timeline.getMetricPosition(currOnset, mi)[0].getNumer();
+			int currBar = Utils.getMetricPosition(currOnset, mi)[0].getNumer(); // TODO pass tab and trans as args to be able to use tab/trans.getMetricPosition()
 			String[] copyOfCurr = Arrays.copyOf(curr, curr.length);
 			Rational durAsRat = uf.get(k);
 			if (isDotted) {
@@ -3415,7 +3451,7 @@ public class MEIExport {
 				if (top != null) {
 					currTripletOpenOnset = 
 						getExtendedTripletOnsetPair(currOnset, tripletOnsetPairs, mi, diminution)[0];
-					metPosTripletOpen = Timeline.getMetricPosition(currTripletOpenOnset, mi)[1];
+					metPosTripletOpen = Utils.getMetricPosition(currTripletOpenOnset, mi)[1];
 					currTripletLen = top[3];
 					tripletBorder = metPosTripletOpen.add(currTripletLen);
 					onsetTripletBorder = currTripletOpenOnset.add(currTripletLen);
@@ -4017,7 +4053,7 @@ public class MEIExport {
 		// for loop breaks at the end of k = 0  
 		for (int k = 0; k < uf.size(); k++) {
 			System.out.println("k = " + k);
-			int currBar = Timeline.getMetricPosition(currOnset, mi)[0].getNumer();
+			int currBar = Utils.getMetricPosition(currOnset, mi)[0].getNumer();
 			String[] copyOfCurr = Arrays.copyOf(curr, curr.length);
 			Rational durAsRat = uf.get(k);
 			if (isDotted) {
@@ -4099,7 +4135,7 @@ public class MEIExport {
 				if (top != null) {
 					currTripletOpenOnset = 
 						getExtendedTripletOnsetPair(currOnset, tripletOnsetPairs, mi, diminution)[0];
-					metPosTripletOpen = Timeline.getMetricPosition(currTripletOpenOnset, mi)[1];
+					metPosTripletOpen = Utils.getMetricPosition(currTripletOpenOnset, mi)[1];
 					currTripletLen = top[3];
 					tripletBorder = metPosTripletOpen.add(currTripletLen);
 					onsetTripletBorder = currTripletOpenOnset.add(currTripletLen);
@@ -4458,20 +4494,20 @@ public class MEIExport {
 		meiHead[MEI_HEAD.indexOf("title")] = tab.getName();
 		res = res.replace("title_placeholder", meiHead[MEI_HEAD.indexOf("title")]);
 
-		List<Integer[]> mi = tab.getTimeline().getMeterInfo();
+		List<Integer[]> mi = tab.getMeterInfo();
 //		List<Integer[]> mi = tab.getTimeline().getMeterInfoOBS();
 		List<String[]> meters = new ArrayList<>();
 		for (Integer[] in : mi) {
 			String sym = "";
-			if (in[Timeline.MI_NUM] == 4 && in[Timeline.MI_DEN] == 4) {
+			if (in[Transcription.MI_NUM] == 4 && in[Transcription.MI_DEN] == 4) {
 				sym = " meter.sym='common'";
 			}
-			else if (in[Timeline.MI_NUM] == 2 && in[Timeline.MI_DEN] == 2) {
+			else if (in[Transcription.MI_NUM] == 2 && in[Transcription.MI_DEN] == 2) {
 				sym = " meter.sym='cut'";
 			}
 			meters.add(new String[]{
-				"meter.count='" + in[Timeline.MI_NUM] + "'", 
-				"meter.unit='" + in[Timeline.MI_DEN] + "'",
+				"meter.count='" + in[Transcription.MI_NUM] + "'", 
+				"meter.unit='" + in[Transcription.MI_DEN] + "'",
 				sym}
 			);
 		}
@@ -4616,7 +4652,7 @@ public class MEIExport {
 						sicList.add(removeTrailingSymbolSeparator(sicEvent));
 						corrList.add(corrEvent);
 						RhythmSymbol rsSic = 
-							RhythmSymbol.getRhythmSymbol(sicEvent.substring(0, sicEvent.indexOf(ss)));
+							Symbol.getRhythmSymbol(sicEvent.substring(0, sicEvent.indexOf(ss)));
 						int durSic; 
 						if (rsSic != null) {
 							durSic = rsSic.getDuration();
@@ -4625,7 +4661,7 @@ public class MEIExport {
 							durSic = -1; // TODO get last specified duration before currEvent
 						}
 						RhythmSymbol rsCorr = 
-							RhythmSymbol.getRhythmSymbol(corrEvent.substring(0, corrEvent.indexOf(ss)));
+							Symbol.getRhythmSymbol(corrEvent.substring(0, corrEvent.indexOf(ss)));
 						int durCorr;
 						if (rsCorr != null) {
 							durCorr = rsCorr.getDuration();
@@ -4651,7 +4687,7 @@ public class MEIExport {
 								// Determine duration of corrected event, increment durCorr,
 								// and update durrCorrToTrack
 								RhythmSymbol nextEventRS = 
-									RhythmSymbol.getRhythmSymbol(nextEvent.substring(0, 
+									Symbol.getRhythmSymbol(nextEvent.substring(0, 
 									nextEvent.indexOf(ss)));
 								int durCorrNext;
 								if (nextEventRS != null) {
@@ -4747,7 +4783,7 @@ public class MEIExport {
 					(!firstEventNext.contains(ss)) ? new String[]{firstEventNext} : 
 					firstEventNext.split("\\" + ss);
 				// Meter change found? Add scoreDef after bar
-				if (MensurationSign.getMensurationSign(firstEventNextSplit[0]) != null) {
+				if (Symbol.getMensurationSign(firstEventNextSplit[0]) != null) {
 					String meterStr = "";
 					for (String s : meters.get(meterIndex+1)) {
 						if (!s.equals("")) {

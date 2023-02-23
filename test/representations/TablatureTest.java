@@ -21,6 +21,7 @@ import path.Path;
 import representations.Tablature.Tuning;
 import tbp.Encoding;
 import tbp.RhythmSymbol;
+import tbp.Symbol;
 import tbp.TabSymbol;
 import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
@@ -44,6 +45,7 @@ public class TablatureTest extends TestCase {
 	private static final Rational DOTTED_HALF = new Rational(3, 4);
 
 
+	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 		String root = Path.getRootPath() + Path.getDataDir(); 
@@ -64,6 +66,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Override
 	protected void tearDown() throws Exception {
 		super.tearDown();
 	}
@@ -531,75 +534,110 @@ public class TablatureTest extends TestCase {
 		List<List<TabSymbol>> chords = new ArrayList<List<TabSymbol>>();
 		//
 		chords.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a5", tss),
-			TabSymbol.getTabSymbol("c4", tss),
-			TabSymbol.getTabSymbol("b2", tss),
-			TabSymbol.getTabSymbol("a1", tss)
+			Symbol.getTabSymbol("a5", tss),
+			Symbol.getTabSymbol("c4", tss),
+			Symbol.getTabSymbol("b2", tss),
+			Symbol.getTabSymbol("a1", tss)
 		}));
 		//
 		chords.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a6", tss),
-			TabSymbol.getTabSymbol("c4", tss),
-			TabSymbol.getTabSymbol("i2", tss),
-			TabSymbol.getTabSymbol("a1", tss)	
+			Symbol.getTabSymbol("a6", tss),
+			Symbol.getTabSymbol("c4", tss),
+			Symbol.getTabSymbol("i2", tss),
+			Symbol.getTabSymbol("a1", tss)	
 		}));
 		//
 		chords.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("d6", tss)
+			Symbol.getTabSymbol("d6", tss)
 		})); 
 		//
 		chords.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("c6", tss),
-			TabSymbol.getTabSymbol("a5", tss),
-			TabSymbol.getTabSymbol("e4", tss),
-			TabSymbol.getTabSymbol("b2", tss)
+			Symbol.getTabSymbol("c6", tss),
+			Symbol.getTabSymbol("a5", tss),
+			Symbol.getTabSymbol("e4", tss),
+			Symbol.getTabSymbol("b2", tss)
 		}));
 		//
 		chords.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a6", tss)
+			Symbol.getTabSymbol("a6", tss)
 		}));
 		//
 		chords.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a6", tss),
-			TabSymbol.getTabSymbol("h5", tss),
-			TabSymbol.getTabSymbol("c4", tss),
-			TabSymbol.getTabSymbol("b3", tss),
-			TabSymbol.getTabSymbol("f2", tss)
+			Symbol.getTabSymbol("a6", tss),
+			Symbol.getTabSymbol("h5", tss),
+			Symbol.getTabSymbol("c4", tss),
+			Symbol.getTabSymbol("b3", tss),
+			Symbol.getTabSymbol("f2", tss)
 		}));
 		//
 		chords.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a6", tss),
-			TabSymbol.getTabSymbol("b3", tss),
-			TabSymbol.getTabSymbol("a2", tss),
-			TabSymbol.getTabSymbol("a1", tss)
+			Symbol.getTabSymbol("a6", tss),
+			Symbol.getTabSymbol("b3", tss),
+			Symbol.getTabSymbol("a2", tss),
+			Symbol.getTabSymbol("a1", tss)
 		}));
 		//
 		chords.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a3", tss),
-			TabSymbol.getTabSymbol("e2", tss)
+			Symbol.getTabSymbol("a3", tss),
+			Symbol.getTabSymbol("e2", tss)
 		}));
 		//
 		chords.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a6", tss),
-			TabSymbol.getTabSymbol("c4", tss),
-			TabSymbol.getTabSymbol("a2", tss),
-			TabSymbol.getTabSymbol("a1", tss)
+			Symbol.getTabSymbol("a6", tss),
+			Symbol.getTabSymbol("c4", tss),
+			Symbol.getTabSymbol("a2", tss),
+			Symbol.getTabSymbol("a1", tss)
 		}));
 		//
-		chords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
-		chords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("a1", tss)}));
-		chords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
-		chords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("c2", tss)}));
-		chords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("e2", tss)}));
-		chords.add(Arrays.asList(new TabSymbol[]{TabSymbol.getTabSymbol("a1", tss)}));
+		chords.add(Arrays.asList(new TabSymbol[]{Symbol.getTabSymbol("e2", tss)}));
+		chords.add(Arrays.asList(new TabSymbol[]{Symbol.getTabSymbol("a1", tss)}));
+		chords.add(Arrays.asList(new TabSymbol[]{Symbol.getTabSymbol("e2", tss)}));
+		chords.add(Arrays.asList(new TabSymbol[]{Symbol.getTabSymbol("c2", tss)}));
+		chords.add(Arrays.asList(new TabSymbol[]{Symbol.getTabSymbol("e2", tss)}));
+		chords.add(Arrays.asList(new TabSymbol[]{Symbol.getTabSymbol("a1", tss)}));
 		//
 		chords.add(Arrays.asList(new TabSymbol[]{
-			TabSymbol.getTabSymbol("a6", tss),
-			TabSymbol.getTabSymbol("c4", tss),
-			TabSymbol.getTabSymbol("a2", tss),
-			TabSymbol.getTabSymbol("a1", tss)
+			Symbol.getTabSymbol("a6", tss),
+			Symbol.getTabSymbol("c4", tss),
+			Symbol.getTabSymbol("a2", tss),
+			Symbol.getTabSymbol("a1", tss)
 		}));
 		return chords;
+	}
+
+
+	public void testMakeMeterInfo() {
+		Tablature t1 = new Tablature();
+		t1.setEncoding(new Encoding(encodingTestpiece));
+		t1.setNormaliseTuning(true);
+		t1.setName();
+		Tablature t2 = new Tablature();
+		t2.setEncoding(new Encoding(encodingTestGetMeterInfo));
+		t2.setNormaliseTuning(true);
+		t2.setName();
+
+		List<Integer[]> expected = new ArrayList<Integer[]>();
+		// t1		
+		expected.add(new Integer[]{2, 2, 1, 3, 0, 1, 1});
+		// t2
+		expected.add(new Integer[]{3, 8, 1, 1, 0, 1, 2});
+		expected.add(new Integer[]{2, 2, 2, 3, 3, 8, 2});
+		expected.add(new Integer[]{3, 4, 4, 5, 19, 8, 4});
+		expected.add(new Integer[]{2, 2, 6, 7, 31, 8, 1});
+		expected.add(new Integer[]{5, 16, 8, 8, 47, 8, 1});
+		expected.add(new Integer[]{2, 2, 9, 9, 99, 16, -2});
+
+		List<Integer[]> actual = new ArrayList<>();
+		actual.addAll(t1.makeMeterInfo());
+		actual.addAll(t2.makeMeterInfo());
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+	  		assertEquals(expected.get(i).length, actual.get(i).length);
+	  		for (int j = 0; j < expected.get(i).length; j++) {
+	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
+	  		}
+		}
 	}
 
 
@@ -608,7 +646,7 @@ public class TablatureTest extends TestCase {
 		t.setEncoding(new Encoding(encodingTestpiece));
 		t.setNormaliseTuning(true);
 		t.setName();
-		t.setTimeline();
+		t.setMeterInfo();
 
 		Tuning[] expected = new Tuning[]{Tuning.A, Tuning.G};
 		Tuning[] actual = t.makeTunings();
@@ -625,7 +663,7 @@ public class TablatureTest extends TestCase {
 		t.setEncoding(new Encoding(encodingTestpiece));
 		t.setNormaliseTuning(true);
 		t.setName();
-		t.setTimeline();
+		t.setMeterInfo();
 		t.setTunings();
 
 		Integer[][] expected = getBtp(true);
@@ -646,7 +684,7 @@ public class TablatureTest extends TestCase {
 		t.setEncoding(new Encoding(encodingTestpiece));
 		t.setNormaliseTuning(true);
 		t.setName();
-		t.setTimeline();
+		t.setMeterInfo();
 		t.setTunings();
 		
 		List<List<Integer>> expected = new ArrayList<>(); 
@@ -669,12 +707,12 @@ public class TablatureTest extends TestCase {
 
 
 	public void testGetMaximumDuration() {
-		Tablature t1 = new Tablature();
-		t1.setEncoding(new Encoding(encodingTestpiece));
-		t1.setNormaliseTuning(true);
-		t1.setName();
-		t1.setTimeline();
-		t1.setTunings();
+		Tablature t = new Tablature();
+		t.setEncoding(new Encoding(encodingTestpiece));
+		t.setNormaliseTuning(true);
+		t.setName();
+		t.setMeterInfo();
+		t.setTunings();
 
 		List<Integer> expected = new ArrayList<>();
 		for (Integer[] in : getBtp(false)) {
@@ -682,15 +720,14 @@ public class TablatureTest extends TestCase {
 		}
 
 		List<String> listOfTabSymbols = 
-			t1.getEncoding().getListsOfSymbols().get(Encoding.TAB_SYMBOLS_IND);
+			t.getEncoding().getListsOfSymbols().get(Encoding.TAB_SYMBOLS_IND);
 		List<Integer> gridXOfTabSymbols = new ArrayList<>();
 		getOnsetTimesPerNote(false).get(0).forEach(item -> { if (item[1] != 0) { 
 			gridXOfTabSymbols.add(item[0]);}});		
 		List<Integer> durOfTabSymbols = getMinimumDurationPerNote(false).get(0);
-//		TabSymbolSet tss = t1.getEncoding().getTabSymbolSet();
 		List<Integer> actual = new ArrayList<>();
 		for (int i = 0; i < listOfTabSymbols.size(); i++) {
-			actual.add(t1.getMaximumDuration(durOfTabSymbols, gridXOfTabSymbols, i));	
+			actual.add(t.getMaximumDuration(durOfTabSymbols, gridXOfTabSymbols, i));	
 		}
 
 		assertEquals(expected.size(), actual.size());
@@ -706,7 +743,7 @@ public class TablatureTest extends TestCase {
 		t.setEncoding(new Encoding(encodingTestpiece));
 		t.setNormaliseTuning(true);
 		t.setName();
-		t.setTimeline();
+		t.setMeterInfo();
 		t.setTunings();
 		t.setBasicTabSymbolProperties();
 		
@@ -729,7 +766,7 @@ public class TablatureTest extends TestCase {
 		t.setEncoding(new Encoding(encodingTestpiece));
 		t.setNormaliseTuning(true);
 		t.setName();
-		t.setTimeline();
+		t.setMeterInfo();
 		t.setTunings();
 		t.setBasicTabSymbolProperties();
 		t.setChords();
@@ -848,8 +885,8 @@ public class TablatureTest extends TestCase {
 					new Rational(in[Tablature.MIN_DURATION], Tablature.SRV_DEN)
 				), 
 				MidiNote.convert(new PerformanceNote(
-					0, 0, 127,
-//					0, 120000, 90, // default instance variable values; see PerformanceNote()
+//					0, 0, 127,
+					0, 120000, 90, // default instance variable values; see PerformanceNote()
 					in[Tablature.PITCH]) 
 				)
 			));
@@ -1142,9 +1179,9 @@ public class TablatureTest extends TestCase {
 			new Encoding(encodingTestpiece).getPiecename(), Encoding.SYNTAX_CHECKED), true);
 		
 		expected.add(new Rational[]{new Rational(5, 4), new Rational(17, 12), 
-			new Rational(RhythmSymbol.SEMIMINIM.getDuration(), 1)});
+			new Rational(Symbol.SEMIMINIM.getDuration(), 1)});
 		expected.add(new Rational[]{new Rational(10, 4), new Rational(17, 6), 
-			new Rational(RhythmSymbol.MINIM.getDuration(), 1)});
+			new Rational(Symbol.MINIM.getDuration(), 1)});
 		if (tablature.getTripletOnsetPairs() == null) {
 			actual.add(null);
 		}

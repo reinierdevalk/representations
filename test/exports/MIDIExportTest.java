@@ -12,6 +12,7 @@ public class MIDIExportTest extends TestCase {
 	private File midiTestGetMeterInfoDiminuted;
 	private File midiTestGetMeterInfo;
 
+	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 //		Runner.setPathsToCodeAndData(UI.getRootDir(), false);
@@ -20,6 +21,7 @@ public class MIDIExportTest extends TestCase {
 		midiTestGetMeterInfoDiminuted = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_get_meter_key_info_diminuted.mid");
 	}
 
+	@Override
 	protected void tearDown() throws Exception {
 		super.tearDown();
 	}

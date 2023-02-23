@@ -26,12 +26,14 @@ public class MEIExportTest extends TestCase {
 	private final Rational r2 = new Rational(1, 2);
 	private final Rational r1 = new Rational(1, 1);
 		
+	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 		encodingTestpiece = new File(MEIExport.rootDir + "data/annotated/encodings/test/"  + "testpiece.tbp");
 	}
 
 
+	@Override
 	protected void tearDown() throws Exception {
 		super.tearDown();
 	}

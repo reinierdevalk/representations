@@ -134,6 +134,31 @@ public class SymbolTest {
 
 
 	@Test
+	public void testGetMensurationSignAlt() {
+		List<MensurationSign> expected = Arrays.asList(
+			Symbol.TWO,
+			Symbol.CUT_C,
+			Symbol.THREE.makeVariant(-1, 4),
+			null
+		);
+
+		List<MensurationSign> actual = new ArrayList<>(); 
+		List<Integer[]> ms = Arrays.asList(new Integer[]{2, 4}, new Integer[]{2, 2}, 
+			new Integer[]{3, 4}, new Integer[]{7, 11});
+		List<Integer> sls = Arrays.asList(-1, -1, 4, -1);
+		for (int i = 0; i < ms.size(); i++) {
+			actual.add(Symbol.getMensurationSign(ms.get(i), sls.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
 	public void testGetRhythmSymbol() {
 		List<RhythmSymbol> expected = Arrays.asList(
 			Symbol.SEMIMINIM,

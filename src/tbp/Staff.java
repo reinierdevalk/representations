@@ -145,11 +145,11 @@ public class Staff {
 			int segment = Integer.parseInt(e[1]);
 			String tssName = e[2];
 			boolean showBeam = Boolean.parseBoolean(e[3]);
-			ConstantMusicalSymbol cms = ConstantMusicalSymbol.getConstantMusicalSymbol(encoding);
+			ConstantMusicalSymbol cms = Symbol.getConstantMusicalSymbol(encoding);
 			TabSymbol ts = 
 				tssName == null ? null :
-				TabSymbol.getTabSymbol(encoding, TabSymbolSet.getTabSymbolSet(tssName, null));
-			RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(encoding);
+				Symbol.getTabSymbol(encoding, TabSymbolSet.getTabSymbolSet(tssName, null));
+			RhythmSymbol rs = Symbol.getRhythmSymbol(encoding);
 			if (cms != null) {
 				addConstantMusicalSymbol(cms, segment);
 			}
@@ -160,7 +160,7 @@ public class Staff {
 				addRhythmSymbol(rs, segment, showBeam);
 			}
 			else {
-				addMensurationSign(MensurationSign.getMensurationSign(encoding), segment);
+				addMensurationSign(Symbol.getMensurationSign(encoding), segment);
 			}
 		}
 	}
@@ -218,7 +218,7 @@ public class Staff {
 		addSymbol(symbol, RHYTHM_LINE, segment);
 		// Dotted RS? Add dot in next segment
 		if (rs.getNumberOfDots() > 0) {
-			addSymbol(RhythmSymbol.RHYTHM_DOT.getSymbol(), RHYTHM_LINE, segment + 1);
+			addSymbol(Symbol.RHYTHM_DOT.getSymbol(), RHYTHM_LINE, segment + 1);
 		}
 		// Beamed RS? Add beam in next segment
 		if (rs.getBeam() && showBeam) {

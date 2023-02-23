@@ -16,7 +16,6 @@ import org.junit.Test;
 
 import junit.framework.TestCase;
 import path.Path;
-import representations.Tablature;
 import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 
@@ -27,6 +26,7 @@ public class EncodingTest extends TestCase {
 	private String miniRawEncoding;
 
 
+	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -39,6 +39,7 @@ public class EncodingTest extends TestCase {
 	}
 
 
+	@Override
 	@After
 	public void tearDown() throws Exception {
 	}
@@ -913,28 +914,28 @@ public class EncodingTest extends TestCase {
 	}
 
 
-	@Test
-	public void testGetMetersBarsDiminutions() {
-		Encoding e = new Encoding(encodingTestGetMeterInfo);
-
-		List<Integer[]> expected = new ArrayList<>();
-		expected.add(new Integer[]{3, 8, 1, 1, 2});
-		expected.add(new Integer[]{2, 2, 2, 3, 2});
-		expected.add(new Integer[]{3, 4, 4, 5, 4});
-		expected.add(new Integer[]{2, 2, 6, 7, 1});
-		expected.add(new Integer[]{5, 16, 8, 8, 1});
-		expected.add(new Integer[]{2, 2, 9, 9, -2});
-
-		List<Integer[]> actual = e.getMetersBarsDiminutions();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).length, actual.get(i).length);
-			for (int j = 0; j < expected.get(i).length; j++) {
-				assertEquals(expected.get(i)[j], actual.get(i)[j]);
-			}
-		}
-	}
+//	@Test
+//	public void testGetMetersBarsDiminutions() {
+//		Encoding e = new Encoding(encodingTestGetMeterInfo);
+//
+//		List<Integer[]> expected = new ArrayList<>();
+//		expected.add(new Integer[]{3, 8, 1, 1, 2});
+//		expected.add(new Integer[]{2, 2, 2, 3, 2});
+//		expected.add(new Integer[]{3, 4, 4, 5, 4});
+//		expected.add(new Integer[]{2, 2, 6, 7, 1});
+//		expected.add(new Integer[]{5, 16, 8, 8, 1});
+//		expected.add(new Integer[]{2, 2, 9, 9, -2});
+//
+//		List<Integer[]> actual = e.getMetersBarsDiminutions();
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i).length, actual.get(i).length);
+//			for (int j = 0; j < expected.get(i).length; j++) {
+//				assertEquals(expected.get(i)[j], actual.get(i)[j]);
+//			}
+//		}
+//	}
 
 
 	@Test
@@ -973,14 +974,14 @@ public class EncodingTest extends TestCase {
 		expected.add(expected4);
 
 		List<String> actual = Arrays.asList(
-			Encoding.augmentHeader(e1.getHeader(), e1.getMetadata(), 
-				e1.getMetersBarsDiminutions(), -1, "reverse"),
-			Encoding.augmentHeader(e2.getHeader(), e2.getMetadata(), 
-				e2.getMetersBarsDiminutions(), -1, "reverse"),
-			Encoding.augmentHeader(e3.getHeader(), e3.getMetadata(), 
-				e3.getMetersBarsDiminutions(), 2, "rescale"),
-			Encoding.augmentHeader(e4.getHeader(), e4.getMetadata(), 
-				e4.getMetersBarsDiminutions(), -2, "rescale")
+			Encoding.augmentHeader(e1.getHeader(), e1.getTimeline(), 
+				e1.getMetadata(), -1, "reverse"),
+			Encoding.augmentHeader(e2.getHeader(), e2.getTimeline(), 
+				e2.getMetadata(),  -1, "reverse"),
+			Encoding.augmentHeader(e3.getHeader(), e3.getTimeline(), 
+				e3.getMetadata(), 2, "rescale"),
+			Encoding.augmentHeader(e4.getHeader(), e4.getTimeline(), 
+				e4.getMetadata(), -2, "rescale")
 		);
 
 		assertEquals(expected.size(), actual.size());
@@ -1057,14 +1058,14 @@ public class EncodingTest extends TestCase {
 
 		List<List<String>> actual = Arrays.asList(
 			Encoding.augmentEvents(e1.decompose(true, true), 
-				e1.getMetersBarsDiminutions(), e1.getTabSymbolSet(), 
+				e1.getTimeline(), e1.getTabSymbolSet(), 
 				-1, -1, "reverse"),
-			Encoding.augmentEvents(e2.decompose(true, true), 
-				e2.getMetersBarsDiminutions(), e2.getTabSymbolSet(), 
+			Encoding.augmentEvents(e2.decompose(true, true),
+				e2.getTimeline(), e2.getTabSymbolSet(), 
 				-1, -1, "reverse"),
 			Encoding.augmentEvents(e3.decompose(true, true), 
 				null, null, 
-				RhythmSymbol.SEMIMINIM.getDuration(), -1, "deornament"),
+				Symbol.SEMIMINIM.getDuration(), -1, "deornament"),
 			Encoding.augmentEvents(e4.decompose(true, true), 
 				null, null, 
 				-1, 2, "rescale")

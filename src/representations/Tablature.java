@@ -15,7 +15,6 @@ import structure.ScorePiece;
 import structure.Timeline;
 import tbp.Encoding;
 import tbp.Event;
-import tbp.MensurationSign;
 import tbp.RhythmSymbol;
 import tbp.Symbol;
 import tbp.TabSymbol;
@@ -36,6 +35,16 @@ public class Tablature implements Serializable {
 	public static final int TAB_BAR_REL_ONSET_IND = 3;
 	public static final int METRIC_BAR_REMAINDER_IND = 4;
 	private static final boolean ADAPT_TAB = false; // TODO remove
+	
+	// For meterInfo
+	public static final int MI_NUM = 0; // TODO 0-5 also in Transcription
+	public static final int MI_DEN = 1;
+	public static final int MI_FIRST_BAR = 2;
+	public static final int MI_LAST_BAR = 3;
+	public static final int MI_NUM_MT_FIRST_BAR = 4;
+	public static final int MI_DEN_MT_FIRST_BAR = 5;
+	public static final int MI_DIM = 6;
+	public static final int MI_SIZE_TAB = 7;
 
 	// For tunings
 	public static final int ENCODED_TUNING_IND = 0;
@@ -56,6 +65,7 @@ public class Tablature implements Serializable {
 	private Encoding encoding;
 	private boolean normaliseTuning;
 	private String name;
+	private List<Integer[]> meterInfo;
 	private Timeline timeline;
 	private Tuning[] tunings;
 	private Integer[][] basicTabSymbolProperties;
@@ -167,7 +177,7 @@ public class Tablature implements Serializable {
 
 
 	/**
-	 * Creates a deep copy of the given <code>Tablature</code>.
+	 * Copy constructor. Creates a deep copy of the given <code>Tablature</code>.
 	 * 
 	 * @param t
 	 */
@@ -202,7 +212,7 @@ public class Tablature implements Serializable {
 		setEncoding(argEncoding);
 		setNormaliseTuning(argNormaliseTuning);
 		setName();
-		setTimeline();
+		setMeterInfo();
 		setTunings();
 		setBasicTabSymbolProperties();
 		setChords();
@@ -230,9 +240,53 @@ public class Tablature implements Serializable {
 	}
 
 
-	void setTimeline() {
-		timeline = new Timeline(getEncoding());
+	void setMeterInfo() {
+		meterInfo = makeMeterInfo(); 
 	}
+
+
+	// TESTED
+	List<Integer[]> makeMeterInfo() {
+		List<Integer[]> mi = new ArrayList<>();
+
+		Timeline tl = getEncoding().getTimeline();
+		List<Integer[]> ts = tl.getTimeSignatures();
+		List<Integer[]> bars = tl.getBars();
+		List<Integer> diminutions = tl.getDiminutions();
+		for (int i = 0; i < ts.size(); i++) {
+			Integer[] currMi = new Integer[MI_SIZE_TAB];
+			Integer[] currTs = ts.get(i);
+			Integer[] currBars = bars.get(i);			
+			// 1. Meter
+			currMi[MI_NUM] = currTs[0];
+			currMi[MI_DEN] = currTs[1];
+			// 2. Bar number(s)
+			currMi[MI_FIRST_BAR] = currBars[0];
+			currMi[MI_LAST_BAR] = currBars[1];
+			// 3. Metric times
+			Integer[] prevMi = i == 0 ? null : mi.get(i-1);
+			Rational prevMeterAsRat = 
+				i == 0 ? Rational.ZERO : new Rational(prevMi[MI_NUM], prevMi[MI_DEN]);
+			int prevNumBars = 
+				i == 0 ? 0 : ((prevMi[MI_LAST_BAR] - prevMi[MI_FIRST_BAR]) + 1);
+			Rational prevMt = 
+				i == 0 ? Rational.ZERO : new Rational(prevMi[MI_NUM_MT_FIRST_BAR], 
+				prevMi[MI_DEN_MT_FIRST_BAR]);	
+			Rational currMt = prevMt.add(prevMeterAsRat.mul(prevNumBars));
+			currMt.reduce();
+			currMi[MI_NUM_MT_FIRST_BAR] = currMt.getNumer();
+			currMi[MI_DEN_MT_FIRST_BAR] = currMt.getDenom();
+			// 4. Diminution
+			currMi[MI_DIM] = diminutions.get(i);
+			mi.add(currMi);
+		}
+		return mi;
+	}
+
+
+//	void setTimeline() {
+//		timeline = new Timeline(getEncoding());
+//	}
 
 
 	void setTunings() {
@@ -283,12 +337,12 @@ public class Tablature implements Serializable {
 		// 2. Make pitches
 		List<Integer> gridYOfTabSymbols = new ArrayList<>();
 		Tuning t = getNormaliseTuning() ? tunings[NORMALISED_TUNING_IND] : tunings[ENCODED_TUNING_IND];
-		listOfTabSymbols.forEach(ts -> gridYOfTabSymbols.add(TabSymbol.getTabSymbol(ts, tss).getPitch(t)));
+		listOfTabSymbols.forEach(ts -> gridYOfTabSymbols.add(Symbol.getTabSymbol(ts, tss).getPitch(t)));
 
 		// 3. Make btp
 		Integer[][] btp = new Integer[listOfTabSymbols.size()][10];
 		for (int i = 0; i < btp.length; i++) {
-			TabSymbol currTabSymbol = TabSymbol.getTabSymbol(listOfTabSymbols.get(i), tss);
+			TabSymbol currTabSymbol = Symbol.getTabSymbol(listOfTabSymbols.get(i), tss);
 			btp[i][PITCH] = gridYOfTabSymbols.get(i);
 			btp[i][COURSE] = currTabSymbol.getCourse();
 			btp[i][FRET] = currTabSymbol.getFret();
@@ -329,8 +383,8 @@ public class Tablature implements Serializable {
 			if (isRsEvent) {
 				String rsStr = currEvent.substring(0, currEvent.indexOf(ss));
 				// a. Regular RS 
-				if (!rsStr.equals(RhythmSymbol.RHYTHM_DOT.getEncoding())) {
-					RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(rsStr);
+				if (!rsStr.equals(Symbol.RHYTHM_DOT.getEncoding())) {
+					RhythmSymbol rs = Symbol.getRhythmSymbol(rsStr);
 					currDur = rs.getDuration();
 				}
 				// b. rhythmDot
@@ -366,13 +420,13 @@ public class Tablature implements Serializable {
 
 		List<String> listOfTabSymbols = getEncoding().getListsOfSymbols().get(Encoding.TAB_SYMBOLS_IND);
 		TabSymbolSet tss = getEncoding().getTabSymbolSet();
-		TabSymbol currTabSymbol = TabSymbol.getTabSymbol(listOfTabSymbols.get(noteIndex), tss);
+		TabSymbol currTabSymbol = Symbol.getTabSymbol(listOfTabSymbols.get(noteIndex), tss);
 		int currOnsetTime = onsetOfTabSymbols.get(noteIndex);
 
 		// Get the onset time of the next TS that has the same course as currTabSymbol
 		int nextOnsetTime = 0;
 		for (int j = noteIndex + 1; j < listOfTabSymbols.size(); j++) {
-			TabSymbol nextTabSymbol = TabSymbol.getTabSymbol(listOfTabSymbols.get(j), tss);
+			TabSymbol nextTabSymbol = Symbol.getTabSymbol(listOfTabSymbols.get(j), tss);
 			if (nextTabSymbol.getCourse() == currTabSymbol.getCourse()) {
 				nextOnsetTime = onsetOfTabSymbols.get(j);
 				break;
@@ -403,12 +457,12 @@ public class Tablature implements Serializable {
 		List<TabSymbol> currChord = new ArrayList<TabSymbol>();
 		List<String> listOfTabSymbols = 
 			getEncoding().getListsOfSymbols().get(Encoding.TAB_SYMBOLS_IND);
-		TabSymbol firstTabSymbol = TabSymbol.getTabSymbol(listOfTabSymbols.get(0), tss);
+		TabSymbol firstTabSymbol = Symbol.getTabSymbol(listOfTabSymbols.get(0), tss);
 		int onsetTimeFirstTabSymbol = btp[0][ONSET_TIME];
 		currChord.add(firstTabSymbol);
 		int onsetTimePrevTabSymbol = onsetTimeFirstTabSymbol;
 		for (int i = 1; i < listOfTabSymbols.size(); i++) {
-			TabSymbol currTabSymbol = TabSymbol.getTabSymbol(listOfTabSymbols.get(i), tss);
+			TabSymbol currTabSymbol = Symbol.getTabSymbol(listOfTabSymbols.get(i), tss);
 			int onsetTimeCurrTabSymbol = btp[i][ONSET_TIME];
 			// If currTabSymbol and prevTabSymbol have the same onset time, they are in the 
 			// same chord
@@ -461,8 +515,25 @@ public class Tablature implements Serializable {
 	}
 
 
-	public Timeline getTimeline() {
-		return timeline;
+	/**
+	 * Gets the meterInfo.
+	 * 
+	 * @return A list whose elements represent the meters in the tablature. Each element contains<br>
+	 *         <ul>
+	 *         <li> As element 0: the numerator of the meter.</li>
+	 *         <li> As element 1: the denominator of the meter.</li>
+	 *         <li> As element 2: the first (metric) bar in the meter.</li>
+	 *         <li> As element 3: the last (metric) bar in the meter.</li>
+	 *         <li> As element 4: the numerator of the metric time of that first bar.</li>
+	 *         <li> As element 5: the denominator of the metric time of that first bar.</li>
+	 *         <li> As element 6: the diminution for the meter.</li>
+	 *         </ul>
+	 *         
+	 *         An anacrusis bar would be denoted with bar number 0; however, the current 
+	 *         approach is to pre-pad an anacrusis bar with rests, making it a complete bar.
+	 */
+	public List<Integer[]> getMeterInfo() {
+		return meterInfo;
 	}
 
 
@@ -612,6 +683,7 @@ public class Tablature implements Serializable {
 			btp[noteIndex][PITCH], 
 			new Rational(btp[noteIndex][ONSET_TIME], SRV_DEN), 
 			new Rational(btp[noteIndex][MIN_DURATION], SRV_DEN),
+			-1,
 			null
 		);
 	}
@@ -928,8 +1000,8 @@ public class Tablature implements Serializable {
 					split = Arrays.copyOf(split, split.length - 1);
 				}
 				// Add event if first element is a RS or last element is a TS
-				if (RhythmSymbol.getRhythmSymbol(split[0]) != null ||
-					TabSymbol.getTabSymbol(split[(split.length) - 1], tss) != null) {
+				if (Symbol.getRhythmSymbol(split[0]) != null ||
+					Symbol.getTabSymbol(split[(split.length) - 1], tss) != null) {
 					tmp.add(t);
 				}
 			}
@@ -958,7 +1030,7 @@ public class Tablature implements Serializable {
 				if (curr.startsWith(RhythmSymbol.TRIPLET_INDICATOR)) {
 					String rs = curr.substring(0, curr.indexOf(Symbol.SYMBOL_SEPARATOR));
 //					RhythmSymbol nonTripletVar = RhythmSymbol.getNonTripletVariant(rs);
-					dur += MEIExport.TRIPLETISER.mul(RhythmSymbol.getRhythmSymbol(rs).getDuration()).toDouble();
+					dur += MEIExport.TRIPLETISER.mul(Symbol.getRhythmSymbol(rs).getDuration()).toDouble();
 //					dur += nonTripletVar.getDuration();
 					// Triplet open chord: add to pair
 					if (curr.contains(RhythmSymbol.TRIPLET_OPEN)) {
@@ -1006,7 +1078,7 @@ public class Tablature implements Serializable {
 			String e = event.getEncoding();
 			int bar = event.getBar();
 			// If the first symbol in the encoded event is a MS
-			if (MensurationSign.getMensurationSign(e.substring(0, e.indexOf(ss))) != null) {
+			if (Symbol.getMensurationSign(e.substring(0, e.indexOf(ss))) != null) {
 				// Add complete event (which will be a MS event) without trailing SS
 				tabMeters.add(new String[]{
 					e.substring(0, e.lastIndexOf(ss)), 
@@ -1084,10 +1156,10 @@ public class Tablature implements Serializable {
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		// Get metric bar lengths in SMALLEST_RHYTHMIC_VALUE
 		List<Integer> metricBarLengths = new ArrayList<>();
-		for (Integer[] in : getTimeline().getMeterInfo()) {
-			Rational currMeter = new Rational(in[Timeline.MI_NUM], in[Timeline.MI_DEN]);
+		for (Integer[] in : getMeterInfo()) {
+			Rational currMeter = new Rational(in[MI_NUM], in[MI_DEN]);
 			int barLenInSrv = (int) currMeter.div(SMALLEST_RHYTHMIC_VALUE).toDouble();
-			int numBarsInMeter = (in[Timeline.MI_LAST_BAR] - in[Timeline.MI_FIRST_BAR]) + 1;
+			int numBarsInMeter = (in[MI_LAST_BAR] - in[MI_FIRST_BAR]) + 1;
 			metricBarLengths.addAll(Collections.nCopies(numBarsInMeter, barLenInSrv));
 		}
 
@@ -1103,7 +1175,7 @@ public class Tablature implements Serializable {
 			// If the event is not a barline event or a MS event
 			if (!Encoding.assertEventType(e, null, "barline") && 
 				!Encoding.assertEventType(e, null, "MensurationSign")) {
-				RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(e.substring(0, e.indexOf(ss)));
+				RhythmSymbol rs = Symbol.getRhythmSymbol(e.substring(0, e.indexOf(ss)));
 				int durE = rs != null ? rs.getDuration() : durPrevE;
 				if (rs != null) {
 					durPrevE = durE;
@@ -1324,7 +1396,7 @@ public class Tablature implements Serializable {
 		Rational noteOnsetTime = new Rational(tabSymbolOnsetTime, SRV_DEN);
 
 		// 3. Create a Note with the given pitch, onset time, and minimum duration
-		Note note = ScorePiece.createNote(tabSymbolPitch, noteOnsetTime, noteMinimumDuration, null);
+		Note note = ScorePiece.createNote(tabSymbolPitch, noteOnsetTime, noteMinimumDuration, -1, null);
 
 		return note; 
 	}
@@ -1356,11 +1428,14 @@ public class Tablature implements Serializable {
 	 */
 	private List<Rational[]> getAllMetricPositions() {
 		List<Rational[]> allMetricPositions = new ArrayList<Rational[]>();
-		List<Integer[]> mi = getTimeline().getMeterInfo();
-//		List<Integer[]> mi = getTimeline().getMeterInfoOBS();
+		List<Integer[]> mi = getMeterInfo();
 		Integer[][] btp = getBasicTabSymbolProperties();
+		Timeline tl = getEncoding().getTimeline();
 		for (Integer[] b : btp) {
-			allMetricPositions.add(Timeline.getMetricPosition(new Rational(b[ONSET_TIME], SRV_DEN), mi)); 
+			allMetricPositions.add(
+				tl.getMetricPosition(b[ONSET_TIME])
+//				Utils.getMetricPosition(new Rational(b[ONSET_TIME], SRV_DEN), mi)
+			); 
 		}
 		return allMetricPositions;
 	}
@@ -1429,8 +1504,8 @@ public class Tablature implements Serializable {
 	private static int getDiminution(int bar, List<Integer[]> mi) {
 		int diminution = 1; 
 		for (Integer[] in : mi) {
-			if (bar >= in[Timeline.MI_FIRST_BAR] && bar <= in[Timeline.MI_LAST_BAR]) {
-				diminution = in[Timeline.MI_DIM];
+			if (bar >= in[MI_FIRST_BAR] && bar <= in[MI_LAST_BAR]) {
+				diminution = in[MI_DIM];
 				break;
 			}
 		}
@@ -1542,10 +1617,10 @@ public class Tablature implements Serializable {
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		// Get metric bar lengths in SMALLEST_RHYTHMIC_VALUE
 		List<Integer> metricBarLengths = new ArrayList<>();
-		for (Integer[] in : getTimeline().getMeterInfo()) {
-			Rational currMeter = new Rational(in[Timeline.MI_NUM], in[Timeline.MI_DEN]);
+		for (Integer[] in : getMeterInfo()) {
+			Rational currMeter = new Rational(in[MI_NUM], in[MI_DEN]);
 			int barLenInSrv = (int) currMeter.div(SMALLEST_RHYTHMIC_VALUE).toDouble();
-			int numBarsInMeter = (in[Timeline.MI_LAST_BAR] - in[Timeline.MI_FIRST_BAR]) + 1;
+			int numBarsInMeter = (in[MI_LAST_BAR] - in[MI_FIRST_BAR]) + 1;
 			metricBarLengths.addAll(Collections.nCopies(numBarsInMeter, barLenInSrv));
 		}
 
@@ -1561,7 +1636,7 @@ public class Tablature implements Serializable {
 			// If the event is not a barline event or a MS event
 			if (!Encoding.assertEventType(e, null, "barline") && 
 				!Encoding.assertEventType(e, null, "MensurationSign")) {
-				RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(e.substring(0, e.indexOf(ss)));
+				RhythmSymbol rs = Symbol.getRhythmSymbol(e.substring(0, e.indexOf(ss)));
 				int durE = rs != null ? rs.getDuration() : durPrevE;
 				if (rs != null) {
 					durPrevE = durE;
@@ -1603,8 +1678,8 @@ public class Tablature implements Serializable {
 		List<Integer> onsetOfTabSymbols) {
 		List<List<Integer>> res = new ArrayList<>();
 
-		Timeline tl = getTimeline();
-		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfo(), Timeline.MI_DIM);
+		Timeline tl = getEncoding().getTimeline();
+		List<Integer> diminutions = ToolBox.getItemsAtIndex(getMeterInfo(), MI_DIM);
 //		List<Integer> diminutions = ToolBox.getItemsAtIndex(tl.getMeterInfoOBS(), Timeline.MI_DIM);
 		List<Integer[]> undiminutedMeterInfo = null; //tl.getUndiminutedMeterInfoOBS();
 
@@ -1615,10 +1690,10 @@ public class Tablature implements Serializable {
 		metricTimesBeatZeroAdapted.add(0);
 		for (int i = 1 ; i < undiminutedMeterInfo.size(); i++) {
 			Integer[] prevMeterInfo = undiminutedMeterInfo.get(i-1);
-			int prevNumBars = (prevMeterInfo[Timeline.MI_LAST_BAR] - 
-				prevMeterInfo[Timeline.MI_FIRST_BAR]) + 1;
-			Rational prevMeter = new Rational(prevMeterInfo[Timeline.MI_NUM], 
-				prevMeterInfo[Timeline.MI_DEN]);
+			int prevNumBars = (prevMeterInfo[MI_LAST_BAR] - 
+				prevMeterInfo[MI_FIRST_BAR]) + 1;
+			Rational prevMeter = new Rational(prevMeterInfo[MI_NUM], 
+				prevMeterInfo[MI_DEN]);
 			// The metric time (duration of the previous bars) for beat zero equals 
 			// original: previous meter * number of bars in that meter 
 			// adapted: previous meter * number of bars in that meter * (or /) the dim for that meter
@@ -1676,7 +1751,7 @@ public class Tablature implements Serializable {
 
 	private void reverse() {
 		Encoding e = getEncoding();
-		e.augment(getTimeline().getMeterInfo(), -1, -1, "reverse");
+		e.augment(-1, -1, "reverse");
 		this.init(e, getNormaliseTuning());
 //			getEncoding().reverse(getTimeline().getMeterInfo()), 
 //			getNormaliseTuning());
@@ -1685,7 +1760,7 @@ public class Tablature implements Serializable {
 
 	private void deornament(int dur) {
 		Encoding e = getEncoding();
-		e.augment(null, dur, 1, "deornament");
+		e.augment(dur, 1, "deornament");
 		this.init(e, getNormaliseTuning());
 //		this.init(getEncoding().deornament(getTabSymbolDur(dur)), 
 //			getNormaliseTuning());
@@ -1694,7 +1769,7 @@ public class Tablature implements Serializable {
 
 	private void rescale(int factor) {
 		Encoding e = getEncoding();
-		e.augment(getTimeline().getMeterInfo(), -1, factor, "rescale");
+		e.augment(-1, factor, "rescale");
 		this.init(e, getNormaliseTuning());
 //		this.init(getEncoding().deornament(getTabSymbolDur(dur)), 
 //			getNormaliseTuning());

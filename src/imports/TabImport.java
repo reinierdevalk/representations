@@ -350,8 +350,8 @@ public class TabImport {
 						RHYTHM_SYMBOLS.get(tabword.substring(tabword.indexOf("(")+1, 
 						tabword.indexOf(")")));
 					System.out.println(":" + tripletUnitRs);
-					int durTripletUnit = RhythmSymbol.getRhythmSymbol(tripletUnitRs).getDuration();
-					int dur = RhythmSymbol.getRhythmSymbol(rs).getDuration();
+					int durTripletUnit = Symbol.getRhythmSymbol(tripletUnitRs).getDuration();
+					int dur = Symbol.getRhythmSymbol(rs).getDuration();
 					System.out.println(durTripletUnit);
 					System.out.println(rs);
 					System.out.println(dur);
@@ -371,7 +371,7 @@ public class TabImport {
 					// Assume mid triplet RS
 					rs = Symbol.getRhythmSymbol(rs).makeVariant(0, false, true).get(1).getEncoding(); // DJUU
 //					rs = RhythmSymbol.getTripletVariant(rs).getEncoding();
-					tripletLength -= RhythmSymbol.getRhythmSymbol(rs).getDuration();
+					tripletLength -= Symbol.getRhythmSymbol(rs).getDuration();
 					System.out.println("TL 2 --> " + tripletLength);
 					// If last note of the triplet
 					if (tripletLength == 0) {
@@ -390,7 +390,7 @@ public class TabImport {
 				System.out.println("converted = " + converted);
 				asTbp += converted;
 				int durFirst = // TODO why add to durCurrRhythmGroup?
-					durCurrRhythmGroup + RhythmSymbol.getRhythmSymbol(rs).getDuration();
+					durCurrRhythmGroup + Symbol.getRhythmSymbol(rs).getDuration();
 				durCurrRhythmGroup += durFirst;
 				prevDur = durFirst;
 			}
@@ -409,8 +409,8 @@ public class TabImport {
 						RhythmSymbol.TRIPLET_INDICATOR +	
 						RHYTHM_SYMBOLS.get(tabword.substring(tabword.indexOf("(")+1, 
 						tabword.indexOf(")")));
-					int durTripletUnit = RhythmSymbol.getRhythmSymbol(tripletUnitRs).getDuration();
-					int dur = RhythmSymbol.getRhythmSymbol(rs).getDuration();
+					int durTripletUnit = Symbol.getRhythmSymbol(tripletUnitRs).getDuration();
+					int dur = Symbol.getRhythmSymbol(rs).getDuration();
 					System.out.println("full triplet length = " + (3 * durTripletUnit));
 					tripletLength = (3 * durTripletUnit) - dur ;
 					System.out.println("TL 3 --> " + tripletLength);
@@ -424,7 +424,7 @@ public class TabImport {
 					// Assume mid triplet RS; beam == false (any beam is already in rs)
 					rs = Symbol.getRhythmSymbol(rs).makeVariant(0, false, true).get(1).getEncoding(); // DJUU
 //					rs = RhythmSymbol.getTripletVariant(rs).getEncoding();
-					tripletLength -= RhythmSymbol.getRhythmSymbol(rs).getDuration();
+					tripletLength -= Symbol.getRhythmSymbol(rs).getDuration();
 					System.out.println("TL 4 --> " + tripletLength);
 					// If last note of the triplet
 					if (tripletLength == 0) {
@@ -442,7 +442,7 @@ public class TabImport {
 				}
 				System.out.println("converted = " + converted);
 				asTbp += converted;
-				int durFirst = RhythmSymbol.getRhythmSymbol(rs).getDuration();
+				int durFirst = Symbol.getRhythmSymbol(rs).getDuration();
 				durCurrRhythmGroup += durFirst;
 				prevDur = durFirst;
 
@@ -467,7 +467,7 @@ public class TabImport {
 							// Assume mid triplet RS; beam == false (any beam is already in rs)
 							rsNext = Symbol.getRhythmSymbol(rsNext).makeVariant(0, false, true).get(1).getEncoding(); // DJUU
 //							rsNext = RhythmSymbol.getTripletVariant(rsNext).getEncoding();
-							tripletLength -= RhythmSymbol.getRhythmSymbol(rsNext).getDuration();
+							tripletLength -= Symbol.getRhythmSymbol(rsNext).getDuration();
 							System.out.println("TL 5 --> " + tripletLength);
 							if (tripletLength == 0) {
 								tripletActive = false;
@@ -497,7 +497,7 @@ public class TabImport {
 							// Assume mid triplet RS; beam == false (any beam is already in rs)
 							rsNext = Symbol.getRhythmSymbol(rsNext).makeVariant(0, false, true).get(1).getEncoding(); // DJUU
 //							rsNext = RhythmSymbol.getTripletVariant(rsNext).getEncoding();
-							tripletLength -= RhythmSymbol.getRhythmSymbol(rsNext).getDuration();
+							tripletLength -= Symbol.getRhythmSymbol(rsNext).getDuration();
 							System.out.println("TL 6 --> " + tripletLength);
 //							System.out.println("rsNext = " + rsNext);
 							if (tripletLength == 0) { // TODO remove: this never happens
@@ -595,7 +595,7 @@ public class TabImport {
 				// If dotted: add rhythmDot
 				if (isDotted) {
 //				if (indAfterRS == 3) {
-					convertedRS += RhythmSymbol.RHYTHM_DOT.getEncoding();
+					convertedRS += Symbol.RHYTHM_DOT.getEncoding();
 				}
 				convertedRS += ss;
 			}
@@ -734,9 +734,9 @@ public class TabImport {
 		for (int i = 0; i < symbols.length; i++) {
 			String s = symbols[i];
 //			System.out.println("symbol = " + s);
-			MensurationSign ms = MensurationSign.getMensurationSign(s);
-			RhythmSymbol rs = RhythmSymbol.getRhythmSymbol(s);
-			TabSymbol ts = TabSymbol.getTabSymbol(s, TabSymbolSet.getTabSymbolSet(tss, null));
+			MensurationSign ms = Symbol.getMensurationSign(s);
+			RhythmSymbol rs = Symbol.getRhythmSymbol(s);
+			TabSymbol ts = Symbol.getTabSymbol(s, TabSymbolSet.getTabSymbolSet(tss, null));
 			ConstantMusicalSymbol cms = Symbol.getConstantMusicalSymbol(s);
 			ConstantMusicalSymbol prevCms = null;
 			if (i > 0) {
@@ -747,7 +747,7 @@ public class TabImport {
 			if (ms != null) {
 				Integer[] meter = ms.getMeter();
 				// In case of double (ternary) MS: get the meter from the second MS
-				MensurationSign nextMS = MensurationSign.getMensurationSign(symbols[i+1]);
+				MensurationSign nextMS = Symbol.getMensurationSign(symbols[i+1]);
 				if (nextMS != null) {
 					meter = nextMS.getMeter();
 					i++; // skip next symbol
@@ -776,7 +776,7 @@ public class TabImport {
 				// Only if previous symbol was no barline and the RS event is not preceded by a MS 
 				// (in both cases posInBar was already updated)
 				if (!(prevCms != null && prevCms != Symbol.SPACE) && 
-					(i >= 2 && MensurationSign.getMensurationSign(symbols[i-2]) == null)) {
+					(i >= 2 && Symbol.getMensurationSign(symbols[i-2]) == null)) {
 					posInBar += prevDur;
 //					System.out.println("RS");
 //					System.out.println("posInBar = " + posInBar);
@@ -803,7 +803,7 @@ public class TabImport {
 //					System.out.println("posInBar = " + posInBar);
 				}
 				// Check for semibreve barring (assumed to be regular)
-				if (currBar == 1 && posInBar >= RhythmSymbol.SEMIBREVIS.getDuration()) {
+				if (currBar == 1 && posInBar >= Symbol.SEMIBREVIS.getDuration()) {
 					semibreveBarring = true;
 				}
 			}

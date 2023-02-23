@@ -31,6 +31,7 @@ public class NoteTimePitchComparator implements Comparator<Note>, Serializable {
 	 *        </ul>
 	 * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
 	 */
+	@Override
 	public int compare(Note note1, Note note2) {
 		Rational t1 = note1.getMetricTime();
 		Rational t2 = note2.getMetricTime();

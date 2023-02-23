@@ -32,6 +32,8 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultHighlighter;
@@ -104,7 +106,7 @@ public class Viewer extends JFrame{
 		setSize(FRAME_DIMS[0], FRAME_DIMS[1]);		
 		setVisible(true);
 		setTitle(TITLE[0] + TITLE[1] + TITLE[2]);
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 	}
 
 
@@ -212,6 +214,7 @@ public class Viewer extends JFrame{
 //		b.setBounds(new Rectangle(600, 559, 91, 31));
 		b.setText("View");
 		b.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				viewButtonAction();
 			}
@@ -234,6 +237,7 @@ public class Viewer extends JFrame{
 
 		JMenuItem newMenuItem = new JMenuItem("New");
 		newMenuItem.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				newFileAction();
 			}
@@ -241,6 +245,7 @@ public class Viewer extends JFrame{
 		m.add(newMenuItem);
 		JMenuItem openMenuItem = new JMenuItem("Open");
 		openMenuItem.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				openFileAction();
 			}
@@ -248,6 +253,7 @@ public class Viewer extends JFrame{
 		m.add(openMenuItem);
 		JMenuItem saveMenuItem = new JMenuItem("Save");
 		saveMenuItem.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				saveFileAction(Encoding.EXTENSION);
 			}
@@ -255,6 +261,7 @@ public class Viewer extends JFrame{
 		m.add(saveMenuItem);
 		JMenuItem saveAsMenuItem = new JMenuItem("Save as");
 		saveAsMenuItem.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				saveAsFileAction(Encoding.EXTENSION);
 			}
@@ -263,6 +270,7 @@ public class Viewer extends JFrame{
 		JMenu sm = new JMenu("Import");
 		JMenuItem asciiImportSubmenuItem = new JMenuItem("ASCII tab");
 		asciiImportSubmenuItem.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				importFileAction(ASCII_EXTENSION);
 			}
@@ -270,6 +278,7 @@ public class Viewer extends JFrame{
 		sm.add(asciiImportSubmenuItem);
 		JMenuItem tabCodeSubmenuItem = new JMenuItem("TabCode");
 		tabCodeSubmenuItem.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				importFileAction(TABCODE_EXTENSION);
 			}
@@ -279,6 +288,7 @@ public class Viewer extends JFrame{
 		sm = new JMenu("Export");
 		JMenuItem asciiSubmenuItem = new JMenuItem("ASCII tab");
 		asciiSubmenuItem.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				exportFileAction(ASCII_EXTENSION);
 			}
@@ -286,6 +296,7 @@ public class Viewer extends JFrame{
 		sm.add(asciiSubmenuItem);
 		JMenuItem tabMEISubmenuItem = new JMenuItem("MEI");
 		tabMEISubmenuItem.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				exportFileAction(MEI_EXTENSION);
 			}
@@ -297,6 +308,7 @@ public class Viewer extends JFrame{
 		mb.add(m);
 		JMenuItem selectAllMenuItem = new JMenuItem("Select all");
 		selectAllMenuItem.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				getEncodingTextArea().requestFocus();
 				getEncodingTextArea().selectAll();
@@ -344,14 +356,14 @@ public class Viewer extends JFrame{
 
 		JScrollPane sp = 
 			new JScrollPane(getEncodingTextArea(), 
-			JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
-			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+			ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, 
+			ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		sp.setBounds(new Rectangle(15, 115, 650, 430));
 		p.add(sp, null);
 		sp = 
 			new JScrollPane(getTabTextArea(), 
-			JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
-			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+			ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, 
+			ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		sp.setBounds(new Rectangle(15 + 15 + 650, 115, 650, 430));
 		p.add(sp, null);
 

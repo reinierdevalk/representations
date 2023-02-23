@@ -30,6 +30,8 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultHighlighter;
@@ -109,7 +111,7 @@ public class ViewerOld extends JFrame {
 		setSize(FRAME_DIMS[0], FRAME_DIMS[1]);		
 		setVisible(true);
 		setTitle(encodingFrame ? TITLE[0] + TITLE[1] + TITLE[2] : file.getName() + TITLE[2]);
-		setDefaultCloseOperation(encodingFrame ? JFrame.EXIT_ON_CLOSE : JFrame.HIDE_ON_CLOSE);
+		setDefaultCloseOperation(encodingFrame ? WindowConstants.EXIT_ON_CLOSE : WindowConstants.HIDE_ON_CLOSE);
 	}
 
 
@@ -196,6 +198,7 @@ public class ViewerOld extends JFrame {
 		b.setBounds(new Rectangle(600, 559, 91, 31));
 		b.setText("View");
 		b.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				viewButtonAction();
 			}
@@ -239,8 +242,8 @@ public class ViewerOld extends JFrame {
 		}
 		JScrollPane sp = 
 			new JScrollPane(encodingFrame ? getEncodingTextArea() : getTabTextArea(), 
-			JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
-			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+			ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, 
+			ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		sp.setBounds(encodingFrame ? new Rectangle(15, 115, 676, 430) : new Rectangle(15, 115-100, 676, 430+100));
 		p.add(sp, null);
 
@@ -262,6 +265,7 @@ public class ViewerOld extends JFrame {
 		if (encodingFrame) {
 			JMenuItem newMenuItem = new JMenuItem("New");
 			newMenuItem.addActionListener(new ActionListener() {
+				@Override
 				public void actionPerformed(ActionEvent e) {
 					newFileAction();
 				}
@@ -269,6 +273,7 @@ public class ViewerOld extends JFrame {
 			m.add(newMenuItem);
 			JMenuItem openMenuItem = new JMenuItem("Open");
 			openMenuItem.addActionListener(new ActionListener() {
+				@Override
 				public void actionPerformed(ActionEvent e) {
 					openFileAction();
 				}
@@ -276,6 +281,7 @@ public class ViewerOld extends JFrame {
 			m.add(openMenuItem);
 			JMenuItem saveMenuItem = new JMenuItem("Save");
 			saveMenuItem.addActionListener(new ActionListener() {
+				@Override
 				public void actionPerformed(ActionEvent e) {
 					saveFileAction(encodingFrame ? Encoding.EXTENSION : EXTENSION);
 				}
@@ -285,6 +291,7 @@ public class ViewerOld extends JFrame {
 		}
 		JMenuItem saveAsMenuItem = new JMenuItem("Save as");
 		saveAsMenuItem.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				saveAsFileAction(/*ta.getText(),*/ encodingFrame ? Encoding.EXTENSION : EXTENSION);
 			}
@@ -294,6 +301,7 @@ public class ViewerOld extends JFrame {
 		JMenu sm = new JMenu("Import");
 		JMenuItem asciiImportSubmenuItem = new JMenuItem("ASCII tab");
 		asciiImportSubmenuItem.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				importFileAction();
 			}
@@ -301,6 +309,7 @@ public class ViewerOld extends JFrame {
 		sm.add(asciiImportSubmenuItem);
 		JMenuItem tabCodeSubmenuItem = new JMenuItem("TabCode");
 		tabCodeSubmenuItem.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				importFileAction();
 			}
@@ -311,6 +320,7 @@ public class ViewerOld extends JFrame {
 		sm = new JMenu("Export");
 		JMenuItem asciiSubmenuItem = new JMenuItem("ASCII tab");
 		asciiSubmenuItem.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				exportFileAction();
 			}
@@ -318,6 +328,7 @@ public class ViewerOld extends JFrame {
 		sm.add(asciiSubmenuItem);
 		JMenuItem tabMEISubmenuItem = new JMenuItem("MEI tab");
 		tabMEISubmenuItem.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				exportFileAction();
 			}
@@ -331,6 +342,7 @@ public class ViewerOld extends JFrame {
 			mb.add(m);
 			JMenuItem selectAllMenuItem = new JMenuItem("Select all");
 			selectAllMenuItem.addActionListener(new ActionListener() {
+				@Override
 				public void actionPerformed(ActionEvent e) {
 					getEncodingTextArea().requestFocus();
 					getEncodingTextArea().selectAll();
@@ -796,8 +808,8 @@ public class ViewerOld extends JFrame {
 
 
 	private JScrollPane getTabViewerPane() { // alternative for getTabViewerPanel()
-		return new JScrollPane(getTabTextArea(), JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
-			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		return new JScrollPane(getTabTextArea(), ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, 
+			ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 	}
 
 
@@ -805,8 +817,8 @@ public class ViewerOld extends JFrame {
 //		if (encodingAreaScrollPane == null) {
 //			encodingAreaScrollPane = 
 		JScrollPane encodingAreaScrollPane = 		
-			new JScrollPane(getEncodingTextArea(), JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
-			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+			new JScrollPane(getEncodingTextArea(), ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+			ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		encodingAreaScrollPane.setBounds(new Rectangle(15, 115, 676, 430));
 //		}
 		return encodingAreaScrollPane;
