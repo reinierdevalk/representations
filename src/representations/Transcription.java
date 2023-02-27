@@ -1362,6 +1362,9 @@ public class Transcription implements Serializable {
 					Collections.swap(argTaggedNotes, indLower, indUpper);
 
 					// TODO Without the below, this method can be static
+					if (handledNotes == null) {
+						handledNotes = "";
+					}
 					handledNotes = handledNotes.concat(
 						"course crossing found in chord " + i + ": notes " + (indLower - notesPreceding) + 
 						" (" + noteLower + ") and " + (indUpper - notesPreceding) + " (" + noteUpper + 
@@ -2431,46 +2434,6 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Gives each note its maximum duration. Given a note n_t and an note n_t+1 in a voice, the duration of
-	 * n_t is
-	 * (1) if the inter-onset time between n_t and n_t+1 <= the given maxDur: the inter-onset time
-	 * (2) if the inter-onset time between n_t and n_t+1 >  the given maxDur: the given maxDur
-	 * 
-	 * @param p
-	 * @param maxDur
-	 * @return
-	 */
-	// TODO test
-	public static Piece completeDurations(Piece p, Rational maxDur) {
-		NotationSystem ns = p.getScore();
-		for (int i = 0; i < ns.size(); i++) {
-			NotationVoice nv = ns.get(i).get(0);
-			for (int j = 0; j < nv.size(); j++) {
-				Note n = nv.get(j).get(0);
-				if (nv.get(j).size() > 1) {
-					System.out.println("two simultaneous notes in voice!");
-				}
-				Rational onset = n.getMetricTime();
-				if (j+1 < nv.size()) {
-					Note nextN = nv.get(j+1).get(0);
-					Rational ioi = nextN.getMetricTime().sub(onset);
-					Rational newDur = ioi;
-					if (ioi.isGreater(maxDur)) {
-						newDur = maxDur;
-					}
-					n.setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), onset, newDur));
-					// TODO Quick fix for two simultaneous notes in a voice 26.01.2020
-					if (nv.get(j).size() > 1) {
-						nv.get(j).get(1).setScoreNote(new ScoreNote(new ScorePitch(n.getMidiPitch()), onset, newDur));
-					}
-				}
-			}
-		}
-		return p;
-	}
-
-
-	/**
 	 * Returns a matrix containing onset, offset, and pitch for each note in btp or bnp, 
 	 * 
 	 * @param btp
@@ -3141,7 +3104,7 @@ public class Transcription implements Serializable {
 	}
 
 
-	// TODO delete
+	// TODO delete: only used in tab-as-non-tab case
 	public void transposeNonTab(int transpositionInterval) {
 		transpose(transpositionInterval);
 		// Redo the part in createTranscription() from setBasicNoteProperties() on. 
@@ -3160,7 +3123,7 @@ public class Transcription implements Serializable {
 	 * 
 	 * @param transposition
 	 */
-	// TESTED TODO delete
+	// TESTED TODO delete: see transposeNonTab()
 	void transpose(int transposition) {
 		// 1. Transpose all the notes in noteSequence and reset noteSequence
 		List<Note> notes = getNotes();
@@ -6789,7 +6752,8 @@ public class Transcription implements Serializable {
 	public List<List<Rational[]>> listNotesPerVoice() {
 		List<List<Rational[]>> notesPerVoice = new ArrayList<>();
 		NotationSystem nSys = getScorePiece().getScore();
-		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
+//		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
+		ScoreMetricalTimeLine smtl = getScorePiece().getScoreMetricalTimeLine();
 		// For each voice i
 		for (int i = 0; i < nSys.size(); i ++) {
 			NotationVoice nv = nSys.get(i).get(0);
@@ -6800,7 +6764,8 @@ public class Transcription implements Serializable {
 						new Rational(n.getMidiPitch(), 1), 
 						n.getMetricTime(),
 						n.getMetricDuration(),
-						ScoreMetricalTimeLine.getMetricPosition(mtl, n.getMetricTime())[1]});
+						smtl.getMetricPosition(n.getMetricTime())[1]});
+//						ScoreMetricalTimeLine.getMetricPosition(mtl, n.getMetricTime())[1]});
 //						Utils.getMetricPosition(n.getMetricTime(), getMeterInfo())[1]});
 				}
 			}
@@ -7350,7 +7315,8 @@ public class Transcription implements Serializable {
 //		NoteSequence noteSeq = getNoteSequence();
 		List<List<List<Double>>> chordVoiceLabels = getChordVoiceLabels();
 		List<List<Double>> voiceLabels = getVoiceLabels();
-		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
+//		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
+		ScoreMetricalTimeLine smtl = getScorePiece().getScoreMetricalTimeLine();
 
 		Integer[][] basicTabSymbolProperties = null;
 		Integer[][] basicNoteProperties = null;
@@ -7414,9 +7380,11 @@ public class Transcription implements Serializable {
 				(tl.getMetricPosition((int) onsetCurrNote.mul(Tablature.SRV_DEN).toDouble())[0].getNumer() + " " +
 				tl.getMetricPosition((int) onsetCurrNote.mul(Tablature.SRV_DEN).toDouble())[1]) // multiplication necessary because of division when making onsetCurrNote above		
 				:
-				(ScoreMetricalTimeLine.getMetricPosition(mtl, onsetCurrNote)[0].getNumer() + " " +	
+				(smtl.getMetricPosition(onsetCurrNote)[0].getNumer() + " " +
+//				(ScoreMetricalTimeLine.getMetricPosition(mtl, onsetCurrNote)[0].getNumer() + " " +	
 //				(Utils.getMetricPosition(onsetCurrNote, meterInfo)[0].getNumer() + " " +
-				ScoreMetricalTimeLine.getMetricPosition(mtl, onsetCurrNote)[1]);
+				smtl.getMetricPosition(onsetCurrNote)[1]);
+//				ScoreMetricalTimeLine.getMetricPosition(mtl, onsetCurrNote)[1]);
 //				Utils.getMetricPosition(onsetCurrNote, meterInfo)[1]);
 
 			// a. Get the voice crossing information within the chord (Type 1)
@@ -7488,9 +7456,11 @@ public class Transcription implements Serializable {
 											(tl.getMetricPosition((int) onsetPrevNote.mul(Tablature.SRV_DEN).toDouble())[0].getNumer() + 
 											" " + tl.getMetricPosition((int) onsetPrevNote.mul(Tablature.SRV_DEN).toDouble())[1])
 											:
-											(ScoreMetricalTimeLine.getMetricPosition(mtl, onsetPrevNote)[0].getNumer() + " " +	
+											(smtl.getMetricPosition(onsetPrevNote)[0].getNumer() + " " +	
+//											(ScoreMetricalTimeLine.getMetricPosition(mtl, onsetPrevNote)[0].getNumer() + " " +	
 //											(Utils.getMetricPosition(onsetPrevNote, meterInfo)[0].getNumer() + " " + 
-											ScoreMetricalTimeLine.getMetricPosition(mtl, onsetPrevNote)[1]);
+											smtl.getMetricPosition(onsetPrevNote)[1]);											
+//											ScoreMetricalTimeLine.getMetricPosition(mtl, onsetPrevNote)[1]);
 //											Utils.getMetricPosition(onsetPrevNote, meterInfo)[1]);
 										voiceCrossingInformation = 
 											voiceCrossingInformation.concat("Type 2 voice crossing at chordIndex " + i + "; notes involved are:" + "\n" + 

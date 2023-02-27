@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import de.uos.fmt.musitech.utility.math.Rational;
+import representations.Tablature;
 import structure.Timeline;
 import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
@@ -3252,21 +3253,21 @@ public class Encoding implements Serializable {
 			meterInfoRev.add(Arrays.copyOf(in, in.length));
 		}
 		Integer[] last = meterInfoRev.get(meterInfoRev.size() - 1);
-		int numBars = last[Timeline.MI_LAST_BAR];
+		int numBars = last[Tablature.MI_LAST_BAR];
 		for (Integer[] in : meterInfoRev) {
-			in[Timeline.MI_FIRST_BAR] = (numBars - in[Timeline.MI_FIRST_BAR]) + 1;
-			in[Timeline.MI_LAST_BAR] = (numBars - in[Timeline.MI_LAST_BAR]) + 1;
+			in[Tablature.MI_FIRST_BAR] = (numBars - in[Tablature.MI_FIRST_BAR]) + 1;
+			in[Tablature.MI_LAST_BAR] = (numBars - in[Tablature.MI_LAST_BAR]) + 1;
 		}
 		Collections.reverse(meterInfoRev);
 		String reversedMeterInfo = "";
 		for (int i = 0; i < meterInfoRev.size(); i++) {
 			Integer[] in = meterInfoRev.get(i);
-			reversedMeterInfo += in[Timeline.MI_NUM] + "/" + in[Timeline.MI_DEN] + " (";
-			if (in[Timeline.MI_FIRST_BAR] == in[Timeline.MI_LAST_BAR]) {
-				reversedMeterInfo += in[Timeline.MI_LAST_BAR];
+			reversedMeterInfo += in[Tablature.MI_NUM] + "/" + in[Tablature.MI_DEN] + " (";
+			if (in[Tablature.MI_FIRST_BAR] == in[Tablature.MI_LAST_BAR]) {
+				reversedMeterInfo += in[Tablature.MI_LAST_BAR];
 			}
-			if (in[Timeline.MI_FIRST_BAR] != in[Timeline.MI_LAST_BAR]) {
-				reversedMeterInfo += in[Timeline.MI_LAST_BAR] + "-" + in[Timeline.MI_FIRST_BAR];
+			if (in[Tablature.MI_FIRST_BAR] != in[Tablature.MI_LAST_BAR]) {
+				reversedMeterInfo += in[Tablature.MI_LAST_BAR] + "-" + in[Tablature.MI_FIRST_BAR];
 			}
 			reversedMeterInfo += ")";
 			if (i < meterInfoRev.size() - 1) {
@@ -3411,12 +3412,12 @@ public class Encoding implements Serializable {
 		for (int i = 0; i < meterInfo.size(); i++) {
 			Integer[] in = meterInfo.get(i);
 			if (i > 0) {
-				in[Timeline.MI_FIRST_BAR] = meterInfo.get(i - 1)[Timeline.MI_LAST_BAR] + 1;
+				in[Tablature.MI_FIRST_BAR] = meterInfo.get(i - 1)[Tablature.MI_LAST_BAR] + 1;
 			}
-			in[Timeline.MI_LAST_BAR] = (int) (in[Timeline.MI_LAST_BAR] * factor);
+			in[Tablature.MI_LAST_BAR] = (int) (in[Tablature.MI_LAST_BAR] * factor);
 			stretchedMeterInfo += 
-				in[Timeline.MI_NUM] + "/" + in[Timeline.MI_DEN] + 
-				" (" + in[Timeline.MI_FIRST_BAR] + "-" + in[Timeline.MI_LAST_BAR] + ")";
+				in[Tablature.MI_NUM] + "/" + in[Tablature.MI_DEN] + 
+				" (" + in[Tablature.MI_FIRST_BAR] + "-" + in[Tablature.MI_LAST_BAR] + ")";
 			if (i < copyOfMeterInfo.size() - 1) {
 				stretchedMeterInfo += "; ";
 			}
@@ -3548,10 +3549,10 @@ public class Encoding implements Serializable {
 		for (Integer[] in : mi) {
 			miRev.add(Arrays.copyOf(in, in.length));
 		}
-		int numBars = miRev.get(miRev.size() - 1)[Timeline.MI_LAST_BAR];
+		int numBars = miRev.get(miRev.size() - 1)[Tablature.MI_LAST_BAR];
 		for (Integer[] in : miRev) {
-			in[Timeline.MI_FIRST_BAR] = (numBars - in[Timeline.MI_FIRST_BAR]) + 1;
-			in[Timeline.MI_LAST_BAR] = (numBars - in[Timeline.MI_LAST_BAR]) + 1;
+			in[Tablature.MI_FIRST_BAR] = (numBars - in[Tablature.MI_FIRST_BAR]) + 1;
+			in[Tablature.MI_LAST_BAR] = (numBars - in[Tablature.MI_LAST_BAR]) + 1;
 		}
 		Collections.reverse(miRev);
 
@@ -3560,13 +3561,13 @@ public class Encoding implements Serializable {
 		String dimRevContent = "";		
 		for (int i = 0; i < miRev.size(); i++) {
 			Integer[] in = miRev.get(i);
-			int firstBar = in[Timeline.MI_FIRST_BAR];
-			int lastBar = in[Timeline.MI_LAST_BAR];
+			int firstBar = in[Tablature.MI_FIRST_BAR];
+			int lastBar = in[Tablature.MI_LAST_BAR];
 			miRevContent += 
-				in[Timeline.MI_NUM] + "/" + in[Timeline.MI_DEN] + " (" + 
+				in[Tablature.MI_NUM] + "/" + in[Tablature.MI_DEN] + " (" + 
 				(firstBar != lastBar ? lastBar + "-" + firstBar : lastBar) + ")" +
 				(i < miRev.size() - 1 ? "; " : "");
-			dimRevContent += in[Timeline.MI_DIM] + (i < miRev.size() - 1 ? "; " : "");
+			dimRevContent += in[Tablature.MI_DIM] + (i < miRev.size() - 1 ? "; " : "");
 		}
 		argHeader = argHeader.replace(miOrigContent, miRevContent);
 		argHeader = argHeader.replace(dimOrigContent, dimRevContent);
@@ -3597,11 +3598,11 @@ public class Encoding implements Serializable {
 		String miRescContent = "";
 		for (int i = 0; i < mi.size(); i++) {
 			Integer[] in = mi.get(i);
-			int firstBar = in[Timeline.MI_FIRST_BAR];
-			int lastBar = in[Timeline.MI_LAST_BAR];
-			int den = in[Timeline.MI_DEN];
+			int firstBar = in[Tablature.MI_FIRST_BAR];
+			int lastBar = in[Tablature.MI_LAST_BAR];
+			int den = in[Tablature.MI_DEN];
 			miRescContent += 
-				in[Timeline.MI_NUM] + "/" + 
+				in[Tablature.MI_NUM] + "/" + 
 				(rescaleFactor > 0 ? den/rescaleFactor : den*Math.abs(rescaleFactor)) + " (" +
 				(firstBar != lastBar ? firstBar + "-" + lastBar : firstBar) + ")" +
 				(i < mi.size() - 1 ? "; " : "");
@@ -3750,10 +3751,10 @@ public class Encoding implements Serializable {
 		List<Integer[]> miRev = new ArrayList<>();
 		if (augmentation.equals("reverse")) {
 			mi.forEach(in -> miRev.add(Arrays.copyOf(in, in.length)));
-			int numBars = miRev.get(miRev.size() - 1)[Timeline.MI_LAST_BAR];
+			int numBars = miRev.get(miRev.size() - 1)[Tablature.MI_LAST_BAR];
 			for (Integer[] in : miRev) {
-				in[Timeline.MI_FIRST_BAR] = (numBars - in[Timeline.MI_FIRST_BAR]) + 1;
-				in[Timeline.MI_LAST_BAR] = (numBars - in[Timeline.MI_LAST_BAR]) + 1;
+				in[Tablature.MI_FIRST_BAR] = (numBars - in[Tablature.MI_FIRST_BAR]) + 1;
+				in[Tablature.MI_LAST_BAR] = (numBars - in[Tablature.MI_LAST_BAR]) + 1;
 			}
 			Collections.reverse(miRev);
 		}
@@ -3763,20 +3764,20 @@ public class Encoding implements Serializable {
 		String dimAugmContent = "";
 		for (int i = 0; i < mi.size(); i++) {
 			Integer[] in = augmentation.equals("reverse") ? miRev.get(i) : mi.get(i);
-			int firstBar = in[Timeline.MI_FIRST_BAR];
-			int lastBar = in[Timeline.MI_LAST_BAR];
-			int den = in[Timeline.MI_DEN];
+			int firstBar = in[Tablature.MI_FIRST_BAR];
+			int lastBar = in[Tablature.MI_LAST_BAR];
+			int den = in[Tablature.MI_DEN];
 			if (augmentation.equals("reverse")) {
 				
 				miAugmContent += 
-					in[Timeline.MI_NUM] + "/" + in[Timeline.MI_DEN] + " (" + 
+					in[Tablature.MI_NUM] + "/" + in[Tablature.MI_DEN] + " (" + 
 					(firstBar != lastBar ? lastBar + "-" + firstBar : lastBar) + ")" +
 					(i < miRev.size() - 1 ? "; " : "");
-				dimAugmContent += in[Timeline.MI_DIM] + (i < miRev.size() - 1 ? "; " : "");
+				dimAugmContent += in[Tablature.MI_DIM] + (i < miRev.size() - 1 ? "; " : "");
 			}
 			else if (augmentation.equals("rescale")) {
 				miAugmContent +=
-					in[Timeline.MI_NUM] + "/" + 
+					in[Tablature.MI_NUM] + "/" + 
 					(rescaleFactor > 0 ? den/rescaleFactor : den*Math.abs(rescaleFactor)) + " (" +
 					(firstBar != lastBar ? firstBar + "-" + lastBar : firstBar) + ")" +
 					(i < mi.size() - 1 ? "; " : "");

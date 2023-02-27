@@ -5056,10 +5056,13 @@ public class TranscriptionTest extends TestCase {
 		expected.addAll(expectedRight);
 
 		List<Note> actual = new ArrayList<Note>();
-		NoteSequence noteSeq = transcription.getNoteSequence();
+//		NoteSequence noteSeq = transcription.getNoteSequence();
+		List<Note> notes = transcription.getNotes();
 		// a. Direction.LEFT
-		for (int i = 0; i < noteSeq.size(); i++) {
-			Note n = noteSeq.getNoteAt(i);
+		for (int i = 0; i < notes.size(); i++) {
+//		for (int i = 0; i < noteSeq.size(); i++) {
+			Note n = notes.get(i);
+//			Note n = noteSeq.getNoteAt(i);
 			int voice = transcription.findVoice(n);
 			NotationVoice nv = ns.get(voice).get(0);
 			actual.add(Transcription.getAdjacentNoteInVoice(nv, n, true));
@@ -5070,7 +5073,8 @@ public class TranscriptionTest extends TestCase {
 			24, 25, 20, 21, 22, 23, 15, 16, 17, 18, 19, 14, 9, 10, 11, 12, 13, 8, 4, 5, 6, 7, 0, 1, 2, 3});
 		
 		for (int i : backwardsMapping) {
-			Note n = noteSeq.getNoteAt(i);
+			Note n = notes.get(i);
+//			Note n = noteSeq.getNoteAt(i);
 			int voice = transcription.findVoice(n);
 			NotationVoice nv = ns.get(voice).get(0);
 			actual.add(Transcription.getAdjacentNoteInVoice(nv, n, false));

@@ -3,10 +3,7 @@ package structure;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-
-import org.w3c.dom.svg.GetSVGDocument;
 
 import de.uos.fmt.musitech.data.performance.MidiNote;
 import de.uos.fmt.musitech.data.performance.PerformanceNote;
@@ -423,11 +420,6 @@ public class ScorePieceTest extends TestCase {
 						assertEquals(expected.get(i).get(j).get(k).get(l).size(), 
 							actual.get(i).get(j).get(k).get(l).size());
 						for (int m = 0; m < expected.get(i).get(j).get(k).get(l).size(); m++) {
-//							System.out.println("voice " + k + "; chord " + l);
-//							System.out.println(expected.get(i).get(j).get(k).get(l).get(m));
-//							System.out.println(actual.get(i).get(j).get(k).get(l).get(m));
-							System.out.println(expected.get(i).get(j).get(k).get(l).get(m));
-							System.out.println(actual.get(i).get(j).get(k).get(l).get(m));
 							assertTrue(expected.get(i).get(j).get(k).get(l).get(m).isEquivalent(
 								actual.get(i).get(j).get(k).get(l).get(m)));
 						}
@@ -583,7 +575,6 @@ public class ScorePieceTest extends TestCase {
 		List<MetricalTimeLine> actual = new ArrayList<>();
 		for (ScorePiece sp : sPieces) {
 			MetricalTimeLine mtl = sp.getMetricalTimeLine();
-//			smtl = ScorePiece.cleanMetricalTimeLine(smtl);
 			actual.add(ScorePiece.cleanTimedMetricals(mtl));
 		}
 
@@ -705,6 +696,7 @@ public class ScorePieceTest extends TestCase {
 
 
 	public void testMakeScore() {
+		// Tablature case
 		Tablature tab = new Tablature(encodingTestpiece, true);
 		Integer[][] btp = tab.getBasicTabSymbolProperties(); 
 		Transcription t1 = new Transcription(midiTestpiece, encodingTestpiece);
@@ -713,6 +705,7 @@ public class ScorePieceTest extends TestCase {
 		List<List<Double>> dl1 = t1.getDurationLabels();
 		// Adapt dl of SNU note to have only one duration (only one duration is predicted for SNUs)
 		dl1.set(12, Transcription.createDurationLabel(new Integer[]{Symbol.MINIM.getDuration()}));
+		// Non-tablature case
 		Transcription t2 = new Transcription(midiTestpiece);
 		MetricalTimeLine mtl2 = t2.getScorePiece().getMetricalTimeLine();
 		Integer[][] bnp2 = t2.getBasicNoteProperties();
@@ -788,6 +781,7 @@ public class ScorePieceTest extends TestCase {
 
 
 	public void testCreateNote() {
+		// Tablature/non-tablature case
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));
 		MetricalTimeLine mtl = sp.getMetricalTimeLine();
 
@@ -851,136 +845,6 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
-	public void testAddNote() {
-		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));
-		MetricalTimeLine mtl = sp.getMetricalTimeLine();
-		int v = 1;
-		NotationVoice voice = sp.getScore().get(v).get(0);		
-		List<Integer> velocities = new ArrayList<>();
-		voice.forEach(nc -> velocities.add(nc.get(0).getVelocity()));
-
-		Note n1a = ScorePiece.createNote(
-			69, new Rational(9, 8), new Rational(1, 8), 90, mtl);
-		Note n6 = ScorePiece.createNote(
-			69, new Rational(11, 4), new Rational(1, 4), velocities.get(6), mtl);
-
-		// Add Note to nc1a (n1a); add Note to nc6 (n6)
-		List<NotationChord> expected = new ArrayList<>();
-		NotationChord nc0 = new NotationChord(); 
-		nc0.add(ScorePiece.createNote(65, new Rational(3, 4), new Rational(1, 4), velocities.get(0), mtl));
-		expected.add(nc0);
-		NotationChord nc1 = new NotationChord();
-		nc1.add(ScorePiece.createNote(69, new Rational(4, 4), new Rational(1, 8), velocities.get(1), mtl));
-		expected.add(nc1);
-		NotationChord nc1a = new NotationChord();
-		nc1a.add(n1a);
-		expected.add(nc1a);
-		NotationChord nc2 = new NotationChord();
-		nc2.add(ScorePiece.createNote(65, new Rational(5, 4), new Rational(1, 8), velocities.get(2), mtl));
-		expected.add(nc2);
-		NotationChord nc3 = new NotationChord();
-		nc3.add(ScorePiece.createNote(60, new Rational(6, 4), new Rational(1, 4), velocities.get(3), mtl));
-		expected.add(nc3);
-		NotationChord nc4 = new NotationChord();
-		nc4.add(ScorePiece.createNote(69, new Rational(7, 4), new Rational(1, 4), velocities.get(4), mtl));
-		expected.add(nc4);
-		NotationChord nc5 = new NotationChord();
-		nc5.add(ScorePiece.createNote(64, new Rational(8, 4), new Rational(1, 2), velocities.get(5), mtl));
-		expected.add(nc5);
-		NotationChord nc6 = new NotationChord();
-		nc6.add(ScorePiece.createNote(64, new Rational(11, 4), new Rational(1, 4), velocities.get(6), mtl));
-		nc6.add(n6);
-		expected.add(nc6);
-		// Set channel to v
-		for (NotationChord nc : expected) {
-			for (Note n : nc) {
-				MidiNote.convert(n.getPerformanceNote()).setChannel(v);
-			}
-		}
-
-		List<NotationChord> actual = new ArrayList<>();
-		sp.addNote(n1a, 1, new Rational(7, 8));
-		sp.addNote(n6, 1, new Rational(11, 4));
-		voice = sp.getScore().get(v).get(0);
-		voice.forEach(nc -> actual.add(nc));
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size());
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertTrue(expected.get(i).get(j).isEquivalent(actual.get(i).get(j)));
-			}
-		}
-
-//		// Visualise
-//		JFrame transcriptionFrame = visualise(t, "test_add_note");
-//		int answer = JOptionPane.showOptionDialog(transcriptionFrame, "Event 1 = G - g - b, d' - g'?", "Confirm", 
-//			JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
-//		assertEquals(answer, JOptionPane.YES_OPTION);     
-	}
-
-
-	public void testRemoveNote() {
-		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));
-		MetricalTimeLine mtl = sp.getMetricalTimeLine();
-		int v = 1;
-		NotationVoice voice = sp.getScore().get(v).get(0);		
-		List<Integer> velocities = new ArrayList<>();
-		voice.forEach(nc -> velocities.add(nc.get(0).getVelocity()));
-
-		Note n6 = ScorePiece.createNote(
-			69, new Rational(11, 4), new Rational(1, 4), velocities.get(6), mtl);
-		sp.addNote(n6, 1, new Rational(11, 4));
-
-		// Remove Note from nc0 (nc0.get(0)); remove Note from nc6 (nc6.get(0))
-		List<NotationChord> expected = new ArrayList<>();
-		NotationChord nc1 = new NotationChord();
-		nc1.add(ScorePiece.createNote(69, new Rational(4, 4), new Rational(1, 8), velocities.get(1), mtl));
-		expected.add(nc1);
-		NotationChord nc2 = new NotationChord();
-		nc2.add(ScorePiece.createNote(65, new Rational(5, 4), new Rational(1, 8), velocities.get(2), mtl));
-		expected.add(nc2);
-		NotationChord nc3 = new NotationChord();
-		nc3.add(ScorePiece.createNote(60, new Rational(6, 4), new Rational(1, 4), velocities.get(3), mtl));
-		expected.add(nc3);
-		NotationChord nc4 = new NotationChord();
-		nc4.add(ScorePiece.createNote(69, new Rational(7, 4), new Rational(1, 4), velocities.get(4), mtl));
-		expected.add(nc4);
-		NotationChord nc5 = new NotationChord();
-		nc5.add(ScorePiece.createNote(64, new Rational(8, 4), new Rational(1, 2), velocities.get(5), mtl));
-		expected.add(nc5);
-		NotationChord nc6 = new NotationChord();
-		nc6.add(n6);
-		expected.add(nc6);
-		// Set channel to v
-		for (NotationChord nc : expected) {
-			for (Note n : nc) {
-				MidiNote.convert(n.getPerformanceNote()).setChannel(v);
-			}
-		}
-
-		List<NotationChord> actual = new ArrayList<>();
-		sp.removeNote(new Rational(3, 4), v, 65);
-		sp.removeNote(new Rational(11, 4), v, 64);
-		voice = sp.getScore().get(v).get(0);
-		voice.forEach(nc -> actual.add(nc));
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size());
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertTrue(expected.get(i).get(j).isEquivalent(actual.get(i).get(j)));
-			}
-		}
-
-//		// Visualise
-//		JFrame transcriptionFrame = visualise(transcription, "test_remove_note");
-//		int answer = JOptionPane.showOptionDialog(transcriptionFrame, "Event 1 = G - g - d' - g'?", "Confirm", 
-//			JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
-//		assertEquals(answer, JOptionPane.YES_OPTION);
-	}
-
-
 	public void testTransposeHarmonyTrack() {
 		// Tablature case
 		List<String> pieceNames = Arrays.asList(new String[]{
@@ -1026,7 +890,6 @@ public class ScorePieceTest extends TestCase {
 		List<SortedContainer<Marker>> actual = new ArrayList<>();
 		for (int i = 0; i < sPieces.size(); i++) {
 			SortedContainer<Marker> ht = sPieces.get(i).getHarmonyTrack();
-//			ht = ScorePiece.cleanHarmonyTrack(ht);
 			actual.add(ScorePiece.transposeHarmonyTrack(ht, transpositions.get(i)));
 		}
 
@@ -1147,9 +1010,7 @@ public class ScorePieceTest extends TestCase {
 
 		List<MetricalTimeLine> actual = new ArrayList<>();
 		for (int i = 0; i < sPieces.size(); i++) {
-//			Timeline tl = tabs.get(i).getTimeline();
 			MetricalTimeLine mtl = sPieces.get(i).getMetricalTimeLine();
-//			mtl = ScorePiece.cleanMetricalTimeLine(mtl);
 			actual.add(ScorePiece.alignMetricalTimeLine(mtl, tabs.get(i).getMeterInfo()));
 		}
 
@@ -1308,9 +1169,7 @@ public class ScorePieceTest extends TestCase {
 		List<MetricalTimeLine> actual = new ArrayList<>();
 		for (int i = 0; i < sPieces.size(); i++) {			
 			List<Integer[]> mi = tabs.get(i).getMeterInfo();
-//			Timeline tl = tabs.get(i).getEncoding().getTimeline();
 			MetricalTimeLine mtl = sPieces.get(i).getMetricalTimeLine();
-//			mtl = ScorePiece.cleanMetricalTimeLine(mtl);
 			mtl = ScorePiece.alignMetricalTimeLine(mtl, mi);
 			actual.add(ScorePiece.diminuteMetricalTimeLine(mtl, mi));
 		}
@@ -1322,29 +1181,29 @@ public class ScorePieceTest extends TestCase {
 	public void testDiminuteHarmonyTrack() {
 		// Tablature case
 		List<String> pieceNames = Arrays.asList(new String[]{
-//			"testpiece", 
+			"testpiece", 
 			"testGetMeterKeyInfo",
-//			"in exitu"
+			"in exitu"
 		});
 
 		List<Tablature> tabs = Arrays.asList(new Tablature[]{
-//			new Tablature(encodingTestpiece, true),
+			new Tablature(encodingTestpiece, true),
 			new Tablature(encodingTestGetMeterInfo, true),
-//			new Tablature(encodingInExitu, true)
+			new Tablature(encodingInExitu, true)
 		});
 
 		List<ScorePiece> sPieces = Arrays.asList(new ScorePiece[]{
-//			new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), 
+			new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), 
 			new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo)), 
-//			new ScorePiece(MIDIImport.importMidiFile(midiInExitu))
+			new ScorePiece(MIDIImport.importMidiFile(midiInExitu))
 		});
 
 		List<SortedContainer<Marker>> expected = new ArrayList<>(); 
 		// midiTestpiece (no diminution)
-//		SortedContainer<Marker> e1 = getCleanHarmonyTrack(pieceNames.get(0));
-//		expected.add(e1);
+		SortedContainer<Marker> e1 = getCleanHarmonyTrack(pieceNames.get(0));
+		expected.add(e1);
 		// midiTestGetMeterKeyInfo (diminutions 2, 2, 4, 1, 1, -2)
-		SortedContainer<Marker> e2 = getCleanHarmonyTrack(pieceNames.get(0)); // TODO get(1)
+		SortedContainer<Marker> e2 = getCleanHarmonyTrack(pieceNames.get(1));
 		List<Rational> metricTimes = Arrays.asList(new Rational[]{
 			Rational.ZERO, 
 			new Rational(19, 8),
@@ -1357,29 +1216,19 @@ public class ScorePieceTest extends TestCase {
 		}
 		expected.add(e2);
 		// In exitu (diminutions 2, 4, 2, 4, 2, 4, 2, 4, 2)
-//		SortedContainer<Marker> e3 = getCleanHarmonyTrack(pieceNames.get(2));
-//		expected.add(e3);
+		SortedContainer<Marker> e3 = getCleanHarmonyTrack(pieceNames.get(2));
+		expected.add(e3);
 
 		List<SortedContainer<Marker>> actual = new ArrayList<>();
 		for (int i = 0; i < sPieces.size(); i++) {
-//			if (i == 1) {
-//			Timeline tl = tabs.get(i).getEncoding().getTimeline();
 			List<Integer[]> mi = tabs.get(i).getMeterInfo();
 			MetricalTimeLine mtl = sPieces.get(i).getMetricalTimeLine();
-//			System.out.println("**");
-//			System.out.println(mtl);
-//			System.out.println(mtl.getMeterSectionOnsets());
-//			System.out.println("**");
-//			System.exit(0);
-//			mtl = ScorePiece.cleanScoreMetricalTimeLine(mtl);
 			mtl = ScorePiece.alignMetricalTimeLine(mtl, mi);
 			ScoreMetricalTimeLine smtl = new ScoreMetricalTimeLine(mtl);
 			MetricalTimeLine mtlDim = ScorePiece.diminuteMetricalTimeLine(mtl, mi);
 			ScoreMetricalTimeLine smtlDim = new ScoreMetricalTimeLine(mtlDim);
 			SortedContainer<Marker> ht = sPieces.get(i).getHarmonyTrack();
-//			ht = ScorePiece.cleanHarmonyTrack(ht);
 			actual.add(ScorePiece.diminuteHarmonyTrack(ht, mi, smtl, smtlDim));
-//			}
 		}
 
 		assertHarmonyTrackEquality(expected, actual);	
@@ -1391,7 +1240,6 @@ public class ScorePieceTest extends TestCase {
 		ScorePiece p = new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo));
 		Tablature t = new Tablature(encodingTestGetMeterInfo, true);
 		MetricalTimeLine mtl = p.getMetricalTimeLine();
-//		mtl = ScorePiece.cleanMetricalTimeLine(mtl);
 		mtl = ScorePiece.alignMetricalTimeLine(mtl, t.getMeterInfo());
 		ScoreMetricalTimeLine smtl = new ScoreMetricalTimeLine(mtl);
 		MetricalTimeLine mtlDim = ScorePiece.diminuteMetricalTimeLine(mtl, t.getMeterInfo());
@@ -1493,6 +1341,190 @@ public class ScorePieceTest extends TestCase {
 			ScorePiece.diminuteNotationSystem(p.getScore(), t.getMeterInfo(), smtl, smtlDim);
 
 		assertNotationSystemEquality(Arrays.asList(expected), Arrays.asList(actual));		
+	}
+
+
+	public void testAddNote() {
+		// Tablature/non-tablature case
+		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));
+		MetricalTimeLine mtl = sp.getMetricalTimeLine();
+		int v = 1;
+		NotationVoice voice = sp.getScore().get(v).get(0);		
+		List<Integer> velocities = new ArrayList<>();
+		voice.forEach(nc -> velocities.add(nc.get(0).getVelocity()));
+
+		Note n1a = ScorePiece.createNote(
+			69, new Rational(9, 8), new Rational(1, 8), 90, mtl);
+		Note n6 = ScorePiece.createNote(
+			69, new Rational(11, 4), new Rational(1, 4), velocities.get(6), mtl);
+
+		// Add Note to nc1a (n1a); add Note to nc6 (n6)
+		List<NotationChord> expected = new ArrayList<>();
+		NotationChord nc0 = new NotationChord(); 
+		nc0.add(ScorePiece.createNote(65, new Rational(3, 4), new Rational(1, 4), velocities.get(0), mtl));
+		expected.add(nc0);
+		NotationChord nc1 = new NotationChord();
+		nc1.add(ScorePiece.createNote(69, new Rational(4, 4), new Rational(1, 8), velocities.get(1), mtl));
+		expected.add(nc1);
+		NotationChord nc1a = new NotationChord();
+		nc1a.add(n1a);
+		expected.add(nc1a);
+		NotationChord nc2 = new NotationChord();
+		nc2.add(ScorePiece.createNote(65, new Rational(5, 4), new Rational(1, 8), velocities.get(2), mtl));
+		expected.add(nc2);
+		NotationChord nc3 = new NotationChord();
+		nc3.add(ScorePiece.createNote(60, new Rational(6, 4), new Rational(1, 4), velocities.get(3), mtl));
+		expected.add(nc3);
+		NotationChord nc4 = new NotationChord();
+		nc4.add(ScorePiece.createNote(69, new Rational(7, 4), new Rational(1, 4), velocities.get(4), mtl));
+		expected.add(nc4);
+		NotationChord nc5 = new NotationChord();
+		nc5.add(ScorePiece.createNote(64, new Rational(8, 4), new Rational(1, 2), velocities.get(5), mtl));
+		expected.add(nc5);
+		NotationChord nc6 = new NotationChord();
+		nc6.add(ScorePiece.createNote(64, new Rational(11, 4), new Rational(1, 4), velocities.get(6), mtl));
+		nc6.add(n6);
+		expected.add(nc6);
+		// Set channel to v
+		for (NotationChord nc : expected) {
+			for (Note n : nc) {
+				MidiNote.convert(n.getPerformanceNote()).setChannel(v);
+			}
+		}
+
+		List<NotationChord> actual = new ArrayList<>();
+		sp.addNote(n1a, 1/*, new Rational(7, 8)*/);
+		sp.addNote(n6, 1/*, new Rational(11, 4)*/);
+		voice = sp.getScore().get(v).get(0);
+		voice.forEach(nc -> actual.add(nc));
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).size(), actual.get(i).size());
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertTrue(expected.get(i).get(j).isEquivalent(actual.get(i).get(j)));
+			}
+		}
+
+//		// Visualise
+//		JFrame transcriptionFrame = visualise(t, "test_add_note");
+//		int answer = JOptionPane.showOptionDialog(transcriptionFrame, "Event 1 = G - g - b, d' - g'?", "Confirm", 
+//			JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
+//		assertEquals(answer, JOptionPane.YES_OPTION);     
+	}
+
+
+	public void testRemoveNote() {
+		// Tablature/non-tablature case
+		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));
+		MetricalTimeLine mtl = sp.getMetricalTimeLine();
+		int v = 1;
+		NotationVoice voice = sp.getScore().get(v).get(0);		
+		List<Integer> velocities = new ArrayList<>();
+		voice.forEach(nc -> velocities.add(nc.get(0).getVelocity()));
+
+		Note n6 = ScorePiece.createNote(
+			69, new Rational(11, 4), new Rational(1, 4), velocities.get(6), mtl);
+		sp.addNote(n6, 1/*, new Rational(11, 4)*/);
+
+		// Remove Note from nc0 (nc0.get(0)); remove Note from nc6 (nc6.get(0))
+		List<NotationChord> expected = new ArrayList<>();
+		NotationChord nc1 = new NotationChord();
+		nc1.add(ScorePiece.createNote(69, new Rational(4, 4), new Rational(1, 8), velocities.get(1), mtl));
+		expected.add(nc1);
+		NotationChord nc2 = new NotationChord();
+		nc2.add(ScorePiece.createNote(65, new Rational(5, 4), new Rational(1, 8), velocities.get(2), mtl));
+		expected.add(nc2);
+		NotationChord nc3 = new NotationChord();
+		nc3.add(ScorePiece.createNote(60, new Rational(6, 4), new Rational(1, 4), velocities.get(3), mtl));
+		expected.add(nc3);
+		NotationChord nc4 = new NotationChord();
+		nc4.add(ScorePiece.createNote(69, new Rational(7, 4), new Rational(1, 4), velocities.get(4), mtl));
+		expected.add(nc4);
+		NotationChord nc5 = new NotationChord();
+		nc5.add(ScorePiece.createNote(64, new Rational(8, 4), new Rational(1, 2), velocities.get(5), mtl));
+		expected.add(nc5);
+		NotationChord nc6 = new NotationChord();
+		nc6.add(n6);
+		expected.add(nc6);
+		// Set channel to v
+		for (NotationChord nc : expected) {
+			for (Note n : nc) {
+				MidiNote.convert(n.getPerformanceNote()).setChannel(v);
+			}
+		}
+
+		List<NotationChord> actual = new ArrayList<>();
+		sp.removeNote(new Rational(3, 4), v, 65);
+		sp.removeNote(new Rational(11, 4), v, 64);
+		voice = sp.getScore().get(v).get(0);
+		voice.forEach(nc -> actual.add(nc));
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).size(), actual.get(i).size());
+			for (int j = 0; j < expected.get(i).size(); j++) {
+				assertTrue(expected.get(i).get(j).isEquivalent(actual.get(i).get(j)));
+			}
+		}
+
+//		// Visualise
+//		JFrame transcriptionFrame = visualise(transcription, "test_remove_note");
+//		int answer = JOptionPane.showOptionDialog(transcriptionFrame, "Event 1 = G - g - d' - g'?", "Confirm", 
+//			JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
+//		assertEquals(answer, JOptionPane.YES_OPTION);
+	}
+
+
+	public void testCompleteDurations() {
+		// Tablature/non-tablature case
+		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));
+		MetricalTimeLine mtl = sp.getMetricalTimeLine();
+
+		// Expected: connect all unconnected notes
+		ScorePiece expected = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));
+		NotationSystem nsE = expected.getScore();
+		// Voice 0, note 12
+		NotationVoice nv0 = nsE.get(0).get(0);
+		NotationChord v0nc12 = nv0.get(12);
+		NotationChord v0nc12E = new NotationChord();
+		v0nc12E.add(ScorePiece.createNote(
+			v0nc12.get(0).getMidiPitch(), v0nc12.get(0).getMetricTime(), H, v0nc12.get(0).getVelocity(), mtl));
+		nv0.remove(v0nc12);
+		nv0.add(v0nc12E);
+		// Voice 1, note 1
+		NotationVoice nv1 = nsE.get(1).get(0);
+		NotationChord v1nc1 = nv1.get(1);
+		NotationChord v1nc1E = new NotationChord();
+		v1nc1E.add(ScorePiece.createNote(
+			v1nc1.get(0).getMidiPitch(), v1nc1.get(0).getMetricTime(), Q, v1nc1.get(0).getVelocity(), mtl));
+		nv1.remove(v1nc1);
+		nv1.add(v1nc1E);
+		// Voice 1, note 2
+		NotationChord v1nc2 = nv1.get(2);
+		NotationChord v1nc2E = new NotationChord();
+		v1nc2E.add(ScorePiece.createNote(
+			v1nc2.get(0).getMidiPitch(), v1nc2.get(0).getMetricTime(), Q, v1nc2.get(0).getVelocity(), mtl));
+		nv1.remove(v1nc2);
+		nv1.add(v1nc2E);
+
+		// Actual: set all Notes to have a duration of 1/32
+		ScorePiece actual = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));
+		NotationSystem nsA = actual.getScore();
+		for (int i = 0; i < nsA.size(); i++) {
+			NotationVoice currNv = nsA.get(i).get(0);
+			for (int j = 0; j < currNv.size()-1; j++) {
+				NotationChord currNc = currNv.get(j);
+				NotationChord currNcA = new NotationChord();
+				currNcA.add(ScorePiece.createNote(
+					currNc.get(0).getMidiPitch(), currNc.get(0).getMetricTime(), TH, currNc.get(0).getVelocity(), mtl));
+				currNv.remove(currNc);
+				currNv.add(currNcA);
+			}
+		}
+		actual.completeDurations(H);
+
+		assertPieceEquality(Arrays.asList(expected), Arrays.asList(actual));
 	}
 
 
@@ -1670,21 +1702,18 @@ public class ScorePieceTest extends TestCase {
 		List<MetricalTimeLine> actual = new ArrayList<>();
 		actual.add(ScorePiece.augmentMetricalTimeLine(
 			sp1.getScoreMetricalTimeLine(), 
-//			t1.getScorePiece().getMetricalTimeLine(), 
 			t1.getMirrorPoint(), 
 			-1, 
 			"reverse")
 		);
 		actual.add(ScorePiece.augmentMetricalTimeLine(
 			sp2.getScoreMetricalTimeLine(), 
-//			t2.getScorePiece().getMetricalTimeLine(), 
 			null, 
 			-2, 
 			"rescale")
 		);
 		actual.add(ScorePiece.augmentMetricalTimeLine(
 			sp3.getScoreMetricalTimeLine(), 
-//			t3.getScorePiece().getMetricalTimeLine(), 
 			null,  
 			2, 
 			"rescale")
@@ -1775,14 +1804,12 @@ public class ScorePieceTest extends TestCase {
 		List<SortedContainer<Marker>> actual = new ArrayList<>();
 		actual.add(ScorePiece.augmentHarmonyTrack(
 			sp1.getHarmonyTrack(), sp1.getScoreMetricalTimeLine(), 
-//			t1.getScorePiece().getHarmonyTrack(), t1.getScorePiece().getMetricalTimeLine(), 
 			t1.getMirrorPoint(), 
 			-1, 
 			"reverse")	
 		);
 		actual.add(ScorePiece.augmentHarmonyTrack(
 			sp2.getHarmonyTrack(), sp2.getScoreMetricalTimeLine(), 
-//			t2.getScorePiece().getHarmonyTrack(), t2.getScorePiece().getMetricalTimeLine(), 
 			null, 
 			-2, 
 			"rescale")	
@@ -2079,21 +2106,18 @@ public class ScorePieceTest extends TestCase {
 		List<NotationSystem> actual = new ArrayList<>();
 		actual.add(ScorePiece.augmentNotationSystem(
 			sp1.getScore(), smtl1,
-//			t1.getScorePiece().getScore(), mtl1, 
 			t1.getMirrorPoint(), 
 			null, null, null, 
 			-1, "reverse", "")
 		);
 		actual.add(ScorePiece.augmentNotationSystem(
 			sp2.getScore(), smtl2, 
-//			t2.getScorePiece().getScore(), mtl2, 
 			null,
 			t2.getChords(), t2.getAllOnsetTimes(), E, 
 			-1, "deornament", "")	
 		);
 		actual.add(ScorePiece.augmentNotationSystem(
 			sp3.getScore(), smtl3, 
-//			t3.getScorePiece().getScore(), mtl3, 
 			null, 
 			null, null, null, 
 			-2, "rescale", "")	
@@ -2105,34 +2129,10 @@ public class ScorePieceTest extends TestCase {
 
 	public void testCopyNotationSystem() {
 		// Tablature/non-tablature case
-		Transcription t = new Transcription(midiTestpiece);
-		NotationSystem expected = t.getScorePiece().getScore();
+		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));
+		NotationSystem expected = sp.getScore();
 		NotationSystem actual = ScorePiece.copyNotationSystem(expected);
 		assertNotationSystemEquality(Arrays.asList(expected), Arrays.asList(actual));
 	}
-
-
-//	public void testGetMeterSections() {
-//		// Tablature/non-tablature case
-//		Transcription t = new Transcription(midiTestGetMeterKeyInfo);
-//		List<Rational[]> expected = new ArrayList<>();
-//		expected.add(new Rational[]{new Rational(3, 4), Rational.ZERO});
-//		expected.add(new Rational[]{new Rational(2, 1), new Rational(3, 4)});
-//		expected.add(new Rational[]{new Rational(3, 1), new Rational(19, 4)});
-//		expected.add(new Rational[]{new Rational(2, 2), new Rational(43, 4)});
-//		expected.add(new Rational[]{new Rational(5, 16), new Rational(51, 4)});
-//		expected.add(new Rational[]{new Rational(2, 4), new Rational(209, 16)});
-//
-//		List<Rational[]> actual = 
-//			ScorePiece.getMeterSections(t.getScorePiece().getMetricalTimeLine());
-//
-//		assertEquals(expected.size(), actual.size());
-//		for (int i = 0; i < expected.size(); i++) {
-//			assertEquals(expected.get(i).length, actual.get(i).length);
-//			for (int j = 0; j < expected.get(i).length; j++) {
-//				assertEquals(expected.get(i)[j], actual.get(i)[j]);
-//			}
-//		}
-//	}
 
 }

@@ -156,34 +156,17 @@ public class ScorePiece extends Piece {
 	// TESTED
 	static MetricalTimeLine cleanMetricalTimeLine(MetricalTimeLine mtl) {
 		MetricalTimeLine mtlClean = initialiseMetricalTimeLine();
-//		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
-//		// zeroMarker, and endMarker) 
-//		MetricalTimeLine mtlClean = new MetricalTimeLine();
-//		mtlClean.clear();
-//		// Add zeroMarker
-//		mtlClean.add((Marker) new TimedMetrical(0, Rational.ZERO));
 
 		// Add TimeSignatureMarkers and TempoMarkers 
 		List<Rational> mts = new ArrayList<>();
 		Rational mtLastTimedMetrical = Rational.ZERO;
 		for (Marker m : mtl) {
 			if (m instanceof TimeSignatureMarker) {
-//				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
 				Rational mt = m.getMetricTime();
-//				long t = mtl.getTime(mt);
 				if (!mts.contains(mt)) {
 					mtlClean = 
 						addToMetricalTimeLine(mtlClean, mt, mtl.getTime(mt), 
 						((TimeSignatureMarker) m).getTimeSignature(), null);
-					
-//					mtlClean.add(new TimeSignatureMarker(tsm.getTimeSignature(), mt));
-//					if (mt.isGreater(Rational.ZERO)) {
-//						mtlClean.add(new TempoMarker(t, mt));
-////						if (mt.isGreater(mtLastTimedMetrical)) {
-////							mtLastTimedMetrical = mt;
-////						}
-//					}
-					
 					if (mt.isGreater(mtLastTimedMetrical)) {
 						mtLastTimedMetrical = mt;
 					}
@@ -196,19 +179,6 @@ public class ScorePiece extends Piece {
 		mtlClean = 
 			finaliseMetricalTimeLine(mtlClean, mtLastTimedMetrical, tLastTimedMetrical, 
 			mtl.getTempo(tLastTimedMetrical), 1);
-		
-//		// If TempoMarkers (and through them, endMarker(s)) have been added: 
-//		// remove all TimedMetricals but the zeroMarker	
-//		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
-//			mtlClean = cleanTimedMetricals(mtlClean);
-//		}
-//
-//		// Add endMarker
-//		long tLastTimedMetrical = mtlClean.getTime(mtLastTimedMetrical);
-//		TimedMetrical end = 
-//			calculateEndMarker(tLastTimedMetrical, mtl.getTempo(tLastTimedMetrical), 
-//			mtLastTimedMetrical, 1);
-//		mtlClean.add((Marker) end);
 
 		return mtlClean;
 	}
@@ -238,6 +208,7 @@ public class ScorePiece extends Piece {
 				mtl.setTempo(mt, tmpDim, 4);
 			}
 		}
+
 		return mtl;
 	}
 
@@ -453,71 +424,6 @@ public class ScorePiece extends Piece {
 	}
 
 
-	/** 
-	 * Adds the given <code>Note</code> to the given voice. If there is already a 
-	 * <code>Note</code> at the given <code>Note</code>'s metric time, the given 
-	 * <code>Note</code> is added to the <code>NotationChord</code> at that metric time.
-	 * 
-	 * @param n
-	 * @param v 
-	 * @param mt
-	 */
-	// TESTED
-	// TODO metricTime can be deduced from Note: do this once everything works again
-	public void addNote(Note n, int v, Rational mt) {
-		MidiNote mn = MidiNote.convert(n.getPerformanceNote());
-		mn.setChannel(v);
-
-		NotationVoice nv = getScore().get(v).get(0);
-		int ncNum = nv.find(mt); // < 0 if there is no NotationChord at mt
-		
-		List<Note> notesNc = new ArrayList<>();
-		notesNc.add(n);
-		// If there is already a NotationChord at mt; add its Notes as well
-		if (ncNum >= 0) {
-			NotationChord currNc = nv.get(ncNum);
-			currNc.forEach(currN -> notesNc.add(currN));
-			Collections.sort(notesNc, Comparator.comparing(Note::getMidiPitch));
-			nv.remove(currNc);
-		}
-		NotationChord nc = new NotationChord();
-		notesNc.forEach(currN -> nc.add(currN));
-		nv.add(nc);
-	}
-
-
-	/** 
-	 * Removes the <code>Note</code> at the given metric time from the given voice. If there is 
-	 * already a <code>Note</code> at the given metric time, the <code>Note</code> with the given
-	 * pitch is removed from the <code>NotationChord</code> at that metric time. If there is no
-	 * <code>Note</code> at the given metric time, no action is taken.
-	 *  
-	 * @param p
-	 * @param v  
-	 * @param mt 
-	 */
-	// TESTED
-	public void removeNote(Rational mt, int v, int p) {
-		NotationVoice nv = getScore().get(v).get(0);
-		int ncNum = nv.find(mt); // < 0 if there is no NotationChord at mt
-		// Only there is already a NotationChord at mt
-		if (ncNum >= 0) {
-			NotationChord currNc = nv.get(ncNum);
-			nv.remove(currNc);
-			// If the NotationChord at mt contains multiple Notes: re-add it
-			// without any Notes of pitch p
-			if (currNc.size() > 1) {
-				List<Note> notesNc = new ArrayList<>();
-				currNc.forEach(currN -> { if (currN.getMidiPitch() != p) { notesNc.add(currN); } });
-				Collections.sort(notesNc, Comparator.comparing(Note::getMidiPitch));			
-				NotationChord nc = new NotationChord();
-				notesNc.forEach(currN -> nc.add(currN));
-				nv.add(nc);
-			}
-		}
-	}
-
-
 	//////////////////////////////////////
 	//
 	//  I N S T A N C E  M E T H O D S
@@ -626,13 +532,8 @@ public class ScorePiece extends Piece {
 		Integer[] in = transpMatrix.get(rowInd);
 		int optionA = accid + in[2];
 		int optionB = accid + in[3];
+
 		return Math.abs(optionA) <= Math.abs(optionB) ? optionA : optionB;
-//		if (Math.abs(optionA) <= Math.abs(optionB)) {
-//			return optionA;
-//		}
-//		else {
-//			return optionB;
-//		}
 	}
 
 
@@ -673,7 +574,7 @@ public class ScorePiece extends Piece {
 		ScoreMetricalTimeLine smtl = new ScoreMetricalTimeLine(mtl);
 		MetricalTimeLine mtlDim = ScorePiece.diminuteMetricalTimeLine(mtl, mi);
 		ScoreMetricalTimeLine smtlDim = new ScoreMetricalTimeLine(mtlDim);
-		// Clean and diminute ht
+//		// Clean and diminute ht
 		SortedContainer<Marker> ht = getHarmonyTrack();
 //		ht = ScorePiece.cleanHarmonyTrack(ht);
 		ht = ScorePiece.diminuteHarmonyTrack(ht, mi, smtl, smtlDim);
@@ -724,7 +625,6 @@ public class ScorePiece extends Piece {
 		// 1. Get undiminuted meters and meter section onsets from meterInfoTab to enable aligning
 		List<Rational> metersTabUndim = new ArrayList<>();
 		List<Rational> msosTabUndim = new ArrayList<>();
-//		List<Integer[]> meterInfoTab = tl.getMeterInfo();
 		for (int i = 0; i < mi.size(); i++) {
 			Integer[] currMi = mi.get(i);
 			metersTabUndim.add(Utils.undiminuteMeter(
@@ -745,34 +645,18 @@ public class ScorePiece extends Piece {
 
 		// 2. Align
 		MetricalTimeLine mtlAligned = initialiseMetricalTimeLine();
-//		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
-//		// zeroMarker, and endMarker) 
-//		MetricalTimeLine mtlAligned = new MetricalTimeLine();
-//		mtlAligned.clear();
-//		// Add zeroMarker
-//		mtlAligned.add((Marker) new TimedMetrical(0, Rational.ZERO));
-		
 		// Add TimeSignatureMarkers and TempoMarkers 
 		int ind = 0; // equals index in meterInfoTab
 		Rational mtLastTimedMetrical = Rational.ZERO;
 		for (Marker m : mtl) {
 			if (m instanceof TimeSignatureMarker) {
-//				TimeSignatureMarker tsm = (TimeSignatureMarker) m;
 				TimeSignature ts = ((TimeSignatureMarker) m).getTimeSignature();
 				Rational mt = m.getMetricTime();
-//				long t = mtl.getTime(mt);
 				mtlAligned = addToMetricalTimeLine(mtlAligned, mt, mtl.getTime(mt), ts, null);				
-//				mtlAligned.add(new TimeSignatureMarker(ts, mt));
-//				if (mt.isGreater(Rational.ZERO)) {
-//					mtlAligned.add(new TempoMarker(t, mt));
-////					if (mt.isGreater(mtLastTimedMetrical)) {
-////						mtLastTimedMetrical = mt;
-////					}
-//				}
 				if (mt.isGreater(mtLastTimedMetrical)) {
 					mtLastTimedMetrical = mt;
 				}
-				
+
 				// If the meter and meter section onset at index ind in tl are not the same
 				// as those in m, mtl is not aligned with tl: add Markers to mtlAligned
 				Rational meterTabUndim = metersTabUndim.get(ind);
@@ -780,7 +664,6 @@ public class ScorePiece extends Piece {
 				boolean isAligned = 
 					meterTabUndim.equals(new Rational(ts.getNumerator(), ts.getDenominator())) && 
 					msoTabUndim.equals(mt);
-//					msoTabUndim.equals(tsm.getMetricTime());
 				if (!isAligned) {
 					mtlAligned.add(new TimeSignatureMarker(new TimeSignature(meterTabUndim), msoTabUndim));
 					mtlAligned.add(new TempoMarker(mtl.getTime(msoTabUndim), msoTabUndim));
@@ -810,18 +693,6 @@ public class ScorePiece extends Piece {
 		mtlAligned = 
 			finaliseMetricalTimeLine(mtlAligned, mtLastTimedMetrical, 
 			tLastTimedMetrical, mtl.getTempo(tLastTimedMetrical), 1);
-//		// If TempoMarkers (and through them, endMarker(s)) have been added: 
-//		// remove all TimedMetricals but the zeroMarker	
-//		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
-//			mtlAligned = cleanTimedMetricals(mtlAligned);
-//		}
-//
-//		// Add endMarker
-//		long tLastTimedMetrical = mtlAligned.getTime(mtLastTimedMetrical);
-//		TimedMetrical end = 
-//			calculateEndMarker(tLastTimedMetrical, mtl.getTempo(tLastTimedMetrical), 
-//			mtLastTimedMetrical, 1);
-//		mtlAligned.add((Marker) end);
 
 		return mtlAligned;
 	}
@@ -841,9 +712,7 @@ public class ScorePiece extends Piece {
 	// TESTED
 	static MetricalTimeLine diminuteMetricalTimeLine(MetricalTimeLine mtl, List<Integer[]> mi) {
 		// 1. Get diminuted tempi
-//		List<Integer[]> meterInfoTab = tl.getMeterInfo();
 		List<Integer> diminutions = ToolBox.getItemsAtIndex(mi, Tablature.MI_DIM);
-//			tl.getDiminutions();
 		List<Double[]> tempiDim = new ArrayList<>();
 		int ind = 0; // equals index in meterInfoTab
 		for (int i = 0; i < mtl.size()-1; i++) { // exclude endMarker
@@ -860,12 +729,6 @@ public class ScorePiece extends Piece {
 
 		// 2. Diminute
 		MetricalTimeLine mtlDim = initialiseMetricalTimeLine();
-//		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
-//		// zeroMarker, and endMarker) 
-//		MetricalTimeLine mtlDim = new MetricalTimeLine();
-//		mtlDim.clear();
-//		// Add zeroMarker
-//		mtlDim.add((Marker) new TimedMetrical(0, Rational.ZERO));
 
 		// Add TimeSignatureMarkers and TempoMarkers		
 		ind = 0; // equals index in meterInfoTab
@@ -899,51 +762,19 @@ public class ScorePiece extends Piece {
 				TimeSignature tsDim = 
 					new TimeSignature(Utils.diminuteMeter(new Rational(tsUndim.getNumerator(), 
 					tsUndim.getDenominator()), diminutions.get(ind)));
-				
 				mtlDim = addToMetricalTimeLine(mtlDim, mtDim, t, tsDim, tempiDim);
-				
-//				mtlDim.add(new TimeSignatureMarker(tsDim, mtDim));
-//				if (mtDim.isGreater(Rational.ZERO)) {
-//					mtlDim.add(new TempoMarker(t, mtDim));
-////					if (mtDim.isGreater(mtLastTimedMetrical)) {
-////						mtLastTimedMetrical = mtDim;
-////					}
-//					// Set tempo
-//					double tmpDim = 
-//						tempiDim.get(ToolBox.getItemsAtIndex(tempiDim, 1).indexOf((double) t))[0];
-//					mtlDim.setTempo(mtDim, tmpDim, 4);
-//				}
 				if (mtDim.isGreater(mtLastTimedMetrical)) {
 					mtLastTimedMetrical = mtDim;
 				}
 				ind++;
 			}
 		}
-
 		long tLastTimedMetrical = mtlDim.getTime(mtLastTimedMetrical);
 		mtlDim = finaliseMetricalTimeLine(mtlDim, mtLastTimedMetrical, tLastTimedMetrical, 
 			tempiDim.get(tempiDim.size()-1)[0], diminutions.get(diminutions.size()-1));
-				
-//		// If TempoMarkers (and through them, endMarker(s)) have been added: 
-//		// remove all TimedMetricals but the zeroMarker	
-//		if (mtLastTimedMetrical.isGreater(Rational.ZERO)) {
-//			mtlDim = cleanTimedMetricals(mtlDim);
-//		}
-//
-//		// Add endMarker
-//		long tLastTimedMetrical = mtlDim.getTime(mtLastTimedMetrical);
-//		TimedMetrical end = 
-//			calculateEndMarker(tLastTimedMetrical, 
-//			tempiDim.get(tempiDim.size()-1)[0],	
-////			Timeline.diminute(mtl.getTempo(tLastTimedMetrical), diminutions.get(diminutions.size()-1)), 
-//			mtLastTimedMetrical, diminutions.get(diminutions.size()-1));
-//		mtlDim.add((Marker) end);
 
 		return mtlDim; 
 	}
-
-
-
 
 
 	/**
@@ -962,29 +793,13 @@ public class ScorePiece extends Piece {
 		SortedContainer<Marker> htDim = 
 			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
 
-//		System.out.println(mtl.getMeterSectionOnsets());
-		
-//		List<Rational> msoUndim = new ArrayList<>();
-//		Arrays.stream(mtl.getTimeSignature()).forEach(ts -> msoUndim.add(new Rational(ts[3], ts[4])));
-//		List<Rational> msoDim = new ArrayList<>();
-//		Arrays.stream(mtlDim.getTimeSignature()).forEach(ts -> msoDim.add(new Rational(ts[3], ts[4])));
-		
 		List<Integer> diminutions = 
 			ToolBox.getItemsAtIndex(mi, Tablature.MI_DIM);
-//			ToolBox.getItemsAtIndex(tl.getMeterInfo(), Tablature.MI_DIM);
-//			tl.getDiminutions(); 
-//		ScoreMetricalTimeLine smtl = new ScoreMetricalTimeLine(mtl);
 		for (Marker m : ht) {
 			if (m instanceof KeyMarker) {
 				KeyMarker km = (KeyMarker) m;
 				km.setMetricTime(
-					smtl.getDiminutedMetricTime(
-					m.getMetricTime(), smtlDim,
-					diminutions)
-//					ScoreMetricalTimeLine.getDiminutedMetricTime(
-//					mtl, m.getMetricTime(), mtlDim,
-////					msoUndim, msoDim, 
-//					diminutions)
+					smtl.getDiminutedMetricTime(m.getMetricTime(), smtlDim, diminutions)
 				);
 				htDim.add(km);
 			}
@@ -1006,7 +821,6 @@ public class ScorePiece extends Piece {
 	// TESTED
 	static NotationSystem diminuteNotationSystem(NotationSystem ns, List<Integer[]> mi, 
 		ScoreMetricalTimeLine smtl, ScoreMetricalTimeLine smtlDim) {
-//		NotationSystem ns = argPiece.getScore();
 		NotationSystem nsDim = new NotationSystem();
 		for (int v = 0; v < ns.size(); v++) {
 			NotationStaff nstDim = new NotationStaff();
@@ -1014,51 +828,19 @@ public class ScorePiece extends Piece {
 			nsDim.add(nstDim);
 		}
 
-///		List<Rational> msoUndim = new ArrayList<>();
-///		Arrays.stream(mtl.getTimeSignature()).forEach(ts -> msoUndim.add(new Rational(ts[3], ts[4])));
-///		List<Rational> msoDim = new ArrayList<>();
-///		Arrays.stream(mtlDim.getTimeSignature()).forEach(ts -> msoDim.add(new Rational(ts[3], ts[4])));
-
-		// 1. Get, per voice, the diminuted NotationChords for each meter section
-///		// Initialise meterSectionsPerVoice with empty lists  
-///		List<List<List<NotationChord>>> meterSectionsPerVoice = new ArrayList<>();
-///		for (int v = 0; v < ns.size(); v++) {
-///			List<List<NotationChord>> currVoice = new ArrayList<>();
-/////			for (int dim : diminutions) {
-/////			for (int j = 0; j < meterInfoTab.size(); j++) {	
-/////				currVoice.add(new ArrayList<>());
-/////			}
-///			diminutions.forEach(d -> currVoice.add(new ArrayList<>()));
-///			meterSectionsPerVoice.add(currVoice);
-///		}
-///		// Fill meterSectionsPerVoice
-///		// meterSectionsPerVoice.get(v)       : the sections for voice v
-///		// meterSectionsPerVoice.get(v).get(s): the notes for section s in voice v
-
-		List<Integer> diminutions = 
-			ToolBox.getItemsAtIndex(mi, Tablature.MI_DIM);	
-//			ToolBox.getItemsAtIndex(tl.getMeterInfo(), Tablature.MI_DIM);
-//			tl.getDiminutions();
-//		ScoreMetricalTimeLine smtl = new ScoreMetricalTimeLine(mtl);
+		List<Integer> diminutions = ToolBox.getItemsAtIndex(mi, Tablature.MI_DIM);	
 		for (int v = 0; v < ns.size(); v++) {
 			NotationVoice nv = ns.get(v).get(0);
 			for (NotationChord nc : nv) {
 				// All notes in nc have the same (metric) time
 				Rational mt = nc.getMetricTime();
 				long time = nc.getTime();
-				int sec = 
-//					ScoreMetricalTimeLine.getMeterSection(mtl, mt);
-					smtl.getMeterSection(mt);
+				int sec = smtl.getMeterSection(mt);
 				// Diminute the notes in nc (and therewith nc itself) and add to nsDim
 				for (Note n : nc) {
 					// Adapt ScoreNote
 					ScoreNote sn = n.getScoreNote();
-					Rational onsDim = 	
-//						ScoreMetricalTimeLine.getDiminutedMetricTime(mtl, mt, mtlDim, diminutions);
-						smtl.getDiminutedMetricTime(mt, smtlDim, diminutions);
-//					Rational onsDim = 
-//						Timeline.getDiminutedMetricPositionOLD(mt, msoUndim, 
-//						msoDim, diminutions);
+					Rational onsDim = smtl.getDiminutedMetricTime(mt, smtlDim, diminutions);
 					sn.setMetricTime(onsDim);
 					Rational durDim = Utils.diminute(n.getMetricDuration(), diminutions.get(sec));
 					sn.setMetricDuration(durDim);
@@ -1066,7 +848,7 @@ public class ScorePiece extends Piece {
 					// Adapt PerformanceNote
 					PerformanceNote pn = n.getPerformanceNote();
 					long duration = n.getDuration();
-//					// By uncommenting the lines below, the time and duration are diminuted
+					// By uncommenting the lines below, the time and duration are diminuted
 //					time = 
 //						Timeline.getDiminutedTime(time, meterSectionTimesUndim, meterSectionTimesDim, 
 //						diminutions);
@@ -1075,26 +857,114 @@ public class ScorePiece extends Piece {
 					pn.setDuration(duration);
 					n.setPerformanceNote(pn);
 				}
-///				meterSectionsPerVoice.get(v).get(sec).add(nc);
 				nsDim.get(v).get(0).add(nc);
 			}
 		}
-///		// 2. Create diminuted NotationSystem from meterSectionsPerVoice 
-///		// For each voice
-///		for (int i = 0; i < meterSectionsPerVoice.size(); i++) {
-///			NotationStaff nstDim = new NotationStaff();
-///			NotationVoice nvDim = new NotationVoice();
-///			// For each section
-///			for (List<NotationChord> l : meterSectionsPerVoice.get(i)) {
-///				for (NotationChord nc : l) {
-///					nvDim.add(nc);
-///				}
-///			}
-///			nstDim.add(nvDim);
-///			nsDim.add(nstDim);
-///		}
 
 		return nsDim;
+	}
+
+
+	/** 
+	 * Adds the given <code>Note</code> to the given voice. If there is already a 
+	 * <code>Note</code> at the given <code>Note</code>'s metric time, the given 
+	 * <code>Note</code> is added to the <code>NotationChord</code> at that metric time.
+	 * 
+	 * @param n
+	 * @param v 
+	 * @param mt
+	 */
+	// TESTED
+	public void addNote(Note n, int v/*, Rational mt*/) {
+		MidiNote mn = MidiNote.convert(n.getPerformanceNote());
+		mn.setChannel(v);
+
+		NotationVoice nv = getScore().get(v).get(0);
+		int ncNum = nv.find(n.getMetricTime()); // < 0 if there is no NotationChord at mt
+
+		List<Note> notesNc = new ArrayList<>();
+		notesNc.add(n);
+		// If there is already a NotationChord at mt; add its Notes as well
+		if (ncNum >= 0) {
+			NotationChord currNc = nv.get(ncNum);
+			currNc.forEach(currN -> notesNc.add(currN));
+			Collections.sort(notesNc, Comparator.comparing(Note::getMidiPitch));
+			nv.remove(currNc);
+		}
+		NotationChord nc = new NotationChord();
+		notesNc.forEach(currN -> nc.add(currN));
+		nv.add(nc);
+	}
+
+
+	/** 
+	 * Removes the <code>Note</code> at the given metric time from the given voice. If there is 
+	 * already a <code>Note</code> at the given metric time, the <code>Note</code> with the given
+	 * pitch is removed from the <code>NotationChord</code> at that metric time. If there is no
+	 * <code>Note</code> at the given metric time, no action is taken.
+	 *  
+	 * @param p
+	 * @param v  
+	 * @param mt 
+	 */
+	// TESTED
+	public void removeNote(Rational mt, int v, int p) {
+		NotationVoice nv = getScore().get(v).get(0);
+		int ncNum = nv.find(mt); // < 0 if there is no NotationChord at mt
+		// Only there is already a NotationChord at mt
+		if (ncNum >= 0) {
+			NotationChord currNc = nv.get(ncNum);
+			nv.remove(currNc);
+			// If the NotationChord at mt contains multiple Notes: re-add it
+			// without any Notes of pitch p
+			if (currNc.size() > 1) {
+				List<Note> notesNc = new ArrayList<>();
+				currNc.forEach(currN -> { if (currN.getMidiPitch() != p) { notesNc.add(currN); } });
+				Collections.sort(notesNc, Comparator.comparing(Note::getMidiPitch));			
+				NotationChord nc = new NotationChord();
+				notesNc.forEach(currN -> nc.add(currN));
+				nv.add(nc);
+			}
+		}
+	}
+
+
+	/**
+	 * Gives each <code>Note</code> in the <code>ScorePiece</code>'s <code>NotationSystem</code> 
+	 * its maximum duration. Given <code>note</code>s n_t and n_t+1 in a <code>NotationVoice</code>, 
+	 * the duration of n_t is
+	 * <ul>
+	 * <li>If the inter-onset time between n_t and n_t+1 <= the given maxDur: the inter-onset time.</li>
+	 * <li>If the inter-onset time between n_t and n_t+1 >  the given maxDur: the given maxDur.</li>
+	 * <ul>
+	 * 
+	 * The final <code>Note</code> in each <code>NotationVoice</code> is not altered.
+	 * 
+	 * @param maxDur
+	 * @return
+	 */
+	// TESTED
+	public void completeDurations(Rational maxDur) {
+		NotationSystem ns = getScore();
+		MetricalTimeLine mtl = getMetricalTimeLine();
+		for (int i = 0; i < ns.size(); i++) {
+			NotationVoice nv = ns.get(i).get(0);
+			// Do not adapt the last Note
+			for (int j = 0; j < nv.size() - 1; j++) {
+				NotationChord nc = nv.get(j);
+				NotationChord ncCompl = new NotationChord();
+				for (Note n : nc) {
+					Rational onset = n.getMetricTime();
+					Rational ioi = nv.get(j+1).getMetricTime().sub(onset);
+					if (ioi.isGreater(maxDur)) {
+						ioi = maxDur;
+					}
+					ncCompl.add(ScorePiece.createNote(n.getMidiPitch(), onset, ioi, n.getVelocity(), mtl));
+				}
+				nv.remove(nc);
+				nv.add(ncCompl);
+			}
+		}
 	}
 
 
@@ -1133,7 +1003,9 @@ public class ScorePiece extends Piece {
 	/**
 	 * Augments the given <code>ScoreMetricalTimeLine</code> according to the given augmentation.
 	 * 
-	 * @param smtl TODO can also be MetricalTimeLine; specific functionality of ScoreMetricalTimeLine not needed 
+	 * @param smtl NB: Specific functionality of <code>ScoreMetricalTimeLine</code> not needed; nevertheless 
+	 *                 preferred over a <code>MetricalTimeLine</code> becaue the augmentation is performed 
+	 *                 on a completed <code>ScorePiece</code>.
 	 * @param mp 
 	 * @param rescaleFactor
 	 * @param augmentation
@@ -1142,20 +1014,9 @@ public class ScorePiece extends Piece {
 	// TESTED
 	static MetricalTimeLine augmentMetricalTimeLine(ScoreMetricalTimeLine smtl, Rational mp,
 		int rescaleFactor, String augmentation) {
-		
-		MetricalTimeLine mtlAugm = initialiseMetricalTimeLine();
-//		// Start with an empty MetricalTimeLine (clear the default TimeSignatureMarker, 
-//		// zeroMarker, and endMarker) 
-//		MetricalTimeLine mtlAugm = new MetricalTimeLine();
-//		mtlAugm.clear();
-//		// Add zeroMarker
-//		mtlAugm.add((Marker) new TimedMetrical(0, Rational.ZERO));
 
-//		MetricalTimeLine mtl = getMetricalTimeLine();
-//		Rational mp = getMirrorPoint(mi);
-		
+		MetricalTimeLine mtlAugm = initialiseMetricalTimeLine();		
 		List<Rational> meterSecMts = new ArrayList<>();
-//		List<Rational> meterSecMetricTimes = ToolBox.getItemsAtIndex(getMeterSections(mtl), 1);
 		Arrays.stream(smtl.getTimeSignature())
 			.forEach(ts -> meterSecMts.add(new Rational(ts[3], ts[4])));
 
@@ -1195,14 +1056,6 @@ public class ScorePiece extends Piece {
 				}
 				
 				mtlAugm = addToMetricalTimeLine(mtlAugm, mtAugm, tAugm, tsAugm, null);
-				
-//				mtlAugm.add(new TimeSignatureMarker(tsAugm, mtAugm));
-//				if (mtAugm.isGreater(Rational.ZERO)) {
-//					mtlAugm.add(new TempoMarker(tAugm, mtAugm));
-//					if (mtAugm.isGreater(mtAugmLastTimedMetrical)) {
-//						mtAugmLastTimedMetrical = mtAugm;
-//					}
-//				}
 				if (mtAugm.isGreater(mtAugmLastTimedMetrical)) {
 					mtAugmLastTimedMetrical = mtAugm;
 				}
@@ -1214,19 +1067,6 @@ public class ScorePiece extends Piece {
 		mtlAugm = 
 			finaliseMetricalTimeLine(mtlAugm, mtAugmLastTimedMetrical, tAugmLastTimedMetrical, 
 			smtl.getTempo(tAugmLastTimedMetrical), !augmentation.equals("rescale") ? 1 : -rescaleFactor);
-		
-//		// If TempoMarkers (and through them, endMarker(s)) have been added: 
-//		// remove all TimedMetricals but the zeroMarker	
-//		if (mtAugmLastTimedMetrical.isGreater(Rational.ZERO)) {
-//			mtlAugm = cleanTimedMetricals(mtlAugm);
-//		}
-//
-//		// Add endMarker
-//		long tAugmLastTimedMetrical = mtlAugm.getTime(mtAugmLastTimedMetrical);
-//		TimedMetrical end = 
-//			calculateEndMarker(tAugmLastTimedMetrical, mtl.getTempo(tAugmLastTimedMetrical), 
-//			mtAugmLastTimedMetrical, !augmentation.equals("rescale") ? 1 : -rescaleFactor);
-//		mtlAugm.add((Marker) end);
 
 		return mtlAugm;
 	}
@@ -1236,7 +1076,9 @@ public class ScorePiece extends Piece {
 	 * Augments the given harmony track according to the given augmentation.
 	 *  
 	 * @param ht 
-	 * @param smtl TODO can also be MetricalTimeLine; specific functionality of ScoreMetricalTimeLine not needed 
+	 * @param smtl NB: Specific functionality of <code>ScoreMetricalTimeLine</code> not needed; nevertheless 
+	 *                 preferred over a <code>MetricalTimeLine</code> because the augmentation is performed 
+	 *                 on a completed <code>ScorePiece</code>.
 	 * @param mp
 	 * @param rescaleFactor
 	 * @param augmentation
@@ -1248,15 +1090,7 @@ public class ScorePiece extends Piece {
 		SortedContainer<Marker> htAugm = 
 			new SortedContainer<Marker>(null, Marker.class, new MetricalComparator());
 
-//		NotationSystem ns = getScore();
-//		MetricalTimeLine mtl = getMetricalTimeLine();
-//		SortedContainer<Marker> ht = getHarmonyTrack();
-//		Rational mp = getMirrorPoint(mi);
-		
 		List<Rational> keySecMts = new ArrayList<>();
-//		List<Rational> meterSecMetricTimes = ToolBox.getItemsAtIndex(getMeterSections(mtl), 1);
-//		Arrays.stream(mtl.getTimeSignature())
-//			.forEach(ts -> keySecMetricTimes.add(new Rational(ts[3], ts[4])));
 		ht.forEach(m -> {
 			if (m instanceof KeyMarker) {
 				keySecMts.add(m.getMetricTime());
@@ -1299,7 +1133,9 @@ public class ScorePiece extends Piece {
 	 * Augments the given <code>NotationSystem</code> according to the given augmentation. 
 	 * 
 	 * @param ns
-	 * @param smtl TODO can also be MetricalTimeLine; specific functionality of ScoreMetricalTimeLine not needed 
+	 * @param smtl NB: Specific functionality of <code>ScoreMetricalTimeLine</code> not needed; nevertheless 
+	 *                 preferred over a <code>MetricalTimeLine</code> because the augmentation is performed 
+	 *                 on a completed <code>ScorePiece</code>.
 	 * @param mp
 	 * @param ch
 	 * @param onsetTimes
@@ -1316,10 +1152,6 @@ public class ScorePiece extends Piece {
 
 		NotationSystem nsAugm = new NotationSystem();
 
-//		NotationSystem ns = getScore();
-//		MetricalTimeLine mtl = getMetricalTimeLine();
-//		Rational mp = getMirrorPoint(mi);		
-		
 		for (NotationStaff nst : ns) {	
 			NotationStaff nstAugm = new NotationStaff();
 			for (NotationVoice nv : nst) {
@@ -1450,48 +1282,5 @@ public class ScorePiece extends Piece {
 		}
 		return copy;
 	}
-
-
-//	/**
-//	 * Gets, for each meter section in the given <code>MetricalTimeLine</code>, a Rational[] containing
-//	 * <ul>
-//	 * <li>As element 0: the time signature for the meter section.</li>
-//	 * <li>As element 1: the metric time for the meter section.</li>
-//	 * </ul>  
-//	 * @param argMtl
-//	 * @return
-//	 */
-//	// TESTED
-//	public static List<Rational[]> getMeterSections(MetricalTimeLine argMtl) {
-//		List<Rational[]> ms = new ArrayList<>();
-//		Arrays.stream(argMtl.getTimeSignature())
-//			.forEach(ts -> ms.add(
-//				new Rational[]{
-//				new Rational((int) ts[0], (int) ts[1]), // cast necessary to avoid reduction	
-//				new Rational(ts[3], ts[4])
-//			})
-//		);
-//		return ms; 
-//	}
-
-
-	private static void augment(ScorePiece p, Rational mp, List<List<Note>> chords, List<Rational> allOnsetTimes, 
-			Rational thresholdDur, int rescaleFactor, String augmentation) {
-
-			MetricalTimeLine mtlAugm = 
-				augmentMetricalTimeLine(p.getScoreMetricalTimeLine(), mp, rescaleFactor, 
-				augmentation);
-			SortedContainer<Marker> htAugm = 
-				augmentHarmonyTrack(p.getHarmonyTrack(), p.getScoreMetricalTimeLine(), mp, 
-				rescaleFactor, augmentation);
-			NotationSystem nsAugm = 
-				augmentNotationSystem(p.getScore(), new ScoreMetricalTimeLine(mtlAugm), mp, 
-				chords, allOnsetTimes, thresholdDur, rescaleFactor, augmentation, "");
-
-			p.setMetricalTimeLine(mtlAugm);
-			p.setScoreMetricalTimeLine(new ScoreMetricalTimeLine(mtlAugm));
-			p.setHarmonyTrack(htAugm);
-			p.setScore(nsAugm);
-		}
 
 }
