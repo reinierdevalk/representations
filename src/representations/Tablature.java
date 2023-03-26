@@ -66,7 +66,7 @@ public class Tablature implements Serializable {
 	private boolean normaliseTuning;
 	private String name;
 	private List<Integer[]> meterInfo;
-	private Timeline timeline;
+//	private Timeline timeline;
 	private Tuning[] tunings;
 	private Integer[][] basicTabSymbolProperties;
 	private List<List<TabSymbol>> chords;

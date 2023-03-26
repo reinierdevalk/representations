@@ -47,6 +47,13 @@ public class DataConverterTest extends TestCase {
 	}
 
 
+	public static List<Double> combineLabels(List<Double> vl1, List<Double> vl2) {
+		List<Double> combined = new ArrayList<Double>(vl1);
+		combined.set(vl2.indexOf(1.0), 1.0);
+		return combined;
+	}
+
+
 	public void testConvertIntoListOfVoices() {		    
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		expected.add(Arrays.asList(new Integer[]{0, 1}));
@@ -54,9 +61,9 @@ public class DataConverterTest extends TestCase {
 		expected.add(Arrays.asList(new Integer[]{3, 4}));
 
 		List<List<Integer>> actual = new ArrayList<List<Integer>>();
-		actual.add(DataConverter.convertIntoListOfVoices(Transcription.combineLabels(V_0, V_1)));
+		actual.add(DataConverter.convertIntoListOfVoices(combineLabels(V_0, V_1)));
 		actual.add(DataConverter.convertIntoListOfVoices(V_2));
-		actual.add(DataConverter.convertIntoListOfVoices(Transcription.combineLabels(V_3, V_4)));
+		actual.add(DataConverter.convertIntoListOfVoices(combineLabels(V_3, V_4)));
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -74,9 +81,9 @@ public class DataConverterTest extends TestCase {
 		List<Integer> predictedVoices3 = Arrays.asList(new Integer[]{3, 4});
 
 		List<List<Double>> expected = new ArrayList<List<Double>>();
-		expected.add(Transcription.combineLabels(V_0, V_1));
+		expected.add(combineLabels(V_0, V_1));
 		expected.add(V_2); 
-		expected.add(Transcription.combineLabels(V_3, V_4)); 
+		expected.add(combineLabels(V_3, V_4)); 
 
 		List<List<Double>> actual = new ArrayList<List<Double>>();
 		actual.add(DataConverter.convertIntoVoiceLabel(predictedVoices1));
@@ -228,7 +235,7 @@ public class DataConverterTest extends TestCase {
 		// Chord 3
 		List<List<Double>> expected3 = new ArrayList<List<Double>>();
 		expected3.add(V_4); expected3.add(V_3); 
-		expected3.add(V_2); expected3.add(Transcription.combineLabels(V_0, V_1)); 
+		expected3.add(V_2); expected3.add(combineLabels(V_0, V_1)); 
 		// Chord 4
 		List<List<Double>> expected4 = new ArrayList<List<Double>>();
 		expected4.add(V_4);  

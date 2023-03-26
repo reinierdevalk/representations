@@ -71,7 +71,7 @@ public class Transcription implements Serializable {
 	public static final int OTHER_IND = 4;
 
 	private ScorePiece scorePiece;
-	private Piece originalPiece;
+	private ScorePiece unaugmentedScorePiece;
 	private String name;
 	private List<Integer[]> meterInfo;
 	private List<Integer[]> keyInfo;
@@ -435,22 +435,22 @@ public class Transcription implements Serializable {
 		// Create staves
 		for (int i = 0; i < numVoices; i++) { 
 			NotationStaff staff = new NotationStaff(notationSystem);
-			// Ensure correct cleffing for each staff: G-clef for the upper two and F-clef for the lower three
-			if (i < 2) {
-				staff.setClefType('g', -1, 0);
-			}
-			else {
-				staff.setClefType('f', 1, 0);
-			}
+//			// Ensure correct cleffing for each staff: G-clef for the upper two and F-clef for the lower three
+//			if (i < 2) {
+//				staff.setClefType('g', -1, 0);
+//			}
+//			else {
+//				staff.setClefType('f', 1, 0);
+//			}
 			notationSystem.add(staff);
 			NotationVoice notationVoice = new NotationVoice(staff);
 			staff.add(notationVoice);
 		}
 
 		// Set the initial NoteSequence and voice labels
-		makeNoteSequence();
+//		makeNoteSequence();
 //		newTranscription.initialiseNoteSequence();
-		initialiseVoiceLabels(null);
+//		initialiseVoiceLabels(null);
 //		newTranscription.initialiseVoiceLabels(null);
 
 //		return newTranscription;
@@ -496,8 +496,8 @@ public class Transcription implements Serializable {
 		Tablature tab = argEncoding != null ? new Tablature(argEncoding, true) : null;
 //		Tablature tab = encoding != null ? new Tablature(encoding, normaliseTuning) : null;
 
-		setScorePiece(argPiece, tab, /*argTimeline,*/ argType);
-		setOriginalPiece();
+		setScorePiece(argPiece, tab, argType);
+		setUnaugmentedScorePiece();
 		setName();
 		setMeterInfo();
 		setKeyInfo();
@@ -587,13 +587,13 @@ public class Transcription implements Serializable {
 	}
 
 
-	void setScorePiece(ScorePiece argPiece, Tablature tab, /*Timeline tl,*/  Type t) {
-		scorePiece = makeScorePiece(argPiece, tab, /*tl,*/ t);
+	void setScorePiece(ScorePiece argPiece, Tablature tab, Type t) {
+		scorePiece = makeScorePiece(argPiece, tab, t);
 	}
 
 
 	// NOT TESTED (wrapper method)
-	ScorePiece makeScorePiece(ScorePiece argPiece, Tablature tab, /*Timeline tl,*/ Type t) {
+	ScorePiece makeScorePiece(ScorePiece argPiece, Tablature tab, Type t) {
 		if (t == Type.GROUND_TRUTH) {
 			// Clean mtl
 //			MetricalTimeLine mtl = argPiece.getMetricalTimeLine();
@@ -647,8 +647,8 @@ public class Transcription implements Serializable {
 	}
 
 
-	void setOriginalPiece() {
-		originalPiece = SerializationUtils.clone(getScorePiece());
+	void setUnaugmentedScorePiece() {
+		unaugmentedScorePiece = SerializationUtils.clone(getScorePiece());
 	}
 
 
@@ -1647,6 +1647,12 @@ public class Transcription implements Serializable {
 	}
 
 
+	// TODO delete after TestManager is simplified?
+	public void setVoiceLabels(List<List<Double>> argVoiceLabels) {
+		voiceLabels = argVoiceLabels;
+	}
+
+
 	void setChordVoiceLabels(Tablature tab) {
 		chordVoiceLabels = makeChordVoiceLabels(getVoiceLabels(), 
 			tab != null ? tab.getChords() : null, getChords());
@@ -1831,8 +1837,8 @@ public class Transcription implements Serializable {
 	}
 
 
-	public Piece getOriginalPiece() {
-		return originalPiece;
+	public Piece getUnaugmentedScorePiece() {
+		return unaugmentedScorePiece;
 	}
 
 
@@ -2071,136 +2077,83 @@ public class Transcription implements Serializable {
 	////////////////////////////////
 	//
 	//  C L A S S  M E T H O D S
-	//  for class variables
 	//
 	public static void setMaxNumVoices(int arg) {
 		MAX_NUM_VOICES = arg;
 	}
 
 
-	////////////////////////////////
-	//
-	//  C L A S S  M E T H O D S
-	//  augmentation
-	//
 	/**
-	 * Augments the <code>Transcription</code>. There are three types of augmentation:
-	 * <ul>
-	 * <li>Reverse   : reverses the <code>Transcription</code>.</li>
-	 * <li>Deornament: removes all sequences of single-note chords shorter than the given
-	 *                 threshold duration from the <code>Transcription</code>, and lengthens 
-	 *                 the duration of the chord preceding a sequence by the total length 
-	 *                 of the removed sequence.</li>
-	 * <li>Rescale   : rescales (up or down) the <code>Transcription</code> durationally by the 
-	 *                 given rescale factor.</li>
-	 * </ul>
-	 * 
-	 * NB: See also <code>Tablature.augment()</code>.<br><br>
-	 * 
-	 * @param argEncoding   An augmented <code>Encoding</code>.
-	 * @param thresholdDur  Applies only if augmentation is "deornament". The threshold duration; 
-	 *                      all single-note chords with a duration shorter than this duration are 
-	 *                      considered ornamental and are removed.
-	 * @param rescaleFactor Applies only if augmentation is "rescale". A positive value doubles
-	 *                      all durations (e.g., 4/4 becomes 4/2); a negative value halves them 
-	 *                      (4/4 becomes 4/8).
-	 * @param augmentation  One of "reverse", "deornament", or "rescale".
+	 * Creates a voice label encoding the given voice(s).
+	 *   
+	 * @param voice The voices, integers ranging from 0 (the highest voice) to 
+	 *              MAX_NUM_VOICES - 1 (the lowest voice). 
+	 * @return
 	 */
-	// NOT TESTED (wrapper method)
-	public void augment(Encoding argEncoding, Rational thresholdDur, int rescaleFactor, String augmentation) {
-		ScorePiece sp = getScorePiece();
-		sp.augment(getMirrorPoint(), getChords(), getAllOnsetTimes(), thresholdDur, 
-			rescaleFactor, augmentation);
-		this.init(sp, argEncoding, /*null,*/ null, null, Type.AUGMENTED);
+	// TESTED
+	public static List<Double> createVoiceLabel(Integer[] voices) {
+		Double[] voiceLabel = new Double[MAX_NUM_VOICES];
+		Arrays.setAll(voiceLabel, ind -> Arrays.asList(voices).contains(ind) ? 1.0 : 0.0);
+		return Arrays.asList(voiceLabel);
 	}
 
 
 	/**
-	 * Gets the mirrorPoint, i.e., the start time of the fictional bar after the last bar, which is 
-	 * needed for reversing the piece. If the piece has an anacrusis, the last bar will be a full 
-	 * bar (i.e., the original, shortened last bar to which the length of the anacrusis is added).
+	 * Creates a duration label encoding the given duration(s).
+	 * 
+	 * NB: Tablature case only.
+	 *  
+	 * @param durations The durations as TabSymbol durations (brevis = whole note = 96, 
+	 * 				    semibrevis = half note = 48, etc.), integers ranging from 0 (the 
+	 *                  shortest duration) to MAX_TABSYMBOL_DUR - 1 (the longest duration). 
+	 *                  TabSymbol durations are always divisible by 3.
+	 * @return
+	 */
+	// TESTED
+	public static List<Double> createDurationLabel(Integer[] durations) {
+		List<Integer> durs = 
+			Arrays.asList(durations).stream().map(d -> ((d/3) - 1)).collect(Collectors.toList());
+		Double[] durLabel = new Double[MAX_TABSYMBOL_DUR];
+		Arrays.setAll(durLabel, ind -> durs.contains(ind) ? 1.0 : 0.0);
+		return Arrays.asList(durLabel);
+	}
+
+
+	/**
+	 * Gets the number of notes.
 	 * 
 	 * @return
 	 */
 	// TESTED
-	public Rational getMirrorPoint() {
-		Rational mirrorPoint = Rational.ZERO;
-
-		List<Integer[]> mi = getMeterInfo();
-
-		ScoreMetricalTimeLine smtl = getScorePiece().getScoreMetricalTimeLine();
-//		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
-		// For each voice
-		for (NotationStaff ns : getScorePiece().getScore()) {	
-			for (NotationVoice nv : ns) {
-				Rational currMirrorPoint = Rational.ZERO;
-				// 1. Determine the onset- and offset time of the last note in the voice
-				NotationChord lastNc = nv.get(nv.size() - 1);
-				Rational onsetTimeLastNote = lastNc.getMetricTime();
-				Rational offsetTimeLastNote = Rational.ZERO;
-				for (Note n : lastNc) {
-					Rational offsetTime = n.getMetricTime().add(n.getMetricDuration());
-					if (offsetTime.isGreater(offsetTimeLastNote)) {
-						offsetTimeLastNote = offsetTime;	
-					}
-				}
-
-				// 2. Get the metric position of the onset and offset of the last note and determine
-				// the onset- and offset bar(s) as well as the onset meter 
-				// NB: The offset time of the last note must be reduced to ensure that it falls with the bar 
-				// (if it coincides with the final barline, offsetTimeLastNote will not have a metric position)
-				Rational[] metPosOnset = 
-					smtl.getMetricPosition(onsetTimeLastNote);
-//					ScoreMetricalTimeLine.getMetricPosition(mtl, onsetTimeLastNote);
-//					Utils.getMetricPosition(onsetTimeLastNote, mi);
-				Rational reduction = new Rational(1, 128);
-				Rational[] metPosOffset = 
-					smtl.getMetricPosition(offsetTimeLastNote.sub(reduction));	
-//					ScoreMetricalTimeLine.getMetricPosition(mtl, offsetTimeLastNote.sub(reduction));	
-//					Utils.getMetricPosition(offsetTimeLastNote.sub(reduction), mi);
-				// Onset- and offset bar(s)
-				int barNumOnset = metPosOnset[0].getNumer();
-				int barNumOffset = metPosOffset[0].getNumer();
-				// Onset bar meter
-				Rational meterOnset = null;
-				for (Integer[] currMeter : mi) {
-					if (barNumOnset >= currMeter[MI_FIRST_BAR] && barNumOnset <= currMeter[MI_LAST_BAR]) {
-						meterOnset = new Rational(currMeter[MI_NUM], currMeter[MI_DEN]);
-					}
-				}
-
-				// 3. Determine currMirrorPoint
-				// Determine the distance of the note's onset to the beginning of the (possibly fictional) next bar 
-				Rational distanceFromOnsetToNextBar = meterOnset.sub(metPosOnset[1]);
-				// If the note's onset and offset are not in the same bar: determine the total duration of all 
-				// succeeding bars	
-				Rational durSucceedingBars = Rational.ZERO;
-				if (barNumOffset > barNumOnset) {     	
-					for (int i = barNumOnset + 1; i <= barNumOffset; i++) {
-						for (Integer[] currMeter : mi) {
-							if (i >= currMeter[MI_FIRST_BAR] && i <= currMeter[MI_LAST_BAR]) { 
-								durSucceedingBars = 
-									durSucceedingBars.add(new Rational(currMeter[MI_NUM], currMeter[MI_DEN]));
-							}
-						}
-					}
-				}
-				currMirrorPoint = 
-					onsetTimeLastNote.add(distanceFromOnsetToNextBar).add(durSucceedingBars);
-				if (currMirrorPoint.isGreater(mirrorPoint)) {
-					mirrorPoint = currMirrorPoint;
-				}
-			}
-		}
-		return mirrorPoint;
+	public int getNumberOfNotes() {
+		return getBasicNoteProperties().length;  
 	}
 
 
-	////////////////////////////////
-	//
-	//  C L A S S  M E T H O D S
-	//  for class variables
-	//
+	/**
+	 * Gets the number of active voices.
+	 * 
+	 */
+	// TESTED
+	public int getNumberOfVoices() {
+		NotationSystem system = getScorePiece().getScore();
+		int numberOfVoices = system.size();
+
+		// Check how many voices contain no Notes and decrement numberOfVoices accordingly 
+		for (int i = 0; i < system.size(); i++) {
+			NotationStaff staff = system.get(i);
+			NotationVoice voice = staff.get(0);
+			if (voice.size() == 0) {
+				numberOfVoices--;
+			}
+		}
+		return numberOfVoices;
+	}
+
+
+	// CLEAN UP TO HERE :)
+
+
 	/**
 	 * Returns the meter at the given metric time.
 	 * 
@@ -2254,7 +2207,7 @@ public class Transcription implements Serializable {
 	 *     in a list)</li>
 	 * </ul> 
 	 * 
-	 * The method takes into account SNUs and course crossings - but it is assumed that a chord 
+	 * The method takes into account SNUs and course crossings -- but it is assumed that a chord 
 	 * with a SNU has no course crossing, and vice versa.
 	 * 
 	 * @param btp
@@ -2434,44 +2387,6 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Returns a matrix containing onset, offset, and pitch for each note in btp or bnp, 
-	 * 
-	 * @param btp
-	 * @param durationLabels
-	 * @param bnp
-	 * @return
-	 */
-	// TESTED (for both tablature and non-tablature case)
-	public static Rational[][] getTimePitchMatrix(Integer[][] btp, List<List<Double>> durationLabels,
-		Integer[][] bnp) { // in 2020
-//		Integer[][] bnp = getBasicNoteProperties(); // in 2020
-		verifyCase(btp, bnp);
-
-		Rational[][] tpm = new Rational[btp != null ? btp.length : bnp.length][3];
-		if (btp != null) {
-			for (int i = 0; i < btp.length; i++) {
-				int pitchCurr = btp[i][0];
-				Rational onsetCurr = new Rational(btp[i][3], Tablature.SRV_DEN);
-//				Rational offsetCurr = onsetCurr.add(
-//					new Rational(btp[i][4], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()));
-				Rational offsetCurr = 
-					onsetCurr.add(DataConverter.convertIntoDuration(durationLabels.get(i))[0]);
-				tpm[i] = new Rational[]{onsetCurr, offsetCurr, new Rational(pitchCurr, 1)};
-			}
-		}
-		if (bnp != null) {		
-			for (int i = 0; i < bnp.length; i++) {
-				int pitchCurr = bnp[i][0];
-				Rational onsetCurr = new Rational(bnp[i][1], bnp[i][2]);
-				Rational offsetCurr = onsetCurr.add(new Rational(bnp[i][3], bnp[i][4]));
-				tpm[i] = new Rational[]{onsetCurr, offsetCurr, new Rational(pitchCurr, 1)};
-			}
-		}
-		return tpm;
-	}
-
-
-	/**
 	 * Gets the pitches in the chord. Element 0 of the List represents the lowest note's pitch, element 1 the
 	 * second-lowest note's, etc. Sustained previous notes are NOT included. 
 	 * 
@@ -2502,25 +2417,10 @@ public class Transcription implements Serializable {
 	 * @param chord
 	 * @return
 	 */
-	// TODO test
+	// TESTED
 	public static List<Integer> getPitchesInChord(List<Note> chord) {
 		List<Integer> pitchesInChord = new ArrayList<Integer>();
-
-//		List<Note> transcriptionChord = null;
-//		// Use the no-final version of the chords when called in Transcription creation
-//		if (getChords() == null) {
-////		if (transcriptionChordsFinal == null) {
-//			transcriptionChord = getNoteSequenceChords().get(chordIndex);
-//		}
-//		// Otherwise use external version
-//		else {
-//			transcriptionChord = getChords().get(chordIndex);
-//		}
-
 		chord.forEach(n -> pitchesInChord.add(n.getMidiPitch()));
-//		for (Note n : chord) {
-//			pitchesInChord.add(n.getMidiPitch());
-//		}
 		return pitchesInChord;
 	}
 
@@ -2604,22 +2504,6 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Combines the two given labels into one label, containing the value 1.0 twice.
-	 * 
-	 * @param labelOne
-	 * @param labelTwo
-	 * @return
-	 */
-	// TESTED
-	public static List<Double> combineLabels(List<Double> labelOne, List<Double> labelTwo) { // TODO only used in testing: remove?
-		List<Double> combined = new ArrayList<Double>(labelOne);
-		int voiceTwo = labelTwo.indexOf(1.0);
-		combined.set(voiceTwo, 1.0);
-		return combined;
-	}
-
-
-	/**
 	 * Verifies that either basicTabSymbolProperties or basicNoteProperties == null (i.e., 
 	 * that the non-tablature case or the tablature case applies, respectively).
 	 * 
@@ -2631,42 +2515,6 @@ public class Transcription implements Serializable {
 			System.out.println("ERROR: if btp == null, bnp must not be, and vice versa" + "\n");
 			throw new RuntimeException("ERROR (see console for details)");
 		}
-	}
-
-
-	/**
-	 * Creates a voice label encoding the given voice(s).
-	 *   
-	 * @param voice The voices, integers ranging from 0 (the highest voice) to 
-	 *              MAX_NUM_VOICES - 1 (the lowest voice). 
-	 * @return
-	 */
-	// TESTED
-	public static List<Double> createVoiceLabel(Integer[] voices) {
-		Double[] voiceLabel = new Double[MAX_NUM_VOICES];
-		Arrays.setAll(voiceLabel, ind -> Arrays.asList(voices).contains(ind) ? 1.0 : 0.0);
-		return Arrays.asList(voiceLabel);
-	}
-
-
-	/**
-	 * Creates a duration label encoding the given duration(s).
-	 * 
-	 * NB: Tablature case only.
-	 *  
-	 * @param durations The durations as TabSymbol durations (brevis = whole note = 96, 
-	 * 				    semibrevis = half note = 48, etc.), integers ranging from 0 (the 
-	 *                  shortest duration) to MAX_TABSYMBOL_DUR - 1 (the longest duration). 
-	 *                  TabSymbol durations are always divisible by 3.
-	 * @return
-	 */
-	// TESTED
-	public static List<Double> createDurationLabel(Integer[] durations) {
-		List<Integer> durs = 
-			Arrays.asList(durations).stream().map(d -> ((d/3) - 1)).collect(Collectors.toList());
-		Double[] durLabel = new Double[MAX_TABSYMBOL_DUR];
-		Arrays.setAll(durLabel, ind -> durs.contains(ind) ? 1.0 : 0.0);
-		return Arrays.asList(durLabel);
 	}
 
 
@@ -3104,6 +2952,119 @@ public class Transcription implements Serializable {
 	}
 
 
+	/**
+	 * Augments the <code>Transcription</code>. There are three types of augmentation:
+	 * <ul>
+	 * <li>Reverse   : reverses the <code>Transcription</code>.</li>
+	 * <li>Deornament: removes all sequences of single-note chords shorter than the given
+	 *                 threshold duration from the <code>Transcription</code>, and lengthens 
+	 *                 the duration of the chord preceding a sequence by the total length 
+	 *                 of the removed sequence.</li>
+	 * <li>Rescale   : rescales (up or down) the <code>Transcription</code> durationally by the 
+	 *                 given rescale factor.</li>
+	 * </ul>
+	 * 
+	 * NB: See also <code>Tablature.augment()</code>.<br><br>
+	 * 
+	 * @param argEncoding   An augmented <code>Encoding</code>.
+	 * @param thresholdDur  Applies only if augmentation is "deornament". The threshold duration; 
+	 *                      all single-note chords with a duration shorter than this duration are 
+	 *                      considered ornamental and are removed.
+	 * @param rescaleFactor Applies only if augmentation is "rescale". A positive value doubles
+	 *                      all durations (e.g., 4/4 becomes 4/2); a negative value halves them 
+	 *                      (4/4 becomes 4/8).
+	 * @param augmentation  One of "reverse", "deornament", or "rescale".
+	 */
+	// NOT TESTED (wrapper method)
+	public void augment(Encoding argEncoding, Rational thresholdDur, int rescaleFactor, String augmentation) {
+		ScorePiece sp = getScorePiece();
+		sp.augment(getMirrorPoint(), getChords(), getMetricPositionsChords(), thresholdDur, 
+			rescaleFactor, augmentation);
+		this.init(sp, argEncoding, /*null,*/ null, null, Type.AUGMENTED);
+	}
+
+
+	/**
+	 * Gets the mirrorPoint, i.e., the start time of the fictional bar after the last bar, which is 
+	 * needed for reversing the piece. If the piece has an anacrusis, the last bar will be a full 
+	 * bar (i.e., the original, shortened last bar to which the length of the anacrusis is added).
+	 * 
+	 * @return
+	 */
+	// TESTED
+	public Rational getMirrorPoint() {
+		Rational mirrorPoint = Rational.ZERO;
+
+		List<Integer[]> mi = getMeterInfo();
+
+		ScoreMetricalTimeLine smtl = getScorePiece().getScoreMetricalTimeLine();
+//		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
+		// For each voice
+		for (NotationStaff ns : getScorePiece().getScore()) {	
+			for (NotationVoice nv : ns) {
+				Rational currMirrorPoint = Rational.ZERO;
+				// 1. Determine the onset- and offset time of the last note in the voice
+				NotationChord lastNc = nv.get(nv.size() - 1);
+				Rational onsetTimeLastNote = lastNc.getMetricTime();
+				Rational offsetTimeLastNote = Rational.ZERO;
+				for (Note n : lastNc) {
+					Rational offsetTime = n.getMetricTime().add(n.getMetricDuration());
+					if (offsetTime.isGreater(offsetTimeLastNote)) {
+						offsetTimeLastNote = offsetTime;	
+					}
+				}
+
+				// 2. Get the metric position of the onset and offset of the last note and determine
+				// the onset- and offset bar(s) as well as the onset meter 
+				// NB: The offset time of the last note must be reduced to ensure that it falls with the bar 
+				// (if it coincides with the final barline, offsetTimeLastNote will not have a metric position)
+				Rational[] metPosOnset = 
+					smtl.getMetricPosition(onsetTimeLastNote);
+//					ScoreMetricalTimeLine.getMetricPosition(mtl, onsetTimeLastNote);
+//					Utils.getMetricPosition(onsetTimeLastNote, mi);
+				Rational reduction = new Rational(1, 128);
+				Rational[] metPosOffset = 
+					smtl.getMetricPosition(offsetTimeLastNote.sub(reduction));	
+//					ScoreMetricalTimeLine.getMetricPosition(mtl, offsetTimeLastNote.sub(reduction));	
+//					Utils.getMetricPosition(offsetTimeLastNote.sub(reduction), mi);
+				// Onset- and offset bar(s)
+				int barNumOnset = metPosOnset[0].getNumer();
+				int barNumOffset = metPosOffset[0].getNumer();
+				// Onset bar meter
+				Rational meterOnset = null;
+				for (Integer[] currMeter : mi) {
+					if (barNumOnset >= currMeter[MI_FIRST_BAR] && barNumOnset <= currMeter[MI_LAST_BAR]) {
+						meterOnset = new Rational(currMeter[MI_NUM], currMeter[MI_DEN]);
+					}
+				}
+
+				// 3. Determine currMirrorPoint
+				// Determine the distance of the note's onset to the beginning of the (possibly fictional) next bar 
+				Rational distanceFromOnsetToNextBar = meterOnset.sub(metPosOnset[1]);
+				// If the note's onset and offset are not in the same bar: determine the total duration of all 
+				// succeeding bars	
+				Rational durSucceedingBars = Rational.ZERO;
+				if (barNumOffset > barNumOnset) {     	
+					for (int i = barNumOnset + 1; i <= barNumOffset; i++) {
+						for (Integer[] currMeter : mi) {
+							if (i >= currMeter[MI_FIRST_BAR] && i <= currMeter[MI_LAST_BAR]) { 
+								durSucceedingBars = 
+									durSucceedingBars.add(new Rational(currMeter[MI_NUM], currMeter[MI_DEN]));
+							}
+						}
+					}
+				}
+				currMirrorPoint = 
+					onsetTimeLastNote.add(distanceFromOnsetToNextBar).add(durSucceedingBars);
+				if (currMirrorPoint.isGreater(mirrorPoint)) {
+					mirrorPoint = currMirrorPoint;
+				}
+			}
+		}
+		return mirrorPoint;
+	}
+
+
 	// TODO delete: only used in tab-as-non-tab case
 	public void transposeNonTab(int transpositionInterval) {
 		transpose(transpositionInterval);
@@ -3206,6 +3167,99 @@ public class Transcription implements Serializable {
 			Arrays.copyOfRange(basicNoteProperties, lowestNoteIndex, lowestNoteIndex + chordSize);    
 		return basicNotePropertiesChord;
 	}
+	
+	
+	// VEEH :)
+
+	public List<List<Integer>> determineVoiceEntriesHIGHLEVEL(Integer[][] btp, 
+		List<List<Double>> durationLabels, Integer[][] bnp, int numVoices, int n) {
+			
+		verifyCase(btp, bnp);
+			
+		List<Integer> noteDensities = getNoteDensity(btp, durationLabels, bnp); // in 2020
+		int leftDensity = noteDensities.get(0);
+
+		// Find density increases
+		List<Integer> densities = new ArrayList<Integer>();
+		densities.add(leftDensity);
+		// If the piece does not start with a fully-textured chord
+		if (leftDensity < numVoices) {
+			for (int i = 0; i < noteDensities.size(); i++) {
+				int density = noteDensities.get(i);
+				if (density > leftDensity) {
+					densities.add(density);
+					leftDensity = density;
+					if (density == numVoices) {
+						break;
+					}
+				}	
+			}
+//			System.out.println(noteDensities.subList(0, 50));
+//			for (List<Double> l : durationLabels) {
+//				System.out.println(l.size() + " - " + l);
+//			}
+
+			System.out.println("densities = " + densities);
+			// If the voices enter successively: determine if the piece is imitative
+			if (densities.size() == numVoices) {
+				// Check whether there are enough notes of density 1 to contain a motif of n notes
+				boolean enoughNotes = true;
+				for (int i = 0; i < n; i++) {
+					if (noteDensities.get(i) > 1) { // in 2020
+//					if (getNoteDensity().get(i) > 1) { // in 2020	
+						enoughNotes = false;
+						System.out.println("not enough notes of density 1 for motif");
+						break;
+					}
+				}
+				// If so: check whether a motif is found (i.e., whether configurations does
+				// not contain only -1s)
+				if (enoughNotes) {
+					List<List<Integer>> ve = 
+						getImitativeVoiceEntries(btp, durationLabels, bnp, numVoices, n); // in 2020
+//					List<Integer> configurations = ve.get(0);
+//					if ((ToolBox.sumListInteger(configurations) != -configurations.size())) {
+//						return ve;
+//					}
+					if (ve != null) {
+						System.out.println("motif found");
+						System.out.println("IMITATIVE MANNE.");
+						return ve;
+					}
+					else {
+//						System.out.println("IMITATIVE FAILED AT " + pieceName);
+						System.out.println("no motif found");
+						System.out.println("NON-IMITATIVE MANNE.");
+						return getNonImitativeVoiceEntries(btp, durationLabels, bnp, numVoices, n); // in  2020
+					}
+				}
+				else {
+					System.out.println("NON-IMITATIVE MANNE.");
+					return getNonImitativeVoiceEntries(btp, durationLabels, bnp, numVoices, n); // in 2020
+				}
+			}
+			// If the voices do not enter successively: the piece is non-imitative
+			else {
+				System.out.println("NON-IMITATIVE MANNE.");
+				return getNonImitativeVoiceEntries(btp, durationLabels, bnp, numVoices, n); // in 2020
+			}
+		}
+		// If the piece starts with a fully-textured chord // TODO account for unisons
+		else {
+			System.out.println("NON-IMITATIVE MANNE.");
+			List<List<Integer>> res = new ArrayList<List<Integer>>();
+			List<Integer> indices = new ArrayList<Integer>();
+			List<Integer> voices = new ArrayList<Integer>();
+			for (int i = 0; i < numVoices; i++) {
+				indices.add(i);
+				voices.add(numVoices - (i+1));
+			}
+			res.add(null);
+			res.add(indices);
+			res.add(voices);
+			return res;
+		}
+	}
 
 
 	/**
@@ -3275,6 +3329,2146 @@ public class Transcription implements Serializable {
 			activeNotes.add(active);
 		}	
 		return activeNotes;
+	}
+
+
+	/**
+	 * Returns a matrix containing onset, offset, and pitch for each note in btp or bnp, 
+	 * 
+	 * @param btp
+	 * @param durationLabels
+	 * @param bnp
+	 * @return
+	 */
+	// TESTED (for both tablature and non-tablature case)
+	public static Rational[][] getTimePitchMatrix(Integer[][] btp, List<List<Double>> durationLabels,
+		Integer[][] bnp) { // in 2020
+//		Integer[][] bnp = getBasicNoteProperties(); // in 2020
+		verifyCase(btp, bnp);
+
+		Rational[][] tpm = new Rational[btp != null ? btp.length : bnp.length][3];
+		if (btp != null) {
+			for (int i = 0; i < btp.length; i++) {
+				int pitchCurr = btp[i][0];
+				Rational onsetCurr = new Rational(btp[i][3], Tablature.SRV_DEN);
+//				Rational offsetCurr = onsetCurr.add(
+//					new Rational(btp[i][4], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()));
+				Rational offsetCurr = 
+					onsetCurr.add(DataConverter.convertIntoDuration(durationLabels.get(i))[0]);
+				tpm[i] = new Rational[]{onsetCurr, offsetCurr, new Rational(pitchCurr, 1)};
+			}
+		}
+		if (bnp != null) {		
+			for (int i = 0; i < bnp.length; i++) {
+				int pitchCurr = bnp[i][0];
+				Rational onsetCurr = new Rational(bnp[i][1], bnp[i][2]);
+				Rational offsetCurr = onsetCurr.add(new Rational(bnp[i][3], bnp[i][4]));
+				tpm[i] = new Rational[]{onsetCurr, offsetCurr, new Rational(pitchCurr, 1)};
+			}
+		}
+		return tpm;
+	}
+
+
+	/**
+	 * Determines the sequence of voice entries based primarily on the rhythmic profile,
+	 * and secondarily on the melodic profile, of the first n notes of the fugue theme (the
+	 * head motif). This is accomplished by locating the vertical position of that head motif
+	 * - with which the newly entering voice starts - at each texture density increase (i.e.,
+	 * from 1-2vv, from 2-3vv, etc.). 
+	 * 
+	 * The following assumptions are made. When a new voice enters for the first time, during
+	 * the length of the head motif </br>
+	 * (1) the head motif is rhythmically clearly distinct from the other active voices </br> 
+	 * (2) all previous voices are active (i.e., do not have rests) </br>
+	 *     (exceptions: BWV 872, all densities; BWV 863, density 4; BWV 871, density 4; 
+	 *     BWV 886, density 4) </br> 
+	 * (3) the head motif is not involved in voice crossings 
+	 *     (exception: BWV 890, density 3) </br>
+	 * (4) the rhythmic profile of the head motif is repeated literally 
+	 *     (exception: BWV 881) </br> 
+	 * 
+	 * Exceptions to (1) and (2) are handled as follows.</br>
+	 * (1) The head motif is doubled rhythmically in another voice, meaning that there may
+	 *     be multiple motif candidates. In this case, the melodic profile (e.g., 'up, up') 
+	 *     of the original head motif is used to identify the correct candidate. Doubling 
+	 *     may occur:</br>
+	 *     (a) in oblique or contrary motion (example: BWV 846, density 3, bar 4 1/8). In 
+	 *         this case, the doubling resembles the head motif only rhythmically but not
+	 *         melodically, and is therefore eliminated as candidate for the head motif.</br> 
+	 *     (b) in parallel motion (example: BWV 859, density 4, bar 15 1/4). In this case,  
+	 *         the doubling resembles the head motif both rhythmically and melodically, and
+	 *         is therefore a candidate for the head motif. The chord (i.e., its pitches)
+	 *         in which the head motif starts is compared to the previous chord, and the 
+	 *         newly entering voice is determined based on the optimal connection of the 
+	 *         pitches in both chords, where voices are assumed to continue in as small as 
+	 *         possible steps.
+	 *         Example: left chord = [67, 60], right chord = [67, 59, 55]. Cost per
+	 *         connection = 0+1 to connect to upper two layers; 0+5 to connect to upper and
+	 *         lower layer; 8+5 to connect to lower two layers. Connection 1 is the lowest-cost
+	 *         and therefore optimal connection.</br>
+	 * (2) Not all previous voices are active. The following scenarios are possible:</br>
+	 *     (a) The new density takes effect during the new head motif:
+	 *         (1) If the first chord in the new density does not contain the first head 
+	 *         motif note (HMN) duration: a small time window to the left of this initial
+	 *         first chord is searched for the chord sequence that does contain the HMN 
+	 *         durations (example: BWV 863, density 4, bar 7 3/8) 
+	 *         NB: this may yield a false candidate, to be removed </br>
+	 *         (2) If the first chord in the new density by coincidence contains the first 
+	 *         head motif note duration: a false cadidate, to be removed, is detected
+	 *         (example: BWV 872, density 2, 3, bars 1, 2) </br> 
+	 *     (b) The new density takes effect after the new head motif. This leads to:</br>
+	 *         (1) a false candidate (i.e., n notes with the same durations as the HMN, but 
+	 *             with different pitch movement), to be removed, being determined (example: 
+	 *             BWV 871, density 4, bar 19 1/4 (missed entry at bar 7 1/8)).</br>
+	 *         (2) a next actual entry of the head motif being determined (example: BWV 886, 
+	 *             density 4, bar 22 1/8 (missed entry at bar 8 1/8)).</br>   
+	 *     
+	 *     When a false candidate is detected, the newly entering voice is simply added as 
+	 *     the lowest of the already active voices; in case (b2) the newly entering voice is
+	 *     derived from the next actual entry.
+	 * 
+	 * @param highestNumVoices
+	 * @param n	The number of notes of the head motif to consider
+	 * @return A list of lists, containing </br>
+	 *         as element 0: the determined voice entry configurations, with -1 as a placeholder
+	 *                       when the configuration could not be determined at that density 
+	 *                       increase</br>
+	 *         as element 1: for each density increase, the indices of the note(s) in the 
+	 *                       first chord at that density increase </br>
+	 *         as element 2: the voices that go with these indices </br>
+	 *         Returns <code>null</code> if no motif was found.
+	 */
+	// TESTED TODO: implement full note duration case in tablature case
+	List<List<Integer>> getImitativeVoiceEntries(Integer[][] btp, List<List<Double>> durationLabels, 
+		Integer[][] bnp, int highestNumVoices, int n) { // in 2020
+
+		verifyCase(btp, bnp);
+		
+		List<List<Integer>> res = new ArrayList<List<Integer>>();
+		List<Integer> configs = new ArrayList<Integer>();
+		final int pitch = 0;
+		final int durNum = 1;
+		final int durDen = 2;
+		final int isHMN = 3;
+		
+//		Integer[][] bnp = getBasicNoteProperties(); // in 2020
+
+		List<Integer> lowestNoteIndicesFirstChords = new ArrayList<Integer>();
+		lowestNoteIndicesFirstChords.add(0);
+		List<List<Integer[]>> pitchesFirstChords = new ArrayList<List<Integer[]>>();
+		List<Integer[]> firstPitch = new ArrayList<Integer[]>();
+		firstPitch.add(new Integer[]{
+			(btp != null) ? btp[0][Tablature.PITCH] : 
+			bnp[0][PITCH], 0});
+		pitchesFirstChords.add(firstPitch);
+
+		// Determine the rhythmic head motif (first n notes of fugue theme)
+		List<Rational> headMotif = new ArrayList<Rational>();
+		Rational granularity = new Rational(1, 32);
+		for (int i = 0; i < n; i++) {
+			Rational curr = 
+				(btp != null) ?	DataConverter.convertIntoDuration(durationLabels.get(i))[0] :
+				new Rational(bnp[i][DUR_NUMER], bnp[i][DUR_DENOM]);
+			headMotif.add(quantiseDuration(curr, granularity));
+		}
+
+		// Determine the inter-onset intervals, exact pitch movement, and general pitch 
+		// movement of the head motif
+		List<Rational> ioiHeadMotif = new ArrayList<Rational>();
+		List<Integer> pitchMvmtHeadMotif = new ArrayList<Integer>();
+		List<Double> mvmtHeadMotif = new ArrayList<Double>();
+		for (int i = 0; i < n-1; i++) {
+			int pitchMvmt;
+			if (btp != null) {
+				ioiHeadMotif.add(
+					new Rational(btp[i+1][Tablature.ONSET_TIME], Tablature.SRV_DEN).sub(
+					new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN)));
+				pitchMvmt = btp[i+1][Tablature.PITCH] - btp[i][Tablature.PITCH];
+			}
+			else {
+				ioiHeadMotif.add(
+					new Rational(bnp[i+1][ONSET_TIME_NUMER], bnp[i+1][ONSET_TIME_DENOM]).sub(
+					new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM])));
+				pitchMvmt = bnp[i+1][PITCH] - bnp[i][PITCH];
+			}
+			pitchMvmtHeadMotif.add(pitchMvmt);
+			mvmtHeadMotif.add(Math.signum((double)pitchMvmt));
+		}
+
+		// Find the next density increase and determine the position of the newly
+		// entering voice
+		List<Integer> noteDensities = getNoteDensity(btp, durationLabels, bnp); // in 2020
+		int density = noteDensities.get(0);
+		for (int i = 0; i < noteDensities.size(); i++) {
+			if (noteDensities.get(i) > density) {
+				System.out.println("density increase");
+				System.out.println( 
+					((btp != null) ? "onset time " + new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
+					"bar " + Utils.getMetricPositionAsString(getMetricPositionsNotes().get(i))));
+				System.out.println("new density = " + noteDensities.get(i));
+				density = noteDensities.get(i);
+				int config = -1;
+
+				// Check whether the chord at i contains the first HMN
+				boolean firstHMNInFirstChord = false;
+				int chordSz = 
+					((btp != null) ? btp[i][Tablature.CHORD_SIZE_AS_NUM_ONSETS] : 
+					bnp[i][CHORD_SIZE_AS_NUM_ONSETS]);
+				for (int j = i; j < i + chordSz ; j++) {
+					Rational curr =
+						(btp != null) ? DataConverter.convertIntoDuration(durationLabels.get(j))[0] :	
+						new Rational(bnp[j][DUR_NUMER], bnp[j][DUR_DENOM]);
+					curr = quantiseDuration(curr, granularity);
+					if (curr.equals(headMotif.get(0))) {
+						firstHMNInFirstChord = true;
+						break;
+					}
+				}
+				System.out.println("firstHMNInFirstChord = " + firstHMNInFirstChord);
+				
+				// If not: find the i that goes with the first sequence of chords to the left 
+				// that contain the HMNs. Stop if no motif candidate has been found after the 
+				// maximum time window has been covered, or when there are no more notes left
+				if (!firstHMNInFirstChord) {
+					Rational onsetOfInitialI = 
+						(btp != null) ? new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN) :	
+						new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM]);
+					Rational timeWindowCovered = Rational.ZERO;
+					Rational maxTimeWindow = new Rational(1, 4);
+					boolean solved = false;
+					while (!solved) {
+						int newI = -1;
+						Rational onsetOfNewI = null;
+						// Find the new i, i.e., the lowest note index of the next left chord 
+						// with the first HMN 
+						for (int j = i-1; j >= 0; j--) {
+							Rational curr = 
+								(btp != null) ? DataConverter.convertIntoDuration(durationLabels.get(j))[0] : 
+								new Rational(bnp[j][DUR_NUMER], bnp[j][DUR_DENOM]);
+							curr = quantiseDuration(curr, granularity);
+							if (curr.equals(headMotif.get(0))) {
+								int chordInd = 
+									(btp != null) ? btp[j][Tablature.CHORD_SEQ_NUM] :
+									bnp[j][CHORD_SEQ_NUM];
+								onsetOfNewI = 
+									(btp != null) ? new Rational(btp[j][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
+									new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);
+								// Find the index of the lowest note in the chord at chordInd
+								for (int k = j; k >=0; k--) {
+									int chordSeqNr = 
+										(btp != null) ? btp[k][Tablature.CHORD_SEQ_NUM] : 
+										bnp[k][CHORD_SEQ_NUM]; 
+									if (chordSeqNr == chordInd-1) {
+										newI = k+1;
+										break;
+									}
+								}	
+								break;
+							}
+						}
+						
+						// If there are no more indices to try
+						if (newI == -1) {
+							return null;
+						}
+
+						Rational shift = onsetOfInitialI.sub(onsetOfNewI);
+						timeWindowCovered = timeWindowCovered.add(shift);
+						onsetOfInitialI = onsetOfNewI;
+
+						// Check if HMN occurs from newI
+						boolean nextFound = true;				
+						int ind = 1;
+						List<Boolean> hits = new ArrayList<Boolean>();
+						Rational onsetOfChordAtNewI = 
+							(btp != null) ? new Rational(btp[newI][Tablature.ONSET_TIME], Tablature.SRV_DEN) : 
+							new Rational(bnp[newI][ONSET_TIME_NUMER], bnp[newI][ONSET_TIME_DENOM]);
+						Rational nextOns = onsetOfChordAtNewI.add(ioiHeadMotif.get(ind - 1));
+						System.out.println("nextOns = " + nextOns);
+						for (int j = newI; j < ((btp != null) ? btp.length : bnp.length); j++) {
+							Rational currOns = 
+								(btp != null) ? new Rational(btp[j][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
+								new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);
+							if (currOns.equals(nextOns)) {
+								Rational currDur = 
+									(btp != null) ? DataConverter.convertIntoDuration(durationLabels.get(j))[0] :
+									new Rational(bnp[j][DUR_NUMER], bnp[j][DUR_DENOM]);
+								currDur = quantiseDuration(currDur, granularity);
+								if (currDur.equals(headMotif.get(ind))) {
+									hits.add(true);
+								}
+								else {
+									hits.add(false);
+								}
+							}
+							else if (currOns.isGreater(nextOns)) {
+								if (!hits.contains(true)) { 
+									nextFound = false;
+									break;
+								}
+								else {
+									ind++;
+									if (ind == headMotif.size()) {
+										break;
+									}
+									else {
+										nextOns = nextOns.add(ioiHeadMotif.get(ind - 1));
+										hits.clear(); 
+										j--;
+									}	
+								}
+							}
+						}					
+						i = newI;
+
+						if (nextFound || timeWindowCovered.isGreater(maxTimeWindow)) {							
+							solved = true;
+						}
+					}
+				}
+
+				// Determine the position of the newly entering voice
+				// 1. HMN: onsets and lowest note indices
+				// a. Determine the onsets of the HMNs
+				List<Rational> onsetsOfHMNChords = new ArrayList<Rational>();	
+				onsetsOfHMNChords.add(
+					(btp != null) ? new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN) :	
+					new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM]));
+				for (int j = 0; j < ioiHeadMotif.size(); j++) { 
+					Rational lastAdded = onsetsOfHMNChords.get(j);
+					Rational toAdd = lastAdded.add(ioiHeadMotif.get(j));
+					onsetsOfHMNChords.add(toAdd);
+				}
+
+				// b. Determine the indices of the lowest chord note at those onsets
+				List<Integer> indOfMotifNotesChords = new ArrayList<Integer>();
+				for (int j = i; j < ((btp != null) ? btp.length : bnp.length); j++) {
+					Rational currOnset = 
+						(btp != null) ?	new Rational(btp[j][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
+						new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);	
+					if (onsetsOfHMNChords.contains(currOnset)) {
+						indOfMotifNotesChords.add(j);
+						int toAdd = 
+							(btp != null) ? btp[j][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+							bnp[j][CHORD_SIZE_AS_NUM_ONSETS];	
+						j += toAdd - 1;
+					}
+					// Break if currOnset is after the last HMN onset
+					if (currOnset.isGreater(onsetsOfHMNChords.get(n-1))) {
+						break;
+					}		
+				}
+
+				// 2. Make the skeleton, i.e., the chords at the onsets of the HMNs
+				// a. Determine the raw skeleton
+				List<List<List<Integer>>> skeleton = new ArrayList<List<List<Integer>>>();
+				for (int j = 0; j < indOfMotifNotesChords.size(); j++) {					
+					int ind = indOfMotifNotesChords.get(j);
+					List<List<Integer>> noteInfo = getChordInfo(btp, durationLabels, bnp, ind);
+					// For each note: add 1 if it has the same duration as the current HMN
+					Rational currHMNDur = headMotif.get(j);
+					for (List<Integer> l : noteInfo) {
+						Rational currDur = null;
+						if (l.get(1) != null) {
+							currDur = new Rational(l.get(1), l.get(2));
+							currDur = quantiseDuration(currDur, granularity);		
+						}
+						if (currDur != null && currDur.equals(currHMNDur)) {
+							l.add(1);
+						}
+						else {
+							l.add(0);
+						}
+					}					
+					skeleton.add(noteInfo);
+				}
+				System.out.println("onsetsOfHMNChords = " + onsetsOfHMNChords);
+				System.out.println("indOfMotifNotesChords = " + indOfMotifNotesChords);
+				System.out.println("SKELETON");
+				for (List<List<Integer>> l : skeleton) {
+					System.out.println(l);
+				}
+
+				// b. Ensure that all chords in the skeleton have a size that is equal 
+				// to the current density by patching smaller chords with null values
+				List<List<List<Integer>>> completes = new ArrayList<List<List<Integer>>>();
+				List<List<List<Integer>>> incompletes = new ArrayList<List<List<Integer>>>();
+				List<Integer> indOfIncompletes = new ArrayList<Integer>();
+
+				// Determine completes and incompletes
+				for (int j = 0; j < skeleton.size(); j++) {
+					List<List<Integer>> curr = skeleton.get(j);
+					if (curr.size() < density) {
+						incompletes.add(curr);
+						indOfIncompletes.add(j);
+					}
+					else {
+						completes.add(curr);
+					}
+				}
+				// Patch incompletes with null values
+				if (incompletes.size() != 0) {
+					for (int j = 0; j < incompletes.size(); j++) {	
+						List<List<Integer>> currIncomplete = incompletes.get(j);
+						int currIncompleteInd = indOfIncompletes.get(j);
+						List<List<Integer>> completed = new ArrayList<List<Integer>>();
+						// If it is the first chord of the skeleton that is incomplete (which
+						// is the case if i was set back): patch the chord by finding the 
+						// optimal position to insert null
+						if (currIncomplete == skeleton.get(0)) {
+							currIncompleteInd = 0;
+							// Get pitches in previous chord
+							List<Integer> pitchesInPrev = new ArrayList<Integer>();
+							int sizePrev = 
+								(btp != null) ? btp[i-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :	
+								bnp[i-1][CHORD_SIZE_AS_NUM_ONSETS];
+							int lowestIndPrev = i - sizePrev;
+							// Add pitches of all chord notes
+							for (int k = lowestIndPrev; k < lowestIndPrev + sizePrev; k++) {
+								pitchesInPrev.add(
+									(btp != null) ? btp[k][Tablature.PITCH] :	
+									bnp[k][PITCH]);
+							}
+							// Add pitches of any sustained previous notes
+							for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, lowestIndPrev)) {
+								pitchesInPrev.add(
+									(btp != null) ? btp[ind][Tablature.PITCH] :	
+									bnp[ind][PITCH]);
+							}
+							Collections.sort(pitchesInPrev);
+
+							// Get pitches in current chord
+							List<Integer> pitchesInCurr = new ArrayList<Integer>();
+							for (List<Integer> l : currIncomplete) {
+								pitchesInCurr.add(l.get(pitch));
+							}
+
+							// Align optimally: place null at each position of pitchesInCurr
+							// and determine lowest-cost alignment with pitchesInPrev
+							int minCost = Integer.MAX_VALUE;
+							int optInd = -1;
+							for (int k = 0; k < density; k++) {
+								List<Integer> curr = new ArrayList<Integer>(pitchesInCurr);
+								curr.add(k, null);
+								int currCost = 0;
+								for (int l = 0; l < pitchesInPrev.size(); l++) {
+									if (curr.get(l) != null) {
+										currCost += Math.abs(curr.get(l) - pitchesInPrev.get(l));
+									}
+								}
+								if (currCost < minCost) {
+									minCost = currCost;
+									optInd = k; 
+								}
+							}
+							currIncomplete.add(optInd, null);
+							completed = new ArrayList<List<Integer>>(currIncomplete);
+						}
+						// If it is not the first chord of the skeleton: patch the chord
+						// using the average pitches of the previos chord(s)
+						else {
+							for (int k = 0; k < density; k++) {
+								completed.add(null);
+							}
+							// Get the average pitches of all completes before incomplete
+							// in skeleton
+							List<Double> avgs = new ArrayList<Double>();
+							for (int k = 0; k < density; k++) {
+								double sum = 0; 
+								int div = 0;
+								for (List<List<Integer>> l : completes) {
+									if (skeleton.indexOf(l) < skeleton.indexOf(currIncomplete)) {
+										sum += l.get(k).get(pitch);
+										div++;
+									}
+								}
+								avgs.add(sum/div);
+							}
+							currIncompleteInd = indOfIncompletes.get(j);
+							// For each element in currIncomplete: compare with the average
+							// pitches to determine its optimal index in completed.
+							// List the pitch differences with the average pitches
+							List<List<Double>> allDiffs = new ArrayList<List<Double>>();
+							for (List<Integer> element : currIncomplete) {
+								List<Double> diffs = new ArrayList<Double>();
+								for (int k = 0; k < avgs.size(); k++) {
+									diffs.add(Math.abs(element.get(pitch) - avgs.get(k)));
+								}
+								allDiffs.add(diffs);
+							}
+							// Determine the optimal index in completed 
+							for (int k = 0; k < allDiffs.size(); k++) {
+								List<Double> currDiff = allDiffs.get(k);
+								double currMin = Collections.min(currDiff);
+								int currMinInd = currDiff.indexOf(currMin);
+								// Compare with other diffs to determine whether currMin is the
+								// lowest value at currMinInd
+								boolean restart = false;
+								for (int l = 0; l < allDiffs.size(); l++) {
+									if (l != k) {
+										List<Double> otherDiff = allDiffs.get(l);
+										// If otherDiff has a lower value at currMinInd, and  
+										// that value is the lowest in that diff: make the 
+										// second-lowest value in currDiff the lowest restart
+										double d = otherDiff.get(currMinInd);
+										if (d < currMin && Collections.min(otherDiff) == d) {
+											currDiff.set(currMinInd, Double.MAX_VALUE);
+											allDiffs.set(k, currDiff);
+											k--;
+											restart = true;
+											break;
+										}
+									}
+								}
+								// If not: set currMinInd in completed to the element in
+								// currIncomplete that corresponds to currDiff 
+								if (!restart) {
+									completed.set(currMinInd, currIncomplete.get(k));
+								}
+							}
+						}
+						// Replace incomplete element in skeleton
+						skeleton.set(currIncompleteInd, completed);					
+					}
+					System.out.println("SKELETON PATCHED");
+					for (List<List<Integer>> l : skeleton) {
+						System.out.println(l);
+					}
+				}
+
+				// c. Handle correct vertical placement of unison notes in the skeleton
+				// List unison notes per chord
+				List<List<List<Integer>>> unisonsToHandlePerChord = new ArrayList<List<List<Integer>>>();
+				for (List<List<Integer>> l : skeleton) {
+					List<List<Integer>> unisonsToHandle = new ArrayList<List<Integer>>();
+					List<Integer> pitchesCovered = new ArrayList<Integer>();
+					// For each note in the HMN chord
+					for (int j = 0; j < l.size(); j++) {
+						List<Integer> currNote = l.get(j);
+						if (currNote != null) {
+							int currPitch = currNote.get(pitch);
+							// Compare currNote to all other notes in l
+							for (int k = 0; k < l.size(); k++) {
+								if (k != j) {
+									List<Integer> otherNote = l.get(k);
+									if (otherNote != null) {
+										int otherPitch = otherNote.get(pitch);
+										// Same pitch? Add both notes to the list
+										if (otherPitch == currPitch &&
+											!pitchesCovered.contains(currPitch)) {
+											unisonsToHandle.add(currNote);
+											unisonsToHandle.add(otherNote);
+											pitchesCovered.add(currPitch);
+										}
+									}
+								}	
+							}
+						}
+					}
+					unisonsToHandlePerChord.add(unisonsToHandle);
+				}
+				// Handle unison notes (i) of different durations, (ii) one of which is 
+				// a HMN duration.
+				// Ad (i): if the unison notes have the same duration: do nothing. In this 
+				// case, the unison pitches will either be both [p, num, den, 0] or both 
+				// [p, num, den, 1]. A combination of the two will never occur: a pitch with
+				// a certain duration either has the same duration as a head motif note or not.
+				// Ad (ii): if none of the durations is the HMN duration: do nothing. In 
+				// this case, correctness of the sequence of the unison notes does not
+				// matter, as this does not affect the position in the chord of the HMN
+				// (which will always be below or above the unison notes). 
+				// NB: This approach assumes that the two consecutive chords are fully 
+				// textured (which is only very rarely not true)
+				for (int j = 0; j < unisonsToHandlePerChord.size(); j++) {
+					List<List<Integer>> currUnisons = unisonsToHandlePerChord.get(j);
+					List<List<Integer>> currHMNChord = skeleton.get(j);
+					int lowestIndCurr = indOfMotifNotesChords.get(j);
+
+					// Find the previous and next non-unison neighbour chord 
+					List<List<Integer>> prevChord = 
+						getNonUnisonNeighbourChord(btp, durationLabels, bnp, -1, lowestIndCurr);
+					List<List<Integer>> nextChord = 
+						getNonUnisonNeighbourChord(btp, durationLabels, bnp, 1, lowestIndCurr);
+
+					// For each unison note pair satisfying criteria (i) and (ii) above 
+					// (the pairs are always at consecutive indices) 
+					for (int k = 0; k < currUnisons.size(); k++) {
+						List<Integer> left = currUnisons.get(k);
+						List<Integer> right = currUnisons.get(k+1);
+						int currPitch = left.get(pitch);
+						// Criterion (i): the unison notes must have the same duration 
+						// (in which case they are the same)
+						// NB: quantisation, which is only necessary to locate the HMNs 
+						// (see above) is not necessary here
+						if (!left.equals(right)) { 
+							boolean leftIsHMN = (left.get(left.size()-1) == 1);
+							boolean rightIsHMN = (right.get(right.size()-1) == 1);
+							boolean leftIsNull = (left.get(durNum) == null);
+							Rational leftDur = null;
+							if (!leftIsNull) {
+								leftDur = new Rational(left.get(durNum), left.get(durDen));
+							}
+							boolean rightIsNull = (right.get(durNum) == null);
+							Rational rightDur = null;
+							if (!rightIsNull) {
+								rightDur = new Rational(right.get(durNum), right.get(durDen));
+							}
+							Rational HMNDur, otherDur; 
+							int indOfHMN, indOfOther;
+							// Criterion (ii): one of the unison durations must be the 
+							// HMN duration
+							if (leftIsHMN || rightIsHMN) {
+								// (a) If the other duration is a non-null duration	 
+								if (leftIsHMN && !rightIsNull || rightIsHMN && !leftIsNull) {
+									if (leftIsHMN) {
+										HMNDur = leftDur;
+										otherDur = rightDur;
+										indOfHMN = currHMNChord.indexOf(left);
+										indOfOther = currHMNChord.indexOf(right);
+									}
+									else {
+										HMNDur = rightDur;
+										otherDur = leftDur;
+										indOfHMN = currHMNChord.indexOf(right);
+										indOfOther = currHMNChord.indexOf(left);
+									}
+									// Check the next chord for the note with the same 
+									// pitch and a null duration
+									for (int l = 0; l < nextChord.size(); l++) {
+										List<Integer> nextChordNote = nextChord.get(l);
+										if (nextChordNote.get(0) == currPitch &&
+											nextChordNote.get(1) == null) {
+											// If otherDur is longer than HMNdur: the position
+											// of the found note determines the position of  
+											// the longer-duration note
+											if (otherDur.isGreater(HMNDur)) {
+												if (indOfOther != l) {
+													Collections.swap(currHMNChord, 
+														indOfOther, indOfHMN);
+												}
+											}
+											// If otherDur is shorter than HMNdur: the position
+											// of the found note determines the position of
+											// the head motif note
+											else if (otherDur.isLess(HMNDur)) {
+												if (indOfHMN != l) {
+													Collections.swap(currHMNChord, 
+														indOfOther, indOfHMN);
+												}
+											}
+											skeleton.set(j, currHMNChord);
+											break;
+										}
+									}
+								}
+								// (b) If the other duration is a null duration
+								else if (leftIsHMN && rightIsNull || rightIsHMN && leftIsNull) {
+									otherDur = null;
+									if (leftIsHMN) {
+										HMNDur = leftDur;
+										indOfHMN = currHMNChord.indexOf(left);
+										indOfOther = currHMNChord.indexOf(right);
+									}
+									else {
+										HMNDur = rightDur;
+										indOfHMN = currHMNChord.indexOf(right);
+										indOfOther = currHMNChord.indexOf(left);
+									}
+									// Check the previous chord for the note with the same 
+									// pitch (and either a null or a non-null duration); 
+									// the position of the found note determines the 
+									// position of the null-duration note
+									for (int l = 0; l < prevChord.size(); l++) {
+										List<Integer> prevChordNote = prevChord.get(l);
+										if (prevChordNote.get(0) == currPitch) {
+											if (indOfOther != l) {
+												Collections.swap(currHMNChord, 
+													indOfOther, indOfHMN);
+											}
+											break;
+										}
+									}
+									skeleton.set(j, currHMNChord);
+								}
+							}
+						}
+						// Increment k to go to next pair
+						k++;
+					}
+				}
+				System.out.println("SKELETON PATCHED AND UNISONS FIXED");
+				for (List<List<Integer>> l : skeleton) {
+					System.out.println(l);
+				}
+
+				// 3. Determine the vertical position of the head motif in the skeleton
+				// Determine all head motif candidates
+				List<List<Integer>> motifCandidates = new ArrayList<List<Integer>>(); 
+				for (int j = 0; j < density; j++) {
+					int sum = 0;
+					List<Integer> motifCandidate = new ArrayList<Integer>();
+					for (List<List<Integer>> l : skeleton) {
+						List<Integer> element = l.get(j); 
+						if (element != null) {
+							sum += element.get(isHMN);
+							motifCandidate.add(element.get(pitch));
+						}
+					}
+					if (sum == n) {
+						motifCandidates.add(motifCandidate);
+					}
+					else {
+						motifCandidates.add(null);
+					}
+				}
+				System.out.println("motifCandidates = " + motifCandidates);
+
+				// Filter out any false head motif candidates, i.e., candidates that
+				// have the same rhythmic profile but are in contrary or oblique motion
+				List<List<Integer>> filtered = new ArrayList<List<Integer>>();
+				for (int j = 0; j < motifCandidates.size(); j++) {
+					List<Integer> motifCandidate = motifCandidates.get(j);
+					if (motifCandidate != null) {
+						List<Integer> pitchMvmtMotifCand = new ArrayList<Integer>(); 
+						List<Double> mvmtMotifCand = new ArrayList<Double>();
+						for (int k = 0; k < motifCandidate.size()-1; k++) {
+							int pitchMvmt = motifCandidate.get(k+1) - motifCandidate.get(k);
+							pitchMvmtMotifCand.add(pitchMvmt);
+							mvmtMotifCand.add(Math.signum((double)pitchMvmt));
+						}
+						// Confirm motif if: (i) it has exactly the same pitch movement
+						// as pitchMvmtHeadMotif; (ii) it has the same general movement 
+						// (up/down) as pitchMvmtHeadMotif. (i) will suffice in most cases;
+						// if not, small difference in pitch movement necessitated by the 
+						// harmony (minor vs major interval, fourth versus fifth) will be
+						// caught by (ii).  
+						// In some cases, however, it can happen that a correct motif 
+						// candidate still does not satisfy criterion (ii) (see e.g. BWV 
+						// 876, density 2 and 4). This is solved by allowing some leeway
+						// in criterion (ii) by creating mvmtMotifCand.size() variants of
+						// mvmtMotifCand, in each of which one element is replaced by 0.0.
+						// (meaning that, to a certain extent, no movement (0.0) is 
+						// considered equal to up/down (1.0/-1.0) movement). All variants
+						// thus created are considered correct as well
+						List<List<Double>> leewayCandidates = new ArrayList<List<Double>>();
+						for (int k = 0; k < mvmtHeadMotif.size(); k++) {
+							List<Double> leewayCand = new ArrayList<Double>(mvmtHeadMotif); 
+							leewayCand.set(k, 0.0);
+							leewayCandidates.add(leewayCand);
+						}
+						if (pitchMvmtMotifCand.equals(pitchMvmtHeadMotif) ||
+							mvmtMotifCand.equals(mvmtHeadMotif) ||
+							leewayCandidates.contains(mvmtMotifCand)) {
+							filtered.add(motifCandidate);
+						}
+						else {
+							filtered.add(null);
+						}
+					}
+					else {
+						filtered.add(null);
+					}
+				}
+				motifCandidates = filtered;
+				
+				System.out.println("motiveCandidates filtered = " + motifCandidates);
+
+				int numMotifCand = motifCandidates.size() - 
+					Collections.frequency(motifCandidates, null);
+				
+				System.out.println("numMotifCand = " + numMotifCand);
+
+				// 4. Determine the configuration 
+				// The configuration equals the index (including sustained notes) of the 
+				// HMN in the first HMN chord. Possibilities:
+				// (0)   (1)   (2)   (3) 
+				// x x     x  
+				//   x   x x
+				//   
+				// x x   x x     x   
+				// x x     x   x x
+				//   x)   x x   x x
+				//   
+				// x x   x x   x x     x
+				// x x   x x     x   x x
+				// x x     x   x x   x x
+				//   x   x x   x x   x x
+				//
+				// If there is only one motif candidate
+				if (numMotifCand == 1) {
+					for (int j = 0; j < motifCandidates.size(); j++) {
+						if (motifCandidates.get(j) != null) {
+							config = j;
+							break;
+						}
+					}
+				}
+				// If there are multiple motif candidates (which will be in parallel 
+				// motion): determine which one is in the newly inserted voice
+				else if (numMotifCand > 1) {
+					System.out.println("multiple motif candidates for " + name);
+					// List all m left chords (i.e., those with the previous density), 
+					// each as a list of pitches, and make average chord 
+					List<List<Integer>> leftChords = new ArrayList<List<Integer>>();	
+					List<Double> avgLeftChord = new ArrayList<Double>();
+					for (int j = 0; j < density; j++) {
+						avgLeftChord.add(null);
+					}
+					// Given the number of left chords to consider, find the lowest note
+					// index of the leftmost chord
+					int chordInd = 
+						(btp != null) ? btp[i][Tablature.CHORD_SEQ_NUM] : 
+						bnp[i][CHORD_SEQ_NUM];
+					int m = 1; // TODO make method argument?
+					int leftChordIndex = chordInd - m;
+					int leftInd = i;
+					int rightInd = i;
+					while (chordInd > leftChordIndex) {
+						int toSub = 
+							(btp != null) ? btp[rightInd-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :	
+							bnp[rightInd-1][CHORD_SIZE_AS_NUM_ONSETS];
+						leftInd = rightInd - toSub;
+						rightInd = leftInd;
+						chordInd = 
+							(btp != null) ? btp[leftInd][Tablature.CHORD_SEQ_NUM] :
+							bnp[leftInd][CHORD_SEQ_NUM];
+					}
+					// List the left chords and prepare avgLeftChord
+					for (int j = leftInd; j < i; j++) {
+						int chordSize = 
+							(btp != null) ? btp[j][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+							bnp[j][CHORD_SIZE_AS_NUM_ONSETS];
+						List<Integer> pitchesInChord = new ArrayList<Integer>();
+						// Add pitches of all chord notes
+						for (int k = j; k < j + chordSize; k++) {
+							pitchesInChord.add(
+								(btp != null) ? btp[k][Tablature.PITCH] :
+								bnp[k][PITCH]);
+						}
+						// Add pitches of any sustained previous notes
+						for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, j)) {
+							pitchesInChord.add(
+								(btp != null) ? btp[ind][Tablature.PITCH] :
+								bnp[ind][PITCH]);
+						}
+						Collections.sort(pitchesInChord);
+						Collections.reverse(pitchesInChord);
+						if (pitchesInChord.size() == density-1) {
+							// Add placeholder
+							pitchesInChord.add(null);
+							leftChords.add(pitchesInChord);
+							// Add to avgs
+							for (int k = 0; k < pitchesInChord.size(); k++) {
+								if (pitchesInChord.get(k) != null) { 
+									double summedPitch = pitchesInChord.get(k);
+									// avgLeftChord will only contain a non-null value 
+									// for the second and higher chords
+									if (j != leftInd) {
+										summedPitch += avgLeftChord.get(k);
+									}
+									avgLeftChord.set(k, summedPitch);
+								}
+							}
+						}
+						// Increment j so that the next iteration starts from the next chord
+						j = (j + chordSize) - 1;
+					}
+					// Calculate avgLeftChord
+					for (int j = 0; j < avgLeftChord.size(); j++) {
+						if (avgLeftChord.get(j) != null) {
+							avgLeftChord.set(j, (avgLeftChord.get(j) / leftChords.size()));
+						}
+					}
+					System.out.println("leftChords.size() = " + leftChords.size());
+					System.out.println("avgLeftChord = " + avgLeftChord);
+
+					// List the right chord
+					List<Integer> rightChord = new ArrayList<Integer>();
+					for (List<Integer> l : skeleton.get(0)) {
+						rightChord.add(l.get(pitch));
+					}
+					Collections.reverse(rightChord);
+					System.out.println("rightChord = " + rightChord);
+
+					// Determine the optimal configuration
+					// For each configuration: sum the movement over all voices that are 
+					// not null in left chord. The number of configurations equals the 
+					// number of notes in the right chord, i.e., the density
+					List<Double> costPerConfigCurrTransition = new ArrayList<Double>();
+					int currConfig = 0;
+					while (currConfig < density) {
+						double costCurrConfig = 0;
+						for (int j = 0; j < avgLeftChord.size(); j++) {
+							if (avgLeftChord.get(j) != null) {
+								costCurrConfig += 
+									Math.abs(rightChord.get(j) - avgLeftChord.get(j));
+							}
+						}
+						costPerConfigCurrTransition.add(costCurrConfig);
+
+						// Not last configuration? Shift placeholder one position back 
+						// and do next config
+						if (currConfig != density - 1) {
+							int swapInd = avgLeftChord.indexOf(null);
+							Collections.swap(avgLeftChord, swapInd, swapInd-1);
+						}
+						currConfig++;
+					}
+					double min = Collections.min(costPerConfigCurrTransition);
+					config = costPerConfigCurrTransition.indexOf(min);
+				}
+				System.out.println("config = " + config);
+
+				// NB: If no config was set, the value of config remains -1
+				configs.add(config);
+				lowestNoteIndicesFirstChords.add(i);
+				List<Integer[]> pitchesInFirstChord = new ArrayList<Integer[]>();
+				for (List<Integer> l : skeleton.get(0)) {
+					// Ternary operator; see https://alvinalexander.com/java/edu/pj/pj010018
+					if (l != null) {
+						pitchesInFirstChord.add(new Integer[]{l.get(pitch), 
+							(l.get(durNum) == null) ? 1 : 0});
+					}
+				}
+				pitchesFirstChords.add(pitchesInFirstChord);
+
+				if (density == highestNumVoices) {
+					break;
+				}
+			}
+		}
+		System.out.println("lowestNoteIndicesFirstChords = " + lowestNoteIndicesFirstChords);
+
+		// Determine the sequence of voice entries
+		// Map all possible combinations of configurations to voicings
+		Map<List<Integer>, List<Double>> dict = new LinkedHashMap<List<Integer>, List<Double>>();
+		// 2vv
+		dict.put(Arrays.asList(new Integer[]{0}), Arrays.asList(new Double[]{0.0, 1.0})); // SB
+		dict.put(Arrays.asList(new Integer[]{1}), Arrays.asList(new Double[]{1.0, 0.0})); // BS
+		// 3vv
+		dict.put(Arrays.asList(new Integer[]{0, 0}), Arrays.asList(new Double[]{0.0, 1.0, 2.0})); // SAB
+		dict.put(Arrays.asList(new Integer[]{0, 1}), Arrays.asList(new Double[]{0.0, 2.0, 1.0})); // SBA
+		dict.put(Arrays.asList(new Integer[]{0, 2}), Arrays.asList(new Double[]{1.0, 2.0, 0.0})); // ABS
+		dict.put(Arrays.asList(new Integer[]{1, 0}), Arrays.asList(new Double[]{1.0, 0.0, 2.0})); // ASB
+		dict.put(Arrays.asList(new Integer[]{1, 1}), Arrays.asList(new Double[]{2.0, 0.0, 1.0})); // BSA
+		dict.put(Arrays.asList(new Integer[]{1, 2}), Arrays.asList(new Double[]{2.0, 1.0, 0.0})); // BAS
+		// 4vv
+		dict.put(Arrays.asList(new Integer[]{0, 0, 0}), Arrays.asList(new Double[]{0.0, 1.0, 2.0, 3.0})); // SATB
+		dict.put(Arrays.asList(new Integer[]{0, 0, 1}), Arrays.asList(new Double[]{0.0, 1.0, 3.0, 2.0})); // SABT
+		dict.put(Arrays.asList(new Integer[]{0, 0, 2}), Arrays.asList(new Double[]{0.0, 2.0, 3.0, 1.0})); // STBA
+		dict.put(Arrays.asList(new Integer[]{0, 0, 3}), Arrays.asList(new Double[]{1.0, 2.0, 3.0, 0.0})); // ATBS
+		//
+		dict.put(Arrays.asList(new Integer[]{0, 1, 0}), Arrays.asList(new Double[]{0.0, 2.0, 1.0, 3.0})); // STAB
+		dict.put(Arrays.asList(new Integer[]{0, 1, 1}), Arrays.asList(new Double[]{0.0, 3.0, 1.0, 2.0})); // SBAT
+		dict.put(Arrays.asList(new Integer[]{0, 1, 2}), Arrays.asList(new Double[]{0.0, 3.0, 2.0, 1.0})); // SBTA
+		dict.put(Arrays.asList(new Integer[]{0, 1, 3}), Arrays.asList(new Double[]{1.0, 3.0, 2.0, 0.0})); // ABTS
+		//
+		dict.put(Arrays.asList(new Integer[]{0, 2, 0}), Arrays.asList(new Double[]{1.0, 2.0, 0.0, 3.0})); // ATSB
+		dict.put(Arrays.asList(new Integer[]{0, 2, 1}), Arrays.asList(new Double[]{1.0, 3.0, 0.0, 2.0})); // ABST
+		dict.put(Arrays.asList(new Integer[]{0, 2, 2}), Arrays.asList(new Double[]{2.0, 3.0, 0.0, 1.0})); // TBSA
+		dict.put(Arrays.asList(new Integer[]{0, 2, 3}), Arrays.asList(new Double[]{2.0, 3.0, 1.0, 0.0})); // TBAS
+		//
+		dict.put(Arrays.asList(new Integer[]{1, 0, 0}), Arrays.asList(new Double[]{1.0, 0.0, 2.0, 3.0})); // ASTB
+		dict.put(Arrays.asList(new Integer[]{1, 0, 1}), Arrays.asList(new Double[]{1.0, 0.0, 3.0, 2.0})); // ASBT
+		dict.put(Arrays.asList(new Integer[]{1, 0, 2}), Arrays.asList(new Double[]{2.0, 0.0, 3.0, 1.0})); // TSBA
+		dict.put(Arrays.asList(new Integer[]{1, 0, 3}), Arrays.asList(new Double[]{2.0, 1.0, 3.0, 0.0})); // TABS
+		//
+		dict.put(Arrays.asList(new Integer[]{1, 1, 0}), Arrays.asList(new Double[]{2.0, 0.0, 1.0, 3.0})); // TSAB
+		dict.put(Arrays.asList(new Integer[]{1, 1, 1}), Arrays.asList(new Double[]{3.0, 0.0, 1.0, 2.0})); // BSAT
+		dict.put(Arrays.asList(new Integer[]{1, 1, 2}), Arrays.asList(new Double[]{3.0, 0.0, 2.0, 1.0})); // BSTA
+		dict.put(Arrays.asList(new Integer[]{1, 1, 3}), Arrays.asList(new Double[]{3.0, 1.0, 2.0, 0.0})); // BATS
+		//
+		dict.put(Arrays.asList(new Integer[]{1, 2, 0}), Arrays.asList(new Double[]{2.0, 1.0, 0.0, 3.0})); // TASB
+		dict.put(Arrays.asList(new Integer[]{1, 2, 1}), Arrays.asList(new Double[]{3.0, 1.0, 0.0, 2.0})); // BAST
+		dict.put(Arrays.asList(new Integer[]{1, 2, 2}), Arrays.asList(new Double[]{3.0, 2.0, 0.0, 1.0})); // BTSA
+		dict.put(Arrays.asList(new Integer[]{1, 2, 3}), Arrays.asList(new Double[]{3.0, 2.0, 1.0, 0.0})); // BTAS
+		// 5vv
+		dict.put(Arrays.asList(new Integer[]{0, 0, 0, 0}), Arrays.asList(new Double[]{0.0, 1.0, 2.0, 3.0, 4.0}));
+		dict.put(Arrays.asList(new Integer[]{1, 0, 0, 0}), Arrays.asList(new Double[]{1.0, 0.0, 2.0, 3.0, 4.0}));
+		dict.put(Arrays.asList(new Integer[]{1, 2, 3, 4}), Arrays.asList(new Double[]{4.0, 3.0, 2.0, 1.0, 0.0}));
+		// TODO
+
+		// Return null if configs contains only -1s, i.e., if no motif was found, or
+		// if not enough motifs (more than half of the new entries) were found to make a 
+		// clear prediction
+		// 2vv: configs.size() == 1: one -1 returns null (none) (there is one new entry; half of it = 1/2)
+		// 3vv: configs.size() == 2: two -1s returns null (881) (there are two new entries; half of them = 2/2)
+		// 4vv: configs.size() == 3: two or three -1s returns null (none) (there are three new entries; half of them = 3/2)
+		// 5vv: configs.size() == 4: three or four -1s returns null (849_1) (there are four new entries; half of them = 4/2)
+		int minusOnes = Collections.frequency(configs, -1); 
+		if ((ToolBox.sumListInteger(configs) == -configs.size()) ||
+			((double)minusOnes/configs.size() > 0.5)) {
+			System.out.println(configs);
+			System.out.println("==========>>> null: no or not enough motifs found for " + getName());
+			return null;
+		}
+		// Get the voicing that corresponds to the (corrected) determined config
+		List<Integer> corrConfigs = new ArrayList<Integer>();
+		for (int i : configs) {
+			// No config set? Assume that the voice is added as lowest (config 0)
+			if (i == -1) {
+				corrConfigs.add(0);
+			}
+			else {
+				corrConfigs.add(i);
+			}
+		}
+		// Return null if corrConfigs does not exist
+		System.out.println("configs = " + configs);
+		System.out.println("corrConfigs = " + corrConfigs);
+		List<Double> voiceEntries = dict.get(corrConfigs);
+		System.out.println("voiceEntries = " + voiceEntries);
+		if (voiceEntries == null) {
+			System.out.println("null: config does not exist.");
+			System.exit(0);
+			return null;
+		}
+		else {
+			List<Integer> indices = new ArrayList<Integer>();
+			List<Integer> voices = new ArrayList<Integer>();
+			List<Integer> voicesAlreadyAdded = new ArrayList<Integer>();
+			for (int i = 0; i < lowestNoteIndicesFirstChords.size(); i++) {		
+				int currInd = lowestNoteIndicesFirstChords.get(i);
+				// List indices
+				List<Integer> currIndices = new ArrayList<Integer>();
+				int chordSize = 
+					(btp != null) ? btp[currInd][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :	
+					bnp[currInd][CHORD_SIZE_AS_NUM_ONSETS];
+				for (int j = currInd; j < currInd + chordSize; j++) {
+					currIndices.add(j);
+				}
+				indices.addAll(currIndices);
+
+				// List voices
+				List<Integer> currVoices = new ArrayList<Integer>();
+				int currVoice = voiceEntries.get(i).intValue();
+				System.out.println("currVoice = " + currVoice);
+				Collections.sort(voicesAlreadyAdded);
+				Collections.reverse(voicesAlreadyAdded);
+				if (currInd == 0) {
+					currVoices.add(currVoice);
+				}
+				else {
+					// Determine the previous chord
+					int toSub = 
+						(btp != null) ? btp[currInd-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+						bnp[currInd-1][CHORD_SIZE_AS_NUM_ONSETS];
+					int prevLowestInd = currInd - toSub;
+					List<Integer> prevChord = new ArrayList<Integer>();
+					for (int k = prevLowestInd; k < currInd; k++) {
+						prevChord.add(
+							(btp != null) ? btp[k][Tablature.PITCH] : 
+							bnp[k][PITCH]);
+					}
+					for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, prevLowestInd)) {
+						prevChord.add(
+							(btp != null) ? btp[ind][Tablature.PITCH] :
+							bnp[ind][PITCH]);
+					}
+					Collections.sort(prevChord);
+					System.out.println("prevChord = " + prevChord);
+
+					// Find any sustained notes in the first chord of the current 
+					// density change 
+					List<Integer[]> currFirst = pitchesFirstChords.get(i);
+					System.out.println("currFirst = ");
+					for (Integer[] in : currFirst) {
+						System.out.println(Arrays.toString(in));
+					}
+					List<Integer> voicesSustained = new ArrayList<Integer>();
+					for (int j = 0; j < currFirst.size(); j++) {
+						Integer[] in = currFirst.get(j);
+						// Sustained note?
+						int voice = -1;
+						// If the current note is a sustained note: find the position
+						// of this note in the previous chord, and then its voice 
+						// NB: it is assumed that there are no voice crossings in both chords
+						if (in[1] == 1) {
+							// Find position of note in previous chord
+							voice = voicesAlreadyAdded.get(prevChord.indexOf(in[0]));
+							voicesSustained.add(voice);
+						}
+					}
+					System.out.println("voicesSustained = " + voicesSustained);
+					System.out.println("voicesAlreadyAdded = " + voicesAlreadyAdded);
+					
+					// Determine the available voices for the notes in the current chord,
+					// which are the active voices without any sustained voices and the 
+					// current voice
+					List<Integer> availableVoices = new ArrayList<Integer>();
+					availableVoices.add(currVoice);
+					for (int v : voicesAlreadyAdded) {
+						if (!voicesSustained.contains(v)) {
+							availableVoices.add(v);
+						}
+					}
+					Collections.sort(availableVoices);
+					Collections.reverse(availableVoices);
+					System.out.println("availableVoices = " + availableVoices);
+					currVoices.addAll(availableVoices);
+				}
+				System.out.println("currVoices = " + currVoices);
+				voices.addAll(currVoices);
+				// Update voicesAlreadyAdded
+				voicesAlreadyAdded.add(currVoice);
+			}
+			res.add(configs);
+			res.add(indices);
+			res.add(voices);
+			return res;
+		}
+//		return res;
+	}
+
+
+	/**
+	 * Quantises the duration to the next multiple of the given granularity fraction.
+	 * 
+	 * @param curr
+	 * @param granularity
+	 * 
+	 * @return  
+	 */
+	// TESTED
+	static Rational quantiseDuration(Rational dur, Rational granularity) {
+		boolean quantised = false;
+		while (!quantised) {
+			if (dur.isMultiple(granularity)) {
+				quantised = true;
+			}
+			else {
+				dur = new Rational(dur.getNumer() + 1, dur.getDenom());
+			}
+		}
+		dur.reduce();
+		return dur;
+	}
+
+
+	/**
+	 * Gets, for each note in basicNoteProperties, the metric position.
+	 * 
+	 * Non-tablature case only.
+	 * 
+	 * @return
+	 */
+	// TESTED
+	List<Rational[]> getMetricPositionsNotes() {
+		List<Rational[]> mp = new ArrayList<Rational[]>();
+		ScoreMetricalTimeLine smtl = getScorePiece().getScoreMetricalTimeLine();
+		for (Integer[] b : getBasicNoteProperties()) {
+			mp.add(
+				smtl.getMetricPosition(new Rational(b[ONSET_TIME_NUMER], b[ONSET_TIME_DENOM]))
+			); 
+		}
+		return mp;	
+	}
+
+
+	/**
+	 * Returns a list of lists, where each list represents a note in the chord and contains </br>
+	 * as element 0: the note's pitch </br>
+	 * as element 1: the numerator of the note's duration as a Rational (or <code>null</code> if
+	 *               it is a sustained previous note </br>
+	 * as element 2: the denominator of the note's duration as a Rational (or <code>null</code> if
+	 *               it is a sustained previous note </br>
+	 * 
+	 * The list returned is sorted in ascending order.
+	 * 
+	 * @param lowestNoteIndex
+	 * @param btp
+	 * @param bnp
+	 * @return
+	 */
+	// TESTED (for both tablature- and non-tablature case)
+	List<List<Integer>> getChordInfo(Integer[][] btp, List<List<Double>> durationLabels, 
+		Integer[][] bnp, int lowestNoteIndex) {
+		
+		verifyCase(btp, bnp);
+
+		List<List<Integer>> noteInfo = new ArrayList<List<Integer>>(); 
+
+//		Rational currMotifNoteDur = headMotif.get(j);
+		int chordSize = 
+			(btp != null) ? btp[lowestNoteIndex][Tablature.CHORD_SIZE_AS_NUM_ONSETS] : 
+			bnp[lowestNoteIndex][CHORD_SIZE_AS_NUM_ONSETS];
+		// Add pitches of all notes in the chord. NB: one-line initialisation of curr (using 
+		// Arrays.asList()) is not possible, as this gives an UnsupportedOperationException 
+		// downstream when adding to noteInfo
+		for (int i = lowestNoteIndex; i < lowestNoteIndex + chordSize; i++) {
+//			int pitch = bnp[i][PITCH];
+//			int isDur = 0;
+//			Rational currNoteDur = new Rational(bnp[i][DURATION_NUMER], bnp[i][DURATION_DENOM]);
+//			if (currNoteDur.equals(currMotifNoteDur)) {
+//				isDur = 1;
+//			}
+			if (btp != null) {
+				Rational dur = DataConverter.convertIntoDuration(durationLabels.get(i))[0];
+				List<Integer> curr = new ArrayList<Integer>();
+				curr.add(btp[i][Tablature.PITCH]);
+				curr.add(dur.getNumer());
+				curr.add(dur.getDenom());
+				noteInfo.add(curr);
+			}
+			if (bnp != null) {
+				List<Integer> curr = new ArrayList<Integer>();
+				curr.add(bnp[i][PITCH]);
+				curr.add(bnp[i][DUR_NUMER]);
+				curr.add(bnp[i][DUR_DENOM]);
+				noteInfo.add(curr);			
+			}
+		}
+		// Add pitches of any sustained previous notes
+		for (int indSus : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, lowestNoteIndex)) {
+			List<Integer> curr = new ArrayList<Integer>();
+			curr.add((btp != null) ? btp[indSus][Tablature.PITCH] : bnp[indSus][PITCH]);
+			curr.add(null);
+			curr.add(null);
+			noteInfo.add(curr);
+		}
+		noteInfo = ToolBox.bubbleSort(noteInfo, 0);
+		return noteInfo;
+	}
+
+
+	/**
+	 * Finds the first neighbour chord (as returned by getChordInfo()) that does not contain a 
+	 * unison. 
+	 * 
+	 * @param btp
+	 * @param durationLabels
+	 * @param bnp
+	 * @param direction +1 if looking for the right (next) neighbour chord; -1 
+	 *        if looking for the left (previous) one
+	 * @param lowestNoteIndex The index of the lowest note of the current chord
+	 * @return
+	 */
+	// TESTED (for both tablature- and non-tablature case)
+	List<List<Integer>> getNonUnisonNeighbourChord(Integer[][] btp, List<List<Double>> 
+		durationLabels, Integer[][] bnp, int direction, int lowestIndCurr) {
+		
+		verifyCase(btp, bnp);
+
+		if (direction == -1) {
+			// Find the first previous chord without a unison
+			List<List<Integer>> prevChord = null;
+			// Only if the chord at lowestIndCurr is not the first chord  
+			if (lowestIndCurr != 0) {
+				int sizePrev = (btp != null) ? btp[lowestIndCurr-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+					bnp[lowestIndCurr-1][CHORD_SIZE_AS_NUM_ONSETS];
+//				int lowestIndPrev = 
+//					lowestIndCurr - bnp[lowestIndCurr-1][CHORD_SIZE_AS_NUM_ONSETS];
+				int lowestIndPrev = lowestIndCurr - sizePrev;
+				for (int i = lowestIndPrev; i >= 0 ; i--) {
+					prevChord = getChordInfo(btp, durationLabels, bnp, lowestIndPrev);
+					boolean unisonFound = false;
+					// Compare pitches
+					outer: for (int j = 0; j < prevChord.size(); j++) {
+						for (int k = 0; k < prevChord.size(); k++) {
+							if (k != j) {
+								// Unison found? Determine chord before previous and break 
+								if (prevChord.get(k).get(0) == prevChord.get(j).get(0)) {
+									unisonFound = true;
+									int sizeBeforePrev = 
+										(btp != null) ? btp[lowestIndPrev-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+										bnp[lowestIndPrev-1][CHORD_SIZE_AS_NUM_ONSETS];
+//									lowestIndPrev = lowestIndPrev - 
+//										bnp[lowestIndPrev-1][CHORD_SIZE_AS_NUM_ONSETS];
+									lowestIndPrev = lowestIndPrev - sizeBeforePrev;
+									i = lowestIndPrev + 1;
+									break outer;
+								}
+							}
+						}
+					}
+					// No unison found in chord? Previous chord found 
+					if (!unisonFound) {
+						break;
+					}
+				}
+			}
+			return prevChord; 
+		}
+
+		// Find the first next chord without a unison
+		else {
+			List<List<Integer>> nextChord = null;
+			// Only if the chord at lowestIndCurr is not the last chord
+			int sizeCurr = (btp != null) ? btp[lowestIndCurr][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+				bnp[lowestIndCurr][CHORD_SIZE_AS_NUM_ONSETS];
+			if ((lowestIndCurr + sizeCurr) != ((btp != null) ? btp.length : bnp.length)) {
+//			if (lowestIndCurr + bnp[lowestIndCurr][CHORD_SIZE_AS_NUM_ONSETS] != bnp.length) {
+				int lowestIndNext = lowestIndCurr + sizeCurr;
+//				int lowestIndNext = 
+//					lowestIndCurr + bnp[lowestIndCurr][CHORD_SIZE_AS_NUM_ONSETS];
+				for (int i = lowestIndNext; i < ((btp != null) ? btp.length : bnp.length); i++) {
+//				for (int i = lowestIndNext; i < bnp.length; i++) {
+					nextChord = getChordInfo(btp, durationLabels, bnp, lowestIndNext);
+					boolean unisonFound = false;
+					// Compare pitches
+					outer: for (int j = 0; j < nextChord.size(); j++) {
+						for (int k = 0; k < nextChord.size(); k++) {
+							if (k != j) {
+								// Unison found? Determine chord after next and break 
+								if (nextChord.get(k).get(0) == nextChord.get(j).get(0)) {
+									unisonFound = true;
+									int sizeNext = (btp != null) ? btp[lowestIndNext][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+										bnp[lowestIndNext][CHORD_SIZE_AS_NUM_ONSETS];
+									lowestIndNext = lowestIndNext + sizeNext;
+//									lowestIndNext = 
+//										lowestIndNext + bnp[lowestIndNext][CHORD_SIZE_AS_NUM_ONSETS];
+									i = lowestIndNext - 1;
+									break outer;
+								}
+							}
+						}
+					}
+					// No unison found in chord? Next chord found 
+					if (!unisonFound) {
+						break;
+					}
+				}
+			}
+			return nextChord;
+		}
+	}
+
+
+	/**
+	 * Determines the sequence of voice entries based on the cost of connecting two configurations.
+	 * 
+	 * @param btp
+	 * @param durationLabels
+	 * @param bnp
+	 * @param numVoices
+	 * @param n
+	 * @return
+	 */
+	// TESTED TODO: implement full note duration case in tablature case
+	// Return <code>null</code> if one or more voices are missing from the returned list of voices. 
+	List<List<Integer>> getNonImitativeVoiceEntries(Integer[][] btp, List<List<Double>> durationLabels,
+		Integer[][] bnp, int numVoices, int n) { // in 2020
+		
+		verifyCase(btp, bnp);
+		
+		List<Integer> allConfigs = new ArrayList<Integer>();
+		List<Integer> allIndices = new ArrayList<Integer>();
+		List<Integer> allVoices = new ArrayList<Integer>();
+		
+//		Integer[][] bnp = getBasicNoteProperties(); // in 2020
+		
+		// Determine the densities and the indices of the lowest note of the first
+		// chord with the new density
+		List<Integer> densities = new ArrayList<Integer>();
+		List<Integer> indices = new ArrayList<Integer>();
+//		List<List<Integer>> firstChordIndices = new ArrayList<List<Integer>>();
+		List<Integer> noteDensities = getNoteDensity(btp, durationLabels, bnp); // in 2020
+		int prevDensity = 0;
+		for (int i = 0; i < noteDensities.size(); i++) {
+			int d = noteDensities.get(i);
+			if (d > prevDensity) {
+				prevDensity = d;
+				densities.add(d);
+				indices.add(i);
+				List<Integer> currFirstChordInd = new ArrayList<Integer>();
+				int chordSize = 
+					(btp != null) ? btp[i][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+					bnp[i][CHORD_SIZE_AS_NUM_ONSETS];	
+				for (int j = i; j < i + chordSize; j++) {
+					currFirstChordInd.add(j);
+				}
+//				firstChordIndices.add(currFirstChordInd);
+				allIndices.addAll(currFirstChordInd);
+			}
+		}
+		System.out.println("indices = " + indices);
+		System.out.println("densities = " + densities);
+//		System.out.println(firstChordIndices);
+		
+//		FeatureGenerator fg = new FeatureGenerator();
+		// rightVoices is the list of voices available for the current right chord; it is 
+		// initialised with all voices (starting with the highest)
+		List<Integer> rightVoices = new ArrayList<Integer>();
+		for (int i = 0; i < numVoices; i++) {
+			rightVoices.add(i);
+		}
+
+		// For each density decrease, starting at the last: 
+		// (1) add the voices in rightVoices that do not go with a sustained previous note to
+		//     allVoices
+		// (2) determine the optimal config and remove all newly entering voices from 
+		//     rightVoices, thus setting it for the next iteration of the for-loop
+		for (int i = densities.size()-1; i > 0; i--) {
+			System.out.println("density increase index = " + indices.get(i));
+			System.out.println("rightVoices = " + rightVoices);
+			
+			// Determine left/right densities and left/current/right density increase index
+			int leftDensity = densities.get(i-1); 
+			int rightDensity = densities.get(i);
+			System.out.println("leftDensity = " + leftDensity);
+			System.out.println("rightDensity = " + rightDensity);	
+			int leftDensIncrInd = indices.get(i-1);
+			int currDensIncrInd = indices.get(i);
+			int rightDensIncrInd;
+			if (i == densities.size()-1) {
+				rightDensIncrInd = 
+					(btp != null) ? btp.length - btp[btp.length-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+					bnp.length - bnp[bnp.length-1][CHORD_SIZE_AS_NUM_ONSETS];
+			}
+			else {
+				rightDensIncrInd = indices.get(i+1);
+			}
+			System.out.println("-----");
+			System.out.println("rightDensIncrInd = " + rightDensIncrInd);
+			System.out.println("currDensIncrInd = " + currDensIncrInd);
+			System.out.println("leftDensIncrInd = " + leftDensIncrInd);
+
+			// 1. List all left chords (i.e., those of size leftDensity) and all right chords 
+			// (i.e., those of size rightDensity)
+			List<List<List<Integer>>> lAndR = new ArrayList<List<List<Integer>>>();
+			lAndR.add(new ArrayList<List<Integer>>()); // leftChords
+			lAndR.add(new ArrayList<List<Integer>>()); // rightChords
+			for (int l = 0; l < lAndR.size(); l++) {
+				int start = leftDensIncrInd;
+				int end = currDensIncrInd;
+				int dens = leftDensity;
+				if (l == 1) {
+					start = currDensIncrInd;
+					end = rightDensIncrInd;
+					dens = rightDensity;
+				}
+				for (int j = start; j < end; j++) {
+					// j is the index of the lowest note in the chord
+					int chordSize = 
+						(btp != null) ? btp[j][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+						bnp[j][CHORD_SIZE_AS_NUM_ONSETS];
+//					List<List<Integer>> pitchesAndSpnInChord = new ArrayList<List<Integer>>();
+					List<Integer> pitchesInChord = new ArrayList<Integer>();
+					// Add pitches and sustained previous note-ness of all notes in the chord
+					for (int k = j; k < j + chordSize; k++) {
+//						pitchesAndSpnInChord.add(Arrays.asList(new Integer[]{bnp[k][PITCH], 0}));
+						pitchesInChord.add(
+							(btp != null) ? btp[k][Tablature.PITCH]	:
+							bnp[k][PITCH]);
+					}
+					// Add pitches and sustained previous note-ness of any sustained previous notes
+					for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, j)) {
+//						pitchesAndSpnInChord.add(Arrays.asList(new Integer[]{bnp[ind][PITCH], 1}));
+						pitchesInChord.add(
+							(btp != null) ? btp[ind][Tablature.PITCH] :	
+							bnp[ind][PITCH]);
+					}
+//					pitchesAndSpnInChord = ToolBox.bubbleSort(pitchesAndSpnInChord);
+//					Collections.reverse(pitchesAndSpnInChord);
+//					List<List<Integer>> t = ToolBox.transposeListOfLists(pitchesAndSpnInChord);
+//					List<Integer> pitchesInChord = t.get(0);
+					Collections.sort(pitchesInChord);
+					Collections.reverse(pitchesInChord);
+
+					// Add only those chords of size dens
+					if (pitchesInChord.size() == dens) { 
+						// Complete left chords to size rightDensity by adding placeholder(s)
+						if (l == 0) {
+							while (pitchesInChord.size() < rightDensity) {
+								pitchesInChord.add(null);
+							}
+						}
+						lAndR.get(l).add(pitchesInChord);
+					}
+
+//					if (l == 0) {
+//						// Add only those chords of size dens; complete them to size 
+//						// rightDensity by adding placeholder(s) 
+//						if (pitchesInChord.size() == dens) { 
+//							while (pitchesInChord.size() < rightDensity) {
+//								pitchesInChord.add(null);
+//							}
+//							lAndR.get(l).add(pitchesInChord);
+//						}
+//					}
+//					if (l == 1) {
+////						// If first chord: set spnInFirstRightChord
+////						if (j == start) {
+////							spnInFirstRightChord = t.get(1);
+////						}
+//						// Add only those chords of size dens
+//						if (pitchesInChord.size() == dens) {
+//							lAndR.get(l).add(pitchesInChord);
+//						}
+//					}
+						
+					// Increment j so that the next iteration starts from the next chord
+					j = (j + chordSize) - 1;
+				}
+			}
+			List<List<Integer>> leftChords = lAndR.get(0);
+//			System.out.println("leftChords = " + leftChords);
+//			for (List<Integer> l : leftChords) {System.out.println(l); }
+			List<List<Integer>> rightChords = lAndR.get(1);
+//			System.out.println("rightChords = " + rightChords);
+//			for (List<Integer> l : rightChords) { System.out.println(l); }
+
+			// 2. List any sustained previous notes in the first right chord  
+			List<Integer> spnInFirstRightChord = new ArrayList<Integer>();
+//			int sizeFirstRightCh = bnp[currDensIncrInd][CHORD_SIZE_AS_NUM_ONSETS];
+			List<List<Integer>> spn = new ArrayList<List<Integer>>();
+			// Add pitches and sustained previous note-ness of all notes in the chord
+			int chrdSize = 
+				(btp != null) ? btp[currDensIncrInd][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
+				bnp[currDensIncrInd][CHORD_SIZE_AS_NUM_ONSETS];	
+			for (int j = currDensIncrInd; j < (currDensIncrInd + chrdSize); j++) {
+				System.out.println("j ==== " + j);
+				int toAdd = (btp != null) ? btp[j][Tablature.PITCH] : bnp[j][PITCH];
+				spn.add(Arrays.asList(new Integer[]{toAdd, 0}));
+			}
+			// Add pitches and sustained previous note-ness of any sustained previous notes
+			for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, currDensIncrInd)) {
+				int toAdd = (btp != null) ? btp[ind][Tablature.PITCH] : bnp[ind][PITCH]; 
+				spn.add(Arrays.asList(new Integer[]{toAdd, 1}));
+			}
+			// Sort on pitch
+			spn = ToolBox.bubbleSort(spn, 0);
+			Collections.reverse(spn);
+			spnInFirstRightChord = ToolBox.transposeListOfLists(spn).get(1);
+
+//			// 1. List all left chords, i.e., those of size leftDensity
+//			List<List<Integer>> leftChords = new ArrayList<List<Integer>>();
+//			for (int j = leftDensIncrInd; j < currDensIncrInd; j++) {
+//				// j is the index of the lowest note in the chord
+//				int chordSize = bnp[j][CHORD_SIZE_AS_NUM_ONSETS];
+//				List<Integer> pitchesInChord = new ArrayList<Integer>();
+//				// Add pitches of all notes in the chord
+//				for (int k = j; k < j + chordSize; k++) {
+//					pitchesInChord.add(bnp[k][PITCH]);
+//					}
+//					// Add pitches of any sustained previous notess
+//					for (int ind : fg.getIndicesOfSustainedPreviousNotes(null, null, bnp, j)) {
+//						pitchesInChord.add(bnp[ind][PITCH]);
+//					}
+//					Collections.sort(pitchesInChord);
+//					Collections.reverse(pitchesInChord);
+//
+//					// Add only those chords of size leftDensity; complete them to size 
+//					// rightDensity by adding placeholder(s)
+//					if (pitchesInChord.size() == leftDensity) {
+//						while (pitchesInChord.size() < rightDensity) {
+//							pitchesInChord.add(null);
+//						}
+//						leftChords.add(pitchesInChord);
+//					}
+//
+//					// Increment j so that the next iteration starts from the next chord
+//					j = (j + chordSize) - 1;
+//				}
+////				System.out.println("leftChords = " + leftChords);
+////				for (List<Integer> l : leftChords) {System.out.println(l); }
+//				
+//				// 2. List all right chords, i.e., those of size rightDensity, and any sustained
+//				// previous notes in the first right chord 
+//				List<List<Integer>> rightChords = new ArrayList<List<Integer>>();
+////				List<Boolean> spnInFirstRightChord = new ArrayList<Boolean>();
+//				List<Integer> spnInFirstRightChord = new ArrayList<Integer>();
+//				for (int j = currDensIncrInd; j < rightDensIncrInd; j++) {
+//					// j is the index of the lowest note in the chord
+//					int chordSize = bnp[j][CHORD_SIZE_AS_NUM_ONSETS];
+//					List<Integer> pitchesInChord = new ArrayList<Integer>();
+//					List<List<Integer>> pitchesInChordExt = new ArrayList<List<Integer>>();
+//					// Add pitches and sustained previous note-ness of all notes in the chord
+//					for (int k = j; k < j + chordSize; k++) {
+//						pitchesInChordExt.add(Arrays.asList(new Integer[]{bnp[k][PITCH], 0}));
+//					}
+//					// Add pitches and sustained previous note-ness of any sustained previous notess
+//					for (int ind : fg.getIndicesOfSustainedPreviousNotes(null, null, bnp, j)) {
+//						pitchesInChordExt.add(Arrays.asList(new Integer[]{bnp[ind][PITCH], 1}));
+//					}
+//					pitchesInChordExt = ToolBox.bubbleSort(pitchesInChordExt);
+//					Collections.reverse(pitchesInChordExt);
+//					List<List<Integer>> t = ToolBox.transposeListOfLists(pitchesInChordExt);
+//					pitchesInChord = t.get(0);
+//					if (j == currDensIncrInd) {
+//						spnInFirstRightChord = t.get(1);
+//					}
+//
+//					// Add only those chords of size rightDensity
+//					if (pitchesInChord.size() == rightDensity) {
+//						rightChords.add(pitchesInChord);
+//					}
+//					
+//					// Increment j so that the next iteration starts from the next chord
+//					j = (j + chordSize) - 1;
+//				}
+////				System.out.println("rightChords = " + rightChords);
+////				for (List<Integer> l : rightChords) { System.out.println(l); }
+
+			// 3. Add all voices in rightVoices that do not go with a sustained previous 
+			// note to allVoices
+			// NB: these voices must remain in rightVoices, as this list, which is only
+			// needed for the config calculation, must be the size of rightDensity
+			System.out.println("rightVoices = " + rightVoices);
+			System.out.println("allVoices was = " + allVoices);
+			for (int j = 0; j < rightVoices.size(); j++) {
+				if (spnInFirstRightChord.get(j) == 0) {
+					allVoices.add(rightVoices.get(j));
+				}
+			}						
+			System.out.println("allVoices is  = " + allVoices);
+
+			// 4. Determine the optimal configuration of the last n left chords and the 
+			// first n right chords, and then the voices to remove from rightVoices
+			List<List<Integer>> lastNLeft;	
+			if (n >= leftChords.size()) {
+				lastNLeft = new ArrayList<List<Integer>>(leftChords);
+			}
+			else {
+				lastNLeft = leftChords.subList(leftChords.size()-n, leftChords.size()); 
+			}
+			List<List<Integer>> firstNRight;
+			if (n >= rightChords.size()) {
+				firstNRight = new ArrayList<List<Integer>>(rightChords);
+			}
+			else {
+				firstNRight = rightChords.subList(0, n);
+			}
+			System.out.println("lastNLeft = " + lastNLeft);
+			System.out.println("firstNRight = " + firstNRight);
+			System.out.println("spnInFirstRightChord = " + spnInFirstRightChord);
+
+//				// Determine the number of configurations
+//				int numConfigs = configs.size();
+//				int numNull = Collections.frequency(leftChords.get(0), null);
+//				// If the left chord contains one note or one placeholder (1-2, 1-3, 1-4, 1-5, 
+//				// 2-3, 3-4, 4-5)
+//				if (leftDensity == 1 || numNull == 1) {
+//					numConfigs = rightDensity;
+//				}
+//				// If the left chord contains more than one note and the right chord contains
+//				// at least two more notes than the left chord (2-4; 2-5; 3-5)
+//				else if (leftDensity > 1 && (rightDensity - leftDensity >= 2)) {
+//				if (leftDensity == 2 && rightDensity == 4) {
+//					numConfigs = 6;
+//				}
+//				if (leftDensity == 2 && rightDensity == 5) {
+//					numConfigs = 10; 
+//				}
+//				if (leftDensity == 3 && rightDensity == 5) {
+//					numConfigs = 9; 
+//				}
+
+			List<List<List<Integer>>> configs = 
+				determineConfigs(leftDensity, rightDensity, lastNLeft);
+//			System.out.println(configs.size());
+//			for (List<List<Integer>> l : configs) {
+//				System.out.println(l);
+//			}
+//			for (List<List<Integer>> l : configs) {
+//				System.out.println(l);
+//			}
+			List<Integer> costPerConfig = new ArrayList<Integer>();
+			List<Integer> costPerConfigNonLin = new ArrayList<Integer>();
+			List<Integer> costPerConfigLin = new ArrayList<Integer>();
+			for (List<List<Integer>> l : configs) {
+				int costNonLin = calculateConfigCost(l, firstNRight, false);
+				int costLin = calculateConfigCost(l, firstNRight, true);	
+				costPerConfigNonLin.add(costNonLin);
+				costPerConfigLin.add(costLin);
+//				costPerConfig.add(costLin + costNonLin);
+				costPerConfig.add(costNonLin);
+			}
+//				int config = 0;
+//				while (config < numConfigs) {
+//					System.out.println("config = " + config);
+//					// Determine the cost for the current configuration 
+//					int costNonLin = calculateConfigCost(lastNLeft, firstNRight, false);
+//					int costLin = calculateConfigCost(lastNLeft, firstNRight, true);	
+//					costPerConfigNonLin.add(costNonLin);
+//					costPerConfigLin.add(costLin);
+//					costPerConfig.add(2*costLin + 3*costNonLin);
+//					
+//					// Determine the next configuration
+//					if (config != numConfigs - 1) {
+//						List<List<Integer>> partialLeftNew = 
+//							determineNextConfig(config, numConfigs, leftDensity, rightDensity,
+//							lastNLeft);
+//						lastNLeft = partialLeftNew;
+//						config++;
+//					}
+//					else {
+//						break;
+//					}
+//				}
+			System.out.println("costPerConfig = " + costPerConfig);
+			System.out.println("costPerConfigNonLin = " + costPerConfigNonLin);
+			System.out.println("costPerConfigLin    = " + costPerConfigLin);
+			int bestConfig = costPerConfig.indexOf(Collections.min(costPerConfig)); 
+			System.out.println("bestConfig = " + bestConfig);
+			allConfigs.add(bestConfig);
+
+			// Determine the newly entering voice(s), i.e., the voice(s) that are in the 
+			// right chord but not in the left, and remove them from rightVoices for the
+			// next iteration of the outer for-loop
+			// Config possibilities:
+			// 1-2  1-3  1-4  1-5  1-6
+			//      2-3  2-4  2-5  2-6
+			//           3-4  3-5  3-6
+			//                4-5  4-6
+			//                     5-6
+//			List<Integer> newVoices = new ArrayList<Integer>();
+			// If the left chord contains one note or one placeholder
+			if (leftDensity == 1 || leftDensity == (rightDensity - 1)) {
+//			if (numConfigs == rightDensity) {
+				System.out.println("rightVoices = " + rightVoices);
+				System.out.println("bestConfig = " + bestConfig);
+				// If the left chord contains one note (1-2, 1-3, 1-4, 1-5, 1-6)
+				if (leftDensity == 1) {
+					System.out.println("leftDensity contains one note");
+					// The voice at index bestConfig in rightVoices is the already active 
+					// voice, so the voices at all other indices are newly entering voices (NEV)
+					// Example 1-4:
+					//     (0)         (1)         (2)         (3)     
+					//     x x           x           x           x
+					//       x         x x           x           x
+					//       x           x         x x           x
+					//       x           x           x         x x
+					// NEV 1,2,3       0,2,3       0,1,3       0,1,2
+					List<Integer> toRemove = new ArrayList<Integer>(); 
+					for (int j = 0; j < rightVoices.size(); j++) {
+//						System.out.println(j);
+						if (j != bestConfig) {
+							toRemove.add(rightVoices.get(j));
+						}
+					}
+					System.out.println("toRemove = " + toRemove);
+					for (int p : toRemove) {
+						rightVoices.remove((Integer) p);
+					}	
+				}
+				// If the left chord contains one placeholder (2-3, 3-4, 4-5, 5-6)
+				else if (leftDensity == (rightDensity - 1)) {
+					System.out.println("leftDensity is one smaller than rightDensity");
+//				else if (numNull == 1) {
+					// The voice at index (rightDensity-1)-bestConfig in rightVoices is the
+					// newly entering voice (NEV)
+					// Example 3-4:
+					//     (0)         (1)         (2)         (3)
+					//     x x         x x         x x           x
+					//     x x         x x           x         x x
+					//     x x           x         x x         x x
+					//       x         x x         x x         x x
+					// NEV (4-1)-0=3   (4-1)-1=2   (4-1)-2=1   (4-1)-3=0
+					rightVoices.remove((rightDensity-1)-bestConfig);
+				}
+			}
+			// If the left chord contains more than one note and the right chord contains
+			// at least two more notes than the left chord (2-4, 2-5, 2-6, 3-5, 3-6, 4-6)
+			else {
+				// 2-4:
+				//     (0)      (1)      (2)      (3)      (4)      (5)
+				//     x x      x x      x x        x        x        x
+				//     x x        x        x      x x      x x        x
+				//       x      x x        x      x x        x      x x
+				//       x        x      x x        x      x x      x x
+				// NEV 2,3      1,3      1,2      0,3      0,2      0,1
+				if (leftDensity == 2 && rightDensity == 4) {
+					List<Integer[]> toRemove = Arrays.asList(new Integer[][]{
+						new Integer[]{2, 3},
+						new Integer[]{1, 3},
+						new Integer[]{1, 2},
+						new Integer[]{0, 3},
+						new Integer[]{0, 2},
+						new Integer[]{0, 1}}
+					);
+					for (int p : toRemove.get(bestConfig)) {
+						rightVoices.remove((Integer) p);
+					}
+				}
+				else if (leftDensity == 2 && rightDensity == 5) { // TODO Fix! (does not happen currently)
+					System.out.println("AAAAAAAAAaaaaaaaaaahhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
+					System.exit(0);
+				}
+				else if (leftDensity == 3 && rightDensity == 5) { // TODO Fix! (does not happen currently)
+					System.out.println("AAAAAAAAAaaaaaaaaaahhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
+					System.exit(0);
+				}
+			}
+			System.out.println("rightVoices = " + rightVoices);
+		}	
+		// Add remaining rightVoices and reverse allVoices
+		allVoices.addAll(rightVoices);
+		Collections.reverse(allVoices);
+		// Reverse allConfigs
+		Collections.reverse(allConfigs);
+		System.out.println("HIERRRRR");
+		List<List<Integer>> res = new ArrayList<List<Integer>>();
+		System.out.println("allVoices = " + allVoices);
+		// Verify that each voice is in allVoices
+		boolean valid = true;
+		for (int i = 0; i < numVoices; i++) {
+			if (!allVoices.contains(i)) {
+				valid = false;
+				break;
+			}
+		}
+//		if (valid) {
+			System.out.println(allConfigs);
+			System.out.println(allIndices);
+			System.out.println(allVoices);
+			res.add(allConfigs);
+			res.add(allIndices);
+			res.add(allVoices);
+			return res;
+//		}
+//		else {
+//			System.out.println("NOT VALID!");
+//			return null;
+//		}
+
+//		return res;
+	}
+
+
+//	static List<List<List<Integer>>> determineConfigsDEZE(int leftDensity, 
+//		int rightDensity, List<List<Integer>> partialLeft) {
+//			
+//		List<List<List<Integer>>> configs = new ArrayList<List<List<Integer>>>();
+//			
+////		List<Integer> leftIndices = new ArrayList<Integer>();
+////		for (int i = 0; i < leftDensity; i++) {
+////			leftIndices.add(i);
+////		}
+//			
+////		List<List<Integer>> currConfig = new ArrayList<List<Integer>>();
+////		for (List<Integer> l : partialLeft) {
+////			currConfig.add(new ArrayList<Integer>(l));
+////		}
+//
+//		// Initialise the startIndices
+//		List<Integer> hiIndices = new ArrayList<Integer>();
+//		for (int i = 0; i <= rightDensity-leftDensity; i++) {
+//			hiIndices.add(i);
+//		}
+//		System.out.println("startIndices = " + hiIndices);
+//		List<List<Integer>> availableCovered = new ArrayList<List<Integer>>();
+//		for (int i = 0; i < hiIndices.size(); i++) {
+//			int indHi = hiIndices.get(i);
+//			System.out.println("indHi = " + indHi);
+//			
+//			// Make the initial config for the current startIndex
+//			List<List<Integer>> startConfig = new ArrayList<List<Integer>>();
+//			for (List<Integer> l : partialLeft) {
+//				List<Integer> curr = new ArrayList<Integer>(l);
+//				// Shift pitches
+//				for (int j = 0; j < indHi; j++) {
+//					curr.add(j, null);
+//					curr.remove(curr.size()-1);
+//				}
+//				startConfig.add(curr);
+//			}
+//			System.out.println("startConfig = " + startConfig);
+//			
+//			// Determine the available indices 
+//			List<Integer> indAvailable = new ArrayList<Integer>();
+//			List<Integer> firstChord = startConfig.get(0);
+//			for (int j = 0; j < firstChord.size(); j++) {
+//				if (firstChord.get(j) == null) {
+//					indAvailable.add(j);
+//				}
+//			}
+//			availableCovered.add(indAvailable);
+//			System.out.println("available = " + availableCovered);
+//
+//			// Determine the lowest note index
+//			int indLow = hiIndices.get((hiIndices.size() - 1) - i);	
+//			int indPreLow = indLow -1;
+////			int indLow = -1;
+////			for (int j = firstChord.size() - 1; j >= 0; j--) {
+////				if (firstChord.get(j) != null) {
+////					indLow = j;
+////					break;
+////				}
+////			}
+//			System.out.println("indLow = " + indLow);
+//			// Determine the next config(s) by swapping indLow with all available indices
+//			
+//			while (indPreLow + 1 < rightDensity) {
+//				while (indLow < rightDensity) {
+//					for (List<Integer> l : startConfig) { 
+//						Collections.swap(l, indLow, indLow+1);
+//					}
+//					indLow++;
+//				}
+//				for (List<Integer> l : startConfig) { 
+//					Collections.swap(l, indPreLow, indPreLow+1);
+//				}
+//				indPreLow++;
+//				for (List<Integer> l : startConfig) { 
+//					Collections.swap(l, indLow, indPreLow+1);
+//				}
+//				indLow = indPreLow + 1;
+//			}
+//				
+//				while (indPostLow < rightDensity) {
+////					List<List<Integer>> currConfig = new ArrayList<List<Integer>>();
+////					for (List<Integer> l : startConfig) {
+////						currConfig.add(new ArrayList<Integer>(l));
+////					}
+//					
+//					
+//				}
+//				indPreLow--;
+//				for (int j = 0; j < indAvailable.size(); j++) {
+//					int indAv = indAvailable.get(j);
+//					System.out.println("indAv = " + indAv);
+//					
+//					List<List<Integer>> currConfig = new ArrayList<List<Integer>>();
+//					for (List<Integer> l : startConfig) {
+//						currConfig.add(new ArrayList<Integer>(l));
+//					}
+//					
+//					for (List<Integer> l : currConfig) { //currConfig) {
+////						System.out.println("l = " + l);
+//						Collections.swap(l, indLow, indAv);
+//						System.out.println("l = " + l);
+//					}
+//					// Add only if the resulting available indices have not been seen before
+//					List<Integer> resAv = new ArrayList<Integer>(indAvailable);
+//					resAv.set(j, indLow);
+//					Collections.sort(resAv);
+//					System.out.println(resAv);
+//					if (!availableCovered.contains(resAv)) {
+//						configs.add(currConfig);
+//						availableCovered.add(resAv);
+//					}
+//				}
+//				indLow--;
+//				System.out.println("indLow = " + indLow);
+//			}
+//			System.out.println(configs);
+//			System.exit(0);
+//		}	
+//		return configs;
+//	}
+
+	
+	/**
+	 * Calculates all possible configurations of the given chords.
+	 * 
+	 * Example for leftDensity = 2 and rightDensity = 4 (six configs). Numbers indicate the 
+	 * indices of the configs in the list returned.  
+	 * 
+	 * startConfig 0
+	 * (0)          (1)  (2)         (3)  (4)
+	 * o o | (o o)  o o  o o  (x o)    o    o   
+	 * o o | (x o)    o    o  (o o)  o o  o o 
+	 *   o | (  o)  x o    o  (  o)  x o    o 
+	 *   o | (  o)    o  x o  (  o)    o  x o 
+	 * 
+	 * startConfig 1
+	 *                                    (5)
+	 *   o | (  o)  x o    o  (  o)  x o    o   
+	 * o o | (o o)  o o  o o  (x o)    o    o 
+	 * o o | (x o)    o    o  (o o)  o o  o o 
+	 *   o | (  o)    o  x o  (  o)    o  x o   
+	 * 
+	 * startConfig 2
+	 * 
+	 *   o | (  o)  x o    o  (  o)  x o    o   
+	 *   o | (  o)    o  x o  (  o)    o  x o 
+	 * o o | (o o)  o o  o o  (x o)    o    o 
+	 * o o | (x o)    o    o  (o o)  o o  o o
+	 * 
+	 * startConfig 3
+	 *        
+	 * o o | (o o)  o o  o o  (x o)    o    o   
+	 *   o | (  o)  x o    o  (  o)  x o    o 
+	 *   o | (  o)    o  x o  (  o)    o  x o 
+	 * o o | (x o)    o    o  (o o)  o o  o o
+	 *    
+	 * @param leftDensity
+	 * @param rightDensity
+	 * @param leftChords
+	 * @return
+	 */
+	// TESTED
+	static List<List<List<Integer>>> determineConfigs(int leftDensity, int rightDensity, 
+		List<List<Integer>> leftChords) {		
+		List<List<List<Integer>>> configs = new ArrayList<List<List<Integer>>>();
+		
+		// Create the initial startConfig
+		List<List<Integer>> currStartConfig = new ArrayList<List<Integer>>();
+		for (List<Integer> l : leftChords) {
+			currStartConfig.add(new ArrayList<Integer>(l));
+		}
+		
+		// For each startConfig
+		List<List<Integer>> availableCovered = new ArrayList<List<Integer>>();
+		for (int i = 0; i < rightDensity; i++) {			
+//			System.out.println("i = " + i);
+			// Determine the available indices in the current startConfig 
+			List<Integer> availableInd = new ArrayList<Integer>();
+			List<Integer> firstChord = currStartConfig.get(0);
+			for (int j = 0; j < firstChord.size(); j++) {
+				if (firstChord.get(j) == null) {
+					availableInd.add(j);
+				}
+			}
+
+			// Add the current startConfig to configs (only if it has not been added before)
+			if (!availableCovered.contains(availableInd)) {
+				List<List<Integer>> currConfigToAdd = new ArrayList<List<Integer>>();
+				for (List<Integer> l : currStartConfig) {
+					currConfigToAdd.add(new ArrayList<Integer>(l));
+				}
+				configs.add(currConfigToAdd);
+				availableCovered.add(availableInd);
+//				System.out.println(currConfigToAdd + " added as startConfig");
+			}
+
+			// Determine the highest and lowest note index in the current startConfig and 
+			// determine the permutations
+			int indHi = -1;
+			for (int j = 0; j < firstChord.size(); j ++) {
+				if (firstChord.get(j) != null) {
+					indHi = j;
+					break;
+				}
+			}
+			int indLow = -1;
+			for (int j = firstChord.size() - 1; j >= 0; j--) {
+				if (firstChord.get(j) != null) {
+					indLow = j;
+					break;
+				}
+			}
+			while (indLow >= indHi) {
+				// For each new indLow, reset currConfig to currStartConfig
+				List<List<Integer>> currConfig = new ArrayList<List<Integer>>();
+				for (List<Integer> l : currStartConfig) {
+					currConfig.add(new ArrayList<Integer>(l));
+				}
+//				System.out.println("indLow = " + indLow);
+//				System.out.println(currConfig);
+				// Swap the note at indLow with all available indices
+				int indLowSwap = indLow;
+				List<Integer> availableIndSwap = new ArrayList<Integer>(availableInd);
+				for (int j = 0; j < availableIndSwap.size(); j++) {
+					int indAv = availableIndSwap.get(j);
+					for (List<Integer> l : currConfig) {
+						Collections.swap(l, indLowSwap, indAv);
+						// The list must be in descending order
+						List<Integer> pitches = new ArrayList<Integer>();
+						for (int k = 0; k < l.size(); k++) {
+							if (l.get(k) != null) {
+								pitches.add(l.get(k));
+							}
+						}
+						Collections.sort(pitches);
+						Collections.reverse(pitches);
+						for (int k = 0; k < l.size(); k++) {
+							if (l.get(k) != null) {
+								l.set(k, pitches.get(0));
+								pitches.remove(0);
+							}
+						}
+					}
+					// Add currConfig to configs (only if it has not been added before)
+					availableIndSwap.set(j, indLowSwap);
+					List<Integer> sorted = new ArrayList<Integer>(availableIndSwap);
+					Collections.sort(sorted);
+					if (!availableCovered.contains(sorted)) {
+//						System.out.println(currConfig + " added");
+						List<List<Integer>> currConfigToAdd = new ArrayList<List<Integer>>();
+						for (List<Integer> l : currConfig) {
+							currConfigToAdd.add(new ArrayList<Integer>(l));
+						}
+						configs.add(currConfigToAdd);
+						availableCovered.add(new ArrayList<Integer>(sorted));
+					}
+					indLowSwap = indAv;
+				}
+				// If indLow is indHi: break and go to next startConfig
+				if (indLow == indHi) {
+					break;
+				}
+				// If not: determine next indLow 
+				else {
+					for (int j = indLow-1; j >= 0; j--) {
+						if (firstChord.get(j) != null) {
+							indLow = j;
+							break;
+						}
+					}
+				}
+			}
+
+			// Make next startConfig
+			for (List<Integer> l : currStartConfig) {
+				l.add(0, l.get(l.size() - 1));
+				l.remove(l.size()-1);
+			}
+		}
+		return configs;
+	}
+
+
+	/**
+	 * Calculates the cost of connecting the left and right chords. 
+	 * 
+	 * The cost for a configuration of left and right chords is calculated as follows:
+	 * 
+	 * l1    l3    l5    | r1    r4    r7
+	 * l2    l4    l6    | r2    r5    r8
+	 * null  null  null  | r3    r6    r9
+	 * 
+	 * cost = ( |l1-r1| + |l1-r4| + |l1-r7| ) + ( |l2-r2| + |l2-r5| + |l2-r8| )
+	 *        +   
+	 *        ( |l3-r1| + |l3-r4| + |l3-r7| ) + ( |l4-r2| + |l4-r5| + |l4-r8| )
+	 *        +
+	 *        ( |l5-r1| + |l5-r4| + |l5-r7| ) + ( |l6-r2| + |l6-r5| + |l6-r8| )
+	 *        
+	 * @param leftChords
+	 * @param rightChords
+	 * @param useLinear 
+	 * @return
+	 */
+	// TESTED
+	static int calculateConfigCost(List<List<Integer>> leftChords, List<List<Integer>> rightChords,
+		boolean useLinear) {
+		int costNonLinear = 0;
+
+		for (List<Integer> lc : leftChords) {
+			for (List<Integer> rc : rightChords) {
+				for (int j = 0; j < lc.size(); j++) {
+					if (lc.get(j) != null) {
+						costNonLinear += Math.abs(rc.get(j) - lc.get(j));	
+					}
+				}
+			}
+		}
+
+		List<List<Integer>> lAndR = new ArrayList<List<Integer>>();
+		lAndR.addAll(leftChords);
+		lAndR.addAll(rightChords);
+		List<Integer> firstChord = lAndR.get(0);
+		int costLinear = 0;
+		for (int i = 0; i < firstChord.size(); i++) {
+			// For each chord in lAndR
+			for (int j = 0; j < lAndR.size() - 1; j++) {
+				if (firstChord.get(i) != null) {
+					List<Integer> ch = lAndR.get(j);
+					List<Integer> nextCh = lAndR.get(j+1);
+					int diff = nextCh.get(i) - ch.get(i);
+					costLinear += Math.abs(diff);
+				}
+			}
+		}
+
+		if (!useLinear) {
+			return costNonLinear;
+		}
+		else {
+			return costLinear;
+		}
 	}
 
 
@@ -4331,1894 +6525,6 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Determines the sequence of voice entries based primarily on the rhythmic profile,
-	 * and secondarily on the melodic profile, of the first n notes of the fugue theme (the
-	 * head motif). This is accomplished by locating the vertical position of that head motif
-	 * - with which the newly entering voice starts - at each texture density increase (i.e.,
-	 * from 1-2vv, from 2-3vv, etc.). 
-	 * 
-	 * The following assumptions are made. When a new voice enters for the first time, during
-	 * the length of the head motif </br>
-	 * (1) the head motif is rhythmically clearly distinct from the other active voices </br> 
-	 * (2) all previous voices are active (i.e., do not have rests) </br>
-	 *     (exceptions: BWV 872, all densities; BWV 863, density 4; BWV 871, density 4; 
-	 *     BWV 886, density 4) </br> 
-	 * (3) the head motif is not involved in voice crossings 
-	 *     (exception: BWV 890, density 3) </br>
-	 * (4) the rhythmic profile of the head motif is repeated literally 
-	 *     (exception: BWV 881) </br> 
-	 * 
-	 * Exceptions to (1) and (2) are handled as follows.</br>
-	 * (1) The head motif is doubled rhythmically in another voice, meaning that there may
-	 *     be multiple motif candidates. In this case, the melodic profile (e.g., 'up, up') 
-	 *     of the original head motif is used to identify the correct candidate. Doubling 
-	 *     may occur:</br>
-	 *     (a) in oblique or contrary motion (example: BWV 846, density 3, bar 4 1/8). In 
-	 *         this case, the doubling resembles the head motif only rhythmically but not
-	 *         melodically, and is therefore eliminated as candidate for the head motif.</br> 
-	 *     (b) in parallel motion (example: BWV 859, density 4, bar 15 1/4). In this case,  
-	 *         the doubling resembles the head motif both rhythmically and melodically, and
-	 *         is therefore a candidate for the head motif. The chord (i.e., its pitches)
-	 *         in which the head motif starts is compared to the previous chord, and the 
-	 *         newly entering voice is determined based on the optimal connection of the 
-	 *         pitches in both chords, where voices are assumed to continue in as small as 
-	 *         possible steps.
-	 *         Example: left chord = [67, 60], right chord = [67, 59, 55]. Cost per
-	 *         connection = 0+1 to connect to upper two layers; 0+5 to connect to upper and
-	 *         lower layer; 8+5 to connect to lower two layers. Connection 1 is the lowest-cost
-	 *         and therefore optimal connection.</br>
-	 * (2) Not all previous voices are active. The following scenarios are possible:</br>
-	 *     (a) The new density takes effect during the new head motif:
-	 *         (1) If the first chord in the new density does not contain the first head 
-	 *         motif note (HMN) duration: a small time window to the left of this initial
-	 *         first chord is searched for the chord sequence that does contain the HMN 
-	 *         durations (example: BWV 863, density 4, bar 7 3/8) 
-	 *         NB: this may yield a false candidate, to be removed </br>
-	 *         (2) If the first chord in the new density by coincidence contains the first 
-	 *         head motif note duration: a false cadidate, to be removed, is detected
-	 *         (example: BWV 872, density 2, 3, bars 1, 2) </br> 
-	 *     (b) The new density takes effect after the new head motif. This leads to:</br>
-	 *         (1) a false candidate (i.e., n notes with the same durations as the HMN, but 
-	 *             with different pitch movement), to be removed, being determined (example: 
-	 *             BWV 871, density 4, bar 19 1/4 (missed entry at bar 7 1/8)).</br>
-	 *         (2) a next actual entry of the head motif being determined (example: BWV 886, 
-	 *             density 4, bar 22 1/8 (missed entry at bar 8 1/8)).</br>   
-	 *     
-	 *     When a false candidate is detected, the newly entering voice is simply added as 
-	 *     the lowest of the already active voices; in case (b2) the newly entering voice is
-	 *     derived from the next actual entry.
-	 * 
-	 * @param highestNumVoices
-	 * @param n	The number of notes of the head motif to consider
-	 * @return A list of lists, containing </br>
-	 *         as element 0: the determined voice entry configurations, with -1 as a placeholder
-	 *                       when the configuration could not be determined at that density 
-	 *                       increase</br>
-	 *         as element 1: for each density increase, the indices of the note(s) in the 
-	 *                       first chord at that density increase </br>
-	 *         as element 2: the voices that go with these indices </br>
-	 *         Returns <code>null</code> if no motif was found.
-	 */
-	// TESTED TODO: implement full note duration case in tablature case
-	List<List<Integer>> getImitativeVoiceEntries(Integer[][] btp, List<List<Double>> durationLabels, 
-		Integer[][] bnp, int highestNumVoices, int n) { // in 2020
-
-		verifyCase(btp, bnp);
-		
-		List<List<Integer>> res = new ArrayList<List<Integer>>();
-		List<Integer> configs = new ArrayList<Integer>();
-		final int pitch = 0;
-		final int durNum = 1;
-		final int durDen = 2;
-		final int isHMN = 3;
-		
-//		Integer[][] bnp = getBasicNoteProperties(); // in 2020
-
-		List<Integer> lowestNoteIndicesFirstChords = new ArrayList<Integer>();
-		lowestNoteIndicesFirstChords.add(0);
-		List<List<Integer[]>> pitchesFirstChords = new ArrayList<List<Integer[]>>();
-		List<Integer[]> firstPitch = new ArrayList<Integer[]>();
-		firstPitch.add(new Integer[]{
-			(btp != null) ? btp[0][Tablature.PITCH] : 
-			bnp[0][PITCH], 0});
-		pitchesFirstChords.add(firstPitch);
-
-		// Determine the rhythmic head motif (first n notes of fugue theme)
-		List<Rational> headMotif = new ArrayList<Rational>();
-		Rational granularity = new Rational(1, 32);
-		for (int i = 0; i < n; i++) {
-			Rational curr = 
-				(btp != null) ?	DataConverter.convertIntoDuration(durationLabels.get(i))[0] :
-				new Rational(bnp[i][DUR_NUMER], bnp[i][DUR_DENOM]);
-			headMotif.add(quantiseDuration(curr, granularity));
-		}
-
-		// Determine the inter-onset intervals, exact pitch movement, and general pitch 
-		// movement of the head motif
-		List<Rational> ioiHeadMotif = new ArrayList<Rational>();
-		List<Integer> pitchMvmtHeadMotif = new ArrayList<Integer>();
-		List<Double> mvmtHeadMotif = new ArrayList<Double>();
-		for (int i = 0; i < n-1; i++) {
-			int pitchMvmt;
-			if (btp != null) {
-				ioiHeadMotif.add(
-					new Rational(btp[i+1][Tablature.ONSET_TIME], Tablature.SRV_DEN).sub(
-					new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN)));
-				pitchMvmt = btp[i+1][Tablature.PITCH] - btp[i][Tablature.PITCH];
-			}
-			else {
-				ioiHeadMotif.add(
-					new Rational(bnp[i+1][ONSET_TIME_NUMER], bnp[i+1][ONSET_TIME_DENOM]).sub(
-					new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM])));
-				pitchMvmt = bnp[i+1][PITCH] - bnp[i][PITCH];
-			}
-			pitchMvmtHeadMotif.add(pitchMvmt);
-			mvmtHeadMotif.add(Math.signum((double)pitchMvmt));
-		}
-
-		// Find the next density increase and determine the position of the newly
-		// entering voice
-		List<Integer> noteDensities = getNoteDensity(btp, durationLabels, bnp); // in 2020
-		int density = noteDensities.get(0);
-		for (int i = 0; i < noteDensities.size(); i++) {
-			if (noteDensities.get(i) > density) {
-				System.out.println("density increase");
-				System.out.println( 
-					((btp != null) ? "onset time " + new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
-					"bar " + Utils.getMetricPositionAsString(getAllMetricPositions().get(i))));
-				System.out.println("new density = " + noteDensities.get(i));
-				density = noteDensities.get(i);
-				int config = -1;
-
-				// Check whether the chord at i contains the first HMN
-				boolean firstHMNInFirstChord = false;
-				int chordSz = 
-					((btp != null) ? btp[i][Tablature.CHORD_SIZE_AS_NUM_ONSETS] : 
-					bnp[i][CHORD_SIZE_AS_NUM_ONSETS]);
-				for (int j = i; j < i + chordSz ; j++) {
-					Rational curr =
-						(btp != null) ? DataConverter.convertIntoDuration(durationLabels.get(j))[0] :	
-						new Rational(bnp[j][DUR_NUMER], bnp[j][DUR_DENOM]);
-					curr = quantiseDuration(curr, granularity);
-					if (curr.equals(headMotif.get(0))) {
-						firstHMNInFirstChord = true;
-						break;
-					}
-				}
-				System.out.println("firstHMNInFirstChord = " + firstHMNInFirstChord);
-				
-				// If not: find the i that goes with the first sequence of chords to the left 
-				// that contain the HMNs. Stop if no motif candidate has been found after the 
-				// maximum time window has been covered, or when there are no more notes left
-				if (!firstHMNInFirstChord) {
-					Rational onsetOfInitialI = 
-						(btp != null) ? new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN) :	
-						new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM]);
-					Rational timeWindowCovered = Rational.ZERO;
-					Rational maxTimeWindow = new Rational(1, 4);
-					boolean solved = false;
-					while (!solved) {
-						int newI = -1;
-						Rational onsetOfNewI = null;
-						// Find the new i, i.e., the lowest note index of the next left chord 
-						// with the first HMN 
-						for (int j = i-1; j >= 0; j--) {
-							Rational curr = 
-								(btp != null) ? DataConverter.convertIntoDuration(durationLabels.get(j))[0] : 
-								new Rational(bnp[j][DUR_NUMER], bnp[j][DUR_DENOM]);
-							curr = quantiseDuration(curr, granularity);
-							if (curr.equals(headMotif.get(0))) {
-								int chordInd = 
-									(btp != null) ? btp[j][Tablature.CHORD_SEQ_NUM] :
-									bnp[j][CHORD_SEQ_NUM];
-								onsetOfNewI = 
-									(btp != null) ? new Rational(btp[j][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
-									new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);
-								// Find the index of the lowest note in the chord at chordInd
-								for (int k = j; k >=0; k--) {
-									int chordSeqNr = 
-										(btp != null) ? btp[k][Tablature.CHORD_SEQ_NUM] : 
-										bnp[k][CHORD_SEQ_NUM]; 
-									if (chordSeqNr == chordInd-1) {
-										newI = k+1;
-										break;
-									}
-								}	
-								break;
-							}
-						}
-						
-						// If there are no more indices to try
-						if (newI == -1) {
-							return null;
-						}
-
-						Rational shift = onsetOfInitialI.sub(onsetOfNewI);
-						timeWindowCovered = timeWindowCovered.add(shift);
-						onsetOfInitialI = onsetOfNewI;
-
-						// Check if HMN occurs from newI
-						boolean nextFound = true;				
-						int ind = 1;
-						List<Boolean> hits = new ArrayList<Boolean>();
-						Rational onsetOfChordAtNewI = 
-							(btp != null) ? new Rational(btp[newI][Tablature.ONSET_TIME], Tablature.SRV_DEN) : 
-							new Rational(bnp[newI][ONSET_TIME_NUMER], bnp[newI][ONSET_TIME_DENOM]);
-						Rational nextOns = onsetOfChordAtNewI.add(ioiHeadMotif.get(ind - 1));
-						System.out.println("nextOns = " + nextOns);
-						for (int j = newI; j < ((btp != null) ? btp.length : bnp.length); j++) {
-							Rational currOns = 
-								(btp != null) ? new Rational(btp[j][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
-								new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);
-							if (currOns.equals(nextOns)) {
-								Rational currDur = 
-									(btp != null) ? DataConverter.convertIntoDuration(durationLabels.get(j))[0] :
-									new Rational(bnp[j][DUR_NUMER], bnp[j][DUR_DENOM]);
-								currDur = quantiseDuration(currDur, granularity);
-								if (currDur.equals(headMotif.get(ind))) {
-									hits.add(true);
-								}
-								else {
-									hits.add(false);
-								}
-							}
-							else if (currOns.isGreater(nextOns)) {
-								if (!hits.contains(true)) { 
-									nextFound = false;
-									break;
-								}
-								else {
-									ind++;
-									if (ind == headMotif.size()) {
-										break;
-									}
-									else {
-										nextOns = nextOns.add(ioiHeadMotif.get(ind - 1));
-										hits.clear(); 
-										j--;
-									}	
-								}
-							}
-						}					
-						i = newI;
-
-						if (nextFound || timeWindowCovered.isGreater(maxTimeWindow)) {							
-							solved = true;
-						}
-					}
-				}
-
-				// Determine the position of the newly entering voice
-				// 1. HMN: onsets and lowest note indices
-				// a. Determine the onsets of the HMNs
-				List<Rational> onsetsOfHMNChords = new ArrayList<Rational>();	
-				onsetsOfHMNChords.add(
-					(btp != null) ? new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN) :	
-					new Rational(bnp[i][ONSET_TIME_NUMER], bnp[i][ONSET_TIME_DENOM]));
-				for (int j = 0; j < ioiHeadMotif.size(); j++) { 
-					Rational lastAdded = onsetsOfHMNChords.get(j);
-					Rational toAdd = lastAdded.add(ioiHeadMotif.get(j));
-					onsetsOfHMNChords.add(toAdd);
-				}
-
-				// b. Determine the indices of the lowest chord note at those onsets
-				List<Integer> indOfMotifNotesChords = new ArrayList<Integer>();
-				for (int j = i; j < ((btp != null) ? btp.length : bnp.length); j++) {
-					Rational currOnset = 
-						(btp != null) ?	new Rational(btp[j][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
-						new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);	
-					if (onsetsOfHMNChords.contains(currOnset)) {
-						indOfMotifNotesChords.add(j);
-						int toAdd = 
-							(btp != null) ? btp[j][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
-							bnp[j][CHORD_SIZE_AS_NUM_ONSETS];	
-						j += toAdd - 1;
-					}
-					// Break if currOnset is after the last HMN onset
-					if (currOnset.isGreater(onsetsOfHMNChords.get(n-1))) {
-						break;
-					}		
-				}
-
-				// 2. Make the skeleton, i.e., the chords at the onsets of the HMNs
-				// a. Determine the raw skeleton
-				List<List<List<Integer>>> skeleton = new ArrayList<List<List<Integer>>>();
-				for (int j = 0; j < indOfMotifNotesChords.size(); j++) {					
-					int ind = indOfMotifNotesChords.get(j);
-					List<List<Integer>> noteInfo = getChordInfo(btp, durationLabels, bnp, ind);
-					// For each note: add 1 if it has the same duration as the current HMN
-					Rational currHMNDur = headMotif.get(j);
-					for (List<Integer> l : noteInfo) {
-						Rational currDur = null;
-						if (l.get(1) != null) {
-							currDur = new Rational(l.get(1), l.get(2));
-							currDur = quantiseDuration(currDur, granularity);		
-						}
-						if (currDur != null && currDur.equals(currHMNDur)) {
-							l.add(1);
-						}
-						else {
-							l.add(0);
-						}
-					}					
-					skeleton.add(noteInfo);
-				}
-				System.out.println("onsetsOfHMNChords = " + onsetsOfHMNChords);
-				System.out.println("indOfMotifNotesChords = " + indOfMotifNotesChords);
-				System.out.println("SKELETON");
-				for (List<List<Integer>> l : skeleton) {
-					System.out.println(l);
-				}
-
-				// b. Ensure that all chords in the skeleton have a size that is equal 
-				// to the current density by patching smaller chords with null values
-				List<List<List<Integer>>> completes = new ArrayList<List<List<Integer>>>();
-				List<List<List<Integer>>> incompletes = new ArrayList<List<List<Integer>>>();
-				List<Integer> indOfIncompletes = new ArrayList<Integer>();
-
-				// Determine completes and incompletes
-				for (int j = 0; j < skeleton.size(); j++) {
-					List<List<Integer>> curr = skeleton.get(j);
-					if (curr.size() < density) {
-						incompletes.add(curr);
-						indOfIncompletes.add(j);
-					}
-					else {
-						completes.add(curr);
-					}
-				}
-				// Patch incompletes with null values
-				if (incompletes.size() != 0) {
-					for (int j = 0; j < incompletes.size(); j++) {	
-						List<List<Integer>> currIncomplete = incompletes.get(j);
-						int currIncompleteInd = indOfIncompletes.get(j);
-						List<List<Integer>> completed = new ArrayList<List<Integer>>();
-						// If it is the first chord of the skeleton that is incomplete (which
-						// is the case if i was set back): patch the chord by finding the 
-						// optimal position to insert null
-						if (currIncomplete == skeleton.get(0)) {
-							currIncompleteInd = 0;
-							// Get pitches in previous chord
-							List<Integer> pitchesInPrev = new ArrayList<Integer>();
-							int sizePrev = 
-								(btp != null) ? btp[i-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :	
-								bnp[i-1][CHORD_SIZE_AS_NUM_ONSETS];
-							int lowestIndPrev = i - sizePrev;
-							// Add pitches of all chord notes
-							for (int k = lowestIndPrev; k < lowestIndPrev + sizePrev; k++) {
-								pitchesInPrev.add(
-									(btp != null) ? btp[k][Tablature.PITCH] :	
-									bnp[k][PITCH]);
-							}
-							// Add pitches of any sustained previous notes
-							for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, lowestIndPrev)) {
-								pitchesInPrev.add(
-									(btp != null) ? btp[ind][Tablature.PITCH] :	
-									bnp[ind][PITCH]);
-							}
-							Collections.sort(pitchesInPrev);
-
-							// Get pitches in current chord
-							List<Integer> pitchesInCurr = new ArrayList<Integer>();
-							for (List<Integer> l : currIncomplete) {
-								pitchesInCurr.add(l.get(pitch));
-							}
-
-							// Align optimally: place null at each position of pitchesInCurr
-							// and determine lowest-cost alignment with pitchesInPrev
-							int minCost = Integer.MAX_VALUE;
-							int optInd = -1;
-							for (int k = 0; k < density; k++) {
-								List<Integer> curr = new ArrayList<Integer>(pitchesInCurr);
-								curr.add(k, null);
-								int currCost = 0;
-								for (int l = 0; l < pitchesInPrev.size(); l++) {
-									if (curr.get(l) != null) {
-										currCost += Math.abs(curr.get(l) - pitchesInPrev.get(l));
-									}
-								}
-								if (currCost < minCost) {
-									minCost = currCost;
-									optInd = k; 
-								}
-							}
-							currIncomplete.add(optInd, null);
-							completed = new ArrayList<List<Integer>>(currIncomplete);
-						}
-						// If it is not the first chord of the skeleton: patch the chord
-						// using the average pitches of the previos chord(s)
-						else {
-							for (int k = 0; k < density; k++) {
-								completed.add(null);
-							}
-							// Get the average pitches of all completes before incomplete
-							// in skeleton
-							List<Double> avgs = new ArrayList<Double>();
-							for (int k = 0; k < density; k++) {
-								double sum = 0; 
-								int div = 0;
-								for (List<List<Integer>> l : completes) {
-									if (skeleton.indexOf(l) < skeleton.indexOf(currIncomplete)) {
-										sum += l.get(k).get(pitch);
-										div++;
-									}
-								}
-								avgs.add(sum/div);
-							}
-							currIncompleteInd = indOfIncompletes.get(j);
-							// For each element in currIncomplete: compare with the average
-							// pitches to determine its optimal index in completed.
-							// List the pitch differences with the average pitches
-							List<List<Double>> allDiffs = new ArrayList<List<Double>>();
-							for (List<Integer> element : currIncomplete) {
-								List<Double> diffs = new ArrayList<Double>();
-								for (int k = 0; k < avgs.size(); k++) {
-									diffs.add(Math.abs(element.get(pitch) - avgs.get(k)));
-								}
-								allDiffs.add(diffs);
-							}
-							// Determine the optimal index in completed 
-							for (int k = 0; k < allDiffs.size(); k++) {
-								List<Double> currDiff = allDiffs.get(k);
-								double currMin = Collections.min(currDiff);
-								int currMinInd = currDiff.indexOf(currMin);
-								// Compare with other diffs to determine whether currMin is the
-								// lowest value at currMinInd
-								boolean restart = false;
-								for (int l = 0; l < allDiffs.size(); l++) {
-									if (l != k) {
-										List<Double> otherDiff = allDiffs.get(l);
-										// If otherDiff has a lower value at currMinInd, and  
-										// that value is the lowest in that diff: make the 
-										// second-lowest value in currDiff the lowest restart
-										double d = otherDiff.get(currMinInd);
-										if (d < currMin && Collections.min(otherDiff) == d) {
-											currDiff.set(currMinInd, Double.MAX_VALUE);
-											allDiffs.set(k, currDiff);
-											k--;
-											restart = true;
-											break;
-										}
-									}
-								}
-								// If not: set currMinInd in completed to the element in
-								// currIncomplete that corresponds to currDiff 
-								if (!restart) {
-									completed.set(currMinInd, currIncomplete.get(k));
-								}
-							}
-						}
-						// Replace incomplete element in skeleton
-						skeleton.set(currIncompleteInd, completed);					
-					}
-					System.out.println("SKELETON PATCHED");
-					for (List<List<Integer>> l : skeleton) {
-						System.out.println(l);
-					}
-				}
-
-				// c. Handle correct vertical placement of unison notes in the skeleton
-				// List unison notes per chord
-				List<List<List<Integer>>> unisonsToHandlePerChord = new ArrayList<List<List<Integer>>>();
-				for (List<List<Integer>> l : skeleton) {
-					List<List<Integer>> unisonsToHandle = new ArrayList<List<Integer>>();
-					List<Integer> pitchesCovered = new ArrayList<Integer>();
-					// For each note in the HMN chord
-					for (int j = 0; j < l.size(); j++) {
-						List<Integer> currNote = l.get(j);
-						if (currNote != null) {
-							int currPitch = currNote.get(pitch);
-							// Compare currNote to all other notes in l
-							for (int k = 0; k < l.size(); k++) {
-								if (k != j) {
-									List<Integer> otherNote = l.get(k);
-									if (otherNote != null) {
-										int otherPitch = otherNote.get(pitch);
-										// Same pitch? Add both notes to the list
-										if (otherPitch == currPitch &&
-											!pitchesCovered.contains(currPitch)) {
-											unisonsToHandle.add(currNote);
-											unisonsToHandle.add(otherNote);
-											pitchesCovered.add(currPitch);
-										}
-									}
-								}	
-							}
-						}
-					}
-					unisonsToHandlePerChord.add(unisonsToHandle);
-				}
-				// Handle unison notes (i) of different durations, (ii) one of which is 
-				// a HMN duration.
-				// Ad (i): if the unison notes have the same duration: do nothing. In this 
-				// case, the unison pitches will either be both [p, num, den, 0] or both 
-				// [p, num, den, 1]. A combination of the two will never occur: a pitch with
-				// a certain duration either has the same duration as a head motif note or not.
-				// Ad (ii): if none of the durations is the HMN duration: do nothing. In 
-				// this case, correctness of the sequence of the unison notes does not
-				// matter, as this does not affect the position in the chord of the HMN
-				// (which will always be below or above the unison notes). 
-				// NB: This approach assumes that the two consecutive chords are fully 
-				// textured (which is only very rarely not true)
-				for (int j = 0; j < unisonsToHandlePerChord.size(); j++) {
-					List<List<Integer>> currUnisons = unisonsToHandlePerChord.get(j);
-					List<List<Integer>> currHMNChord = skeleton.get(j);
-					int lowestIndCurr = indOfMotifNotesChords.get(j);
-
-					// Find the previous and next non-unison neighbour chord 
-					List<List<Integer>> prevChord = 
-						getNonUnisonNeighbourChord(btp, durationLabels, bnp, -1, lowestIndCurr);
-					List<List<Integer>> nextChord = 
-						getNonUnisonNeighbourChord(btp, durationLabels, bnp, 1, lowestIndCurr);
-
-					// For each unison note pair satisfying criteria (i) and (ii) above 
-					// (the pairs are always at consecutive indices) 
-					for (int k = 0; k < currUnisons.size(); k++) {
-						List<Integer> left = currUnisons.get(k);
-						List<Integer> right = currUnisons.get(k+1);
-						int currPitch = left.get(pitch);
-						// Criterion (i): the unison notes must have the same duration 
-						// (in which case they are the same)
-						// NB: quantisation, which is only necessary to locate the HMNs 
-						// (see above) is not necessary here
-						if (!left.equals(right)) { 
-							boolean leftIsHMN = (left.get(left.size()-1) == 1);
-							boolean rightIsHMN = (right.get(right.size()-1) == 1);
-							boolean leftIsNull = (left.get(durNum) == null);
-							Rational leftDur = null;
-							if (!leftIsNull) {
-								leftDur = new Rational(left.get(durNum), left.get(durDen));
-							}
-							boolean rightIsNull = (right.get(durNum) == null);
-							Rational rightDur = null;
-							if (!rightIsNull) {
-								rightDur = new Rational(right.get(durNum), right.get(durDen));
-							}
-							Rational HMNDur, otherDur; 
-							int indOfHMN, indOfOther;
-							// Criterion (ii): one of the unison durations must be the 
-							// HMN duration
-							if (leftIsHMN || rightIsHMN) {
-								// (a) If the other duration is a non-null duration	 
-								if (leftIsHMN && !rightIsNull || rightIsHMN && !leftIsNull) {
-									if (leftIsHMN) {
-										HMNDur = leftDur;
-										otherDur = rightDur;
-										indOfHMN = currHMNChord.indexOf(left);
-										indOfOther = currHMNChord.indexOf(right);
-									}
-									else {
-										HMNDur = rightDur;
-										otherDur = leftDur;
-										indOfHMN = currHMNChord.indexOf(right);
-										indOfOther = currHMNChord.indexOf(left);
-									}
-									// Check the next chord for the note with the same 
-									// pitch and a null duration
-									for (int l = 0; l < nextChord.size(); l++) {
-										List<Integer> nextChordNote = nextChord.get(l);
-										if (nextChordNote.get(0) == currPitch &&
-											nextChordNote.get(1) == null) {
-											// If otherDur is longer than HMNdur: the position
-											// of the found note determines the position of  
-											// the longer-duration note
-											if (otherDur.isGreater(HMNDur)) {
-												if (indOfOther != l) {
-													Collections.swap(currHMNChord, 
-														indOfOther, indOfHMN);
-												}
-											}
-											// If otherDur is shorter than HMNdur: the position
-											// of the found note determines the position of
-											// the head motif note
-											else if (otherDur.isLess(HMNDur)) {
-												if (indOfHMN != l) {
-													Collections.swap(currHMNChord, 
-														indOfOther, indOfHMN);
-												}
-											}
-											skeleton.set(j, currHMNChord);
-											break;
-										}
-									}
-								}
-								// (b) If the other duration is a null duration
-								else if (leftIsHMN && rightIsNull || rightIsHMN && leftIsNull) {
-									otherDur = null;
-									if (leftIsHMN) {
-										HMNDur = leftDur;
-										indOfHMN = currHMNChord.indexOf(left);
-										indOfOther = currHMNChord.indexOf(right);
-									}
-									else {
-										HMNDur = rightDur;
-										indOfHMN = currHMNChord.indexOf(right);
-										indOfOther = currHMNChord.indexOf(left);
-									}
-									// Check the previous chord for the note with the same 
-									// pitch (and either a null or a non-null duration); 
-									// the position of the found note determines the 
-									// position of the null-duration note
-									for (int l = 0; l < prevChord.size(); l++) {
-										List<Integer> prevChordNote = prevChord.get(l);
-										if (prevChordNote.get(0) == currPitch) {
-											if (indOfOther != l) {
-												Collections.swap(currHMNChord, 
-													indOfOther, indOfHMN);
-											}
-											break;
-										}
-									}
-									skeleton.set(j, currHMNChord);
-								}
-							}
-						}
-						// Increment k to go to next pair
-						k++;
-					}
-				}
-				System.out.println("SKELETON PATCHED AND UNISONS FIXED");
-				for (List<List<Integer>> l : skeleton) {
-					System.out.println(l);
-				}
-
-				// 3. Determine the vertical position of the head motif in the skeleton
-				// Determine all head motif candidates
-				List<List<Integer>> motifCandidates = new ArrayList<List<Integer>>(); 
-				for (int j = 0; j < density; j++) {
-					int sum = 0;
-					List<Integer> motifCandidate = new ArrayList<Integer>();
-					for (List<List<Integer>> l : skeleton) {
-						List<Integer> element = l.get(j); 
-						if (element != null) {
-							sum += element.get(isHMN);
-							motifCandidate.add(element.get(pitch));
-						}
-					}
-					if (sum == n) {
-						motifCandidates.add(motifCandidate);
-					}
-					else {
-						motifCandidates.add(null);
-					}
-				}
-				System.out.println("motifCandidates = " + motifCandidates);
-
-				// Filter out any false head motif candidates, i.e., candidates that
-				// have the same rhythmic profile but are in contrary or oblique motion
-				List<List<Integer>> filtered = new ArrayList<List<Integer>>();
-				for (int j = 0; j < motifCandidates.size(); j++) {
-					List<Integer> motifCandidate = motifCandidates.get(j);
-					if (motifCandidate != null) {
-						List<Integer> pitchMvmtMotifCand = new ArrayList<Integer>(); 
-						List<Double> mvmtMotifCand = new ArrayList<Double>();
-						for (int k = 0; k < motifCandidate.size()-1; k++) {
-							int pitchMvmt = motifCandidate.get(k+1) - motifCandidate.get(k);
-							pitchMvmtMotifCand.add(pitchMvmt);
-							mvmtMotifCand.add(Math.signum((double)pitchMvmt));
-						}
-						// Confirm motif if: (i) it has exactly the same pitch movement
-						// as pitchMvmtHeadMotif; (ii) it has the same general movement 
-						// (up/down) as pitchMvmtHeadMotif. (i) will suffice in most cases;
-						// if not, small difference in pitch movement necessitated by the 
-						// harmony (minor vs major interval, fourth versus fifth) will be
-						// caught by (ii).  
-						// In some cases, however, it can happen that a correct motif 
-						// candidate still does not satisfy criterion (ii) (see e.g. BWV 
-						// 876, density 2 and 4). This is solved by allowing some leeway
-						// in criterion (ii) by creating mvmtMotifCand.size() variants of
-						// mvmtMotifCand, in each of which one element is replaced by 0.0.
-						// (meaning that, to a certain extent, no movement (0.0) is 
-						// considered equal to up/down (1.0/-1.0) movement). All variants
-						// thus created are considered correct as well
-						List<List<Double>> leewayCandidates = new ArrayList<List<Double>>();
-						for (int k = 0; k < mvmtHeadMotif.size(); k++) {
-							List<Double> leewayCand = new ArrayList<Double>(mvmtHeadMotif); 
-							leewayCand.set(k, 0.0);
-							leewayCandidates.add(leewayCand);
-						}
-						if (pitchMvmtMotifCand.equals(pitchMvmtHeadMotif) ||
-							mvmtMotifCand.equals(mvmtHeadMotif) ||
-							leewayCandidates.contains(mvmtMotifCand)) {
-							filtered.add(motifCandidate);
-						}
-						else {
-							filtered.add(null);
-						}
-					}
-					else {
-						filtered.add(null);
-					}
-				}
-				motifCandidates = filtered;
-				
-				System.out.println("motiveCandidates filtered = " + motifCandidates);
-
-				int numMotifCand = motifCandidates.size() - 
-					Collections.frequency(motifCandidates, null);
-				
-				System.out.println("numMotifCand = " + numMotifCand);
-
-				// 4. Determine the configuration 
-				// The configuration equals the index (including sustained notes) of the 
-				// HMN in the first HMN chord. Possibilities:
-				// (0)   (1)   (2)   (3) 
-				// x x     x  
-				//   x   x x
-				//   
-				// x x   x x     x   
-				// x x     x   x x
-				//   x)   x x   x x
-				//   
-				// x x   x x   x x     x
-				// x x   x x     x   x x
-				// x x     x   x x   x x
-				//   x   x x   x x   x x
-				//
-				// If there is only one motif candidate
-				if (numMotifCand == 1) {
-					for (int j = 0; j < motifCandidates.size(); j++) {
-						if (motifCandidates.get(j) != null) {
-							config = j;
-							break;
-						}
-					}
-				}
-				// If there are multiple motif candidates (which will be in parallel 
-				// motion): determine which one is in the newly inserted voice
-				else if (numMotifCand > 1) {
-					System.out.println("multiple motif candidates for " + name);
-					// List all m left chords (i.e., those with the previous density), 
-					// each as a list of pitches, and make average chord 
-					List<List<Integer>> leftChords = new ArrayList<List<Integer>>();	
-					List<Double> avgLeftChord = new ArrayList<Double>();
-					for (int j = 0; j < density; j++) {
-						avgLeftChord.add(null);
-					}
-					// Given the number of left chords to consider, find the lowest note
-					// index of the leftmost chord
-					int chordInd = 
-						(btp != null) ? btp[i][Tablature.CHORD_SEQ_NUM] : 
-						bnp[i][CHORD_SEQ_NUM];
-					int m = 1; // TODO make method argument?
-					int leftChordIndex = chordInd - m;
-					int leftInd = i;
-					int rightInd = i;
-					while (chordInd > leftChordIndex) {
-						int toSub = 
-							(btp != null) ? btp[rightInd-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :	
-							bnp[rightInd-1][CHORD_SIZE_AS_NUM_ONSETS];
-						leftInd = rightInd - toSub;
-						rightInd = leftInd;
-						chordInd = 
-							(btp != null) ? btp[leftInd][Tablature.CHORD_SEQ_NUM] :
-							bnp[leftInd][CHORD_SEQ_NUM];
-					}
-					// List the left chords and prepare avgLeftChord
-					for (int j = leftInd; j < i; j++) {
-						int chordSize = 
-							(btp != null) ? btp[j][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
-							bnp[j][CHORD_SIZE_AS_NUM_ONSETS];
-						List<Integer> pitchesInChord = new ArrayList<Integer>();
-						// Add pitches of all chord notes
-						for (int k = j; k < j + chordSize; k++) {
-							pitchesInChord.add(
-								(btp != null) ? btp[k][Tablature.PITCH] :
-								bnp[k][PITCH]);
-						}
-						// Add pitches of any sustained previous notes
-						for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, j)) {
-							pitchesInChord.add(
-								(btp != null) ? btp[ind][Tablature.PITCH] :
-								bnp[ind][PITCH]);
-						}
-						Collections.sort(pitchesInChord);
-						Collections.reverse(pitchesInChord);
-						if (pitchesInChord.size() == density-1) {
-							// Add placeholder
-							pitchesInChord.add(null);
-							leftChords.add(pitchesInChord);
-							// Add to avgs
-							for (int k = 0; k < pitchesInChord.size(); k++) {
-								if (pitchesInChord.get(k) != null) { 
-									double summedPitch = pitchesInChord.get(k);
-									// avgLeftChord will only contain a non-null value 
-									// for the second and higher chords
-									if (j != leftInd) {
-										summedPitch += avgLeftChord.get(k);
-									}
-									avgLeftChord.set(k, summedPitch);
-								}
-							}
-						}
-						// Increment j so that the next iteration starts from the next chord
-						j = (j + chordSize) - 1;
-					}
-					// Calculate avgLeftChord
-					for (int j = 0; j < avgLeftChord.size(); j++) {
-						if (avgLeftChord.get(j) != null) {
-							avgLeftChord.set(j, (avgLeftChord.get(j) / leftChords.size()));
-						}
-					}
-					System.out.println("leftChords.size() = " + leftChords.size());
-					System.out.println("avgLeftChord = " + avgLeftChord);
-
-					// List the right chord
-					List<Integer> rightChord = new ArrayList<Integer>();
-					for (List<Integer> l : skeleton.get(0)) {
-						rightChord.add(l.get(pitch));
-					}
-					Collections.reverse(rightChord);
-					System.out.println("rightChord = " + rightChord);
-
-					// Determine the optimal configuration
-					// For each configuration: sum the movement over all voices that are 
-					// not null in left chord. The number of configurations equals the 
-					// number of notes in the right chord, i.e., the density
-					List<Double> costPerConfigCurrTransition = new ArrayList<Double>();
-					int currConfig = 0;
-					while (currConfig < density) {
-						double costCurrConfig = 0;
-						for (int j = 0; j < avgLeftChord.size(); j++) {
-							if (avgLeftChord.get(j) != null) {
-								costCurrConfig += 
-									Math.abs(rightChord.get(j) - avgLeftChord.get(j));
-							}
-						}
-						costPerConfigCurrTransition.add(costCurrConfig);
-
-						// Not last configuration? Shift placeholder one position back 
-						// and do next config
-						if (currConfig != density - 1) {
-							int swapInd = avgLeftChord.indexOf(null);
-							Collections.swap(avgLeftChord, swapInd, swapInd-1);
-						}
-						currConfig++;
-					}
-					double min = Collections.min(costPerConfigCurrTransition);
-					config = costPerConfigCurrTransition.indexOf(min);
-				}
-				System.out.println("config = " + config);
-
-				// NB: If no config was set, the value of config remains -1
-				configs.add(config);
-				lowestNoteIndicesFirstChords.add(i);
-				List<Integer[]> pitchesInFirstChord = new ArrayList<Integer[]>();
-				for (List<Integer> l : skeleton.get(0)) {
-					// Ternary operator; see https://alvinalexander.com/java/edu/pj/pj010018
-					if (l != null) {
-						pitchesInFirstChord.add(new Integer[]{l.get(pitch), 
-							(l.get(durNum) == null) ? 1 : 0});
-					}
-				}
-				pitchesFirstChords.add(pitchesInFirstChord);
-
-				if (density == highestNumVoices) {
-					break;
-				}
-			}
-		}
-		System.out.println("lowestNoteIndicesFirstChords = " + lowestNoteIndicesFirstChords);
-
-		// Determine the sequence of voice entries
-		// Map all possible combinations of configurations to voicings
-		Map<List<Integer>, List<Double>> dict = new LinkedHashMap<List<Integer>, List<Double>>();
-		// 2vv
-		dict.put(Arrays.asList(new Integer[]{0}), Arrays.asList(new Double[]{0.0, 1.0})); // SB
-		dict.put(Arrays.asList(new Integer[]{1}), Arrays.asList(new Double[]{1.0, 0.0})); // BS
-		// 3vv
-		dict.put(Arrays.asList(new Integer[]{0, 0}), Arrays.asList(new Double[]{0.0, 1.0, 2.0})); // SAB
-		dict.put(Arrays.asList(new Integer[]{0, 1}), Arrays.asList(new Double[]{0.0, 2.0, 1.0})); // SBA
-		dict.put(Arrays.asList(new Integer[]{0, 2}), Arrays.asList(new Double[]{1.0, 2.0, 0.0})); // ABS
-		dict.put(Arrays.asList(new Integer[]{1, 0}), Arrays.asList(new Double[]{1.0, 0.0, 2.0})); // ASB
-		dict.put(Arrays.asList(new Integer[]{1, 1}), Arrays.asList(new Double[]{2.0, 0.0, 1.0})); // BSA
-		dict.put(Arrays.asList(new Integer[]{1, 2}), Arrays.asList(new Double[]{2.0, 1.0, 0.0})); // BAS
-		// 4vv
-		dict.put(Arrays.asList(new Integer[]{0, 0, 0}), Arrays.asList(new Double[]{0.0, 1.0, 2.0, 3.0})); // SATB
-		dict.put(Arrays.asList(new Integer[]{0, 0, 1}), Arrays.asList(new Double[]{0.0, 1.0, 3.0, 2.0})); // SABT
-		dict.put(Arrays.asList(new Integer[]{0, 0, 2}), Arrays.asList(new Double[]{0.0, 2.0, 3.0, 1.0})); // STBA
-		dict.put(Arrays.asList(new Integer[]{0, 0, 3}), Arrays.asList(new Double[]{1.0, 2.0, 3.0, 0.0})); // ATBS
-		//
-		dict.put(Arrays.asList(new Integer[]{0, 1, 0}), Arrays.asList(new Double[]{0.0, 2.0, 1.0, 3.0})); // STAB
-		dict.put(Arrays.asList(new Integer[]{0, 1, 1}), Arrays.asList(new Double[]{0.0, 3.0, 1.0, 2.0})); // SBAT
-		dict.put(Arrays.asList(new Integer[]{0, 1, 2}), Arrays.asList(new Double[]{0.0, 3.0, 2.0, 1.0})); // SBTA
-		dict.put(Arrays.asList(new Integer[]{0, 1, 3}), Arrays.asList(new Double[]{1.0, 3.0, 2.0, 0.0})); // ABTS
-		//
-		dict.put(Arrays.asList(new Integer[]{0, 2, 0}), Arrays.asList(new Double[]{1.0, 2.0, 0.0, 3.0})); // ATSB
-		dict.put(Arrays.asList(new Integer[]{0, 2, 1}), Arrays.asList(new Double[]{1.0, 3.0, 0.0, 2.0})); // ABST
-		dict.put(Arrays.asList(new Integer[]{0, 2, 2}), Arrays.asList(new Double[]{2.0, 3.0, 0.0, 1.0})); // TBSA
-		dict.put(Arrays.asList(new Integer[]{0, 2, 3}), Arrays.asList(new Double[]{2.0, 3.0, 1.0, 0.0})); // TBAS
-		//
-		dict.put(Arrays.asList(new Integer[]{1, 0, 0}), Arrays.asList(new Double[]{1.0, 0.0, 2.0, 3.0})); // ASTB
-		dict.put(Arrays.asList(new Integer[]{1, 0, 1}), Arrays.asList(new Double[]{1.0, 0.0, 3.0, 2.0})); // ASBT
-		dict.put(Arrays.asList(new Integer[]{1, 0, 2}), Arrays.asList(new Double[]{2.0, 0.0, 3.0, 1.0})); // TSBA
-		dict.put(Arrays.asList(new Integer[]{1, 0, 3}), Arrays.asList(new Double[]{2.0, 1.0, 3.0, 0.0})); // TABS
-		//
-		dict.put(Arrays.asList(new Integer[]{1, 1, 0}), Arrays.asList(new Double[]{2.0, 0.0, 1.0, 3.0})); // TSAB
-		dict.put(Arrays.asList(new Integer[]{1, 1, 1}), Arrays.asList(new Double[]{3.0, 0.0, 1.0, 2.0})); // BSAT
-		dict.put(Arrays.asList(new Integer[]{1, 1, 2}), Arrays.asList(new Double[]{3.0, 0.0, 2.0, 1.0})); // BSTA
-		dict.put(Arrays.asList(new Integer[]{1, 1, 3}), Arrays.asList(new Double[]{3.0, 1.0, 2.0, 0.0})); // BATS
-		//
-		dict.put(Arrays.asList(new Integer[]{1, 2, 0}), Arrays.asList(new Double[]{2.0, 1.0, 0.0, 3.0})); // TASB
-		dict.put(Arrays.asList(new Integer[]{1, 2, 1}), Arrays.asList(new Double[]{3.0, 1.0, 0.0, 2.0})); // BAST
-		dict.put(Arrays.asList(new Integer[]{1, 2, 2}), Arrays.asList(new Double[]{3.0, 2.0, 0.0, 1.0})); // BTSA
-		dict.put(Arrays.asList(new Integer[]{1, 2, 3}), Arrays.asList(new Double[]{3.0, 2.0, 1.0, 0.0})); // BTAS
-		// 5vv
-		dict.put(Arrays.asList(new Integer[]{0, 0, 0, 0}), Arrays.asList(new Double[]{0.0, 1.0, 2.0, 3.0, 4.0}));
-		dict.put(Arrays.asList(new Integer[]{1, 0, 0, 0}), Arrays.asList(new Double[]{1.0, 0.0, 2.0, 3.0, 4.0}));
-		dict.put(Arrays.asList(new Integer[]{1, 2, 3, 4}), Arrays.asList(new Double[]{4.0, 3.0, 2.0, 1.0, 0.0}));
-		// TODO
-
-		// Return null if configs contains only -1s, i.e., if no motif was found, or
-		// if not enough motifs (more than half of the new entries) were found to make a 
-		// clear prediction
-		// 2vv: configs.size() == 1: one -1 returns null (none) (there is one new entry; half of it = 1/2)
-		// 3vv: configs.size() == 2: two -1s returns null (881) (there are two new entries; half of them = 2/2)
-		// 4vv: configs.size() == 3: two or three -1s returns null (none) (there are three new entries; half of them = 3/2)
-		// 5vv: configs.size() == 4: three or four -1s returns null (849_1) (there are four new entries; half of them = 4/2)
-		int minusOnes = Collections.frequency(configs, -1); 
-		if ((ToolBox.sumListInteger(configs) == -configs.size()) ||
-			((double)minusOnes/configs.size() > 0.5)) {
-			System.out.println(configs);
-			System.out.println("==========>>> null: no or not enough motifs found for " + getName());
-			return null;
-		}
-		// Get the voicing that corresponds to the (corrected) determined config
-		List<Integer> corrConfigs = new ArrayList<Integer>();
-		for (int i : configs) {
-			// No config set? Assume that the voice is added as lowest (config 0)
-			if (i == -1) {
-				corrConfigs.add(0);
-			}
-			else {
-				corrConfigs.add(i);
-			}
-		}
-		// Return null if corrConfigs does not exist
-		System.out.println("configs = " + configs);
-		System.out.println("corrConfigs = " + corrConfigs);
-		List<Double> voiceEntries = dict.get(corrConfigs);
-		System.out.println("voiceEntries = " + voiceEntries);
-		if (voiceEntries == null) {
-			System.out.println("null: config does not exist.");
-			System.exit(0);
-			return null;
-		}
-		else {
-			List<Integer> indices = new ArrayList<Integer>();
-			List<Integer> voices = new ArrayList<Integer>();
-			List<Integer> voicesAlreadyAdded = new ArrayList<Integer>();
-			for (int i = 0; i < lowestNoteIndicesFirstChords.size(); i++) {		
-				int currInd = lowestNoteIndicesFirstChords.get(i);
-				// List indices
-				List<Integer> currIndices = new ArrayList<Integer>();
-				int chordSize = 
-					(btp != null) ? btp[currInd][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :	
-					bnp[currInd][CHORD_SIZE_AS_NUM_ONSETS];
-				for (int j = currInd; j < currInd + chordSize; j++) {
-					currIndices.add(j);
-				}
-				indices.addAll(currIndices);
-
-				// List voices
-				List<Integer> currVoices = new ArrayList<Integer>();
-				int currVoice = voiceEntries.get(i).intValue();
-				System.out.println("currVoice = " + currVoice);
-				Collections.sort(voicesAlreadyAdded);
-				Collections.reverse(voicesAlreadyAdded);
-				if (currInd == 0) {
-					currVoices.add(currVoice);
-				}
-				else {
-					// Determine the previous chord
-					int toSub = 
-						(btp != null) ? btp[currInd-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
-						bnp[currInd-1][CHORD_SIZE_AS_NUM_ONSETS];
-					int prevLowestInd = currInd - toSub;
-					List<Integer> prevChord = new ArrayList<Integer>();
-					for (int k = prevLowestInd; k < currInd; k++) {
-						prevChord.add(
-							(btp != null) ? btp[k][Tablature.PITCH] : 
-							bnp[k][PITCH]);
-					}
-					for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, prevLowestInd)) {
-						prevChord.add(
-							(btp != null) ? btp[ind][Tablature.PITCH] :
-							bnp[ind][PITCH]);
-					}
-					Collections.sort(prevChord);
-					System.out.println("prevChord = " + prevChord);
-
-					// Find any sustained notes in the first chord of the current 
-					// density change 
-					List<Integer[]> currFirst = pitchesFirstChords.get(i);
-					System.out.println("currFirst = ");
-					for (Integer[] in : currFirst) {
-						System.out.println(Arrays.toString(in));
-					}
-					List<Integer> voicesSustained = new ArrayList<Integer>();
-					for (int j = 0; j < currFirst.size(); j++) {
-						Integer[] in = currFirst.get(j);
-						// Sustained note?
-						int voice = -1;
-						// If the current note is a sustained note: find the position
-						// of this note in the previous chord, and then its voice 
-						// NB: it is assumed that there are no voice crossings in both chords
-						if (in[1] == 1) {
-							// Find position of note in previous chord
-							voice = voicesAlreadyAdded.get(prevChord.indexOf(in[0]));
-							voicesSustained.add(voice);
-						}
-					}
-					System.out.println("voicesSustained = " + voicesSustained);
-					System.out.println("voicesAlreadyAdded = " + voicesAlreadyAdded);
-					
-					// Determine the available voices for the notes in the current chord,
-					// which are the active voices without any sustained voices and the 
-					// current voice
-					List<Integer> availableVoices = new ArrayList<Integer>();
-					availableVoices.add(currVoice);
-					for (int v : voicesAlreadyAdded) {
-						if (!voicesSustained.contains(v)) {
-							availableVoices.add(v);
-						}
-					}
-					Collections.sort(availableVoices);
-					Collections.reverse(availableVoices);
-					System.out.println("availableVoices = " + availableVoices);
-					currVoices.addAll(availableVoices);
-				}
-				System.out.println("currVoices = " + currVoices);
-				voices.addAll(currVoices);
-				// Update voicesAlreadyAdded
-				voicesAlreadyAdded.add(currVoice);
-			}
-			res.add(configs);
-			res.add(indices);
-			res.add(voices);
-			return res;
-		}
-//		return res;
-	}
-
-	/**
-	 * Determines the sequence of voice entries based on the cost of connecting two configurations.
-	 * 
-	 * @param btp
-	 * @param durationLabels
-	 * @param bnp
-	 * @param numVoices
-	 * @param n
-	 * @return
-	 */
-	// TESTED TODO: implement full note duration case in tablature case
-	// Return <code>null</code> if one or more voices are missing from the returned list of voices. 
-	List<List<Integer>> getNonImitativeVoiceEntries(Integer[][] btp, List<List<Double>> durationLabels,
-		Integer[][] bnp, int numVoices, int n) { // in 2020
-		
-		verifyCase(btp, bnp);
-		
-		List<Integer> allConfigs = new ArrayList<Integer>();
-		List<Integer> allIndices = new ArrayList<Integer>();
-		List<Integer> allVoices = new ArrayList<Integer>();
-		
-//		Integer[][] bnp = getBasicNoteProperties(); // in 2020
-		
-		// Determine the densities and the indices of the lowest note of the first
-		// chord with the new density
-		List<Integer> densities = new ArrayList<Integer>();
-		List<Integer> indices = new ArrayList<Integer>();
-//		List<List<Integer>> firstChordIndices = new ArrayList<List<Integer>>();
-		List<Integer> noteDensities = getNoteDensity(btp, durationLabels, bnp); // in 2020
-		int prevDensity = 0;
-		for (int i = 0; i < noteDensities.size(); i++) {
-			int d = noteDensities.get(i);
-			if (d > prevDensity) {
-				prevDensity = d;
-				densities.add(d);
-				indices.add(i);
-				List<Integer> currFirstChordInd = new ArrayList<Integer>();
-				int chordSize = 
-					(btp != null) ? btp[i][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
-					bnp[i][CHORD_SIZE_AS_NUM_ONSETS];	
-				for (int j = i; j < i + chordSize; j++) {
-					currFirstChordInd.add(j);
-				}
-//				firstChordIndices.add(currFirstChordInd);
-				allIndices.addAll(currFirstChordInd);
-			}
-		}
-		System.out.println("indices = " + indices);
-		System.out.println("densities = " + densities);
-//		System.out.println(firstChordIndices);
-		
-//		FeatureGenerator fg = new FeatureGenerator();
-		// rightVoices is the list of voices available for the current right chord; it is 
-		// initialised with all voices (starting with the highest)
-		List<Integer> rightVoices = new ArrayList<Integer>();
-		for (int i = 0; i < numVoices; i++) {
-			rightVoices.add(i);
-		}
-
-		// For each density decrease, starting at the last: 
-		// (1) add the voices in rightVoices that do not go with a sustained previous note to
-		//     allVoices
-		// (2) determine the optimal config and remove all newly entering voices from 
-		//     rightVoices, thus setting it for the next iteration of the for-loop
-		for (int i = densities.size()-1; i > 0; i--) {
-			System.out.println("density increase index = " + indices.get(i));
-			System.out.println("rightVoices = " + rightVoices);
-			
-			// Determine left/right densities and left/current/right density increase index
-			int leftDensity = densities.get(i-1); 
-			int rightDensity = densities.get(i);
-			System.out.println("leftDensity = " + leftDensity);
-			System.out.println("rightDensity = " + rightDensity);	
-			int leftDensIncrInd = indices.get(i-1);
-			int currDensIncrInd = indices.get(i);
-			int rightDensIncrInd;
-			if (i == densities.size()-1) {
-				rightDensIncrInd = 
-					(btp != null) ? btp.length - btp[btp.length-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
-					bnp.length - bnp[bnp.length-1][CHORD_SIZE_AS_NUM_ONSETS];
-			}
-			else {
-				rightDensIncrInd = indices.get(i+1);
-			}
-			System.out.println("-----");
-			System.out.println("rightDensIncrInd = " + rightDensIncrInd);
-			System.out.println("currDensIncrInd = " + currDensIncrInd);
-			System.out.println("leftDensIncrInd = " + leftDensIncrInd);
-
-			// 1. List all left chords (i.e., those of size leftDensity) and all right chords 
-			// (i.e., those of size rightDensity)
-			List<List<List<Integer>>> lAndR = new ArrayList<List<List<Integer>>>();
-			lAndR.add(new ArrayList<List<Integer>>()); // leftChords
-			lAndR.add(new ArrayList<List<Integer>>()); // rightChords
-			for (int l = 0; l < lAndR.size(); l++) {
-				int start = leftDensIncrInd;
-				int end = currDensIncrInd;
-				int dens = leftDensity;
-				if (l == 1) {
-					start = currDensIncrInd;
-					end = rightDensIncrInd;
-					dens = rightDensity;
-				}
-				for (int j = start; j < end; j++) {
-					// j is the index of the lowest note in the chord
-					int chordSize = 
-						(btp != null) ? btp[j][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
-						bnp[j][CHORD_SIZE_AS_NUM_ONSETS];
-//					List<List<Integer>> pitchesAndSpnInChord = new ArrayList<List<Integer>>();
-					List<Integer> pitchesInChord = new ArrayList<Integer>();
-					// Add pitches and sustained previous note-ness of all notes in the chord
-					for (int k = j; k < j + chordSize; k++) {
-//						pitchesAndSpnInChord.add(Arrays.asList(new Integer[]{bnp[k][PITCH], 0}));
-						pitchesInChord.add(
-							(btp != null) ? btp[k][Tablature.PITCH]	:
-							bnp[k][PITCH]);
-					}
-					// Add pitches and sustained previous note-ness of any sustained previous notes
-					for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, j)) {
-//						pitchesAndSpnInChord.add(Arrays.asList(new Integer[]{bnp[ind][PITCH], 1}));
-						pitchesInChord.add(
-							(btp != null) ? btp[ind][Tablature.PITCH] :	
-							bnp[ind][PITCH]);
-					}
-//					pitchesAndSpnInChord = ToolBox.bubbleSort(pitchesAndSpnInChord);
-//					Collections.reverse(pitchesAndSpnInChord);
-//					List<List<Integer>> t = ToolBox.transposeListOfLists(pitchesAndSpnInChord);
-//					List<Integer> pitchesInChord = t.get(0);
-					Collections.sort(pitchesInChord);
-					Collections.reverse(pitchesInChord);
-
-					// Add only those chords of size dens
-					if (pitchesInChord.size() == dens) { 
-						// Complete left chords to size rightDensity by adding placeholder(s)
-						if (l == 0) {
-							while (pitchesInChord.size() < rightDensity) {
-								pitchesInChord.add(null);
-							}
-						}
-						lAndR.get(l).add(pitchesInChord);
-					}
-
-//					if (l == 0) {
-//						// Add only those chords of size dens; complete them to size 
-//						// rightDensity by adding placeholder(s) 
-//						if (pitchesInChord.size() == dens) { 
-//							while (pitchesInChord.size() < rightDensity) {
-//								pitchesInChord.add(null);
-//							}
-//							lAndR.get(l).add(pitchesInChord);
-//						}
-//					}
-//					if (l == 1) {
-////						// If first chord: set spnInFirstRightChord
-////						if (j == start) {
-////							spnInFirstRightChord = t.get(1);
-////						}
-//						// Add only those chords of size dens
-//						if (pitchesInChord.size() == dens) {
-//							lAndR.get(l).add(pitchesInChord);
-//						}
-//					}
-						
-					// Increment j so that the next iteration starts from the next chord
-					j = (j + chordSize) - 1;
-				}
-			}
-			List<List<Integer>> leftChords = lAndR.get(0);
-//			System.out.println("leftChords = " + leftChords);
-//			for (List<Integer> l : leftChords) {System.out.println(l); }
-			List<List<Integer>> rightChords = lAndR.get(1);
-//			System.out.println("rightChords = " + rightChords);
-//			for (List<Integer> l : rightChords) { System.out.println(l); }
-
-			// 2. List any sustained previous notes in the first right chord  
-			List<Integer> spnInFirstRightChord = new ArrayList<Integer>();
-//			int sizeFirstRightCh = bnp[currDensIncrInd][CHORD_SIZE_AS_NUM_ONSETS];
-			List<List<Integer>> spn = new ArrayList<List<Integer>>();
-			// Add pitches and sustained previous note-ness of all notes in the chord
-			int chrdSize = 
-				(btp != null) ? btp[currDensIncrInd][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
-				bnp[currDensIncrInd][CHORD_SIZE_AS_NUM_ONSETS];	
-			for (int j = currDensIncrInd; j < (currDensIncrInd + chrdSize); j++) {
-				System.out.println("j ==== " + j);
-				int toAdd = (btp != null) ? btp[j][Tablature.PITCH] : bnp[j][PITCH];
-				spn.add(Arrays.asList(new Integer[]{toAdd, 0}));
-			}
-			// Add pitches and sustained previous note-ness of any sustained previous notes
-			for (int ind : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, currDensIncrInd)) {
-				int toAdd = (btp != null) ? btp[ind][Tablature.PITCH] : bnp[ind][PITCH]; 
-				spn.add(Arrays.asList(new Integer[]{toAdd, 1}));
-			}
-			// Sort on pitch
-			spn = ToolBox.bubbleSort(spn, 0);
-			Collections.reverse(spn);
-			spnInFirstRightChord = ToolBox.transposeListOfLists(spn).get(1);
-
-//			// 1. List all left chords, i.e., those of size leftDensity
-//			List<List<Integer>> leftChords = new ArrayList<List<Integer>>();
-//			for (int j = leftDensIncrInd; j < currDensIncrInd; j++) {
-//				// j is the index of the lowest note in the chord
-//				int chordSize = bnp[j][CHORD_SIZE_AS_NUM_ONSETS];
-//				List<Integer> pitchesInChord = new ArrayList<Integer>();
-//				// Add pitches of all notes in the chord
-//				for (int k = j; k < j + chordSize; k++) {
-//					pitchesInChord.add(bnp[k][PITCH]);
-//					}
-//					// Add pitches of any sustained previous notess
-//					for (int ind : fg.getIndicesOfSustainedPreviousNotes(null, null, bnp, j)) {
-//						pitchesInChord.add(bnp[ind][PITCH]);
-//					}
-//					Collections.sort(pitchesInChord);
-//					Collections.reverse(pitchesInChord);
-//
-//					// Add only those chords of size leftDensity; complete them to size 
-//					// rightDensity by adding placeholder(s)
-//					if (pitchesInChord.size() == leftDensity) {
-//						while (pitchesInChord.size() < rightDensity) {
-//							pitchesInChord.add(null);
-//						}
-//						leftChords.add(pitchesInChord);
-//					}
-//
-//					// Increment j so that the next iteration starts from the next chord
-//					j = (j + chordSize) - 1;
-//				}
-////				System.out.println("leftChords = " + leftChords);
-////				for (List<Integer> l : leftChords) {System.out.println(l); }
-//				
-//				// 2. List all right chords, i.e., those of size rightDensity, and any sustained
-//				// previous notes in the first right chord 
-//				List<List<Integer>> rightChords = new ArrayList<List<Integer>>();
-////				List<Boolean> spnInFirstRightChord = new ArrayList<Boolean>();
-//				List<Integer> spnInFirstRightChord = new ArrayList<Integer>();
-//				for (int j = currDensIncrInd; j < rightDensIncrInd; j++) {
-//					// j is the index of the lowest note in the chord
-//					int chordSize = bnp[j][CHORD_SIZE_AS_NUM_ONSETS];
-//					List<Integer> pitchesInChord = new ArrayList<Integer>();
-//					List<List<Integer>> pitchesInChordExt = new ArrayList<List<Integer>>();
-//					// Add pitches and sustained previous note-ness of all notes in the chord
-//					for (int k = j; k < j + chordSize; k++) {
-//						pitchesInChordExt.add(Arrays.asList(new Integer[]{bnp[k][PITCH], 0}));
-//					}
-//					// Add pitches and sustained previous note-ness of any sustained previous notess
-//					for (int ind : fg.getIndicesOfSustainedPreviousNotes(null, null, bnp, j)) {
-//						pitchesInChordExt.add(Arrays.asList(new Integer[]{bnp[ind][PITCH], 1}));
-//					}
-//					pitchesInChordExt = ToolBox.bubbleSort(pitchesInChordExt);
-//					Collections.reverse(pitchesInChordExt);
-//					List<List<Integer>> t = ToolBox.transposeListOfLists(pitchesInChordExt);
-//					pitchesInChord = t.get(0);
-//					if (j == currDensIncrInd) {
-//						spnInFirstRightChord = t.get(1);
-//					}
-//
-//					// Add only those chords of size rightDensity
-//					if (pitchesInChord.size() == rightDensity) {
-//						rightChords.add(pitchesInChord);
-//					}
-//					
-//					// Increment j so that the next iteration starts from the next chord
-//					j = (j + chordSize) - 1;
-//				}
-////				System.out.println("rightChords = " + rightChords);
-////				for (List<Integer> l : rightChords) { System.out.println(l); }
-
-			// 3. Add all voices in rightVoices that do not go with a sustained previous 
-			// note to allVoices
-			// NB: these voices must remain in rightVoices, as this list, which is only
-			// needed for the config calculation, must be the size of rightDensity
-			System.out.println("rightVoices = " + rightVoices);
-			System.out.println("allVoices was = " + allVoices);
-			for (int j = 0; j < rightVoices.size(); j++) {
-				if (spnInFirstRightChord.get(j) == 0) {
-					allVoices.add(rightVoices.get(j));
-				}
-			}						
-			System.out.println("allVoices is  = " + allVoices);
-
-			// 4. Determine the optimal configuration of the last n left chords and the 
-			// first n right chords, and then the voices to remove from rightVoices
-			List<List<Integer>> lastNLeft;	
-			if (n >= leftChords.size()) {
-				lastNLeft = new ArrayList<List<Integer>>(leftChords);
-			}
-			else {
-				lastNLeft = leftChords.subList(leftChords.size()-n, leftChords.size()); 
-			}
-			List<List<Integer>> firstNRight;
-			if (n >= rightChords.size()) {
-				firstNRight = new ArrayList<List<Integer>>(rightChords);
-			}
-			else {
-				firstNRight = rightChords.subList(0, n);
-			}
-			System.out.println("lastNLeft = " + lastNLeft);
-			System.out.println("firstNRight = " + firstNRight);
-			System.out.println("spnInFirstRightChord = " + spnInFirstRightChord);
-
-//				// Determine the number of configurations
-//				int numConfigs = configs.size();
-//				int numNull = Collections.frequency(leftChords.get(0), null);
-//				// If the left chord contains one note or one placeholder (1-2, 1-3, 1-4, 1-5, 
-//				// 2-3, 3-4, 4-5)
-//				if (leftDensity == 1 || numNull == 1) {
-//					numConfigs = rightDensity;
-//				}
-//				// If the left chord contains more than one note and the right chord contains
-//				// at least two more notes than the left chord (2-4; 2-5; 3-5)
-//				else if (leftDensity > 1 && (rightDensity - leftDensity >= 2)) {
-//				if (leftDensity == 2 && rightDensity == 4) {
-//					numConfigs = 6;
-//				}
-//				if (leftDensity == 2 && rightDensity == 5) {
-//					numConfigs = 10; 
-//				}
-//				if (leftDensity == 3 && rightDensity == 5) {
-//					numConfigs = 9; 
-//				}
-
-			List<List<List<Integer>>> configs = 
-				determineConfigs(leftDensity, rightDensity, lastNLeft);
-//			System.out.println(configs.size());
-//			for (List<List<Integer>> l : configs) {
-//				System.out.println(l);
-//			}
-//			for (List<List<Integer>> l : configs) {
-//				System.out.println(l);
-//			}
-			List<Integer> costPerConfig = new ArrayList<Integer>();
-			List<Integer> costPerConfigNonLin = new ArrayList<Integer>();
-			List<Integer> costPerConfigLin = new ArrayList<Integer>();
-			for (List<List<Integer>> l : configs) {
-				int costNonLin = calculateConfigCost(l, firstNRight, false);
-				int costLin = calculateConfigCost(l, firstNRight, true);	
-				costPerConfigNonLin.add(costNonLin);
-				costPerConfigLin.add(costLin);
-//				costPerConfig.add(costLin + costNonLin);
-				costPerConfig.add(costNonLin);
-			}
-//				int config = 0;
-//				while (config < numConfigs) {
-//					System.out.println("config = " + config);
-//					// Determine the cost for the current configuration 
-//					int costNonLin = calculateConfigCost(lastNLeft, firstNRight, false);
-//					int costLin = calculateConfigCost(lastNLeft, firstNRight, true);	
-//					costPerConfigNonLin.add(costNonLin);
-//					costPerConfigLin.add(costLin);
-//					costPerConfig.add(2*costLin + 3*costNonLin);
-//					
-//					// Determine the next configuration
-//					if (config != numConfigs - 1) {
-//						List<List<Integer>> partialLeftNew = 
-//							determineNextConfig(config, numConfigs, leftDensity, rightDensity,
-//							lastNLeft);
-//						lastNLeft = partialLeftNew;
-//						config++;
-//					}
-//					else {
-//						break;
-//					}
-//				}
-			System.out.println("costPerConfig = " + costPerConfig);
-			System.out.println("costPerConfigNonLin = " + costPerConfigNonLin);
-			System.out.println("costPerConfigLin    = " + costPerConfigLin);
-			int bestConfig = costPerConfig.indexOf(Collections.min(costPerConfig)); 
-			System.out.println("bestConfig = " + bestConfig);
-			allConfigs.add(bestConfig);
-
-			// Determine the newly entering voice(s), i.e., the voice(s) that are in the 
-			// right chord but not in the left, and remove them from rightVoices for the
-			// next iteration of the outer for-loop
-			// Config possibilities:
-			// 1-2  1-3  1-4  1-5  1-6
-			//      2-3  2-4  2-5  2-6
-			//           3-4  3-5  3-6
-			//                4-5  4-6
-			//                     5-6
-//			List<Integer> newVoices = new ArrayList<Integer>();
-			// If the left chord contains one note or one placeholder
-			if (leftDensity == 1 || leftDensity == (rightDensity - 1)) {
-//			if (numConfigs == rightDensity) {
-				System.out.println("rightVoices = " + rightVoices);
-				System.out.println("bestConfig = " + bestConfig);
-				// If the left chord contains one note (1-2, 1-3, 1-4, 1-5, 1-6)
-				if (leftDensity == 1) {
-					System.out.println("leftDensity contains one note");
-					// The voice at index bestConfig in rightVoices is the already active 
-					// voice, so the voices at all other indices are newly entering voices (NEV)
-					// Example 1-4:
-					//     (0)         (1)         (2)         (3)     
-					//     x x           x           x           x
-					//       x         x x           x           x
-					//       x           x         x x           x
-					//       x           x           x         x x
-					// NEV 1,2,3       0,2,3       0,1,3       0,1,2
-					List<Integer> toRemove = new ArrayList<Integer>(); 
-					for (int j = 0; j < rightVoices.size(); j++) {
-//						System.out.println(j);
-						if (j != bestConfig) {
-							toRemove.add(rightVoices.get(j));
-						}
-					}
-					System.out.println("toRemove = " + toRemove);
-					for (int p : toRemove) {
-						rightVoices.remove((Integer) p);
-					}	
-				}
-				// If the left chord contains one placeholder (2-3, 3-4, 4-5, 5-6)
-				else if (leftDensity == (rightDensity - 1)) {
-					System.out.println("leftDensity is one smaller than rightDensity");
-//				else if (numNull == 1) {
-					// The voice at index (rightDensity-1)-bestConfig in rightVoices is the
-					// newly entering voice (NEV)
-					// Example 3-4:
-					//     (0)         (1)         (2)         (3)
-					//     x x         x x         x x           x
-					//     x x         x x           x         x x
-					//     x x           x         x x         x x
-					//       x         x x         x x         x x
-					// NEV (4-1)-0=3   (4-1)-1=2   (4-1)-2=1   (4-1)-3=0
-					rightVoices.remove((rightDensity-1)-bestConfig);
-				}
-			}
-			// If the left chord contains more than one note and the right chord contains
-			// at least two more notes than the left chord (2-4, 2-5, 2-6, 3-5, 3-6, 4-6)
-			else {
-				// 2-4:
-				//     (0)      (1)      (2)      (3)      (4)      (5)
-				//     x x      x x      x x        x        x        x
-				//     x x        x        x      x x      x x        x
-				//       x      x x        x      x x        x      x x
-				//       x        x      x x        x      x x      x x
-				// NEV 2,3      1,3      1,2      0,3      0,2      0,1
-				if (leftDensity == 2 && rightDensity == 4) {
-					List<Integer[]> toRemove = Arrays.asList(new Integer[][]{
-						new Integer[]{2, 3},
-						new Integer[]{1, 3},
-						new Integer[]{1, 2},
-						new Integer[]{0, 3},
-						new Integer[]{0, 2},
-						new Integer[]{0, 1}}
-					);
-					for (int p : toRemove.get(bestConfig)) {
-						rightVoices.remove((Integer) p);
-					}
-				}
-				else if (leftDensity == 2 && rightDensity == 5) { // TODO Fix! (does not happen currently)
-					System.out.println("AAAAAAAAAaaaaaaaaaahhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
-					System.exit(0);
-				}
-				else if (leftDensity == 3 && rightDensity == 5) { // TODO Fix! (does not happen currently)
-					System.out.println("AAAAAAAAAaaaaaaaaaahhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
-					System.exit(0);
-				}
-			}
-			System.out.println("rightVoices = " + rightVoices);
-		}	
-		// Add remaining rightVoices and reverse allVoices
-		allVoices.addAll(rightVoices);
-		Collections.reverse(allVoices);
-		// Reverse allConfigs
-		Collections.reverse(allConfigs);
-		System.out.println("HIERRRRR");
-		List<List<Integer>> res = new ArrayList<List<Integer>>();
-		System.out.println("allVoices = " + allVoices);
-		// Verify that each voice is in allVoices
-		boolean valid = true;
-		for (int i = 0; i < numVoices; i++) {
-			if (!allVoices.contains(i)) {
-				valid = false;
-				break;
-			}
-		}
-//		if (valid) {
-			System.out.println(allConfigs);
-			System.out.println(allIndices);
-			System.out.println(allVoices);
-			res.add(allConfigs);
-			res.add(allIndices);
-			res.add(allVoices);
-			return res;
-//		}
-//		else {
-//			System.out.println("NOT VALID!");
-//			return null;
-//		}
-
-//		return res;
-	}
-
-
-	/**
-	 * Calculates the cost of connecting the left and right chords. 
-	 * 
-	 * The cost for a configuration of left and right chords is calculated as follows:
-	 * 
-	 * l1    l3    l5    | r1    r4    r7
-	 * l2    l4    l6    | r2    r5    r8
-	 * null  null  null  | r3    r6    r9
-	 * 
-	 * cost = ( |l1-r1| + |l1-r4| + |l1-r7| ) + ( |l2-r2| + |l2-r5| + |l2-r8| )
-	 *        +   
-	 *        ( |l3-r1| + |l3-r4| + |l3-r7| ) + ( |l4-r2| + |l4-r5| + |l4-r8| )
-	 *        +
-	 *        ( |l5-r1| + |l5-r4| + |l5-r7| ) + ( |l6-r2| + |l6-r5| + |l6-r8| )
-	 *        
-	 * @param leftChords
-	 * @param rightChords
-	 * @param useLinear 
-	 * @return
-	 */
-	// TESTED
-	static int calculateConfigCost(List<List<Integer>> leftChords, List<List<Integer>> rightChords,
-		boolean useLinear) {
-		int costNonLinear = 0;
-
-		for (List<Integer> lc : leftChords) {
-			for (List<Integer> rc : rightChords) {
-				for (int j = 0; j < lc.size(); j++) {
-					if (lc.get(j) != null) {
-						costNonLinear += Math.abs(rc.get(j) - lc.get(j));	
-					}
-				}
-			}
-		}
-
-		List<List<Integer>> lAndR = new ArrayList<List<Integer>>();
-		lAndR.addAll(leftChords);
-		lAndR.addAll(rightChords);
-		List<Integer> firstChord = lAndR.get(0);
-		int costLinear = 0;
-		for (int i = 0; i < firstChord.size(); i++) {
-			// For each chord in lAndR
-			for (int j = 0; j < lAndR.size() - 1; j++) {
-				if (firstChord.get(i) != null) {
-					List<Integer> ch = lAndR.get(j);
-					List<Integer> nextCh = lAndR.get(j+1);
-					int diff = nextCh.get(i) - ch.get(i);
-					costLinear += Math.abs(diff);
-				}
-			}
-		}
-
-		if (!useLinear) {
-			return costNonLinear;
-		}
-		else {
-			return costLinear;
-		}
-	}
-
-
-//	static List<List<List<Integer>>> determineConfigsDEZE(int leftDensity, 
-//		int rightDensity, List<List<Integer>> partialLeft) {
-//			
-//		List<List<List<Integer>>> configs = new ArrayList<List<List<Integer>>>();
-//			
-////		List<Integer> leftIndices = new ArrayList<Integer>();
-////		for (int i = 0; i < leftDensity; i++) {
-////			leftIndices.add(i);
-////		}
-//			
-////		List<List<Integer>> currConfig = new ArrayList<List<Integer>>();
-////		for (List<Integer> l : partialLeft) {
-////			currConfig.add(new ArrayList<Integer>(l));
-////		}
-//
-//		// Initialise the startIndices
-//		List<Integer> hiIndices = new ArrayList<Integer>();
-//		for (int i = 0; i <= rightDensity-leftDensity; i++) {
-//			hiIndices.add(i);
-//		}
-//		System.out.println("startIndices = " + hiIndices);
-//		List<List<Integer>> availableCovered = new ArrayList<List<Integer>>();
-//		for (int i = 0; i < hiIndices.size(); i++) {
-//			int indHi = hiIndices.get(i);
-//			System.out.println("indHi = " + indHi);
-//			
-//			// Make the initial config for the current startIndex
-//			List<List<Integer>> startConfig = new ArrayList<List<Integer>>();
-//			for (List<Integer> l : partialLeft) {
-//				List<Integer> curr = new ArrayList<Integer>(l);
-//				// Shift pitches
-//				for (int j = 0; j < indHi; j++) {
-//					curr.add(j, null);
-//					curr.remove(curr.size()-1);
-//				}
-//				startConfig.add(curr);
-//			}
-//			System.out.println("startConfig = " + startConfig);
-//			
-//			// Determine the available indices 
-//			List<Integer> indAvailable = new ArrayList<Integer>();
-//			List<Integer> firstChord = startConfig.get(0);
-//			for (int j = 0; j < firstChord.size(); j++) {
-//				if (firstChord.get(j) == null) {
-//					indAvailable.add(j);
-//				}
-//			}
-//			availableCovered.add(indAvailable);
-//			System.out.println("available = " + availableCovered);
-//
-//			// Determine the lowest note index
-//			int indLow = hiIndices.get((hiIndices.size() - 1) - i);	
-//			int indPreLow = indLow -1;
-////			int indLow = -1;
-////			for (int j = firstChord.size() - 1; j >= 0; j--) {
-////				if (firstChord.get(j) != null) {
-////					indLow = j;
-////					break;
-////				}
-////			}
-//			System.out.println("indLow = " + indLow);
-//			// Determine the next config(s) by swapping indLow with all available indices
-//			
-//			while (indPreLow + 1 < rightDensity) {
-//				while (indLow < rightDensity) {
-//					for (List<Integer> l : startConfig) { 
-//						Collections.swap(l, indLow, indLow+1);
-//					}
-//					indLow++;
-//				}
-//				for (List<Integer> l : startConfig) { 
-//					Collections.swap(l, indPreLow, indPreLow+1);
-//				}
-//				indPreLow++;
-//				for (List<Integer> l : startConfig) { 
-//					Collections.swap(l, indLow, indPreLow+1);
-//				}
-//				indLow = indPreLow + 1;
-//			}
-//				
-//				while (indPostLow < rightDensity) {
-////					List<List<Integer>> currConfig = new ArrayList<List<Integer>>();
-////					for (List<Integer> l : startConfig) {
-////						currConfig.add(new ArrayList<Integer>(l));
-////					}
-//					
-//					
-//				}
-//				indPreLow--;
-//				for (int j = 0; j < indAvailable.size(); j++) {
-//					int indAv = indAvailable.get(j);
-//					System.out.println("indAv = " + indAv);
-//					
-//					List<List<Integer>> currConfig = new ArrayList<List<Integer>>();
-//					for (List<Integer> l : startConfig) {
-//						currConfig.add(new ArrayList<Integer>(l));
-//					}
-//					
-//					for (List<Integer> l : currConfig) { //currConfig) {
-////						System.out.println("l = " + l);
-//						Collections.swap(l, indLow, indAv);
-//						System.out.println("l = " + l);
-//					}
-//					// Add only if the resulting available indices have not been seen before
-//					List<Integer> resAv = new ArrayList<Integer>(indAvailable);
-//					resAv.set(j, indLow);
-//					Collections.sort(resAv);
-//					System.out.println(resAv);
-//					if (!availableCovered.contains(resAv)) {
-//						configs.add(currConfig);
-//						availableCovered.add(resAv);
-//					}
-//				}
-//				indLow--;
-//				System.out.println("indLow = " + indLow);
-//			}
-//			System.out.println(configs);
-//			System.exit(0);
-//		}	
-//		return configs;
-//	}
-
-	
-	/**
-	 * Calculates all possible configurations of the given chords.
-	 * 
-	 * Example for leftDensity = 2 and rightDensity = 4 (six configs). Numbers indicate the 
-	 * indices of the configs in the list returned.  
-	 * 
-	 * startConfig 0
-	 * (0)          (1)  (2)         (3)  (4)
-	 * o o | (o o)  o o  o o  (x o)    o    o   
-	 * o o | (x o)    o    o  (o o)  o o  o o 
-	 *   o | (  o)  x o    o  (  o)  x o    o 
-	 *   o | (  o)    o  x o  (  o)    o  x o 
-	 * 
-	 * startConfig 1
-	 *                                    (5)
-	 *   o | (  o)  x o    o  (  o)  x o    o   
-	 * o o | (o o)  o o  o o  (x o)    o    o 
-	 * o o | (x o)    o    o  (o o)  o o  o o 
-	 *   o | (  o)    o  x o  (  o)    o  x o   
-	 * 
-	 * startConfig 2
-	 * 
-	 *   o | (  o)  x o    o  (  o)  x o    o   
-	 *   o | (  o)    o  x o  (  o)    o  x o 
-	 * o o | (o o)  o o  o o  (x o)    o    o 
-	 * o o | (x o)    o    o  (o o)  o o  o o
-	 * 
-	 * startConfig 3
-	 *        
-	 * o o | (o o)  o o  o o  (x o)    o    o   
-	 *   o | (  o)  x o    o  (  o)  x o    o 
-	 *   o | (  o)    o  x o  (  o)    o  x o 
-	 * o o | (x o)    o    o  (o o)  o o  o o
-	 *    
-	 * @param leftDensity
-	 * @param rightDensity
-	 * @param leftChords
-	 * @return
-	 */
-	// TESTED
-	static List<List<List<Integer>>> determineConfigs(int leftDensity, int rightDensity, 
-		List<List<Integer>> leftChords) {		
-		List<List<List<Integer>>> configs = new ArrayList<List<List<Integer>>>();
-		
-		// Create the initial startConfig
-		List<List<Integer>> currStartConfig = new ArrayList<List<Integer>>();
-		for (List<Integer> l : leftChords) {
-			currStartConfig.add(new ArrayList<Integer>(l));
-		}
-		
-		// For each startConfig
-		List<List<Integer>> availableCovered = new ArrayList<List<Integer>>();
-		for (int i = 0; i < rightDensity; i++) {			
-//			System.out.println("i = " + i);
-			// Determine the available indices in the current startConfig 
-			List<Integer> availableInd = new ArrayList<Integer>();
-			List<Integer> firstChord = currStartConfig.get(0);
-			for (int j = 0; j < firstChord.size(); j++) {
-				if (firstChord.get(j) == null) {
-					availableInd.add(j);
-				}
-			}
-
-			// Add the current startConfig to configs (only if it has not been added before)
-			if (!availableCovered.contains(availableInd)) {
-				List<List<Integer>> currConfigToAdd = new ArrayList<List<Integer>>();
-				for (List<Integer> l : currStartConfig) {
-					currConfigToAdd.add(new ArrayList<Integer>(l));
-				}
-				configs.add(currConfigToAdd);
-				availableCovered.add(availableInd);
-//				System.out.println(currConfigToAdd + " added as startConfig");
-			}
-
-			// Determine the highest and lowest note index in the current startConfig and 
-			// determine the permutations
-			int indHi = -1;
-			for (int j = 0; j < firstChord.size(); j ++) {
-				if (firstChord.get(j) != null) {
-					indHi = j;
-					break;
-				}
-			}
-			int indLow = -1;
-			for (int j = firstChord.size() - 1; j >= 0; j--) {
-				if (firstChord.get(j) != null) {
-					indLow = j;
-					break;
-				}
-			}
-			while (indLow >= indHi) {
-				// For each new indLow, reset currConfig to currStartConfig
-				List<List<Integer>> currConfig = new ArrayList<List<Integer>>();
-				for (List<Integer> l : currStartConfig) {
-					currConfig.add(new ArrayList<Integer>(l));
-				}
-//				System.out.println("indLow = " + indLow);
-//				System.out.println(currConfig);
-				// Swap the note at indLow with all available indices
-				int indLowSwap = indLow;
-				List<Integer> availableIndSwap = new ArrayList<Integer>(availableInd);
-				for (int j = 0; j < availableIndSwap.size(); j++) {
-					int indAv = availableIndSwap.get(j);
-					for (List<Integer> l : currConfig) {
-						Collections.swap(l, indLowSwap, indAv);
-						// The list must be in descending order
-						List<Integer> pitches = new ArrayList<Integer>();
-						for (int k = 0; k < l.size(); k++) {
-							if (l.get(k) != null) {
-								pitches.add(l.get(k));
-							}
-						}
-						Collections.sort(pitches);
-						Collections.reverse(pitches);
-						for (int k = 0; k < l.size(); k++) {
-							if (l.get(k) != null) {
-								l.set(k, pitches.get(0));
-								pitches.remove(0);
-							}
-						}
-					}
-					// Add currConfig to configs (only if it has not been added before)
-					availableIndSwap.set(j, indLowSwap);
-					List<Integer> sorted = new ArrayList<Integer>(availableIndSwap);
-					Collections.sort(sorted);
-					if (!availableCovered.contains(sorted)) {
-//						System.out.println(currConfig + " added");
-						List<List<Integer>> currConfigToAdd = new ArrayList<List<Integer>>();
-						for (List<Integer> l : currConfig) {
-							currConfigToAdd.add(new ArrayList<Integer>(l));
-						}
-						configs.add(currConfigToAdd);
-						availableCovered.add(new ArrayList<Integer>(sorted));
-					}
-					indLowSwap = indAv;
-				}
-				// If indLow is indHi: break and go to next startConfig
-				if (indLow == indHi) {
-					break;
-				}
-				// If not: determine next indLow 
-				else {
-					for (int j = indLow-1; j >= 0; j--) {
-						if (firstChord.get(j) != null) {
-							indLow = j;
-							break;
-						}
-					}
-				}
-			}
-
-			// Make next startConfig
-			for (List<Integer> l : currStartConfig) {
-				l.add(0, l.get(l.size() - 1));
-				l.remove(l.size()-1);
-			}
-		}
-		return configs;
-	}
-
-
-	/**
 	 * Determines the next configuration of the notes in each chord in the given list of chords.
 	 * 
 	 * @param config
@@ -6329,334 +6635,27 @@ public class Transcription implements Serializable {
 		}
 		return partialLeftReordered;
 	}
-
-
-	public List<List<Integer>> determineVoiceEntriesHIGHLEVEL(Integer[][] btp, 
-		List<List<Double>> durationLabels, Integer[][] bnp, int numVoices, int n) {
-		
-		verifyCase(btp, bnp);
-		
-		List<Integer> noteDensities = getNoteDensity(btp, durationLabels, bnp); // in 2020
-		int leftDensity = noteDensities.get(0);
-
-		// Find density increases
-		List<Integer> densities = new ArrayList<Integer>();
-		densities.add(leftDensity);
-		// If the piece does not start with a fully-textured chord
-		if (leftDensity < numVoices) {
-			for (int i = 0; i < noteDensities.size(); i++) {
-				int density = noteDensities.get(i);
-				if (density > leftDensity) {
-					densities.add(density);
-					leftDensity = density;
-					if (density == numVoices) {
-						break;
-					}
-				}	
-			}
-//			System.out.println(noteDensities.subList(0, 50));
-//			for (List<Double> l : durationLabels) {
-//				System.out.println(l.size() + " - " + l);
-//			}
-
-			System.out.println("densities = " + densities);
-			// If the voices enter successively: determine if the piece is imitative
-			if (densities.size() == numVoices) {
-				// Check whether there are enough notes of density 1 to contain a motif of n notes
-				boolean enoughNotes = true;
-				for (int i = 0; i < n; i++) {
-					if (noteDensities.get(i) > 1) { // in 2020
-//					if (getNoteDensity().get(i) > 1) { // in 2020	
-						enoughNotes = false;
-						System.out.println("not enough notes of density 1 for motif");
-						break;
-					}
-				}
-				// If so: check whether a motif is found (i.e., whether configurations does
-				// not contain only -1s)
-				if (enoughNotes) {
-					List<List<Integer>> ve = 
-						getImitativeVoiceEntries(btp, durationLabels, bnp, numVoices, n); // in 2020
-//					List<Integer> configurations = ve.get(0);
-//					if ((ToolBox.sumListInteger(configurations) != -configurations.size())) {
-//						return ve;
-//					}
-					if (ve != null) {
-						System.out.println("motif found");
-						System.out.println("IMITATIVE MANNE.");
-						return ve;
-					}
-					else {
-//						System.out.println("IMITATIVE FAILED AT " + pieceName);
-						System.out.println("no motif found");
-						System.out.println("NON-IMITATIVE MANNE.");
-						return getNonImitativeVoiceEntries(btp, durationLabels, bnp, numVoices, n); // in  2020
-					}
-				}
-				else {
-					System.out.println("NON-IMITATIVE MANNE.");
-					return getNonImitativeVoiceEntries(btp, durationLabels, bnp, numVoices, n); // in 2020
-				}
-			}
-			// If the voices do not enter successively: the piece is non-imitative
-			else {
-				System.out.println("NON-IMITATIVE MANNE.");
-				return getNonImitativeVoiceEntries(btp, durationLabels, bnp, numVoices, n); // in 2020
-			}
-		}
-		// If the piece starts with a fully-textured chord // TODO account for unisons
-		else {
-			System.out.println("NON-IMITATIVE MANNE.");
-			List<List<Integer>> res = new ArrayList<List<Integer>>();
-			List<Integer> indices = new ArrayList<Integer>();
-			List<Integer> voices = new ArrayList<Integer>();
-			for (int i = 0; i < numVoices; i++) {
-				indices.add(i);
-				voices.add(numVoices - (i+1));
-			}
-			res.add(null);
-			res.add(indices);
-			res.add(voices);
-			return res;
-		}
-	}
+	
+	// End of VEEH :)
 
 
 	/**
-	 * Quantises the duration to the next multiple of the given granularity fraction.
-	 * 
-	 * @param curr
-	 * @param granularity
-	 * 
-	 * @return  
-	 */
-	// TESTED
-	static Rational quantiseDuration(Rational dur, Rational granularity) {
-		boolean quantised = false;
-		while (!quantised) {
-			if (dur.isMultiple(granularity)) {
-				quantised = true;
-			}
-			else {
-				dur = new Rational(dur.getNumer() + 1, dur.getDenom());
-			}
-		}
-		dur.reduce();
-		return dur;
-	}
-
-
-	/**
-	 * Finds the first neighbour chord (as returned by getChordInfo()) that does not contain a 
-	 * unison. 
-	 * 
-	 * @param btp
-	 * @param durationLabels
-	 * @param bnp
-	 * @param direction +1 if looking for the right (next) neighbour chord; -1 
-	 *        if looking for the left (previous) one
-	 * @param lowestNoteIndex The index of the lowest note of the current chord
-	 * @return
-	 */
-	// TESTED (for both tablature- and non-tablature case)
-	List<List<Integer>> getNonUnisonNeighbourChord(Integer[][] btp, List<List<Double>> 
-		durationLabels, Integer[][] bnp, int direction, int lowestIndCurr) {
-		
-		verifyCase(btp, bnp);
-
-		if (direction == -1) {
-			// Find the first previous chord without a unison
-			List<List<Integer>> prevChord = null;
-			// Only if the chord at lowestIndCurr is not the first chord  
-			if (lowestIndCurr != 0) {
-				int sizePrev = (btp != null) ? btp[lowestIndCurr-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
-					bnp[lowestIndCurr-1][CHORD_SIZE_AS_NUM_ONSETS];
-//				int lowestIndPrev = 
-//					lowestIndCurr - bnp[lowestIndCurr-1][CHORD_SIZE_AS_NUM_ONSETS];
-				int lowestIndPrev = lowestIndCurr - sizePrev;
-				for (int i = lowestIndPrev; i >= 0 ; i--) {
-					prevChord = getChordInfo(btp, durationLabels, bnp, lowestIndPrev);
-					boolean unisonFound = false;
-					// Compare pitches
-					outer: for (int j = 0; j < prevChord.size(); j++) {
-						for (int k = 0; k < prevChord.size(); k++) {
-							if (k != j) {
-								// Unison found? Determine chord before previous and break 
-								if (prevChord.get(k).get(0) == prevChord.get(j).get(0)) {
-									unisonFound = true;
-									int sizeBeforePrev = 
-										(btp != null) ? btp[lowestIndPrev-1][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
-										bnp[lowestIndPrev-1][CHORD_SIZE_AS_NUM_ONSETS];
-//									lowestIndPrev = lowestIndPrev - 
-//										bnp[lowestIndPrev-1][CHORD_SIZE_AS_NUM_ONSETS];
-									lowestIndPrev = lowestIndPrev - sizeBeforePrev;
-									i = lowestIndPrev + 1;
-									break outer;
-								}
-							}
-						}
-					}
-					// No unison found in chord? Previous chord found 
-					if (!unisonFound) {
-						break;
-					}
-				}
-			}
-			return prevChord; 
-		}
-
-		// Find the first next chord without a unison
-		else {
-			List<List<Integer>> nextChord = null;
-			// Only if the chord at lowestIndCurr is not the last chord
-			int sizeCurr = (btp != null) ? btp[lowestIndCurr][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
-				bnp[lowestIndCurr][CHORD_SIZE_AS_NUM_ONSETS];
-			if ((lowestIndCurr + sizeCurr) != ((btp != null) ? btp.length : bnp.length)) {
-//			if (lowestIndCurr + bnp[lowestIndCurr][CHORD_SIZE_AS_NUM_ONSETS] != bnp.length) {
-				int lowestIndNext = lowestIndCurr + sizeCurr;
-//				int lowestIndNext = 
-//					lowestIndCurr + bnp[lowestIndCurr][CHORD_SIZE_AS_NUM_ONSETS];
-				for (int i = lowestIndNext; i < ((btp != null) ? btp.length : bnp.length); i++) {
-//				for (int i = lowestIndNext; i < bnp.length; i++) {
-					nextChord = getChordInfo(btp, durationLabels, bnp, lowestIndNext);
-					boolean unisonFound = false;
-					// Compare pitches
-					outer: for (int j = 0; j < nextChord.size(); j++) {
-						for (int k = 0; k < nextChord.size(); k++) {
-							if (k != j) {
-								// Unison found? Determine chord after next and break 
-								if (nextChord.get(k).get(0) == nextChord.get(j).get(0)) {
-									unisonFound = true;
-									int sizeNext = (btp != null) ? btp[lowestIndNext][Tablature.CHORD_SIZE_AS_NUM_ONSETS] :
-										bnp[lowestIndNext][CHORD_SIZE_AS_NUM_ONSETS];
-									lowestIndNext = lowestIndNext + sizeNext;
-//									lowestIndNext = 
-//										lowestIndNext + bnp[lowestIndNext][CHORD_SIZE_AS_NUM_ONSETS];
-									i = lowestIndNext - 1;
-									break outer;
-								}
-							}
-						}
-					}
-					// No unison found in chord? Next chord found 
-					if (!unisonFound) {
-						break;
-					}
-				}
-			}
-			return nextChord;
-		}
-	}
-
-
-	/**
-	 * Returns a list of lists, where each list represents a note in the chord and contains </br>
-	 * as element 0: the note's pitch </br>
-	 * as element 1: the numerator of the note's duration as a Rational (or <code>null</code> if
-	 *               it is a sustained previous note </br>
-	 * as element 2: the denominator of the note's duration as a Rational (or <code>null</code> if
-	 *               it is a sustained previous note </br>
-	 * 
-	 * The list returned is sorted in ascending order.
-	 * 
-	 * @param lowestNoteIndex
-	 * @param btp
-	 * @param bnp
-	 * @return
-	 */
-	// TESTED (for both tablature- and non-tablature case)
-	List<List<Integer>> getChordInfo(Integer[][] btp, List<List<Double>> durationLabels, 
-		Integer[][] bnp, int lowestNoteIndex) {
-		
-		verifyCase(btp, bnp);
-
-		List<List<Integer>> noteInfo = new ArrayList<List<Integer>>(); 
-
-//		Rational currMotifNoteDur = headMotif.get(j);
-		int chordSize = 
-			(btp != null) ? btp[lowestNoteIndex][Tablature.CHORD_SIZE_AS_NUM_ONSETS] : 
-			bnp[lowestNoteIndex][CHORD_SIZE_AS_NUM_ONSETS];
-		// Add pitches of all notes in the chord. NB: one-line initialisation of curr (using 
-		// Arrays.asList()) is not possible, as this gives an UnsupportedOperationException 
-		// downstream when adding to noteInfo
-		for (int i = lowestNoteIndex; i < lowestNoteIndex + chordSize; i++) {
-//			int pitch = bnp[i][PITCH];
-//			int isDur = 0;
-//			Rational currNoteDur = new Rational(bnp[i][DURATION_NUMER], bnp[i][DURATION_DENOM]);
-//			if (currNoteDur.equals(currMotifNoteDur)) {
-//				isDur = 1;
-//			}
-			if (btp != null) {
-				Rational dur = DataConverter.convertIntoDuration(durationLabels.get(i))[0];
-				List<Integer> curr = new ArrayList<Integer>();
-				curr.add(btp[i][Tablature.PITCH]);
-				curr.add(dur.getNumer());
-				curr.add(dur.getDenom());
-				noteInfo.add(curr);
-			}
-			if (bnp != null) {
-				List<Integer> curr = new ArrayList<Integer>();
-				curr.add(bnp[i][PITCH]);
-				curr.add(bnp[i][DUR_NUMER]);
-				curr.add(bnp[i][DUR_DENOM]);
-				noteInfo.add(curr);			
-			}
-		}
-		// Add pitches of any sustained previous notes
-		for (int indSus : getIndicesOfSustainedPreviousNotes(btp, durationLabels, bnp, lowestNoteIndex)) {
-			List<Integer> curr = new ArrayList<Integer>();
-			curr.add((btp != null) ? btp[indSus][Tablature.PITCH] : bnp[indSus][PITCH]);
-			curr.add(null);
-			curr.add(null);
-			noteInfo.add(curr);
-		}
-		noteInfo = ToolBox.bubbleSort(noteInfo, 0);
-		return noteInfo;
-	}
-
-
-	/**
-	 * Lists the individual onset times of the notes in the Transcription, in ascending order.
+	 * Gets, for each chord, the metric position.
 	 * 
 	 * @return
 	 */
 	// TESTED
-	public List<Rational> getAllOnsetTimes() {
-		List<Rational> onsetTimes = new ArrayList<Rational>();
+	public List<Rational> getMetricPositionsChords() {
+		List<Rational> mp = new ArrayList<Rational>();
 		getChords().stream().forEach(c -> { 
-			if (!onsetTimes.contains(c.get(0).getMetricTime())) { 
-				onsetTimes.add(c.get(0).getMetricTime());
+			if (!mp.contains(c.get(0).getMetricTime())) { 
+				mp.add(c.get(0).getMetricTime());
 			} 
-		});		
-//		NotationSystem notationSystem = getPiece().getScore();
-//
-//		// For every voice
-//		for (int i = 0; i < notationSystem.size(); i++) {
-//			NotationStaff staff = notationSystem.get(i);
-//			NotationVoice currentVoice = staff.get(0);
-//			for (NotationChord notationChord : currentVoice) {
-//				// Each NotationChord contains a list of Notes; in practice, this list will only be one Note
-//				for (Note n : notationChord) {
-//					Rational currentOnsetTime = n.getMetricTime();
-//					if (!onsetTimes.contains(currentOnsetTime)) {
-//						onsetTimes.add(currentOnsetTime);
-//					}
-//				}
-//			}
-//		}
-		Collections.sort(onsetTimes);
-		return onsetTimes;
+		});
+		Collections.sort(mp);
+		return mp;
 	}
 
-
-	/**
-	 * NB: Non-tablature case only.
-	 * 
-	 * @return
-	 */
-	public int getNumberOfNotes() {
-		return basicNoteProperties.length;  
-	}
 
 	/**
 	 * Returns a List<List>> containing, for each chord, the indices in the Transcription of the notes in that chord.
@@ -6701,30 +6700,22 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED
-	public int getLargestTranscriptionChord() { 
-//		FeatureGenerator featureGenerator = new FeatureGenerator();
-//		int indexOfFinalChord = getTranscriptionChords().size() - 1;
-		int indexOfFinalChord = basicNoteProperties[basicNoteProperties.length - 1][CHORD_SEQ_NUM];
-//		System.out.println(indexOfFinalChord); // DBLCHK
-//		System.out.println(indexOfFinalChord2);
+	public int getLargestTranscriptionChord() {
+		Integer[][] bnp = getBasicNoteProperties();
+		int indexOfFinalChord = bnp[bnp.length - 1][CHORD_SEQ_NUM];
 		int largestChord = 0;
 		int lowestNoteIndex = 0;
-		for (int i = lowestNoteIndex; i < basicNoteProperties.length; i++) {
-			Integer[] currentBasicNoteProperties = basicNoteProperties[lowestNoteIndex];
-			int newOnsetsOnly = currentBasicNoteProperties[CHORD_SIZE_AS_NUM_ONSETS];
+		for (int i = lowestNoteIndex; i < bnp.length; i++) {
+			Integer[] curr = bnp[lowestNoteIndex];
+			int newOnsetsOnly = curr[CHORD_SIZE_AS_NUM_ONSETS];
 			int numSustainedNotes = 
-				getIndicesOfSustainedPreviousNotes(null, null, basicNoteProperties, lowestNoteIndex).size();
-			int sizeOfCurrentChord = newOnsetsOnly + numSustainedNotes;
-			if (sizeOfCurrentChord > largestChord) {
-				largestChord = sizeOfCurrentChord;
-//				if (largestChord > 3) {
-//					System.out.println(i);
-//					System.out.println("largest chord = " + largestChord);
-//					System.out.println(Arrays.toString(currentBasicNoteProperties));
-//				}
+				getIndicesOfSustainedPreviousNotes(null, null, bnp, lowestNoteIndex).size();
+			int sizeOfCurrChord = newOnsetsOnly + numSustainedNotes;
+			if (sizeOfCurrChord > largestChord) {
+				largestChord = sizeOfCurrChord;
 			}
 			// If the last chord is reached: break
-			if (currentBasicNoteProperties[CHORD_SEQ_NUM] == indexOfFinalChord) {
+			if (curr[CHORD_SEQ_NUM] == indexOfFinalChord) {
 				break;
 			}
 			// If not: increment lowestNoteIndex
@@ -6733,45 +6724,6 @@ public class Transcription implements Serializable {
 			}
 		}
 		return largestChord;
-	}
-
-
-	/**
-	 * Returns, for each voice, a list containing a Rational[], each element of which represents
-	 * a note and contains
-	 * <ul>
-	 * <li>as element 0: its pitch (with the MIDI number as the numerator and 1 as the denominator)</li>
-	 * <li>as element 1: its onset</li>
-	 * <li>as element 2: its duration</li>
-	 * <li>as element 3: its metric position</li>
-	 * </ul>
-	 * 
-	 * @return
-	 */
-	// TESTED (non-tab only, for one voice)
-	public List<List<Rational[]>> listNotesPerVoice() {
-		List<List<Rational[]>> notesPerVoice = new ArrayList<>();
-		NotationSystem nSys = getScorePiece().getScore();
-//		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
-		ScoreMetricalTimeLine smtl = getScorePiece().getScoreMetricalTimeLine();
-		// For each voice i
-		for (int i = 0; i < nSys.size(); i ++) {
-			NotationVoice nv = nSys.get(i).get(0);
-			List<Rational[]> notes = new ArrayList<>();
-			for (NotationChord nc : nv) {
-				for (Note n : nc) {
-					notes.add(new Rational[]{
-						new Rational(n.getMidiPitch(), 1), 
-						n.getMetricTime(),
-						n.getMetricDuration(),
-						smtl.getMetricPosition(n.getMetricTime())[1]});
-//						ScoreMetricalTimeLine.getMetricPosition(mtl, n.getMetricTime())[1]});
-//						Utils.getMetricPosition(n.getMetricTime(), getMeterInfo())[1]});
-				}
-			}
-			notesPerVoice.add(notes);
-		}
-		return notesPerVoice;
 	}
 
 
@@ -6787,7 +6739,7 @@ public class Transcription implements Serializable {
 	// TESTED (for non-tablature case only) TODO
 	public List<List<List<Rational[]>>> getLastNotesInVoices(int n) {
 		List<List<List<Rational[]>>> res = new ArrayList<>();
-		List<Rational> allOnsetTimes = getAllOnsetTimes();
+		List<Rational> allOnsetTimes = getMetricPositionsChords();
 		// Remove duplicates
 		List<Rational> dedup = new ArrayList<>();
 		for (Rational r : allOnsetTimes) {
@@ -6843,38 +6795,41 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Determines whether a chord contains a voice crossing.
+	 * Returns, for each voice, a list containing a Rational[], each element of which represents
+	 * a note and contains
+	 * <ul>
+	 * <li>as element 0: its pitch (with the MIDI number as the numerator and 1 as the denominator)</li>
+	 * <li>as element 1: its onset</li>
+	 * <li>as element 2: its duration</li>
+	 * <li>as element 3: its metric position</li>
+	 * </ul>
+	 * 
 	 * @return
 	 */
-	private boolean chordContainsVoiceCrossing(int chordIndex) {
-		boolean chordContainsVoiceCrossing = false;
-//		NotationSystem notationSystem = piece.getScore();
-		List<Note> currentChord = getChords().get(chordIndex); // conditions satisfied; external version OK
-		List<Integer> voicesInCurrentChord = new ArrayList<Integer>();
-		// List the voices in the chord 
-		for (int j = 0; j < currentChord.size(); j++) {
-			Note currentNote = currentChord.get(j);
-			int currentVoice = findVoice(currentNote);
-//			int currentVoice = findVoice(currentNote, notationSystem);
-			voicesInCurrentChord.add(currentVoice);
+	// TESTED (non-tab only, for one voice)
+	List<List<Rational[]>> listNotesPerVoice() {
+		List<List<Rational[]>> notesPerVoice = new ArrayList<>();
+		NotationSystem nSys = getScorePiece().getScore();
+//		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
+		ScoreMetricalTimeLine smtl = getScorePiece().getScoreMetricalTimeLine();
+		// For each voice i
+		for (int i = 0; i < nSys.size(); i ++) {
+			NotationVoice nv = nSys.get(i).get(0);
+			List<Rational[]> notes = new ArrayList<>();
+			for (NotationChord nc : nv) {
+				for (Note n : nc) {
+					notes.add(new Rational[]{
+						new Rational(n.getMidiPitch(), 1), 
+						n.getMetricTime(),
+						n.getMetricDuration(),
+						smtl.getMetricPosition(n.getMetricTime())[1]});
+//						ScoreMetricalTimeLine.getMetricPosition(mtl, n.getMetricTime())[1]});
+//						Utils.getMetricPosition(n.getMetricTime(), getMeterInfo())[1]});
+				}
+			}
+			notesPerVoice.add(notes);
 		}
-//		System.out.println("chordIndex = " + chordIndex);
-//		System.out.println("voices incurrent chord = " + voicesInCurrentChord);
-
-		// Chords without voice crossings will be sorted in strict reverse numerical order (since their Notes
-		// are added to the NoteSequence from low to high and the lowest voices has the highest voice number). 
-		// 1. Make a list in which the voices in currentChord are ordered in reverse numerical order
-		List<Integer> voicesInCurrentChordOrdered = new ArrayList<Integer>();
-		voicesInCurrentChordOrdered.addAll(voicesInCurrentChord);
-		// Order numerically and then reverse
-		Collections.sort(voicesInCurrentChordOrdered);
-		Collections.reverse(voicesInCurrentChordOrdered);
-		// 2. Check whether voicesInCurrentChord and voicesInCurrentChordOrdered are equal. If not: voice crossing
-		// found; add chordIndex to chordsWithVoiceCrossings
-		if (!voicesInCurrentChordOrdered.equals(voicesInCurrentChord)) {
-			chordContainsVoiceCrossing = true;
-		}    	
-		return chordContainsVoiceCrossing;
+		return notesPerVoice;
 	}
 
 
@@ -6939,7 +6894,7 @@ public class Transcription implements Serializable {
 	 * of the lower note of the EPP, and (2) the sequence number in the event of the upper note of the EPP. If
 	 * the event does not contain (an) EPP(s), null is returned.   
 	 */
-	public List<List<Integer>> getEqualPitchPairsInfo(List<List<Note>> transcriptionEvents, int eventIndex) {
+	private List<List<Integer>> getEqualPitchPairsInfo(List<List<Note>> transcriptionEvents, int eventIndex) {
 		List<List<Integer>> equalPitchPairsInfo = new ArrayList<List<Integer>>();
 		List<Note> event = transcriptionEvents.get(eventIndex);
 
@@ -6977,278 +6932,28 @@ public class Transcription implements Serializable {
 	}
 
 
-	/**
-	 * Gets the number of active voices in the Transcription.
-	 */
-	// TESTED (for both tablature- and non-tablature case)
-	public int getNumberOfVoices() {
-		NotationSystem system = getScorePiece().getScore();
-		int numberOfVoices = system.size();
 
-		// Check how many voices contain no Notes and decrement numberOfVoices accordingly 
-		for (int i = 0; i < system.size(); i++) {
-			NotationStaff staff = system.get(i);
-			NotationVoice voice = staff.get(0);
-			if (voice.size() == 0) {
-				numberOfVoices--;
-			}
-		}
-		return numberOfVoices;
-	}
+
+
+
 
 
 	/**
-	 * Non-tablature case only.
-	 * 
-	 * @return
-	 */
-	// TESTED
-	public List<Rational[]> getAllMetricPositions() {
-		List<Rational[]> allMetricPositions = new ArrayList<Rational[]>();
-//		List<Integer[]> meterInf = getMeterInfo();
-		Integer[][] bnp = getBasicNoteProperties();
-//		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
-		ScoreMetricalTimeLine smtl = getScorePiece().getScoreMetricalTimeLine();
-		for (Integer[] b : bnp) {
-			Rational currMetricTime = new Rational(b[ONSET_TIME_NUMER], b[ONSET_TIME_DENOM]);
-			allMetricPositions.add(
-				smtl.getMetricPosition(currMetricTime)
-//				ScoreMetricalTimeLine.getMetricPosition(mtl, currMetricTime)
-//				Utils.getMetricPosition(currMetricTime, meterInf)
-			); 
-		}
-		return allMetricPositions;	
-	}
-
-
-	/**
-	 * Visualises the Transcription. 
-	 * 
-	 * @param showAsScore
-	 * @param numberOfVoices
-	 */
-	private JFrame visualise(TimeSignature timeSig, /*KeyMarker keyMarker,*/ boolean showAsScore, int numberOfVoices) {
-
-		String windowTitle = getName();
-		Piece argPiece = getScorePiece();
-
-		Piece piece = new Piece(); 
-		NotationSystem notationSystem = piece.createNotationSystem();
-		
-		// Add time and key signatures
-		MetricalTimeLine metricalTimeLine = piece.getMetricalTimeLine();
-		
-		TimeSignatureMarker timeSigMarker = 
-			new TimeSignatureMarker(timeSig.getNumerator(), timeSig.getDenominator(), new Rational(0, 1));
-		timeSigMarker.setTimeSignature(timeSig);
-		metricalTimeLine.add(timeSigMarker);
-//		metricalTimeLine.add(keyMarker);
-		
-		int superius = 0;
-		int altus = 1;
-		int tenor = 2;
-		int bassus = 3;
-		
-		int lowestVoice = -1; 
-		if (numberOfVoices == 3) {
-			lowestVoice = tenor;
-		}
-		else if (numberOfVoices == 4) {
-			lowestVoice = bassus;
-		}
-		
-		for (int voice = superius; voice <= lowestVoice; voice++) {
-			NotationStaff notationStaff = null;
-			if (voice == superius || voice == tenor) {
-				notationStaff = new NotationStaff(notationSystem);
-				if (voice == tenor) {
-					notationStaff.setClefType('f', 1, 0);
-				}
-			}
-			if (voice == altus || voice == bassus) {
-				if (!showAsScore) {
-					// If j == ALTUS, notationSystem contains one staff; if j == BASSUS it contains two staves
-					notationStaff = notationSystem.get((notationSystem.size() - voice) * -1);
-				}
-				else {
-					notationStaff = new NotationStaff(notationSystem);
-					if (voice == bassus) {
-						notationStaff.setClefType('f', 1, 0);
-					}
-				}
-			}
-			NotationVoice notationVoice = new NotationVoice(notationStaff);
-			for (NotationChord nc : argPiece.getScore().get(voice).get(0)) {
-				Note n = nc.get(0);	
-//				if (!showAsScore) {
-//					RenderingHints rh = new RenderingHints();   		  
-//					if (voice == SUPERIUS || voice == TENOR) {
-//						rh.registerHint("stem direction", "up");
-//					}
-//					else {
-//						rh.registerHint("stem direction", "down");
-//					}	
-//					n.setRenderingHints(rh);
-//				}
-				notationVoice.add(n);
-			}
-		}
-		
-		// OUDE VERSIES
-//		if (!showAsScore) {
-////			RenderingHints rhUpper = new RenderingHints();
-////			rhUpper.registerHint("stem direction", "up");
-////			RenderingHints rhLower = new RenderingHints();
-////			rhLower.registerHint("stem direction", "down");
-//
-//			NotationStaff upperStaff = new NotationStaff(notationSystem);
-//			NotationStaff lowerStaff = new NotationStaff(notationSystem);
-//			lowerStaff.setClefType('f', 1, 0);
-//			for (int voice = SUPERIUS; voice <= BASSUS; voice++) {
-//				NotationStaff ns = null;
-//				if (voice == SUPERIUS || voice == ALTUS) {
-//					ns = upperStaff;
-//				}
-//				else {
-//					ns = lowerStaff;
-//				}
-//				NotationVoice nv = new NotationVoice(ns);
-//				NotationVoice argNV = argPiece.getScore().get(voice).get(0);
-//				for (NotationChord nc : argNV) {
-//					Note n = nc.get(0);	  
-////					if (voice == SUPERIUS || voice == TENOR) {
-////						n.setRenderingHints(rhUpper);
-////					}
-////					else {
-////						n.setRenderingHints(rhLower);
-////					}
-//					nv.add(n);
-//				}
-//			}
-//		}
-//		else {
-//			for (int voice = SUPERIUS; voice <= BASSUS; voice++) {
-//				NotationStaff ns = new NotationStaff(notationSystem);
-//				if (voice == TENOR || voice == BASSUS) {
-//					ns.setClefType('f', 1, 0);
-//				}
-//				NotationVoice nv = new NotationVoice(ns);
-//				NotationVoice argNV = argPiece.getScore().get(voice).get(0);
-//				for (NotationChord nc : argNV) {
-//					Note n = nc.get(0);	  
-//					nv.add(n);
-//				}
-//			}
-//		}
-
-		notationSystem.createBeams();
-		NotationStaffConnector nsc = new NotationStaffConnector(CType.BRACKET);
-		nsc.add(notationSystem.get(0));
-		nsc.add(notationSystem.get(notationSystem.size() - 1));
-		notationSystem.addStaffConnector(nsc);
-
-		ScoreEditor scoreEditor = new ScoreEditor(piece.getScore());
-//		ScoreEditor scoreEditor = new ScoreEditor(getPiece().getScore());
-		scoreEditor.setModus(Mode.SELECT_AND_EDIT);	
-
-		JFrame fullScoreFrame = new JFrame(windowTitle);
-		fullScoreFrame.setJMenuBar(getMenubar());
-		fullScoreFrame.add(new JScrollPane(scoreEditor));
-		fullScoreFrame.setSize(800, 600);
-//		fullScoreFrame.setSize(1200, 1200);
-		fullScoreFrame.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
-//		fullScoreFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		fullScoreFrame.setVisible(true);
-		scoreEditor.setSize(20000, 20000);
-
-		return fullScoreFrame;
-	}
-
-
-	private JMenuBar getMenubar() {
-		JMenuBar encodingWindowMenubar = null;
-		if (encodingWindowMenubar == null) {
-			encodingWindowMenubar = new JMenuBar();
-			JMenu fileMenu = new JMenu("File");
-			encodingWindowMenubar.add(fileMenu);   
-			
-			JMenuItem openFile = new JMenuItem("Open"); 
-			fileMenu.add(openFile); 
-			openFile.addActionListener(new java.awt.event.ActionListener() {
-				@Override
-				public void actionPerformed(java.awt.event.ActionEvent e) {
-//					openFileAction();
-				}
-			});
-
-			JMenuItem saveFile = new JMenuItem("Save");
-			fileMenu.add(saveFile);
-			saveFile.addActionListener(new java.awt.event.ActionListener() {
-				@Override
-				public void actionPerformed(java.awt.event.ActionEvent e) {
-//					saveFileAction();
-				}
-			});
-
-			JMenu editMenu = new JMenu("Edit");
-			encodingWindowMenubar.add(editMenu);   
-
-			JMenuItem blaFile = new JMenuItem("Bla"); 
-			editMenu.add(blaFile); 
-			blaFile.addActionListener(new java.awt.event.ActionListener() {
-				@Override
-				public void actionPerformed(java.awt.event.ActionEvent e) {
-//					openFileAction();
-				}
-			});
-
-			JMenu viewMenu = new JMenu("View");
-			encodingWindowMenubar.add(viewMenu);   
-
-			JMenuItem scoreViewFile = new JMenuItem("Score View"); 
-			viewMenu.add(scoreViewFile); 
-			scoreViewFile.addActionListener(new java.awt.event.ActionListener() {
-				@Override
-				public void actionPerformed(java.awt.event.ActionEvent e) {
-//					openFileAction();
-				}
-			});
-
-			JMenuItem grandStaffViewFile = new JMenuItem("Grand Staff View"); 
-			viewMenu.add(grandStaffViewFile); 
-			grandStaffViewFile.addActionListener(new java.awt.event.ActionListener() {
-				@Override
-				public void actionPerformed(java.awt.event.ActionEvent e) {
-//					openFileAction();
-				}
-			});
-
-		}
-		return encodingWindowMenubar;
-	}
-
-
-	/**
-	 * Returns the Transcription's voice assignments, listed per chord. The parameter highestNumberOfVoices
-	 * controls the size of the voice assignments returned.
+	 * Gets the voice assignments, listed per chord. 
 	 *  
-	 * @param highestNumberOfVoices
+	 * @param highestNumVoices Controls the size of the voice assignments returned.
 	 * @return
 	 */
 	// TESTED
-	public List<List<Integer>> getVoiceAssignments(int highestNumberOfVoices) {
+	public List<List<Integer>> getVoiceAssignments(int highestNumVoices) {
 		List<List<Integer>> voiceAssignments = new ArrayList<List<Integer>>();
 
-//		List<List<List<Double>>> allChordVoiceLabels = getChordVoiceLabels(tablature);	
-		List<List<List<Double>>> allChordVoiceLabels = getChordVoiceLabels(); // VANDAAG	
-		// For each chord
+		List<List<List<Double>>> allChordVoiceLabels = getChordVoiceLabels();
 		for (int i = 0; i < allChordVoiceLabels.size(); i++) {
-			// Get the voice labels and convert them into a voice assignment
-			List<List<Double>> currentChordVoiceLabels = allChordVoiceLabels.get(i);
-			List<Integer> currentVoiceAssignment = 
-				DataConverter.getVoiceAssignment(currentChordVoiceLabels, highestNumberOfVoices);
-			// Add currentVoiceAssignment to voiceAssignments
-			voiceAssignments.add(currentVoiceAssignment);
+			List<List<Double>> curr = allChordVoiceLabels.get(i);
+			List<Integer> currVoiceAssignment = 
+				DataConverter.getVoiceAssignment(curr, highestNumVoices);
+			voiceAssignments.add(currVoiceAssignment);
 		}		
 		return voiceAssignments;
 	}
@@ -7569,16 +7274,16 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Lists all the unique (chord) voice assignments in the transcription in the order they are encountered.
-	 * The parameter highestNumberOfVoices controls the size of the voice assignments returned.
+	 * Lists all the unique (chord) voice assignments in the transcription in the order they are 
+	 * encountered.
 	 * 
-	 * @param highestNumberOfVoices
+	 * @param highestNumVoices Controls the size of the voice assignments returned.
 	 * @return
 	 */
 	// TESTED (for both tablature and non-tablature case)
-	public List<List<Integer>> generateVoiceAssignmentDictionary(int highestNumberOfVoices) {
+	public List<List<Integer>> generateVoiceAssignmentDictionary(int highestNumVoices) {
 		List<List<Integer>> voiceAssignmentDictionary = new ArrayList<List<Integer>>();
-		List<List<Integer>> voiceAssignments = getVoiceAssignments(/*tablature,*/ highestNumberOfVoices);
+		List<List<Integer>> voiceAssignments = getVoiceAssignments(highestNumVoices);
 
 		// For each voice assignment
 		for (int i = 0; i < voiceAssignments.size(); i++) {
@@ -7607,17 +7312,251 @@ public class Transcription implements Serializable {
 	}
 
 
-	public void setColourIndices(List<List<Integer>> arg) {
-//		colourIndices = arg;
+	// OBSOLETE FROM HERE :)
+	
+	/**
+	 * Visualises the Transcription. 
+	 * 
+	 * @param showAsScore
+	 * @param numberOfVoices
+	 */
+	private JFrame visualise(TimeSignature timeSig, /*KeyMarker keyMarker,*/ boolean showAsScore, int numberOfVoices) {
+
+		String windowTitle = getName();
+		Piece argPiece = getScorePiece();
+
+		Piece piece = new Piece(); 
+		NotationSystem notationSystem = piece.createNotationSystem();
+		
+		// Add time and key signatures
+		MetricalTimeLine metricalTimeLine = piece.getMetricalTimeLine();
+		
+		TimeSignatureMarker timeSigMarker = 
+			new TimeSignatureMarker(timeSig.getNumerator(), timeSig.getDenominator(), new Rational(0, 1));
+		timeSigMarker.setTimeSignature(timeSig);
+		metricalTimeLine.add(timeSigMarker);
+//		metricalTimeLine.add(keyMarker);
+		
+		int superius = 0;
+		int altus = 1;
+		int tenor = 2;
+		int bassus = 3;
+		
+		int lowestVoice = -1; 
+		if (numberOfVoices == 3) {
+			lowestVoice = tenor;
+		}
+		else if (numberOfVoices == 4) {
+			lowestVoice = bassus;
+		}
+		
+		for (int voice = superius; voice <= lowestVoice; voice++) {
+			NotationStaff notationStaff = null;
+			if (voice == superius || voice == tenor) {
+				notationStaff = new NotationStaff(notationSystem);
+				if (voice == tenor) {
+					notationStaff.setClefType('f', 1, 0);
+				}
+			}
+			if (voice == altus || voice == bassus) {
+				if (!showAsScore) {
+					// If j == ALTUS, notationSystem contains one staff; if j == BASSUS it contains two staves
+					notationStaff = notationSystem.get((notationSystem.size() - voice) * -1);
+				}
+				else {
+					notationStaff = new NotationStaff(notationSystem);
+					if (voice == bassus) {
+						notationStaff.setClefType('f', 1, 0);
+					}
+				}
+			}
+			NotationVoice notationVoice = new NotationVoice(notationStaff);
+			for (NotationChord nc : argPiece.getScore().get(voice).get(0)) {
+				Note n = nc.get(0);	
+//				if (!showAsScore) {
+//					RenderingHints rh = new RenderingHints();   		  
+//					if (voice == SUPERIUS || voice == TENOR) {
+//						rh.registerHint("stem direction", "up");
+//					}
+//					else {
+//						rh.registerHint("stem direction", "down");
+//					}	
+//					n.setRenderingHints(rh);
+//				}
+				notationVoice.add(n);
+			}
+		}
+		
+		// OUDE VERSIES
+//		if (!showAsScore) {
+////			RenderingHints rhUpper = new RenderingHints();
+////			rhUpper.registerHint("stem direction", "up");
+////			RenderingHints rhLower = new RenderingHints();
+////			rhLower.registerHint("stem direction", "down");
+//
+//			NotationStaff upperStaff = new NotationStaff(notationSystem);
+//			NotationStaff lowerStaff = new NotationStaff(notationSystem);
+//			lowerStaff.setClefType('f', 1, 0);
+//			for (int voice = SUPERIUS; voice <= BASSUS; voice++) {
+//				NotationStaff ns = null;
+//				if (voice == SUPERIUS || voice == ALTUS) {
+//					ns = upperStaff;
+//				}
+//				else {
+//					ns = lowerStaff;
+//				}
+//				NotationVoice nv = new NotationVoice(ns);
+//				NotationVoice argNV = argPiece.getScore().get(voice).get(0);
+//				for (NotationChord nc : argNV) {
+//					Note n = nc.get(0);	  
+////					if (voice == SUPERIUS || voice == TENOR) {
+////						n.setRenderingHints(rhUpper);
+////					}
+////					else {
+////						n.setRenderingHints(rhLower);
+////					}
+//					nv.add(n);
+//				}
+//			}
+//		}
+//		else {
+//			for (int voice = SUPERIUS; voice <= BASSUS; voice++) {
+//				NotationStaff ns = new NotationStaff(notationSystem);
+//				if (voice == TENOR || voice == BASSUS) {
+//					ns.setClefType('f', 1, 0);
+//				}
+//				NotationVoice nv = new NotationVoice(ns);
+//				NotationVoice argNV = argPiece.getScore().get(voice).get(0);
+//				for (NotationChord nc : argNV) {
+//					Note n = nc.get(0);	  
+//					nv.add(n);
+//				}
+//			}
+//		}
+
+		notationSystem.createBeams();
+		NotationStaffConnector nsc = new NotationStaffConnector(CType.BRACKET);
+		nsc.add(notationSystem.get(0));
+		nsc.add(notationSystem.get(notationSystem.size() - 1));
+		notationSystem.addStaffConnector(nsc);
+
+		ScoreEditor scoreEditor = new ScoreEditor(piece.getScore());
+//		ScoreEditor scoreEditor = new ScoreEditor(getPiece().getScore());
+		scoreEditor.setModus(Mode.SELECT_AND_EDIT);	
+
+		JFrame fullScoreFrame = new JFrame(windowTitle);
+		fullScoreFrame.setJMenuBar(getMenubar());
+		fullScoreFrame.add(new JScrollPane(scoreEditor));
+		fullScoreFrame.setSize(800, 600);
+//		fullScoreFrame.setSize(1200, 1200);
+		fullScoreFrame.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
+//		fullScoreFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		fullScoreFrame.setVisible(true);
+		scoreEditor.setSize(20000, 20000);
+
+		return fullScoreFrame;
 	}
 
 
-	public void setVoiceLabels(List<List<Double>> argVoiceLabels) {
-		voiceLabels = argVoiceLabels;
+	private JMenuBar getMenubar() {
+		JMenuBar encodingWindowMenubar = null;
+		if (encodingWindowMenubar == null) {
+			encodingWindowMenubar = new JMenuBar();
+			JMenu fileMenu = new JMenu("File");
+			encodingWindowMenubar.add(fileMenu);   
+			
+			JMenuItem openFile = new JMenuItem("Open"); 
+			fileMenu.add(openFile); 
+			openFile.addActionListener(new java.awt.event.ActionListener() {
+				@Override
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+//					openFileAction();
+				}
+			});
+
+			JMenuItem saveFile = new JMenuItem("Save");
+			fileMenu.add(saveFile);
+			saveFile.addActionListener(new java.awt.event.ActionListener() {
+				@Override
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+//					saveFileAction();
+				}
+			});
+
+			JMenu editMenu = new JMenu("Edit");
+			encodingWindowMenubar.add(editMenu);   
+
+			JMenuItem blaFile = new JMenuItem("Bla"); 
+			editMenu.add(blaFile); 
+			blaFile.addActionListener(new java.awt.event.ActionListener() {
+				@Override
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+//					openFileAction();
+				}
+			});
+
+			JMenu viewMenu = new JMenu("View");
+			encodingWindowMenubar.add(viewMenu);   
+
+			JMenuItem scoreViewFile = new JMenuItem("Score View"); 
+			viewMenu.add(scoreViewFile); 
+			scoreViewFile.addActionListener(new java.awt.event.ActionListener() {
+				@Override
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+//					openFileAction();
+				}
+			});
+
+			JMenuItem grandStaffViewFile = new JMenuItem("Grand Staff View"); 
+			viewMenu.add(grandStaffViewFile); 
+			grandStaffViewFile.addActionListener(new java.awt.event.ActionListener() {
+				@Override
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+//					openFileAction();
+				}
+			});
+
+		}
+		return encodingWindowMenubar;
 	}
 
 
-	// COMMENTED OUT 10.2022
+	/**
+	 * Determines whether a chord contains a voice crossing.
+	 * @return
+	 */
+	private boolean chordContainsVoiceCrossing(int chordIndex) {
+		boolean chordContainsVoiceCrossing = false;
+//		NotationSystem notationSystem = piece.getScore();
+		List<Note> currentChord = getChords().get(chordIndex); // conditions satisfied; external version OK
+		List<Integer> voicesInCurrentChord = new ArrayList<Integer>();
+		// List the voices in the chord 
+		for (int j = 0; j < currentChord.size(); j++) {
+			Note currentNote = currentChord.get(j);
+			int currentVoice = findVoice(currentNote);
+//			int currentVoice = findVoice(currentNote, notationSystem);
+			voicesInCurrentChord.add(currentVoice);
+		}
+//		System.out.println("chordIndex = " + chordIndex);
+//		System.out.println("voices incurrent chord = " + voicesInCurrentChord);
+
+		// Chords without voice crossings will be sorted in strict reverse numerical order (since their Notes
+		// are added to the NoteSequence from low to high and the lowest voices has the highest voice number). 
+		// 1. Make a list in which the voices in currentChord are ordered in reverse numerical order
+		List<Integer> voicesInCurrentChordOrdered = new ArrayList<Integer>();
+		voicesInCurrentChordOrdered.addAll(voicesInCurrentChord);
+		// Order numerically and then reverse
+		Collections.sort(voicesInCurrentChordOrdered);
+		Collections.reverse(voicesInCurrentChordOrdered);
+		// 2. Check whether voicesInCurrentChord and voicesInCurrentChordOrdered are equal. If not: voice crossing
+		// found; add chordIndex to chordsWithVoiceCrossings
+		if (!voicesInCurrentChordOrdered.equals(voicesInCurrentChord)) {
+			chordContainsVoiceCrossing = true;
+		}    	
+		return chordContainsVoiceCrossing;
+	}
+
+
 	/**
 	 * Gets the pitches in the chord at the given index. Element 0 of the List represents the lowest note's pitch,
 	 * element 1 the second-lowest note's, etc. Sustained notes are not included. 
@@ -9214,7 +9153,7 @@ public class Transcription implements Serializable {
 		new File(fPath).delete();
 
 		setPiece(p);
-		setOriginalPiece();
+		setUnaugmentedScorePiece();
 		String pName = p.getName();
 		setName();
 //		setName(pName.contains(MIDIImport.EXTENSION) ? 

@@ -521,8 +521,6 @@ public class ScorePieceTest extends TestCase {
 			"preter rerum", 
 			"in exitu"
 		});
-		// Cannot be tested with already completed ScorePieces because the extracted mtls 
-		// should not be clean 
 		List<Piece> pieces = Arrays.asList(
 			MIDIImport.importMidiFile(midiTestpiece), 
 			MIDIImport.importMidiFile(midiMemorEsto), 
@@ -548,33 +546,25 @@ public class ScorePieceTest extends TestCase {
 
 	public void testCleanTimedMetricals() {
 		// Tablature/non-tablature case
-		List<String> pieceNames = Arrays.asList(new String[]{
-			"testpiece", 
-			"memor esto", 
-			"qui habitat", 
-			"preter rerum", 
-			"in exitu"
-		});
-		// Can be tested with already completed ScorePieces because the method under test is static
-		// and does not depend on any instance variables
-		List<ScorePiece> sPieces = Arrays.asList(
-			new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), 
-			new ScorePiece(MIDIImport.importMidiFile(midiMemorEsto)), 
-			new ScorePiece(MIDIImport.importMidiFile(midiQuiHabitat)), 
-			new ScorePiece(MIDIImport.importMidiFile(midiPreterRerum)), 
-			new ScorePiece(MIDIImport.importMidiFile(midiInExitu))
+		List<File> files = Arrays.asList(
+			midiTestpiece, 
+			midiMemorEsto, 
+			midiQuiHabitat, 
+			midiPreterRerum, 
+			midiInExitu
 		);
 
 		List<MetricalTimeLine> expected = new ArrayList<>();	
-		for (String s : pieceNames) {
-			MetricalTimeLine mtl = getCleanMetricalTimeLine(s);
+		// Remove endMarker from raw MetricalTimeLines
+		for (File f : files) {
+			MetricalTimeLine mtl = MIDIImport.importMidiFile(f).getMetricalTimeLine();
 			mtl.remove(mtl.get(mtl.size()-1));
 			expected.add(mtl);
 		}
 
 		List<MetricalTimeLine> actual = new ArrayList<>();
-		for (ScorePiece sp : sPieces) {
-			MetricalTimeLine mtl = sp.getMetricalTimeLine();
+		for (File f : files) {
+			MetricalTimeLine mtl = MIDIImport.importMidiFile(f).getMetricalTimeLine();
 			actual.add(ScorePiece.cleanTimedMetricals(mtl));
 		}
 
@@ -672,8 +662,6 @@ public class ScorePieceTest extends TestCase {
 			"testGetMeterKeyInfo",
 			"in exitu"
 		});
-		// Cannot be tested with already completed ScorePieces because the extracted hts 
-		// should not be clean
 		List<Piece> pieces = Arrays.asList(
 			MIDIImport.importMidiFile(midiTestpiece), 
 			MIDIImport.importMidiFile(midiTestGetMeterKeyInfo), 
@@ -866,7 +854,7 @@ public class ScorePieceTest extends TestCase {
 		KeyMarker km = (KeyMarker) e1.get(0);
 		km.setAlterationNumAndMode(2, km.getMode()); km.setRoot('D'); km.setRootAlteration(0);
 		expected.add(e1);
-		// midiTestGetMeterKeyInfo (transpose down two semitones)
+		// midiTestGetMeterKeyInfo (transpose two semitones down)
 		// C major --> Bb major; F# minor --> E minor (G major); Bb major --> Ab major;
 		// E minor --> D minor (F major)
 		SortedContainer<Marker> e2 = getCleanHarmonyTrack(pieceNames.get(1));
@@ -880,7 +868,7 @@ public class ScorePieceTest extends TestCase {
 			km.setRootAlteration(rootAlterations.get(i));
 		}
 		expected.add(e2);
-		// In exitu (transpose down five semitones)
+		// In exitu (transpose five semitones down)
 		// F major --> C major)
 		SortedContainer<Marker> e3 = getCleanHarmonyTrack(pieceNames.get(2));
 		km = (KeyMarker) e3.get(0);
@@ -937,13 +925,13 @@ public class ScorePieceTest extends TestCase {
 			new Tablature(encodingPreterRerum, true),
 			new Tablature(encodingInExitu, true)
 		});
-		List<ScorePiece> sPieces = Arrays.asList(new ScorePiece[]{
+		List<ScorePiece> sPieces = Arrays.asList(
 			new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), 
 			new ScorePiece(MIDIImport.importMidiFile(midiMemorEsto)), 
 			new ScorePiece(MIDIImport.importMidiFile(midiQuiHabitat)), 
 			new ScorePiece(MIDIImport.importMidiFile(midiPreterRerum)), 
 			new ScorePiece(MIDIImport.importMidiFile(midiInExitu))
-		});
+		);
 
 		List<MetricalTimeLine> expected = new ArrayList<>();
 		// One meter section, none added
@@ -1237,16 +1225,16 @@ public class ScorePieceTest extends TestCase {
 
 	public void testDiminuteNotationSystem() {
 		// Tablature case
-		ScorePiece p = new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo));
+		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo));
 		Tablature t = new Tablature(encodingTestGetMeterInfo, true);
-		MetricalTimeLine mtl = p.getMetricalTimeLine();
+		MetricalTimeLine mtl = sp.getMetricalTimeLine();
 		mtl = ScorePiece.alignMetricalTimeLine(mtl, t.getMeterInfo());
 		ScoreMetricalTimeLine smtl = new ScoreMetricalTimeLine(mtl);
 		MetricalTimeLine mtlDim = ScorePiece.diminuteMetricalTimeLine(mtl, t.getMeterInfo());
 		ScoreMetricalTimeLine smtlDim = new ScoreMetricalTimeLine(mtlDim);
 		
 		NotationSystem expected = new NotationSystem();
-		List<Note> unhandled = TranscriptionTest.getUnhandledNotesFromPiece(p, "testGetMeterKeyInfo");
+		List<Note> unhandled = TranscriptionTest.getUnhandledNotesFromPiece(sp, "testGetMeterKeyInfo");
 		// Voice 0
 		NotationStaff ns0 = new NotationStaff();
 		NotationVoice nv0 = new NotationVoice();
@@ -1338,7 +1326,7 @@ public class ScorePieceTest extends TestCase {
 		expected.add(ns1);
 
 		NotationSystem actual = 
-			ScorePiece.diminuteNotationSystem(p.getScore(), t.getMeterInfo(), smtl, smtlDim);
+			ScorePiece.diminuteNotationSystem(sp.getScore(), t.getMeterInfo(), smtl, smtlDim);
 
 		assertNotationSystemEquality(Arrays.asList(expected), Arrays.asList(actual));		
 	}
@@ -1349,16 +1337,26 @@ public class ScorePieceTest extends TestCase {
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));
 		MetricalTimeLine mtl = sp.getMetricalTimeLine();
 		int v = 1;
-		NotationVoice voice = sp.getScore().get(v).get(0);		
+		NotationVoice voice = sp.getScore().get(v).get(0);
 		List<Integer> velocities = new ArrayList<>();
 		voice.forEach(nc -> velocities.add(nc.get(0).getVelocity()));
+		// Add additional NotationChords with different durs at mt 8/4 and 11/4
+		// NB: NotationChords appear in a NotationVoice in the reverse order in which they are added;
+		// Notes appear in a NotationChord in the order in which they are added 
+		voice.add(ScorePiece.createNote(64, new Rational(8, 4), new Rational(1, 4), velocities.get(5), mtl));
+		voice.add(ScorePiece.createNote(64, new Rational(11, 4), new Rational(1, 8), velocities.get(6), mtl));
 
-		Note n1a = ScorePiece.createNote(
+		Note nAddedByMethod98 = ScorePiece.createNote(
 			69, new Rational(9, 8), new Rational(1, 8), 90, mtl);
-		Note n6 = ScorePiece.createNote(
-			69, new Rational(11, 4), new Rational(1, 4), velocities.get(6), mtl);
+		Note nAddedByMethodAt84 = ScorePiece.createNote(
+			69, new Rational(8, 4), new Rational(1, 2), velocities.get(5), mtl);
+		Note nAddedByMethodAt114 = ScorePiece.createNote(
+			69, new Rational(11, 4), new Rational(1, 16), velocities.get(6), mtl);
 
-		// Add Note to nc1a (n1a); add Note to nc6 (n6)
+		// 1. Add note at mt where there is no NotationChord (mt = 9/8)
+		// 2. Add note at mt where there is
+		//    a. A NotationChord with the same duration as the note (mt = 8/4) 
+		//    b. No NotationChord with the same duration as the note (mt = 11/4)
 		List<NotationChord> expected = new ArrayList<>();
 		NotationChord nc0 = new NotationChord(); 
 		nc0.add(ScorePiece.createNote(65, new Rational(3, 4), new Rational(1, 4), velocities.get(0), mtl));
@@ -1366,8 +1364,10 @@ public class ScorePieceTest extends TestCase {
 		NotationChord nc1 = new NotationChord();
 		nc1.add(ScorePiece.createNote(69, new Rational(4, 4), new Rational(1, 8), velocities.get(1), mtl));
 		expected.add(nc1);
+		// mt = 9/8
+		// nc added by method at this mt --> addNote() adds to this
 		NotationChord nc1a = new NotationChord();
-		nc1a.add(n1a);
+		nc1a.add(nAddedByMethod98);
 		expected.add(nc1a);
 		NotationChord nc2 = new NotationChord();
 		nc2.add(ScorePiece.createNote(65, new Rational(5, 4), new Rational(1, 8), velocities.get(2), mtl));
@@ -1378,12 +1378,28 @@ public class ScorePieceTest extends TestCase {
 		NotationChord nc4 = new NotationChord();
 		nc4.add(ScorePiece.createNote(69, new Rational(7, 4), new Rational(1, 4), velocities.get(4), mtl));
 		expected.add(nc4);
+		// mt = 8/4
+		// First: nc added to have two ncs at this mt
+		NotationChord nc5Added = new NotationChord();
+		nc5Added.add(ScorePiece.createNote(64, new Rational(8, 4), new Rational(1, 4), velocities.get(5), mtl));
+		expected.add(nc5Added);
+		// Second: original nc at this mt --> addNote() adds to this 
 		NotationChord nc5 = new NotationChord();
 		nc5.add(ScorePiece.createNote(64, new Rational(8, 4), new Rational(1, 2), velocities.get(5), mtl));
+		nc5.add(nAddedByMethodAt84);
 		expected.add(nc5);
+		// mt = 11/4
+		// First: nc added by method at this mt --> addNote() adds to this
+		NotationChord nc6AddedByMethodAt114 = new NotationChord();
+		nc6AddedByMethodAt114.add(nAddedByMethodAt114);
+		expected.add(nc6AddedByMethodAt114);
+		// Second: nc added to have two ncs at this mt
+		NotationChord nc6Added = new NotationChord();
+		nc6Added.add(ScorePiece.createNote(64, new Rational(11, 4), new Rational(1, 8), velocities.get(6), mtl));
+		expected.add(nc6Added);
+		// Third: original nc at this mt
 		NotationChord nc6 = new NotationChord();
 		nc6.add(ScorePiece.createNote(64, new Rational(11, 4), new Rational(1, 4), velocities.get(6), mtl));
-		nc6.add(n6);
 		expected.add(nc6);
 		// Set channel to v
 		for (NotationChord nc : expected) {
@@ -1393,8 +1409,9 @@ public class ScorePieceTest extends TestCase {
 		}
 
 		List<NotationChord> actual = new ArrayList<>();
-		sp.addNote(n1a, 1/*, new Rational(7, 8)*/);
-		sp.addNote(n6, 1/*, new Rational(11, 4)*/);
+		sp.addNote(nAddedByMethod98, 1);
+		sp.addNote(nAddedByMethodAt84, 1);
+		sp.addNote(nAddedByMethodAt114, 1);
 		voice = sp.getScore().get(v).get(0);
 		voice.forEach(nc -> actual.add(nc));
 
@@ -1422,17 +1439,37 @@ public class ScorePieceTest extends TestCase {
 		NotationVoice voice = sp.getScore().get(v).get(0);		
 		List<Integer> velocities = new ArrayList<>();
 		voice.forEach(nc -> velocities.add(nc.get(0).getVelocity()));
+		// Add additional NotationChords with different durs at mt 8/4 and 11/4
+		// NB: NotationChords appear in a NotationVoice in the reverse order in which they are added;
+		// Notes appear in a NotationChord in the order in which they are added
+		voice.add(ScorePiece.createNote(64, new Rational(8, 4), new Rational(1, 4), velocities.get(5), mtl));
+		voice.add(ScorePiece.createNote(69, new Rational(8, 4), new Rational(1, 4), velocities.get(5), mtl));
+		voice.add(ScorePiece.createNote(64, new Rational(11, 4), new Rational(1, 8), velocities.get(6), mtl));
 
-		Note n6 = ScorePiece.createNote(
-			69, new Rational(11, 4), new Rational(1, 4), velocities.get(6), mtl);
-		sp.addNote(n6, 1/*, new Rational(11, 4)*/);
+		Note nRemovedByMethodAt34 = ScorePiece.createNote(
+			69, new Rational(3, 4), new Rational(1, 4), velocities.get(0), mtl);
+		Note nRemovedByMethodAt98 = ScorePiece.createNote(
+			69, new Rational(9, 8), new Rational(1, 16), velocities.get(1), mtl);
+		Note nRemovedByMethodAt84 = ScorePiece.createNote(
+			69, new Rational(8, 4), new Rational(1, 4), velocities.get(5), mtl);
+		Note nRemovedByMethodAt114 = ScorePiece.createNote(
+			64, new Rational(11, 4), new Rational(1, 16), velocities.get(6), mtl);
 
-		// Remove Note from nc0 (nc0.get(0)); remove Note from nc6 (nc6.get(0))
+		// 1. Remove note from mt where there is no NotationChord (i.e., do nothing) (mt = 9/8)
+		// 2. Remove note from mt where there is 
+		//    a. A NotationChord with the same duration as the note 
+		//       - with one note (mt = 3/4)
+		//       - with two notes (mt = 8/4)
+		//	  b. No NotationChord with the same duration as the note (i.e., do nothing) (mt = 11/4)		
 		List<NotationChord> expected = new ArrayList<>();
+		// mt = 3/4
+		// (NotationChord is removed)
 		NotationChord nc1 = new NotationChord();
 		nc1.add(ScorePiece.createNote(69, new Rational(4, 4), new Rational(1, 8), velocities.get(1), mtl));
 		expected.add(nc1);
 		NotationChord nc2 = new NotationChord();
+		// mt = 9/8
+		// (do nothing)
 		nc2.add(ScorePiece.createNote(65, new Rational(5, 4), new Rational(1, 8), velocities.get(2), mtl));
 		expected.add(nc2);
 		NotationChord nc3 = new NotationChord();
@@ -1441,11 +1478,24 @@ public class ScorePieceTest extends TestCase {
 		NotationChord nc4 = new NotationChord();
 		nc4.add(ScorePiece.createNote(69, new Rational(7, 4), new Rational(1, 4), velocities.get(4), mtl));
 		expected.add(nc4);
+		// mt = 8/4
+		// First: nc added to have two ncs at this mt --> removeNote() removes from this
+		NotationChord nc5Added = new NotationChord();
+		nc5Added.add(ScorePiece.createNote(64, new Rational(8, 4), new Rational(1, 4), velocities.get(5), mtl));
+		expected.add(nc5Added);
+		// Second: original nc at this mt
 		NotationChord nc5 = new NotationChord();
 		nc5.add(ScorePiece.createNote(64, new Rational(8, 4), new Rational(1, 2), velocities.get(5), mtl));
 		expected.add(nc5);
+		// mt = 11/4
+		// (do nothing)
+		// First: nc added to have two ncs at this mt 
+		NotationChord nc6Added = new NotationChord();
+		nc6Added.add(ScorePiece.createNote(64, new Rational(11, 4), new Rational(1, 8), velocities.get(6), mtl));
+		expected.add(nc6Added);
+		// Second: original nc at this mt
 		NotationChord nc6 = new NotationChord();
-		nc6.add(n6);
+		nc6.add(ScorePiece.createNote(64, new Rational(11, 4), new Rational(1, 4), velocities.get(6), mtl));
 		expected.add(nc6);
 		// Set channel to v
 		for (NotationChord nc : expected) {
@@ -1455,8 +1505,14 @@ public class ScorePieceTest extends TestCase {
 		}
 
 		List<NotationChord> actual = new ArrayList<>();
-		sp.removeNote(new Rational(3, 4), v, 65);
-		sp.removeNote(new Rational(11, 4), v, 64);
+		sp.removeNote(nRemovedByMethodAt34.getMidiPitch(), nRemovedByMethodAt34.getMetricTime(), 
+			nRemovedByMethodAt34.getMetricDuration(), v);
+		sp.removeNote(nRemovedByMethodAt98.getMidiPitch(), nRemovedByMethodAt98.getMetricTime(), 
+			nRemovedByMethodAt98.getMetricDuration(), v);
+		sp.removeNote(nRemovedByMethodAt84.getMidiPitch(), nRemovedByMethodAt84.getMetricTime(), 
+			nRemovedByMethodAt84.getMetricDuration(), v);
+		sp.removeNote(nRemovedByMethodAt114.getMidiPitch(), nRemovedByMethodAt114.getMetricTime(), 
+			nRemovedByMethodAt114.getMetricDuration(), v);
 		voice = sp.getScore().get(v).get(0);
 		voice.forEach(nc -> actual.add(nc));
 
@@ -2113,7 +2169,7 @@ public class ScorePieceTest extends TestCase {
 		actual.add(ScorePiece.augmentNotationSystem(
 			sp2.getScore(), smtl2, 
 			null,
-			t2.getChords(), t2.getAllOnsetTimes(), E, 
+			t2.getChords(), t2.getMetricPositionsChords(), E, 
 			-1, "deornament", "")	
 		);
 		actual.add(ScorePiece.augmentNotationSystem(

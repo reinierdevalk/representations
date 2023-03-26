@@ -25,8 +25,8 @@ public class ScoreMetricalTimeLine extends MetricalTimeLine {
 
 	private static final long serialVersionUID = 1L;
 
-	List<Rational> meterSectionOnsets;
-	List<Long> meterSectionTimes;
+	private List<Rational> meterSectionOnsets;
+	private List<Long> meterSectionTimes;
 
 
 	///////////////////////////////

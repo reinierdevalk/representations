@@ -114,7 +114,7 @@ public class ScorePiece extends Piece {
 			setHarmonyTrack();
 		}
 		else {
-			setScore(makeScore(btp, bnp, voiceLabels, durLabels, mtl, numVoices));
+			setScore(btp, bnp, voiceLabels, durLabels, mtl, numVoices);
 			setMetricalTimeLine(mtl);
 			setScoreMetricalTimeLine();
 			setHarmonyTrack(ht);
@@ -174,7 +174,7 @@ public class ScorePiece extends Piece {
 				}
 			}
 		}
-
+		// Remove all TimedMetricals but the zeroMarker; add endMarker
 		long tLastTimedMetrical = mtlClean.getTime(mtLastTimedMetrical);
 		mtlClean = 
 			finaliseMetricalTimeLine(mtlClean, mtLastTimedMetrical, tLastTimedMetrical, 
@@ -182,6 +182,39 @@ public class ScorePiece extends Piece {
 
 		return mtlClean;
 	}
+	
+	
+//	/**
+//	 * Removes all duplicate of <code>TimeSignatureMarkers</code> from the given 
+//	 * <code>MetricalTimeLine</code>.
+//	 * 
+//	 * @param mtl
+//	 * @return
+//	 */
+//	// TESTED
+//	static MetricalTimeLine cleanTimeSignatures(MetricalTimeLine mtl) {
+//		List<Integer> indsToRemove = new ArrayList<>();
+//		List<Rational> mts = new ArrayList<>();
+//		for (int i = 0; i < mtl.size(); i++) {
+//			Marker m = mtl.get(i);
+//			if (m instanceof TimeSignatureMarker) {
+//				Rational mt = m.getMetricTime();
+////			if (m instanceof TimedMetrical && !(m instanceof TempoMarker)) {
+//				if (mts.contains(mt)) {
+////				if (!m.getMetricTime().equals(Rational.ZERO)) {
+//					indsToRemove.add(i);
+//				}
+//				else {
+//					mts.add(mt);					
+//				}
+//			}
+//		}
+//		for (int i = 0; i < indsToRemove.size(); i++) {
+//			mtl.remove(indsToRemove.get(i) - i);
+//		}
+//
+//		return mtl;
+//	}
 
 
 	// NOT TESTED (wrapper method)
@@ -688,7 +721,7 @@ public class ScorePiece extends Piece {
 				}
 			}
 		}
-
+		// Remove all TimedMetricals but the zeroMarker; add endMarker
 		long tLastTimedMetrical = mtlAligned.getTime(mtLastTimedMetrical);
 		mtlAligned = 
 			finaliseMetricalTimeLine(mtlAligned, mtLastTimedMetrical, 
@@ -769,6 +802,7 @@ public class ScorePiece extends Piece {
 				ind++;
 			}
 		}
+		// Remove all TimedMetricals but the zeroMarker; add endMarker
 		long tLastTimedMetrical = mtlDim.getTime(mtLastTimedMetrical);
 		mtlDim = finaliseMetricalTimeLine(mtlDim, mtLastTimedMetrical, tLastTimedMetrical, 
 			tempiDim.get(tempiDim.size()-1)[0], diminutions.get(diminutions.size()-1));
@@ -866,66 +900,240 @@ public class ScorePiece extends Piece {
 
 
 	/** 
-	 * Adds the given <code>Note</code> to the given voice. If there is already a 
-	 * <code>Note</code> at the given <code>Note</code>'s metric time, the given 
-	 * <code>Note</code> is added to the <code>NotationChord</code> at that metric time.
+	 * Adds the given <code>Note</code> to the given voice.<br><br>
+	 * 
+	 * Each <code>Note</code> is wrapped in a <code>NotationChord</code>, which has a single metric 
+	 * duration (i.e., all its <code>Note</code>s have the same duration). 
+	 * 
+	 * <ul>
+	 * <li>If the given voice contains no <code>NotationChord</code>s at the given <code>Note</code>'s 
+	 * metric time, the given <code>Note</code> is simply added.</li>
+	 * 
+	 * <li>If the given voice contains one or more <code>NotationChord</code>s at the given <code>Note</code>'s 
+	 * metric time,</li> 
+	 * <ul>
+	 * <li>If one of these <code>NotationChord</code>s has a duration that is the same as that of the given 
+	 *     <code>Note</code>, the given <code>Note</code> is added to this <code>NotationChord</code>.</li>
+	 * <li>If none of these <code>NotationChord</code>s have a duration that is the same as that of the given
+	 *     <code>Note</code>, the given <code>Note</code> is added in a new <code>NotationChord</code>, 
+	 *     at the same metric time.</li>
+	 * </ul>
+	 * </ul>
+	 * 
+	 * NB1: If a <code>NotationVoice</code> has multiple <code>NotationChord</code>s at the same metric time,
+	 *      the ordering of the <code>NotationChord</code>s in the <code>NotationVoice</code> is based on their 
+	 *      order of adding (at that metric time): the one added last appears first, and the one added first  
+	 *      appears last.<br><br>
+	 * 
+	 * NB2: If a <code>NotationChord</code> has multiple <code>Note</code>s, the ordering of the <code>Notes</code>s 
+	 *      in the <code>NotationChord</code> is based on their order of adding: the one added first appears 
+	 *      first, and the one added last appears last.<br><br>
 	 * 
 	 * @param n
-	 * @param v 
-	 * @param mt
+	 * @param v
 	 */
 	// TESTED
-	public void addNote(Note n, int v/*, Rational mt*/) {
+	public void addNote(Note n, int v) {
 		MidiNote mn = MidiNote.convert(n.getPerformanceNote());
 		mn.setChannel(v);
 
 		NotationVoice nv = getScore().get(v).get(0);
-		int ncNum = nv.find(n.getMetricTime()); // < 0 if there is no NotationChord at mt
-
-		List<Note> notesNc = new ArrayList<>();
-		notesNc.add(n);
-		// If there is already a NotationChord at mt; add its Notes as well
-		if (ncNum >= 0) {
-			NotationChord currNc = nv.get(ncNum);
-			currNc.forEach(currN -> notesNc.add(currN));
-			Collections.sort(notesNc, Comparator.comparing(Note::getMidiPitch));
-			nv.remove(currNc);
+		
+		Rational mt = n.getMetricTime();
+		int ncInd = nv.find(mt); // < 0 if there is no NotationChord at mt
+		// If there is no NotationChord at mt
+		if (ncInd < 0) {
+			NotationChord nc = new NotationChord();
+			nc.add(n);
+			nv.add(nc);
 		}
-		NotationChord nc = new NotationChord();
-		notesNc.forEach(currN -> nc.add(currN));
-		nv.add(nc);
+		// If there is already a NotationChord at mt
+		else {
+			// 1. Get all NotationChords with mt; get the index of the one
+			// with the same dur as n
+			List<NotationChord> ncsWithSameMt = new ArrayList<>();
+			int indNcWithSameDur = -1;
+			int startInd = ncInd;
+			for (int i = ncInd - 1; i >= 0; i--) {
+				if (nv.get(i).getMetricTime().equals(mt)) {
+					startInd = i;
+				}
+				else {
+					break;
+				}
+			}
+			int endInd = ncInd;
+			for (int i = ncInd + 1; i < nv.size(); i++) {
+				if (nv.get(i).getMetricTime().equals(mt)) {
+					endInd = i;
+				}
+				else {
+					break;
+				}
+			}
+			for (int i = startInd; i <= endInd; i++) {
+				ncsWithSameMt.add(nv.get(i));
+				if (nv.get(i).getMetricDuration().equals(n.getMetricDuration())) {
+					indNcWithSameDur = i;
+				}
+			}
+			// 2. Add n
+			// If any of the NotationChords at mt has the same duration as n: add n to it 
+			// (n will be added as the *last* element in the NotationChord) 
+			// TODO: cleaner is sorted by pitch (lowest first)
+			if (indNcWithSameDur != -1) {
+				nv.get(indNcWithSameDur).add(n);
+			}
+			// If not: add n to a new NotationChord, and add this to nv (the new NotationChord 
+			// will be added as the *first* of the NotationChords with the same mt)
+			// TODO: cleaner is sorted by duration (longest first)
+			else {
+				NotationChord nc = new NotationChord();
+				nc.add(n);
+				nv.add(nc);
+			}
+		}
+		
+//		int ncNum = nv.find(n.getMetricTime()); // < 0 if there is no NotationChord at mt
+//		List<Note> notesNc = new ArrayList<>();
+//		notesNc.add(n);
+//		// If there is already a NotationChord at mt: add its Notes as well
+//		if (ncNum >= 0) {
+//			NotationChord currNc = nv.get(ncNum);
+//			currNc.forEach(currN -> notesNc.add(currN));
+//			Collections.sort(notesNc, Comparator.comparing(Note::getMidiPitch));
+//			nv.remove(currNc);
+//		}
+//		NotationChord nc = new NotationChord();
+//		notesNc.forEach(currN -> nc.add(currN));
+//		nv.add(nc);
 	}
 
 
 	/** 
-	 * Removes the <code>Note</code> at the given metric time from the given voice. If there is 
-	 * already a <code>Note</code> at the given metric time, the <code>Note</code> with the given
-	 * pitch is removed from the <code>NotationChord</code> at that metric time. If there is no
-	 * <code>Note</code> at the given metric time, no action is taken.
+	 * Removes the <code>Note</code> with the given pitch, duration, and metric time from the given voice.<br><br>
+	 * 
+	 * Each <code>Note</code> is wrapped in a <code>NotationChord</code>, which has a single metric 
+	 * duration (i.e., all its <code>Note</code>s have the same duration). 
+	 * <ul>
+	 * <li>If the given voice contains no <code>NotationChord</code>s at the given metric time, no action 
+	 * is taken.</li>
+	 * <li>If the given voice contains one or more <code>NotationChord</code>s at the given metric time, 
+	 * </li>
+	 * <ul>
+	 * <li>All notes with the given pitch are removed from the <code>NotationChord</code> with the given 
+	 *     duration (if any). If, after the removal, the <code>NotationChord</code> is empty, it itself 
+	 *     is removed from the given voice. </li>
+	 * </ul>
+	 * </ul>
 	 *  
 	 * @param p
-	 * @param v  
-	 * @param mt 
+	 * @param mt  
+	 * @param dur
+	 * @param v 
 	 */
 	// TESTED
-	public void removeNote(Rational mt, int v, int p) {
+	public void removeNote(int p, Rational mt, Rational dur, int v) {
 		NotationVoice nv = getScore().get(v).get(0);
-		int ncNum = nv.find(mt); // < 0 if there is no NotationChord at mt
-		// Only there is already a NotationChord at mt
-		if (ncNum >= 0) {
-			NotationChord currNc = nv.get(ncNum);
-			nv.remove(currNc);
-			// If the NotationChord at mt contains multiple Notes: re-add it
-			// without any Notes of pitch p
-			if (currNc.size() > 1) {
-				List<Note> notesNc = new ArrayList<>();
-				currNc.forEach(currN -> { if (currN.getMidiPitch() != p) { notesNc.add(currN); } });
-				Collections.sort(notesNc, Comparator.comparing(Note::getMidiPitch));			
-				NotationChord nc = new NotationChord();
-				notesNc.forEach(currN -> nc.add(currN));
-				nv.add(nc);
+
+		int ncInd = nv.find(mt); // < 0 if there is no NotationChord at mt
+		// If there are one or more NotationChords at mt
+		if (ncInd >= 0) {
+			// 1. Get all NotationChords with mt; get the index of the one
+			// with the same dur as n
+			List<NotationChord> ncsWithSameMt = new ArrayList<>();
+			int indNcWithSameDur = -1;
+			int startInd = ncInd;
+			for (int i = ncInd - 1; i >= 0; i--) {
+				if (nv.get(i).getMetricTime().equals(mt)) {
+					startInd = i;
+				}
+				else {
+					break;
+				}
+			}
+			int endInd = ncInd;
+			for (int i = ncInd + 1; i < nv.size(); i++) {
+				if (nv.get(i).getMetricTime().equals(mt)) {
+					endInd = i;
+				}
+				else {
+					break;
+				}
+			}
+			for (int i = startInd; i <= endInd; i++) {
+				ncsWithSameMt.add(nv.get(i));
+				if (nv.get(i).getMetricDuration().equals(dur)) {
+					indNcWithSameDur = i;
+				}
+			}
+			// 2. Remove n
+			// If there is only one NotationChord at mt: remove all Notes with pitch p from it;
+			// if there are more, remove all Notes with pitch p from the one with duration dur
+			NotationChord currNc = nv.get(indNcWithSameDur);
+//				ncsWithSameMt.size() == 1 ? nv.get(ncInd) : nv.get(indNcWithSameDur);
+			for (int j = currNc.size() - 1; j >= 0; j--) {
+				Note currN = currNc.get(j);
+				if (currN.getMidiPitch() == p) {
+					currNc.remove(currN);
+				}
+			}
+			if (currNc.size() == 0) {
+				nv.remove(currNc);
 			}
 		}
+		
+		
+////		List<Integer> indsOfNcsWithMt = new ArrayList<>();
+////		for (int i = 0; i < nv.size(); i++) {
+////			if (nv.get(i).getMetricTime().equals(mt)) {
+////				indsOfNcsWithMt.add(i);
+////			}
+////		}
+////
+////		// For each nc at mt: remove all Notes with pitch p
+////		for (int i = indsOfNcsWithMt.size() - 1; i >= 0; i--) {
+//////			int ind = indsOfNcsWithMt.get(i);
+////			NotationChord currNc = nv.get(indsOfNcsWithMt.get(i));
+////			for (int j = currNc.size() - 1; j >= 0; j--) {
+////				Note currN = currNc.get(j);
+////				if (currN.getMidiPitch() == p) {
+////					currNc.remove(currN);
+////				}
+////			}
+////			if (currNc.size() == 0) {
+////				nv.remove(currNc);
+////			}
+			
+//			nv.remove(currNc);
+//			List<Note> notesNc = new ArrayList<>();
+//			currNc.forEach(currN -> { if (currN.getMidiPitch() != p) { notesNc.add(currN); } });
+//			// If notesCurrNc is not empty: add it to nv
+//			if (notesNc.size() > 0) {
+//				Collections.sort(notesNc, Comparator.comparing(Note::getMidiPitch));			
+//				NotationChord nc = new NotationChord();
+//				notesNc.forEach(currN -> nc.add(currN));
+//				nv.add(nc);
+//			}
+//		}
+		
+		
+//		int ncNum = nv.find(mt); // < 0 if there is no NotationChord at mt
+//		// Only if there is already a NotationChord at mt
+//		if (ncNum >= 0) {
+//			NotationChord currNc = nv.get(ncNum);			
+//			nv.remove(currNc);
+//			// If the NotationChord at mt contains multiple Notes: re-add it
+//			// without any Notes of pitch p
+//			if (currNc.size() > 1) {
+//				List<Note> notesNc = new ArrayList<>();
+//				currNc.forEach(currN -> { if (currN.getMidiPitch() != p) { notesNc.add(currN); } });
+//				Collections.sort(notesNc, Comparator.comparing(Note::getMidiPitch));			
+//				NotationChord nc = new NotationChord();
+//				notesNc.forEach(currN -> nc.add(currN));
+//				nv.add(nc);
+//			}
+//		}
 	}
 
 
@@ -1062,7 +1270,7 @@ public class ScorePiece extends Piece {
 				ind++;
 			}
 		}
-
+		// Remove all TimedMetricals but the zeroMarker; add endMarker
 		long tAugmLastTimedMetrical = mtlAugm.getTime(mtAugmLastTimedMetrical);
 		mtlAugm = 
 			finaliseMetricalTimeLine(mtlAugm, mtAugmLastTimedMetrical, tAugmLastTimedMetrical, 

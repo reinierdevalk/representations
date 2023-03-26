@@ -47,9 +47,10 @@ public class ScoreMetricalTimeLineTest {
 
 	@Test
 	public void testMakeMeterSectionOnsets() {
-		// Can be tested with an already completed ScoreMetricalTimeLine (and not with one with the
-		// instance variables added incrementally) because the instance variables do not depend on 
-		// each other
+		// There is no empty constructor, so the init() methods cannot be tested with the instance 
+		// variables added incrementally to an empty ScoreMetricalTimeLine. But since the instance 
+		// variables do not depend on each other, the init() methods can be tested with a completed 
+		// ScoreMetricalTimeLine
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo));
 		ScoreMetricalTimeLine smtl = new ScoreMetricalTimeLine(sp.getMetricalTimeLine());
 
@@ -74,9 +75,10 @@ public class ScoreMetricalTimeLineTest {
 
 	@Test
 	public void testMakeMeterSectionTimes() {
-		// Can be tested with an already completed ScoreMetricalTimeLine (and not with one with the
-		// instance variables added incrementally) because the instance variables do not depend on 
-		// each other
+		// There is no empty constructor, so the init() methods cannot be tested with the instance 
+		// variables added incrementally to an empty ScoreMetricalTimeLine. But since the instance 
+		// variables do not depend on each other, the init() methods can be tested with a completed 
+		// ScoreMetricalTimeLine
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo));
 		ScoreMetricalTimeLine smtl = new ScoreMetricalTimeLine(sp.getMetricalTimeLine());
 
