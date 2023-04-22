@@ -105,6 +105,7 @@ public class Transcription implements Serializable {
 	public static final int CHORD_SEQ_NUM = 5;
 	public static final int CHORD_SIZE_AS_NUM_ONSETS = 6;
 	public static final int NOTE_SEQ_NUM = 7;
+	public static final int NUM_BNP = 8;
 
 	// For meterInfo
 	public static final int MI_NUM = 0; // TODO 0-5 also in Tablature
@@ -253,8 +254,8 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Constructor for a ground truth <code>Transcription</code>. 
-	 * Creates a <code>Transcription</code> from a <code>.mid</code> and a <code>.tbp</code> file.
+	 * Constructor for a ground truth <code>Transcription</code>. Creates a <code>Transcription</code> 
+	 * from a <code>.mid</code> and a <code>.tbp</code> file.
 	 *                              
 	 * @param argFiles A <code>.mid</code> file and a <code>.tbp</code> file (optional; tablature 
 	 *                 case only).
@@ -283,8 +284,8 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Constructor for a mapping Transcription.
-	 * Creates a <code>Transcription</code> from a <code>.mid</code> and a <code>.tbp</code> file.
+	 * Constructor for a mapping Transcription. Creates a <code>Transcription</code> from 
+	 * a <code>.mid</code> and a <code>.tbp</code> file.
 	 * 
 	 * @param argMidiFile
 	 * @param argTimeline
@@ -317,25 +318,9 @@ public class Transcription implements Serializable {
 	}
 
 
-//	/**
-//	 * Constructor for a derivation of a ground truth Transcription (used for data augmentation).
-//	 * Creates a <code>Transcription</code> from an existing <code>Piece</code> and <code>Encoding</code>. 
-//	 *                              
-//	 * @param argPiece
-//	 * @param argEncoding
-//	 */
-//	public Transcription(Piece argPiece, Encoding argEncoding) {
-////		boolean normaliseTuning = false;
-////		boolean isGroundTruthTranscription = true;
-//		init(new ScorePiece(argPiece), argEncoding, /*null,*/ 
-//			/*normaliseTuning, isGroundTruthTranscription,*/
-//			null, null, Type.AUGMENTED);
-//	}
-
-
 	/**
-	 * Constructor for a predicted Transcription.
-	 * Creates a <code>Transcription</code> from an existing <code>Piece</code> and <code>Encoding</code>. 
+	 * Constructor for a predicted Transcription. Creates a <code>Transcription</code> 
+	 * from an existing <code>ScorePiece</code> and <code>Encoding</code>. 
 	 * 
 	 * @param argPredictedPiece
 	 * @param argEncoding
@@ -473,6 +458,13 @@ public class Transcription implements Serializable {
 	 *     <code>true</code> when creating a predicted Transcription: the Transcription's Piece 
 	 *       has already been normalised/transposed correctly because it was created from a 
 	 *       normalised Tablature (in TrainingManager.prepareTraining())
+	 *       
+	 * transpose:
+	 * GT: yes 
+	 * MA: no (no Tablature involved)
+	 * AU: no (has already been transposed)
+	 * PR: no (has already been transposed)   
+	 *       
 	 * 
 	 * @param argPiece
 	 * @param argEncoding Always <code>non-null</code> if <code>t</code> is <code>Type.MAPPING</code>; 
@@ -1780,7 +1772,7 @@ public class Transcription implements Serializable {
 	Integer[][] makeBasicNoteProperties() {
 		List<Note> argNotes = getNotes();
 		List<List<Note>> argChords = getChords();
-		Integer[][] argBnp = new Integer[argNotes.size()][8];
+		Integer[][] argBnp = new Integer[argNotes.size()][NUM_BNP];
 
 		int chordNum = 0;
 		Rational mt = new Rational(argNotes.get(0).getMetricTime());
@@ -7313,6 +7305,21 @@ public class Transcription implements Serializable {
 
 
 	// OBSOLETE FROM HERE :)
+	
+//	/**
+//	 * Constructor for a derivation of a ground truth Transcription (used for data augmentation).
+//	 * Creates a <code>Transcription</code> from an existing <code>Piece</code> and <code>Encoding</code>. 
+//	 *                              
+//	 * @param argPiece
+//	 * @param argEncoding
+//	 */
+//	public Transcription(Piece argPiece, Encoding argEncoding) {
+////		boolean normaliseTuning = false;
+////		boolean isGroundTruthTranscription = true;
+//		init(new ScorePiece(argPiece), argEncoding, /*null,*/ 
+//			/*normaliseTuning, isGroundTruthTranscription,*/
+//			null, null, Type.AUGMENTED);
+//	}
 	
 	/**
 	 * Visualises the Transcription. 

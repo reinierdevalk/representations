@@ -1,17 +1,33 @@
 package tbp;
 
+/**
+ * @author Reinier de Valk
+ * @version 11.04.2023 (last well-formedness check)
+ */
 public class ConstantMusicalSymbol extends Symbol {
-
 	public static final String PIPE = "|";
 	public static final String REPEAT_DOTS = ":";
 
 
+	///////////////////////////////
+	//
+	//  C O N S T R U C T O R S
+	//
 	public ConstantMusicalSymbol(String e, String s) {
+		init(e, s);
+	}
+
+
+	private void init(String e, String s) {
 		setEncoding(e);
 		setSymbol(s);
 	}
 
 
+	//////////////////////////////////////
+	//
+	//  I N S T A N C E  M E T H O D S
+	//
 	/**
 	 * Makes a variant (barline) of the CMS.
 	 * 
@@ -56,5 +72,4 @@ public class ConstantMusicalSymbol extends Symbol {
 			getEncoding().equals(c.getEncoding()) && 
 			getSymbol().equals(c.getSymbol());
 	}
-
 }

@@ -1,14 +1,17 @@
 package tbp;
 
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import representations.Tablature.Tuning;
 
+/**
+ * @author Reinier de Valk
+ * @version 14.04.2023 (last well-formedness check)
+ */
 public class TabSymbol extends Symbol implements Serializable {
-
 	private static final long serialVersionUID = 1L;
 
 	public static final String FINGERING_DOT_ENCODING = "'";
@@ -30,29 +33,41 @@ public class TabSymbol extends Symbol implements Serializable {
 		public static final int FRETS_GERMAN = 1;
 		public static final List<String[][]> FRETS;
 		static {
-			FRETS = new ArrayList<>();
-			FRETS.add(new String[][] {
-				{"a", "b", "c", "d", "e", "f", "g", "h", "i", "k", "l"} // 11 frets per course
-			});
-			FRETS.add(new String[][] {
-				{"5", "e", "k", "p", "v", "9", "e-", "k-", "p-", "v-", "9-"}, // 11 frets per course
-				{"4", "d", "i", "o", "t", "7", "d-", "i-", "o-", "t-", "7-"},
-				{"3", "c", "h", "n", "s", "z", "c-", "h-", "n-", "s-", "z-"},
-				{"2", "b", "g", "m", "r", "y", "b-", "g-", "m-", "r-", "y-"},
-				{"1", "a", "f", "l", "q", "x", "a-", "f-", "l-", "q-", "x-"}
-			});
+			FRETS = Arrays.asList(
+				new String[][] {
+					{"a", "b", "c", "d", "e", "f", "g", "h", "i", "k", "l"} // 11 frets per course
+				},
+				new String[][] {
+					{"5", "e", "k", "p", "v", "9", "e-", "k-", "p-", "v-", "9-"}, // 11 frets per course
+					{"4", "d", "i", "o", "t", "7", "d-", "i-", "o-", "t-", "7-"},
+					{"3", "c", "h", "n", "s", "z", "c-", "h-", "n-", "s-", "z-"},
+					{"2", "b", "g", "m", "r", "y", "b-", "g-", "m-", "r-", "y-"},
+					{"1", "a", "f", "l", "q", "x", "a-", "f-", "l-", "q-", "x-"}
+				}
+			);
+//			FRETS = new ArrayList<>();
+//			FRETS.add(new String[][] {
+//				{"a", "b", "c", "d", "e", "f", "g", "h", "i", "k", "l"} // 11 frets per course
+//			});
+//			FRETS.add(new String[][] {
+//				{"5", "e", "k", "p", "v", "9", "e-", "k-", "p-", "v-", "9-"}, // 11 frets per course
+//				{"4", "d", "i", "o", "t", "7", "d-", "i-", "o-", "t-", "7-"},
+//				{"3", "c", "h", "n", "s", "z", "c-", "h-", "n-", "s-", "z-"},
+//				{"2", "b", "g", "m", "r", "y", "b-", "g-", "m-", "r-", "y-"},
+//				{"1", "a", "f", "l", "q", "x", "a-", "f-", "l-", "q-", "x-"}
+//			});
 		}
 
 		private String name;
 		private String type;
-		private int maxNumberOfCourses;
+		private int maxNumCourses;
 		private String[] fretsSixthCourse;
 
-		TabSymbolSet(String s, String t, int m, String[] sc) {
-			name = s;
+		TabSymbolSet(String n, String t, int m, String[] f) {
+			name = n;
 			type = t;
-			maxNumberOfCourses = m;
-			fretsSixthCourse = sc;
+			maxNumCourses = m;
+			fretsSixthCourse = f;
 		}
 
 		public String getName() {
@@ -63,8 +78,8 @@ public class TabSymbol extends Symbol implements Serializable {
 			return type;
 		}
 
-		public int getMaxNumberOfCourses() {
-			return maxNumberOfCourses;
+		public int getMaxNumCourses() {
+			return maxNumCourses;
 		}
 
 		public String[] getFretsSixthCourse() {
@@ -87,7 +102,16 @@ public class TabSymbol extends Symbol implements Serializable {
 	}
 
 
+	///////////////////////////////
+	//
+	//  C O N S T R U C T O R S
+	//
 	public TabSymbol(String e, String s, int f, int c) {
+		init(e, s, f, c);
+	}
+
+
+	private void init(String e, String s, int f, int c) {
 		setEncoding(e);
 		setSymbol(s);
 		setFret(f);
@@ -96,6 +120,11 @@ public class TabSymbol extends Symbol implements Serializable {
 	}
 
 
+	//////////////////////////////
+	//
+	//  S E T T E R S  
+	//  for instance variables
+	//
 	void setFret(int f) {
 		fret = f;
 	}
@@ -107,10 +136,17 @@ public class TabSymbol extends Symbol implements Serializable {
 
 
 	void setFingeringDots() {
-		fingeringDots = (int) getEncoding().chars().filter(c -> c == FINGERING_DOT_ENCODING.charAt(0)).count();
+		fingeringDots = 
+			(int) getEncoding().chars()
+			.filter(c -> c == FINGERING_DOT_ENCODING.charAt(0)).count();
 	}
 
 
+	//////////////////////////////
+	//
+	//  G E T T E R S  
+	//  for instance variables
+	//
 	public int getFret() {
 		return fret;
 	}
@@ -126,6 +162,10 @@ public class TabSymbol extends Symbol implements Serializable {
 	}
 
 
+	//////////////////////////////////////
+	//
+	//  I N S T A N C E  M E T H O D S
+	//
 	/**
 	 * Makes a variant (RH-dotted) of the TS.
 	 * 

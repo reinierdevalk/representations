@@ -21,21 +21,22 @@ import tbp.TabSymbol;
 import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 
+/**
+ * @author Reinier de Valk
+ * @version 10.04.2023 (last well-formedness check)
+ */
 public class Tablature implements Serializable {
-
 	private static final long serialVersionUID = 1L;
 
-	public static final int MAXIMUM_NUMBER_OF_NOTES = 5;
-	public static final Rational SMALLEST_RHYTHMIC_VALUE = new Rational(
-		RhythmSymbol.SEMIFUSA.getDuration()/3, RhythmSymbol.BREVIS.getDuration());
+	public static final Rational SMALLEST_RHYTHMIC_VALUE = 
+		new Rational(RhythmSymbol.SEMIFUSA.getDuration()/3, RhythmSymbol.BREVIS.getDuration());
 	public static final int SRV_DEN = SMALLEST_RHYTHMIC_VALUE.getDenom();
 	public static final int TAB_BAR_IND = 0;
 	public static final int METRIC_BAR_IND = 1;
 	public static final int SECOND_METRIC_BAR_IND = 2;
 	public static final int TAB_BAR_REL_ONSET_IND = 3;
 	public static final int METRIC_BAR_REMAINDER_IND = 4;
-	private static final boolean ADAPT_TAB = false; // TODO remove
-	
+
 	// For meterInfo
 	public static final int MI_NUM = 0; // TODO 0-5 also in Transcription
 	public static final int MI_DEN = 1;
@@ -49,6 +50,7 @@ public class Tablature implements Serializable {
 	// For tunings
 	public static final int ENCODED_TUNING_IND = 0;
 	public static final int NORMALISED_TUNING_IND = 1;
+	public static final int NUM_TUNINGS = 2;
 
 	// For basicTabSymbolProperties
 	public static final int PITCH = 0;
@@ -61,12 +63,12 @@ public class Tablature implements Serializable {
 	public static final int CHORD_SIZE_AS_NUM_ONSETS = 7;
 	public static final int NOTE_SEQ_NUM = 8;
 	public static final int TAB_EVENT_SEQ_NUM = 9;
+	public static final int NUM_BTP = 10;
 
 	private Encoding encoding;
 	private boolean normaliseTuning;
 	private String name;
 	private List<Integer[]> meterInfo;
-//	private Timeline timeline;
 	private Tuning[] tunings;
 	private Integer[][] basicTabSymbolProperties;
 	private List<List<TabSymbol>> chords;
@@ -114,7 +116,7 @@ public class Tablature implements Serializable {
 		private int transposition;
 		private boolean isDrop;
 		private List<String> courses;
-		int pitchLowestCourse;
+		private int pitchLowestCourse;
 		private List<Integer> intervals;
 
 		Tuning(String n, int t, boolean d, List<String> c, int p, List<Integer> i) {
@@ -230,8 +232,8 @@ public class Tablature implements Serializable {
 	}
 
 
-	void setNormaliseTuning(boolean arg) {
-		normaliseTuning = arg;
+	void setNormaliseTuning(boolean b) {
+		normaliseTuning = b;
 	}
 
 
@@ -284,11 +286,6 @@ public class Tablature implements Serializable {
 	}
 
 
-//	void setTimeline() {
-//		timeline = new Timeline(getEncoding());
-//	}
-
-
 	void setTunings() {
 		tunings = makeTunings();
 	}
@@ -298,7 +295,7 @@ public class Tablature implements Serializable {
 	Tuning[] makeTunings() {
 		Tuning encodedTun = 
 			Tuning.getTuning(getEncoding().getMetadata().get(Encoding.METADATA_TAGS[Encoding.TUNING_IND]));
-		Tuning[] tuns = new Tuning[2];
+		Tuning[] tuns = new Tuning[NUM_TUNINGS];
 		tuns[ENCODED_TUNING_IND] = encodedTun;
 		tuns[NORMALISED_TUNING_IND] = 
 			!getNormaliseTuning() ? encodedTun : (encodedTun.getIsDrop() ? Tuning.G6F : Tuning.G);
@@ -328,11 +325,11 @@ public class Tablature implements Serializable {
 		List<List<Integer>> durAndOnsets = getDurationsAndOnsets();
 		List<Integer> durOfTabSymbols = durAndOnsets.get(0);
 		List<Integer> onsetOfTabSymbols = durAndOnsets.get(1);
-		if (ADAPT_TAB) {
+//		if (ADAPT_TAB) {
 //			List<List<Integer>> scaled = adaptToDiminutions(durOfTabSymbols, onsetOfTabSymbols);
 //			durOfTabSymbols = scaled.get(0);
 //			onsetOfTabSymbols = scaled.get(1);
-		}
+//		}
 
 		// 2. Make pitches
 		List<Integer> gridYOfTabSymbols = new ArrayList<>();
@@ -340,7 +337,7 @@ public class Tablature implements Serializable {
 		listOfTabSymbols.forEach(ts -> gridYOfTabSymbols.add(Symbol.getTabSymbol(ts, tss).getPitch(t)));
 
 		// 3. Make btp
-		Integer[][] btp = new Integer[listOfTabSymbols.size()][10];
+		Integer[][] btp = new Integer[listOfTabSymbols.size()][NUM_BTP];
 		for (int i = 0; i < btp.length; i++) {
 			TabSymbol currTabSymbol = Symbol.getTabSymbol(listOfTabSymbols.get(i), tss);
 			btp[i][PITCH] = gridYOfTabSymbols.get(i);
@@ -1200,8 +1197,8 @@ public class Tablature implements Serializable {
 		int onsetTabInMetric = 0;
 		int remainderOfMetricBarLen = metricBarLengths.get(0);
 		for (int i = 0; i < tabBarLengths.size(); i++) {
-			int bar = i + 1;
-			Integer[] barMetricBarsOnsetTabInMetricBar = new Integer[]{bar, -1, -1, -1, -1};
+			Integer[] barMetricBarsOnsetTabInMetricBar = new Integer[]{-1, -1, -1, -1, -1};
+			barMetricBarsOnsetTabInMetricBar[TAB_BAR_IND] = i + 1;
 			int currTabBarLen = tabBarLengths.get(i);
 //			int currMetricBarLen = metricBarLengths.get(metricBar -1);
 
@@ -1214,36 +1211,36 @@ public class Tablature implements Serializable {
 			// tab:metric = n:1, non-last tab bar: covers non-end of metric bar
 			// tab:metric = 3:2, first tab bar: covers beginning of first metric bar
 			if (currTabBarLen < remainderOfMetricBarLen) {
-				barMetricBarsOnsetTabInMetricBar[1] = metricBar;
-				barMetricBarsOnsetTabInMetricBar[3] = onsetTabInMetric;
+				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
+				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
 				// Set for next tab bar
 //				onsetTabInMetric = currMetricBarLen - (currMetricBarLen - currTabBarLen);
 				onsetTabInMetric += currTabBarLen;
 				remainderOfMetricBarLen -= currTabBarLen;
 				// Set metricBar remainder
-				barMetricBarsOnsetTabInMetricBar[4] = remainderOfMetricBarLen;
+				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_REMAINDER_IND] = remainderOfMetricBarLen;
  			}
 			// Case c
 			// tab:metric = 3:2, middle tab bar: covers end of first metric bar and beginning of second
 			else if (currTabBarLen > remainderOfMetricBarLen) {
-				barMetricBarsOnsetTabInMetricBar[1] = metricBar;
-				barMetricBarsOnsetTabInMetricBar[2] = metricBar + 1;
-				barMetricBarsOnsetTabInMetricBar[3] = onsetTabInMetric; 
+				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
+				barMetricBarsOnsetTabInMetricBar[SECOND_METRIC_BAR_IND] = metricBar + 1;
+				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
 				// Set for next tab bar
 				metricBar++;
 				onsetTabInMetric = Math.abs(metricBarLengths.get(metricBar - 1) - (onsetTabInMetric + currTabBarLen));
 				remainderOfMetricBarLen = 
 					metricBarLengths.get(metricBar - 1) - (currTabBarLen - remainderOfMetricBarLen);
 				// Set metricBar remainder
-				barMetricBarsOnsetTabInMetricBar[4] = remainderOfMetricBarLen;
+				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_REMAINDER_IND] = remainderOfMetricBarLen;
 			}
 			// Cases a, b, and c
 			// tab:metric 1:1
 			// tab:metric n:1, last tab bar: covers end of metric bar
 			// tab:metric 3:2, last tab bar: covers end of second metric bar
 			else if (currTabBarLen == remainderOfMetricBarLen) {
-				barMetricBarsOnsetTabInMetricBar[1] = metricBar;
-				barMetricBarsOnsetTabInMetricBar[3] = onsetTabInMetric;
+				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
+				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
 				// Set for next tab bar
 				metricBar++;
 				onsetTabInMetric = 0;
@@ -1252,7 +1249,7 @@ public class Tablature implements Serializable {
 					remainderOfMetricBarLen = metricBarLengths.get(metricBar-1);
 				}
 				// Set metricBar remainder
-				barMetricBarsOnsetTabInMetricBar[4] = 0;
+				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_REMAINDER_IND] = 0;
 			}
 			mapped.add(barMetricBarsOnsetTabInMetricBar);
 		}

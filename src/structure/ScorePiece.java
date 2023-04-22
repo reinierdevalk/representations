@@ -2,8 +2,6 @@ package structure;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -908,15 +906,13 @@ public class ScorePiece extends Piece {
 	 * <ul>
 	 * <li>If the given voice contains no <code>NotationChord</code>s at the given <code>Note</code>'s 
 	 * metric time, the given <code>Note</code> is simply added.</li>
-	 * 
 	 * <li>If the given voice contains one or more <code>NotationChord</code>s at the given <code>Note</code>'s 
-	 * metric time,</li> 
+	 * metric time</li> 
 	 * <ul>
-	 * <li>If one of these <code>NotationChord</code>s has a duration that is the same as that of the given 
-	 *     <code>Note</code>, the given <code>Note</code> is added to this <code>NotationChord</code>.</li>
-	 * <li>If none of these <code>NotationChord</code>s have a duration that is the same as that of the given
-	 *     <code>Note</code>, the given <code>Note</code> is added in a new <code>NotationChord</code>, 
-	 *     at the same metric time.</li>
+	 * <li>If one of these <code>NotationChord</code>s has the duration of the given <code>Note</code>, 
+	 *     the given <code>Note</code> is added to this <code>NotationChord</code>.</li>
+	 * <li>If none of these <code>NotationChord</code>s have the duration of the given <code>Note</code>, 
+	 *     the given <code>Note</code> is added in a new <code>NotationChord</code>, at the same metric time.</li>
 	 * </ul>
 	 * </ul>
 	 * 
@@ -934,12 +930,13 @@ public class ScorePiece extends Piece {
 	 */
 	// TESTED
 	public void addNote(Note n, int v) {
+		NotationVoice nv = getScore().get(v).get(0);
+		Rational mt = n.getMetricTime();
+		Rational dur = n.getMetricDuration();
 		MidiNote mn = MidiNote.convert(n.getPerformanceNote());
 		mn.setChannel(v);
 
-		NotationVoice nv = getScore().get(v).get(0);
-		
-		Rational mt = n.getMetricTime();
+		// Get NotationChord(s) at mt
 		int ncInd = nv.find(mt); // < 0 if there is no NotationChord at mt
 		// If there is no NotationChord at mt
 		if (ncInd < 0) {
@@ -949,42 +946,35 @@ public class ScorePiece extends Piece {
 		}
 		// If there is already a NotationChord at mt
 		else {
-			// 1. Get all NotationChords with mt; get the index of the one
-			// with the same dur as n
-			List<NotationChord> ncsWithSameMt = new ArrayList<>();
+			// Get the index of the NotationChord at mt with duration dur 
 			int indNcWithSameDur = -1;
-			int startInd = ncInd;
-			for (int i = ncInd - 1; i >= 0; i--) {
-				if (nv.get(i).getMetricTime().equals(mt)) {
-					startInd = i;
+			int incr = 0;
+			while (indNcWithSameDur == -1 && ncInd - incr >= 0 && ncInd + incr < nv.size()) {
+				// Check left
+				NotationChord prev = nv.get(ncInd - incr);
+				if (prev.getMetricTime().equals(mt) && prev.getMetricDuration().equals(dur)) {
+					indNcWithSameDur = ncInd - incr;
 				}
-				else {
+				// Check right
+				NotationChord next = nv.get(ncInd + incr);
+				if (next.getMetricTime().equals(mt) && next.getMetricDuration().equals(dur)) {
+					indNcWithSameDur = ncInd + incr;
+				}
+				// No NotationChord found 
+				if (prev.getMetricTime().isLess(mt) && next.getMetricTime().isGreater(mt))  {
 					break;
 				}
+				incr++;
 			}
-			int endInd = ncInd;
-			for (int i = ncInd + 1; i < nv.size(); i++) {
-				if (nv.get(i).getMetricTime().equals(mt)) {
-					endInd = i;
-				}
-				else {
-					break;
-				}
-			}
-			for (int i = startInd; i <= endInd; i++) {
-				ncsWithSameMt.add(nv.get(i));
-				if (nv.get(i).getMetricDuration().equals(n.getMetricDuration())) {
-					indNcWithSameDur = i;
-				}
-			}
-			// 2. Add n
-			// If any of the NotationChords at mt has the same duration as n: add n to it 
+
+			// 2. Add n to NotationChord
+			// a. If there is a NotationChord at mt that has the same duration as n: add n to it 
 			// (n will be added as the *last* element in the NotationChord) 
 			// TODO: cleaner is sorted by pitch (lowest first)
 			if (indNcWithSameDur != -1) {
 				nv.get(indNcWithSameDur).add(n);
 			}
-			// If not: add n to a new NotationChord, and add this to nv (the new NotationChord 
+			// b. If not: add n to a new NotationChord, and add this to nv (the new NotationChord 
 			// will be added as the *first* of the NotationChords with the same mt)
 			// TODO: cleaner is sorted by duration (longest first)
 			else {
@@ -993,37 +983,24 @@ public class ScorePiece extends Piece {
 				nv.add(nc);
 			}
 		}
-		
-//		int ncNum = nv.find(n.getMetricTime()); // < 0 if there is no NotationChord at mt
-//		List<Note> notesNc = new ArrayList<>();
-//		notesNc.add(n);
-//		// If there is already a NotationChord at mt: add its Notes as well
-//		if (ncNum >= 0) {
-//			NotationChord currNc = nv.get(ncNum);
-//			currNc.forEach(currN -> notesNc.add(currN));
-//			Collections.sort(notesNc, Comparator.comparing(Note::getMidiPitch));
-//			nv.remove(currNc);
-//		}
-//		NotationChord nc = new NotationChord();
-//		notesNc.forEach(currN -> nc.add(currN));
-//		nv.add(nc);
 	}
 
 
 	/** 
-	 * Removes the <code>Note</code> with the given pitch, duration, and metric time from the given voice.<br><br>
+	 * Removes the <code>Note</code> with the given pitch, metric time, and duration from the given voice.<br><br>
 	 * 
 	 * Each <code>Note</code> is wrapped in a <code>NotationChord</code>, which has a single metric 
-	 * duration (i.e., all its <code>Note</code>s have the same duration). 
+	 * duration (i.e., all its <code>Note</code>s have the same duration).
+	 *  
 	 * <ul>
 	 * <li>If the given voice contains no <code>NotationChord</code>s at the given metric time, no action 
 	 * is taken.</li>
-	 * <li>If the given voice contains one or more <code>NotationChord</code>s at the given metric time, 
-	 * </li>
+	 * <li>If the given voice contains one or more <code>NotationChord</code>s at the given metric time</li>
 	 * <ul>
-	 * <li>All notes with the given pitch are removed from the <code>NotationChord</code> with the given 
-	 *     duration (if any). If, after the removal, the <code>NotationChord</code> is empty, it itself 
-	 *     is removed from the given voice. </li>
+	 * <li>If one of these <code>NotationChord</code>s has the given duration, all notes with the given 
+	 *     pitch are removed from this <code>NotationChord</code>. If, after the removal, the 
+	 *     <code>NotationChord</code> is empty, it itself is removed from the given voice.</li>
+	 * <li>If none of these <code>NotationChord</code>s have the given duration, no action is taken.</li>
 	 * </ul>
 	 * </ul>
 	 *  
@@ -1036,104 +1013,44 @@ public class ScorePiece extends Piece {
 	public void removeNote(int p, Rational mt, Rational dur, int v) {
 		NotationVoice nv = getScore().get(v).get(0);
 
+		// Get NotationChord(s) at mt
 		int ncInd = nv.find(mt); // < 0 if there is no NotationChord at mt
-		// If there are one or more NotationChords at mt
 		if (ncInd >= 0) {
-			// 1. Get all NotationChords with mt; get the index of the one
-			// with the same dur as n
-			List<NotationChord> ncsWithSameMt = new ArrayList<>();
+			// Get the index of the NotationChord at mt with duration dur 
 			int indNcWithSameDur = -1;
-			int startInd = ncInd;
-			for (int i = ncInd - 1; i >= 0; i--) {
-				if (nv.get(i).getMetricTime().equals(mt)) {
-					startInd = i;
+			int incr = 0;
+			while (indNcWithSameDur == -1 && ncInd - incr >= 0 && ncInd + incr < nv.size()) {
+				// Check left
+				NotationChord prev = nv.get(ncInd - incr);
+				if (prev.getMetricTime().equals(mt) && prev.getMetricDuration().equals(dur)) {
+					indNcWithSameDur = ncInd - incr;
 				}
-				else {
+				// Check right
+				NotationChord next = nv.get(ncInd + incr);
+				if (next.getMetricTime().equals(mt) && next.getMetricDuration().equals(dur)) {
+					indNcWithSameDur = ncInd + incr;
+				}
+				// No NotationChord found 
+				if (prev.getMetricTime().isLess(mt) && next.getMetricTime().isGreater(mt))  {
 					break;
 				}
+				incr++;
 			}
-			int endInd = ncInd;
-			for (int i = ncInd + 1; i < nv.size(); i++) {
-				if (nv.get(i).getMetricTime().equals(mt)) {
-					endInd = i;
+
+			// 2. Remove all Notes with pitch p from NotationChord with duration dur
+			if (indNcWithSameDur != -1) {
+				NotationChord currNc = nv.get(indNcWithSameDur);
+				for (int j = currNc.size() - 1; j >= 0; j--) {
+					Note currN = currNc.get(j);
+					if (currN.getMidiPitch() == p) {
+						currNc.remove(currN);
+					}
 				}
-				else {
-					break;
+				if (currNc.size() == 0) {
+					nv.remove(currNc);
 				}
-			}
-			for (int i = startInd; i <= endInd; i++) {
-				ncsWithSameMt.add(nv.get(i));
-				if (nv.get(i).getMetricDuration().equals(dur)) {
-					indNcWithSameDur = i;
-				}
-			}
-			// 2. Remove n
-			// If there is only one NotationChord at mt: remove all Notes with pitch p from it;
-			// if there are more, remove all Notes with pitch p from the one with duration dur
-			NotationChord currNc = nv.get(indNcWithSameDur);
-//				ncsWithSameMt.size() == 1 ? nv.get(ncInd) : nv.get(indNcWithSameDur);
-			for (int j = currNc.size() - 1; j >= 0; j--) {
-				Note currN = currNc.get(j);
-				if (currN.getMidiPitch() == p) {
-					currNc.remove(currN);
-				}
-			}
-			if (currNc.size() == 0) {
-				nv.remove(currNc);
 			}
 		}
-		
-		
-////		List<Integer> indsOfNcsWithMt = new ArrayList<>();
-////		for (int i = 0; i < nv.size(); i++) {
-////			if (nv.get(i).getMetricTime().equals(mt)) {
-////				indsOfNcsWithMt.add(i);
-////			}
-////		}
-////
-////		// For each nc at mt: remove all Notes with pitch p
-////		for (int i = indsOfNcsWithMt.size() - 1; i >= 0; i--) {
-//////			int ind = indsOfNcsWithMt.get(i);
-////			NotationChord currNc = nv.get(indsOfNcsWithMt.get(i));
-////			for (int j = currNc.size() - 1; j >= 0; j--) {
-////				Note currN = currNc.get(j);
-////				if (currN.getMidiPitch() == p) {
-////					currNc.remove(currN);
-////				}
-////			}
-////			if (currNc.size() == 0) {
-////				nv.remove(currNc);
-////			}
-			
-//			nv.remove(currNc);
-//			List<Note> notesNc = new ArrayList<>();
-//			currNc.forEach(currN -> { if (currN.getMidiPitch() != p) { notesNc.add(currN); } });
-//			// If notesCurrNc is not empty: add it to nv
-//			if (notesNc.size() > 0) {
-//				Collections.sort(notesNc, Comparator.comparing(Note::getMidiPitch));			
-//				NotationChord nc = new NotationChord();
-//				notesNc.forEach(currN -> nc.add(currN));
-//				nv.add(nc);
-//			}
-//		}
-		
-		
-//		int ncNum = nv.find(mt); // < 0 if there is no NotationChord at mt
-//		// Only if there is already a NotationChord at mt
-//		if (ncNum >= 0) {
-//			NotationChord currNc = nv.get(ncNum);			
-//			nv.remove(currNc);
-//			// If the NotationChord at mt contains multiple Notes: re-add it
-//			// without any Notes of pitch p
-//			if (currNc.size() > 1) {
-//				List<Note> notesNc = new ArrayList<>();
-//				currNc.forEach(currN -> { if (currN.getMidiPitch() != p) { notesNc.add(currN); } });
-//				Collections.sort(notesNc, Comparator.comparing(Note::getMidiPitch));			
-//				NotationChord nc = new NotationChord();
-//				notesNc.forEach(currN -> nc.add(currN));
-//				nv.add(nc);
-//			}
-//		}
 	}
 
 

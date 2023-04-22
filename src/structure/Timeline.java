@@ -345,6 +345,23 @@ public class Timeline implements Serializable {
 	}
 
 
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) {
+			return true;
+		}
+		if (!(o instanceof Timeline)) {
+			return false;
+		}
+		Timeline t = (Timeline) o;
+		return
+			getBars().equals(t.getBars()) &&
+			getDiminutions().equals(t.getDiminutions()) &&
+			getTimeSignatures().equals(t.getTimeSignatures()) &&
+			getDiminutionPerBar().equals(t.getDiminutionPerBar());
+	}
+
+
 	/**
 	 * Given an undiminuted metric position, gets the meter section.
 	 * 

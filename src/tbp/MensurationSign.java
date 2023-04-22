@@ -2,14 +2,21 @@ package tbp;
 
 import java.util.Arrays;
 
+/**
+ * @author Reinier de Valk
+ * @version 11.04.2023 (last well-formedness check)
+ */
 public class MensurationSign extends Symbol {
-
 	public static final int DEFAULT_STAFFLINE = 3; 
 
 	private Integer[] meter;
 	private int staffLine;
 
 
+	///////////////////////////////
+	//
+	//  C O N S T R U C T O R S
+	//
 	public MensurationSign() {
 	}
 
@@ -19,13 +26,23 @@ public class MensurationSign extends Symbol {
 		// M<n> or M<n>\ (cut MS), where <n> is a number or a symbol
 		// A variant type may have a different beat unit or staffline, and is encoded as 
 		// M<n>:<b><l> or M<n>\\:<b><l> (cut MS), where <b> is the beat unit and <l> the staffline
-		setEncoding(e);
-		setSymbol(s);
-		setMeter(m);
-		setStaffLine();
+		init(e, s, m);
 	}
 
 
+	private void init(String e, String s, Integer[] m) {
+		setEncoding(e);
+		setSymbol(s);
+		setMeter(m);
+		setStaffLine();		
+	}
+
+
+	//////////////////////////////
+	//
+	//  S E T T E R S
+	//  for instance variables
+	//
 	void setMeter(Integer[] m) {
 		meter = m;
 	}
@@ -60,6 +77,11 @@ public class MensurationSign extends Symbol {
 	}
 
 
+	//////////////////////////////
+	//
+	//  G E T T E R S
+	//  for instance variables
+	//
 	public Integer[] getMeter() {
 		return meter;  
 	}
@@ -70,6 +92,10 @@ public class MensurationSign extends Symbol {
 	}
 
 
+	//////////////////////////////////////
+	//
+	//  I N S T A N C E  M E T H O D S 
+	//
 	/**
 	 * Makes a variant (beat unit, staff line, or combined) of the MS.
 	 * 
@@ -110,5 +136,4 @@ public class MensurationSign extends Symbol {
 			Arrays.equals(getMeter(), m.getMeter()) &&
 			getStaffLine() == m.getStaffLine();
 	}
-
 }

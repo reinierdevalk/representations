@@ -7,20 +7,24 @@ import java.util.stream.Collectors;
 
 import tbp.TabSymbol.TabSymbolSet;
 
-
+/**
+ * @author Reinier de Valk
+ * @version 13.04.2023 (last well-formedness check)
+ */
 public class Staff {
-
-	public static final String SPACE_BETWEEN_STAFFS = "\n";
 	public static final String OPEN_BAR_NUM_BRACKET = "[";
 	public static final String CLOSE_BAR_NUM_BRACKET = "]";
 	public static final String OPEN_FOOTNOTE_PAR = "(";
 	public static final String CLOSE_FOOTNOTE_PAR = ")";
+	public static final String STAFF_SEGMENT = "-";
+	public static final String SPACE_SEGMENT = " ";
+	public static final String REPEAT_DOT = ".";
 	public static final int LEFT_MARGIN = 1; // must be >= 1
+	public static final int RIGHT_MARGIN = 2;
 	public static final int NECESSARY_LINE_SHIFT = 2;
 	public static final int BAR_NUM_FREQ = 5;
-
+	
 	// For staffGrid
-	public static final int STAFF_LINES = 11;
 	public static final int BAR_NUMS_LINE = 0;
 	public static final int RHYTHM_LINE = 1;
 	public static final int DIAPASONS_LINE_ITALIAN = 2;
@@ -30,10 +34,7 @@ public class Staff {
 	public static final int BOTTOM_LINE = 8;
 	public static final int DIAPASONS_LINE_OTHER = 9;
 	public static final int FOOTNOTES_LINE = 10;
-	public static final String STAFF_SEGMENT = "-";
-	public static final String SPACE_SEGMENT = " ";
-	public static final String REPEAT_DOT = ".";
-	public static final int RIGHT_MARGIN = 2;
+	public static final int LEN_STAFF_GRID = 11;
 
 	private String tablatureType;
 	private String[][] staffGrid;
@@ -70,8 +71,8 @@ public class Staff {
 
 
 	String[][] makeStaffGrid(int numSegments) {
-		String[][] sd = new String[STAFF_LINES][numSegments + RIGHT_MARGIN];
-		for (int staffLine = BAR_NUMS_LINE; staffLine < STAFF_LINES; staffLine++) {  
+		String[][] sd = new String[LEN_STAFF_GRID][numSegments + RIGHT_MARGIN];
+		for (int staffLine = BAR_NUMS_LINE; staffLine < LEN_STAFF_GRID; staffLine++) {  
 			for (int segment = 0; segment < numSegments; segment++) { 
 				switch (staffLine) {
 					// Lines 0-2
@@ -172,7 +173,7 @@ public class Staff {
 		if (!symbol.contains(ConstantMusicalSymbol.REPEAT_DOTS)) {
 			for (int staffLine = TOP_LINE; staffLine <= BOTTOM_LINE; staffLine++) {
 				for (int i = 0; i < symbol.length(); i++) {
-					addSymbol(Character.toString(symbol.charAt(i)), staffLine, segment + i);
+					addSymbolString(Character.toString(symbol.charAt(i)), staffLine, segment + i);
 				}
 			}
 		}
@@ -182,14 +183,45 @@ public class Staff {
 				for (int i = 0; i < symbol.length(); i++) {
 					String subSymbol = Character.toString(symbol.charAt(i));
 					if (subSymbol.equals(ConstantMusicalSymbol.REPEAT_DOTS)) {
-						addSymbol((staffLine == UPPER_MIDDLE_LINE || staffLine == LOWER_MIDDLE_LINE ?
+						addSymbolString((staffLine == UPPER_MIDDLE_LINE || staffLine == LOWER_MIDDLE_LINE ?
 							REPEAT_DOT : STAFF_SEGMENT), staffLine, segment + i);
 					}
 					else {
-						addSymbol(subSymbol, staffLine, segment + i);
+						addSymbolString(subSymbol, staffLine, segment + i);
 					}
 				}
 			}
+		}
+	}
+
+
+	/**
+	 * Adds the given symbol string at the given position (staffline, segment) to the staffGrid.
+	 * 
+	 * @param symbolString
+	 * @param staffLine
+	 * @param segment
+	 */
+	void addSymbolString(String symbolString, int staffLine, int segment) {
+		getStaffGrid()[staffLine][segment] = symbolString;
+	}
+
+
+	void addMensurationSign(MensurationSign ms, int segment) {
+		addSymbolString(ms.getSymbol(), ms.getStaffLine() + NECESSARY_LINE_SHIFT, segment);
+	}
+
+
+	void addRhythmSymbol(RhythmSymbol rs, int segment, boolean showBeam) {
+		String symbol = rs.getSymbol();
+		addSymbolString(symbol, RHYTHM_LINE, segment);
+		// Dotted RS? Add dot in next segment
+		if (rs.getNumberOfDots() > 0) {
+			addSymbolString(Symbol.RHYTHM_DOT.getSymbol(), RHYTHM_LINE, segment + 1);
+		}
+		// Beamed RS? Add beam in next segment
+		if (rs.getBeam() && showBeam) {
+			addSymbolString(RhythmSymbol.BEAM, RHYTHM_LINE, segment + 1);
 		}
 	}
 
@@ -209,38 +241,75 @@ public class Staff {
 		else if(tabType.equals("Italian") || tabType.equals("Spanish")) {
 			symbol = Integer.toString(fret);
 		}	
-		addSymbol(symbol, lineNumber, segment);
+		addSymbolString(symbol, lineNumber, segment);
 	}
 
 
-	void addRhythmSymbol(RhythmSymbol rs, int segment, boolean showBeam) {
-		String symbol = rs.getSymbol();
-		addSymbol(symbol, RHYTHM_LINE, segment);
-		// Dotted RS? Add dot in next segment
-		if (rs.getNumberOfDots() > 0) {
-			addSymbol(Symbol.RHYTHM_DOT.getSymbol(), RHYTHM_LINE, segment + 1);
-		}
-		// Beamed RS? Add beam in next segment
-		if (rs.getBeam() && showBeam) {
-			addSymbol(RhythmSymbol.BEAM, RHYTHM_LINE, segment + 1);
-		}
-	}
-
-
-	void addMensurationSign(MensurationSign ms, int segment) {
-		addSymbol(ms.getSymbol(), ms.getStaffLine() + NECESSARY_LINE_SHIFT, segment);
-	}
-
-
-	/**
-	 * Adds the given symbol at the given position (staffline, segment) to the staffGrid.
+	/** 
+	 * Adds the footnote numbers at the positions in the list given 
 	 * 
-	 * @param symbol
-	 * @param staffLine
-	 * @param segment
+	 * @param indices The indices of the segments containing footnotes events.
 	 */
-	public void addSymbol(String symbol, int staffLine, int segment) {
-		getStaffGrid()[staffLine][segment] = symbol;
+	public void addFootnoteNumbers(List<Integer> indices, int firstFootnoteNum) {
+		int footnoteNum = firstFootnoteNum;
+		List<Integer> indsPrevFootnote = new ArrayList<>();
+		for (int ind : indices) {
+			List<Integer> indsCurrFootnote = new ArrayList<>();
+			String footnoteNumAsStr = String.valueOf(footnoteNum);
+			if (ind != 0) {
+				addSymbolString(OPEN_FOOTNOTE_PAR, FOOTNOTES_LINE, ind-1);
+				indsCurrFootnote.add(ind-1);
+			}
+			for (int j = 0; j < footnoteNumAsStr.length(); j++) {
+				addSymbolString(footnoteNumAsStr.substring(j, j+1), FOOTNOTES_LINE, ind+j);
+				indsCurrFootnote.add(ind+j);
+			}
+			addSymbolString(CLOSE_FOOTNOTE_PAR, FOOTNOTES_LINE, ind + footnoteNumAsStr.length());
+			indsCurrFootnote.add(ind+footnoteNumAsStr.length());
+			
+			// If there is overlap between indsCurrFootnote and indsPrevFootnote: correct.
+			// There are two minimal event distance scenarios, (1) and (2), which require
+			// two types of correction, (a) and (b).
+			// (1) shows the minimal distance between two *event* footnotes (this is 
+			// because successive footnotes within a bar are grouped together). Assuming 
+			// that a piece always has fewer than 100 footnotes, this is never a problem. 
+			// (2) shows the minimal distance between an *event* footnote and a *barline* 
+			// footnote. This becomes a problem if the index of the first footnote is 
+			// greater than 9
+			//
+			//      H  H               H  H        
+			// (1) |a-|a-|        (2) |a-|a-|    
+			//     |--|--|            |--|--|    
+			//     |b-|b-|            |b-|b-|        
+			//     |c-|c-|            |c-|c-|        
+			//     |--|--|            |--|--|    
+			//     |--|--|            |--|--| 
+			//      *  *               * *
+			//     (1)(2) --> OK      (1 2)   --> (a)
+			//     (10 11)--> (a)     (1011)  --> NOK (b)
+			
+			// See https://stackoverflow.com/questions/2400838/efficient-intersection-of-two-liststring-in-java
+			List<Integer> intersection = 
+				indsPrevFootnote.stream().filter(c -> 
+				indsCurrFootnote.contains(c)).collect(Collectors.toList());
+			// Correction {(a) / (b)} is needed when footnote n+1 overwrites the last
+			// {index / two indices} taken by footnote n (i.e., indsPrevFootnote and
+			// indsCurrFootnote have {one index / two indices} in common). The solution 
+			// implies replacing the OPEN_FOOTNOTE_PAR at the first index in indsCurrFootnote 
+			// with {whitespace / the last digit of the previous footnote number} 
+			if (intersection.size() == 1) {
+				addSymbolString(" ", FOOTNOTES_LINE, indsCurrFootnote.get(0));
+			}
+
+			if (intersection.size() == 2) {
+				String lastDigit = String.valueOf(footnoteNum  - 1);
+				addSymbolString(lastDigit.substring(lastDigit.length()-1), 
+					FOOTNOTES_LINE, indsCurrFootnote.get(0));
+			}
+			// Update
+			indsPrevFootnote = indsCurrFootnote;
+			footnoteNum++;
+		}
 	}
 
 
@@ -271,7 +340,7 @@ public class Staff {
 			// Add each char in the bar number at ind
 			int ind = !startsWithBarline ? 0 : 1;
 			for (int j = 0; j < asStr.length(); j++) {
-				addSymbol(asStr.substring(j, j+1), BAR_NUMS_LINE, ind + j);
+				addSymbolString(asStr.substring(j, j+1), BAR_NUMS_LINE, ind + j);
 			}
 		}
 
@@ -310,79 +379,11 @@ public class Staff {
 						OPEN_BAR_NUM_BRACKET + String.valueOf(barCount+1) + CLOSE_BAR_NUM_BRACKET;
 					// Add each char in the bar number at ind
 					for (int j = 0; j < asStr.length(); j++) {
-						addSymbol(asStr.substring(j, j+1), BAR_NUMS_LINE, ind + j);
+						addSymbolString(asStr.substring(j, j+1), BAR_NUMS_LINE, ind + j);
 					}
 				}
 			}
 			barCount++;
-		}
-	}
-
-
-	/** 
-	 * Adds the footnote numbers at the positions in the list given 
-	 * 
-	 * @param indices The indices of the segments containing footnotes events.
-	 */
-	public void addFootnoteNumbers(List<Integer> indices, int firstFootnoteNum) {
-		int footnoteNum = firstFootnoteNum;
-		List<Integer> indsPrevFootnote = new ArrayList<>();
-		for (int ind : indices) {
-			List<Integer> indsCurrFootnote = new ArrayList<>();
-			String footnoteNumAsStr = String.valueOf(footnoteNum);
-			if (ind != 0) {
-				addSymbol(OPEN_FOOTNOTE_PAR, FOOTNOTES_LINE, ind-1);
-				indsCurrFootnote.add(ind-1);
-			}
-			for (int j = 0; j < footnoteNumAsStr.length(); j++) {
-				addSymbol(footnoteNumAsStr.substring(j, j+1), FOOTNOTES_LINE, ind+j);
-				indsCurrFootnote.add(ind+j);
-			}
-			addSymbol(CLOSE_FOOTNOTE_PAR, FOOTNOTES_LINE, ind + footnoteNumAsStr.length());
-			indsCurrFootnote.add(ind+footnoteNumAsStr.length());
-			
-			// If there is overlap between indsCurrFootnote and indsPrevFootnote: correct.
-			// There are two minimal event distance scenarios, (1) and (2), which require
-			// two types of correction, (a) and (b).
-			// (1) shows the minimal distance between two *event* footnotes (this is 
-			// because successive footnotes within a bar are grouped together). Assuming 
-			// that a piece always has fewer than 100 footnotes, this is never a problem. 
-			// (2) shows the minimal distance between an *event* footnote and a *barline* 
-			// footnote. This becomes a problem if the index of the first footnote is 
-			// greater than 9
-			//
-			//      H  H               H  H        
-			// (1) |a-|a-|        (2) |a-|a-|    
-			//     |--|--|            |--|--|    
-			//     |b-|b-|            |b-|b-|        
-			//     |c-|c-|            |c-|c-|        
-			//     |--|--|            |--|--|    
-			//     |--|--|            |--|--| 
-			//      *  *               * *
-			//     (1)(2) --> OK      (1 2)   --> (a)
-			//     (10 11)--> (a)     (1011)  --> NOK (b)
-			
-			// See https://stackoverflow.com/questions/2400838/efficient-intersection-of-two-liststring-in-java
-			List<Integer> intersection = 
-				indsPrevFootnote.stream().filter(c -> 
-				indsCurrFootnote.contains(c)).collect(Collectors.toList());
-			// Correction {(a) / (b)} is needed when footnote n+1 overwrites the last
-			// {index / two indices} taken by footnote n (i.e., indsPrevFootnote and
-			// indsCurrFootnote have {one index / two indices} in common). The solution 
-			// implies replacing the OPEN_FOOTNOTE_PAR at the first index in indsCurrFootnote 
-			// with {whitespace / the last digit of the previous footnote number} 
-			if (intersection.size() == 1) {
-				addSymbol(" ", FOOTNOTES_LINE, indsCurrFootnote.get(0));
-			}
-
-			if (intersection.size() == 2) {
-				String lastDigit = String.valueOf(footnoteNum  - 1);
-				addSymbol(lastDigit.substring(lastDigit.length()-1), 
-					FOOTNOTES_LINE, indsCurrFootnote.get(0));
-			}
-			// Update
-			indsPrevFootnote = indsCurrFootnote;
-			footnoteNum++;
 		}
 	}
 

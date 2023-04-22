@@ -38,6 +38,7 @@ import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 
 import path.Path;
+import tbp.Encoding.Stage;
 import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 
@@ -50,7 +51,9 @@ public class ViewerOld extends JFrame {
 	private static final String NAME = "TabViewer";
 	private static final String EXTENSION = ".tab";
 	private static final String[] TITLE = new String[]{"untitled", Encoding.EXTENSION, " - " + NAME};
-
+	public static final String METADATA_ERROR = 
+		"METADATA ERROR -- Check for missing or misplaced curly brackets.";
+	
 	private Highlighter highlighter;
 	private JLabel pieceLabel;
 	private ButtonGroup tabTypeButtonGroup;
@@ -70,7 +73,7 @@ public class ViewerOld extends JFrame {
 
 
 	public static void main(String[] args) {
-		new Viewer(null, "", true);
+		new ViewerOld(null, "", true);
 	}
 
 
@@ -726,17 +729,17 @@ public class ViewerOld extends JFrame {
 		// file that is loaded because it is set as such in openFileAction(). Any next time,
 		// it will be exactly what is in the encodingArea (which now may have corrections 
 		// compared to what is in the loaded file)
-		Encoding enc = new Encoding(rawEnc, "", Encoding.MINIMAL);
+		Encoding enc = new Encoding(rawEnc, "", Stage.MINIMAL);
 		// a. If the encoding contains metadata errors: place error message
 		if (Encoding.checkForMetadataErrors(rawEnc)) {
-			getUpperErrorLabel().setText(Encoding.METADATA_ERROR);
+			getUpperErrorLabel().setText(METADATA_ERROR);
 			getLowerErrorLabel().setText("");
 //			getErrorMessageLabel("upper").setText(Encoding.METADATA_ERROR);
 //			getErrorMessageLabel("lower").setText("");
 		}
 		// b. If the encoding contains no metadata errors: continue
 		else {
-			enc = new Encoding(rawEnc, "", Encoding.METADATA_CHECKED);
+			enc = new Encoding(rawEnc, "", Stage.METADATA_CHECKED);
 			String cleanEnc = enc.getCleanEncoding();
 			// 2. Check the encoding
 			// Remove any remaining highlights and error messages
@@ -764,7 +767,7 @@ public class ViewerOld extends JFrame {
 			}
 			// b. If the encoding contains no encoding errors: show the tablature in a new window 
 			else {
-				enc = new Encoding(rawEnc, "", Encoding.SYNTAX_CHECKED);
+				enc = new Encoding(rawEnc, "", Stage.SYNTAX_CHECKED);
 //				List<String> types = new ArrayList<>();
 //				Arrays.asList(TabSymbolSet.values()).forEach(tss -> {
 //					if (!types.contains(tss.getType())) {
@@ -796,7 +799,7 @@ public class ViewerOld extends JFrame {
 //					getRhythmSymbolsCheckBox().isSelected(), true, true));
 //				initializeTabViewer(encPath);
 
-				new Viewer(/*getFileName(Encoding.EXTENSION)*/getFile(), enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected(), true, true), false);
+				new ViewerOld(/*getFileName(Encoding.EXTENSION)*/getFile(), enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected(), true, true), false);
 			} 
 		}
 	}

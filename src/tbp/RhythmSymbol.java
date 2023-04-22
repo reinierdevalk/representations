@@ -3,24 +3,32 @@ package tbp;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @author Reinier de Valk
+ * @version 13.04.2023 (last well-formedness check)
+ */
 public class RhythmSymbol extends Symbol {
-
 	public static final String BEAM = "-";
 	public static final String DOT_ENCODING = "*";
 	public static final String TRIPLET_INDICATOR = "tr";
 	public static final String TRIPLET_OPEN = "[";
 	public static final String TRIPLET_CLOSE = "]";
-	public static final String CORONA_INDICATOR = "co"; 
-	public static final int TRIPLET_OPEN_IND = 0;
-	public static final int TRIPLET_MID_IND = 1;
-	public static final int TRIPLET_CLOSE_IND = 2;
 
 	private int duration;
 	private int numberOfDots;
 	private boolean beam;
 
 
+	///////////////////////////////
+	//
+	//  C O N S T R U C T O R S
+	//
 	public RhythmSymbol(String e, String s, int d) {
+		init(e, s, d);
+	}
+
+
+	private void init(String e, String s, int d) {
 		setEncoding(e);
 		setSymbol(s);
 		setDuration(d);
@@ -29,13 +37,21 @@ public class RhythmSymbol extends Symbol {
 	}
 
 
+	//////////////////////////////
+	//
+	//  S E T T E R S
+	//  for instance variables
+	//
 	void setDuration(int d) {
 		duration = d;
 	}
 
 
 	void setNumberOfDots() {
-		numberOfDots = (int) getEncoding().chars().filter(c -> c == DOT_ENCODING.charAt(0)).count();
+		numberOfDots = 
+			(int) getEncoding()
+			.chars()
+			.filter(c -> c == DOT_ENCODING.charAt(0)).count();
 	}
 
 
@@ -44,6 +60,11 @@ public class RhythmSymbol extends Symbol {
 	}
 
 
+	//////////////////////////////
+	//
+	//  G E T T E R S
+	//  for instance variables
+	//
 	public int getDuration() {
 		return duration;
 	}
@@ -59,6 +80,10 @@ public class RhythmSymbol extends Symbol {
 	}
 
 
+	//////////////////////////////////////
+	//
+	//  I N S T A N C E  M E T H O D S 
+	//
 	/**
 	 * Makes a variant (dotted, beamed, tripletised, or any of these combined) of the RS.
 	 * 
@@ -130,5 +155,4 @@ public class RhythmSymbol extends Symbol {
 			getNumberOfDots() == r.getNumberOfDots() &&
 			getBeam() == r.getBeam();
 	}
-
 }

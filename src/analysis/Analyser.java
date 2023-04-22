@@ -21,7 +21,6 @@ import imports.MIDIImport;
 import representations.Tablature;
 import representations.Transcription;
 import structure.ScoreMetricalTimeLine;
-import structure.metric.Utils;
 import tbp.Encoding;
 import tbp.TabSymbol;
 import tools.ToolBox;

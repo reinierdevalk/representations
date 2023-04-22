@@ -1,5 +1,9 @@
 package tbp;
 
+/**
+ * @author Reinier de Valk
+ * @version 14.04.2023 (last well-formedness check)
+ */
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -19,19 +23,21 @@ public class Symbol {
 	// II. Musical symbols
 	// 1. Constant musical symbols
 	public static final ConstantMusicalSymbol SPACE = new ConstantMusicalSymbol(">", "-");
-	public static final ConstantMusicalSymbol BARLINE = new ConstantMusicalSymbol(ConstantMusicalSymbol.PIPE, ConstantMusicalSymbol.PIPE);
+	public static final ConstantMusicalSymbol BARLINE = 
+		new ConstantMusicalSymbol(ConstantMusicalSymbol.PIPE, ConstantMusicalSymbol.PIPE);
 	public static final Map<String, ConstantMusicalSymbol> CONSTANT_MUSICAL_SYMBOLS;
 	static {
-		List<ConstantMusicalSymbol> cmss = Arrays.asList(new ConstantMusicalSymbol[]{
-			SPACE, BARLINE,
+		List<ConstantMusicalSymbol> cmss = Arrays.asList(
+			SPACE, 
+			BARLINE,
 			BARLINE.makeVariant(1, "left"),
 			BARLINE.makeVariant(1, "right"),
 			BARLINE.makeVariant(1, "both"),
 			BARLINE.makeVariant(2, null),
 			BARLINE.makeVariant(2, "left"),
 			BARLINE.makeVariant(2, "right"),
-			BARLINE.makeVariant(2, "both"),
-		});
+			BARLINE.makeVariant(2, "both")
+		);
 		CONSTANT_MUSICAL_SYMBOLS = new LinkedHashMap<String, ConstantMusicalSymbol>();
 		cmss.forEach(cms -> CONSTANT_MUSICAL_SYMBOLS.put(cms.getEncoding(), cms));
 	}
@@ -47,7 +53,7 @@ public class Symbol {
 	public static final MensurationSign CUT_C = new MensurationSign("MC\\", "\u00A2", new Integer[]{2, 2});	
 	public static final Map<String, MensurationSign> MENSURATION_SIGNS;
 	static {
-		List<MensurationSign> mss = Arrays.asList(new MensurationSign[]{
+		List<MensurationSign> mss = Arrays.asList(
 			TWO, THREE, FOUR, SIX, O, C, CUT_C,
 			THREE.makeVariant(-1, 4),
 			THREE.makeVariant(2, -1),
@@ -58,12 +64,13 @@ public class Symbol {
 			THREE.makeVariant(8, -1),
 			TWO.makeVariant(4, -1),
 			FIVE.makeVariant(16, -1)
-		}); 
+		); 
 		MENSURATION_SIGNS = new LinkedHashMap<String, MensurationSign>();
 		mss.forEach(ms -> MENSURATION_SIGNS.put(ms.getEncoding(), ms));
 	}
 
 	// 3. Rhythm symbols
+	public static final String CORONA_INDICATOR = "co";
 	public static final RhythmSymbol LONGA = new RhythmSymbol("lo", "B", 192);
 //	public static final RhythmSymbol LONGA = new RhythmSymbol("lo", "D", 192);
 	public static final RhythmSymbol BREVIS = new RhythmSymbol("br", "W", 96); 
@@ -80,30 +87,32 @@ public class Symbol {
 	static {	
 		List<RhythmSymbol> rss = new ArrayList<RhythmSymbol>();
 		// Basic (lo-sf)
-		Arrays.asList(new RhythmSymbol[]{LONGA, BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, SEMIFUSA, 
-			CORONA_LONGA, CORONA_BREVIS, CORONA_SEMIBREVIS, RHYTHM_DOT}).forEach(rs -> rss.add(rs));
+		Arrays.asList(LONGA, BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, SEMIFUSA, 
+			CORONA_LONGA, CORONA_BREVIS, CORONA_SEMIBREVIS, RHYTHM_DOT)
+			.forEach(rs -> rss.add(rs));
 		// Dotted (lo-fu)
-		Arrays.asList(new RhythmSymbol[]{LONGA, BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, CORONA_BREVIS, 
-			CORONA_SEMIBREVIS}).forEach(rs -> rss.addAll(rs.makeVariant(1, false, false)));
+		Arrays.asList(LONGA, BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, CORONA_BREVIS, 
+			CORONA_SEMIBREVIS)
+			.forEach(rs -> rss.addAll(rs.makeVariant(1, false, false)));
 		rss.addAll(MINIM.makeVariant(2, false, false));
 		// Beamed (sm-sf)
-		Arrays.asList(new RhythmSymbol[]{SEMIMINIM, FUSA, SEMIFUSA}).
-			forEach(rs -> rss.addAll(rs.makeVariant(0, true, false)));
+		Arrays.asList(SEMIMINIM, FUSA, SEMIFUSA)
+			.forEach(rs -> rss.addAll(rs.makeVariant(0, true, false)));
 		// Dotted and beamed (sm-fu)
-		Arrays.asList(new RhythmSymbol[]{SEMIMINIM, FUSA}).
-			forEach(rs -> rss.addAll(rs.makeVariant(1, true, false)));
+		Arrays.asList(SEMIMINIM, FUSA)
+			.forEach(rs -> rss.addAll(rs.makeVariant(1, true, false)));
 		// Triplets, basic (br-sf)
-		Arrays.asList(new RhythmSymbol[]{BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, SEMIFUSA}).
-			forEach(rs -> rss.addAll(rs.makeVariant(0, false, true)));
+		Arrays.asList(BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA, SEMIFUSA)
+			.forEach(rs -> rss.addAll(rs.makeVariant(0, false, true)));
 		// Triplets, dotted (br-fu)
-		Arrays.asList(new RhythmSymbol[]{BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA}).
-			forEach(rs -> rss.addAll(rs.makeVariant(1, false, true)));
+		Arrays.asList(BREVIS, SEMIBREVIS, MINIM, SEMIMINIM, FUSA)
+			.forEach(rs -> rss.addAll(rs.makeVariant(1, false, true)));
 		// Triplets, beamed (sm-sf)
-		Arrays.asList(new RhythmSymbol[]{SEMIMINIM, FUSA, SEMIFUSA}).
-			forEach(rs -> rss.addAll(rs.makeVariant(0, true, true)));
+		Arrays.asList(SEMIMINIM, FUSA, SEMIFUSA)
+			.forEach(rs -> rss.addAll(rs.makeVariant(0, true, true)));
 		// Triplets, dotted and beamed (sm-fu)
-		Arrays.asList(new RhythmSymbol[]{SEMIMINIM, FUSA}).
-			forEach(rs -> rss.addAll(rs.makeVariant(1, true, true)));
+		Arrays.asList(SEMIMINIM, FUSA)
+			.forEach(rs -> rss.addAll(rs.makeVariant(1, true, true)));
 		RHYTHM_SYMBOLS = new LinkedHashMap<String, RhythmSymbol>();
 		rss.forEach(rs -> RHYTHM_SYMBOLS.put(rs.getEncoding(), rs));
 	}
@@ -143,6 +152,11 @@ public class Symbol {
 	private String symbol;
 
 
+	//////////////////////////////
+	//
+	//  S E T T E R S
+	//  for instance variables
+	//
 	void setEncoding(String e) {
 		encoding = e;
 	}
@@ -153,6 +167,11 @@ public class Symbol {
 	}
 
 
+	//////////////////////////////
+	//
+	//  G E T T E R S
+	//  for instance variables
+	//
 	public String getEncoding() {
 		return encoding;
 	}
@@ -163,6 +182,11 @@ public class Symbol {
 	}
 
 
+	////////////////////////////////
+	//
+	//  C L A S S  M E T H O D S
+	//  symbol retrieval
+	//
 	// TESTED
 	public static ConstantMusicalSymbol getConstantMusicalSymbol(String e) {
 		return !CONSTANT_MUSICAL_SYMBOLS.containsKey(e) ? null : CONSTANT_MUSICAL_SYMBOLS.get(e);
@@ -206,7 +230,7 @@ public class Symbol {
 			RHYTHM_SYMBOLS.values().stream()
 			.filter(
 				rs -> rs.getDuration() == d &&
-				rs.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR) == isCorona && // corona check
+				rs.getEncoding().startsWith(CORONA_INDICATOR) == isCorona && // corona check
 				rs.getEncoding().endsWith(RhythmSymbol.BEAM) == isBeamed && // beam check
 				(rs.isTriplet() != null ? rs.isTriplet().equals(tripletType) : 
 				rs.isTriplet() == tripletType) // triplet check
@@ -232,7 +256,7 @@ public class Symbol {
 			!isGerman ? TabSymbolSet.FRETS.get(TabSymbolSet.FRETS_FRENCH) : 
 			TabSymbolSet.FRETS.get(TabSymbolSet.FRETS_GERMAN);
 		// For each course
-		for (int c = 0; c < tss.getMaxNumberOfCourses(); c++) {
+		for (int c = 0; c < tss.getMaxNumCourses(); c++) {
 			String courseStr = String.valueOf(c + 1);
 			// For each fret
 			for (int f = 0; f < frets[0].length; f++) {
@@ -276,5 +300,4 @@ public class Symbol {
 		}
 		return getTabSymbol(e + TabSymbol.FINGERING_DOT_ENCODING.repeat(ts.getFingeringDots()), tss);
 	}
-
 }

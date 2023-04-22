@@ -2,8 +2,11 @@ package tbp;
 
 import java.io.Serializable;
 
+/**
+ * @author Reinier de Valk
+ * @version 12.04.2023 (last well-formedness check)
+ */
 public class Event implements Serializable {
-
 	private static final long serialVersionUID = 1L;
 
 	private String encoding;
@@ -13,6 +16,10 @@ public class Event implements Serializable {
 	private String footnoteID;
 
 
+	///////////////////////////////
+	//
+	//  C O N S T R U C T O R S
+	//
 	public Event(String e, int s, int b, String f, String fID) {
 		encoding = e;
 		system = s;
@@ -22,6 +29,11 @@ public class Event implements Serializable {
 	}
 
 
+	//////////////////////////////
+	//
+	//  G E T T E R S
+	//  for instance variables
+	//
 	public String getEncoding() {
 		return encoding;
 	}
@@ -47,6 +59,10 @@ public class Event implements Serializable {
 	}
 
 
+	//////////////////////////////////////
+	//
+	//  I N S T A N C E  M E T H O D S
+	//
 	@Override
 	public boolean equals(Object o) {
 		if (o == this) {
@@ -65,5 +81,4 @@ public class Event implements Serializable {
 			getFootnoteID() == null ? getFootnoteID() == e.getFootnoteID() : 
 				getFootnoteID().equals(e.getFootnoteID());
 	}
-
 }

@@ -16,6 +16,7 @@ import org.junit.Test;
 
 import junit.framework.TestCase;
 import path.Path;
+import tbp.Encoding.Stage;
 import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 
@@ -450,7 +451,7 @@ public class EncodingTest extends TestCase {
 	@Test
 	public void testAlignRawAndCleanEncoding() {	
 		Encoding encoding = new Encoding(new Encoding(encodingTestpiece).getRawEncoding(), 
-			"", Encoding.METADATA_CHECKED);
+			"", Stage.METADATA_CHECKED);
 
 		boolean print = false;
 		if (print) {
@@ -550,7 +551,7 @@ public class EncodingTest extends TestCase {
 
 		List<String[]> actual = new ArrayList<String[]>();
 		for (String s : rawEncodings) {
-			Encoding e = new Encoding(s, "", Encoding.METADATA_CHECKED);
+			Encoding e = new Encoding(s, "", Stage.METADATA_CHECKED);
 			actual.add(Encoding.checkValidityRules(
 				e.getCleanEncoding(), Encoding.alignRawAndCleanEncoding(s, e.getCleanEncoding())));
 		}
@@ -601,7 +602,7 @@ public class EncodingTest extends TestCase {
 
 		List<String[]> actual = new ArrayList<String[]>();
 		for (String s : rawEncodings) {
-			Encoding e = new Encoding(s, "", Encoding.METADATA_CHECKED);
+			Encoding e = new Encoding(s, "", Stage.METADATA_CHECKED);
 			actual.add(Encoding.checkSymbols(
 				e.getCleanEncoding(), e.getTabSymbolSet(), 
 				Encoding.alignRawAndCleanEncoding(s, e.getCleanEncoding())));
@@ -714,7 +715,7 @@ public class EncodingTest extends TestCase {
 
 		List<String[]> actual = new ArrayList<String[]>();
 		for (String s : rawEncodings) {
-			Encoding e = new Encoding(s, "", Encoding.METADATA_CHECKED);
+			Encoding e = new Encoding(s, "", Stage.METADATA_CHECKED);
 			actual.add(Encoding.checkLayoutRules(
 				e.getCleanEncoding(), e.getTabSymbolSet(), 
 				Encoding.alignRawAndCleanEncoding(s, e.getCleanEncoding())));

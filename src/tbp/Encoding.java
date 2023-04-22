@@ -15,37 +15,29 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import de.uos.fmt.musitech.utility.math.Rational;
 import representations.Tablature;
 import structure.Timeline;
 import tbp.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 
+/**
+ * @author Reinier de Valk
+ * @version 12.04.2023 (last well-formedness check)
+ */
 public class Encoding implements Serializable {
-
 	private static final long serialVersionUID = 1L;
 
 	public static final String EXTENSION = ".tbp"; 
 	public static final String FOOTNOTE_INDICATOR = "@";
-	public static final String METADATA_ERROR = "METADATA ERROR -- Check for missing or misplaced curly brackets.";
-	public static final String NO_BARLINE_TEXT = "no barline";
-	public static final String MISPLACED_BARLINE_TEXT = "misplaced barline";
-	public static final String METER_INFO_TAG = "METER_INFO";
-	public static final String DIMINUTION_TAG = "DIMINUTION";
-	public static final int MINIMAL = 0;
-	public static final int METADATA_CHECKED = 1;
-	public static final int SYNTAX_CHECKED = 2;
-	public static final String[] METADATA_TAGS = new String[]{ 
-		"AUTHOR", 
-		"TITLE", 
-		"SOURCE", 
-		"TABSYMBOLSET", 
-		"TUNING", 
-		METER_INFO_TAG,
-		DIMINUTION_TAG
-	};
 	public static final String OPEN_METADATA_BRACKET = "{";
 	public static final String CLOSE_METADATA_BRACKET = "}";
+	public static final String NO_BARLINE_TEXT = "no barline";
+	public static final String MISPLACED_BARLINE_TEXT = "misplaced barline";
+	public static final String SPACE_BETWEEN_STAFFS = "\n";
+	public static final String METER_INFO_TAG = "METER_INFO";
+	public static final String DIMINUTION_TAG = "DIMINUTION";
+	public static final String[] METADATA_TAGS = 
+		new String[]{"AUTHOR", "TITLE", "SOURCE", "TABSYMBOLSET", "TUNING", METER_INFO_TAG, DIMINUTION_TAG};
 
 	// For metadata
 	public static final int AUTHOR_IND = 0;
@@ -85,6 +77,10 @@ public class Encoding implements Serializable {
 	private List<List<String>> listsOfSymbols;
 	private List<List<Integer>> listsOfStatistics;
 
+	public static enum Stage {
+		MINIMAL, METADATA_CHECKED, SYNTAX_CHECKED;
+	}
+
 
 	///////////////////////////////
 	//
@@ -100,7 +96,7 @@ public class Encoding implements Serializable {
 	 * @param f
 	 */
 	public Encoding(File f) {
-		init(ToolBox.readTextFile(f), ToolBox.getFilename(f, EXTENSION), SYNTAX_CHECKED);
+		init(ToolBox.readTextFile(f), ToolBox.getFilename(f, EXTENSION), Stage.SYNTAX_CHECKED);
 	}
 
 
@@ -111,23 +107,23 @@ public class Encoding implements Serializable {
 	 * @param piecename
 	 * @param stage
 	 */
-	public Encoding(String rawEncoding, String piecename, int stage) {
+	public Encoding(String rawEncoding, String piecename, Stage stage) {
 		init(rawEncoding, piecename, stage);
 	}
 
 
-	private void init(String rawEncoding, String piecename, int stage) {
-		if (stage == MINIMAL || stage == METADATA_CHECKED || stage == SYNTAX_CHECKED) {
+	private void init(String rawEncoding, String piecename, Stage stage) {
+		if (stage == Stage.MINIMAL || stage == Stage.METADATA_CHECKED || stage == Stage.SYNTAX_CHECKED) {
 			setPiecename(piecename);
 			setRawEncoding(rawEncoding);
 		}
-		if (stage == METADATA_CHECKED || stage == SYNTAX_CHECKED) {
+		if (stage == Stage.METADATA_CHECKED || stage == Stage.SYNTAX_CHECKED) {
 			setCleanEncoding();
 			setMetadata();
 			setHeader();
 			setTabSymbolSet();
 		}
-		if (stage == SYNTAX_CHECKED) {
+		if (stage == Stage.SYNTAX_CHECKED) {
 			setEvents();
 			setTimeline();
 			setListsOfSymbols();
@@ -142,7 +138,7 @@ public class Encoding implements Serializable {
 	//  for instance variables
 	//
 	void setPiecename(String s) {
-		piecename = s;
+		piecename = s.trim();
 	}
 
 
@@ -1416,7 +1412,7 @@ public class Encoding implements Serializable {
 			"\r\n\r\n" + 
 			recompose(augmentEvents(decompose(true, true), getTimeline(), getTabSymbolSet(), 
 			thresholdDur, rescaleFactor, augmentation));
-		this.init(rawEncAugm, getPiecename(), SYNTAX_CHECKED);
+		this.init(rawEncAugm, getPiecename(), Stage.SYNTAX_CHECKED);
 	}
 
 
@@ -1596,7 +1592,7 @@ public class Encoding implements Serializable {
 										RhythmSymbol rPrev = Symbol.getRhythmSymbol(symbolsPrev[0]);
 										String ePrevDeorn = Symbol.getRhythmSymbol(
 											rPrev.getDuration() + durOrnSeq,
-											rPrev.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR),
+											rPrev.getEncoding().startsWith(Symbol.CORONA_INDICATOR),
 											rPrev.getBeam(),
 											rPrev.isTriplet()
 												).getEncoding();
@@ -1620,7 +1616,7 @@ public class Encoding implements Serializable {
 					else if (augmentation.equals("rescale")) {
 						String eResc = Symbol.getRhythmSymbol(
 							r.getDuration() * rescaleFactor, 
-							r.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR), 
+							r.getEncoding().startsWith(Symbol.CORONA_INDICATOR), 
 							r.getBeam(), 
 							r.isTriplet()
 						).getEncoding();
@@ -1676,7 +1672,7 @@ public class Encoding implements Serializable {
 			String metadataStr = metadata.get(METADATA_TAGS[AUTHOR_IND]) + "\n";
 			metadataStr += metadata.get(METADATA_TAGS[TITLE_IND]) + "\n";
 			metadataStr += metadata.get(METADATA_TAGS[SOURCE_IND]) + "\n";
-			tab += metadataStr + "\n" + Staff.SPACE_BETWEEN_STAFFS.repeat(2);
+			tab += metadataStr + "\n" + SPACE_BETWEEN_STAFFS.repeat(2);
 		}
 
 		int staffInd = 0;
@@ -1786,7 +1782,7 @@ public class Encoding implements Serializable {
 			}
 
 			// System traversed? Add to tab and update information for the next system
-			tab += staff.visualise() + Staff.SPACE_BETWEEN_STAFFS;
+			tab += staff.visualise() + SPACE_BETWEEN_STAFFS;
 			startsWithUnfinishedBar = endsWithBarline ? false : true;
 			if (staffInd < barlineSegmentInds.size() - 1) {
 				firstBar = getSystemBarNumbers().get(staffInd + 1).get(0);
@@ -1798,7 +1794,7 @@ public class Encoding implements Serializable {
 		
 		// Add formatted footnotes
 		if (showFootnotes) {
-			tab += Staff.SPACE_BETWEEN_STAFFS.repeat(2);
+			tab += SPACE_BETWEEN_STAFFS.repeat(2);
 			tab += visualiseFootnotes(tssSelected);
 		}
 		return tab;
@@ -2036,7 +2032,7 @@ public class Encoding implements Serializable {
 				if (!currFnEnc.contains("/")) {
 					currFnStaffPart = 
 						new Encoding(hdr + "\r\n" + currFnEnc + ebi, "", 
-						SYNTAX_CHECKED).visualise(argTss, false, false, true);
+						Stage.SYNTAX_CHECKED).visualise(argTss, false, false, true);
 				}	
 				// b. Doubled symbols
 				else {
@@ -2057,7 +2053,7 @@ public class Encoding implements Serializable {
 							currFnEventEnc = currFnEventEnc.replace(toRemove, "");
 							currFnEventStaffPart = 
 								new Encoding(hdr + "\r\n" + currFnEventEnc + ebi, "", 
-								SYNTAX_CHECKED).visualise(argTss, false, false, true);
+								Stage.SYNTAX_CHECKED).visualise(argTss, false, false, true);
 							System.out.println(toRemove);
 							System.out.println(currFnEventEnc);
 							System.out.println(currFnEventStaffPart);
@@ -2111,7 +2107,7 @@ public class Encoding implements Serializable {
 							// 1. Make currFnEventStaffPart
 							currFnEventStaffPart = 
 								new Encoding(hdr + "\r\n" + currFnEventEnc + ebi, "",
-								SYNTAX_CHECKED).visualise(argTss, false, false, true);
+								Stage.SYNTAX_CHECKED).visualise(argTss, false, false, true);
 							// 2. Split currFnEventStaffPart into lines
 							currFnEventStaffPartSplit = currFnEventStaffPart.split("\n");
 							// 3. Add
@@ -2206,7 +2202,7 @@ public class Encoding implements Serializable {
 						currFnNumStr : fnNumBuffer) + " " + line, numTabs));
 				}
 				// Append with empty lines
-				for (int j = currFnList.size(); j < Staff.STAFF_LINES; j++) {
+				for (int j = currFnList.size(); j < Staff.LEN_STAFF_GRID; j++) {
 					currFnList.add(emptyLine);
 				}
 			}
@@ -2284,6 +2280,7 @@ public class Encoding implements Serializable {
 	//
 	//  I N S T A N C E  M E T H O D S
 	//  other
+	//
 	/**
 	 * Decomposes the Encoding into its individual event encodings.
 	 * 
@@ -2403,6 +2400,7 @@ public class Encoding implements Serializable {
 			getHeader().equals(e.getHeader()) &&
 			getTabSymbolSet().equals(e.getTabSymbolSet()) &&
 			getEvents().equals(e.getEvents()) &&
+			getTimeline().equals(e.getTimeline()) &&
 			getListsOfSymbols().equals(e.getListsOfSymbols()) &&
 			getListsOfStatistics().equals(e.getListsOfStatistics());
 	}
@@ -3228,7 +3226,7 @@ public class Encoding implements Serializable {
 		this.init(
 			reverseHeader(mi) + "\r\n\r\n" + reverseCleanEncoding(), 
 			getPiecename(), 
-			SYNTAX_CHECKED
+			Stage.SYNTAX_CHECKED
 		);
 	}
 
@@ -3284,7 +3282,7 @@ public class Encoding implements Serializable {
 		this.init(
 			header + "\r\n\r\n" + recompose(events) + Symbol.END_BREAK_INDICATOR, 
 			getPiecename(), 
-			SYNTAX_CHECKED
+			Stage.SYNTAX_CHECKED
 		);
 //		return new Encoding(
 //			header + "\r\n\r\n" + recompose(events) + Symbol.END_BREAK_INDICATOR, 
@@ -3298,7 +3296,7 @@ public class Encoding implements Serializable {
 		this.init(
 			getHeader() + "\r\n\r\n" + deornamentCleanEncoding(dur), 
 			getPiecename(), 
-			SYNTAX_CHECKED
+			Stage.SYNTAX_CHECKED
 		);
 	}
 
@@ -3381,7 +3379,7 @@ public class Encoding implements Serializable {
 		return new Encoding(
 			getHeader() + "\r\n\r\n" + recompose(events), 
 			getPiecename(), 
-			SYNTAX_CHECKED
+			Stage.SYNTAX_CHECKED
 		);
 	}
 
@@ -3449,7 +3447,7 @@ public class Encoding implements Serializable {
 		return new Encoding(
 			header + "\r\n\r\n" + recompose(events), 
 			getPiecename(), 
-			SYNTAX_CHECKED);
+			Stage.SYNTAX_CHECKED);
 	}
 
 
@@ -3665,7 +3663,7 @@ public class Encoding implements Serializable {
 								RhythmSymbol rPrev = Symbol.getRhythmSymbol(symbolsPrev[0]);
 								String ePrevDeorn = Symbol.getRhythmSymbol(
 									rPrev.getDuration() + durOrnSeq,
-									rPrev.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR),
+									rPrev.getEncoding().startsWith(Symbol.CORONA_INDICATOR),
 									rPrev.getBeam(),
 									rPrev.isTriplet()
 								).getEncoding();
@@ -3712,7 +3710,7 @@ public class Encoding implements Serializable {
 				RhythmSymbol r = Symbol.getRhythmSymbol(symbols[0]);
 				String eResc = Symbol.getRhythmSymbol(
 					r.getDuration() * rescaleFactor, 
-					r.getEncoding().startsWith(RhythmSymbol.CORONA_INDICATOR), 
+					r.getEncoding().startsWith(Symbol.CORONA_INDICATOR), 
 					r.getBeam(), 
 					r.isTriplet()
 				).getEncoding();
