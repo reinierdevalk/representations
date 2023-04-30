@@ -20,7 +20,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
@@ -62,36 +61,30 @@ public class Viewer extends JFrame{
 	private static final String MEI_EXTENSION = ".xml";
 	private static final String[] TITLE = 
 		new String[]{"untitled", Encoding.EXTENSION, " - " + TOOL_NAME};
-	public static final String METADATA_ERROR = 
+	private static final String METADATA_ERROR = 
 		"METADATA ERROR -- Check for missing or misplaced curly brackets.";
 
-	private static final int H_MARGIN = 15;
-	private static final int V_MARGIN = 15;
+	private static final int HM = 15; // horizontal margin
+	private static final int VM = 15; // vertical margin
 	private static final int PANEL_W = 900;
+	private static final int PANEL_PART_W = PANEL_W/3;
 	private static final int ENC_PANEL_H = 200;
 	private static final int TAB_PANEL_H = 300;
 	private static final int LABEL_W = 90;
-	private static final int LABEL_H = V_MARGIN;
+	private static final int LABEL_H = VM;
 	private static final int BUTTON_W = LABEL_W;
-	private static final int BUTTON_H = 2*V_MARGIN;
+	private static final int BUTTON_H = 2*VM;
 	private static final int V_CORRECTION = 157;
-	private static final Integer[] PANEL_DIMS = new Integer[]{H_MARGIN + PANEL_W + H_MARGIN, -1};
+	private static final Integer[] PANEL_DIMS = new Integer[]{HM + PANEL_W + HM, -1};
 	private static final Integer[] FRAME_DIMS = new Integer[]{
-		H_MARGIN/2 + PANEL_DIMS[0] + H_MARGIN/2, 
-		V_MARGIN + ENC_PANEL_H + V_MARGIN + TAB_PANEL_H + V_MARGIN + V_CORRECTION
+		HM/2 + PANEL_DIMS[0] + HM/2, VM + ENC_PANEL_H + VM + TAB_PANEL_H + VM + V_CORRECTION
 	};
 
 	private Highlighter highlighter;
-//	private JLabel pieceLabel;
-	private ButtonGroup tabTypeButtonGroup;
-//	private JLabel upperErrorLabel;
-//	private JLabel lowerErrorLabel;
 	private JTextArea encodingTextArea;
 	private JTextArea tabTextArea;
-	private JCheckBox rhythmSymbolsCheckBox;
-//	private JButton viewButton;	
-//	private JMenuBar menuBar;
-//	private JPanel editorPanel;
+	private ButtonGroup tabStyleButtonGroup;
+	private JCheckBox rhythmFlagsCheckBox;
 	private JFileChooser fileChooser;
 	private File file;
 
@@ -105,6 +98,9 @@ public class Viewer extends JFrame{
 	//
 	//  C O N S T R U C T O R S
 	//
+	/**
+	 * Creates a Viewer (JFrame) containing a JMenuBar and a Container with graphical elements.
+	 */
 	public Viewer() {
 		super();
 		init();
@@ -112,92 +108,83 @@ public class Viewer extends JFrame{
 
 
 	private void init() {
-		// https://www.codespeedy.com/how-to-add-multiple-panels-in-jframe-in-java/
+		// Set instance variables  
+		// a. JFrame 
 		setTitle(TITLE[0] + TITLE[1] + TITLE[2]);
 		setBounds(0, 0, FRAME_DIMS[0], FRAME_DIMS[1]);
-		setLayout(null);
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-
-		// 
-		setJMenuBar(makeMenuBar());
-		setFileChooser(); 
-		setFile(null);
-
-		// Hierarchy
-		// 0. JFrame -> 1. Container -> 2. JPanels
-
-		// 1. Container
-		Container cp = getContentPane();
-
-		// 2. JPanels
-		// a. Encoding panel
-		JPanel encPanel = makeJPanel(
-			null, new Rectangle(H_MARGIN, V_MARGIN, PANEL_W, ENC_PANEL_H), "Encoding"
-		);
-		
+		setLayout(null);
+		// b. Viewer 
 		setHighlighter();
 		setEncodingTextArea();
-		JScrollPane encScrollPane = makeJScrollPane(
-			getEncodingTextArea(), 
-			new Rectangle(H_MARGIN, 2*V_MARGIN, PANEL_W - 2*H_MARGIN, ENC_PANEL_H - 3*V_MARGIN)
-		);
-		encPanel.add(encScrollPane, null);
-		
-		// b. Tablature panel
-		JPanel tabPanel = makeJPanel(
-			null, new Rectangle(H_MARGIN, 2*V_MARGIN + ENC_PANEL_H, PANEL_W, TAB_PANEL_H + 6*V_MARGIN), 
-			"Tablature"
-		);
-
 		setTabTextArea();
-		JScrollPane tabScrollPane = makeJScrollPane(
-			getTabTextArea(), 
-			new Rectangle(H_MARGIN, 2*V_MARGIN, PANEL_W - 2*H_MARGIN, TAB_PANEL_H - 3*V_MARGIN)
-		);
-		tabPanel.add(tabScrollPane, null);
+		setTabStyleButtonGroup();
+		setRhythmFlagsCheckBox();
+		setFileChooser(new File(Path.ROOT_PATH_USER + Path.ENCODINGS_PATH)); 
+		setFile(null);
 
-		JPanel stylePanel = makeJPanel(
-			null, 
-			new Rectangle(H_MARGIN, TAB_PANEL_H, (PANEL_W / 3) - H_MARGIN, 5*V_MARGIN),
-			"Tablature style"
+		// Set graphical elements
+		// a. Menu bar 
+		setJMenuBar(makeJMenuBar());
+		// b. Content pane
+		Container cp = getContentPane(); 
+		// 1. Encoding panel, containing scroll pane with text area
+		JPanel encPanel = makeJPanel(
+			null, "Encoding", new Rectangle(HM, VM, PANEL_W, ENC_PANEL_H) 
 		);
-		setTabTypeButtonGroup();
-		for (AbstractButton b : Collections.list(getTabTypeButtonGroup().getElements())) {
+		encPanel.add(makeJScrollPane(
+			getEncodingTextArea(), new Rectangle(HM, 2*VM, PANEL_W - 2*HM, ENC_PANEL_H - 3*VM)), null);
+		cp.add(encPanel);
+
+		// 2. Tablature panel, containing scroll pane with text area; panel with radio buttons;
+		// panel with checkbox; button
+		JPanel tabPanel = makeJPanel(
+			null, "Tablature", new Rectangle(HM, 2*VM + ENC_PANEL_H, PANEL_W, TAB_PANEL_H + 6*VM) 
+		);
+		tabPanel.add(makeJScrollPane(
+			getTabTextArea(), new Rectangle(HM, 2*VM, PANEL_W - 2*HM, TAB_PANEL_H - 3*VM)), null);
+		JPanel stylePanel = makeJPanel(
+			null, "Tablature style", new Rectangle(HM, TAB_PANEL_H, PANEL_PART_W - HM, 5*VM)
+		);
+		for (AbstractButton b : Collections.list(getTabStyleButtonGroup().getElements())) {
 			stylePanel.add(b, null);
 		}
 		tabPanel.add(stylePanel, null);
-		
-		JPanel rsPanel = makeJPanel(
-			null, 
-			new Rectangle(H_MARGIN + (PANEL_W / 3), TAB_PANEL_H, (PANEL_W / 3) - H_MARGIN, 5*V_MARGIN),
-			"Rhythm flags"
+		JPanel rfPanel = makeJPanel(
+			null, "Rhythm flags", new Rectangle(HM + PANEL_PART_W, TAB_PANEL_H, PANEL_PART_W - HM, 5*VM)
 		);
-		setRhythmSymbolsCheckBox();
-		rsPanel.add(getRhythmSymbolsCheckBox(), null);
-		tabPanel.add(rsPanel, null);
-		
-//		setViewButton();
-//		tabPanel.add(getViewButton());
+		rfPanel.add(getRhythmFlagsCheckBox(), null);
+		tabPanel.add(rfPanel, null);
 		JButton viewButton = makeJButton(
-			new Rectangle(PANEL_W - BUTTON_W - H_MARGIN, TAB_PANEL_H, BUTTON_W, BUTTON_H), 
-			"View"
+			"View",	new Rectangle(PANEL_W - BUTTON_W - HM, TAB_PANEL_H, BUTTON_W, BUTTON_H) 
 		);
-		viewButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				viewButtonAction();
-			}
-		});
 		tabPanel.add(viewButton);
-
-		cp.add(encPanel);
 		cp.add(tabPanel);
-				
+
 		setVisible(true);
 	}
 
 
-	private JTextArea makeJTextArea(String content, Rectangle bounds, Highlighter hl) {
+	//////////////////////////////
+	//
+	//  S E T T E R S  
+	//  for instance variables 
+	//  (+ make() methods for 
+	//  content pane elements 
+	//  that are not (yet) 
+	//  instance variables) 
+	//
+	private void setHighlighter() {
+		highlighter = new DefaultHighlighter();
+	}
+
+
+	private void setEncodingTextArea() {
+		encodingTextArea = makeJTextArea("", getHighlighter(), null);
+	}
+
+
+	private JTextArea makeJTextArea(String content, Highlighter hl, Rectangle bounds) {
 		JTextArea ta = new JTextArea();
 		// If there is a JScrollPane, the JTextArea's bounds are overridden by the JScrollPane's 
 		if (bounds != null) {
@@ -212,7 +199,148 @@ public class Viewer extends JFrame{
 	}
 
 
-	private JPanel makeJPanel(LayoutManager lm, Rectangle bounds, String borderText) {
+	private void setTabTextArea() {
+		tabTextArea = makeJTextArea("", null, null);
+	}
+
+
+	private void setTabStyleButtonGroup() {
+		String[] t = new String[]{
+			TabSymbolSet.FRENCH.getType(), 
+			TabSymbolSet.ITALIAN.getType(),
+			TabSymbolSet.SPANISH.getType(), 
+			TabSymbolSet.NEWSIDLER_1536.getType()};
+		Rectangle[] bounds = new Rectangle[]{
+			new Rectangle(HM, 2*VM, LABEL_W, LABEL_H),
+			new Rectangle(HM, 2*VM + LABEL_H, LABEL_W, LABEL_H),
+			new Rectangle(HM + LABEL_W, 2*VM, LABEL_W, LABEL_H),
+			new Rectangle(HM + LABEL_W, 2*VM + LABEL_H, LABEL_W, LABEL_H)
+		};
+		Boolean[] selected = new Boolean[]{true, false, false, false};
+		Boolean[] enabled = new Boolean[]{true, true, true, false};
+		tabStyleButtonGroup = makeButtonGroup(t, bounds, selected, enabled);
+	}
+
+
+	private ButtonGroup makeButtonGroup(String[] t, Rectangle[] bounds, Boolean[] selected, Boolean[] enabled) {
+		ButtonGroup bg = new ButtonGroup();
+		for (int i = 0; i < bounds.length; i++) {
+			JRadioButton rb = new JRadioButton(t[i]);
+			rb.setBounds(bounds[i]);
+			rb.setSelected(selected[i]);
+			rb.setEnabled(enabled[i]);
+			bg.add(rb);
+		}
+		return bg;
+	}
+
+
+	private void setRhythmFlagsCheckBox() {
+		rhythmFlagsCheckBox = makeJCheckBox(
+			"Hide repeated rhythm flags",
+			new Rectangle(HM, 2*VM, LABEL_W*2 + (LABEL_W / 2), LABEL_H)
+		);
+	}
+
+
+	private JCheckBox makeJCheckBox(String t, Rectangle bounds) {
+		JCheckBox cb = new JCheckBox();
+		cb.setBounds(bounds);
+		cb.setText(t);
+		return cb;
+	}
+
+
+	private void setFileChooser(File f) {
+		JFileChooser fc = new JFileChooser();
+		fc.setCurrentDirectory(f);
+		fileChooser = fc;
+	}
+
+
+	private void setFile(File f) {
+		file = f;
+	}
+
+
+	private JMenuBar makeJMenuBar() {
+		JMenuBar mb = new JMenuBar();
+
+		Map<String, String> extensions = new LinkedHashMap<String, String>();
+		extensions.put("ASCII tab", ASCII_EXTENSION);
+		extensions.put("TabCode", TABCODE_EXTENSION);
+		extensions.put("MEI", MEI_EXTENSION);
+
+		// File
+		JMenu m = new JMenu("File");
+		for (String s : Arrays.asList("New", "Open", "Save", "Save as", "Import", "Export")) {
+			// Add JMenuItem
+			if (!Arrays.asList("Import", "Export").contains(s)) {
+				JMenuItem mi = new JMenuItem(s);
+				mi.addActionListener(makeActionListener(s, null));
+				m.add(mi);
+			}
+			// Add JMenu with JMenuItems
+			else {
+				JMenu mm = new JMenu(s);
+				for (String ss : (s.equals("Import") ? Arrays.asList("ASCII tab", "TabCode") : 
+					Arrays.asList("ASCII tab", "MEI"))) {
+					JMenuItem mi = new JMenuItem(ss);
+					mi.addActionListener(makeActionListener(s, extensions.get(ss)));
+					mm.add(mi);
+				}
+				m.add(mm);
+			}
+		}
+		mb.add(m);
+
+		// Edit
+		m = new JMenu("Edit");
+		for (String s : Arrays.asList("Select all")) {
+			JMenuItem mi = new JMenuItem(s);
+			mi.addActionListener(makeActionListener(s, null));
+			m.add(mi);
+		}
+		mb.add(m);
+
+		return mb;
+	}
+
+
+	private ActionListener makeActionListener(String actionStr, String ext) {
+		return new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (actionStr.equals("New")) {
+					newFileAction();
+				}
+				else if (actionStr.equals("Open")) {
+					openFileAction();
+				}
+				else if (actionStr.equals("Save")) {
+					saveFileAction();
+				}
+				else if (actionStr.equals("Save as")) {
+					saveAsFileAction();
+				}
+				else if (actionStr.equals("Import")) {
+					importFileAction(ext);
+				}
+				else if (actionStr.equals("Export")) {
+					exportFileAction(ext);
+				}
+				else if (actionStr.equals("Select all")) {
+					selectAllEditAction();
+				}
+				else if (actionStr.equals("View")) {
+					viewButtonAction();
+				}
+			}
+		};
+	}
+
+
+	private JPanel makeJPanel(LayoutManager lm, String borderText, Rectangle bounds) {
 		JPanel p = new JPanel();
 		p.setLayout(lm);
 		p.setBounds(bounds);
@@ -231,190 +359,12 @@ public class Viewer extends JFrame{
 	}
 
 
-	//////////////////////////////
-	//
-	//  S E T T E R S  
-	//  for instance variables
-	//
-	private void setHighlighter() {
-		highlighter = new DefaultHighlighter();
-	}
-
-
-	private void setTabTypeButtonGroup() {
-		String[] t = new String[]{
-			TabSymbolSet.FRENCH.getType(), 
-			TabSymbolSet.ITALIAN.getType(),
-			TabSymbolSet.SPANISH.getType(), 
-			TabSymbolSet.NEWSIDLER_1536.getType()};
-		Rectangle[] bounds = new Rectangle[]{
-			new Rectangle(H_MARGIN, 2*V_MARGIN, LABEL_W, LABEL_H),
-			new Rectangle(H_MARGIN, 2*V_MARGIN + LABEL_H, LABEL_W, LABEL_H),
-			new Rectangle(H_MARGIN + LABEL_W, 2*V_MARGIN, LABEL_W, LABEL_H),
-			new Rectangle(H_MARGIN + LABEL_W, 2*V_MARGIN + LABEL_H, LABEL_W, LABEL_H)
-		};
-		Boolean[] selected = new Boolean[]{true, false, false, false};
-		Boolean[] enabled = new Boolean[]{true, true, true, false};
-		tabTypeButtonGroup = makeButtonGroup(t, bounds, selected, enabled);
-	}
-
-
-	private ButtonGroup makeButtonGroup(String[] t, Rectangle[] bounds, Boolean[] selected, Boolean[] enabled) {
-		ButtonGroup bg = new ButtonGroup();
-		for (int i = 0; i < bounds.length; i++) {
-			JRadioButton rb = new JRadioButton(t[i]);
-			rb.setBounds(bounds[i]);
-			rb.setSelected(selected[i]);
-			rb.setEnabled(enabled[i]);
-			bg.add(rb);
-		}
-		return bg;
-	}
-
-
-	private void setEncodingTextArea() {
-		encodingTextArea = makeJTextArea("", null, getHighlighter());
-	}
-
-
-	private void setTabTextArea() {
-		tabTextArea = makeJTextArea("", null, null);
-	}
-
-
-	private void setRhythmSymbolsCheckBox() {
-		rhythmSymbolsCheckBox = makeJCheckBox(
-			new Rectangle(H_MARGIN, 2*V_MARGIN, LABEL_W*2 + (LABEL_W / 2), LABEL_H),
-			"Hide repeated rhythm flags"
-		);
-	}
-
-
-	private JCheckBox makeJCheckBox(Rectangle bounds, String t) {
-		JCheckBox cb = new JCheckBox();
-		cb.setBounds(bounds);
-		cb.setText(t);
-		return cb;
-	}
-
-
-	private JButton makeJButton(Rectangle bounds, String t) {
+	private JButton makeJButton(String t, Rectangle bounds) {
 		JButton b = new JButton();
 		b.setBounds(bounds);
 		b.setText(t);
+		b.addActionListener(makeActionListener(t, null));
 		return b;
-	}
-
-
-	private JMenuBar makeMenuBar() {
-		JMenuBar mb = new JMenuBar();
-
-		Map<String, String> extensions = new LinkedHashMap<String, String>();
-		extensions.put("ASCII tab", ASCII_EXTENSION);
-		extensions.put("TabCode", TABCODE_EXTENSION);
-		extensions.put("MEI", MEI_EXTENSION);
-
-		// File
-		JMenu fileM = new JMenu("File");
-		for (String s : Arrays.asList("New", "Open", "Save", "Save as", "Import", "Export")) {
-			// Add JMenuItem
-			if (!Arrays.asList("Import", "Export").contains(s)) {
-				JMenuItem mi = new JMenuItem(s);
-				mi.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						if (s.equals("New")) {
-							newFileAction();
-						}
-						else if (s.equals("Open")) {
-							openFileAction();
-						}
-						else if (s.equals("Save")) {
-							saveFileAction(Encoding.EXTENSION);
-						}
-						else if (s.equals("Save as")) {
-							saveAsFileAction(Encoding.EXTENSION);
-						}
-					}
-				});
-				fileM.add(mi);
-			}
-			// Add JMenu with JMenuItems
-			else {
-				JMenu m = new JMenu(s);
-				for (String s2 : (s.equals("Import") ? Arrays.asList("ASCII tab", "TabCode") : 
-					Arrays.asList("ASCII tab", "MEI"))) {
-					JMenuItem mi = new JMenuItem(s2);
-					mi.addActionListener(new ActionListener() {
-						@Override
-						public void actionPerformed(ActionEvent e) {
-							if (s.equals("Import")) {
-								importFileAction(extensions.get(s2));
-							}
-							else if (s.equals("Export")) {
-								exportFileAction(extensions.get(s2));
-							}
-						}
-					});
-					m.add(mi);
-				}
-				fileM.add(m);
-			}
-		}
-		
-//		JMenu importSubm = new JMenu("Import");
-//		for (String s : Arrays.asList("ASCII tab", "TabCode")) {
-//			JMenuItem mi = new JMenuItem(s);
-//			mi.addActionListener(new ActionListener() {
-//				@Override
-//				public void actionPerformed(ActionEvent e) {
-//					importFileAction(s.equals("ASCII tab") ? ASCII_EXTENSION : TABCODE_EXTENSION);
-//				}
-//			});
-//			importSubm.add(mi);
-//		}
-//		fileM.add(importSubm);
-//				
-//		JMenu exportSubm = new JMenu("Export");
-//		for (String s : Arrays.asList("ASCII tab", "MEI")) {
-//			JMenuItem mi = new JMenuItem(s);
-//			mi.addActionListener(new ActionListener() {
-//				@Override
-//				public void actionPerformed(ActionEvent e) {
-//					exportFileAction(s.equals("ASCII tab") ? ASCII_EXTENSION : MEI_EXTENSION);
-//				}
-//			});
-//			exportSubm.add(mi);
-//		}
-//		fileM.add(exportSubm);
-
-		// Edit
-		JMenu editM = new JMenu("Edit");
-		JMenuItem selectAllMenuItem = new JMenuItem("Select all");
-		selectAllMenuItem.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				getEncodingTextArea().requestFocus();
-				getEncodingTextArea().selectAll();
-			}
-		});
-		editM.add(selectAllMenuItem);
-
-		mb.add(fileM);
-		mb.add(editM);
-		return mb;
-	}
-
-
-	private void setFileChooser() {
-		JFileChooser fc = new JFileChooser();
-		fc.setCurrentDirectory(new File(Path.ROOT_PATH_USER + Path.ENCODINGS_PATH));
-		fileChooser = fc;
-	}
-
-
-	private void setFile(File f) {
-		file = f;
 	}
 
 
@@ -428,11 +378,6 @@ public class Viewer extends JFrame{
 	}
 
 
-	private ButtonGroup getTabTypeButtonGroup() {
-		return tabTypeButtonGroup;
-	}
-
-
 	private JTextArea getEncodingTextArea() {
 		return encodingTextArea; 
 	}
@@ -443,8 +388,13 @@ public class Viewer extends JFrame{
 	}
 
 
-	private JCheckBox getRhythmSymbolsCheckBox() {
-		return rhythmSymbolsCheckBox; 
+	private ButtonGroup getTabStyleButtonGroup() {
+		return tabStyleButtonGroup;
+	}
+
+
+	private JCheckBox getRhythmFlagsCheckBox() {
+		return rhythmFlagsCheckBox; 
 	}
 
 
@@ -509,13 +459,14 @@ public class Viewer extends JFrame{
 	}
 
 
-	private void saveFileAction(String extension) {
-		String content = 
-			extension.equals(Encoding.EXTENSION) ? getEncodingTextArea().getText() : 
-			getTabTextArea().getText();
+	private void saveFileAction(/*String extension*/) {
+		String content = getEncodingTextArea().getText();
+//		String content =
+//			extension.equals(Encoding.EXTENSION) ? getEncodingTextArea().getText() : 
+//			getTabTextArea().getText();
 		// New file: treat as Save As
 		if (getFile() == null) {
-			saveAsFileAction(extension);
+			saveAsFileAction(/*extension*/);
 		}
 		// Existing file
 		else {
@@ -524,22 +475,25 @@ public class Viewer extends JFrame{
 	}
 
 
-	private void saveAsFileAction(String extension) {
-		String content = 
-			extension.equals(Encoding.EXTENSION) ? getEncodingTextArea().getText() : 
-			getTabTextArea().getText();
+	private void saveAsFileAction(/*String extension*/) {
+		String content = getEncodingTextArea().getText();
+//		String content = 
+//			extension.equals(Encoding.EXTENSION) ? getEncodingTextArea().getText() : 
+//			getTabTextArea().getText();
 
 		getFileChooser().setDialogType(JFileChooser.SAVE_DIALOG);
 		getFileChooser().setDialogTitle("Save as");
-		// Set file type filter and suggested file name 
-		if (extension.equals(Encoding.EXTENSION)) {
-			getFileChooser().setFileFilter(new FileNameExtensionFilter("tab+ (.tbp)", extension.substring(1)));
-			getFileChooser().setSelectedFile(getFile() == null ? new File("untitled" + extension): getFile());
-		}
-		else {
-			getFileChooser().setFileFilter(new FileNameExtensionFilter("ASCII (" + ASCII_EXTENSION +")", extension.substring(1)));			
-			getFileChooser().setSelectedFile(new File(getFile().getAbsolutePath().replace(Encoding.EXTENSION, extension)));
-		}
+		// Set file type filter and suggested file name
+		getFileChooser().setFileFilter(new FileNameExtensionFilter("tab+ (.tbp)", Encoding.EXTENSION.substring(1)));
+		getFileChooser().setSelectedFile(getFile() == null ? new File("untitled" + Encoding.EXTENSION): getFile());
+//		if (extension.equals(Encoding.EXTENSION)) {
+//			getFileChooser().setFileFilter(new FileNameExtensionFilter("tab+ (.tbp)", extension.substring(1)));
+//			getFileChooser().setSelectedFile(getFile() == null ? new File("untitled" + extension): getFile());
+//		}
+//		else {
+//			getFileChooser().setFileFilter(new FileNameExtensionFilter("ASCII (" + ASCII_EXTENSION +")", extension.substring(1)));			
+//			getFileChooser().setSelectedFile(new File(getFile().getAbsolutePath().replace(Encoding.EXTENSION, extension)));
+//		}
 		// https://stackoverflow.com/questions/17010647/set-default-saving-extension-with-jfilechooser
 		if (getFileChooser().showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
 			File f = null;
@@ -640,14 +594,18 @@ public class Viewer extends JFrame{
 	}
 
 
+	private void selectAllEditAction() {
+		getEncodingTextArea().requestFocus();
+		getEncodingTextArea().selectAll();
+	}
+
+
 	/**
 	 * Converts the encoding in the encoding area into the chosen tablature style, and shows 
 	 * that in the TabViewer window. In case the encoding contains errors, an error message 
 	 * is given and the TabViewer is not opened. 
 	 * 
 	 * This is the action performed when clicking the View button in the EncodingViewer.
-	 * 
-	 * @param rawEnc
 	 */ 
 	private void viewButtonAction() {
 		final int firstErrorCharIndex = 0;
@@ -726,7 +684,7 @@ public class Viewer extends JFrame{
 
 				// Determine TabSymbolSet
 				TabSymbolSet tss = null;
-				for (AbstractButton b : Collections.list(getTabTypeButtonGroup().getElements())) {
+				for (AbstractButton b : Collections.list(getTabStyleButtonGroup().getElements())) {
 					if (b.isSelected()) {
 						tss = TabSymbolSet.getTabSymbolSet(null, b.getText());
 						break;
@@ -748,7 +706,7 @@ public class Viewer extends JFrame{
 //					getRhythmSymbolsCheckBox().isSelected(), true, true));
 //				initializeTabViewer(encPath);
 				
-				setTextAreaContent(enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected(), true, true), getTabTextArea());
+				setTextAreaContent(enc.visualise(tss, getRhythmFlagsCheckBox().isSelected(), true, true), getTabTextArea());
 //				new Viewer(/*getFileName(Encoding.EXTENSION)*/getFile(), enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected(), true, true), false);
 			} 
 		}
@@ -762,6 +720,7 @@ public class Viewer extends JFrame{
 
 
 	private void initFromWWW() {
+		// https://www.codespeedy.com/how-to-add-multiple-panels-in-jframe-in-java/
         setTitle("JPANEL CREATION");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(null);
@@ -935,8 +894,8 @@ public class Viewer extends JFrame{
 		//
 		JLabel l = new JLabel("Style:");
 		l.setBounds(new Rectangle(
-			MARGIN, 
-			MARGIN + PANEL_H + MARGIN, 
+			HM, 
+			VM + PANEL_H + VM, 
 //			MARGIN + ENCODING_TEXT_AREA_H + MARGIN, 
 			LABEL_W, 
 			LABEL_H)
@@ -945,13 +904,13 @@ public class Viewer extends JFrame{
 //		l.setBounds(new Rectangle(PANEL_MARGIN, 559, 81, 16));
 //		l.setBounds(new Rectangle(15, 15, 81, 16));
 //		l.setBounds(new Rectangle(15, 42, 81, 16));
-		for (AbstractButton b : Collections.list(getTabTypeButtonGroup().getElements())) {
+		for (AbstractButton b : Collections.list(getTabStyleButtonGroup().getElements())) {
 			p.add(b, null);
 		}
 		//
 		l = new JLabel("Error:");
 		l.setBounds(new Rectangle(
-			MARGIN, 
+			HM, 
 			69, 
 			LABEL_W, 
 			LABEL_H)
@@ -960,7 +919,7 @@ public class Viewer extends JFrame{
 //		p.add(getUpperErrorLabel(), null);
 //		p.add(getLowerErrorLabel(), null);
 		//
-		p.add(getRhythmSymbolsCheckBox(), null);
+		p.add(getRhythmFlagsCheckBox(), null);
 		//
 		p.add(getViewButton(), null);
 
@@ -969,8 +928,8 @@ public class Viewer extends JFrame{
 			ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, 
 			ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		sp.setBounds(new Rectangle(
-			MARGIN, 
-			MARGIN, 
+			HM, 
+			VM, 
 			PANEL_W/*TEXT_AREA_W*/, 
 			PANEL_H
 //			ENCODING_TEXT_AREA_H
@@ -982,8 +941,8 @@ public class Viewer extends JFrame{
 			ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, 
 			ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		sp.setBounds(new Rectangle(
-			MARGIN, 
-			MARGIN + PANEL_H /*ENCODING_TEXT_AREA_H*/ + MARGIN + BUTTON_H + MARGIN, 
+			HM, 
+			VM + PANEL_H /*ENCODING_TEXT_AREA_H*/ + VM + BUTTON_H + VM, 
 			PANEL_W/*TEXT_AREA_W*/,
 			PANEL_H
 //			TAB_TEXT_AREA_H
