@@ -46,6 +46,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 
+import imports.TabImport;
 import path.Path;
 import tbp.Encoding.Stage;
 import tbp.TabSymbol.TabSymbolSet;
@@ -86,7 +87,7 @@ public class Viewer extends JFrame{
 	private ButtonGroup tabStyleButtonGroup;
 	private JCheckBox rhythmFlagsCheckBox;
 	private JFileChooser fileChooser;
-	private File file;
+	private File file; // a .tbp file 
 
 
 	public static void main(String[] args) {
@@ -204,7 +205,7 @@ public class Viewer extends JFrame{
 	}
 
 
-	private void setTabStyleButtonGroup() {
+	private void setTabStyleButtonGroup() { // TODO
 		String[] t = new String[]{
 			TabSymbolSet.FRENCH.getType(), 
 			TabSymbolSet.ITALIAN.getType(),
@@ -425,156 +426,140 @@ public class Viewer extends JFrame{
 	}
 
 
+	// https://www.youtube.com/watch?v=Z8p_BtqPk78
+	// https://www.guru99.com/buffered-reader-in-java.html
+	// https://stackoverflow.com/questions/56151113/use-try-with-resources-or-close-this-bufferedreader-in-a-finally-clause
+	// https://stackoverflow.com/questions/17010647/set-default-saving-extension-with-jfilechooser
+	// https://stackoverflow.com/questions/8402889/working-with-jfilechooser-getting-access-to-the-selected-file
 	private void openFileAction() {
 		setTextAreaContent("", getTabTextArea());
-		getFileChooser().setDialogType(JFileChooser.OPEN_DIALOG);
-		getFileChooser().setDialogTitle("Open");
-		// Set file type filter
-		getFileChooser().setFileFilter(new FileNameExtensionFilter("tab+ (.tbp)", 
+		JFileChooser fc = getFileChooser();
+		fc.setDialogType(JFileChooser.OPEN_DIALOG);
+		fc.setDialogTitle("Open");
+		// Set file filter and suggested file name (empty string = remove any previous selection)
+		fc.setFileFilter(new FileNameExtensionFilter("tab+ (" + Encoding.EXTENSION + ")", 
 			Encoding.EXTENSION.substring(1)));
-		// Remove any previous selection
-		getFileChooser().setSelectedFile(new File(""));
-		// Get file
-		if (getFileChooser().showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-			File f = null;
-			try {
-				f = getFileChooser().getSelectedFile();
-				BufferedReader br = new BufferedReader(new FileReader(getFileChooser().getSelectedFile()));						
+		fc.setSelectedFile(new File(""));
+		if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+			File f = fc.getSelectedFile();
+			StringBuilder strb = new StringBuilder();
+			try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+				String line;
+				while ((line = br.readLine()) != null) {
+					strb.append(line).append("\r\n");
+				}
 			} catch (IOException e) {
-				// 11:11
-				// https://www.youtube.com/watch?v=Z8p_BtqPk78
 				e.printStackTrace();
 			}
 			setFile(f);
 			setTitle(f.getName() + " - " + TOOL_NAME);
-			String rawEncoding = "";
-			try {
-				rawEncoding = new String(Files.readAllBytes(Paths.get(f.getAbsolutePath())));
-//				rawEncoding = ToolBox.readTextFile(f);
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-			setTextAreaContent(rawEncoding, getEncodingTextArea());
+			setTextAreaContent(strb.toString(), getEncodingTextArea());
 		}
 	}
 
 
-	private void saveFileAction(/*String extension*/) {
-		String content = getEncodingTextArea().getText();
-//		String content =
-//			extension.equals(Encoding.EXTENSION) ? getEncodingTextArea().getText() : 
-//			getTabTextArea().getText();
+	// TODO converts (stylised) ASCII tab to tbp: TabImport.ascii2tbp
+	private void importFileAction(String extension) {
+		Map<String, String> extensions = new LinkedHashMap<String, String>();
+		extensions.put(ASCII_EXTENSION, "ASCII tab");
+		extensions.put(TABCODE_EXTENSION, "TabCode");
+		extensions.put(MEI_EXTENSION, "MEI");
+
+		setTextAreaContent("", getTabTextArea());
+		getFileChooser().setDialogType(JFileChooser.OPEN_DIALOG);
+		getFileChooser().setDialogTitle("Import");
+		// Set file filter and suggested file name (empty string = remove any previous selection)
+		getFileChooser().setFileFilter(new FileNameExtensionFilter(
+			extensions.get(extension) + " (" + extension + ")", extension.substring(1)));
+		getFileChooser().setSelectedFile(new File(""));
+		if (getFileChooser().showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+			File f = getFileChooser().getSelectedFile();
+			StringBuilder strb = new StringBuilder();
+			try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+				String line;
+				while ((line = br.readLine()) != null) {
+					strb.append(line).append("\r\n");
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			setFile(null); // TODO OK? or f as .tbp?
+			setTitle(f.getName() + " - " + TOOL_NAME); // TODO OK? or f as .tbp?
+			System.out.println(TabImport.ascii2tbp(strb.toString()));
+			setTextAreaContent(TabImport.ascii2tbp(strb.toString()), getEncodingTextArea());
+		}
+	}
+
+
+	private void saveFileAction() {
 		// New file: treat as Save As
 		if (getFile() == null) {
-			saveAsFileAction(/*extension*/);
+			saveAsFileAction();
 		}
 		// Existing file
 		else {
-			ToolBox.storeTextFile(content, getFile());
+			ToolBox.storeTextFile(getEncodingTextArea().getText(), getFile());
 		}
 	}
 
 
-	private void saveAsFileAction(/*String extension*/) {
-		String content = getEncodingTextArea().getText();
-//		String content = 
-//			extension.equals(Encoding.EXTENSION) ? getEncodingTextArea().getText() : 
-//			getTabTextArea().getText();
-
-		getFileChooser().setDialogType(JFileChooser.SAVE_DIALOG);
-		getFileChooser().setDialogTitle("Save as");
-		// Set file type filter and suggested file name
-		getFileChooser().setFileFilter(new FileNameExtensionFilter("tab+ (.tbp)", Encoding.EXTENSION.substring(1)));
-		getFileChooser().setSelectedFile(getFile() == null ? new File("untitled" + Encoding.EXTENSION): getFile());
-//		if (extension.equals(Encoding.EXTENSION)) {
-//			getFileChooser().setFileFilter(new FileNameExtensionFilter("tab+ (.tbp)", extension.substring(1)));
-//			getFileChooser().setSelectedFile(getFile() == null ? new File("untitled" + extension): getFile());
-//		}
-//		else {
-//			getFileChooser().setFileFilter(new FileNameExtensionFilter("ASCII (" + ASCII_EXTENSION +")", extension.substring(1)));			
-//			getFileChooser().setSelectedFile(new File(getFile().getAbsolutePath().replace(Encoding.EXTENSION, extension)));
-//		}
-		// https://stackoverflow.com/questions/17010647/set-default-saving-extension-with-jfilechooser
-		if (getFileChooser().showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-			File f = null;
-//			String extension = encodingFrame ? Encoding.EXTENSION.substring(1) : ".tab";
-//			try {
-			
-//				getFileChooser().setDialogType(JFileChooser.SAVE_DIALOG);
-//				getFileChooser().setFileFilter(new FileNameExtensionFilter(null, 
-//					Encoding.EXTENSION.substring(1)));
-				
-				
-				f = getFileChooser().getSelectedFile();;
-//				BufferedReader br = new BufferedReader(new FileReader(getFileChooser().getSelectedFile()));
-//				BufferedReader br = new BufferedReader(new FileReader(new File("")));
-
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-				
+	private void saveAsFileAction() {
+		JFileChooser fc = getFileChooser();
+		fc.setDialogType(JFileChooser.SAVE_DIALOG);
+		fc.setDialogTitle("Save as");
+		// Set file filter and suggested file name
+		fc.setFileFilter(new FileNameExtensionFilter("tab+ (" + Encoding.EXTENSION + ")", 
+			Encoding.EXTENSION.substring(1)));
+		fc.setSelectedFile(getFile() == null ? new File("untitled" + Encoding.EXTENSION) : getFile());
+		if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+			// try-catch block is only needed when reading from a File using a BufferedReader
+			File f = fc.getSelectedFile();			
+			// Set file if it hasn't been set yet (new file case; see saveFileAction())
 			if (getFile() == null) {
 				setFile(f);
 				setTitle(f.getName());
 			}
+			// Returns entered directly in encodingTextArea will be \n, but will be saved as \r\n;
+			// returns in a file opened into encodingTextArea will always be \r\n
+			ToolBox.storeTextFile(getEncodingTextArea().getText(), f);
+//			ToolBox.storeTextFile(handleReturns(getEncodingTextArea().getText()), f);
+		}
+		else {
 
-			// Handle any returns added to encoding (which will be "\n" and not "\r\n") by 
-			// replacing them with "\r\n"
-			// 1. List all indices of the \ns not preceded by \rs
-			List<Integer> indsOfLineBreaks = new ArrayList<Integer>(); 
-			for (int i = 0; i < content.length(); i++) {
-				String currChar = content.substring(i, i + 1);
-				if (currChar.equals("\n")) {
-					// NB: prevChar always exists as the char at index 0 in encoding will
-					// never be a \n
-					String prevChar = content.substring(i - 1, i);	
-					if (!prevChar.equals("\r")) {
-						indsOfLineBreaks.add(i);
-					}
+		}
+	}
+
+
+	/**
+	 * Replaces, in the given String, all "\n" that are not preceded by "\r" with "r\n".
+	 * 
+	 * @param content
+	 * @return
+	 */
+	private String handleReturns(String s) {
+		// List all indices of the \n not preceded by \r
+		List<Integer> indsOfLineBreaks = new ArrayList<Integer>(); 
+		for (int i = 0; i < s.length(); i++) {
+			String currChar = s.substring(i, i + 1);
+			if (currChar.equals("\n")) {
+				// NB: prevChar always exists as the char at index 0 in encoding will
+				// never be a \n
+				String prevChar = s.substring(i - 1, i);	
+				if (!prevChar.equals("\r")) {
+					indsOfLineBreaks.add(i);
 				}
 			}
-			// 2. Replace all \ns not preceded by \rs in the encoding by \n\rs and store the file
-			for (int i = indsOfLineBreaks.size() - 1; i >= 0; i--) {
-				int currInd = indsOfLineBreaks.get(i);
-				content = content.substring(0, currInd) + "\r" + content.substring(currInd);
-			}
-//			try {
-			
-			ToolBox.storeTextFile(content, f);
-//				Files.write(Paths.get("C:/Users/Reinier/Desktop/test_save" + extension), content.getBytes());
-//				Files.write(Paths.get(encPath), enc.getBytes());
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
 		}
+		// Replace all \n not preceded by \r in the encoding by \r\n and store the file
+		for (int i = indsOfLineBreaks.size() - 1; i >= 0; i--) {
+			int currInd = indsOfLineBreaks.get(i);
+			s = s.substring(0, currInd) + "\r" + s.substring(currInd);
+		}
+		return s;
 	}
 
 
-	private void importFileAction(String extension) {
-		setTextAreaContent("", getTabTextArea());
-		getFileChooser().setDialogType(JFileChooser.OPEN_DIALOG);
-		getFileChooser().setDialogTitle("Import");
-		// Set file type filter
-		if (extension.equals(TABCODE_EXTENSION)) {
-			getFileChooser().setFileFilter(new FileNameExtensionFilter("TabCode (" + TABCODE_EXTENSION + ")", extension.substring(1)));
-		}
-		else if (extension.equals(ASCII_EXTENSION)) {
-			getFileChooser().setFileFilter(new FileNameExtensionFilter("ASCII (" + ASCII_EXTENSION + ")", extension.substring(1)));
-		}
-		// Remove any previous selection
-		getFileChooser().setSelectedFile(new File(""));
-		if (getFileChooser().showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-			File f = null;
-			try {
-				f = getFileChooser().getSelectedFile();
-				BufferedReader br = new BufferedReader(new FileReader(getFileChooser().getSelectedFile()));						
-			} catch (IOException e) {
-				// 11:11
-				// https://www.youtube.com/watch?v=Z8p_BtqPk78
-				e.printStackTrace();
-			}
-		}
-	}
+
 
 
 	private void exportFileAction(String extension) {

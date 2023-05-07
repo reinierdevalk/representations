@@ -178,14 +178,18 @@ public class TabImport {
 		
 		// From TabCode
 		for (String s : pieces) {
-			tbp = tc2tbp(new File(path + s + ".tc"));
+			File f = new File(path + s + ".tc"); 
+			String tc = ToolBox.readTextFile(f).trim();
+			tbp = tc2tbp(tc);
 			ToolBox.storeTextFile(tbp, new File(path + s + Encoding.EXTENSION));
 		}
 		System.exit(0);
 
 		// From ASCII
 		for (String s : pieces) {
-			tbp = ascii2tbp(new File(path + s + ".tab"));
+			File f = new File(path + s + ".tab");
+			String ascii = ToolBox.readTextFile(f).trim();
+			tbp = ascii2tbp(ascii);
 			ToolBox.storeTextFile(tbp, new File(path + s + "XXX" + Encoding.EXTENSION));
 		}
 
@@ -193,15 +197,13 @@ public class TabImport {
 
 
 	/**
-	 * Creates a tab+ encoding from the given TabCode file.
+	 * Creates a tab+ encoding from the given TabCode encoding.
 	 * 
-	 * @param tabcode
-	 * @param metadata
-	 * @param courses
+	 * @param tc
 	 * @return
 	 */
-	public static String tc2tbp(File tabcode) {
-		String tc = ToolBox.readTextFile(tabcode).trim();
+	public static String tc2tbp(String tc) {
+//		String tc = ToolBox.readTextFile(tabcode).trim();
 
 		Map<Integer, String> tunings = new LinkedHashMap<Integer, String>();
 		tunings.put(65, "F");
@@ -676,7 +678,7 @@ public class TabImport {
 	 * @param ascii
 	 * @return
 	 */
-	public static String ascii2tbp(File ascii) {
+	public static String ascii2tbp(String ascii) {
 		// Make encoding
 		List<List<String>> systemContents = getSystemContents(getSystems(ascii));
 		StringBuffer enc = getEncoding(systemContents);
@@ -866,10 +868,11 @@ public class TabImport {
 	 * @param f
 	 * @return
 	 */
-	private static List<String[][]> getSystems(File f) {
+	private static List<String[][]> getSystems(String s) {
 		List<String[][]> systems = new ArrayList<String[][]>();
 		
-		String[] lines = ToolBox.readTextFile(f).split("\r\n");
+		String[] lines = s.split("\r\n");
+//		String[] lines = ToolBox.readTextFile(f).split("\r\n");
 		
 		int numCourses = 0;
 		for (String line : lines) {
@@ -1001,7 +1004,7 @@ public class TabImport {
 			// It tuningString equals currTuning
 			if (currTuning.equals(tuningString)) {
 				tuning = t.getName();
-				tss = TabSymbolSet.ITALIAN.toString();
+				tss = TabSymbolSet.ITALIAN.getName();
 				break;
 			}
 			// If tuningString equals the reverse of currTuning
@@ -1011,11 +1014,11 @@ public class TabImport {
 					String symb = firstChord.substring(i, i+1);
 					if (!symb.equals("-")) {
 						if (COURSE_NUMBERS.contains(symb)) {
-							tss = TabSymbolSet.SPANISH.toString(); 
+							tss = TabSymbolSet.SPANISH.getName(); 
 							break;
 						}
 						else if (TAB_LETTERS.contains(symb)) {
-							tss = TabSymbolSet.FRENCH.toString();
+							tss = TabSymbolSet.FRENCH.getName();
 							break;
 						}			
 					}
@@ -1023,6 +1026,7 @@ public class TabImport {
 			}
 		}
 		allChords.add(Arrays.asList(new String[]{tss, tuning}));
+
 		return allChords;
 	}
 	
@@ -1058,6 +1062,7 @@ public class TabImport {
 				// Non-barline or repeat dots event
 				if (!(event.equals(BARLINE_EVENT) || event.equals(REPEAT_DOTS_EVENT))) {
 					if (!tieActive) {
+						System.out.println("-- " + event);
 						String tabPlusChord;
 						// MS
 						if (event.contains("/")) {
@@ -1105,7 +1110,8 @@ public class TabImport {
 							}
 							// Start from lowest course
 							String chordOnly = event.substring(1);
-							if (tss.equals(TabSymbolSet.ITALIAN.toString())) {
+							if (tss.equals(TabSymbolSet.ITALIAN.getName())) {
+								System.out.println("yo yo yo yo");
 								chordOnly = new StringBuilder(chordOnly).reverse().toString();
 							}				
 							char[] chordAsArr = chordOnly.toCharArray();
