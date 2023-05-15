@@ -1062,7 +1062,7 @@ public class TabImport {
 				// Non-barline or repeat dots event
 				if (!(event.equals(BARLINE_EVENT) || event.equals(REPEAT_DOTS_EVENT))) {
 					if (!tieActive) {
-						System.out.println("-- " + event);
+//						System.out.println("-- " + event);
 						String tabPlusChord;
 						// MS
 						if (event.contains("/")) {
@@ -1111,7 +1111,6 @@ public class TabImport {
 							// Start from lowest course
 							String chordOnly = event.substring(1);
 							if (tss.equals(TabSymbolSet.ITALIAN.getName())) {
-								System.out.println("yo yo yo yo");
 								chordOnly = new StringBuilder(chordOnly).reverse().toString();
 							}				
 							char[] chordAsArr = chordOnly.toCharArray();

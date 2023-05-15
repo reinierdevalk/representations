@@ -20,6 +20,7 @@ import junit.framework.TestCase;
 import path.Path;
 import representations.Tablature.Tuning;
 import tbp.Encoding;
+import tbp.Encoding.Stage;
 import tbp.RhythmSymbol;
 import tbp.Symbol;
 import tbp.TabSymbol;
@@ -1176,7 +1177,7 @@ public class TablatureTest extends TestCase {
 		String bar3Beat3Triplets = "tr[mi.>.trmi.a6.c4.a2.a1.>.tr]mi.a6.c4.a2.a1.>.";
 		origEncoding = origEncoding.replace(bar3Beat3, bar3Beat3Triplets);
 		tablature = new Tablature(new Encoding(origEncoding, 
-			new Encoding(encodingTestpiece).getPiecename(), Encoding.SYNTAX_CHECKED), true);
+			new Encoding(encodingTestpiece).getPiecename(), Stage.SYNTAX_CHECKED), true);
 		
 		expected.add(new Rational[]{new Rational(5, 4), new Rational(17, 12), 
 			new Rational(Symbol.SEMIMINIM.getDuration(), 1)});

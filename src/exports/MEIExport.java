@@ -179,7 +179,7 @@ public class MEIExport {
 		
 		boolean grandStaff = true;
 		boolean tabOnTop = true;
-		boolean alignWithMetricBarring = true;
+		boolean alignWithMetricBarring = true; // TODO remove because this is always true?
 		String s = path + "newsidler-1544_2-nun_volget-test";
 		s = path + "fold_06-1025_adieu_mes_amours";
 		s = path + "Berchem_-_O_s'io_potessi_donna";
@@ -894,7 +894,7 @@ public class MEIExport {
 	 * @param tabOnTop
 	 * @param path
 	 */
-	public static void exportMEIFile(Transcription trans, Tablature tab, List<List<Integer>> 
+	public static String exportMEIFile(Transcription trans, Tablature tab, List<List<Integer>> 
 		mismatchInds, boolean grandStaff, boolean tabOnTop, boolean alignWithMetricBarring, 
 		String path) {
 		System.out.println("\r\n>>> MEIExport.exportMEIFile() called");
@@ -1072,7 +1072,7 @@ public class MEIExport {
 			List<Object> data = getData(tab, trans, mi, ki, tripletOnsetPairs);
 			List<List<String>> transBars =
 				getTransBars(data, tab, mi, tripletOnsetPairs, mismatchInds, grandStaff, tabOnTop,
-				numVoices, path);
+				numVoices/*, path*/);
 			for (int i = 0; i < numMetricBars; i++) {
 				StringBuilder currTransBarAsStr = new StringBuilder();
 				for (String s : transBars.get(i)) {
@@ -1156,9 +1156,15 @@ public class MEIExport {
 			sb.append(sectionsAsStr.get(i));
 		}
 		res = res.replace(INDENT_ONE + "score_placeholder" + "\r\n", sb.toString());
-
-		ToolBox.storeTextFile(res, 
-			new File(path + "-" + (grandStaff ? "grand_staff" : "score") + ".xml"));
+		
+		if (path != null) { 
+			ToolBox.storeTextFile(
+				res, new File(path + "-" + (grandStaff ? "grand_staff" : "score") + ".xml"));
+			return null;
+		}
+		else {
+			return res;
+		}
 	}
 
 
@@ -1844,7 +1850,7 @@ public class MEIExport {
 
 	private static List<List<String>> getTransBars(List<Object> data, Tablature tab, List<Integer[]> mi,
 		List<Rational[]> tripletOnsetPairs, List<List<Integer>> mismatchInds, 
-		boolean grandStaff, boolean tabOnTop, int numVoices, String path) {			
+		boolean grandStaff, boolean tabOnTop, int numVoices/*, String path*/) {			
 		System.out.println("\r\n>>> getTransBars() called");
 		List<List<String>> transBars = new ArrayList<>();
 		
@@ -1886,7 +1892,7 @@ public class MEIExport {
 		// Apply beaming: set beamOpen and beamClose in dataInt
 		System.out.println(Arrays.asList(dataInt));
 		System.out.println(Arrays.asList(dataStr));
-		dataInt = beam(dataInt, dataStr, tab, mi, tripletOnsetPairs, mismatchInds, numVoices, path);
+		dataInt = beam(dataInt, dataStr, tab, mi, tripletOnsetPairs, mismatchInds, numVoices/*, path*/);
 		
 //		for (List<Integer[]> l : dataInt.get(2)) {
 //			for (Integer[] in : l) {
@@ -1984,7 +1990,7 @@ public class MEIExport {
 
 	private static List<List<List<Integer[]>>> beam(List<List<List<Integer[]>>> dataInt, 
 		List<List<List<String[]>>> dataStr, Tablature tab, List<Integer[]> mi, 
-		List<Rational[]> tripletOnsetPairs, List<List<Integer>> mismatchInds, int numVoices, String path) {
+		List<Rational[]> tripletOnsetPairs, List<List<Integer>> mismatchInds, int numVoices/*, String path*/) {
 		System.out.println(">>> beam() called");
 		// Organise the information (i) per voice, (ii) per bar for the python beaming script
 		List<List<String>> unbeamedBarsPerVoice = new ArrayList<>();
@@ -2047,7 +2053,7 @@ public class MEIExport {
 				strb.append(s);
 			}
 		}
-		String filePath = path; // scriptPathPythonMEI;
+		String filePath = MEITemplatePath; //path; // scriptPathPythonMEI;
 		File notesFile = new File(filePath + "-notes.txt");
 		ToolBox.storeTextFile(strb.toString(), notesFile);
 //		System.out.println(strb.toString());
