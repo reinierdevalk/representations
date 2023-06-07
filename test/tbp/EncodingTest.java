@@ -213,7 +213,7 @@ public class EncodingTest extends TestCase {
 				"Author", 
 				"Title", 
 				"Source (year)", 
-				"FrenchTab", 
+				"French", 
 				"A", 
 				"2/2 (1-3)", 
 				"1"
@@ -414,7 +414,158 @@ public class EncodingTest extends TestCase {
 
 
 	@Test
-	public void testCheckForMetaDataErrors() {
+	public void testCheckComments() { // TODO MOVE
+		String correct = "{AUTHOR:a}{TITLE:t}{SOURCE:s}\n{e}nc{od}in{g}";
+		List<String> rawEncodings = new ArrayList<String>();
+		// CMB missing at beginning of tags
+		rawEncodings.add("{AUTHOR:a{TITLE:t}{SOURCE:s}\n{e}nc{od}in{g}");
+		// OMB missing at beginning of tags
+		rawEncodings.add("AUTHOR:a}{TITLE:t}{SOURCE:s}\n{e}nc{od}in{g}");
+		// CMB missing in middle of tags
+		rawEncodings.add("{AUTHOR:a}{TITLE:t{SOURCE:s}\n{e}nc{od}in{g}");
+		// OMB missing in middle of tags
+		rawEncodings.add("{AUTHOR:a}TITLE:t}{SOURCE:s}\n{e}nc{od}in{g}");
+		// CMB missing at end of tags
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s\n{e}nc{od}in{g}");
+		// OMB missing at end of tags
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}SOURCE:s}\n{e}nc{od}in{g}");
+		// CMB missing at beginning of remainder
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}\n{enc{od}in{g}");
+		// OMB missing at beginning of remainder
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}\ne}nc{od}in{g}");
+		// CMB missing in middle of remainder
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}\n{e}nc{odin{g}");
+		// OMB missing in middle of remainder
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}\n{e}ncod}in{g}");
+		// CMB missing at end of remainder
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}\n{e}nc{od}in{g");
+		// OMB missing at end of remainder
+		rawEncodings.add("{AUTHOR:a}{TITLE:t}{SOURCE:s}\n{e}nc{od}ing}");
+		// Correct encoding
+		rawEncodings.add(correct);
+
+		String o = "BRACKET ERROR -- Add complementing opening bracket.";
+		String c = "BRACKET ERROR -- Add complementing closing bracket.";
+		List<String[]> expected = new ArrayList<String[]>();
+		expected.add(new String[]{"0", "1", c, ""});
+		expected.add(new String[]{"8", "9", o, ""});
+		expected.add(new String[]{"10", "11", c, ""});
+		expected.add(new String[]{"17", "18", o, ""});
+		expected.add(new String[]{"19", "20", c, ""});
+		expected.add(new String[]{"27", "28", o, ""});
+		expected.add(new String[]{"30", "31", c, ""});
+		expected.add(new String[]{"31", "32", o, ""});
+		expected.add(new String[]{"35", "36", c, ""});
+		expected.add(new String[]{"37", "38", o, ""});
+		expected.add(new String[]{"41", "42", c, ""});
+		expected.add(new String[]{"42", "43", o, ""});
+		expected.add(null);
+
+		List<String[]> actual = new ArrayList<>();
+		for (String s : rawEncodings) {
+			actual.add(Encoding.checkComments(s));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			if (expected.get(i) == null) {
+				assertArrayEquals(expected.get(i), actual.get(i));
+			}
+			else {
+				assertEquals(expected.get(i).length, actual.get(i).length);
+				for (int j = 0; j < expected.get(i).length; j++) {
+					assertEquals(expected.get(i)[j], actual.get(i)[j]);
+				}
+			}
+		}
+	}
+
+
+	@Test
+	public void testCheckMetaData() {
+		String au = "{AUTHOR:a}"; // inds 0-9
+		String ti = "{TITLE:t}"; // inds 10-18
+		String so = "{SOURCE:s}"; // inds 19-28
+		String ta = "{TABSYMBOLSET:French}"; // inds 29-49
+		String tu = "{TUNING: A}"; // inds 50-60
+		String me = "{METER_INFO:2/2 (1-2); 3/2 (3-4)}"; // inds 61-93
+		String di = "{DIMINUTION: -2}"; // inds 94-109
+		String en = "\nencoding"; // inds 110-118 
+		String correct = au + ti + so + ta + tu + me + di + en;
+		List<String> rawEncodings = new ArrayList<String>();
+		// Missing tag
+		rawEncodings.add(au + ti + so + tu + me + en);
+		// Wrong tag order
+		rawEncodings.add(au + ti + so + tu + ta + me + di + en);
+		// Wrong content
+		// 1. No content
+		rawEncodings.add(correct.replace(ta, "{TABSYMBOLSET:}"));
+		// 2. Invalid TabSymbolSet
+		rawEncodings.add(correct.replace(ta, "{TABSYMBOLSET:Frenc}"));
+		// 3. Invalid tuning
+		rawEncodings.add(correct.replace(tu, "{TUNING: Q}"));
+		// 4. Invalid meter
+		rawEncodings.add(correct.replace(me, "{METER_INFO:2/2 (1-2); 3/5 (3-4)}"));
+		// 5. Invalid meter bars: non-parenthesised
+		rawEncodings.add(correct.replace(me, "{METER_INFO:2/2 1-2; 3/2 (3-4)}"));
+		// 6. Invalid meter bars: non-increasing
+		rawEncodings.add(correct.replace(me, "{METER_INFO:2/2 (2-1); 3/2 (3-4)}"));
+		// 7. Invalid meter bars: not connecting to previous meter section
+		rawEncodings.add(correct.replace(me, "{METER_INFO:2/2 (1); 3/2 (3-4)}"));
+		// 8. Invalid diminution
+		rawEncodings.add(correct.replace(di, "{DIMINUTION: D}"));
+		// Correct encoding
+		rawEncodings.add(correct);
+
+		List<String[]> expected = new ArrayList<>();
+		String e = "METADATA ERROR -- ";
+		expected.add(new String[]{"-1", "-1", e + "Add missing tags:", "TABSYMBOLSET, DIMINUTION."});
+		expected.add(new String[]{"-1", "-1", e + "Order tags correctly:", 
+			String.join(", ", Arrays.asList(Encoding.METADATA_TAGS)) + "."});
+		expected.add(new String[]{"30", "42", e + "Add TabSymbolSet.", ""});
+		expected.add(new String[]{"43", "48", e + "Replace invalid TabSymbolSet.", ""});
+		expected.add(new String[]{"59", "60", e + "Replace invalid tuning.", ""});
+		expected.add(new String[]{"84", "93", e + "Replace invalid time signature.", ""});
+		expected.add(new String[]{"73", "80", e + "Replace invalid bars.", ""});
+		expected.add(new String[]{"73", "82", e + "Replace invalid bars.", ""});
+		expected.add(new String[]{"82", "91", e + "Replace invalid bars.", ""});
+		expected.add(new String[]{"107", "108", e + "Replace invalid diminution.", ""});		
+		expected.add(null);
+
+//		for (String[] ex : expected) {
+//			if (ex != null) {
+//				System.out.println(Arrays.asList(ex));
+//			}
+//		}
+
+		List<String[]> actual = new ArrayList<String[]>();
+		for (int i = 0; i < rawEncodings.size(); i++) {
+			actual.add(Encoding.checkMetadata(rawEncodings.get(i)));
+		}
+		
+//		for (String[] ac : actual) {
+//			if  (ac != null) {
+//				System.out.println(Arrays.asList(ac));
+//			}
+//		}
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			if (expected.get(i) == null) {
+				assertArrayEquals(expected.get(i), actual.get(i));
+			}
+			else {
+				assertEquals(expected.get(i).length, actual.get(i).length);
+				for (int j = 0; j < expected.get(i).length; j++) {
+					assertEquals(expected.get(i)[j], actual.get(i)[j]);
+				}
+			}
+		}
+	}
+
+
+	@Test
+	public void testCheckMetaDataOLD() { // TODO remove
 		String correct = "{AUTHOR:a}{TITLE:t}{SOURCE:s}{TABSYMBOLSET:t}{TUNING:t}{METER_INFO:m}{DIMINUTION:d}\ne{n}c{o}d{i}n{g}";
 		List<String> rawEncodings = new ArrayList<String>();
 		// Missing tag
@@ -433,12 +584,14 @@ public class EncodingTest extends TestCase {
 		// Correct encoding
 		rawEncodings.add(correct);
 
-		List<Boolean> expected = Arrays.asList(new Boolean[]{
-			true, true, true, true, true, true, true, true, true, true, false}); 
+		String[] s = new String[]{};
+		List<String[]> expected = Arrays.asList(
+			new String[][]{s, s, s, s, s, s, s, s, s, s, null}
+		); 
 
-		List<Boolean> actual = new ArrayList<Boolean>();
+		List<String[]> actual = new ArrayList<String[]>();
 		for (int i = 0; i < rawEncodings.size(); i++) {
-			actual.add(Encoding.checkForMetadataErrors(rawEncodings.get(i)));
+			actual.add(Encoding.checkMetadata(rawEncodings.get(i)));
 		}
 
 		assertEquals(expected.size(), actual.size());
@@ -950,14 +1103,12 @@ public class EncodingTest extends TestCase {
 		String expected1 = getHeader("testpiece");
 		expected.add(expected1);
 		String expected2 = getHeader("testGetMeterInfo");
-		int start = expected2.indexOf(Encoding.METER_INFO_TAG) + 
-			(Encoding.METER_INFO_TAG + ": ").length();
+		int start = expected2.indexOf(Encoding.METER_INFO_TAG) + (Encoding.METER_INFO_TAG + ": ").length();
 		expected2 = 
 			expected2.replace(expected2.substring(start, 
 			expected2.indexOf(Encoding.CLOSE_METADATA_BRACKET, start)), 
 			"2/2 (1); 5/16 (2); 2/2 (3-4); 3/4 (5-6); 2/2 (7-8); 3/8 (9)");
-		start = expected2.indexOf(Encoding.DIMINUTION_TAG) +  
-			(Encoding.DIMINUTION_TAG + ": ").length();
+		start = expected2.indexOf(Encoding.DIMINUTION_TAG) + (Encoding.DIMINUTION_TAG + ": ").length();
 		expected2 = 
 			expected2.replace(expected2.substring(start, 
 			expected2.indexOf(Encoding.CLOSE_METADATA_BRACKET, start)), 

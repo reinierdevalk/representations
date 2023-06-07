@@ -731,7 +731,7 @@ public class ViewerOld extends JFrame {
 		// compared to what is in the loaded file)
 		Encoding enc = new Encoding(rawEnc, "", Stage.MINIMAL);
 		// a. If the encoding contains metadata errors: place error message
-		if (Encoding.checkForMetadataErrors(rawEnc)) {
+		if (Encoding.checkMetadata(rawEnc)) {
 			getUpperErrorLabel().setText(METADATA_ERROR);
 			getLowerErrorLabel().setText("");
 //			getErrorMessageLabel("upper").setText(Encoding.METADATA_ERROR);
@@ -749,7 +749,7 @@ public class ViewerOld extends JFrame {
 //			getErrorMessageLabel("upper").setText("(none)");
 //			getErrorMessageLabel("lower").setText(null);
 			// a. If the encoding contains encoding errors: place error messages and highlight
-			String[] encErrs = Encoding.checkForEncodingErrors(rawEnc, cleanEnc, enc.getTabSymbolSet());
+			String[] encErrs = Encoding.checkEncoding(rawEnc, cleanEnc, enc.getTabSymbolSet());
 			if (encErrs != null) {
 				getUpperErrorLabel().setText(encErrs[errorStringIndex]);
 				getLowerErrorLabel().setText(encErrs[ruleStringIndex]);

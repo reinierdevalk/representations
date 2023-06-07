@@ -10,6 +10,7 @@ public class MensurationSign extends Symbol {
 	public static final int DEFAULT_STAFFLINE = 3; 
 
 	private Integer[] meter;
+	private String meterString;
 	private int staffLine;
 
 
@@ -34,6 +35,7 @@ public class MensurationSign extends Symbol {
 		setEncoding(e);
 		setSymbol(s);
 		setMeter(m);
+		setMeterString();
 		setStaffLine();		
 	}
 
@@ -45,6 +47,11 @@ public class MensurationSign extends Symbol {
 	//
 	void setMeter(Integer[] m) {
 		meter = m;
+	}
+
+
+	void setMeterString() {
+		meterString = getMeter()[0] + "/" + getMeter()[1];
 	}
 
 
@@ -84,6 +91,11 @@ public class MensurationSign extends Symbol {
 	//
 	public Integer[] getMeter() {
 		return meter;  
+	}
+
+
+	public String getMeterString() {
+		return meterString;
 	}
 
 
@@ -134,6 +146,7 @@ public class MensurationSign extends Symbol {
 			getEncoding().equals(m.getEncoding()) &&
 			getSymbol().equals(m.getSymbol()) &&
 			Arrays.equals(getMeter(), m.getMeter()) &&
+			getMeterString().equals(m.getMeterString()) &&
 			getStaffLine() == m.getStaffLine();
 	}
 }

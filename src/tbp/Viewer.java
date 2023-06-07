@@ -61,15 +61,26 @@ public class Viewer extends JFrame{
 	private static final long serialVersionUID = 1L;
 
 	private static final Font FONT = new Font("Courier New", Font.PLAIN, 12);
-	private static final String TOOL_NAME = "tab+Editor";
+	private static final String ASCII = "ASCII tab";
 	private static final String ASCII_EXTENSION = ".tab";
-	private static final String TABCODE_EXTENSION = ".tc";
+	private static final String TC = "TabCode";
+	private static final String TC_EXTENSION = ".tc";
+	private static final String MEI = "MEI";
 	private static final String MEI_EXTENSION = ".xml";
 	private static final String MEI_EXTENSION_ALT = ".mei";
-	private static final String[] TITLE = 
-		new String[]{"untitled", Encoding.EXTENSION, " - " + TOOL_NAME};
-	private static final String METADATA_ERROR = 
-		"METADATA ERROR -- Check for missing or misplaced curly brackets.";
+	private static final String TBP = "tab+";
+	private static final String[] TITLE = new String[]{
+		"untitled", Encoding.EXTENSION, " - " + "tab+Editor"
+	};
+
+	private static final Map<String, String> EXTENSIONS;
+	static { EXTENSIONS = new LinkedHashMap<String, String>();
+		EXTENSIONS.put(ASCII_EXTENSION, ASCII);
+		EXTENSIONS.put(TC_EXTENSION, TC);
+		EXTENSIONS.put(MEI_EXTENSION, MEI);
+		EXTENSIONS.put(MEI_EXTENSION_ALT, MEI);
+		EXTENSIONS.put(Encoding.EXTENSION, TBP);
+	}
 
 	private static final int HM = 15; // horizontal margin
 	private static final int VM = 15; // vertical margin
@@ -87,22 +98,14 @@ public class Viewer extends JFrame{
 		HM/2 + PANEL_DIMS[0] + HM/2, VM + ENC_PANEL_H + VM + TAB_PANEL_H + VM + V_CORRECTION
 	};
 
-	private static final Map<String, String> EXTENSIONS;
-	static { EXTENSIONS = new LinkedHashMap<String, String>();
-		EXTENSIONS.put(ASCII_EXTENSION, "ASCII tab");
-		EXTENSIONS.put(TABCODE_EXTENSION, "TabCode");
-		EXTENSIONS.put(MEI_EXTENSION, "MEI");
-		EXTENSIONS.put(MEI_EXTENSION_ALT, "MEI");
-		EXTENSIONS.put(Encoding.EXTENSION, "tab+");
-	}
-
 	private Highlighter highlighter;
 	private JTextArea encodingTextArea;
 	private JTextArea tabTextArea;
 	private ButtonGroup tabStyleButtonGroup;
 	private JCheckBox rhythmFlagsCheckBox;
 	private JFileChooser fileChooser;
-	private File file; // a .tbp file 
+	private File file; // .tbp
+	private File importFile; // .tab or .tc
 
 
 	// https://www.youtube.com/watch?v=Z8p_BtqPk78
@@ -130,14 +133,35 @@ public class Viewer extends JFrame{
 	}
 
 
+	/**
+	 * New: <code>file</code> = <code>null</code> / <code>importFile</code> = <code>null</code> / 
+	 * title = "untitled.tbp" TODO
+	 * 
+	 * <ul>
+	 * <li>Save: redirects to Save as</li> 
+	 * <li>Save as: suggests to save in FileChooser dir (default dir) as untitled.tbp </li>
+	 * <li>Export:  suggests to save in FileChooser dir (default dir) as untitled.{@code<}ext{@code>} </li>
+	 *</ul>
+	 *
+	 * Open: <code>file</code> = .../{@code<}opened_file{@code>}.tbp / <code>importFile</code> = <code>null</code> / 
+	 * title = "{@code<}opened_file{@code>}.tbp"
+	 * <ul>
+	 * <li>Save: saves opened file </li>
+	 * <li>Save as: suggests to save in dir of opened file as {@code<}opened_file{@code>}.tbp </li>
+	 * <li>Export:  suggests to save in dir of opened file as {@code<}opened_file{@code>}.{@code<}ext{@code>} </li>
+	 * </ul>
+	 * 
+	 * Import: <code>file</code> = <code>null</code> / 
+	 * <code>importFile</code> = .../{@code<}imported_file{@code>}.{@code<}ext{@code>} / 
+	 * title = "{@code<}imported_file{@code>}.tbp"
+	 * <ul>
+	 * <li>Save: redirects to Save as </li>
+	 * <li>Save as: suggests to save in dir of imported file as {@code<}imported_file{@code>}.tbp </li>
+	 * <li>Export:  suggests to save in dir of imported file as {@code<}imported_file{@code>}.{@code<}ext{@code>} </li>
+	 * </ul>
+	 */
 	private void init() {
-		// Set instance variables  
-		// a. JFrame 
-		setTitle(TITLE[0] + TITLE[1] + TITLE[2]);
-		setBounds(0, 0, FRAME_DIMS[0], FRAME_DIMS[1]);
-		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		setLayout(null);
-		// b. Viewer 
+		// a. Viewer instance variables
 		setHighlighter();
 		setEncodingTextArea();
 		setTabTextArea();
@@ -145,45 +169,14 @@ public class Viewer extends JFrame{
 		setRhythmFlagsCheckBox();
 		setFileChooser(new File(Path.ROOT_PATH_USER + Path.ENCODINGS_PATH)); 
 		setFile(null);
-
-		// Set graphical elements
-		// a. Menu bar 
+		setImportFile(null);
+		// b. JFrame instance variables
+		setLayout(null);
 		setJMenuBar(makeJMenuBar());
-		// b. Content pane
-		Container cp = getContentPane(); 
-		// 1. Encoding panel, containing scroll pane with text area
-		JPanel encPanel = makeJPanel(
-			null, "Encoding", new Rectangle(HM, VM, PANEL_W, ENC_PANEL_H) 
-		);
-		encPanel.add(makeJScrollPane(
-			getEncodingTextArea(), new Rectangle(HM, 2*VM, PANEL_W - 2*HM, ENC_PANEL_H - 3*VM)), null);
-		cp.add(encPanel);
-
-		// 2. Tablature panel, containing scroll pane with text area; panel with radio buttons;
-		// panel with checkbox; button
-		JPanel tabPanel = makeJPanel(
-			null, "Tablature", new Rectangle(HM, 2*VM + ENC_PANEL_H, PANEL_W, TAB_PANEL_H + 6*VM) 
-		);
-		tabPanel.add(makeJScrollPane(
-			getTabTextArea(), new Rectangle(HM, 2*VM, PANEL_W - 2*HM, TAB_PANEL_H - 3*VM)), null);
-		JPanel stylePanel = makeJPanel(
-			null, "Tablature style", new Rectangle(HM, TAB_PANEL_H, PANEL_PART_W - HM, 5*VM)
-		);
-		for (AbstractButton b : Collections.list(getTabStyleButtonGroup().getElements())) {
-			stylePanel.add(b, null);
-		}
-		tabPanel.add(stylePanel, null);
-		JPanel rfPanel = makeJPanel(
-			null, "Rhythm flags", new Rectangle(HM + PANEL_PART_W, TAB_PANEL_H, PANEL_PART_W - HM, 5*VM)
-		);
-		rfPanel.add(getRhythmFlagsCheckBox(), null);
-		tabPanel.add(rfPanel, null);
-		JButton viewButton = makeJButton(
-			"View", new Rectangle(PANEL_W - BUTTON_W - HM, TAB_PANEL_H, BUTTON_W, BUTTON_H) 
-		);
-		tabPanel.add(viewButton);
-		cp.add(tabPanel);
-
+		setContentPane(makeContentPane());
+		setTitle(TITLE[0] + TITLE[1] + TITLE[2]);
+		setBounds(0, 0, FRAME_DIMS[0], FRAME_DIMS[1]);
+		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setVisible(true);
 	}
 
@@ -191,11 +184,12 @@ public class Viewer extends JFrame{
 	//////////////////////////////
 	//
 	//  S E T T E R S  
-	//  for instance variables 
-	//  (+ make() methods for 
-	//  content pane elements 
-	//  that are not (yet) 
-	//  instance variables) 
+	//  for instance variables
+	//  (with general makers (e.g., 
+	//  make<Type>(), not make<MyVar>())
+	//  and makers for elements of
+	//  instance variables (e.g., 
+	//  makeJPanel()))
 	//
 	private void setHighlighter() {
 		highlighter = new DefaultHighlighter();
@@ -227,25 +221,27 @@ public class Viewer extends JFrame{
 	}
 
 
-	private void setTabStyleButtonGroup() { // TODO
-		String[] t = new String[]{
-			TabSymbolSet.FRENCH.getType(), 
-			TabSymbolSet.ITALIAN.getType(),
-			TabSymbolSet.SPANISH.getType(), 
-			TabSymbolSet.NEWSIDLER_1536.getType()};
-		Rectangle[] bounds = new Rectangle[]{
-			new Rectangle(HM, 2*VM, LABEL_W, LABEL_H),
-			new Rectangle(HM, 2*VM + LABEL_H, LABEL_W, LABEL_H),
-			new Rectangle(HM + LABEL_W, 2*VM, LABEL_W, LABEL_H),
-			new Rectangle(HM + LABEL_W, 2*VM + LABEL_H, LABEL_W, LABEL_H)
-		};
-		Boolean[] selected = new Boolean[]{true, false, false, false};
-		Boolean[] enabled = new Boolean[]{true, true, true, false};
-		tabStyleButtonGroup = makeButtonGroup(t, bounds, selected, enabled);
+	private void setTabStyleButtonGroup() {
+		tabStyleButtonGroup = makeButtonGroup(
+			new String[]{
+				TabSymbolSet.FRENCH.getType(), 
+				TabSymbolSet.ITALIAN.getType(),
+				TabSymbolSet.SPANISH.getType(), 
+				TabSymbolSet.NEWSIDLER_1536.getType()}, 
+			new Rectangle[]{
+				new Rectangle(HM, 2*VM, LABEL_W, LABEL_H),
+				new Rectangle(HM, 2*VM + LABEL_H, LABEL_W, LABEL_H),
+				new Rectangle(HM + LABEL_W, 2*VM, LABEL_W, LABEL_H),
+				new Rectangle(HM + LABEL_W, 2*VM + LABEL_H, LABEL_W, LABEL_H)
+			}, 
+			new Boolean[]{true, false, false, false}, 
+			new Boolean[]{true, true, true, false}
+		);
 	}
 
 
-	private ButtonGroup makeButtonGroup(String[] t, Rectangle[] bounds, Boolean[] selected, Boolean[] enabled) {
+	private ButtonGroup makeButtonGroup(String[] t, Rectangle[] bounds, Boolean[] selected, 
+		Boolean[] enabled) {
 		ButtonGroup bg = new ButtonGroup();
 		for (int i = 0; i < bounds.length; i++) {
 			JRadioButton rb = new JRadioButton(t[i]);
@@ -286,13 +282,13 @@ public class Viewer extends JFrame{
 	}
 
 
+	private void setImportFile(File f) {
+		importFile = f;
+	}
+
+
 	private JMenuBar makeJMenuBar() {
 		JMenuBar mb = new JMenuBar();
-
-		Map<String, String> extensions = new LinkedHashMap<String, String>();
-		extensions.put("ASCII tab", ASCII_EXTENSION);
-		extensions.put("TabCode", TABCODE_EXTENSION);
-		extensions.put("MEI", MEI_EXTENSION);
 
 		// File
 		JMenu m = new JMenu("File");
@@ -300,16 +296,16 @@ public class Viewer extends JFrame{
 			// Add JMenuItem
 			if (!Arrays.asList("Import", "Export").contains(s)) {
 				JMenuItem mi = new JMenuItem(s);
-				mi.addActionListener(makeActionListener(s, null));
+				mi.addActionListener(defineActionListener(s, null));
 				m.add(mi);
 			}
 			// Add JMenu with JMenuItems
 			else {
 				JMenu mm = new JMenu(s);
-				for (String ss : (s.equals("Import") ? Arrays.asList("ASCII tab", "TabCode") : 
-					Arrays.asList("ASCII tab", "MEI"))) {
-					JMenuItem mi = new JMenuItem(ss);
-					mi.addActionListener(makeActionListener(s, extensions.get(ss)));
+				for (String ss : (s.equals("Import") ? Arrays.asList(ASCII_EXTENSION, TC_EXTENSION) : 
+					Arrays.asList(ASCII_EXTENSION, MEI_EXTENSION))) {
+					JMenuItem mi = new JMenuItem(EXTENSIONS.get(ss));
+					mi.addActionListener(defineActionListener(s, ss));
 					mm.add(mi);
 				}
 				m.add(mm);
@@ -321,7 +317,7 @@ public class Viewer extends JFrame{
 		m = new JMenu("Edit");
 		for (String s : Arrays.asList("Select all")) {
 			JMenuItem mi = new JMenuItem(s);
-			mi.addActionListener(makeActionListener(s, null));
+			mi.addActionListener(defineActionListener(s, null));
 			m.add(mi);
 		}
 		mb.add(m);
@@ -330,39 +326,42 @@ public class Viewer extends JFrame{
 	}
 
 
-	private ActionListener makeActionListener(String actionStr, String ext) {
-		return new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (actionStr.equals("New")) {
-					newFileAction();
-				}
-				else if (actionStr.equals("Open")) {
-					openFileAction();
-				}
-				else if (actionStr.equals("Save")) {
-					saveFileAction();
-				}
-				else if (actionStr.equals("Save as")) {
-					saveAsFileAction();
-				}
-				else if (actionStr.equals("Import")) {
-					importFileAction(ext);
-				}
-				else if (actionStr.equals("Export")) {
-					exportFileAction(ext);
-				}
-				else if (actionStr.equals("Select all")) {
-					selectAllEditAction();
-				}
-				else if (actionStr.equals("View")) {
-					viewButtonAction();
-				}
-//				else if (actionStr.equals("Check")) {
-//					checkButtonAction();
-//				}
-			}
-		};
+	private Container makeContentPane() {
+		Container cp = getContentPane(); 
+		// 1. Encoding panel, containing scroll pane with text area
+		JPanel encPanel = makeJPanel(
+			null, "Encoding", new Rectangle(HM, VM, PANEL_W, ENC_PANEL_H) 
+		);
+		encPanel.add(makeJScrollPane(
+			getEncodingTextArea(), new Rectangle(HM, 2*VM, PANEL_W - 2*HM, ENC_PANEL_H - 3*VM)), null);
+		cp.add(encPanel);
+
+		// 2. Tablature panel, containing scroll pane with text area; panel with radio buttons;
+		// panel with checkbox; button
+		JPanel tabPanel = makeJPanel(
+			null, "Tablature", new Rectangle(HM, 2*VM + ENC_PANEL_H, PANEL_W, TAB_PANEL_H + 6*VM) 
+		);
+		tabPanel.add(makeJScrollPane(
+			getTabTextArea(), new Rectangle(HM, 2*VM, PANEL_W - 2*HM, TAB_PANEL_H - 3*VM)), null);
+		JPanel stylePanel = makeJPanel(
+			null, "Tablature style", new Rectangle(HM, TAB_PANEL_H, PANEL_PART_W - HM, 5*VM)
+		);
+		for (AbstractButton b : Collections.list(getTabStyleButtonGroup().getElements())) {
+			stylePanel.add(b, null);
+		}
+		tabPanel.add(stylePanel, null);
+		JPanel rfPanel = makeJPanel(
+			null, "Rhythm flags", new Rectangle(HM + PANEL_PART_W, TAB_PANEL_H, PANEL_PART_W - HM, 5*VM)
+		);
+		rfPanel.add(getRhythmFlagsCheckBox(), null);
+		tabPanel.add(rfPanel, null);
+		JButton viewButton = makeJButton(
+			"View", new Rectangle(PANEL_W - BUTTON_W - HM, TAB_PANEL_H, BUTTON_W, BUTTON_H) 
+		);
+		tabPanel.add(viewButton);
+		cp.add(tabPanel);
+
+		return cp;
 	}
 
 
@@ -389,7 +388,7 @@ public class Viewer extends JFrame{
 		JButton b = new JButton();
 		b.setBounds(bounds);
 		b.setText(t);
-		b.addActionListener(makeActionListener(t, null));
+		b.addActionListener(defineActionListener(t, null));
 		return b;
 	}
 
@@ -397,7 +396,7 @@ public class Viewer extends JFrame{
 	//////////////////////////////
 	//
 	//  G E T T E R S
-	//  for instance variables
+	//  for instance variables 
 	//
 	private Highlighter getHighlighter() {
 		return highlighter;
@@ -434,25 +433,110 @@ public class Viewer extends JFrame{
 	}
 
 
+	private File getImportFile() {
+		return importFile;
+	}
+
+
+	////////////////////////////////
+	//
+	//  C L A S S  M E T H O D S
+	//
+	/**
+	 * Replaces, in the given String, all "\r\n"  with "\n".
+	 * 
+	 * @param s
+	 * @return
+	 */
+	private static String handleReturns(String s) {
+		s = s.replace("\r\n", "\n");
+		return s;
+	}
+
+
+	/**
+	 * Replaces, in the given String, all "\n" that are not preceded by "\r" with "\r\n".
+	 * 
+	 * @param s
+	 * @return
+	 */
+	private static String handleReturnsAlt(String s) {
+		// List all indices of the \n not preceded by \r
+		List<Integer> indsOfLineBreaks = new ArrayList<Integer>(); 
+		for (int i = 0; i < s.length(); i++) {
+			String currChar = s.substring(i, i + 1);
+			if (currChar.equals("\n")) {
+				// NB: prevChar always exists as the char at index 0 in encoding will
+				// never be a \n
+				String prevChar = s.substring(i - 1, i);	
+				if (!prevChar.equals("\r")) {
+					indsOfLineBreaks.add(i);
+				}
+			}
+		}
+		// Replace all \n not preceded by \r in the encoding by \r\n and store the file
+		for (int i = indsOfLineBreaks.size() - 1; i >= 0; i--) {
+			int currInd = indsOfLineBreaks.get(i);
+			s = s.substring(0, currInd) + "\r" + s.substring(currInd);
+		}
+		return s;
+	}
+
+
 	//////////////////////////////////////
 	//
 	//  I N S T A N C E  M E T H O D S
+	//  actions 
 	//
+	private ActionListener defineActionListener(String actionStr, String ext) {
+		return new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (actionStr.equals("New")) {
+					newFileAction();
+				}
+				else if (actionStr.equals("Open")) {
+					openFileAction();
+				}
+				else if (actionStr.equals("Save")) {
+					saveFileAction();
+				}
+				else if (actionStr.equals("Save as")) {
+					saveAsFileAction();
+				}
+				else if (actionStr.equals("Import")) {
+					importFileAction(ext);
+				}
+				else if (actionStr.equals("Export")) {
+					exportFileAction(ext);
+				}
+				else if (actionStr.equals("Select all")) {
+					selectAllEditAction();
+				}
+				else if (actionStr.equals("View")) {
+					viewButtonAction();
+				}
+			}
+		};
+	}
+
+
 	private void newFileAction() {
 		StringBuilder sb = new StringBuilder();
 		Arrays.stream(Encoding.METADATA_TAGS).forEach(t -> 
-			sb.append(Encoding.OPEN_METADATA_BRACKET + t + ":" + Encoding.CLOSE_METADATA_BRACKET + "\r\n"));
+			sb.append(Encoding.OPEN_METADATA_BRACKET + t + ":" + Encoding.CLOSE_METADATA_BRACKET + "\n"));
 		// Set JTextAreas content
-		setTextAreaContent(sb.toString() + Symbol.END_BREAK_INDICATOR, getEncodingTextArea());
-		setTextAreaContent("", getTabTextArea());
-		// Set file and title
+		populateTextArea(sb.toString() + Symbol.END_BREAK_INDICATOR, getEncodingTextArea());
+		populateTextArea("", getTabTextArea());
+		// Set file, importFile, and title
 		setFile(null);
+		setImportFile(null);
 		setTitle(TITLE[0] + TITLE[1] + TITLE[2]);
 	}
 
 
 	private void openFileAction() {
-		openLike("Open", "tab+ (" + Encoding.EXTENSION + ")", Encoding.EXTENSION, null);
+		openLike("Open", TBP + " (" + Encoding.EXTENSION + ")", Encoding.EXTENSION, null);
 	}
 
 
@@ -485,37 +569,71 @@ public class Viewer extends JFrame{
 			}
 			// Import case
 			else {
-				if (importType.equals("ASCII tab")) {
+				if (importType.equals(ASCII)) {
 					content = TabImport.ascii2tbp(fileContent);
 				}
-				else if (importType.equals("TabCode")) {
+				else if (importType.equals(TC)) {
 					content = TabImport.tc2tbp(fileContent);
 				}
 			}
 			// Set JTextAreas content
-			setTextAreaContent(content, getEncodingTextArea());
-			setTextAreaContent("", getTabTextArea());
-			// Set file and title
-			File fToSet = importType == null ? f : new File(FilenameUtils.getBaseName(f.getName()) + Encoding.EXTENSION);  
-			setFile(fToSet);
-			setTitle(fToSet.getName() + " - " + TOOL_NAME);
+			populateTextArea(handleReturns(content), getEncodingTextArea());
+			populateTextArea("", getTabTextArea());
+			// Set file, importFile, and title
+			setFile(importType == null ? f : null);
+			setImportFile(importType == null ? null : f);
+			setTitle(FilenameUtils.removeExtension(f.getName()) + Encoding.EXTENSION + TITLE[2]);
 		}
 	}
 
-	
+
+	private void saveFileAction() {
+		if (checkEncoding() == null) {
+			// Newly created or imported file
+			if (getFile() == null) {
+				saveAsFileAction();
+			}
+			// Opened file
+			else {
+				ToolBox.storeTextFile(handleReturns(getEncodingTextArea().getText()), getFile());
+			}
+		}
+	}
+
+
+	private void saveAsFileAction() {
+		String extStr = EXTENSIONS.get(Encoding.EXTENSION);
+		saveAsLike("Save as", extStr + " (" + Encoding.EXTENSION + ")", Encoding.EXTENSION, null);
+	}
+
+
 	private void saveAsLike(String dialogTitle, String fileDescr, String fileExt, String exportType) {
-		if (checkEncoding()) {
+		if (checkEncoding() == null) {
 			JFileChooser fc = getFileChooser();
 			fc.setDialogType(JFileChooser.SAVE_DIALOG);
 			fc.setDialogTitle(dialogTitle);
 			// Set file filter and suggested file name 
 			fc.setFileFilter(new FileNameExtensionFilter(fileDescr, fileExt.substring(1)));
+			File opf = getFile();
+			File imf = getImportFile();
 			File sf;
-			if (exportType == null) {
-				sf = getFile() == null ? new File("untitled" + Encoding.EXTENSION) : getFile();
+			// Called from file created with New
+			if (opf == null && imf == null) {
+				sf = new File(
+					fc.getCurrentDirectory() + File.separator + "untitled" + fileExt
+				);
 			}
+			// Called from file created with Open
+			else if (opf != null && imf == null) {
+				sf = 
+					exportType == null ? opf :
+					new File(FilenameUtils.removeExtension(opf.getAbsolutePath()) + fileExt);
+			}
+			// Called from file created with Import
 			else {
-				sf = new File(FilenameUtils.getBaseName(getFile().getName()) + fileExt);
+				sf = new File(
+					FilenameUtils.removeExtension(imf.getAbsolutePath()) + fileExt
+				);
 			}
 			fc.setSelectedFile(sf);
 			// If dialog is confirmed
@@ -529,35 +647,28 @@ public class Viewer extends JFrame{
 				String content = null;
 				// Save as-case
 				if (exportType == null) {
-					if (getFile() == null) {
+					if (opf == null) {
 						setFile(f);
-						setTitle(f.getName());
+						setTitle(f.getName() + TITLE[2]);
 					}
 					content = etaContent;
 				}
 				// Export case
 				else {
-					Encoding e = 
-						new Encoding(etaContent, FilenameUtils.getBaseName(f.getName()), 
-						Stage.SYNTAX_CHECKED); 
-					if (exportType.equals("ASCII tab")) {
+					Encoding e = new Encoding(etaContent, "", Stage.SYNTAX_CHECKED); 
+					if (exportType.equals(ASCII)) {
 						content = makeASCIITab(e);
 					}
-					else if (exportType.equals("MEI")) {
-						content = 
-							MEIExport.exportMEIFile(null, new Tablature(e, false), 
-							null, false, false, true, null);
+					else if (exportType.equals(MEI)) {
+						content = MEIExport.exportMEIFile(
+							null, new Tablature(e, false), null, false, false, true, null
+						);
 					}
 				}
 				// Save as/export
 				ToolBox.storeTextFile(content, f);
 			}
 		}		
-	}
-	
-	private void saveAsFileAction() {
-		String extStr = EXTENSIONS.get(Encoding.EXTENSION);
-		saveAsLike("Save as", extStr + " (" + Encoding.EXTENSION + ")", Encoding.EXTENSION, null);
 	}
 
 
@@ -573,82 +684,115 @@ public class Viewer extends JFrame{
 	}
 
 
-	private void saveFileAction() {
-		// New file: treat as Save As
-		if (getFile() == null) {
-			saveAsFileAction();
-		}
-		// Existing file
-		else {
-			if (checkEncoding()) {
-				ToolBox.storeTextFile(handleReturns(getEncodingTextArea().getText()), getFile());
-			}
-		}
-	}
-
-
-	/**
-	 * Replaces, in the given String, all "\n" that are not preceded by "\r" with "r\n".
-	 * 
-	 * @param content
-	 * @return
-	 */
-	private String handleReturns(String s) {
-		// List all indices of the \n not preceded by \r
-		List<Integer> indsOfLineBreaks = new ArrayList<Integer>(); 
-		for (int i = 0; i < s.length(); i++) {
-			String currChar = s.substring(i, i + 1);
-			if (currChar.equals("\n")) {
-				// NB: prevChar always exists as the char at index 0 in encoding will
-				// never be a \n
-				String prevChar = s.substring(i - 1, i);	
-				if (!prevChar.equals("\r")) {
-					indsOfLineBreaks.add(i);
-				}
-			}
-		}
-		// Replace all \n not preceded by \r in the encoding by \r\n and store the file
-		for (int i = indsOfLineBreaks.size() - 1; i >= 0; i--) {
-			int currInd = indsOfLineBreaks.get(i);
-			s = s.substring(0, currInd) + "\r" + s.substring(currInd);
-		}
-		return s;
-	}
-
-
 	private void selectAllEditAction() {
 		getEncodingTextArea().requestFocus();
 		getEncodingTextArea().selectAll();
 	}
 
 
-	private boolean checkEncoding() {		
-		final int firstErrorCharIndex = 0;
-		final int lastErrorCharIndex = 1;
-		final int errorStringIndex = 2;
-		final int ruleStringIndex = 3;
-		
-		String rawEnc = handleReturns(getEncodingTextArea().getText());
+	private void viewButtonAction() {
+		getHighlighter().removeAllHighlights();
+		if (checkEncoding() == null) {
+			populateTextArea(makeASCIITab(new Encoding(
+				handleReturns(getEncodingTextArea().getText()), "", Stage.SYNTAX_CHECKED)), 
+				getTabTextArea()
+			);
+		}
+	}
 
-		// 1. Create an unchecked encoding
-		// Every time the viewbutton is clicked, a new rawEnc is made. The first time the 
-		// viewbutton is clicked, encodingArea.getText() will always be exactly as in the 
-		// file that is loaded because it is set as such in openFileAction(). Any next time,
-		// it will be exactly what is in the encodingArea (which now may have corrections 
-		// compared to what is in the loaded file)
+
+	//////////////////////////////////////
+	//
+	//  I N S T A N C E  M E T H O D S
+	//  other
+	//
+	private void populateTextArea(String content, JTextArea ta) { 
+		ta.setText(content);
+		ta.setCaretPosition(0);
+	}
+
+
+	private String[] checkEncoding() {
+		final int errStrInd = 2;
+		final int ruleStrInd = 3;
+
+		String rawEnc = handleReturns(getEncodingTextArea().getText());
+		// Check for content
+		if (rawEnc.equals("")) {
+			createErrorDialog("No encoding.");
+			return new String[]{};
+		}
 		Encoding enc = new Encoding(rawEnc, "", Stage.MINIMAL);
+		// If there is content: check for metadata errors
+		String[] mdErrs = Encoding.checkMetadata(rawEnc);RRR
+		if (mdErrs != null) {
+			createErrorDialog("METADATA ERROR -- Check for missing or misplaced curly brackets." + "\n" + "");
+			return mdErrs;
+		}
+		// If there are no metadata errors: check for encoding errors
+		else {
+			Encoding enc = new Encoding(rawEnc, "", Stage.METADATA_CHECKED);
+			String[] encErrs = Encoding.checkEncoding(
+				rawEnc, enc.getCleanEncoding(), enc.getTabSymbolSet()
+			);
+			// If there are encoding errors: highlight and give error messages (in that order)
+			if (encErrs != null) {
+				createHighlight(encErrs);
+				createErrorDialog(encErrs[errStrInd] + "\n" + encErrs[ruleStrInd]);
+				return encErrs;
+			}
+			// If there are no encoding errors
+			else {
+				return null;
+			} 
+		}
+	}
+
+
+	private void createHighlight(String[] errs) {
+		final int firstErrCharInd = 0;
+		final int lastErrCharInd = 1;
+		int hilitStartInd = Integer.parseInt(errs[firstErrCharInd]);
+		int hilitEndInd = Integer.parseInt(errs[lastErrCharInd]);
+		HighlightPainter p = new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
+		try {
+			getHighlighter().addHighlight(hilitStartInd, hilitEndInd, p);
+		} catch (BadLocationException e) {  
+			System.err.println("BadLocationException: " + e.getMessage());
+		}
+	}
+
+
+	private void createErrorDialog(String t) {
+		JDialog dialog = 
+			new JOptionPane(t, JOptionPane.ERROR_MESSAGE).createDialog("Error");
+		dialog.setAlwaysOnTop(true);
+		dialog.setVisible(true);
+	}
+
+
+	private boolean checkEncodingOLD() {
+		final int firstErrCharInd = 0;
+		final int lastErrCharInd = 1;
+		final int errStrInd = 2;
+		final int ruleStrInd = 3;
+
+		String rawEnc = handleReturns(getEncodingTextArea().getText());
+		// 0. Check for content
+		if (rawEnc.equals("")) {
+			createErrorDialog("No encoding.");
+			return false;
+		}
+		// 1. Create an unchecked encoding
+//		Encoding enc = new Encoding(rawEnc, "", Stage.MINIMAL);
 		// a. If the encoding contains metadata errors: give error message
-		if (Encoding.checkForMetadataErrors(rawEnc)) {
-			JOptionPane optionPane = 
-				new JOptionPane(METADATA_ERROR + "\n" + "", JOptionPane.ERROR_MESSAGE);
-			JDialog dialog = optionPane.createDialog("Error");
-			dialog.setAlwaysOnTop(true);
-			dialog.setVisible(true);
+		if (Encoding.checkForMetadataErrors(rawEnc) != null) {
+			createErrorDialog("METADATA ERROR -- Check for missing or misplaced curly brackets." + "\n" + "");
 			return false;
 		}
 		// b. If the encoding contains no metadata errors
 		else {
-			enc = new Encoding(rawEnc, "", Stage.METADATA_CHECKED);
+			Encoding enc = new Encoding(rawEnc, "", Stage.METADATA_CHECKED);
 			String cleanEnc = enc.getCleanEncoding();
 			// 2. Check the encoding
 			// Remove any remaining highlights and error messages
@@ -656,63 +800,22 @@ public class Viewer extends JFrame{
 			// a. If the encoding contains encoding errors: give error messages and highlight
 			String[] encErrs = Encoding.checkForEncodingErrors(rawEnc, cleanEnc, enc.getTabSymbolSet());
 			if (encErrs != null) {
-				int hilitStartIndex = Integer.parseInt(encErrs[firstErrorCharIndex]);
-				int hilitEndIndex = Integer.parseInt(encErrs[lastErrorCharIndex]);
+				int hilitStartInd = Integer.parseInt(encErrs[firstErrCharInd]);
+				int hilitEndInd = Integer.parseInt(encErrs[lastErrCharInd]);
 				HighlightPainter painter = 
 					new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
-//				Highlighter.HighlightPainter painter = 
-//					new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
 				try {
-					getHighlighter().addHighlight(hilitStartIndex, hilitEndIndex, painter);
+					getHighlighter().addHighlight(hilitStartInd, hilitEndInd, painter);
 				} catch (BadLocationException e) {  
 					System.err.println("BadLocationException: " + e.getMessage());
 				}
-				JOptionPane optionPane = 
-					new JOptionPane(encErrs[errorStringIndex] + "\n" + encErrs[ruleStringIndex], 
-					JOptionPane.ERROR_MESSAGE);
-				JDialog dialog = optionPane.createDialog("Error");
-				dialog.setAlwaysOnTop(true);
-				dialog.setVisible(true);
+				createErrorDialog(encErrs[errStrInd] + "\n" + encErrs[ruleStrInd]);
 				return false;
 			}
-			// b. If the encoding contains no encoding errors: show the tablature in a new window 
+			// b. If the encoding contains no encoding errors
 			else {
 				return true;
-//				enc = new Encoding(rawEnc, "", Stage.SYNTAX_CHECKED);
-//
-//				// Determine TabSymbolSet
-//				TabSymbolSet tss = null;
-//				for (AbstractButton b : Collections.list(getTabStyleButtonGroup().getElements())) {
-//					if (b.isSelected()) {
-//						tss = TabSymbolSet.getTabSymbolSet(null, b.getText());
-//						break;
-//					}
-//				}
-//				
-//				setTextAreaContent(enc.visualise(
-//					tss, getRhythmFlagsCheckBox().isSelected(), true, true), getTabTextArea());
 			} 
-		}
-	}
-
-
-	private void viewButtonAction() {
-		if (checkEncoding()) {
-			setTextAreaContent(
-				makeASCIITab(new Encoding(handleReturns(getEncodingTextArea().getText()), "", 
-				Stage.SYNTAX_CHECKED)), getTabTextArea());
-		}
-	}
-	
-	
-	private void checkButtonAction() {
-		if (checkEncoding()) {
-			JOptionPane optionPane = 
-				new JOptionPane("SUCCESS -- The encoding meets all validity rules, all layout rules, \n" + 
-				"and contains no unknown symbols.", JOptionPane.INFORMATION_MESSAGE);
-			JDialog dialog = optionPane.createDialog("Success");
-			dialog.setAlwaysOnTop(true);
-			dialog.setVisible(true);
 		}
 	}
 
@@ -726,84 +829,6 @@ public class Viewer extends JFrame{
 			}
 		}
 		return e.visualise(tss, getRhythmFlagsCheckBox().isSelected(), true, true);		
-	}
-
-
-	private void viewButtonActionOLDD() {
-		final int firstErrorCharIndex = 0;
-		final int lastErrorCharIndex = 1;
-		final int errorStringIndex = 2;
-		final int ruleStringIndex = 3;
-		
-		String rawEnc = getEncodingTextArea().getText();
-
-		// 1. Create an unchecked encoding
-		// Every time the viewbutton is clicked, a new rawEnc is made. The first time the 
-		// viewbutton is clicked, encodingArea.getText() will always be exactly as in the 
-		// file that is loaded because it is set as such in openFileAction(). Any next time,
-		// it will be exactly what is in the encodingArea (which now may have corrections 
-		// compared to what is in the loaded file)
-		Encoding enc = new Encoding(rawEnc, "", Stage.MINIMAL);
-		// a. If the encoding contains metadata errors: place error message
-		if (Encoding.checkForMetadataErrors(rawEnc)) {
-			JOptionPane optionPane = 
-				new JOptionPane(METADATA_ERROR + "\n" + "", JOptionPane.ERROR_MESSAGE);
-			JDialog dialog = optionPane.createDialog("Error");
-			dialog.setAlwaysOnTop(true);
-			dialog.setVisible(true);
-		}
-		// b. If the encoding contains no metadata errors: continue
-		else {
-			enc = new Encoding(rawEnc, "", Stage.METADATA_CHECKED);
-			String cleanEnc = enc.getCleanEncoding();
-			// 2. Check the encoding
-			// Remove any remaining highlights and error messages
-			getHighlighter().removeAllHighlights();
-			// a. If the encoding contains encoding errors: place error messages and highlight
-			String[] encErrs = Encoding.checkForEncodingErrors(rawEnc, cleanEnc, enc.getTabSymbolSet());
-			if (encErrs != null) {
-				int hilitStartIndex = Integer.parseInt(encErrs[firstErrorCharIndex]);
-				int hilitEndIndex = Integer.parseInt(encErrs[lastErrorCharIndex]);
-				HighlightPainter painter = 
-					new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
-//				Highlighter.HighlightPainter painter = 
-//					new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
-				try {
-					getHighlighter().addHighlight(hilitStartIndex, hilitEndIndex, painter);
-				} catch (BadLocationException e) {  
-					System.err.println("BadLocationException: " + e.getMessage());
-				}
-				JOptionPane optionPane = 
-					new JOptionPane(encErrs[errorStringIndex] + "\n" + encErrs[ruleStringIndex], 
-					JOptionPane.ERROR_MESSAGE);
-				JDialog dialog = optionPane.createDialog("Error");
-				dialog.setAlwaysOnTop(true);
-				dialog.setVisible(true);
-			}
-			// b. If the encoding contains no encoding errors: show the tablature in a new window 
-			else {
-				
-				enc = new Encoding(rawEnc, "", Stage.SYNTAX_CHECKED);
-
-				// Determine TabSymbolSet
-				TabSymbolSet tss = null;
-				for (AbstractButton b : Collections.list(getTabStyleButtonGroup().getElements())) {
-					if (b.isSelected()) {
-						tss = TabSymbolSet.getTabSymbolSet(null, b.getText());
-						break;
-					}
-				}
-				
-				setTextAreaContent(enc.visualise(
-					tss, getRhythmFlagsCheckBox().isSelected(), true, true), getTabTextArea());
-			} 
-		}
-	}
-
-
-	private void setTextAreaContent(String content, JTextArea ta) { 
-		ta.setText(content);
-		ta.setCaretPosition(0);
 	}
 
 
@@ -1009,7 +1034,7 @@ public class Viewer extends JFrame{
 		//
 		p.add(getRhythmFlagsCheckBox(), null);
 		//
-		p.add(getViewButton(), null);
+//		p.add(getViewButton(), null);
 
 		JScrollPane sp = 
 			new JScrollPane(getEncodingTextArea(), 
@@ -1043,11 +1068,11 @@ public class Viewer extends JFrame{
 
 
 	private void openFileActionOLD() {
-		setTextAreaContent("", getTabTextArea());
+		populateTextArea("", getTabTextArea());
 		getFileChooser().setDialogType(JFileChooser.OPEN_DIALOG);
 		getFileChooser().setDialogTitle("Open");
 		// Set file type filter
-		getFileChooser().setFileFilter(new FileNameExtensionFilter("tab+ (.tbp)", 
+		getFileChooser().setFileFilter(new FileNameExtensionFilter(TBP + " (.tbp)", 
 			Encoding.EXTENSION.substring(1)));
 		// Remove any previous selection
 		getFileChooser().setSelectedFile(new File(""));
@@ -1062,7 +1087,7 @@ public class Viewer extends JFrame{
 				e.printStackTrace();
 			}
 			setFile(f);
-			setTitle(f.getName() + " - " + TOOL_NAME);
+			setTitle(f.getName() + " - " + "tab+Editor");
 //			fileName = f.getName();
 //			String rawEnc = ToolBox.readTextFile(encFile);
 			String rawEncoding = "";
@@ -1072,7 +1097,7 @@ public class Viewer extends JFrame{
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
-			setTextAreaContent(rawEncoding, getEncodingTextArea());
+			populateTextArea(rawEncoding, getEncodingTextArea());
 //			getEncodingTextArea().setText(rawEncoding);
 //			getEncodingTextArea().setCaretPosition(0);
 		}
@@ -1119,9 +1144,9 @@ public class Viewer extends JFrame{
 				// 3vv
 //				encPath += "thesis-int/3vv/" + "newsidler-1536_7-disant_adiu.tbp";
 //				encPath += "thesis-int/3vv/" + "newsidler-1536_7-mess_pensees.tbp";
-//				encPath += "thesis-int/3vv/" + "pisador-1552_7-pleni_de.tbp"; // TODO remove every second barline
+//				encPath += "thesis-int/3vv/" + "pisador-1552_7-pleni_de.tbp";
 //				encPath += "thesis-int/3vv/" + "judenkuenig-1523_2-elslein_liebes.tbp";
-//				encPath += "thesis-int/3vv/" + "newsidler-1544_2-nun_volget.tbp"; // TODO remove every second barline in ternary part
+//				encPath += "thesis-int/3vv/" + "newsidler-1544_2-nun_volget.tbp";
 				encPath += "thesis-int/3vv/" + "phalese-1547_7-tant_que-3vv.tbp";
 
 				// 4vv
@@ -1133,8 +1158,8 @@ public class Viewer extends JFrame{
 //				encPath += "thesis-int/4vv/" + "ochsenkun-1558_5-herr_gott.tbp";
 //				encPath += "thesis-int/4vv/" + "abondante-1548_1-mais_mamignone.tbp";
 //				encPath += "thesis-int/4vv/" + "phalese-1563_12-las_on.tbp";
-//				encPath += "thesis-int/4vv/" + "barbetta-1582_1-il_nest.tbp"; // TODO remove every second barline
-//				encPath += "thesis-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp"; // TODO remove every second barline
+//				encPath += "thesis-int/4vv/" + "barbetta-1582_1-il_nest.tbp";
+//				encPath += "thesis-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp";
 //				encPath += "thesis-int/4vv/" + "phalese-1563_12-il_estoit.tbp";
 //				encPath += "thesis-int/4vv/" + "BSB-mus.ms._272-mille_regres.tbp";
 
@@ -1171,7 +1196,7 @@ public class Viewer extends JFrame{
 		fc.setDialogType(JFileChooser.OPEN_DIALOG);
 		fc.setDialogTitle("Open");
 		// Set file filter and suggested file name (empty string = remove any previous selection)
-		fc.setFileFilter(new FileNameExtensionFilter("tab+ (" + Encoding.EXTENSION + ")", 
+		fc.setFileFilter(new FileNameExtensionFilter(TBP + " (" + Encoding.EXTENSION + ")", 
 			Encoding.EXTENSION.substring(1)));
 		fc.setSelectedFile(new File(""));
 		// If dialog is confirmed
@@ -1187,11 +1212,11 @@ public class Viewer extends JFrame{
 				e.printStackTrace();
 			}
 			//
-			setTextAreaContent(sb.toString(), getEncodingTextArea());
-			setTextAreaContent("", getTabTextArea());
+			populateTextArea(sb.toString(), getEncodingTextArea());
+			populateTextArea("", getTabTextArea());
 			//
 			setFile(f);
-			setTitle(f.getName() + " - " + TOOL_NAME);
+			setTitle(f.getName() + " - " + "tab+Editor");
 		}
 	}
 
@@ -1201,7 +1226,7 @@ public class Viewer extends JFrame{
 		fc.setDialogType(JFileChooser.SAVE_DIALOG);
 		fc.setDialogTitle("Save as");
 		// Set file filter and suggested file name
-		fc.setFileFilter(new FileNameExtensionFilter("tab+ (" + Encoding.EXTENSION + ")", 
+		fc.setFileFilter(new FileNameExtensionFilter(TBP + " (" + Encoding.EXTENSION + ")", 
 			Encoding.EXTENSION.substring(1)));
 		fc.setSelectedFile(getFile() == null ? new File("untitled" + Encoding.EXTENSION) : getFile());
 		// If dialog is confirmed
@@ -1221,9 +1246,9 @@ public class Viewer extends JFrame{
 
 	private void importFileActionOLDD(String extension) {
 		Map<String, String> extensions = new LinkedHashMap<String, String>();
-		extensions.put(ASCII_EXTENSION, "ASCII tab");
-		extensions.put(TABCODE_EXTENSION, "TabCode");
-		extensions.put(MEI_EXTENSION, "MEI");
+		extensions.put(ASCII_EXTENSION, ASCII);
+		extensions.put(TC_EXTENSION, TC);
+		extensions.put(MEI_EXTENSION, MEI);
 
 		JFileChooser fc = getFileChooser();
 		fc.setDialogType(JFileChooser.OPEN_DIALOG);
@@ -1245,22 +1270,22 @@ public class Viewer extends JFrame{
 				e.printStackTrace();
 			}
 			//
-			setTextAreaContent(TabImport.ascii2tbp(sb.toString()), getEncodingTextArea());
-			setTextAreaContent("", getTabTextArea());
+			populateTextArea(TabImport.ascii2tbp(sb.toString()), getEncodingTextArea());
+			populateTextArea("", getTabTextArea());
 			//
 			File fTbp = new File(FilenameUtils.getBaseName(f.getName()) + Encoding.EXTENSION);
 			setFile(fTbp);
-			setTitle(fTbp.getName() + " - " + TOOL_NAME);
+			setTitle(fTbp.getName() + " - " + "tab+Editor");
 		}
 	}
 
 
 	private void exportFileActionOLD(String extension) {
 		Map<String, String> extensions = new LinkedHashMap<String, String>();
-		extensions.put(ASCII_EXTENSION, "ASCII tab");
-		extensions.put(TABCODE_EXTENSION, "TabCode");
-		extensions.put(MEI_EXTENSION, "MEI");
-		extensions.put(MEI_EXTENSION_ALT, "MEI");
+		extensions.put(ASCII_EXTENSION, ASCII);
+		extensions.put(TC_EXTENSION, TC);
+		extensions.put(MEI_EXTENSION, MEI);
+		extensions.put(".mei", MEI);
 		
 		JFileChooser fc = getFileChooser();
 		fc.setDialogType(JFileChooser.SAVE_DIALOG);
@@ -1298,13 +1323,13 @@ public class Viewer extends JFrame{
 		// compared to what is in the loaded file)
 		Encoding enc = new Encoding(rawEnc, "", Stage.MINIMAL);
 		// a. If the encoding contains metadata errors: place error message
-		if (Encoding.checkForMetadataErrors(rawEnc)) {
+		if (Encoding.checkForMetadataErrors(rawEnc) != null) {
 //			getUpperErrorLabel().setText(METADATA_ERROR);
 //			getLowerErrorLabel().setText("");
 //			getErrorMessageLabel("upper").setText(Encoding.METADATA_ERROR);
 //			getErrorMessageLabel("lower").setText("");
 			JOptionPane optionPane = 
-				new JOptionPane(METADATA_ERROR + "\n" + "", JOptionPane.ERROR_MESSAGE);
+				new JOptionPane("METADATA ERROR -- Check for missing or misplaced curly brackets." + "\n" + "", JOptionPane.ERROR_MESSAGE);
 //				JOptionPane optionPane = new JOptionPane("ErrorMsg", JOptionPane.ERROR_MESSAGE);
 			JDialog dialog = optionPane.createDialog("ERROR");
 			dialog.setAlwaysOnTop(true);
@@ -1380,8 +1405,80 @@ public class Viewer extends JFrame{
 //					getRhythmSymbolsCheckBox().isSelected(), true, true));
 //				initializeTabViewer(encPath);
 				
-				setTextAreaContent(enc.visualise(tss, getRhythmFlagsCheckBox().isSelected(), true, true), getTabTextArea());
+				populateTextArea(enc.visualise(tss, getRhythmFlagsCheckBox().isSelected(), true, true), getTabTextArea());
 //				new Viewer(/*getFileName(Encoding.EXTENSION)*/getFile(), enc.visualise(tss, getRhythmSymbolsCheckBox().isSelected(), true, true), false);
+			} 
+		}
+	}
+
+
+	private void viewButtonActionOLDD() {
+		final int firstErrorCharIndex = 0;
+		final int lastErrorCharIndex = 1;
+		final int errorStringIndex = 2;
+		final int ruleStringIndex = 3;
+		
+		String rawEnc = getEncodingTextArea().getText();
+
+		// 1. Create an unchecked encoding
+		// Every time the viewbutton is clicked, a new rawEnc is made. The first time the 
+		// viewbutton is clicked, encodingArea.getText() will always be exactly as in the 
+		// file that is loaded because it is set as such in openFileAction(). Any next time,
+		// it will be exactly what is in the encodingArea (which now may have corrections 
+		// compared to what is in the loaded file)
+		Encoding enc = new Encoding(rawEnc, "", Stage.MINIMAL);
+		// a. If the encoding contains metadata errors: place error message
+		if (Encoding.checkForMetadataErrors(rawEnc) != null) {
+			JOptionPane optionPane = 
+				new JOptionPane("METADATA ERROR -- Check for missing or misplaced curly brackets." + "\n" + "", JOptionPane.ERROR_MESSAGE);
+			JDialog dialog = optionPane.createDialog("Error");
+			dialog.setAlwaysOnTop(true);
+			dialog.setVisible(true);
+		}
+		// b. If the encoding contains no metadata errors: continue
+		else {
+			enc = new Encoding(rawEnc, "", Stage.METADATA_CHECKED);
+			String cleanEnc = enc.getCleanEncoding();
+			// 2. Check the encoding
+			// Remove any remaining highlights and error messages
+			getHighlighter().removeAllHighlights();
+			// a. If the encoding contains encoding errors: place error messages and highlight
+			String[] encErrs = Encoding.checkForEncodingErrors(rawEnc, cleanEnc, enc.getTabSymbolSet());
+			if (encErrs != null) {
+				int hilitStartIndex = Integer.parseInt(encErrs[firstErrorCharIndex]);
+				int hilitEndIndex = Integer.parseInt(encErrs[lastErrorCharIndex]);
+				HighlightPainter painter = 
+					new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
+//				Highlighter.HighlightPainter painter = 
+//					new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
+				try {
+					getHighlighter().addHighlight(hilitStartIndex, hilitEndIndex, painter);
+				} catch (BadLocationException e) {  
+					System.err.println("BadLocationException: " + e.getMessage());
+				}
+				JOptionPane optionPane = 
+					new JOptionPane(encErrs[errorStringIndex] + "\n" + encErrs[ruleStringIndex], 
+					JOptionPane.ERROR_MESSAGE);
+				JDialog dialog = optionPane.createDialog("Error");
+				dialog.setAlwaysOnTop(true);
+				dialog.setVisible(true);
+			}
+			// b. If the encoding contains no encoding errors: show the tablature in a new window 
+			else {
+				
+				enc = new Encoding(rawEnc, "", Stage.SYNTAX_CHECKED);
+
+				// Determine TabSymbolSet
+				TabSymbolSet tss = null;
+				for (AbstractButton b : Collections.list(getTabStyleButtonGroup().getElements())) {
+					if (b.isSelected()) {
+						tss = TabSymbolSet.getTabSymbolSet(null, b.getText());
+						break;
+					}
+				}
+				
+				populateTextArea(enc.visualise(
+					tss, getRhythmFlagsCheckBox().isSelected(), true, true), getTabTextArea());
 			} 
 		}
 	}
