@@ -333,7 +333,7 @@ public class Tablature implements Serializable {
 
 		// 2. Make pitches
 		List<Integer> gridYOfTabSymbols = new ArrayList<>();
-		Tuning t = getNormaliseTuning() ? tunings[NORMALISED_TUNING_IND] : tunings[ENCODED_TUNING_IND];
+		Tuning t = getNormaliseTuning() ? getTunings()[NORMALISED_TUNING_IND] : getTunings()[ENCODED_TUNING_IND];
 		listOfTabSymbols.forEach(ts -> gridYOfTabSymbols.add(Symbol.getTabSymbol(ts, tss).getPitch(t)));
 
 		// 3. Make btp
@@ -721,17 +721,36 @@ public class Tablature implements Serializable {
 	 * @return
 	 */
 	// TESTED
-	public List<Integer> getPitchesInChord(List<TabSymbol> argChord) {
+	public static List<Integer> getPitchesInChord(List<TabSymbol> argChord, Tuning t) {
 		List<Integer> pitchesInChord = new ArrayList<Integer>();
-		argChord.forEach(ts -> pitchesInChord.add(
-			ts.getPitch(getNormaliseTuning() ? tunings[NORMALISED_TUNING_IND] : tunings[ENCODED_TUNING_IND])));
+		argChord.forEach(ts -> pitchesInChord.add(ts.getPitch(t)));
 		return pitchesInChord;
 	}
 
 
 	/**
-	 * Gets information on the unison(s) in the chord at the given index. A unison occurs when 
-	 * two different Tablature notes in the same chord have the same pitch.  
+	 * Gets the pitches in the given chord. Element 0 of the List represents the lowest 
+	 * note's pitch, element 1 the second-lowest note's, etc. 
+	 * 
+	 * NB: If the chord contains course crossings, the list returned will not be in numerical 
+	 * order.
+	 * 
+	 * @param argChord
+	 * @return
+	 */
+	// TESTED
+	private List<Integer> getPitchesInChordOLD(List<TabSymbol> argChord) {
+		List<Integer> pitchesInChord = new ArrayList<Integer>();
+		argChord.forEach(ts -> pitchesInChord.add(
+			ts.getPitch(getNormaliseTuning() ? getTunings()[NORMALISED_TUNING_IND] : 
+			getTunings()[ENCODED_TUNING_IND])));
+		return pitchesInChord;
+	}
+
+
+	/**
+	 * Gets information on the unison(s) in the given chord with the given tuning. 
+	 * A unison occurs when two different Tablature notes in the same chord have the same pitch.  
 	 *
 	 * NB: This method presumes that<br>
 	 * <ul>
@@ -741,7 +760,8 @@ public class Tablature implements Serializable {
 	 *    in practice.</li>
 	 * </ul>
 	 *
-	 * @param chordIndex
+	 * @param argChord
+	 * @param t
 	 * @return An List of Integer[]s, each element of which represents a unison pair (starting 
 	 * from below), each element of which contains<br>
 	 * <ul>
@@ -753,15 +773,16 @@ public class Tablature implements Serializable {
 	 * If the chord does not contain (a) unison(s), <code>null</code> is returned. 
 	 */
 	// TESTED
-	public List<Integer[]> getUnisonInfo(int chordIndex) {
+	public static List<Integer[]> getUnisonInfo(List<TabSymbol> argChord, Tuning t /*int chordIndex*/) {
 		List<Integer[]> unisonInfo = new ArrayList<>();
 		// For each pitch in pitchesInChord
-		List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
-		for (int i = 0; i < pitchesInChord.size(); i++) {
-			int currentPitch = pitchesInChord.get(i);        
-			// Search the remainder of pitchesInChord for a note with the same pitch (unison)
-			for (int j = i + 1; j < pitchesInChord.size(); j++) {
-				if (pitchesInChord.get(j) == currentPitch) {
+		List<Integer> pitches = getPitchesInChord(argChord, t);
+//		List<Integer> pitches = getPitchesInChord(chordIndex);
+		for (int i = 0; i < pitches.size(); i++) {
+			int currentPitch = pitches.get(i);        
+			// Search the remainder of pitches for a note with the same pitch (unison)
+			for (int j = i + 1; j < pitches.size(); j++) {
+				if (pitches.get(j) == currentPitch) {
 					unisonInfo.add(new Integer[]{currentPitch, i, j});
 					break; // See NB b) for reason of break
 				}
@@ -790,8 +811,8 @@ public class Tablature implements Serializable {
 
 
 	/**
-	 * Gets information on the course crossing(s) in the chord at the given index in the given
-	 * list. A course crossing occurs when an note on course x has a pitch that is higher than
+	 * Gets information on the course crossing(s) in the given chord with the given tuning. 
+	 * A course crossing occurs when an note on course x has a pitch that is higher than
 	 * that of a note (in the same chord) on course y above it.
 	 * 
 	 * NB: This method presumes that<br>
@@ -801,7 +822,8 @@ public class Tablature implements Serializable {
 	 *    possible (e.g., 6th c., 12th fr. - 5th c., 6th fr. - 4th c., open), but will not 
 	 *    likely occur in practice.</li>
 	 * </ul>
-	 * @param tabChord
+	 * @param argChord
+	 * @param t
 	 * @return A List of Integer[]s, each element of which represents a course crossing pair 
 	 * (starting from below), each element of which contains<br>
 	 * <ul>
@@ -811,25 +833,24 @@ public class Tablature implements Serializable {
 	 * <li>As element 2: the sequence number in the chord of the lower CC note.</li>
 	 * <li>As element 3: the sequence number in the chord of the upper CC note.</li>
 	 * </ul>  
-	 * If the chord does not contain (a) course crossing(s), <code>null</code> is returned. 
+	 * If the chord does not contain (a) course crossing(s), <code>null</code> is returned.
 	 */
 	// TESTED
-	public List<Integer[]> getCourseCrossingInfo(List<TabSymbol> argChord /*int chordIndex */) {
-		List<Integer[]> courseCrossingsInfo = new ArrayList<>();
+	public static List<Integer[]> getCourseCrossingInfo(List<TabSymbol> argChord, Tuning t) {
+		List<Integer[]> ccInfo = new ArrayList<>();
 		// For each pitch in pitchesInChord
-		List<Integer> pitchesInChord = getPitchesInChord(argChord);
-//		List<Integer> pitchesInChord = getPitchesInChord(chordIndex);
-		for (int i = 0; i < pitchesInChord.size(); i++) {
-			int currPitch = pitchesInChord.get(i);        
-			// Search the remainder of pitchesInChord for a note with a lower pitch (course crossing)
-			for (int j = i + 1; j < pitchesInChord.size(); j++) {
-				if (pitchesInChord.get(j) < currPitch) {
-					courseCrossingsInfo.add(new Integer[]{currPitch, pitchesInChord.get(j), i, j});
+		List<Integer> pitches = getPitchesInChord(argChord, t);
+		for (int i = 0; i < pitches.size(); i++) {
+			int currPitch = pitches.get(i);        
+			// Search the remainder of pitches for a note with a lower pitch (course crossing)
+			for (int j = i + 1; j < pitches.size(); j++) {
+				if (pitches.get(j) < currPitch) {
+					ccInfo.add(new Integer[]{currPitch, pitches.get(j), i, j});
 					break; // See NB b) for reason of break
 				}
 			} 
 		}
-		return courseCrossingsInfo.size() != 0 ? courseCrossingsInfo : null;
+		return ccInfo.size() != 0 ? ccInfo : null;
 	}
 
 
@@ -842,11 +863,11 @@ public class Tablature implements Serializable {
 	 */
 	// TESTED
 	public int getNumberOfCourseCrossingsInChord(List<TabSymbol> chord /*int chordIndex*/) {
-		if (getCourseCrossingInfo(chord/*chordIndex*/) == null) {
+		if (getCourseCrossingInfo(chord) == null) {
 			return 0;
 		}
 		else {
-			return getCourseCrossingInfo(chord/*chordIndex*/).size();
+			return getCourseCrossingInfo(chord).size();
 		}
 	}
 

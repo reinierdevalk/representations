@@ -50,9 +50,10 @@ public class MIDIExport {
 //		String piece = "phalese-1547_7-tant_que-a3";
 		String piece = "newsidler-1544_2-nun_volget";
 		
-		Transcription t = new Transcription(new File(path + piece + MIDIImport.EXTENSION), 
-			new File("F:/research/data/encodings/intabulations/3vv/" + piece + 
-			Encoding.EXTENSION));
+		Transcription t = new Transcription(
+			new File(path + piece + MIDIImport.EXTENSION)
+//			, new File("F:/research/data/encodings/intabulations/3vv/" + piece + Encoding.EXTENSION)
+		);
 		ToolBox.storeObjectBinary(t, new File(path + piece + ".ser"));
 			
 		Transcription stored =	

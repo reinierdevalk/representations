@@ -36,14 +36,17 @@ public class Encoding implements Serializable {
 	public static final String NO_BARLINE_TEXT = "no barline";
 	public static final String MISPLACED_BARLINE_TEXT = "misplaced barline";
 	public static final String SPACE_BETWEEN_STAFFS = "\n";
+	public static final String AUTHOR_TAG = "AUTHOR";
+	public static final String TITLE_TAG = "TITLE";
+	public static final String SOURCE_TAG = "SOURCE";
 	public static final String TABSYMBOLSET_TAG = "TABSYMBOLSET";
 	public static final String TUNING_TAG = "TUNING";
 	public static final String METER_INFO_TAG = "METER_INFO";
 	public static final String DIMINUTION_TAG = "DIMINUTION";
 	public static final String[] METADATA_TAGS = new String[]{
-		"AUTHOR", 
-		"TITLE", 
-		"SOURCE", 
+		AUTHOR_TAG, 
+		TITLE_TAG, 
+		SOURCE_TAG, 
 		TABSYMBOLSET_TAG, 
 		TUNING_TAG, 
 		METER_INFO_TAG, 
@@ -89,7 +92,7 @@ public class Encoding implements Serializable {
 	private List<List<Integer>> listsOfStatistics;
 
 	public static enum Stage {
-		MINIMAL, METADATA_CHECKED, SYNTAX_CHECKED;
+		COMMENTS_AND_METADATA_CHECKED, RULES_CHECKED;
 	}
 
 
@@ -108,7 +111,7 @@ public class Encoding implements Serializable {
 	 * @param f
 	 */
 	public Encoding(File f) {
-		init(ToolBox.readTextFile(f), ToolBox.getFilename(f, EXTENSION), Stage.SYNTAX_CHECKED);
+		init(ToolBox.readTextFile(f), ToolBox.getFilename(f, EXTENSION), Stage.RULES_CHECKED);
 	}
 
 
@@ -126,17 +129,15 @@ public class Encoding implements Serializable {
 
 
 	private void init(String rawEncoding, String piecename, Stage stage) {
-		if (stage == Stage.MINIMAL || stage == Stage.METADATA_CHECKED || stage == Stage.SYNTAX_CHECKED) {
+		if (stage == Stage.COMMENTS_AND_METADATA_CHECKED || stage == Stage.RULES_CHECKED) {
 			setPiecename(piecename);
 			setRawEncoding(rawEncoding);
-		}
-		if (stage == Stage.METADATA_CHECKED || stage == Stage.SYNTAX_CHECKED) {
 			setCleanEncoding();
 			setMetadata();
 			setHeader();
 			setTabSymbolSet();
 		}
-		if (stage == Stage.SYNTAX_CHECKED) {
+		if (stage == Stage.RULES_CHECKED) {
 			setEvents();
 			setTimeline();
 			setListsOfSymbols();
@@ -610,6 +611,73 @@ public class Encoding implements Serializable {
 	}
 
 
+	////////////////////////////////
+	//
+	//  C L A S S  M E T H O D S
+	//
+	/**
+	 * Checks the <code>Encoding</code>, i.e.,  
+	 * <ul>
+	 * <li>Checks for correct bracketing of the metadata and comments.</li> 
+	 * <li>Checks for missing or incorrect metadata.</li> 
+	 * <li>Checks all VALIDITY RULES.</li> 
+	 * <li>Checks for missing or unknown symbols.</li> 
+	 * <li>Checks all LAYOUT RULES.</li> 
+	 * </ul>
+	 * 
+	 * @param rawEnc
+	 * @return 
+     * <ul>
+	 * <li><code>null</code> if there are no errors.</li>
+	 * <li>If not, a String[] containing</li>
+	 * <ul>
+	 * <li>At element 0: the index in rawEncoding of the first error char to be highlighted.</li>
+	 * <li>At element 1: the index in rawEncoding of the last error char to be highlighted.</li>
+	 * <li>At element 2: the appropriate error message.</li>
+	 * <li>At element 3: additional information.</li>
+	 * </ul>
+	 * </ul>
+	 */
+	// NOT TESTED (wrapper method))
+	public static String[] checkEncoding(String rawEnc) {
+		String[] commErrs = checkComments(rawEnc);
+		if (commErrs != null) {
+			return commErrs;
+		}
+		else {
+			String[] mdErrs = checkMetadata(rawEnc);
+			if (mdErrs != null) {
+				return mdErrs;
+			}
+			else {
+				Encoding e = new Encoding(rawEnc, "", Stage.COMMENTS_AND_METADATA_CHECKED);
+				String cleanEnc = e.getCleanEncoding();
+				TabSymbolSet tss = e.getTabSymbolSet();
+				Integer[] indsAligned = alignRawAndCleanEncoding(rawEnc, cleanEnc);
+				String[] vrErrs = checkValidityRules(cleanEnc, indsAligned);
+				if (vrErrs != null) {
+					return vrErrs;
+				}
+				else {
+					String[] symErrs = checkSymbols(cleanEnc, tss, indsAligned);
+					if (symErrs != null) {
+						return symErrs;    
+					}
+					else {
+						String[] lrErrs = checkLayoutRules(cleanEnc, tss, indsAligned);
+						if (lrErrs != null) {
+							return lrErrs;
+						}
+						else {
+							return null;
+						}
+					}
+				}
+			}
+		}
+	}
+
+
 	/**
 	 * Checks for correct bracketing of the metadata and comments.
 	 * 
@@ -627,7 +695,7 @@ public class Encoding implements Serializable {
 	 * </ul>
 	 */
 	// TESTED
-	public static String[] checkComments(String rawEnc) { // TODO move
+	static String[] checkComments(String rawEnc) {
 		String omb = OPEN_METADATA_BRACKET;
 		String cmb = CLOSE_METADATA_BRACKET;
 		for (int i = 0; i < rawEnc.length(); i++) {
@@ -640,7 +708,7 @@ public class Encoding implements Serializable {
 						return new String[]{
 							String.valueOf(i), 
 							String.valueOf(i+1),
-							"BRACKET ERROR -- Add complementing closing bracket.", 
+							"COMMENT ERROR -- Insert complementing closing bracket.", 
 							""
 						};
 					}
@@ -658,7 +726,7 @@ public class Encoding implements Serializable {
 						return new String[]{
 							String.valueOf(i),
 							String.valueOf(i+1),
-							"BRACKET ERROR -- Add complementing opening bracket.", 
+							"COMMENT ERROR -- Insert complementing opening bracket.", 
 							""
 						};
 					}
@@ -673,13 +741,8 @@ public class Encoding implements Serializable {
 	}
 
 
-	////////////////////////////////
-	//
-	//  C L A S S  M E T H O D S
-	//
 	/**
-	 * Checks for missing metadata tags, wrongly ordered metadata tags, and missing or incorrect 
-	 * metadata content.
+	 * Checks for missing or incorrect metadata.
 	 * 
 	 * @param rawEnc
 	 * @return 
@@ -695,192 +758,149 @@ public class Encoding implements Serializable {
 	 * </ul>
 	 */
 	// TESTED
-	public static String[] checkMetadata(String rawEnc) {
-		List<Integer> tagInds = Arrays.asList(METADATA_TAGS).stream()
-			.map(t -> rawEnc.indexOf(t + ":"))
-//			.map(String::indexOf)
-			.collect(Collectors.toList());
-		
-		// Check for missing tags
+	static String[] checkMetadata(String rawEnc) {
+		String cmb = CLOSE_METADATA_BRACKET;
 		List<String> missing = Arrays.asList(METADATA_TAGS).stream()
 			.filter(t -> rawEnc.indexOf(t + ":") == -1)
 			.collect(Collectors.toList());
+		List<Integer> tagInds = Arrays.asList(METADATA_TAGS).stream()
+			.map(t -> rawEnc.indexOf(t + ":"))
+			.collect(Collectors.toList());
+
+		// Missing tags
 		if (missing.size() != 0) {
 			return new String[]{
 				String.valueOf(-1), String.valueOf(-1),	
-				"METADATA ERROR -- Add missing " + (missing.size() == 1 ? "tag:" : "tags:"), 
+				"METADATA ERROR -- Insert missing " + (missing.size() == 1 ? "tag:" : "tags:"), 
 				String.join(", ", missing) + "."
 			};
-		}
-			
-		// Check tag order
-		if (!(tagInds.stream().sorted().collect(Collectors.toList()).equals(tagInds))) {
+		}	
+		// Tag order
+		else if (!(tagInds.stream().sorted().collect(Collectors.toList()).equals(tagInds))) {
 			return new String[]{
 				String.valueOf(-1), String.valueOf(-1),
 				"METADATA ERROR -- Order tags correctly:", 
 				String.join(", ", Arrays.asList(METADATA_TAGS)) + "."
 			};
 		}
-		// Check tag content
+		// Tag content (author, title, and source need not be checked)
 		else {
-			List<String[]> mdItems = new ArrayList<>();
-//			List<Integer> inds = new ArrayList<>();
-			for (String tag : METADATA_TAGS) {
-				int ind = rawEnc.indexOf(tag);
-				tagInds.add(ind);
-				String mdItem = rawEnc.substring(ind, rawEnc.indexOf(CLOSE_METADATA_BRACKET, ind + 1));
-				mdItems.add(new String[]{
-					mdItem.substring(0, mdItem.indexOf(":")).trim(),
-					mdItem.substring(mdItem.indexOf(":") + 1).trim()
-				});
-			}
-				for (String[] item : mdItems) {
-					String tag = item[0];
-					String content = item[1];
-					int indT = rawEnc.indexOf(tag);
-					int indC = rawEnc.indexOf(content, rawEnc.indexOf(tag) + tag.length());
-					// No content
-					if (content.equals("")) {
-						return new String[]{
-							String.valueOf(indT), String.valueOf(indT + tag.length()),
-							"METADATA ERROR -- Add " + 
-							(tag.equals(TABSYMBOLSET_TAG) ? "TabSymbolSet" :
-							(tag.equals(TUNING_TAG) ? "tuning" :
-							(tag.equals(METER_INFO_TAG) ? "meter info" : "diminution"))) + ".", "" 
-						};
+			List<List<String>> validNames = new ArrayList<>(Collections.nCopies(METADATA_TAGS.length, null));
+			validNames.set(TABSYMBOLSET_IND, Arrays.asList(TabSymbolSet.values()).stream()
+				.map(TabSymbolSet::getName)
+				.collect(Collectors.toList())
+			);
+			validNames.set(TUNING_IND, Arrays.asList(Tuning.values()).stream()
+				.map(Tuning::getName)
+				.collect(Collectors.toList())
+			);
+			validNames.set(METER_INFO_IND, Symbol.MENSURATION_SIGNS.values().stream()
+				.map(MensurationSign::getMeterString)
+				.distinct()
+				.collect(Collectors.toList())
+			);
+			validNames.set(DIMINUTION_IND, Arrays.asList("-4", "-2", "1", "2", "4"));
+			List<String> tagStrs = new ArrayList<>(Collections.nCopies(METADATA_TAGS.length, null));
+			tagStrs.set(TABSYMBOLSET_IND, "TabSymbolSet");
+			tagStrs.set(TUNING_IND, "tuning");
+			tagStrs.set(METER_INFO_IND, "meter info");
+			tagStrs.set(DIMINUTION_IND, "diminution");
+
+			for (String t : Arrays.copyOfRange(METADATA_TAGS, TABSYMBOLSET_IND, METADATA_TAGS.length)) {
+				int indT = rawEnc.indexOf(t);
+				int tagNum = Arrays.asList(METADATA_TAGS).indexOf(t);
+				String c = rawEnc.substring(indT + (t + ":").length(), rawEnc.indexOf(cmb, indT + 1)).trim();
+				int indC = rawEnc.indexOf(c, indT + 1);
+				int start = -1;
+				int end = -1;
+				String e = "";
+
+				// No content
+				if (c.equals("")) {
+					start = indT;
+					end = indT + t.length();
+					e = "METADATA ERROR -- Insert valid " + tagStrs.get(tagNum) + ".";
+				}
+				// Invalid TabSymbolSet, Tuning, diminution
+				else if (Arrays.asList(TABSYMBOLSET_TAG, TUNING_TAG, DIMINUTION_TAG).contains(t)) {
+					if (!validNames.get(tagNum).contains(c)) {
+						start = indC;
+						end = indC + c.length();
+						e = "METADATA ERROR -- Insert valid " + tagStrs.get(tagNum) + ".";
 					}
-					if (tag.equals(TABSYMBOLSET_TAG)) {
-						List<String> validNames = Arrays.asList(TabSymbolSet.values()).stream()
-							.map(TabSymbolSet::getName)
-							.collect(Collectors.toList());	
-						if (!validNames.contains(content)) {
-							return new String[]{
-								String.valueOf(indC), String.valueOf(indC + content.length()),
-								"METADATA ERROR -- Replace invalid TabSymbolSet.", "" 
-							};
+				}
+				// Invalid meterInfo
+				else if (t.equals(METER_INFO_TAG)) {
+					List<String> miItems = 
+						Arrays.stream(c.split(";")).map(String::trim).collect(Collectors.toList());
+					List<Integer> prevBarNums = new ArrayList<>(Arrays.asList(-1));
+					for (String miItem : miItems) {
+						int indMiItem = rawEnc.indexOf(miItem);
+						// Check formatting 
+						if (!miItem.contains(" ")) {
+							e = "METADATA ERROR -- Insert valid time signature and bars.";
 						}
-					}
-					else if (tag.equals(TUNING_TAG)) {
-						List<String> validNames = Arrays.asList(Tuning.values()).stream()
-							.map(Tuning::getName)
-							.collect(Collectors.toList());
-						if (!validNames.contains(content)) {
-							return new String[]{
-								String.valueOf(indC), String.valueOf(indC + content.length()),	
-								"METADATA ERROR -- Replace invalid tuning.", "" 
-							};
-						}
-					}
-					else if (tag.equals(METER_INFO_TAG)) {
-						List<String> validMeterNames = Symbol.MENSURATION_SIGNS.values().stream()
-							.map(MensurationSign::getMeterString)
-							.distinct()
-							.collect(Collectors.toList());
-						String[] miItems = 
-							Arrays.stream(content.split(";")).map(String::trim).toArray(String[]::new);
-						for (int i = 0; i < miItems.length; i++) {
-							String miItem = miItems[i];
-							int indMiItem = rawEnc.indexOf(miItem);
-							// Check meter validity
+						// Check meter validity and bars validity
+						else {
 							String meterStr = miItem.substring(0, miItem.indexOf(" ")).trim();
-							if (!validMeterNames.contains(meterStr)) {
-								return new String[]{
-									String.valueOf(indMiItem), String.valueOf(indMiItem + miItem.length()),	
-									"METADATA ERROR -- Replace invalid time signature.", "" 
-								};
-							}
-							// Check bars validity
-							// Bar numbers should be parenthesised
 							String barsStr = miItem.substring(miItem.indexOf(" ")).trim();
-							if (!barsStr.contains("(") && !barsStr.contains(")")) {
-								return new String[]{
-									String.valueOf(indMiItem), String.valueOf(indMiItem + miItem.length()),	
-									"METADATA ERROR -- Replace invalid bars.", "" 
-								};
+							int barsStrCheck = checkBarsString(barsStr, prevBarNums.get(prevBarNums.size() - 1)); 
+							prevBarNums.add(barsStrCheck);
+							if (!validNames.get(tagNum).contains(meterStr)) {
+								e = "METADATA ERROR -- Insert valid time signature.";
 							}
-							barsStr = miItem.substring(miItem.indexOf("(") + 1, miItem.indexOf(")")).trim();
-							Integer[] barNums = 
-								Arrays.stream(barsStr.split("-"))
-								.map(String::trim)
-								.map(Integer::valueOf)
-								.toArray(Integer[]::new);
-							// Bar numbers should be increasing
-							if (barNums.length > 1 && barNums[0] > barNums[1]) {
-								return new String[]{
-									String.valueOf(indMiItem), String.valueOf(indMiItem + miItem.length()),	
-									"METADATA ERROR -- Replace invalid bars.", "" 
-								};
-							}
-							// Bar numbers should connect to previous meter section
-							else if (i > 0) {
-								String prevMiItem = miItems[i-1];
-								String prevBarsStr = 
-									prevMiItem.substring(prevMiItem.indexOf("(") + 1, prevMiItem.indexOf(")")).trim();
-								Integer[] prevBarNums = 
-									Arrays.stream(prevBarsStr.split("-"))
-									.map(String::trim)
-									.map(Integer::valueOf)
-									.toArray(Integer[]::new);
-								if (prevBarNums[prevBarNums.length-1] + 1 != barNums[0]) {
-									return new String[]{
-										String.valueOf(indMiItem), String.valueOf(indMiItem + miItem.length()),	
-										"METADATA ERROR -- Replace invalid bars.", "" 
-									};
-								}
-							}
+							else if (barsStrCheck == -1) {
+								e = "METADATA ERROR -- Insert valid bars.";
+							}						
 						}
-					}
-					else if (tag.equals(DIMINUTION_TAG)) {
-						List<String> validNames = Arrays.asList("-4", "-2", "1", "2", "4");
-						if (!validNames.contains(content)) {
-							return new String[]{
-								String.valueOf(indC), String.valueOf(indC + content.length()),	
-								"METADATA ERROR -- Replace invalid diminution.", "" 
-							};
+						if (!e.equals("")) {
+							start = indMiItem;
+							end = indMiItem + miItem.length();
+							break;
 						}
 					}
 				}
+				if (!e.equals("")) {
+					return new String[]{
+						String.valueOf(start), String.valueOf(end),	e, "" 
+					};
+				}
 			}
-//		}
+		}
 		return null;
 	}
 
 
 	/**
-	 * Checks the <code>Encoding</code> to see whether 
-	 * <ul>
-	 * <li>All VALIDITY RULES are met.</li> 
-	 * <li>There are no unknown or missing symbols.</li> 
-	 * <li>All LAYOUT RULES are met.</li> 
-	 * </ul>
-	 * NB: The the <code>Encoding</code> must always be checked in the sequence 
-	 *     <code>checkValidityRules()</code> - <code>checkSymbols()</code> - 
-	 *     <code>checkLayoutRules()</code>.<br><br>
+	 * Checks the given bars String for correctness.
 	 * 
-	 * @param rawEnc
-	 * @param cleanEnc
-	 * @param tss
-	 * @return <ul>
-	 * <li><code>null</code> if and only if all conditions are met.</li> 
-     * <li>A <code>String[]</code> containing the relevant error information if not.</li>
-     * </ul>
+	 * @param barsStr
+	 * @param prevBarNum
+	 * @return If the bars String is correct, the upper bar number; if not, -1.
 	 */
-	// NOT TESTED (wrapper method))
-	public static String[] checkEncoding(String rawEnc, String cleanEnc, TabSymbolSet tss) {
-		Integer[] indsAligned = alignRawAndCleanEncoding(rawEnc, cleanEnc);
-		String[] checkVR = checkValidityRules(cleanEnc, indsAligned);
-		if (checkVR != null) {
-			return checkVR;
+	// TESTED
+	static int checkBarsString(String barsStr, int prevBarNum) {
+		String r = "[0-9]+";
+		// barsStr must start and end with parentheses
+		if (!barsStr.startsWith("(") || !barsStr.endsWith(")")) {
+			return -1;
+		}
+		barsStr = barsStr.substring(1, barsStr.length()-1);
+		String[] bars = barsStr.split("-"); // NB returns full barsStr if there is no dash
+		// barsStr must contain numeric characters separated by a dash
+		if (!bars[0].matches(r) || (bars.length == 2 && !bars[1].matches(r))) {
+			return -1;
+		}
+		// barsStr must contain increasing numbers
+		else if (bars.length == 2 && Integer.valueOf(bars[0]) > Integer.valueOf(bars[1])) {
+			return -1;
+		}
+		// barsStr must connect to prevBarNum
+		else if (prevBarNum != -1 && Integer.valueOf(bars[0]) != prevBarNum + 1) {
+			return -1;
 		}
 		else {
-			String[] checkSymbols = checkSymbols(cleanEnc, tss, indsAligned);
-			if (checkSymbols != null) {
-				return checkSymbols;    
-			}
-			else {
-				String[] checkLR = checkLayoutRules(cleanEnc, tss, indsAligned);
-				return checkLR != null ? checkLR : null;
-			}
+			return Integer.valueOf(bars[bars.length-1]);
 		}
 	}
 
@@ -992,7 +1012,7 @@ public class Encoding implements Serializable {
 			return new String[]{
 				String.valueOf(-1),
 				String.valueOf(-1),
-				"INVALID ENCODING ERROR -- The encoding does not end with an end break indicator.",
+				"INVALID ENCODING ERROR -- Insert an end break indicator.",
 				"See " + VR2
 			};
 		}
@@ -1049,7 +1069,7 @@ public class Encoding implements Serializable {
 	 * @return
 	 * <ul>
 	 * <li><code>null</code> if there are no errors.</li>
-	 * <li>If so, a String[] containing</li>
+	 * <li>If not, a String[] containing</li>
 	 * <ul>
 	 * <li>At element 0: the index in rawEncoding of the first error char to be highlighted.</li>
 	 * <li>At element 1: the index in rawEncoding of the last error char to be highlighted.</li>
@@ -1360,13 +1380,13 @@ public class Encoding implements Serializable {
 		for (int i = 0; i < events.size(); i++) {
 			String t = events.get(i);
 			String[] split = t.split("\\" + ss);
-			System.out.println(t);
+//			System.out.println(t);
 			// If rest event: add to temporary list and continue for loop
 			if (assertEventType(t, tss, "rest") == true) {
 //			if (split.length == 2 && RhythmSymbol.getRhythmSymbol(split[0]) != null &&
 //				split[1].equals(Symbol.SPACE.getEncoding())) {
 				successiveRests.add(split[0]);
-				System.out.println("IS REST: " + t);
+//				System.out.println("IS REST: " + t);
 			}
 //			// If barline event: ignore if any event after is a rest event; add to final list if not
 //			else if (assertEventType(t, tss, "barline") == true) {
@@ -1390,8 +1410,8 @@ public class Encoding implements Serializable {
 			else {
 				// If the temporary list contains (successive) rests, which still need to be added
 				if (!successiveRests.isEmpty()) {
-					System.out.println("IS NOT: " + t);
-					System.out.println(successiveRests);
+//					System.out.println("IS NOT: " + t);
+//					System.out.println(successiveRests);
 					boolean combinedIsOpen = 
 						successiveRests.get(0).contains(RhythmSymbol.TRIPLET_OPEN);
 					boolean combinedIsClose = 
@@ -1402,7 +1422,7 @@ public class Encoding implements Serializable {
 					}
 //					System.out.println(combinedIsOpen);
 //					System.out.println(combinedIsClose);
-					System.out.println(totalDur);
+//					System.out.println(totalDur);
 					RhythmSymbol combinedRs = null;
 					for (RhythmSymbol rs : Symbol.RHYTHM_SYMBOLS.values()) {
 						// Do not consider coronas
@@ -1444,7 +1464,7 @@ public class Encoding implements Serializable {
 							break;
 						}
 					}
-					System.out.println("gaaaaah " + combinedRs.getEncoding());
+//					System.out.println("gaaaaah " + combinedRs.getEncoding());
 //					System.out.println(combinedRs.getSymbol());
 //					System.out.println(combinedRs.getDuration());
 //					System.out.println(combinedRs.getNumberOfDots());
@@ -1611,7 +1631,7 @@ public class Encoding implements Serializable {
 			"\r\n\r\n" + 
 			recompose(augmentEvents(decompose(true, true), getTimeline(), getTabSymbolSet(), 
 			thresholdDur, rescaleFactor, augmentation));
-		this.init(rawEncAugm, getPiecename(), Stage.SYNTAX_CHECKED);
+		this.init(rawEncAugm, getPiecename(), Stage.RULES_CHECKED);
 	}
 
 
@@ -2231,7 +2251,7 @@ public class Encoding implements Serializable {
 				if (!currFnEnc.contains("/")) {
 					currFnStaffPart = 
 						new Encoding(hdr + "\r\n" + currFnEnc + ebi, "", 
-						Stage.SYNTAX_CHECKED).visualise(argTss, false, false, true);
+						Stage.RULES_CHECKED).visualise(argTss, false, false, true);
 				}	
 				// b. Doubled symbols
 				else {
@@ -2243,7 +2263,7 @@ public class Encoding implements Serializable {
 						String[] currFnEventStaffPartSplit;
 						// If the event contains a doubled symbol 
 						if (currFnEventEnc.contains("/")) {
-							System.out.println(currFnEventEnc);
+//							System.out.println(currFnEventEnc);
 							// 1. Make currFnEventStaffPart
 							// Remove doubled symbol from currFnEventEnc
 							String toRemove = 
@@ -2252,14 +2272,14 @@ public class Encoding implements Serializable {
 							currFnEventEnc = currFnEventEnc.replace(toRemove, "");
 							currFnEventStaffPart = 
 								new Encoding(hdr + "\r\n" + currFnEventEnc + ebi, "", 
-								Stage.SYNTAX_CHECKED).visualise(argTss, false, false, true);
-							System.out.println(toRemove);
-							System.out.println(currFnEventEnc);
-							System.out.println(currFnEventStaffPart);
+								Stage.RULES_CHECKED).visualise(argTss, false, false, true);
+//							System.out.println(toRemove);
+//							System.out.println(currFnEventEnc);
+//							System.out.println(currFnEventStaffPart);
 	
 							// 2. Split currFnEventStaffPart into lines and adapt them
 							currFnEventStaffPartSplit = currFnEventStaffPart.split("\n");
-							System.out.println(Arrays.asList(currFnEventStaffPartSplit));
+//							System.out.println(Arrays.asList(currFnEventStaffPartSplit));
 							// Get doubled symbol and changeLine for doubled symbol
 							String dbld = 
 								toRemove.substring(toRemove.indexOf("/") + 1, toRemove.indexOf(ss));
@@ -2306,7 +2326,7 @@ public class Encoding implements Serializable {
 							// 1. Make currFnEventStaffPart
 							currFnEventStaffPart = 
 								new Encoding(hdr + "\r\n" + currFnEventEnc + ebi, "",
-								Stage.SYNTAX_CHECKED).visualise(argTss, false, false, true);
+								Stage.RULES_CHECKED).visualise(argTss, false, false, true);
 							// 2. Split currFnEventStaffPart into lines
 							currFnEventStaffPartSplit = currFnEventStaffPart.split("\n");
 							// 3. Add
@@ -2684,6 +2704,45 @@ public class Encoding implements Serializable {
 			e1.printStackTrace();
 		}
 		return rawEncoding;
+	}
+
+
+	/**
+	 * Checks the <code>Encoding</code> to see whether 
+	 * <ul>
+	 * <li>All VALIDITY RULES are met.</li> 
+	 * <li>There are no unknown or missing symbols.</li> 
+	 * <li>All LAYOUT RULES are met.</li> 
+	 * </ul>
+	 * NB: The the <code>Encoding</code> must always be checked in the sequence 
+	 *     <code>checkValidityRules()</code> - <code>checkSymbols()</code> - 
+	 *     <code>checkLayoutRules()</code>.<br><br>
+	 * 
+	 * @param rawEnc
+	 * @param cleanEnc
+	 * @param tss
+	 * @return <ul>
+	 * <li><code>null</code> if and only if all conditions are met.</li> 
+     * <li>A <code>String[]</code> containing the relevant error information if not.</li>
+     * </ul>
+	 */
+	// NOT TESTED (wrapper method)
+	private static String[] checkEncodingOLD(String rawEnc, String cleanEnc, TabSymbolSet tss) {
+		Integer[] indsAligned = alignRawAndCleanEncoding(rawEnc, cleanEnc);
+		String[] checkVR = checkValidityRules(cleanEnc, indsAligned);
+		if (checkVR != null) {
+			return checkVR;
+		}
+		else {
+			String[] checkSymbols = checkSymbols(cleanEnc, tss, indsAligned);
+			if (checkSymbols != null) {
+				return checkSymbols;    
+			}
+			else {
+				String[] checkLR = checkLayoutRules(cleanEnc, tss, indsAligned);
+				return checkLR != null ? checkLR : null;
+			}
+		}
 	}
 
 
@@ -3425,7 +3484,7 @@ public class Encoding implements Serializable {
 		this.init(
 			reverseHeader(mi) + "\r\n\r\n" + reverseCleanEncoding(), 
 			getPiecename(), 
-			Stage.SYNTAX_CHECKED
+			Stage.RULES_CHECKED
 		);
 	}
 
@@ -3481,7 +3540,7 @@ public class Encoding implements Serializable {
 		this.init(
 			header + "\r\n\r\n" + recompose(events) + Symbol.END_BREAK_INDICATOR, 
 			getPiecename(), 
-			Stage.SYNTAX_CHECKED
+			Stage.RULES_CHECKED
 		);
 //		return new Encoding(
 //			header + "\r\n\r\n" + recompose(events) + Symbol.END_BREAK_INDICATOR, 
@@ -3495,7 +3554,7 @@ public class Encoding implements Serializable {
 		this.init(
 			getHeader() + "\r\n\r\n" + deornamentCleanEncoding(dur), 
 			getPiecename(), 
-			Stage.SYNTAX_CHECKED
+			Stage.RULES_CHECKED
 		);
 	}
 
@@ -3578,7 +3637,7 @@ public class Encoding implements Serializable {
 		return new Encoding(
 			getHeader() + "\r\n\r\n" + recompose(events), 
 			getPiecename(), 
-			Stage.SYNTAX_CHECKED
+			Stage.RULES_CHECKED
 		);
 	}
 
@@ -3646,7 +3705,7 @@ public class Encoding implements Serializable {
 		return new Encoding(
 			header + "\r\n\r\n" + recompose(events), 
 			getPiecename(), 
-			Stage.SYNTAX_CHECKED);
+			Stage.RULES_CHECKED);
 	}
 
 

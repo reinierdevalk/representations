@@ -460,7 +460,7 @@ public class ScorePiece extends Piece {
 	//  I N S T A N C E  M E T H O D S
 	//
 	/**
-	 * Augments the <code>ScorePiece</code> according to the given transposition.
+	 * Transposes the given <code>ScorePiece</code> according to the given transposition.
 	 * 
 	 * @param transposition
 	 */

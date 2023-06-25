@@ -947,7 +947,10 @@ public class TablatureTest extends TestCase {
 
 
 	public void testGetUnisonInfo() {
-		Tablature tablature = new Tablature(encodingTestpiece, false);
+		Tablature tab = new Tablature(encodingTestpiece, false);
+		List<List<TabSymbol>> chords = tab.getChords();
+		Tuning t = tab.getNormaliseTuning() ? tab.getTunings()[Tablature.NORMALISED_TUNING_IND] : 
+			tab.getTunings()[Tablature.ENCODED_TUNING_IND];
 
 		List<List<Integer[]>> expected = new ArrayList<>();
 		expected.add(null);
@@ -969,9 +972,9 @@ public class TablatureTest extends TestCase {
 		expected.add(null);
 		expected.add(null);
 
-		List<List<Integer[]>> actual = new ArrayList<>();
-		for (int i = 0; i < tablature.getChords().size(); i++) {
-			actual.add(tablature.getUnisonInfo(i));
+		List<List<Integer[]>> actual = new ArrayList<>();		
+		for (int i = 0; i < chords.size(); i++) {
+			actual.add(Tablature.getUnisonInfo(chords.get(i), t));
 		}
 
 		assertEquals(expected.size(), actual.size());
@@ -1010,7 +1013,10 @@ public class TablatureTest extends TestCase {
 
 
 	public void testGetCourseCrossingInfo() {
-		Tablature tablature = new Tablature(encodingTestpiece, false);
+		Tablature tab = new Tablature(encodingTestpiece, false);
+		List<List<TabSymbol>> chords = tab.getChords();
+		Tuning t = tab.getNormaliseTuning() ? tab.getTunings()[Tablature.NORMALISED_TUNING_IND] : 
+			tab.getTunings()[Tablature.ENCODED_TUNING_IND];
 
 		List<List<Integer[]>> expected = new ArrayList<>(Collections.nCopies(16, null));
 		List<Integer[]> chord1 = new ArrayList<>();
@@ -1018,9 +1024,8 @@ public class TablatureTest extends TestCase {
 		expected.set(1, chord1);
 
 		List<List<Integer[]>> actual = new ArrayList<>();
-		List<List<TabSymbol>> chords = tablature.getChords();
 		for (int i = 0; i < chords.size(); i++) {
-			actual.add(tablature.getCourseCrossingInfo(chords.get(i)));
+			actual.add(Tablature.getCourseCrossingInfo(chords.get(i), t));
 		}
 
 		assertEquals(expected.size(), actual.size());
@@ -1177,7 +1182,7 @@ public class TablatureTest extends TestCase {
 		String bar3Beat3Triplets = "tr[mi.>.trmi.a6.c4.a2.a1.>.tr]mi.a6.c4.a2.a1.>.";
 		origEncoding = origEncoding.replace(bar3Beat3, bar3Beat3Triplets);
 		tablature = new Tablature(new Encoding(origEncoding, 
-			new Encoding(encodingTestpiece).getPiecename(), Stage.SYNTAX_CHECKED), true);
+			new Encoding(encodingTestpiece).getPiecename(), Stage.RULES_CHECKED), true);
 		
 		expected.add(new Rational[]{new Rational(5, 4), new Rational(17, 12), 
 			new Rational(Symbol.SEMIMINIM.getDuration(), 1)});

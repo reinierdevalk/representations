@@ -68,8 +68,8 @@ public class TranscriptionTest extends TestCase {
 	private File encodingHerrGott;
 	private File midiTestpiece;
 	private File midiTestGetMeterKeyInfo;
-	private File midiTestGetMeterKeyInfoDiminuted; // TODO delete
-//	private File midiTestGetMeterKeyInfoDiminutedNoAnacrusis; // TODO delete
+//	private File midiTestGetMeterKeyInfoDiminuted;
+//	private File midiTestGetMeterKeyInfoDiminutedNoAnacrusis;
 //	private File midiMemorEsto;
 //	private File midiQuiHabitat;
 //	private File midiPreterRerum;
@@ -134,7 +134,7 @@ public class TranscriptionTest extends TestCase {
 		
 		midiTestpiece = new File(mp + "test/" + "testpiece.mid");
 		midiTestGetMeterKeyInfo = new File(mp + "test/" + "test_get_meter_key_info.mid");
-		midiTestGetMeterKeyInfoDiminuted = new File(mp + "test/" + "test_get_meter_key_info_diminuted.mid");
+//		midiTestGetMeterKeyInfoDiminuted = new File(mp + "test/" + "test_get_meter_key_info_diminuted.mid");
 //		midiTestGetMeterKeyInfoDiminutedNoAnacrusis = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info_diminuted_no_anacrusis.mid");
 //		midiMemorEsto = new File(jtp + "Jos1714-Memor_esto_verbi_tui-166-325.mid");
 //		midiQuiHabitat = new File(jtp + "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282.mid");
@@ -952,7 +952,7 @@ public class TranscriptionTest extends TestCase {
 		
 		List<Boolean> actual = new ArrayList<Boolean>();
 		for (List<TaggedNote> tn : allTaggedNotes) {
-			actual.add(Transcription.checkAlignment(tab, tn));
+			actual.add(Transcription.checkAlignment(tn, tab));
 		}
 		System.out.println(Transcription.alignmentCheck);
 
@@ -1042,14 +1042,14 @@ public class TranscriptionTest extends TestCase {
 		t1.setName();
 		t1.setMeterInfo();
 		t1.setKeyInfo();
-		t1.setTaggedNotes(tab);
+		t1.setTaggedNotes(tab, Type.GROUND_TRUTH);
 		// Non-tablature case
 		Transcription t2 = new Transcription();
 		t2.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, Type.GROUND_TRUTH);
 		t2.setName();
 		t2.setMeterInfo();
 		t2.setKeyInfo();
-		t2.setTaggedNotes(null);
+		t2.setTaggedNotes(null, Type.GROUND_TRUTH);
 
 		List<List<Note>> expected = new ArrayList<>(); 
 		List<Note> expected1 = getHandledNotesFromPiece(t1.getScorePiece(), "testpiece", true);
@@ -1079,7 +1079,7 @@ public class TranscriptionTest extends TestCase {
 		t1.setName();
 		t1.setMeterInfo();
 		t1.setKeyInfo();
-		t1.setTaggedNotes(tab);
+		t1.setTaggedNotes(tab, Type.GROUND_TRUTH);
 		t1.setNotes();
 		t1.setChords();
 		// Non-tablature case
@@ -1088,7 +1088,7 @@ public class TranscriptionTest extends TestCase {
 		t2.setName();
 		t2.setMeterInfo();
 		t2.setKeyInfo();
-		t2.setTaggedNotes(null);
+		t2.setTaggedNotes(null, Type.GROUND_TRUTH);
 		t2.setNotes();
 		t1.setChords();
 
@@ -1175,7 +1175,7 @@ public class TranscriptionTest extends TestCase {
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
-		t.setTaggedNotes(tab);
+		t.setTaggedNotes(tab, Type.GROUND_TRUTH);
 		t.setNotes();
 		t.setChords();
 		t.setVoiceLabels(null, true);
@@ -1257,7 +1257,7 @@ public class TranscriptionTest extends TestCase {
 		t1.setName();
 		t1.setMeterInfo();
 		t1.setKeyInfo();
-		t1.setTaggedNotes(tab1);
+		t1.setTaggedNotes(tab1, Type.GROUND_TRUTH);
 		t1.setNotes();
 		t1.setChords();
 		t1.setVoiceLabels(null, true);
@@ -1270,7 +1270,7 @@ public class TranscriptionTest extends TestCase {
 		t2.setName();
 		t2.setMeterInfo();
 		t2.setKeyInfo();
-		t2.setTaggedNotes(tab2);
+		t2.setTaggedNotes(tab2, Type.GROUND_TRUTH);
 		t2.setNotes();
 		t2.setChords();
 		t2.setVoiceLabels(null, true);
@@ -1338,7 +1338,7 @@ public class TranscriptionTest extends TestCase {
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
-		t.setTaggedNotes(null);
+		t.setTaggedNotes(null, Type.GROUND_TRUTH);
 		// Make the second unison note pair an EDU note pair with duration 1/4
 		TaggedNote tn16 = t.getTaggedNotes().get(16);
 		TaggedNote tn17 = t.getTaggedNotes().get(17);
@@ -1383,7 +1383,7 @@ public class TranscriptionTest extends TestCase {
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
-		t.setTaggedNotes(null);
+		t.setTaggedNotes(null, Type.GROUND_TRUTH);
 		// Make the second unison note pair an EDU note pair with duration 1/4
 		TaggedNote tn16 = t.getTaggedNotes().get(16);
 		TaggedNote tn17 = t.getTaggedNotes().get(17);
@@ -1427,7 +1427,7 @@ public class TranscriptionTest extends TestCase {
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
-		t.setTaggedNotes(null);
+		t.setTaggedNotes(null, Type.GROUND_TRUTH);
 		// Make the second unison note pair an EDU note pair with duration 1/4
 		TaggedNote tn16 = t.getTaggedNotes().get(16);
 		TaggedNote tn17 = t.getTaggedNotes().get(17);
@@ -1472,7 +1472,7 @@ public class TranscriptionTest extends TestCase {
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
-		t.setTaggedNotes(null);
+		t.setTaggedNotes(null, Type.GROUND_TRUTH);
 		t.setNotes();
 		t.setChords();
 		t.setVoiceLabels(null, false);
@@ -1554,7 +1554,7 @@ public class TranscriptionTest extends TestCase {
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
-		t.setTaggedNotes(null);
+		t.setTaggedNotes(null, Type.GROUND_TRUTH);
 		t.setNotes();
 		t.setChords();
 		t.setVoiceLabels(null, false);
@@ -4164,31 +4164,31 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetMeter() {
-		Transcription tr = new Transcription(midiTestGetMeterKeyInfoDiminuted);
+		Transcription tr = new Transcription(midiTestGetMeterKeyInfo);
 		
 		List<Rational> all = Arrays.asList(new Rational[]{
-			new Rational(2, 8), // b0
-			new Rational(3, 8), // begin b1 
-			new Rational(12, 8), // b2
-			new Rational(19, 8), // begin b3
-			new Rational(28, 8), // b4
-			new Rational(31, 8), // begin b5
-			new Rational(45, 8), // b6
-			new Rational(47, 8), // begin b7
-			new Rational(100, 16) // b8
+			new Rational(1, 4), // b0, Q in
+			new Rational(3, 4), // begin b1 
+			new Rational(12, 4), // b2, Q in
+			new Rational(19, 4), // begin b3
+			new Rational(32, 4), // b4, Q in
+			new Rational(43, 4), // begin b5
+			new Rational(48, 4), // b6, Q in
+			new Rational(51, 4), // begin b7
+			new Rational(213, 16) // b8, Q in
 		});
 		
-		List<Rational> expected = Arrays.asList(new Rational[]{
-			new Rational(3, 8), // b0
-			new Rational(2, 2), // begin b1 
-			new Rational(2, 2), // b2
-			new Rational(3, 4), // begin b3
-			new Rational(3, 4), // b4
-			new Rational(2, 2), // begin b5
-			new Rational(2, 2), // b6
-			new Rational(5, 16), // begin b7
-			new Rational(2, 2) // b8
-		});
+		List<Rational> expected = Arrays.asList(
+			new Rational(3, 4),
+			new Rational(2, 1),
+			new Rational(2, 1),
+			new Rational(3, 1),
+			new Rational(3, 1),
+			new Rational(2, 2),
+			new Rational(2, 2),
+			new Rational(5, 16),
+			new Rational(2, 4)
+		);
 		
 		List<Rational> actual = new ArrayList<Rational>();
 		List<Integer[]> mi = tr.getMeterInfo();
@@ -4204,26 +4204,26 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testGetMeterBar() {
-		Transcription tr = new Transcription(midiTestGetMeterKeyInfoDiminuted);
+		Transcription tr = new Transcription(midiTestGetMeterKeyInfo);
 		
-		List<Rational> expected = Arrays.asList(new Rational[]{
-			new Rational(3, 8), // b0
-			new Rational(2, 2), // begin b1 
-			new Rational(2, 2), // b2
-			new Rational(3, 4), // begin b3
-			new Rational(3, 4), // b4
-			new Rational(2, 2), // begin b5
-			new Rational(2, 2), // b6
-			new Rational(5, 16), // begin b7
-			new Rational(2, 2) // b8
-		});
-		
+		List<Rational> expected = Arrays.asList(
+			new Rational(3, 4),
+			new Rational(2, 1),
+			new Rational(2, 1),
+			new Rational(3, 1),
+			new Rational(3, 1),
+			new Rational(2, 2),
+			new Rational(2, 2),
+			new Rational(5, 16),
+			new Rational(2, 4)
+		);
+
 		List<Integer[]> mi = tr.getMeterInfo();
 		List<Rational> actual = new ArrayList<Rational>();
 		for (int i = 1; i < 10; i++) {
 			actual.add(Transcription.getMeter(i, mi));
 		}
-		
+
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));

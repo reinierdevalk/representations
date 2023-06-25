@@ -48,6 +48,7 @@ import de.uos.fmt.musitech.score.ScoreEditor.Mode;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import imports.MIDIImport;
+import representations.Tablature.Tuning;
 import structure.ScoreMetricalTimeLine;
 import structure.ScorePiece;
 import structure.Timeline;
@@ -261,38 +262,25 @@ public class Transcription implements Serializable {
 	 *                 case only).
 	 */
 	public Transcription(File... argFiles) {
-//		setFiles(Arrays.asList(new File[]{argMidiFile, argEncodingFile}));
-
 		File argMidiFile = argFiles.length == 1 ? argFiles[0] : 
 			(argFiles[0].getName().endsWith(MIDIImport.EXTENSION) ? argFiles[0] : argFiles[1]);
 		File argEncodingFile = argFiles.length == 1 ? null : 
 			(argFiles[0].getName().endsWith(Encoding.EXTENSION) ? argFiles[0] : argFiles[1]);
-		
+
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(argMidiFile));
-//		MetricalTimeLine mtl = groundTruthPiece.getMetricalTimeLine();
-//		mtl = cleanMetricalTimeLine(mtl);
-//		SortedContainer<Marker> ht = groundTruthPiece.getHarmonyTrack();
-//		ht = cleanHarmonyTrack(ht);
-//		groundTruthPiece.setMetricalTimeLine(mtl);
-//		groundTruthPiece.setHarmonyTrack(ht);
 		Encoding encoding = argEncodingFile != null ? new Encoding(argEncodingFile) : null;
-//		boolean normaliseTuning = false;
-//		boolean isGroundTruthTranscription = true;
-		init(sp, encoding, /*null,*/ /*normaliseTuning, isGroundTruthTranscription,*/ 
-			null, null, Type.GROUND_TRUTH);	
+		init(sp, encoding, null, null, Type.GROUND_TRUTH);	
 	}
 
 
 	/**
-	 * Constructor for a mapping Transcription. Creates a <code>Transcription</code> from 
-	 * a <code>.mid</code> and a <code>.tbp</code> file.
+	 * Constructor for a mapping <code>Transcription</code>. Creates a <code>Transcription</code> 
+	 * from a <code>.mid</code> and a <code>.tbp</code> file.
 	 * 
-	 * @param argMidiFile
-	 * @param argTimeline
+	 * @param t
+	 * @param argFiles
 	 */
-	public Transcription(Type t, File... argFiles /*argMidiFile,*/ /*Timeline argTimeline*/) {
-//		setFiles(Arrays.asList(new File[]{argMidiFile, null}));
-
+	public Transcription(Type t, File... argFiles) {
 		File argMidiFile =  
 			(argFiles[0].getName().endsWith(MIDIImport.EXTENSION) ? argFiles[0] : argFiles[1]);
 		File argEncodingFile = 
@@ -300,21 +288,7 @@ public class Transcription implements Serializable {
 
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(argMidiFile));
 		Encoding encoding = new Encoding(argEncodingFile);
-//		MetricalTimeLine mtl = groundTruthPiece.getMetricalTimeLine();
-//		mtl = cleanMetricalTimeLine(mtl);
-//		mtl = alignMetricalTimeLine(mtl, tl);
-//		SortedContainer<Marker> ht = groundTruthPiece.getHarmonyTrack();
-//		ht = cleanHarmonyTrack(ht);
-//		groundTruthPiece.setMetricalTimeLine(mtl);
-//		groundTruthPiece.setHarmonyTrack(ht);
-//		groundTruthPiece = diminutePiece(groundTruthPiece, tl);
-
-//		Encoding encoding = null; //new Encoding(argEncodingFile);	
-//		boolean normaliseTuning = false;
-//		boolean isGroundTruthTranscription = true;
-		init(sp, encoding, /*argTimeline,*/ 
-			/*normaliseTuning, isGroundTruthTranscription,*/  
-			null, null, Type.MAPPING);	
+		init(sp, encoding, null, null, Type.MAPPING);	
 	}
 
 
@@ -458,15 +432,8 @@ public class Transcription implements Serializable {
 	 *     <code>true</code> when creating a predicted Transcription: the Transcription's Piece 
 	 *       has already been normalised/transposed correctly because it was created from a 
 	 *       normalised Tablature (in TrainingManager.prepareTraining())
-	 *       
-	 * transpose:
-	 * GT: yes 
-	 * MA: no (no Tablature involved)
-	 * AU: no (has already been transposed)
-	 * PR: no (has already been transposed)   
-	 *       
 	 * 
-	 * @param argPiece
+	 * @param argScorePiece
 	 * @param argEncoding Always <code>non-null</code> if <code>t</code> is <code>Type.MAPPING</code>; 
 	 *                    else, non-<code>null</code> in the tablature case.
 	 * @param argTimeline Always <code>null</code> if <code>t</code> is not <code>Type.MAPPING</code>;
@@ -475,29 +442,40 @@ public class Transcription implements Serializable {
 	 * @param argDurLabels Only none-<code>null</code> if <code>t</code> is <code>Type.PREDICTED</code>.
 	 * @param argType
 	 */
-	private void init(ScorePiece argPiece, Encoding argEncoding, /*Timeline argTimeline,*/ 
-		/*boolean argnNormaliseTuning, boolean isGrousndTruthTranscription,*/ 
-		List<List<Double>> argVoiceLabels, List<List<Double>> argDurLabels, Type argType) {
-		
-//		// NB: normaliseTuning is false when creating a ground truth Transcription and true 
-//		// when creating a predicted Transcription (see Javadoc for this method)
-		
-		// The Tablature is used for alignment of the Transcription (transposition, SNUs, CCs) and
-		// for setting the minimumDurationLabels. It is NOT the Tablature object that forms a 
-		// TablatureTranscriptionPair with the Transcription
-		Tablature tab = argEncoding != null ? new Tablature(argEncoding, true) : null;
-//		Tablature tab = encoding != null ? new Tablature(encoding, normaliseTuning) : null;
+	private void init(ScorePiece argScorePiece, Encoding argEncoding, List<List<Double>> argVoiceLabels, 
+		List<List<Double>> argDurLabels, Type argType) {
 
-		setScorePiece(argPiece, tab, argType);
+		// argType == GROUND_TRUTH, PREDICTED, AUGMENTED -- tablature- or non-tablature case
+		// in the tablature case, tab is used for
+		// - alignment of the Transcription and Tablature 
+		//   - transposition of ScorePiece (w/ setScorePiece())
+		//     NB: only in the GROUND_TRUTH case
+		//      - in the GROUND_TRUTH case, when init() is called, ScorePiece is still in the key 
+		//        of the non-normalised Tablature
+		//      - in the PREDICTED case, ScorePiece has been created from scratch (has been predicted)  
+		//        from a normalised Tablature and does therefore not need to be transposed
+		//      - in the AUGMENTED case, ScorePiece has been created from a Transcription that has 
+		//        already been transposed
+		//   - handling SNUs and CCs; chords and alignment checks (w/ setTaggedNotes())
+		// - setting the chordVoiceLabels 
+		// - setting the minimumDurationLabels
+		//
+		// argType = MAPPING -- always non-tablature case
+		// tab (i.e., its meterInfo) is only used for 
+		// - diminution of the ScorePiece (w/ setScorePiece())
+		Tablature tab = argEncoding != null ? new Tablature(argEncoding, true) : null;
+		boolean isTabCase = tab != null && argType != Type.MAPPING;
+
+		setScorePiece(argScorePiece, tab, argType);
 		setUnaugmentedScorePiece();
 		setName();
 		setMeterInfo();
 		setKeyInfo();
-		setTaggedNotes(tab);
+		setTaggedNotes(tab, argType);
 		setNotes();
 		setChords();
 
-		setVoiceLabels((argType != Type.PREDICTED ? null : argVoiceLabels), tab != null);
+		setVoiceLabels((argType != Type.PREDICTED ? null : argVoiceLabels), isTabCase);
 //		if (t != Type.PREDICTED) {
 //			setVoiceLabels(null, tab != null);
 ////			initialiseVoiceLabels(null);
@@ -506,9 +484,9 @@ public class Transcription implements Serializable {
 //			setVoiceLabels(argVoiceLabels, tab != null);
 ////			initialiseVoiceLabels(argVoiceLabels);
 //		}
-		setChordVoiceLabels(tab);
+		setChordVoiceLabels(isTabCase ? tab : null);
 		// a. Tablature case
-		if (tab != null) {
+		if (isTabCase) {
 //			setVoicesSNU();
 			setDurationLabels(argType != Type.PREDICTED ? null : argDurLabels);
 			setMinimumDurationLabels(tab);
@@ -585,7 +563,7 @@ public class Transcription implements Serializable {
 
 
 	// NOT TESTED (wrapper method)
-	ScorePiece makeScorePiece(ScorePiece argPiece, Tablature tab, Type t) {
+	ScorePiece makeScorePiece(ScorePiece argScorePiece, Tablature tab, Type t) {
 		if (t == Type.GROUND_TRUTH) {
 			// Clean mtl
 //			MetricalTimeLine mtl = argPiece.getMetricalTimeLine();
@@ -595,7 +573,7 @@ public class Transcription implements Serializable {
 //			ht = ScorePiece.cleanHarmonyTrack(ht);
 			// Transpose ht and ns
 			if (tab != null) {
-				argPiece.transpose(tab.getTranspositionInterval());
+				argScorePiece.transpose(tab.getTranspositionInterval());
 //				int transposition = tab.getTranspositionInterval();
 //				SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
 //				ht = ScorePiece.transposeHarmonyTrack(ht, transposition);
@@ -610,7 +588,7 @@ public class Transcription implements Serializable {
 //			argPiece.setHarmonyTrack(ht);
 		}
 		else if (t == Type.MAPPING) {
-			argPiece.diminute(tab.getMeterInfo());
+			argScorePiece.diminute(tab.getMeterInfo());
 //			// Clean, align, and diminute mtl
 //			List<Integer[]> mi = tab.getMeterInfo();
 //			MetricalTimeLine mtl = argPiece.getScoreMetricalTimeLine();
@@ -633,9 +611,9 @@ public class Transcription implements Serializable {
 //			argPiece.setHarmonyTrack(ht);
 		}
 		else if (t == Type.AUGMENTED || t == Type.PREDICTED) {
-			return argPiece;
+			return argScorePiece;
 		}
-		return argPiece;
+		return argScorePiece;
 	}
 
 
@@ -771,8 +749,8 @@ public class Transcription implements Serializable {
 	}
 
 
-	void setTaggedNotes(Tablature tab) {
-		taggedNotes = makeTaggedNotes(tab);
+	void setTaggedNotes(Tablature tab, Type t) {
+		taggedNotes = makeTaggedNotes(tab, t);
 	}
 
 
@@ -800,18 +778,22 @@ public class Transcription implements Serializable {
 	 *  
 	 * NB: Any unison notes (tablature case) need no further handling, as the lower-course unison
 	 * note automatically always comes first.
+	 * 
+	 * @param tab
+	 * @param t 
+	 * @return
 	 */
 	// NOT TESTED (wrapper method)
-	List<TaggedNote> makeTaggedNotes(Tablature tab) {
+	List<TaggedNote> makeTaggedNotes(Tablature tab, Type t) {
 		List<TaggedNote> argTaggedNotes;
 
 		// Make unhandled notes
 		List<Note> argNotes = makeUnhandledNotes();
 
 		// In the tablature case: handle SNUs and course crossings
-		if (tab != null) {
+		if (tab != null && t != Type.MAPPING) {
 			// Check tablature chords
-			if (checkChords(tab, argNotes) == false) {
+			if (checkChords(argNotes, tab) == false) {
 				System.out.println(chordCheck);
 				throw new RuntimeException("ERROR: Chord error (see console).");
 			}
@@ -822,7 +804,7 @@ public class Transcription implements Serializable {
 			argTaggedNotes = handleCourseCrossings(argTaggedNotes, tab);
 			
 			// Check alignment
-			if (checkAlignment(tab, argTaggedNotes) == false) {
+			if (checkAlignment(argTaggedNotes, tab) == false) {
 				System.out.println(alignmentCheck);
 				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
 			}
@@ -875,17 +857,19 @@ public class Transcription implements Serializable {
 	 *   
 	 * NB: Tablature case only; must be called before handling of SNUs and course crossings.
 	 *  
-	 * @param tab
 	 * @param argNotes
+	 * @param tab
 	 * @return <code>true</code> if no illegal chords are found; else <code>false</code>.
 	 */
 	// NOT TESTED
-	static boolean checkChords(Tablature tab, List<Note> argNotes) {  
+	static boolean checkChords(List<Note> argNotes, Tablature tab) {  
 		boolean checkPassed = true;
 
 		List<List<TabSymbol>> tabCh = tab.getChords();
 		List<List<Note>> argChords = getChordsFromNotes(argNotes);
 		Timeline tl = tab.getEncoding().getTimeline();
+		Tuning t = tab.getNormaliseTuning() ? tab.getTunings()[Tablature.NORMALISED_TUNING_IND] : 
+			tab.getTunings()[Tablature.ENCODED_TUNING_IND];
 
 		// 0. Check equality of number of chords
 		if (tabCh.size() != argChords.size()) {
@@ -946,14 +930,16 @@ public class Transcription implements Serializable {
 				}
 			}
 			// b. Check for any SNUs
-			if (argChords.get(i).size() != tabCh.get(i).size()) {
-				if (argChords.get(i).size() == (tabCh.get(i).size() + 1)) {					
+			List<Note> ch = argChords.get(i);
+			List<TabSymbol> tch = tabCh.get(i);
+			if (ch.size() != tabCh.get(i).size()) {
+				if (ch.size() == (tch.size() + 1)) {					
 					oneSNU.add(metPosAsString);
 				}
-				if (argChords.get(i).size() == (tabCh.get(i).size() + 2)) {
+				if (ch.size() == (tch.size() + 2)) {
 					twoSNUs.add(metPosAsString);
 				}
-				if (argChords.get(i).size() == (tabCh.get(i).size() + 3)) {
+				if (ch.size() == (tch.size() + 3)) {
 					threeSNUs.add(metPosAsString);
 				}
 				if (!specialChords.contains(metPosAsString)) {
@@ -961,14 +947,15 @@ public class Transcription implements Serializable {
 				}
 			}	     
 			// c. Check for any unisons
-			if (tab.getUnisonInfo(i) != null) {
-				if (tab.getUnisonInfo(i).size() == 1) {
+			List<Integer[]> uniInfo = Tablature.getUnisonInfo(tabCh.get(i), t);
+			if (uniInfo != null) {
+				if (uniInfo.size() == 1) {
 					oneUnison.add(metPosAsString);
 				}
-				if (tab.getUnisonInfo(i).size() == 2) {
+				if (uniInfo.size() == 2) {
 					twoUnisons.add(metPosAsString);
 				}
-				if (tab.getUnisonInfo(i).size() == 3) {
+				if (uniInfo.size() == 3) {
 					threeUnisons.add(metPosAsString);
 				}
 				if (!specialChords.contains(metPosAsString)) {
@@ -976,14 +963,15 @@ public class Transcription implements Serializable {
 				}
 			}
 			// d. Check for any course crossings
-			if (tab.getCourseCrossingInfo(tabCh.get(i)) != null) {
-				if (tab.getCourseCrossingInfo(tabCh.get(i)).size() == 1) {
+			List<Integer[]> ccInfo = Tablature.getCourseCrossingInfo(tabCh.get(i), t);
+			if (ccInfo != null) {
+				if (ccInfo.size() == 1) {
 					oneCC.add(metPosAsString);
 				}
-				if (tab.getCourseCrossingInfo(tabCh.get(i)).size() == 2) {
+				if (ccInfo.size() == 2) {
 					twoCCs.add(metPosAsString);
 				}
-				if (tab.getCourseCrossingInfo(tabCh.get(i)).size() == 3) {
+				if (ccInfo.size() == 3) {
 					threeCCs.add(metPosAsString);
 				}
 				if (!specialChords.contains(metPosAsString)) {
@@ -1338,8 +1326,10 @@ public class Transcription implements Serializable {
 	List<TaggedNote> handleCourseCrossings(List<TaggedNote> argTaggedNotes, Tablature tab) {
 		List<List<TabSymbol>> tabChords = tab.getChords();
 		int notesPreceding = 0;
+		Tuning t = tab.getNormaliseTuning() ? tab.getTunings()[Tablature.NORMALISED_TUNING_IND] : 
+			tab.getTunings()[Tablature.ENCODED_TUNING_IND];
 		for (int i = 0; i < tabChords.size(); i++) {
-			List<Integer[]> CCInfo = tab.getCourseCrossingInfo(tabChords.get(i));
+			List<Integer[]> CCInfo = Tablature.getCourseCrossingInfo(tabChords.get(i), t);
 			// If the chord contains a course crossing note pair
 			if (CCInfo != null) {
 				// For each course crossing note pair in the chord (there should be only one)
@@ -1382,12 +1372,12 @@ public class Transcription implements Serializable {
 	 * 
 	 * NB: Tablature case only; must be called after handling of SNUs and course crossings.
 	 * 
-	 * @param tab
 	 * @param argTaggedNotes
+	 * @param tab
 	 * @return <code>true</code> if both conditions are met; else <code>false</code>.
 	 */
 	// NOT TESTED
-	static boolean checkAlignment(Tablature tab, List<TaggedNote> argTaggedNotes) {
+	static boolean checkAlignment(List<TaggedNote> argTaggedNotes, Tablature tab) {
 		Integer[][] btp = tab.getBasicTabSymbolProperties();
 
 		// 1. Check equality of number of notes

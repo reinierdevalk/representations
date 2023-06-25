@@ -9,7 +9,7 @@ import representations.Transcription;
 
 public class MIDIExportTest extends TestCase {
 
-	private File midiTestGetMeterInfoDiminuted;
+//	private File midiTestGetMeterInfoDiminuted;
 	private File midiTestGetMeterInfo;
 
 	@Override
@@ -18,7 +18,7 @@ public class MIDIExportTest extends TestCase {
 //		Runner.setPathsToCodeAndData(UI.getRootDir(), false);
 //		midiTestGetMeterInfoDiminuted = new File(Runner.midiPathTest + "test_get_meter_key_info_diminuted.mid");
 		midiTestGetMeterInfo = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_get_meter_key_info.mid");
-		midiTestGetMeterInfoDiminuted = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_get_meter_key_info_diminuted.mid");
+//		midiTestGetMeterInfoDiminuted = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_get_meter_key_info_diminuted.mid");
 	}
 
 	@Override
@@ -28,18 +28,18 @@ public class MIDIExportTest extends TestCase {
 
 
 	public void testGetTimeSigTicks() {
-		Transcription t = new Transcription(midiTestGetMeterInfoDiminuted);
-		
+		Transcription t = new Transcription(midiTestGetMeterInfo);
+
 		List<Integer[]> expected = new ArrayList<Integer[]>();
-		expected.add(new Integer[]{0, 384});
-		expected.add(new Integer[]{384, 2432});
-		expected.add(new Integer[]{2432, 3968});
-		expected.add(new Integer[]{3968, 6016});
-		expected.add(new Integer[]{6016, 6336});
-		expected.add(new Integer[]{6336, 7360});
-		
+		expected.add(new Integer[]{0, 0 + 3*256}); // 768
+		expected.add(new Integer[]{768, 768 + 16*256 }); // 4864
+		expected.add(new Integer[]{4864, 4864 + 24*256}); // 11008
+		expected.add(new Integer[]{11008, 11008 + 8*256}); // 13056
+		expected.add(new Integer[]{13056, 13056 + (256 + 64)}); // 13376
+		expected.add(new Integer[]{13376, 13376 + 2*256});
+
 		List<Integer[]> actual = MIDIExport.getTimeSigTicks(t.getMeterInfo(), 256);
-		
+
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i).length, actual.get(i).length);
