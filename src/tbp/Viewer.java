@@ -655,7 +655,8 @@ public class Viewer extends JFrame{
 					}
 					else if (exportType.equals(MEI)) {
 						content = MEIExport.exportMEIFile(
-							null, new Tablature(e, false), null, false, false, true, null
+							null, new Tablature(e, false), null, false, false, true, 
+							new String[]{null, "tab+Editor"}
 						);
 					}
 				}

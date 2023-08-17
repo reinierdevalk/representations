@@ -71,6 +71,7 @@ public class Transcription implements Serializable {
 	public static final int FICTA_IND = 3;
 	public static final int OTHER_IND = 4;
 
+	private Type type;
 	private ScorePiece scorePiece;
 	private ScorePiece unaugmentedScorePiece;
 	private String name;
@@ -152,8 +153,7 @@ public class Transcription implements Serializable {
 //	public static final List<Double> VOICE_4 = createVoiceLabel(new Integer[]{4});
 	
 	public static enum Type {
-		GROUND_TRUTH("ground truth", 0), PREDICTED("predicted", 2), 
-		MAPPING("mapping", 3), AUGMENTED("augmented", 3);
+		FROM_FILE("from file", 0), PREDICTED("predicted", 1);
 
 		private String stringRep; 
 		private int intRep;
@@ -250,59 +250,120 @@ public class Transcription implements Serializable {
 	 * @param t
 	 */
 	public Transcription(Transcription t) {
-		init(t.getScorePiece(), null, null, null, Type.GROUND_TRUTH);
+		init(t.getScorePiece(), null, null, null, false, null, t.getType());
 	}
 
 
 	/**
-	 * Constructor for a ground truth <code>Transcription</code>. Creates a <code>Transcription</code> 
-	 * from a <code>.mid</code> and a <code>.tbp</code> file.
+	 * Short constructor for a <code>Transcription</code> of <code>Type.FROM_FILE</code>,
+	 * non-normalised and non-diminuted.
 	 *                              
-	 * @param argFiles A <code>.mid</code> file and a <code>.tbp</code> file (optional; tablature 
-	 *                 case only).
+	 * @param f A <code>.mid</code> file (mandatory) and a <code>.tbp</code> file (optional; 
+	 *          tablature case only).
 	 */
-	public Transcription(File... argFiles) {
-		File argMidiFile = argFiles.length == 1 ? argFiles[0] : 
-			(argFiles[0].getName().endsWith(MIDIImport.EXTENSION) ? argFiles[0] : argFiles[1]);
-		File argEncodingFile = argFiles.length == 1 ? null : 
-			(argFiles[0].getName().endsWith(Encoding.EXTENSION) ? argFiles[0] : argFiles[1]);
-
-		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(argMidiFile));
-		Encoding encoding = argEncodingFile != null ? new Encoding(argEncodingFile) : null;
-		init(sp, encoding, null, null, Type.GROUND_TRUTH);	
+	public Transcription(File... f) {
+		// https://stackoverflow.com/questions/285177/how-do-i-call-one-constructor-from-another-in-java
+		this(false, null, f);
 	}
 
 
 	/**
-	 * Constructor for a mapping <code>Transcription</code>. Creates a <code>Transcription</code> 
-	 * from a <code>.mid</code> and a <code>.tbp</code> file.
+	 * Constructor for a <code>Transcription</code> of <code>Type.FROM_FILE</code>, normalised. 
 	 * 
-	 * @param t
-	 * @param argFiles
+	 * @param normalise Whether or not to normalise the <code>Transcription</code>. Must be <code>true</code>
+	 *                  when this constructor is called.
+	 * @param mf A <code>.mid</code> file. 
+	 * @param ef A <code>.tbp</code> file. 
 	 */
-	public Transcription(Type t, File... argFiles) {
-		File argMidiFile =  
-			(argFiles[0].getName().endsWith(MIDIImport.EXTENSION) ? argFiles[0] : argFiles[1]);
-		File argEncodingFile = 
-			(argFiles[0].getName().endsWith(Encoding.EXTENSION) ? argFiles[0] : argFiles[1]);
-
-		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(argMidiFile));
-		Encoding encoding = new Encoding(argEncodingFile);
-		init(sp, encoding, null, null, Type.MAPPING);	
+	public Transcription(boolean normalise, File mf, File ef) {
+		// https://stackoverflow.com/questions/285177/how-do-i-call-one-constructor-from-another-in-java
+		this(normalise, null, new File[]{mf, ef});
 	}
 
 
 	/**
-	 * Constructor for a predicted Transcription. Creates a <code>Transcription</code> 
-	 * from an existing <code>ScorePiece</code> and <code>Encoding</code>. 
+	 * Constructor for a <code>Transcription</code> of <code>Type.FROM_FILE</code>, diminuted.
+	 *     
+	 * @param mi The meterInfo that governs the diminution(s). Must be non-<code>null<code> when 
+	 *           this constructor is called.
+	 * @param f A <code>.mid</code> file.
+	 */
+	public Transcription(List<Integer[]> mi, File f) {
+		// https://stackoverflow.com/questions/285177/how-do-i-call-one-constructor-from-another-in-java
+		this(false, mi, f);
+	}
+
+
+	/**
+	 * Full constructor for a <code>Transcription</code> of <code>Type.FROM_FILE</code>.
 	 * 
-	 * @param argPredictedPiece
+	 * @param normalise Whether or not to normalise the <code>Transcription</code>.
+	 * @param mi The meterInfo that governs the diminution(s), or <code>null</code> (no diminution).
+	 * @param f A <code>.mid</code> file (mandatory) and a <code>.tbp</code> file (optional; 
+	 *          tablature case only).
+	 */
+	public Transcription(boolean normalise, List<Integer[]> mi, File... f) {
+		File midF = f.length == 1 ? f[0] : 
+			(f[0].getName().endsWith(MIDIImport.EXTENSION) ? f[0] : f[1]);
+		File encF = f.length == 1 ? null : 
+			(f[0].getName().endsWith(Encoding.EXTENSION) ? f[0] : f[1]);
+
+		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midF));
+		Encoding enc = encF != null ? new Encoding(encF) : null;
+		init(sp, enc, null, null, normalise, mi, Type.FROM_FILE);
+	}
+
+
+//	/**
+//	 * Constructor for a ground truth <code>Transcription</code>. Creates a <code>Transcription</code> 
+//	 * from a <code>.mid</code> and a <code>.tbp</code> file.
+//	 *                              
+//	 * @param argFiles A <code>.mid</code> file and a <code>.tbp</code> file (optional; tablature 
+//	 *                 case only).
+//	 */
+//	public Transcription(int i, File... argFiles) {
+//		File argMidiFile = argFiles.length == 1 ? argFiles[0] : 
+//			(argFiles[0].getName().endsWith(MIDIImport.EXTENSION) ? argFiles[0] : argFiles[1]);
+//		File argEncodingFile = argFiles.length == 1 ? null : 
+//			(argFiles[0].getName().endsWith(Encoding.EXTENSION) ? argFiles[0] : argFiles[1]);
+//
+//		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(argMidiFile));
+//		Encoding encoding = argEncodingFile != null ? new Encoding(argEncodingFile) : null;
+//		init(sp, encoding, null, null, Type.GROUND_TRUTH);
+//	}
+
+
+//	/**
+//	 * Constructor for a mapping <code>Transcription</code>. Creates a <code>Transcription</code> 
+//	 * from a <code>.mid</code> and a <code>.tbp</code> file.
+//	 * 
+//	 * @param t
+//	 * @param argFiles
+//	 */
+//	public Transcription(Type t, int i, File... argFiles) {
+//		File argMidiFile =  
+//			(argFiles[0].getName().endsWith(MIDIImport.EXTENSION) ? argFiles[0] : argFiles[1]);
+//		File argEncodingFile = 
+//			(argFiles[0].getName().endsWith(Encoding.EXTENSION) ? argFiles[0] : argFiles[1]);
+//
+//		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(argMidiFile));
+//		Encoding encoding = new Encoding(argEncodingFile);
+//		init(sp, encoding, null, null, Type.MAPPING);	
+//	}
+
+
+	/**
+	 * Constructor for a <code>Transcription</code> of <code>Type.PREDICTED</code>. 
+	 * Creates a <code>Transcription</code> from an existing <code>ScorePiece</code> 
+	 * and <code>Encoding</code>. 
+	 * 
+	 * @param argPredScorePiece
 	 * @param argEncoding
-	 * @param argVoiceLabels
-	 * @param argDurationLabels
+	 * @param argPredVoiceLabels
+	 * @param argPredDurLabels
 	 */
-	public Transcription(ScorePiece argPredictedPiece, Encoding argEncoding,  
-		List<List<Double>> argVoiceLabels, List<List<Double>> argDurationLabels) {
+	public Transcription(ScorePiece argPredScorePiece, Encoding argEncoding,  
+		List<List<Double>> argPredVoiceLabels, List<List<Double>> argPredDurLabels) {
 		
 //		Encoding argEncoding = argEncoding != null ? new Encoding(argEncoding) : null;
 
@@ -313,9 +374,9 @@ public class Transcription implements Serializable {
 
 //		boolean normaliseTuning = true; // is only used in the tablature case
 //		boolean isGroundTruthTranscription = false;
-		init(argPredictedPiece, argEncoding, /*null,*/ 
+		init(argPredScorePiece, argEncoding, /*null,*/ 
 			/*normaliseTuning, isGroundTruthTranscription,*/
-			argVoiceLabels, argDurationLabels, Type.PREDICTED);
+			argPredVoiceLabels, argPredDurLabels, false, null, Type.PREDICTED);
 			
 //		// Set the predicted class fields. When creating a ground truth Transcription, this happens inside
 //		// handleCoDNotes() and handleCourseCrossings(), but when creating a predicted Transcription this step
@@ -419,76 +480,59 @@ public class Transcription implements Serializable {
 	/**
 	 * Creates a new Transcription from the given arguments. 
 	 *
-	 * NBs for the tablature case TODO
-	 * (1) If isGroundTruthTranscription is <code>true</code>, which is only not the case for a 
-	 *     predicted Transcription, the Transcription is transposed.
-	 * (2) The Tablature object as used in this method (which is NOT the Tablature object that 
-	 *     forms a TablatureTranscriptionPair with the Transcription!), which serves for alignment
-	 *     checking, must be in the same key as the Transcription's piece in order for the alignment
-	 *     (done in handleCoDNotes(), handleCourseCrossings(), and checkAlignment()) to succeed.
-	 *     Therefore, the argument normaliseTuning, needed to create this Tablature object, is 
-	 *     <code>false</code> when creating the ground truth Transcription: the Transcription's
-	 *       Piece is only normalised/transposed after the alignment (in transpose())
-	 *     <code>true</code> when creating a predicted Transcription: the Transcription's Piece 
-	 *       has already been normalised/transposed correctly because it was created from a 
-	 *       normalised Tablature (in TrainingManager.prepareTraining())
-	 * 
-	 * @param argScorePiece
-	 * @param argEncoding Always <code>non-null</code> if <code>t</code> is <code>Type.MAPPING</code>; 
-	 *                    else, non-<code>null</code> in the tablature case.
-	 * @param argTimeline Always <code>null</code> if <code>t</code> is not <code>Type.MAPPING</code>;
-	 *                    else, non-<code>null</code>.
+	 * @param argScorePiece 
+	 * @param argEncoding Only non-<code>null</code> in the tablature case.
 	 * @param argVoiceLabels Only none-<code>null</code> if <code>t</code> is <code>Type.PREDICTED</code>.
 	 * @param argDurLabels Only none-<code>null</code> if <code>t</code> is <code>Type.PREDICTED</code>.
-	 * @param argType
+	 * @param normalise
+	 * @param mi Only non-<code>null</code> if the <code>Transcription</code> is diminuted.
+	 * @param t
 	 */
 	private void init(ScorePiece argScorePiece, Encoding argEncoding, List<List<Double>> argVoiceLabels, 
-		List<List<Double>> argDurLabels, Type argType) {
-
-		// argType == GROUND_TRUTH, PREDICTED, AUGMENTED -- tablature- or non-tablature case
-		// in the tablature case, tab is used for
-		// - alignment of the Transcription and Tablature 
-		//   - transposition of ScorePiece (w/ setScorePiece())
-		//     NB: only in the GROUND_TRUTH case
-		//      - in the GROUND_TRUTH case, when init() is called, ScorePiece is still in the key 
-		//        of the non-normalised Tablature
-		//      - in the PREDICTED case, ScorePiece has been created from scratch (has been predicted)  
-		//        from a normalised Tablature and does therefore not need to be transposed
-		//      - in the AUGMENTED case, ScorePiece has been created from a Transcription that has 
-		//        already been transposed
-		//   - handling SNUs and CCs; chords and alignment checks (w/ setTaggedNotes())
-		// - setting the chordVoiceLabels 
-		// - setting the minimumDurationLabels
+		List<List<Double>> argDurLabels, boolean normalise, List<Integer[]> mi, Type t) {
+		// normaliseTuning is
+		// - GROUND_TRUTH case: true if the Transcription is used for training a model; false if not
+		// - PREDICTED case: true, as the predicted ScorePiece is created from a normalised Tablature 
 		//
-		// argType = MAPPING -- always non-tablature case
-		// tab (i.e., its meterInfo) is only used for 
-		// - diminution of the ScorePiece (w/ setScorePiece())
-		Tablature tab = argEncoding != null ? new Tablature(argEncoding, true) : null;
-		boolean isTabCase = tab != null && argType != Type.MAPPING;
+		// The ScorePiece is transposed
+		// - only if normaliseTuning == true
+		// - only in the GROUND_TRUTH case. When init() is called 
+		//   - in the GROUND_TRUTH case: ScorePiece has been loaded from file and is still 
+		//     in its original key (the key of the non-normalised Tablature)
+		//   - in the PREDICTED case: ScorePiece has been created from scratch (i.e., predicted) 
+		//     from an already normalised Tablature, and is therefore already in the normalised key
+		//
+		// The Tablature is non-null only in the tablature case. It is NOT the Tablature that forms
+		// a TablatureTranscriptionPair with the Transcription during training, but is used for
+		// - transposition of the ScorePiece, if applicable (w/ setScorePiece()) 
+		// - alignment of the Transcription and Tablature (w/ setTaggedNotes())
+		//   - checking chords 
+		//   - handling of SNUs 
+		//   - handling of course crossings
+		//   - checking final alignment 
+		// - setting the chordVoiceLabels
+		// - setting the minimumDurationLabels
+		Tablature tab = 
+			argEncoding != null ? new Tablature(argEncoding, (t != Type.PREDICTED ? normalise : true)) 
+			: null;
+		boolean isTabCase = tab != null;
 
-		setScorePiece(argScorePiece, tab, argType);
+		setType(t);
+		setScorePiece(argScorePiece, tab, mi);
 		setUnaugmentedScorePiece();
 		setName();
 		setMeterInfo();
 		setKeyInfo();
-		setTaggedNotes(tab, argType);
+		setTaggedNotes(tab);
 		setNotes();
 		setChords();
 
-		setVoiceLabels((argType != Type.PREDICTED ? null : argVoiceLabels), isTabCase);
-//		if (t != Type.PREDICTED) {
-//			setVoiceLabels(null, tab != null);
-////			initialiseVoiceLabels(null);
-//		}
-//		else {
-//			setVoiceLabels(argVoiceLabels, tab != null);
-////			initialiseVoiceLabels(argVoiceLabels);
-//		}
+		setVoiceLabels(t == Type.PREDICTED ? argVoiceLabels : null, isTabCase);
 		setChordVoiceLabels(isTabCase ? tab : null);
 		// a. Tablature case
 		if (isTabCase) {
 //			setVoicesSNU();
-			setDurationLabels(argType != Type.PREDICTED ? null : argDurLabels);
+			setDurationLabels(t == Type.PREDICTED ? argDurLabels : null);
 			setMinimumDurationLabels(tab);
 //			if (t != Type.PREDICTED) {
 //				setDurationLabels(null);
@@ -557,63 +601,82 @@ public class Transcription implements Serializable {
 	}
 
 
-	void setScorePiece(ScorePiece argPiece, Tablature tab, Type t) {
-		scorePiece = makeScorePiece(argPiece, tab, t);
+	void setType(Type t) {
+		type = t;
+	}
+
+
+	void setScorePiece(ScorePiece argScorePiece, Tablature tab, List<Integer[]> mi) {
+		scorePiece = makeScorePiece(argScorePiece, tab, mi);
 	}
 
 
 	// NOT TESTED (wrapper method)
-	ScorePiece makeScorePiece(ScorePiece argScorePiece, Tablature tab, Type t) {
-		if (t == Type.GROUND_TRUTH) {
-			// Clean mtl
-//			MetricalTimeLine mtl = argPiece.getMetricalTimeLine();
-//			mtl = ScorePiece.cleanMetricalTimeLine(mtl);
-			// Clean ht
-//			SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
-//			ht = ScorePiece.cleanHarmonyTrack(ht);
-			// Transpose ht and ns
-			if (tab != null) {
-				argScorePiece.transpose(tab.getTranspositionInterval());
-//				int transposition = tab.getTranspositionInterval();
-//				SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
-//				ht = ScorePiece.transposeHarmonyTrack(ht, transposition);
-//				argPiece.setHarmonyTrack(ht);
-//				NotationSystem ns = argPiece.getScore();
-//				ns = ScorePiece.transposeNotationSystem(ns, transposition);
-//				argPiece.setScore(ns);
+	ScorePiece makeScorePiece(ScorePiece argScorePiece, Tablature tab, List<Integer[]> mi) {
+		Type t = getType();
+		if (t == Type.FROM_FILE) {
+			if (tab != null && tab.getNormaliseTuning() == true) {
+				int ti = tab.getTranspositionInterval();
+				if (ti != 0) {
+					argScorePiece.transpose(ti);
+				}
 			}
-			// Set mtl and ht
-//			argPiece.setMetricalTimeLine(mtl);
-//			argPiece.setScoreMetricalTimeLine(new ScoreMetricalTimeLine(mtl));
-//			argPiece.setHarmonyTrack(ht);
-		}
-		else if (t == Type.MAPPING) {
-			argScorePiece.diminute(tab.getMeterInfo());
-//			// Clean, align, and diminute mtl
-//			List<Integer[]> mi = tab.getMeterInfo();
-//			MetricalTimeLine mtl = argPiece.getScoreMetricalTimeLine();
-////			mtl = ScorePiece.cleanMetricalTimeLine(mtl);
-//			mtl = ScorePiece.alignMetricalTimeLine(mtl, mi);
-//			ScoreMetricalTimeLine smtl = new ScoreMetricalTimeLine(mtl);
-//			MetricalTimeLine mtlDim = ScorePiece.diminuteMetricalTimeLine(mtl, mi);
-//			ScoreMetricalTimeLine smtlDim = new ScoreMetricalTimeLine(mtlDim);
-//			// Clean and diminute ht
-//			SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
-////			ht = ScorePiece.cleanHarmonyTrack(ht);
-//			ht = ScorePiece.diminuteHarmonyTrack(ht, mi, smtl, smtlDim);
-//			// Diminute ns
-//			NotationSystem ns = argPiece.getScore();
-//			ns = ScorePiece.diminuteNotationSystem(ns, mi, smtl, smtlDim);
-//			// Set ns, mtl, and ht
-//			argPiece.setScore(ns);
-//			argPiece.setMetricalTimeLine(mtlDim);
-//			argPiece.setScoreMetricalTimeLine(smtlDim);
-//			argPiece.setHarmonyTrack(ht);
-		}
-		else if (t == Type.AUGMENTED || t == Type.PREDICTED) {
-			return argScorePiece;
+			else if (mi != null) {
+				argScorePiece.diminute(mi);
+			}
 		}
 		return argScorePiece;
+		
+//		if (t == Type.GROUND_TRUTH) {
+//			// Clean mtl
+////			MetricalTimeLine mtl = argPiece.getMetricalTimeLine();
+////			mtl = ScorePiece.cleanMetricalTimeLine(mtl);
+//			// Clean ht
+////			SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
+////			ht = ScorePiece.cleanHarmonyTrack(ht);
+//			// Transpose ht and ns
+//			if (tab != null) {
+//				argScorePiece.transpose(tab.getTranspositionInterval());
+////				int transposition = tab.getTranspositionInterval();
+////				SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
+////				ht = ScorePiece.transposeHarmonyTrack(ht, transposition);
+////				argPiece.setHarmonyTrack(ht);
+////				NotationSystem ns = argPiece.getScore();
+////				ns = ScorePiece.transposeNotationSystem(ns, transposition);
+////				argPiece.setScore(ns);
+//			}
+//			// Set mtl and ht
+////			argPiece.setMetricalTimeLine(mtl);
+////			argPiece.setScoreMetricalTimeLine(new ScoreMetricalTimeLine(mtl));
+////			argPiece.setHarmonyTrack(ht);
+//		}
+//		else if (t == Type.MAPPING) {
+//			argScorePiece.diminute(tab.getMeterInfo());
+////			// Clean, align, and diminute mtl
+////			List<Integer[]> mi = tab.getMeterInfo();
+////			MetricalTimeLine mtl = argPiece.getScoreMetricalTimeLine();
+//////			mtl = ScorePiece.cleanMetricalTimeLine(mtl);
+////			mtl = ScorePiece.alignMetricalTimeLine(mtl, mi);
+////			ScoreMetricalTimeLine smtl = new ScoreMetricalTimeLine(mtl);
+////			MetricalTimeLine mtlDim = ScorePiece.diminuteMetricalTimeLine(mtl, mi);
+////			ScoreMetricalTimeLine smtlDim = new ScoreMetricalTimeLine(mtlDim);
+////			// Clean and diminute ht
+////			SortedContainer<Marker> ht = argPiece.getHarmonyTrack();
+//////			ht = ScorePiece.cleanHarmonyTrack(ht);
+////			ht = ScorePiece.diminuteHarmonyTrack(ht, mi, smtl, smtlDim);
+////			// Diminute ns
+////			NotationSystem ns = argPiece.getScore();
+////			ns = ScorePiece.diminuteNotationSystem(ns, mi, smtl, smtlDim);
+////			// Set ns, mtl, and ht
+////			argPiece.setScore(ns);
+////			argPiece.setMetricalTimeLine(mtlDim);
+////			argPiece.setScoreMetricalTimeLine(smtlDim);
+////			argPiece.setHarmonyTrack(ht);
+//		}
+//		else if (t == Type.AUGMENTED || t == Type.PREDICTED) {
+//			return argScorePiece;
+//		}
+//		return argScorePiece;
 	}
 
 
@@ -747,10 +810,15 @@ public class Transcription implements Serializable {
 		}
 		return keyInfo;
 	}
+	
+	
+	public List<Integer[]> makeKI() {
+		return makeKeyInfo();
+	}
 
 
-	void setTaggedNotes(Tablature tab, Type t) {
-		taggedNotes = makeTaggedNotes(tab, t);
+	void setTaggedNotes(Tablature tab) {
+		taggedNotes = makeTaggedNotes(tab);
 	}
 
 
@@ -784,14 +852,17 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// NOT TESTED (wrapper method)
-	List<TaggedNote> makeTaggedNotes(Tablature tab, Type t) {
+	List<TaggedNote> makeTaggedNotes(Tablature tab) {
 		List<TaggedNote> argTaggedNotes;
 
 		// Make unhandled notes
 		List<Note> argNotes = makeUnhandledNotes();
+		System.out.println(argNotes.size());
+		
 
 		// In the tablature case: handle SNUs and course crossings
-		if (tab != null && t != Type.MAPPING) {
+		if (tab != null) {
+//		if (tab != null && t != Type.MAPPING) {
 			// Check tablature chords
 			if (checkChords(argNotes, tab) == false) {
 				System.out.println(chordCheck);
@@ -802,7 +873,7 @@ public class Transcription implements Serializable {
 			argTaggedNotes = handleSNUs(argNotes, tab);
 			// Handle course crossings
 			argTaggedNotes = handleCourseCrossings(argTaggedNotes, tab);
-			
+
 			// Check alignment
 			if (checkAlignment(argTaggedNotes, tab) == false) {
 				System.out.println(alignmentCheck);
@@ -1454,6 +1525,8 @@ public class Transcription implements Serializable {
 	List<TaggedNote> handleUnisons(List<Note> argNotes) {
 		List<TaggedNote> argTaggedNotes = new ArrayList<>();
 		argNotes.forEach(n -> argTaggedNotes.add(new TaggedNote(n)));
+//		argNotes.forEach(n -> System.out.println(n));
+//		System.exit(0);
 
 		List<List<Note>> argChords = getChordsFromNotes(argNotes);
 		int notesPreceding = 0;
@@ -1636,8 +1709,9 @@ public class Transcription implements Serializable {
 
 
 	void setChordVoiceLabels(Tablature tab) {
-		chordVoiceLabels = makeChordVoiceLabels(getVoiceLabels(), 
-			tab != null ? tab.getChords() : null, getChords());
+		chordVoiceLabels = makeChordVoiceLabels(
+			getVoiceLabels(), tab != null ? tab.getChords() : null, getChords()
+		);
 	}
 
 
@@ -1814,6 +1888,11 @@ public class Transcription implements Serializable {
 	//  G E T T E R S
 	//  for instance variables
 	//
+	public Type getType() {
+		return type;
+	}
+
+
 	public ScorePiece getScorePiece() {
 		return scorePiece;
 	}
@@ -2962,7 +3041,7 @@ public class Transcription implements Serializable {
 		ScorePiece sp = getScorePiece();
 		sp.augment(getMirrorPoint(), getChords(), getMetricPositionsChords(), thresholdDur, 
 			rescaleFactor, augmentation);
-		this.init(sp, argEncoding, /*null,*/ null, null, Type.AUGMENTED);
+		this.init(sp, argEncoding, null, null, false, null, Type.FROM_FILE);
 	}
 
 

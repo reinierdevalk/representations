@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import de.uos.fmt.musitech.utility.math.Rational;
-import exports.MEIExport;
 import junit.framework.TestCase;
 import tbp.Encoding;
 import tbp.Event;
@@ -75,7 +74,9 @@ public class MEIExportTest extends TestCase {
 		expected.add(Arrays.asList(new Integer[]{6, 1, 8, 3, 10, 5, 0}));
 		
 		List<List<Integer>> actual = new ArrayList<List<Integer>>();
-		for (Integer[] key : MEIExport.getKeys()) {
+		for (Integer key : MEIExport.getKeySigMPCs().keySet()) {
+//		for (Entry<Integer, Integer[]> entry : MEIExport.getKeys().entrySet()) {
+//		for (Integer[] key : MEIExport.getKeys()) {
 			actual.add(MEIExport.getMIDIPitchClassKeySigs(key));
 		}
 		
@@ -90,9 +91,9 @@ public class MEIExportTest extends TestCase {
 	};
 
 
-	public void testMakeMIDIPitchClassesGrid() {
-		Integer[][] expected = new Integer[15][8];
-		expected[0] = new Integer[]{11, 1, 3, 4, 6, 8, 10, }; // Cb
+	public void testMakeMIDIPitchClassGrid() {
+		Integer[][] expected = new Integer[30][7];
+		expected[0] = new Integer[]{11, 1, 3, 4, 6, 8, 10}; // Cb
 		expected[1] = new Integer[]{6, 8, 10, 11, 1, 3, 5}; // Gb
 		expected[2] = new Integer[]{1, 3, 5, 6, 8, 10, 0}; // Db
 		expected[3] = new Integer[]{8, 10, 0, 1, 3, 5, 7}; // Ab
@@ -107,8 +108,140 @@ public class MEIExportTest extends TestCase {
 		expected[12] = new Integer[]{11, 1, 3, 4, 6, 8, 10}; // B
 		expected[13] = new Integer[]{6, 8, 10, 11, 1, 3, 5}; // F#
 		expected[14] = new Integer[]{1, 3, 5, 6, 8, 10, 0}; // C#
+		//
+		expected[15] = new Integer[]{8, 10, 11, 1, 3, 4, 6}; // Abm
+		expected[16] = new Integer[]{3, 5, 6, 8, 10, 11, 1}; // Ebm
+		expected[17] = new Integer[]{10, 0, 1, 3, 5, 6, 8}; // Bbm
+		expected[18] = new Integer[]{5, 7, 8, 10, 0, 1, 3}; // Fm
+		expected[19] = new Integer[]{0, 2, 3, 5, 7, 8, 10}; // Cm
+		expected[20] = new Integer[]{7, 9, 10, 0, 2, 3, 5}; // Gm
+		expected[21] = new Integer[]{2, 4, 5, 7, 9, 10, 0}; // Dm
+		expected[22] = new Integer[]{9, 11, 0, 2, 4, 5, 7}; // Am 
+		expected[23] = new Integer[]{4, 6, 7, 9, 11, 0, 2}; // Em
+		expected[24] = new Integer[]{11, 1, 2, 4, 6, 7, 9}; // Bm
+		expected[25] = new Integer[]{6, 8, 9, 11, 1, 2, 4}; // F#m
+		expected[26] = new Integer[]{1, 3, 4, 6, 8, 9, 11}; // C#m
+		expected[27] = new Integer[]{8, 10, 11, 1, 3, 4, 6}; // G#m
+		expected[28] = new Integer[]{3, 5, 6, 8, 10, 11, 1}; // D#m
+		expected[29] = new Integer[]{10, 0, 1, 3, 5, 6, 8}; // A#m
+
+		Integer[][] maj = MEIExport.makeMIDIPitchClassGrid(0);
+		Integer[][] min = MEIExport.makeMIDIPitchClassGrid(1);
+		Integer[][] actual = new Integer[30][7];
+		for (int i = 0; i < maj.length; i++) {
+			actual[i] = maj[i];
+		}
+		for (int i = 0; i < min.length; i++) {
+			actual[i+15] = min[i];
+		}
+
+		assertEquals(expected.length, actual.length);
+		for (int i = 0; i < expected.length; i++) {
+			assertEquals(expected[i].length, actual[i].length);
+			for (int j = 0; j < expected[i].length; j++) {
+				assertEquals(expected[i][j], actual[i][j]);
+			}
+	    }
+	}
+
+
+	public void testMakeAlterationGrid() {
+		String[][] expected = new String[30][7];
+		expected[0] = new String[]{"f", "f", "f", "f", "f", "f", "f"}; // Cb
+		expected[1] = new String[]{"f", "f", "f", "f", "f", "f", "n"}; // Gb
+		expected[2] = new String[]{"f", "f", "n", "f", "f", "f", "n"}; // Db
+		expected[3] = new String[]{"f", "f", "n", "f", "f", "n", "n"}; // Ab
+		expected[4] = new String[]{"f", "n", "n", "f", "f", "n", "n"}; // Eb
+		expected[5] = new String[]{"f", "n", "n", "f", "n", "n", "n"}; // Bb
+		expected[6] = new String[]{"n", "n", "n", "f", "n", "n", "n"}; // F
+		expected[7] = new String[]{"n", "n", "n", "n", "n", "n", "n"}; // C
+		expected[8] = new String[]{"n", "n", "n", "n", "n", "n", "s"}; // G
+		expected[9] = new String[]{"n", "n", "s", "n", "n", "n", "s"}; // D
+		expected[10] = new String[]{"n", "n", "s", "n", "n", "s", "s"}; // A
+		expected[11] = new String[]{"n", "s", "s", "n", "n", "s", "s"}; // E
+		expected[12] = new String[]{"n", "s", "s", "n", "s", "s", "s"}; // B
+		expected[13] = new String[]{"s", "s", "s", "n", "s", "s", "s"}; // F#
+		expected[14] = new String[]{"s", "s", "s", "s", "s", "s", "s"}; // C#
+		//
+		expected[15] = new String[]{"f", "f", "f", "f", "f", "f", "f"}; // Abm
+		expected[16] = new String[]{"f", "n", "f", "f", "f", "f", "f"}; // Ebm
+		expected[17] = new String[]{"f", "n", "f", "f", "n", "f", "f"}; // Bbm
+		expected[18] = new String[]{"n", "n", "f", "f", "n", "f", "f"}; // Fm
+		expected[19] = new String[]{"n", "n", "f", "n", "n", "f", "f"}; // Cm
+		expected[20] = new String[]{"n", "n", "f", "n", "n", "f", "n"}; // Gm
+		expected[21] = new String[]{"n", "n", "n", "n", "n", "f", "n"}; // Dm
+		expected[22] = new String[]{"n", "n", "n", "n", "n", "n", "n"}; // Am
+		expected[23] = new String[]{"n", "s", "n", "n", "n", "n", "n"}; // Em
+		expected[24] = new String[]{"n", "s", "n", "n", "s", "n", "n"}; // Bm
+		expected[25] = new String[]{"s", "s", "n", "n", "s", "n", "n"}; // F#m
+		expected[26] = new String[]{"s", "s", "n", "s", "s", "n", "n"}; // C#m
+		expected[27] = new String[]{"s", "s", "n", "s", "s", "n", "s"}; // G#m
+		expected[28] = new String[]{"s", "s", "s", "s", "s", "n", "s"}; // D#m
+		expected[29] = new String[]{"s", "s", "s", "s", "s", "s", "s"}; // A#m
 		
-		Integer[][] actual = MEIExport.makeMIDIPitchClassGrid();
+		String[][] maj = MEIExport.makeAlterationGrid(MEIExport.makeMIDIPitchClassGrid(0));
+		String[][] min = MEIExport.makeAlterationGrid(MEIExport.makeMIDIPitchClassGrid(1));
+		String[][] actual = new String[30][7];
+		for (int i = 0; i < maj.length; i++) {
+			actual[i] = maj[i];
+		}
+		for (int i = 0; i < min.length; i++) {
+			actual[i+15] = min[i];
+		}
+		
+		assertEquals(expected.length, actual.length);
+		for (int i = 0; i < expected.length; i++) {
+			assertEquals(expected[i].length, actual[i].length);
+			for (int j = 0; j < expected[i].length; j++) {
+				assertEquals(expected[i][j], actual[i][j]);
+			}
+	    }
+	}
+	
+	
+	public void testMakePitchClassGrid() {
+		String[][] expected = new String[30][7];
+		expected[0] = new String[]{"c", "d", "e", "f", "g", "a", "b"}; // Cb
+		expected[1] = new String[]{"g", "a", "b", "c", "d", "e", "f"}; // Gb
+		expected[2] = new String[]{"d", "e", "f", "g", "a", "b", "c"}; // Db
+		expected[3] = new String[]{"a", "b", "c", "d", "e", "f", "g"}; // Ab
+		expected[4] = new String[]{"e", "f", "g", "a", "b", "c", "d"}; // Eb
+		expected[5] = new String[]{"b", "c", "d", "e", "f", "g", "a"}; // Bb
+		expected[6] = new String[]{"f", "g", "a", "b", "c", "d", "e"}; // F
+		expected[7] = new String[]{"c", "d", "e", "f", "g", "a", "b"}; // C
+		expected[8] = new String[]{"g", "a", "b", "c", "d", "e", "f"}; // G
+		expected[9] = new String[]{"d", "e", "f", "g", "a", "b", "c"}; // D
+		expected[10] = new String[]{"a", "b", "c", "d", "e", "f", "g"}; // A
+		expected[11] = new String[]{"e", "f", "g", "a", "b", "c", "d"}; // E
+		expected[12] = new String[]{"b", "c", "d", "e", "f", "g", "a"}; // B
+		expected[13] = new String[]{"f", "g", "a", "b", "c", "d", "e"}; // F#
+		expected[14] = new String[]{"c", "d", "e", "f", "g", "a", "b"}; // C#
+		//
+		expected[15] = new String[]{"a", "b", "c", "d", "e", "f", "g"}; // Abm
+		expected[16] = new String[]{"e", "f", "g", "a", "b", "c", "d"}; // Ebm
+		expected[17] = new String[]{"b", "c", "d", "e", "f", "g", "a"}; // Bbm
+		expected[18] = new String[]{"f", "g", "a", "b", "c", "d", "e"}; // Fm
+		expected[19] = new String[]{"c", "d", "e", "f", "g", "a", "b"}; // Cm
+		expected[20] = new String[]{"g", "a", "b", "c", "d", "e", "f"}; // Gm
+		expected[21] = new String[]{"d", "e", "f", "g", "a", "b", "c"}; // Dm
+		expected[22] = new String[]{"a", "b", "c", "d", "e", "f", "g"}; // Am
+		expected[23] = new String[]{"e", "f", "g", "a", "b", "c", "d"}; // Em
+		expected[24] = new String[]{"b", "c", "d", "e", "f", "g", "a"}; // Bm
+		expected[25] = new String[]{"f", "g", "a", "b", "c", "d", "e"}; // F#m
+		expected[26] = new String[]{"c", "d", "e", "f", "g", "a", "b", }; // C#m
+		expected[27] = new String[]{"g", "a", "b", "c", "d", "e", "f"}; // G#m
+		expected[28] = new String[]{"d", "e", "f", "g", "a", "b", "c"}; // D#m
+		expected[29] = new String[]{"a", "b", "c", "d", "e", "f", "g"}; // A#m
+
+		String[][] maj = MEIExport.makePitchClassGrid(0);
+		String[][] min = MEIExport.makePitchClassGrid(1);
+		String[][] actual = new String[30][7];
+		for (int i = 0; i < maj.length; i++) {
+			actual[i] = maj[i];
+		}
+		for (int i = 0; i < min.length; i++) {
+			actual[i+15] = min[i];
+		}
 		
 		assertEquals(expected.length, actual.length);
 		for (int i = 0; i < expected.length; i++) {
@@ -530,6 +663,32 @@ public class MEIExportTest extends TestCase {
 	}
 
 
+	public void testGetUndottedNoteLength() {
+		List<Integer> expected = Arrays.asList(new Integer[]{
+			96, 96, 96, 96, // 1/1 
+			48, 48, 48, 48, // 1/2 
+			24, 24, 24, 24 // 1/4 
+		});
+
+		List<Integer> dotted = Arrays.asList(new Integer[]{
+			96, 144, 168, 180, // 0, 1, 2, 3 dots 
+			48, 72, 84, 90, // 0, 1, 2, 3 dots 
+			24, 36, 42, 45 // 0, 1, 2, 3 dots
+		});
+		List<Integer> dots = Arrays.asList(new Integer[]{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3});
+		List<Integer> actual = new ArrayList<>();
+		for (int i = 0; i < dotted.size(); i++) {
+			actual.add(MEIExport.getUndottedNoteLength(dotted.get(i), dots.get(i)));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
 	public void testGetDuration() {
 		List<Rational> all = new ArrayList<Rational>();
 		for (int i = 1; i <= 128; i++) {
@@ -666,65 +825,236 @@ public class MEIExportTest extends TestCase {
 		expected.add(new Integer[]{});
 		expected.add(new Integer[]{1, 0}); // 128 --- 
 	}
-	
-	
-	public void testMakeAlterationGrid() {
-		String[][] expected = new String[15][7];
-		expected[0] = new String[]{"f", "f", "f", "f", "f", "f", "f"}; // Cb
-		expected[1] = new String[]{"f", "f", "f", "f", "f", "f", "n"}; // Gb
-		expected[2] = new String[]{"f", "f", "n", "f", "f", "f", "n"}; // Db
-		expected[3] = new String[]{"f", "f", "n", "f", "f", "n", "n"}; // Ab
-		expected[4] = new String[]{"f", "n", "n", "f", "f", "n", "n"}; // Eb
-		expected[5] = new String[]{"f", "n", "n", "f", "n", "n", "n"}; // Bb
-		expected[6] = new String[]{"n", "n", "n", "f", "n", "n", "n"}; // F
-		expected[7] = new String[]{"n", "n", "n", "n", "n", "n", "n"}; // C
-		expected[8] = new String[]{"n", "n", "n", "n", "n", "n", "s"}; // G
-		expected[9] = new String[]{"n", "n", "s", "n", "n", "n", "s"}; // D
-		expected[10] = new String[]{"n", "n", "s", "n", "n", "s", "s"}; // A
-		expected[11] = new String[]{"n", "s", "s", "n", "n", "s", "s"}; // E
-		expected[12] = new String[]{"n", "s", "s", "n", "s", "s", "s"}; // B
-		expected[13] = new String[]{"s", "s", "s", "n", "s", "s", "s"}; // F#
-		expected[14] = new String[]{"s", "s", "s", "s", "s", "s", "s"}; // C#
-		
-		String[][] actual = MEIExport.makeAlterationGrid(MEIExport.makeMIDIPitchClassGrid());
-		
-		assertEquals(expected.length, actual.length);
-		for (int i = 0; i < expected.length; i++) {
-			assertEquals(expected[i].length, actual[i].length);
-			for (int j = 0; j < expected[i].length; j++) {
-				assertEquals(expected[i][j], actual[i][j]);
+
+
+	public void testSpellPitch() {
+		Integer[][] mpcGridMaj = MEIExport.makeMIDIPitchClassGrid(0);
+		String[][] altGridMaj = MEIExport.makeAlterationGrid(mpcGridMaj);
+		String[][] pcGridMaj = MEIExport.makePitchClassGrid(0);
+		Integer[][] mpcGridMin = MEIExport.makeMIDIPitchClassGrid(1);
+		String[][] altGridMin = MEIExport.makeAlterationGrid(mpcGridMin);
+		String[][] pcGridMin = MEIExport.makePitchClassGrid(1);
+
+		int Bbm = 2;
+		int Fm = 3;
+		int Cm = 4;
+		int Gm = 5;		
+		int Dm = 6;
+		int Am = 7; // int C = 7;
+		int Em = 8; // int G = 8;
+		int Bm = 9; // int D = 9;
+		int Fsm = 10;
+		int Csm = 11;
+		int Gsm = 12;
+
+		List<List<Integer>> aie = null;
+
+		List<String[]> expected = new ArrayList<>();
+		// pitch is in key
+		// Flats
+		expected.add(new String[]{"b", "n"}); // 71 in Am
+		expected.add(new String[]{"b", "f"}); // 70 in Dm
+		expected.add(new String[]{"e", "f"}); // 63 in Gm
+		expected.add(new String[]{"a", "f"}); // 68 in Cm
+		expected.add(new String[]{"d", "f"}); // 61 in Fm
+		expected.add(new String[]{"g", "f"}); // 66 in Bbm
+		// Sharps
+		expected.add(new String[]{"f", "s"}); // 66 in Em
+		expected.add(new String[]{"c", "s"}); // 61 in Bm
+		expected.add(new String[]{"g", "s"}); // 68 in F#m
+		expected.add(new String[]{"d", "s"}); // 63 in C#m
+		expected.add(new String[]{"a", "s"}); // 70 in G#m
+		// pitch is not in key
+		// 1. next or second-next KA
+		// Flats
+		expected.add(new String[]{"b", "f"}); // 70 in Am
+		expected.add(new String[]{"a", "f"}); // 68 in Dm
+		expected.add(new String[]{"a", "f"}); // 68 in Gm
+		expected.add(new String[]{"g", "f"}); // 66 in Cm
+		expected.add(new String[]{"g", "f"}); // 66 in Fm
+		expected.add(new String[]{"f", "f"}); // 64 in Bbm
+		// Sharps
+		expected.add(new String[]{"g", "s"}); // 68 in Em
+		expected.add(new String[]{"g", "s"}); // 68 in Bm
+		expected.add(new String[]{"a", "s"}); // 70 in F#m
+		expected.add(new String[]{"a", "s"}); // 70 in C#m
+		expected.add(new String[]{"b", "s"}); // 60 in G#m
+		// 2. naturalised KA
+		// Flats
+		expected.add(new String[]{"b", "n"}); // 71 in Dm
+		expected.add(new String[]{"e", "n"}); // 64 in Gm
+		expected.add(new String[]{"a", "n"}); // 69 in Cm
+		expected.add(new String[]{"d", "n"}); // 62 in Fm
+		expected.add(new String[]{"g", "n"}); // 67 in Bbm
+		// Sharps
+		expected.add(new String[]{"f", "n"}); // 65 in Em
+		expected.add(new String[]{"c", "n"}); // 60 in Bm
+		expected.add(new String[]{"g", "n"}); // 67 in F#m
+		expected.add(new String[]{"d", "n"}); // 62 in C#m
+		expected.add(new String[]{"a", "n"}); // 69 in G#m		
+		// 3. ULT/LLT for minor (or minor parallel)
+		// ULT, flats
+		expected.add(new String[]{"b", "f"}); // 70 in Am
+		expected.add(new String[]{"e", "f"}); // 63 in Dm
+		expected.add(new String[]{"a", "f"}); // 68 in Gm
+		expected.add(new String[]{"d", "f"}); // 61 in Cm
+		expected.add(new String[]{"g", "f"}); // 66 in Fm
+		expected.add(new String[]{"c", "f"}); // 71 in Bbm
+		// ULT, sharps
+		expected.add(new String[]{"f", "n"}); // 65 in Em
+		expected.add(new String[]{"c", "n"}); // 60 in Bm
+		expected.add(new String[]{"g", "n"}); // 67 in F#m
+		expected.add(new String[]{"d", "n"}); // 62 in C#m
+		expected.add(new String[]{"a", "n"}); // 69 in G#m
+		// LLT, flats
+		expected.add(new String[]{"g", "s"}); // 68 in Am
+		expected.add(new String[]{"c", "s"}); // 61 in Dm
+		expected.add(new String[]{"f", "s"}); // 66 in Gm
+		expected.add(new String[]{"b", "n"}); // 71 in Cm
+		expected.add(new String[]{"e", "n"}); // 64 in Fm
+		expected.add(new String[]{"a", "n"}); // 69 in Bbm
+		// LLT, sharps
+		expected.add(new String[]{"d", "s"}); // 63 in Em
+		expected.add(new String[]{"a", "s"}); // 70 in Bm
+		expected.add(new String[]{"e", "s"}); // 65 in F#m
+		expected.add(new String[]{"b", "s"}); // 60 in C#m
+		expected.add(new String[]{"f", "x"}); // 67 in G#m
+		// 4. R3 for minor (or minor parallel)
+		// Flats
+		expected.add(new String[]{"c", "s"}); // 61 in Am
+		expected.add(new String[]{"f", "s"}); // 66 in Dm
+		expected.add(new String[]{"b", "n"}); // 71 in Gm
+		expected.add(new String[]{"e", "n"}); // 64 in Cm
+		expected.add(new String[]{"a", "n"}); // 69 in Fm
+		expected.add(new String[]{"d", "n"}); // 62 in Bbm
+		// Sharps
+		expected.add(new String[]{"g", "s"}); // 68 in Em
+		expected.add(new String[]{"d", "s"}); // 63 in Bm
+		expected.add(new String[]{"a", "s"}); // 70 in F#m
+		expected.add(new String[]{"e", "s"}); // 65 in C#m
+		expected.add(new String[]{"b", "s"}); // 60 in G#m
+		// 5. R6 for minor (or minor parallel)
+		// Flats
+		expected.add(new String[]{"f", "s"}); // 66 in Am
+		expected.add(new String[]{"b", "n"}); // 71 in Dm
+		expected.add(new String[]{"e", "n"}); // 64 in Gm
+		expected.add(new String[]{"a", "n"}); // 69 in Cm
+		expected.add(new String[]{"d", "n"}); // 62 in Fm
+		expected.add(new String[]{"g", "n"}); // 67 in Bbm
+		// Sharps
+		expected.add(new String[]{"c", "s"}); // 61 in Em
+		expected.add(new String[]{"g", "s"}); // 68 in Bm
+		expected.add(new String[]{"d", "s"}); // 63 in F#m
+		expected.add(new String[]{"a", "s"}); // 70 in C#m
+		expected.add(new String[]{"e", "s"}); // 65 in G#m	
+
+		List<String[]> actual = new ArrayList<>();
+		Rational o = new Rational(1, 2);
+		// pitch is in key
+		// Flats
+		actual.add((String[]) MEIExport.spellPitch(71, 1, o, 0, mpcGridMin[Am], altGridMin[Am], pcGridMin[Am], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(70, 1, o, -1, mpcGridMin[Dm], altGridMin[Dm], pcGridMin[Dm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(63, 1, o, -2, mpcGridMaj[Gm], altGridMaj[Gm], pcGridMaj[Gm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(68, 1, o, -3, mpcGridMin[Cm], altGridMin[Cm], pcGridMin[Cm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(61, 1, o, -4, mpcGridMin[Fm], altGridMin[Fm], pcGridMin[Fm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(66, 1, o, -5, mpcGridMaj[Bbm], altGridMaj[Bbm], pcGridMaj[Bbm], aie).get(0));
+		// Sharps
+		actual.add((String[]) MEIExport.spellPitch(66, 1, o, 1, mpcGridMin[Em], altGridMin[Em], pcGridMin[Em], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(61, 1, o, 2, mpcGridMin[Bm], altGridMin[Bm], pcGridMin[Bm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(68, 1, o, 3, mpcGridMin[Fsm], altGridMin[Fsm], pcGridMin[Fsm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(63, 1, o, 4, mpcGridMin[Csm], altGridMin[Csm], pcGridMin[Csm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(70, 1, o, 5, mpcGridMin[Gsm], altGridMin[Gsm], pcGridMin[Gsm], aie).get(0));
+		// pitch is not in key
+		// 1. next or second-next KA
+		// Flats
+		actual.add((String[]) MEIExport.spellPitch(70, 1, o, 0, mpcGridMin[Am], altGridMin[Am], pcGridMin[Am], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(68, 1, o, -1, mpcGridMin[Dm], altGridMin[Dm], pcGridMin[Dm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(68, 1, o, -2, mpcGridMaj[Gm], altGridMaj[Gm], pcGridMaj[Gm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(66, 1, o, -3, mpcGridMin[Cm], altGridMin[Cm], pcGridMin[Cm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(66, 1, o, -4, mpcGridMin[Fm], altGridMin[Fm], pcGridMin[Fm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(64, 1, o, -5, mpcGridMaj[Bbm], altGridMaj[Bbm], pcGridMaj[Bbm], aie).get(0));
+		// Sharps
+		actual.add((String[]) MEIExport.spellPitch(68, 1, o, 1, mpcGridMin[Em], altGridMin[Em], pcGridMin[Em], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(68, 1, o, 2, mpcGridMin[Bm], altGridMin[Bm], pcGridMin[Bm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(70, 1, o, 3, mpcGridMin[Fsm], altGridMin[Fsm], pcGridMin[Fsm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(70, 1, o, 4, mpcGridMin[Csm], altGridMin[Csm], pcGridMin[Csm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(60, 1, o, 5, mpcGridMin[Gsm], altGridMin[Gsm], pcGridMin[Gsm], aie).get(0));
+		// 2. naturalised KA
+		// Flats
+		actual.add((String[]) MEIExport.spellPitch(71, 1, o, -1, mpcGridMin[Dm], altGridMin[Dm], pcGridMin[Dm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(64, 1, o, -2, mpcGridMaj[Gm], altGridMaj[Gm], pcGridMaj[Gm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(69, 1, o, -3, mpcGridMin[Cm], altGridMin[Cm], pcGridMin[Cm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(62, 1, o, -4, mpcGridMin[Fm], altGridMin[Fm], pcGridMin[Fm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(67, 1, o, -5, mpcGridMaj[Bbm], altGridMaj[Bbm], pcGridMaj[Bbm], aie).get(0));
+		// Sharps
+		actual.add((String[]) MEIExport.spellPitch(65, 1, o, 1, mpcGridMin[Em], altGridMin[Em], pcGridMin[Em], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(60, 1, o, 2, mpcGridMin[Bm], altGridMin[Bm], pcGridMin[Bm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(67, 1, o, 3, mpcGridMin[Fsm], altGridMin[Fsm], pcGridMin[Fsm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(62, 1, o, 4, mpcGridMin[Csm], altGridMin[Csm], pcGridMin[Csm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(69, 1, o, 5, mpcGridMin[Gsm], altGridMin[Gsm], pcGridMin[Gsm], aie).get(0));
+		// 3. ULT/LLT for minor (or minor parallel)
+		// ULT, flats
+		actual.add((String[]) MEIExport.spellPitch(70, 1, o, 0, mpcGridMin[Am], altGridMin[Am], pcGridMin[Am], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(63, 1, o, -1, mpcGridMin[Dm], altGridMin[Dm], pcGridMin[Dm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(68, 1, o, -2, mpcGridMin[Gm], altGridMin[Gm], pcGridMin[Gm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(61, 1, o, -3, mpcGridMin[Cm], altGridMin[Cm], pcGridMin[Cm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(66, 1, o, -4, mpcGridMin[Fm], altGridMin[Fm], pcGridMin[Fm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(71, 1, o, -5, mpcGridMin[Bbm], altGridMin[Bbm], pcGridMin[Bbm], aie).get(0));
+		// ULT, sharps
+		actual.add((String[]) MEIExport.spellPitch(65, 1, o, 1, mpcGridMin[Em], altGridMin[Em], pcGridMin[Em], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(60, 1, o, 2, mpcGridMin[Bm], altGridMin[Bm], pcGridMin[Bm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(67, 1, o, 3, mpcGridMin[Fsm], altGridMin[Fsm], pcGridMin[Fsm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(62, 1, o, 4, mpcGridMin[Csm], altGridMin[Csm], pcGridMin[Csm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(69, 1, o, 5, mpcGridMin[Gsm], altGridMin[Gsm], pcGridMin[Gsm], aie).get(0));
+		// LLT, flats
+		actual.add((String[]) MEIExport.spellPitch(68, 1, o, 0, mpcGridMin[Am], altGridMin[Am], pcGridMin[Am], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(61, 1, o, -1, mpcGridMin[Dm], altGridMin[Dm], pcGridMin[Dm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(66, 1, o, -2, mpcGridMin[Gm], altGridMin[Gm], pcGridMin[Gm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(71, 1, o, -3, mpcGridMin[Cm], altGridMin[Cm], pcGridMin[Cm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(64, 1, o, -4, mpcGridMin[Fm], altGridMin[Fm], pcGridMin[Fm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(69, 1, o, -5, mpcGridMin[Bbm], altGridMin[Bbm], pcGridMin[Bbm], aie).get(0));
+		// LLT, sharps
+		actual.add((String[]) MEIExport.spellPitch(63, 1, o, 1, mpcGridMin[Em], altGridMin[Em], pcGridMin[Em], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(70, 1, o, 2, mpcGridMin[Bm], altGridMin[Bm], pcGridMin[Bm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(65, 1, o, 3, mpcGridMin[Fsm], altGridMin[Fsm], pcGridMin[Fsm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(60, 1, o, 4, mpcGridMin[Csm], altGridMin[Csm], pcGridMin[Csm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(67, 1, o, 5, mpcGridMin[Gsm], altGridMin[Gsm], pcGridMin[Gsm], aie).get(0));
+		// 4. R3 for minor (or minor parallel)
+		// Flats
+		actual.add((String[]) MEIExport.spellPitch(61, 1, o, 0, mpcGridMin[Am], altGridMin[Am], pcGridMin[Am], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(66, 1, o, -1, mpcGridMin[Dm], altGridMin[Dm], pcGridMin[Dm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(71, 1, o, -2, mpcGridMin[Gm], altGridMin[Gm], pcGridMin[Gm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(64, 1, o, -3, mpcGridMin[Cm], altGridMin[Cm], pcGridMin[Cm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(69, 1, o, -4, mpcGridMin[Fm], altGridMin[Fm], pcGridMin[Fm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(62, 1, o, -5, mpcGridMin[Bbm], altGridMin[Bbm], pcGridMin[Bbm], aie).get(0));
+		// Sharps
+		actual.add((String[]) MEIExport.spellPitch(68, 1, o, 1, mpcGridMin[Em], altGridMin[Em], pcGridMin[Em], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(63, 1, o, 2, mpcGridMin[Bm], altGridMin[Bm], pcGridMin[Bm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(70, 1, o, 3, mpcGridMin[Fsm], altGridMin[Fsm], pcGridMin[Fsm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(65, 1, o, 4, mpcGridMin[Csm], altGridMin[Csm], pcGridMin[Csm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(60, 1, o, 5, mpcGridMin[Gsm], altGridMin[Gsm], pcGridMin[Gsm], aie).get(0));
+		// 5. R6 for minor (or minor parallel)
+		// Flats
+		actual.add((String[]) MEIExport.spellPitch(66, 1, o, 0, mpcGridMin[Am], altGridMin[Am], pcGridMin[Am], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(71, 1, o, -1, mpcGridMin[Dm], altGridMin[Dm], pcGridMin[Dm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(64, 1, o, -2, mpcGridMin[Gm], altGridMin[Gm], pcGridMin[Gm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(69, 1, o, -3, mpcGridMin[Cm], altGridMin[Cm], pcGridMin[Cm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(62, 1, o, -4, mpcGridMin[Fm], altGridMin[Fm], pcGridMin[Fm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(67, 1, o, -5, mpcGridMin[Bbm], altGridMin[Bbm], pcGridMin[Bbm], aie).get(0));
+		// Sharps
+		actual.add((String[]) MEIExport.spellPitch(61, 1, o, 1, mpcGridMin[Em], altGridMin[Em], pcGridMin[Em], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(68, 1, o, 2, mpcGridMin[Bm], altGridMin[Bm], pcGridMin[Bm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(63, 1, o, 3, mpcGridMin[Fsm], altGridMin[Fsm], pcGridMin[Fsm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(70, 1, o, 4, mpcGridMin[Csm], altGridMin[Csm], pcGridMin[Csm], aie).get(0));
+		actual.add((String[]) MEIExport.spellPitch(65, 1, o, 5, mpcGridMin[Gsm], altGridMin[Gsm], pcGridMin[Gsm], aie).get(0));
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).length, actual.get(i).length);
+			for (int j = 0; j < expected.get(i).length; j++) {
+				assertEquals(expected.get(i)[j], actual.get(i)[j]);
 			}
-	    }
-	}
-	
-	
-	public void testMakePitchClassGrid() {
-		String[][] expected = new String[15][7];
-		expected[0] = new String[]{"c", "d", "e", "f", "g", "a", "b"}; // Cb
-		expected[1] = new String[]{"g", "a", "b", "c", "d", "e", "f"}; // Gb
-		expected[2] = new String[]{"d", "e", "f", "g", "a", "b", "c"}; // Db
-		expected[3] = new String[]{"a", "b", "c", "d", "e", "f", "g"}; // Ab
-		expected[4] = new String[]{"e", "f", "g", "a", "b", "c", "d"}; // Eb
-		expected[5] = new String[]{"b", "c", "d", "e", "f", "g", "a"}; // Bb
-		expected[6] = new String[]{"f", "g", "a", "b", "c", "d", "e"}; // F
-		expected[7] = new String[]{"c", "d", "e", "f", "g", "a", "b"}; // C
-		expected[8] = new String[]{"g", "a", "b", "c", "d", "e", "f"}; // G
-		expected[9] = new String[]{"d", "e", "f", "g", "a", "b", "c"}; // D
-		expected[10] = new String[]{"a", "b", "c", "d", "e", "f", "g"}; // A
-		expected[11] = new String[]{"e", "f", "g", "a", "b", "c", "d"}; // E
-		expected[12] = new String[]{"b", "c", "d", "e", "f", "g", "a"}; // B
-		expected[13] = new String[]{"f", "g", "a", "b", "c", "d", "e"}; // F#
-		expected[14] = new String[]{"c", "d", "e", "f", "g", "a", "b"}; // C#
-		
-		String[][] actual = MEIExport.makePitchClassGrid();
-		
-		assertEquals(expected.length, actual.length);
-		for (int i = 0; i < expected.length; i++) {
-			assertEquals(expected[i].length, actual[i].length);
-			for (int j = 0; j < expected[i].length; j++) {
-				assertEquals(expected[i][j], actual[i][j]);
-			}
-	    }
+		}
 	}
 
 }

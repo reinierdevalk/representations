@@ -195,11 +195,11 @@ public class UtilsTest {
 	@Test
 	public void testGetMetricPosition() {
 		// For a piece with meter changes
-		Tablature t1 = new Tablature(encodingTestGetMeterInfo, false);
+		Tablature t1 = new Tablature(encodingTestGetMeterInfo);
 		List<Rational[]> expected = TimelineTest.getMetricPositions("testGetMeterInfo", true);
 
 		// For a piece with no meter changes
-		Tablature t2 = new Tablature(encodingTestpiece, false);
+		Tablature t2 = new Tablature(encodingTestpiece);
 		expected.addAll(TimelineTest.getMetricPositions("testpiece", true));
 
 		List<Rational[]> actual = new ArrayList<Rational[]>();
@@ -263,8 +263,8 @@ public class UtilsTest {
 
 		List<Integer> actual = new ArrayList<>();
 		List<Tablature> tabs = Arrays.asList(new Tablature[]{
-			new Tablature(encodingTestGetMeterInfo, true),
-			new Tablature(encodingTestpiece, true)});
+			new Tablature(encodingTestGetMeterInfo),
+			new Tablature(encodingTestpiece)});
 		for (int i = 0; i < tabs.size(); i++) {
 			for (Rational mt : allMetricTimes.get(i)) {
 				actual.add(Utils.getDiminution(mt, tabs.get(i).getMeterInfo()));

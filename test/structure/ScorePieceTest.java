@@ -582,11 +582,11 @@ public class ScorePieceTest extends TestCase {
 			"in exitu"
 		);
 		List<Tablature> tabs = Arrays.asList(
-			new Tablature(encodingTestpiece, true),
-			new Tablature(encodingMemorEsto, true),
-			new Tablature(encodingQuiHabitat, true),
-			new Tablature(encodingPreterRerum, true),
-			new Tablature(encodingInExitu, true)
+			new Tablature(encodingTestpiece),
+			new Tablature(encodingMemorEsto),
+			new Tablature(encodingQuiHabitat),
+			new Tablature(encodingPreterRerum),
+			new Tablature(encodingInExitu)
 		);
 		long tMemor = getMeterSectionLength("memor esto", "1a") + getMeterSectionLength("memor esto", "1b") + 
 			getMeterSectionLength("memor esto", "1c") + getMeterSectionLength("memor esto", "1d") +
@@ -685,7 +685,7 @@ public class ScorePieceTest extends TestCase {
 
 	public void testMakeScore() {
 		// Tablature case
-		Tablature tab = new Tablature(encodingTestpiece, true);
+		Tablature tab = new Tablature(encodingTestpiece);
 		Integer[][] btp = tab.getBasicTabSymbolProperties(); 
 		Transcription t1 = new Transcription(midiTestpiece, encodingTestpiece);
 		MetricalTimeLine mtl1 = t1.getScorePiece().getMetricalTimeLine();
@@ -705,8 +705,8 @@ public class ScorePieceTest extends TestCase {
 		// Set velocity to default
 		expected1.getContentsRecursiveList(null).stream().filter(c -> c instanceof Note)
 			.forEach(c -> ((Note) c).getPerformanceNote().setVelocity(90));
-		// Transpose
-		ScorePiece.transposeNotationSystem(expected1, -2);
+//		// Transpose
+//		ScorePiece.transposeNotationSystem(expected1, -2);
 		// Set durations to minimum durations
 		int whole = 4 * 600000;
 		// Voice 0
@@ -745,8 +745,8 @@ public class ScorePieceTest extends TestCase {
 		// Set velocity to default
 		expected2.getContentsRecursiveList(null).stream().filter(c -> c instanceof Note)
 			.forEach(c -> ((Note) c).getPerformanceNote().setVelocity(90));
-		// Transpose
-		ScorePiece.transposeNotationSystem(expected2, -2);	
+//		// Transpose
+//		ScorePiece.transposeNotationSystem(expected2, -2);
 		// Adapt SNU note to have only one duration (only one duration is predicted for SNUs)
 		expected2.get(1).get(0).get(2).get(0).getScoreNote().setMetricDuration(new Rational(1, 4));
 		expected2.get(1).get(0).get(2).get(0).getPerformanceNote().setDuration((long) new Rational(1, 4).mul(whole).toDouble());
@@ -919,11 +919,11 @@ public class ScorePieceTest extends TestCase {
 	public void testAlignMetricalTimeLine() {
 		// Tablature case
 		List<Tablature> tabs = Arrays.asList(
-			new Tablature(encodingTestpiece, true),
-			new Tablature(encodingMemorEsto, true),
-			new Tablature(encodingQuiHabitat, true),
-			new Tablature(encodingPreterRerum, true),
-			new Tablature(encodingInExitu, true)
+			new Tablature(encodingTestpiece),
+			new Tablature(encodingMemorEsto),
+			new Tablature(encodingQuiHabitat),
+			new Tablature(encodingPreterRerum),
+			new Tablature(encodingInExitu)
 		);
 		List<ScorePiece> sPieces = Arrays.asList(
 			new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), 
@@ -1009,11 +1009,11 @@ public class ScorePieceTest extends TestCase {
 	public void testDiminuteMetricalTimeLine() {
 		// Tablature case
 		List<Tablature> tabs = Arrays.asList(
-			new Tablature(encodingTestpiece, true),
-			new Tablature(encodingMemorEsto, true),
-			new Tablature(encodingQuiHabitat, true),
-			new Tablature(encodingPreterRerum, true),
-			new Tablature(encodingInExitu, true)
+			new Tablature(encodingTestpiece),
+			new Tablature(encodingMemorEsto),
+			new Tablature(encodingQuiHabitat),
+			new Tablature(encodingPreterRerum),
+			new Tablature(encodingInExitu)
 		);
 		List<ScorePiece> sPieces = Arrays.asList(
 			new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), 
@@ -1175,9 +1175,9 @@ public class ScorePieceTest extends TestCase {
 		);
 
 		List<Tablature> tabs = Arrays.asList(
-			new Tablature(encodingTestpiece, true),
-			new Tablature(encodingTestGetMeterInfo, true),
-			new Tablature(encodingInExitu, true)
+			new Tablature(encodingTestpiece),
+			new Tablature(encodingTestGetMeterInfo),
+			new Tablature(encodingInExitu)
 		);
 
 		List<ScorePiece> sPieces = Arrays.asList(
@@ -1226,7 +1226,7 @@ public class ScorePieceTest extends TestCase {
 	public void testDiminuteNotationSystem() {
 		// Tablature case
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo));
-		Tablature t = new Tablature(encodingTestGetMeterInfo, true);
+		Tablature t = new Tablature(encodingTestGetMeterInfo);
 		MetricalTimeLine mtl = sp.getMetricalTimeLine();
 		mtl = ScorePiece.alignMetricalTimeLine(mtl, t.getMeterInfo());
 		ScoreMetricalTimeLine smtl = new ScoreMetricalTimeLine(mtl);

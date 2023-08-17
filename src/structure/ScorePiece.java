@@ -601,6 +601,9 @@ public class ScorePiece extends Piece {
 //		List<Integer[]> mi = tab.getMeterInfo();
 		MetricalTimeLine mtl = getMetricalTimeLine();
 //		mtl = ScorePiece.cleanMetricalTimeLine(mtl);
+//		for (Integer[] in : mi) {
+//			System.out.println(Arrays.asList(in));
+//		}
 		mtl = ScorePiece.alignMetricalTimeLine(mtl, mi);
 		ScoreMetricalTimeLine smtl = new ScoreMetricalTimeLine(mtl);
 		MetricalTimeLine mtlDim = ScorePiece.diminuteMetricalTimeLine(mtl, mi);
@@ -653,6 +656,8 @@ public class ScorePiece extends Piece {
 		// =           2/1, 3/1, 2/1, 3/1, 2/1, 2/1, 2/1, 3/1, 2/1
 		// in Piece    2/1, 3/1, 2/1, 3/1, 2/1,           3/1, 2/1
 
+		System.out.println(mtl);
+		
 		// 1. Get undiminuted meters and meter section onsets from meterInfoTab to enable aligning
 		List<Rational> metersTabUndim = new ArrayList<>();
 		List<Rational> msosTabUndim = new ArrayList<>();

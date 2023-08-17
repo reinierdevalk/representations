@@ -106,7 +106,7 @@ public class Encoding implements Serializable {
 
 	/**
 	 * Creates an <code>Encoding</code> from a <code>.tbp</code> file. 
-	 * IT IS ASSUMED THAT THE TBP FILE IS CHECKED IN THE VIEWER AND IS CORRECT
+	 * IT IS ASSUMED THAT THE TBP FILE IS CHECKED IN THE VIEWER AND IS CORRECT TODO
 	 * 
 	 * @param f
 	 */
@@ -117,7 +117,7 @@ public class Encoding implements Serializable {
 
 	/**
 	 * Creates an <code>Encoding</code> from an existing raw encoding.
-	 * RAW ENCODING MAY CONTAIN ERRORS // or RAW ENCODING CHECKED IN VIEWER?
+	 * RAW ENCODING MAY CONTAIN ERRORS // or RAW ENCODING CHECKED IN VIEWER? TODO
 	 *  
 	 * @param rawEncoding
 	 * @param piecename
@@ -821,13 +821,17 @@ public class Encoding implements Serializable {
 					end = indT + t.length();
 					e = "METADATA ERROR -- Insert valid " + tagStrs.get(tagNum) + ".";
 				}
-				// Invalid TabSymbolSet, Tuning, diminution
-				else if (Arrays.asList(TABSYMBOLSET_TAG, TUNING_TAG, DIMINUTION_TAG).contains(t)) {
+				// Invalid TabSymbolSet, Tuning
+				else if (Arrays.asList(TABSYMBOLSET_TAG, TUNING_TAG).contains(t)) {
 					if (!validNames.get(tagNum).contains(c)) {
 						start = indC;
 						end = indC + c.length();
 						e = "METADATA ERROR -- Insert valid " + tagStrs.get(tagNum) + ".";
 					}
+				}
+				// Invalid diminution
+				else if (Arrays.asList(DIMINUTION_TAG).contains(t)) { // TODO
+					// as meterInfo
 				}
 				// Invalid meterInfo
 				else if (t.equals(METER_INFO_TAG)) {

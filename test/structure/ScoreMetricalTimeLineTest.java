@@ -170,7 +170,7 @@ public class ScoreMetricalTimeLineTest {
 	public void testGetDiminutedMetricTime() {
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo));
 		ScoreMetricalTimeLine smtl = new ScoreMetricalTimeLine(sp.getScoreMetricalTimeLine());
-		Tablature tab = new Tablature(encodingTestGetMeterInfo, true);
+		Tablature tab = new Tablature(encodingTestGetMeterInfo);
 		MetricalTimeLine mtl = sp.getMetricalTimeLine();
 		MetricalTimeLine mtlDim = ScorePiece.diminuteMetricalTimeLine(mtl, tab.getMeterInfo());
 		ScoreMetricalTimeLine smtlDim = new ScoreMetricalTimeLine(mtlDim);

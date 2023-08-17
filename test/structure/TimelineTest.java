@@ -366,8 +366,8 @@ public class TimelineTest extends TestCase {
 
 	public void testGetMetricPosition() {
 		List<Tablature> tabs = Arrays.asList(
-			new Tablature(encodingTestpiece, false),
-			new Tablature(encodingTestGetMeterInfo, false)
+			new Tablature(encodingTestpiece),
+			new Tablature(encodingTestGetMeterInfo)
 		);
 
 		List<Rational[]> expected = getMetricPositions("testpiece", true);

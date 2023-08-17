@@ -1,23 +1,29 @@
 package exports;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationVoice;
-import de.uos.fmt.musitech.data.structure.Piece;
 import de.uos.fmt.musitech.utility.math.Rational;
 import interfaces.PythonInterface;
 import representations.Tablature;
 import representations.Transcription;
 import structure.ScoreMetricalTimeLine;
+import structure.ScorePiece;
 import structure.Timeline;
 import structure.metric.Utils;
 import tbp.Encoding;
@@ -34,12 +40,7 @@ public class MEIExport {
 	public static String rootDir = "F:/research/"; // TODO also defined in UI; should be in one place only
 	public static String MEITemplatePath = rootDir + "data/" + "templates/"; // TODO suffix data/defined inside Runner.setPathsToCodeAndData() 
 	public static String scriptPathPythonMEI = rootDir + "software/code/" + "eclipse/formats-representations/py/";
-	
-	private static List<Integer> mpcFlats = 
-		Arrays.asList(new Integer[]{10, 3, 8, 1, 6, 11, 4}); // Bb, Eb, Ab, Db, Gb, Cb, Fb,
-	private static List<Integer> mpcSharps = 
-		Arrays.asList(new Integer[]{6, 1, 8, 3, 10, 5, 0}); // F#, C#, G#, D#, A#, E#, B#
-	
+
 	public static final Rational TRIPLETISER = new Rational(3, 2);
 	private static final Rational DETRIPLETISER = new Rational(2, 3);
 	private static final int BREVE = -1;
@@ -49,28 +50,85 @@ public class MEIExport {
 	
 	private static boolean verbose = false;
 	
-	// Keys contains, for each key, the number of sharps (positive) or flats (negative) and 
-	// the MIDI pitch class of the tonic
-	private static List<Integer[]> keys;
+//	// KEYS contains, for each key, the number of sharps (positive) or flats (negative) and 
+//	// the MIDI pitch class of the tonic
+//	private static final List<Integer[]> KEYS_OLD;
+//	static {
+//		KEYS_OLD = new ArrayList<Integer[]>();
+//		KEYS_OLD.add(new Integer[]{-7, 11}); // Cb
+//		KEYS_OLD.add(new Integer[]{-6, 6}); // Gb
+//		KEYS_OLD.add(new Integer[]{-5, 1}); // Db
+//		KEYS_OLD.add(new Integer[]{-4, 8}); // Ab
+//		KEYS_OLD.add(new Integer[]{-3, 3}); // Eb
+//		KEYS_OLD.add(new Integer[]{-2, 10}); // Bb
+//		KEYS_OLD.add(new Integer[]{-1, 5}); // F
+//		KEYS_OLD.add(new Integer[]{0, 0}); // C
+//		KEYS_OLD.add(new Integer[]{1, 7}); // G
+//		KEYS_OLD.add(new Integer[]{2, 2}); // D
+//		KEYS_OLD.add(new Integer[]{3, 9}); // A
+//		KEYS_OLD.add(new Integer[]{4, 4}); // E
+//		KEYS_OLD.add(new Integer[]{5, 11}); // B
+//		KEYS_OLD.add(new Integer[]{6, 6}); // F#
+//		KEYS_OLD.add(new Integer[]{7, 1}); // C#
+//	}
+
+	// For each key, represented by number of flats (-) or sharps (+), the MIDI 
+	// pitch class of the key and its minor parallel
+	public static final Map<Integer, Integer[]> KEY_SIG_MPCS;
 	static {
-		keys = new ArrayList<Integer[]>();
-		keys.add(new Integer[]{-7, 11}); // Cb
-		keys.add(new Integer[]{-6, 6}); // Gb
-		keys.add(new Integer[]{-5, 1}); // Db
-		keys.add(new Integer[]{-4, 8}); // Ab
-		keys.add(new Integer[]{-3, 3}); // Eb
-		keys.add(new Integer[]{-2, 10}); // Bb
-		keys.add(new Integer[]{-1, 5}); // F
-		keys.add(new Integer[]{0, 0}); // C
-		keys.add(new Integer[]{1, 7}); // G
-		keys.add(new Integer[]{2, 2}); // D
-		keys.add(new Integer[]{3, 9}); // A
-		keys.add(new Integer[]{4, 4}); // E
-		keys.add(new Integer[]{5, 11}); // B
-		keys.add(new Integer[]{6, 6}); // F#
-		keys.add(new Integer[]{7, 1}); // C#
+		KEY_SIG_MPCS = new LinkedHashMap<Integer, Integer[]>();
+		KEY_SIG_MPCS.put(-7, new Integer[]{11, 8}); // Cb/ab
+		KEY_SIG_MPCS.put(-6, new Integer[]{6, 3}); // Gb/eb
+		KEY_SIG_MPCS.put(-5, new Integer[]{1, 10}); // Db/bb
+		KEY_SIG_MPCS.put(-4, new Integer[]{8, 5}); // Ab/f
+		KEY_SIG_MPCS.put(-3, new Integer[]{3, 0}); // Eb/c
+		KEY_SIG_MPCS.put(-2, new Integer[]{10, 7}); // Bb/g
+		KEY_SIG_MPCS.put(-1, new Integer[]{5, 2}); // F/d
+		KEY_SIG_MPCS.put(0, new Integer[]{0, 9}); // C/a
+		KEY_SIG_MPCS.put(1, new Integer[]{7, 4}); // G/e
+		KEY_SIG_MPCS.put(2, new Integer[]{2, 11}); // D/b
+		KEY_SIG_MPCS.put(3, new Integer[]{9, 6}); // A/f#
+		KEY_SIG_MPCS.put(4, new Integer[]{4, 1}); // E/c#
+		KEY_SIG_MPCS.put(5, new Integer[]{11, 8}); // B/g#
+		KEY_SIG_MPCS.put(6, new Integer[]{6, 3}); // F#/d#
+		KEY_SIG_MPCS.put(7, new Integer[]{1, 10}); // C#/a#
 	}
+
+
+//	public static final Map<Integer, Integer[]> KEY_SIGS;
+//	static { KEY_SIGS = new LinkedHashMap<Integer, Integer[]>();
+//		KEY_SIGS.put(4, new Integer[]{4, 1});   // E/c#
+//		KEY_SIGS.put(3, new Integer[]{9, 6});   // A/f#
+//		KEY_SIGS.put(2, new Integer[]{2, 11});  // D/b
+//		KEY_SIGS.put(1, new Integer[]{7, 4});   // G/e
+//		KEY_SIGS.put(0, new Integer[]{0, 9});   // C/a
+//		KEY_SIGS.put(-1, new Integer[]{5, 2});  // F/d
+//		KEY_SIGS.put(-2, new Integer[]{10, 7}); // Bb/g
+//		KEY_SIGS.put(-3, new Integer[]{3, 0});  // Eb/c
+//		KEY_SIGS.put(-4, new Integer[]{8, 5});  // Ab/f
+//	}
 	
+
+//	private static final Map<Integer, Integer[]> KEY_ACCID;
+//	static { KEY_ACCID = new LinkedHashMap<Integer, Integer[]>();
+//		KEY_ACCID.put(4, new Integer[]{6, 1, 8, 3});   // E/c#
+//		KEY_ACCID.put(3, new Integer[]{6, 1, 8});      // A/f#
+//		KEY_ACCID.put(2, new Integer[]{6, 1});         // D/b
+//		KEY_ACCID.put(1, new Integer[]{6});            // G/e
+//		KEY_ACCID.put(0, new Integer[]{});             // C/a
+//		KEY_ACCID.put(-1, new Integer[]{10});          // F/d
+//		KEY_ACCID.put(-2, new Integer[]{10, 3});       // Bb/g
+//		KEY_ACCID.put(-3, new Integer[]{10, 3, 8});    // Eb/c
+//		KEY_ACCID.put(-4, new Integer[]{10, 3, 8, 1}); // Ab/f
+//	}
+
+	// F#, C#, G#, D#, A#, E#, B#
+	private static final List<Integer> KEY_ACCID_MPC_SHARP = Arrays.asList(6, 1, 8, 3, 10, 5, 0); 
+	private static final List<String> KEY_ACCID_PC_SHARP = Arrays.asList("f", "c", "g", "d", "a", "e", "b");
+	// Bb, Eb, Ab, Db, Gb, Cb, Fb
+	private static final List<Integer> KEY_ACCID_MPC_FLAT = Arrays.asList(10, 3, 8, 1, 6, 11, 4);
+	private static final List<String> KEY_ACCID_PC_FLAT = Arrays.asList("b", "e", "a", "d", "g", "c", "f");
+
 	private static final List<String> MEI_HEAD = Arrays.asList(new String[]{"title"});
 	private static final List<String> STRINGS = 
 		Arrays.asList(new String[]{"pname", "oct", "accid", "tie", "dur", "dots", "ID", "metPos"});
@@ -82,7 +140,7 @@ public class MEIExport {
 	private static final String INDENT_TWO = TAB.repeat(6);
 	private static final int XML_DUR_IND = 0;
 	private static final int XML_DOTS_IND = 1;
-	
+
 	// reduceCMNDur adapts the Transcription durations to those of the tablature; what we want 
 	// is the reverse
 	// a. Adapt the metric times and onsets in the transcription to fit those resulting from the 
@@ -115,11 +173,11 @@ public class MEIExport {
 		
 		Tablature testTab = new Tablature(new File(
 			"F:/research/data/annotated/encodings/thesis-int/" + testTabFile + 
-			Encoding.EXTENSION), false);
+			Encoding.EXTENSION));
 		
 		testTab = new Tablature(new File(
 			"C:/Users/Reinier/Desktop/test-capirola/tab/capirola-1520-et_in_terra_pax" + 
-			Encoding.EXTENSION), false);
+			Encoding.EXTENSION));
 		
 //		exportTabMEIFile(testTab, "C:/Users/Reinier/Desktop/test-capirola/capirola-1520-et_in_terra_pax" + "-tab");	
 //		System.exit(0);
@@ -137,8 +195,9 @@ public class MEIExport {
 		pieceName = "1025_adieu_mes_amours";
 
 		// This must be a created Transcription and the second argument must be null
-//		Transcription trans = 
-//			new Transcription(
+		Transcription trans = 
+//			null;
+			new Transcription(
 ////			new File("F:/research/data/MIDI/thesis-int/4vv/rotta-1546_15-bramo_morir.mid")
 ////			new File("F:/research/data/annotated/MIDI/thesis-int/3vv/newsidler-1544_2-nun_volget.mid")
 ////			new File("F:/research/data/MIDI/" + tabFile + MIDIImport.EXTENSION)
@@ -148,20 +207,21 @@ public class MEIExport {
 ////			new File("C:/Users/Reinier/Desktop/IMS-tours/example/MIDI/Berchem_-_O_s'io_potessi_donna.mid")
 ////			new File("C:/Users/Reinier/Desktop/test-capirola/mapped/" + pieceName + MIDIImport.EXTENSION)
 //			new File("C:/Users/Reinier/Desktop/beaming/mapped/" + pieceName + MIDIImport.EXTENSION)
-//		);
-		Transcription trans = null;
+			new File("F:/research/experiments/thesis/exp_3.1/thesis-int/3vv/N/bwd/out/fold_03-judenkuenig-1523_2-elslein_liebes.mid")		
+		);
+
 
 //		Tablature tab = 
-//			new Tablature(new File("F:/research/data/encodings/" + tabFile + Encoding.EXTENSION), false);
+//			new Tablature(new File("F:/research/data/encodings/" + tabFile + Encoding.EXTENSION), true);
 //		Tablature tab = 
 ////			new Tablature(new File("C:/Users/Reinier/Desktop/test-capirola/tab/" +
 //			new Tablature(new File("C:/Users/Reinier/Desktop/beaming/tab/" +
-//			pieceName + Encoding.EXTENSION), false);
+//			pieceName + Encoding.EXTENSION), true);
 		Tablature tab = 
 			new Tablature(new File("F:/research/data/annotated/encodings/thesis-int/" + 
 			"3vv/judenkuenig-1523_2-elslein_liebes" + 
 //			"4vv/rotta-1546_15-bramo_morir" +
-			Encoding.EXTENSION), false);
+			Encoding.EXTENSION), true);
 //		tab = null;
 		
 //		List<List<String[]>> data = getData(t);
@@ -191,7 +251,7 @@ public class MEIExport {
 		
 		exportMEIFile(trans, tab, /*tab.getBasicTabSymbolProperties(), trans.getKeyInfo(), 
 			tab.getTripletOnsetPairs(),*/ mismatchInds, grandStaff, tabOnTop, 
-			alignWithMetricBarring, s);
+			alignWithMetricBarring, new String[]{s, ""});
 //		System.out.println(ToolBox.readTextFile(new File(s)));
 
 //		String scoreType = grandStaff ? "grand_staff" : "score";
@@ -202,8 +262,8 @@ public class MEIExport {
 	}
 
 
-	public static List<Integer[]> getKeys() {
-		return keys;
+	public static Map<Integer, Integer[]> getKeySigMPCs() {
+		return KEY_SIG_MPCS;
 	}
 
 
@@ -892,15 +952,18 @@ public class MEIExport {
 	 * @param mismatchInds
 	 * @param grandStaff
 	 * @param tabOnTop
-	 * @param path
+	 * @param alignWithMetricBarring
+	 * @param dict
 	 */
 	public static String exportMEIFile(Transcription trans, Tablature tab, List<List<Integer>> 
 		mismatchInds, boolean grandStaff, boolean tabOnTop, boolean alignWithMetricBarring, 
-		String path) {
+		String[] dict) {
 		System.out.println("\r\n>>> MEIExport.exportMEIFile() called");
 
 		String res = ToolBox.readTextFile(new File(MEITemplatePath + "template-MEI.xml"));
-
+		String path = dict[0];
+		String app = dict[1];
+		
 //		Integer[][] bnp = trans.getBasicNoteProperties();
 //		for (int i : new Integer[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}) {
 //			System.out.println(Arrays.toString(bnp[i]));
@@ -955,6 +1018,9 @@ public class MEIExport {
 		String[] meiHead = new String[MEI_HEAD.size()];
 		meiHead[MEI_HEAD.indexOf("title")] = pieceName;
 		res = res.replace("title_placeholder", meiHead[MEI_HEAD.indexOf("title")]);
+		res = res.replace("date_placeholder", new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
+		// TODO version
+		res = res.replace("app_placeholder", app);
 
 		// Make the <music> 
 		// 1. Make the <scoreDef>s as strings (one for each time the meter or key changes) 
@@ -1047,6 +1113,24 @@ public class MEIExport {
 //			}
 			for (int i = 0; i < numBars; i++) {
 				StringBuilder currTabBarAsStr = new StringBuilder();
+//				System.out.println(tabBars.get(0));
+//				System.out.println("...");
+//				System.out.println(tabBars.get(1));
+//				System.out.println("...");
+//				System.out.println(tabBars.get(2));
+//				System.out.println("...");
+//				System.out.println(tabBars.get(3));
+//				System.out.println("...");
+//				System.out.println(tabBars.get(4));
+//				System.out.println("...");
+//				System.out.println(tabBars.get(5));
+//				System.out.println("...");
+//				System.out.println(tabBars.get(6));
+//				System.out.println("...");
+//				System.out.println(tabBars.get(7));
+//				System.out.println("...");
+//				tabBars.get(8).forEach(s -> System.out.println(s));
+//				System.out.println("...");
 				for (String s : tabBars.get(i)) {
 					currTabBarAsStr.append(INDENT_TWO + TAB + s + "\r\n");
 				}
@@ -1068,11 +1152,11 @@ public class MEIExport {
 //		System.exit(0);
 		// b. Trans bars
 		List<String> transBarsAsStr = new ArrayList<>();
-		if (ONLY_TRANS || TAB_AND_TRANS) {
+		if (ONLY_TRANS || TAB_AND_TRANS) {	
 			List<Object> data = getData(tab, trans, mi, ki, tripletOnsetPairs);
 			List<List<String>> transBars =
 				getTransBars(data, tab, mi, tripletOnsetPairs, mismatchInds, grandStaff, tabOnTop,
-				numVoices/*, path*/);
+				numVoices, dict[1]/*, path*/);
 			for (int i = 0; i < numMetricBars; i++) {
 				StringBuilder currTransBarAsStr = new StringBuilder();
 				for (String s : transBars.get(i)) {
@@ -1156,7 +1240,7 @@ public class MEIExport {
 			sb.append(sectionsAsStr.get(i));
 		}
 		res = res.replace(INDENT_ONE + "score_placeholder" + "\r\n", sb.toString());
-		
+
 		if (path != null) { 
 			ToolBox.storeTextFile(
 				res, new File(path + "-" + (grandStaff ? "grand_staff" : "score") + ".xml"));
@@ -1211,15 +1295,41 @@ public class MEIExport {
 		}
 		else {
 			// Each dot d adds 1/(2^d) * the undotted length to the undotted note
-			// One dot adds 1/(2^1), e.g., H.  = 1/2 + (1/2 * 1/2)
-			// Two dots add 1/(2^2), e.g., H.. = 1/2 + (1/2 * 1/2) + (1/2 * 1/4)
-			int dotted = undotted;
+			// One dot adds 1/(2^1), e.g., H.  = 1 * H + (1/2 * H)             = 3/2 * H
+			// Two dots add 1/(2^2), e.g., H.. = 1 * H + (1/2 * H) + (1/4 * H) = 7/4 * H 
+			// The dotted length is the undotted length multiplied by this factor
+			double factor = 1;
 			for (int i = 1; i <= dots; i++) {
-				int factor = (int) Math.pow(2, i);
-				int increment = undotted / factor;
-				dotted += increment;
+				factor += 1 / Math.pow(2, i);
 			}
+			return (int) (undotted * factor);
+		}
+	}
+
+
+	/**
+	 * Gets the duration, as an int, of the given dotted note when it is undotted with 
+	 * the given number of dots.
+	 * 
+	 * @param dotted
+	 * @param dots
+	 * @return
+	 */
+	// TESTED
+	public static int getUndottedNoteLength(int dotted, int dots) {
+		if (dots == 0) {
 			return dotted;
+		}
+		else {
+			// Each dot d adds 1/(2^d) * the undotted length to the undotted note
+			// One dot adds 1/(2^1), e.g., H.  = 1 * H + (1/2 * H)             = 3/2 * H
+			// Two dots add 1/(2^2), e.g., H.. = 1 * H + (1/2 * H) + (1/4 * H) = 7/4 * H
+			// The undotted length is the dotted length divided by this factor  
+			double factor = 1;
+			for (int i = 1; i <= dots; i++) {
+				factor += 1 / Math.pow(2, i);
+			}
+			return (int) (dotted / factor);
 		}
 	}
 
@@ -1240,7 +1350,6 @@ public class MEIExport {
 		for (Integer[] in : tabBarsToMetricBars) {
 			System.out.println(Arrays.toString(in));
 		}
-//		System.exit(0);
 
 //		List<Integer> xmlDurPerBar = new ArrayList<>();
 //		Rational prevDur = null;
@@ -1368,6 +1477,7 @@ public class MEIExport {
 //				currBarEvents.add(events.get(j));
 //			}
 			int currMetricBar = tabBarsToMetricBars.get(currTabBar - 1)[Tablature.METRIC_BAR_IND];
+			System.out.println(currMetricBar);
 			int currDim = tab.getEncoding().getTimeline().getDiminution(currMetricBar);
 
 			// For each event
@@ -1848,11 +1958,24 @@ public class MEIExport {
 	}
 
 
+	public static List<String[]> ornFull = new ArrayList<>();
 	private static List<List<String>> getTransBars(List<Object> data, Tablature tab, List<Integer[]> mi,
 		List<Rational[]> tripletOnsetPairs, List<List<Integer>> mismatchInds, 
-		boolean grandStaff, boolean tabOnTop, int numVoices/*, String path*/) {			
+		boolean grandStaff, boolean tabOnTop, int numVoices, String app/*, String path*/) {			
 		System.out.println("\r\n>>> getTransBars() called");
 		List<List<String>> transBars = new ArrayList<>();
+//		for (List<Integer> l : mismatchInds) {
+//			System.out.println(l);
+//		}
+		
+		System.out.println("incorrect:");
+		System.out.println(mismatchInds.get(1));
+		System.out.println("overlooked:");
+		System.out.println(mismatchInds.get(2));
+		System.out.println("superfluous:");
+		System.out.println(mismatchInds.get(3));
+		System.out.println("half:");
+		System.out.println(mismatchInds.get(4));
 		
 		// Composition of dataStr (and dataInt):
 		// dataStr.size() = number of bars in piece
@@ -1860,6 +1983,231 @@ public class MEIExport {
 		// dataStr.get(b).get(v).size() = notes in bar b in voice v 
 		List<List<List<Integer[]>>> dataInt = (List<List<List<Integer[]>>>) data.get(0);
 		List<List<List<String[]>>> dataStr = (List<List<List<String[]>>>) data.get(1);
+
+		// TODO münchen: move glossary extraction to own method
+		boolean extractOrnaments = app.equals("halcyon") ? false : true;
+		if (extractOrnaments) {
+			// Reorganise: list, per voice, the notes in that voice
+			List<List<Integer[]>> dataIntPerVoice = new ArrayList<>();
+			List<List<String[]>> dataStrPerVoice = new ArrayList<>();
+			int numBars = dataInt.size();
+			for (int voice = 0; voice < numVoices; voice++) {
+				List<Integer[]> notesCurrVoiceInt = new ArrayList<>();
+				List<String[]> notesCurrVoiceStr = new ArrayList<>();
+				for (int bar = 0; bar < numBars; bar++) {
+					notesCurrVoiceInt.addAll(dataInt.get(bar).get(voice));
+					notesCurrVoiceStr.addAll(dataStr.get(bar).get(voice));
+				}
+				dataIntPerVoice.add(notesCurrVoiceInt);
+				dataStrPerVoice.add(notesCurrVoiceStr);
+			}
+		
+			Integer[][] btp = tab.getBasicTabSymbolProperties();
+			List<Integer> ornInds = mismatchInds.get(Transcription.ORNAMENTATION_IND);
+			List<String[]> ornaments = new ArrayList<>();
+			ornaments.add(new String[]{"piece="+tab.getName()});
+			for (int i = 0 ; i < numVoices; i++) {
+				List<Integer[]> currVoiceDataInt = dataIntPerVoice.get(i);
+				int numNotes = currVoiceDataInt.size();
+				for (int j = 0; j < numNotes - 1; j++) {
+					Integer[] currNoteDataInt = currVoiceDataInt.get(j);
+					Integer[] nextNoteDataInt = currVoiceDataInt.get(j+1);
+
+					// If the next note is ornamental: build ornament. ornament consists of 
+					// (1) the opening non-ornamental note (left border note)
+					// (2) the ornamental note(s)
+					// (3) the closing non-ornamental note (right border note)
+					if (ornInds.contains(nextNoteDataInt[INTS.indexOf("indTab")])) {
+						List<String> ornament = new ArrayList<>();
+						List<String> loc = new ArrayList<>();
+						// Add left border note
+						int currIndTab = currNoteDataInt[INTS.indexOf("indTab")];
+						int currPitch;
+						int startPitch;
+						String currRs;
+						// If currIndTab is -1, currNoteDataInt represents a rest, and
+						// the ornament starts with a rest (+ interval 0)
+						if (currIndTab == -1) {
+							currPitch = -1;
+							startPitch = -1;
+							currRs = "R";
+						}
+						else {
+							currPitch = btp[currIndTab][Tablature.PITCH];
+							startPitch = currPitch;
+							int dur = btp[currIndTab][Tablature.MIN_DURATION];
+							int dots = currNoteDataInt[INTS.indexOf("dots")];
+							// getRhythmSymbol() needs the undotted dur
+							dur = getUndottedNoteLength(dur, dots);
+							currRs = Symbol.getRhythmSymbol(dur, false, false, null).getSymbol() + 
+								".".repeat(dots);
+						}
+						// Add current RS
+						ornament.add(currRs);
+						// Add ornamental note(s) and right border note
+						for (int k = j + 1; k < numNotes; k++) {
+							nextNoteDataInt = currVoiceDataInt.get(k);
+							int nextIndTab = nextNoteDataInt[INTS.indexOf("indTab")];
+							int nextPitch = btp[nextIndTab][Tablature.PITCH];
+							if (startPitch == -1) {
+								startPitch = nextPitch;
+							}
+							int nextDur = btp[nextIndTab][Tablature.MIN_DURATION];
+							int nextDots = nextNoteDataInt[INTS.indexOf("dots")];
+							// getRhythmSymbol() needs the undotted dur
+							nextDur = getUndottedNoteLength(nextDur, nextDots);
+							String nextRs = Symbol.getRhythmSymbol(nextDur, false, false, null).getSymbol() + 
+								".".repeat(nextDots);
+							// Add interval from curr to next (or 0 if left border is a rest)
+							// and next RS
+							ornament.add(
+								currIndTab == -1 ? String.valueOf(0) :
+								String.valueOf(nextPitch - currPitch));
+							ornament.add(nextRs);
+							
+							currIndTab = nextIndTab;
+							currPitch = nextPitch;
+							// Break if last note added is right border note
+							if (!ornInds.contains(nextIndTab)) {
+								// Make sure that the next iteration of the j for-loop starts at the right 
+								// border note, which could be a new left border note
+								loc.add("voice=" + i);
+								loc.add("bar=" + currNoteDataInt[INTS.indexOf("bar")]);
+								Rational mp = new Rational(
+									currNoteDataInt[INTS.indexOf("metPosNum")], 
+									currNoteDataInt[INTS.indexOf("metPosDen")]
+								);
+								mp.reduce();
+								String mpStr = 
+									mp.equals(Rational.ZERO) ? "0" :
+									(mp.equals(Rational.ONE) ? "1" : mp.toString());									
+								loc.add("metPos=" + mpStr);
+								loc.add("startPitch=" + startPitch);
+								j = k-1; 
+								break;
+							}
+						}
+						ornaments.add(new String[]{
+							ornament.toString(), loc.toString()	
+//							"[" + String.join(", ", ornament) + "]", 
+//							"[" +  String.join(", ", loc) + "]"  
+						});
+					}
+				}
+			
+			
+//			for (int j = 0; j < numNotes; j++) {
+//				Integer[] currNoteDataInt = currVoiceDataInt.get(j);
+//				// If there is a next note
+//				if (j != numNotes - 1) {
+//					// If the next note is ornamental: build ornament. ornament consists of 
+//					// (1) the opening non-ornamental note (left border note)
+//					// (2) the ornamental note(s)
+//					// (3) the closing non-ornamental note (right border note)
+//					if (ornInds.contains(currVoiceDataInt.get(j + 1)[INTS.indexOf("indTab")])) {
+//						List<String> ornament = new ArrayList<>();
+//						List<String> ornamentAbs = new ArrayList<>();
+//						// Add left border note
+//						int currIndTab = currNoteDataInt[INTS.indexOf("indTab")];
+////						String o = "";
+//						String rs = "R";
+//						int pitch = -1;
+//						// If currIndTab is -1, currNoteDataInt represents a rest
+//						if (currIndTab != -1) {
+//							pitch = btp[currIndTab][Tablature.PITCH];
+//							int dur = btp[currIndTab][Tablature.MIN_DURATION];
+//							int dots = currNoteDataInt[INTS.indexOf("dots")];
+//							// getRhythmSymbol() needs the undotted dur
+//							dur = getUndottedNoteLength(dur, dots);
+//							rs = Symbol.getRhythmSymbol(dur, false, false, null).getSymbol() + 
+//								".".repeat(dots);
+////							o = rs + pitch;
+//						}
+//						ornament.add(rs + pitch);
+//						ornamentAbs.add(rs);
+//						// Add ornamental note(s) and right border note
+//						for (int k = j + 1; k < numNotes; k++) {
+//							Integer[] nextNoteDataInt = currVoiceDataInt.get(k);
+//							int nextIndTab = nextNoteDataInt[INTS.indexOf("indTab")];
+////							String nextO = "";
+//							String nextRs = "";
+//							int nextPitch = -1;
+//							// If nextIndTab is -1, nextNoteDataInt represents a rest
+//							if (nextIndTab != -1) {
+//								nextPitch = btp[nextIndTab][Tablature.PITCH];
+//								int nextDur = btp[nextIndTab][Tablature.MIN_DURATION];
+//								int nextDots = nextNoteDataInt[INTS.indexOf("dots")];
+//								// getRhythmSymbol() needs the undotted dur
+//								nextDur = getUndottedNoteLength(nextDur, nextDots);
+//								nextRs = Symbol.getRhythmSymbol(nextDur, false, false, null).getSymbol() + 
+//									".".repeat(nextDots);
+////								nextO = nextRs + nextPitch;
+//							}
+//							ornament.add(nextRs + nextPitch);
+//							ornamentAbs.add(currIndTab != -1 ? String.valueOf(0) : 
+//								String.valueOf(nextPitch - pitch));
+//							ornamentAbs.add(nextRs);
+//	
+//							// Break after right border note
+//							if (!ornInds.contains(nextIndTab)) {
+//								// Make sure that the next iteration of the j for-loop starts at the right 
+//								// border note, which could a new left border note
+//								ornament.add("voice=" + i);
+//								ornament.add("bar=" + currNoteDataInt[INTS.indexOf("bar")]);
+//								Rational mp = new Rational(
+//									currNoteDataInt[INTS.indexOf("metPosNum")], 
+//									currNoteDataInt[INTS.indexOf("metPosDen")]
+//								);
+//								mp.reduce();
+//								String mpStr = 
+//									mp.equals(Rational.ZERO) ? "0" :
+//									(mp.equals(Rational.ONE) ? "1" : mp.toString());									
+//								ornament.add("metPos=" + mpStr);
+//								j = k-1; 
+//								break;
+//							}
+//						}
+//						ornaments.add(ornament);
+//					}
+//				}
+//			}
+		}
+		ornFull.addAll(ornaments);
+		System.out.println("xxxxxxxxxxxxxxxxxxxx");
+		}
+
+//		System.exit(0);
+		
+//		// dataStr for voice 0
+//		List<List<String>> ornaments = new ArrayList<>();
+////		int numBars = dataStr.size();
+//		for (int voice = 0; voice < numVoices; voice++) {
+//			
+//			List<String> ornament = new ArrayList<>();
+//			List<String> orn = new ArrayList<>();
+//			List<Integer> ornInds = mismatchInds.get(Transcription.ORNAMENTATION_IND);
+//			for (int bar = 0; bar < numBars; bar++) {
+//				List<String[]> currBarStr = dataStr.get(bar).get(voice);
+//				List<Integer[]> currBarInt = dataInt.get(bar).get(voice);
+//				int numNotes = currBarStr.size();
+//				for (int note = 0; note < numNotes; note++) {
+//					String[] currNoteStr = currBarStr.get(note);
+//					Integer[] currNoteInt = currBarInt.get(note);
+//					int currIndTab = currNoteInt[INTS.indexOf("indTab")];
+//					if (note < numNotes - 1) {
+//
+//						Integer[] nextNoteInt = currBarInt.get(note + 1);
+//						int nextIndTab = currNoteInt[INTS.indexOf("indTab")];
+//						if (ornInds.contains(nextNoteInt[INTS.indexOf("indTab")])) {
+////							ornament.add(e);
+//						}
+//					}
+//
+//				}
+//				System.out.println("|");		
+//			}
+//		}
+//		System.exit(0);
 		
 //		for (List<String[]> voice : dataStr.get(29)) {
 //			for (String[] note : voice) {
@@ -1964,6 +2312,11 @@ public class MEIExport {
 					diminution = tab.getEncoding().getTimeline().getDiminution(bar);
 //					diminution = Tablature.getDiminution(bar, mi);
 				}
+//				for (int z = 0; z < currBarCurrVoiceInt.size(); z++) {
+//					System.out.println(Arrays.asList(currBarCurrVoiceStr.get(z)));
+//					System.out.println(Arrays.asList(currBarCurrVoiceInt.get(z)));
+//				}
+//				System.exit(0);
 				List<String> currNotesAsXML = 
 					getBar(currBarCurrVoiceInt, currBarCurrVoiceStr, tripletOnsetPairs,
 					mismatchInds, j, diminution);
@@ -2490,8 +2843,8 @@ public class MEIExport {
 	/**
 	 * Extracts from the given Transcription the data needed to create an MEI file.
 	 * 
+	 * @param tab
 	 * @param trans
-	 * @param btp
 	 * @param mi
 	 * @param ki
 	 * @param tripletOnsetPairs
@@ -2502,7 +2855,8 @@ public class MEIExport {
 		List<Integer[]> mi, List<Integer[]> ki, List<Rational[]> tripletOnsetPairs) {
 		System.out.println("\r\n>>> getData() called");
 
-		Piece p = trans.getScorePiece();
+		ScorePiece p = trans.getScorePiece();
+//		Piece p = trans.getScorePiece();
 //		MetricalTimeLine mtl = trans.getScorePiece().getMetricalTimeLine();
 		ScoreMetricalTimeLine smtl = trans.getScorePiece().getScoreMetricalTimeLine();
 		int numVoices = p.getScore().size();
@@ -2646,6 +3000,8 @@ public class MEIExport {
 		}
 		Integer[] key = ki.get(0);
 		int numAlt = key[Transcription.KI_KEY];
+		int mode = key[Transcription.KI_MODE];
+
 		// Set initial bar and meter
 		Integer[] initMi = mi.get(0);
 		Rational meter = new Rational(initMi[Transcription.MI_NUM], initMi[Transcription.MI_DEN]);
@@ -2661,10 +3017,21 @@ public class MEIExport {
 		}
 
 		// Set grids 
-		Integer[][] mpcg = makeMIDIPitchClassGrid();
-		String[][] ag = makeAlterationGrid(mpcg);
-		String[][] pcg = makePitchClassGrid();
-
+		List<Object> grids = createGrids(numAlt, mode);
+		Integer[] mpcGrid = (Integer[]) grids.get(0);
+		String[] altGrid = (String[]) grids.get(1);
+		String[] pcGrid = (String[]) grids.get(2);
+//		Integer[][] mpcg = makeMIDIPitchClassGrid(mode);
+//		String[][] ag = makeAlterationGrid(mpcg);
+//		String[][] pcg = makePitchClassGrid(mode);
+//		int keyInd = numAlt + 7;
+//		Integer[] mpcGrid = mpcg[keyInd];
+//		String[] altGrid = ag[keyInd];
+//		String[] pcGrid = pcg[keyInd];
+		System.out.println("mpcGrid: " + Arrays.asList(mpcGrid));
+		System.out.println("altGrid: " + Arrays.asList(altGrid));
+		System.out.println("pcGrid:  " + Arrays.asList(pcGrid));
+		
 		List<List<String[]>> noteAttribPerVoiceStrings = new ArrayList<List<String[]>>();
 		List<List<Integer[]>> noteAttribPerVoiceInts = new ArrayList<List<Integer[]>>();
 		for (int i = 0; i < numVoices; i++) {
@@ -2673,10 +3040,23 @@ public class MEIExport {
 		}
 		List<Integer> naturalsAlreadyAdded = new ArrayList<Integer>();
 		List<Integer> accidentalsAlreadyAdded = new ArrayList<Integer>();
-		List<Integer> naturalsInEffect = new ArrayList<Integer>();
-		List<Integer> sharpsInEffect = new ArrayList<Integer>();
-		List<Integer> flatsInEffect = new ArrayList<Integer>();
+//		List<List<Integer>> naturalsPcInEffect = new ArrayList<List<Integer>>();
+//		List<List<Integer>> sharpsPcInEffect = new ArrayList<List<Integer>>();
+//		List<List<Integer>> flatsPcInEffect = new ArrayList<List<Integer>>();
+//		for (int i = 0; i < numVoices; i++) {
+//			naturalsPcInEffect.add(new ArrayList<Integer>());
+//			sharpsPcInEffect.add(new ArrayList<Integer>());
+//			flatsPcInEffect.add(new ArrayList<Integer>());
+//		}
+		List<Integer> doubleFlatsInEffect = new ArrayList<>();
+		List<Integer> flatsInEffect = new ArrayList<>();
+		List<Integer> naturalsInEffect = new ArrayList<>();
+		List<Integer> sharpsInEffect = new ArrayList<>();
+		List<Integer> doubleSharpsInEffect = new ArrayList<>();
 
+		String summ = "";
+		List<String> summL = new ArrayList<>();
+		List<String> pp = Arrays.asList(new String[]{"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B"});
 		for (int i = 0; i < bnp.length; i++) {
 			int iTab = -1;
 			if (btp != null) {
@@ -2726,13 +3106,20 @@ public class MEIExport {
 				barEnd = (onset.sub(metPos)).add(Transcription.getMeter(bar, mi));
 				naturalsAlreadyAdded.clear();
 				accidentalsAlreadyAdded.clear();
+//				for (int j = 0; j < numVoices; j++) {
+//					naturalsPcInEffect.get(j).clear();
+//					sharpsPcInEffect.get(j).clear();
+//					flatsPcInEffect.get(j).clear();
+//				}
+				doubleFlatsInEffect.clear();
+				flatsInEffect.clear();
 				naturalsInEffect.clear();
 				sharpsInEffect.clear();
-				flatsInEffect.clear();
+				doubleSharpsInEffect.clear();
 			}
 
 			int pitch = bnp[i][Transcription.PITCH];
-			int midiPitchClass = pitch % 12;
+			
 			Rational dur = 
 				new Rational(bnp[i][Transcription.DUR_NUMER], bnp[i][Transcription.DUR_DENOM]);
 //			Rational durRounded = round(new Rational(bnp[i][Transcription.DUR_NUMER], 
@@ -2750,24 +3137,37 @@ public class MEIExport {
 			}
 
 			Rational offset = onset.add(dur);
-			int keyInd = numAlt + 7;
-			Integer[] currMpcg = mpcg[keyInd];
-			String[] currAg = ag[keyInd];
-			String[] currPcg = pcg[keyInd];
+//			int keyInd = numAlt + 7;
+//			Integer[] currMpcg = mpcg[keyInd];
+//			String[] currAg = ag[keyInd];
+//			String[] currPcg = pcg[keyInd];
+//			System.out.println("currMpcg: " + Arrays.asList(currMpcg));
+//			System.out.println("currAg:   " + Arrays.asList(currAg));
+//			System.out.println("currPcg:  " + Arrays.asList(currPcg));
+			
 			if (verbose) {
 				System.out.println("voice                    " + voice);
 				System.out.println("bar                      " + bar);
 				System.out.println("pitch                    " + pitch);
-				System.out.println("midiPitchClass           " + midiPitchClass);
+				System.out.println("midiPitchClass           " + (pitch % 12));
 				System.out.println("onset                    " + onset);
 				System.out.println("offset                   " + offset);
 				System.out.println("metPos                   " + metPos);
 				System.out.println("durRounded               " + dur);
 				System.out.println("barEnd                   " + barEnd);
-				System.out.println("currMpcg                 " + Arrays.asList(currMpcg));
-				System.out.println("currAg                   " + Arrays.asList(currAg));
-				System.out.println("currPcg                  " + Arrays.asList(currPcg));
-				System.out.println("------------------");
+				System.out.println("currMpcg                 " + Arrays.asList(mpcGrid));
+				System.out.println("currAg                   " + Arrays.asList(altGrid));
+				System.out.println("currPcg                  " + Arrays.asList(pcGrid));
+				System.out.println("------------------");	
+			}
+			if (!Arrays.asList(mpcGrid).contains(pitch % 12)) {
+				Rational mp = metPos;
+				mp.reduce();
+				System.out.println(pitch);
+				summ += pp.get(pitch % 12) + "(MIDI " + pitch + "), bar " + bar + ", voice " + voice + ", onset " + metPos + " not in key\r\n"; 
+				if (!summL.contains(pp.get(pitch % 12))) {
+					summL.add(pp.get(pitch % 12));
+				}
 			}
 
 			// Check for preceding rests
@@ -2983,93 +3383,319 @@ public class MEIExport {
 
 			// Notes
 			// 1. Set pname, accid, oct
-			String pname = "";
-			String accid = "";
+			List<List<Integer>> accidsInEffect = new ArrayList<>();
+			accidsInEffect.add(doubleFlatsInEffect);
+			accidsInEffect.add(flatsInEffect);
+			accidsInEffect.add(naturalsInEffect);
+			accidsInEffect.add(sharpsInEffect);
+			accidsInEffect.add(doubleSharpsInEffect);
+			List<Object> pitchSpell = spellPitch(
+				pitch, bar, onset, numAlt, mpcGrid, altGrid, pcGrid, accidsInEffect
+			);
+			String[] pa = (String[]) pitchSpell.get(0);
+			String pname = pa[0];
+			String accid = pa[1];
+//			String pname = "";
+//			String accid = "";
 			String oct = String.valueOf(getOctave(pitch));
-			// Find gridRowInd to determine pname
-			int gridRowInd = -1;
-			// No flat, sharp, or natural
-			if (Arrays.asList(currMpcg).contains(midiPitchClass)) {
-				gridRowInd = Arrays.asList(currMpcg).indexOf(midiPitchClass);
-				// TODO If the note restores a previously altered (flat/sharp/natural) note
-			}
-			// Flat, sharp, or natural
-			else {
-				List<Integer> keySigs = getMIDIPitchClassKeySigs(key);
-				// If natural (flats/sharps)
-				if (numAlt < 0 && keySigs.contains((pitch-1) % 12) ||
-					numAlt > 0 && keySigs.contains((pitch+1) % 12)) {
-					if (verbose) System.out.println("is natural");
-					// Only if the natural has not already been indicated in the bar
-					if (!naturalsInEffect.contains(midiPitchClass)) {
-						accid = "n";
-						naturalsInEffect.add(midiPitchClass);
-					}
-					// Natural for flat
-					if (keySigs.contains((pitch-1) % 12)) {
-						gridRowInd = Arrays.asList(currMpcg).indexOf((pitch-1) % 12);
-					}
-					// Natural for sharp
-					else if (keySigs.contains((pitch+1) % 12)) {
-						gridRowInd = Arrays.asList(currMpcg).indexOf((pitch+1) % 12);
-					}
-				}
-				// If accidental
-				else {
-					if (verbose) System.out.println("is accidental");
-					// Find pitch of next note of different pitch. If there is none, the voice
-					// ends with a sequence of the same pitches (i.e., with a repetition of 
-					// the last pitch), and nextPitch remains -1
-					NotationVoice nv = p.getScore().get(voice).get(0);
-					int nextPitch = -1;	
-					// If not last note
-					if (!(nv.get(nv.size()-1).getMetricTime().equals(onset))) {
-						for (int j = 0; j < nv.size(); j++) {
-							if (nv.get(j).getMetricTime().equals(onset)) {
-								int currNextPitch = nv.get(j+1).get(0).getMidiPitch();
-								if (currNextPitch != pitch) {
-									nextPitch = currNextPitch;
-									break;
-								}
-							}
-						}
-					}
-					// Sharps (if last note, assume sharp )
-					if ((nextPitch != -1 && nextPitch > pitch) || nextPitch == -1) {
-						if (verbose) System.out.println("is sharp");
-						gridRowInd = Arrays.asList(currMpcg).indexOf((pitch-1) % 12);
-						// Only if the accidental has not already been indicated in the bar
-						if (!sharpsInEffect.contains(midiPitchClass)) {
-							accid = "s";
-							// If pitch is already a sharp: double sharp
-							if (Arrays.asList(currMpcg).contains(midiPitchClass) && 
-								mpcSharps.contains(midiPitchClass)) {
-								accid = "x";
-							}
-							sharpsInEffect.add(midiPitchClass);
-						}
-					}
-					// Flats
-					else if (nextPitch != -1 && nextPitch < pitch) {
-						if (verbose) System.out.println("is flat");
-						gridRowInd = Arrays.asList(currMpcg).indexOf((pitch+1) % 12);
-						// Only if the accidental has not already been indicated in the bar
-						if (!flatsInEffect.contains(midiPitchClass)) {
-							accid = "f";
-							// If pitch is already a flat: double flat
-							if (Arrays.asList(currMpcg).contains(midiPitchClass) &&
-								mpcFlats.contains(midiPitchClass)) {
-								accid = "ff";
-							}
-							flatsInEffect.add(midiPitchClass);
-						}
-					}
-					else {
-						System.out.println("dit dus");
-					}
-				}
-			}
-			pname = String.valueOf(currPcg[gridRowInd]);
+			// Update accidLists
+			List<List<Integer>> aie = (List<List<Integer>>) pitchSpell.get(1);
+			doubleFlatsInEffect = aie.get(0);
+			flatsInEffect = aie.get(1);
+			naturalsInEffect = aie.get(2);
+			sharpsInEffect = aie.get(3);
+			doubleSharpsInEffect = aie.get(4);
+
+//			int midiPitchClass = pitch % 12;
+//			// No flat, sharp, or natural
+//			if (Arrays.asList(mpcGrid).contains(midiPitchClass)) {
+//				int pcInd = Arrays.asList(mpcGrid).indexOf(midiPitchClass);
+//				pname = String.valueOf(pcGrid[pcInd]);
+//				// If the note resets a previously altered (flat/sharp/natural) note: remove accidental
+//				// Previously flat or sharp: add natural
+//				if (flatsInEffect.contains(pitch-1)) {
+//					accid="n";
+//					flatsInEffect.remove(flatsInEffect.indexOf(pitch-1));
+//				}
+//				if (sharpsInEffect.contains(pitch+1)) {
+//					accid="n";
+//					sharpsInEffect.remove(sharpsInEffect.indexOf(pitch+1));
+//				}
+//				// Previously natural: add sharp or flat
+//				boolean isFlatInKey = altGrid[pcInd] == "f";
+//				boolean isSharpInKey = altGrid[pcInd] == "s";
+//				if (isFlatInKey && naturalsInEffect.contains(pitch+1)) {
+//					accid = "f";
+//					naturalsInEffect.remove(naturalsInEffect.indexOf(pitch+1));
+//				}
+//				if (isSharpInKey && naturalsInEffect.contains(pitch-1)) {
+//					accid = "s";
+//					naturalsInEffect.remove(naturalsInEffect.indexOf(pitch-1));
+//				}
+//			}
+//			// TODO münchen: move pitch spelling to own method
+//			// Flat, sharp, or natural
+//			else {
+////				if (bar == 29 && voice == 1 && metPos.equals(new Rational(7, 4))) {
+////					System.out.println(pitch);
+////					System.out.println(flatsInEffect);
+////					System.out.println(sharpsInEffect);
+////					System.out.println(naturalsInEffect);
+////					System.exit(0);
+////				}
+//				List<Integer> mpcKeySigs = getMIDIPitchClassKeySigs(numAlt/*key*/);
+//				// If natural (flats/sharps)
+//				if (numAlt < 0 && mpcKeySigs.contains((pitch-1) % 12) ||
+//					numAlt > 0 && mpcKeySigs.contains((pitch+1) % 12)) {
+//					if (verbose) System.out.println("is natural");
+//					// Only if the natural has not already been indicated for this specific pitch in the bar
+//					if (!naturalsInEffect.contains(pitch)) {
+//						accid = "n";
+//						naturalsInEffect.add(pitch);
+//					}
+//					// Natural for flat
+//					int pcInd = -1;
+//					if (mpcKeySigs.contains((pitch-1) % 12)) {
+//						pcInd = Arrays.asList(mpcGrid).indexOf((pitch-1) % 12);
+//					}
+//					// Natural for sharp
+//					else if (mpcKeySigs.contains((pitch+1) % 12)) {
+//						pcInd = Arrays.asList(mpcGrid).indexOf((pitch+1) % 12);
+//					}
+//					pname = String.valueOf(pcGrid[pcInd]);
+//				}
+//				// If accidental
+//				else {
+//					if (verbose) System.out.println("is accidental");
+//					// Find pitch of next note of different pitch. If there is none, the voice
+//					// ends with a sequence of the same pitches (i.e., with a repetition of 
+//					// the last pitch), and nextPitch remains -1
+//					NotationVoice nv = p.getScore().get(voice).get(0);
+//					int nextPitch = -1;	
+//					// If not last note
+//					if (!(nv.get(nv.size()-1).getMetricTime().equals(onset))) {
+//						for (int j = 0; j < nv.size() && nextPitch == -1; j++) {
+//							if (nv.get(j).getMetricTime().equals(onset)) {
+//								for (int k = j+1; k < nv.size(); k++) {
+//									int currNextPitch = nv.get(k).get(0).getMidiPitch();
+//									if (currNextPitch != pitch) {
+//										nextPitch = currNextPitch;
+//										break;
+//									}
+//								}
+//							}
+//						}
+//					}
+//					System.out.println("pitch: " + pitch);
+//					System.out.println("midiPitchClass: " + midiPitchClass);
+//					System.out.println("nextPitch: " + nextPitch);
+//					System.out.println("mpcGrid " + Arrays.asList(mpcGrid));
+//					System.out.println("altGrid " + Arrays.asList(altGrid));
+//					System.out.println("pcGrid  " + Arrays.asList(pcGrid));
+//					boolean nextIsInKey = Arrays.asList(mpcGrid).contains(nextPitch % 12);
+//					System.out.println("nextIsInKey " + nextIsInKey);
+//					// a. Direct leading tone (next different pitch is in-key and a semitone lower/higher)
+//					//    or last note in voice     
+//					if (nextIsInKey && (nextPitch == (pitch + 1) || nextPitch == (pitch - 1) || nextPitch == -1)) {
+//						// Sharps (if last note, assume sharp )
+//						if ((nextPitch != -1 && nextPitch == (pitch + 1)) || nextPitch == -1) {
+//							if (verbose) System.out.println("is sharp");
+//							// pname is pc of un-sharpened pitch
+//							int pcInd = Arrays.asList(mpcGrid).indexOf((pitch-1) % 12);
+//							pname = String.valueOf(pcGrid[pcInd]);
+//							// Only if the accidental has not already been indicated for this specific pitch in the bar
+//							if (!sharpsInEffect.contains(pitch)) {
+//								accid = "s";
+//								// If pitch is already a sharp: double sharp
+//								if (Arrays.asList(mpcGrid).contains(midiPitchClass) && 
+//									KEY_ACCID_MPC_SHARP.contains(midiPitchClass)) {
+//									accid = "x";
+//								}
+//								sharpsInEffect.add(pitch);
+//							}
+//						}
+//						// Flats
+//						else if (nextPitch != -1 && nextPitch == (pitch - 1)) {
+//							if (verbose) System.out.println("is flat");
+//							// pname is pc of un-flattened pitch
+//							int pcInd = Arrays.asList(mpcGrid).indexOf((pitch+1) % 12);
+//							pname = String.valueOf(pcGrid[pcInd]);
+//							// Only if the accidental has not already been indicated for this specific pitch in the bar
+//							if (!flatsInEffect.contains(pitch)) {
+//								accid = "f";
+//								// If pitch is already a flat: double flat
+//								if (Arrays.asList(mpcGrid).contains(midiPitchClass) &&
+//									KEY_ACCID_MPC_FLAT.contains(midiPitchClass)) {
+//									accid = "ff";
+//								}
+//								flatsInEffect.add(pitch);
+//							}
+//						}
+//					}
+//					// b. Not a direct leading tone
+//					else {
+//						boolean isNextOrSecondNextKeyAccid = false;
+//						boolean isLeadingToneForMinor = false;		
+//						System.out.println("bar   " + bar);
+//						System.out.println("voice " + voice);
+//						System.out.println(nextPitch);
+//						System.out.println(midiPitchClass);
+//						System.out.println(sharpsInEffect);
+//						// 1. If pitch is the next or second-next key accidental: spell as key accidental
+//						// Sharps
+//						if (numAlt > 0) {
+//							int indLastKeyAccid = KEY_ACCID_MPC_SHARP.indexOf(mpcKeySigs.get(mpcKeySigs.size()-1));
+//							for (int incr : new Integer[]{1, 2}) {
+//								if (KEY_ACCID_MPC_SHARP.get(indLastKeyAccid + incr) == midiPitchClass) {
+//									pname = KEY_ACCID_PC_SHARP.get(indLastKeyAccid + incr);
+//									// Only if the accidental has not already been indicated for this specific pitch in the bar
+//									if (!sharpsInEffect.contains(pitch)) {
+//										accid = "s";
+//										// If pitch is already a sharp: double sharp
+//										if (Arrays.asList(mpcGrid).contains(midiPitchClass) && 
+//											KEY_ACCID_MPC_SHARP.contains(midiPitchClass)) {
+//											accid = "x";
+//										}
+//										sharpsInEffect.add(pitch);
+//									}
+//									isNextOrSecondNextKeyAccid = true;
+//									break;
+//								}
+//							}
+//							
+//						}
+//						// Flats
+//						else if (numAlt < 0) {
+//							int indLastKeyAccid = KEY_ACCID_MPC_FLAT.indexOf(mpcKeySigs.get(mpcKeySigs.size()-1));
+//							for (int incr : new Integer[]{1, 2}) {
+//								if (KEY_ACCID_MPC_FLAT.get(indLastKeyAccid + incr) == midiPitchClass) {
+//									pname = KEY_ACCID_PC_FLAT.get(indLastKeyAccid + incr);
+//									// Only if the accidental has not already been indicated for this specific pitch in the bar
+//									if (!flatsInEffect.contains(pitch)) {
+//										accid = "f";
+//										// If pitch is already a flat: double flat
+//										if (Arrays.asList(mpcGrid).contains(midiPitchClass) &&
+//											KEY_ACCID_MPC_FLAT.contains(midiPitchClass)) {
+//											accid = "ff";
+//										}
+//										flatsInEffect.add(pitch);
+//									}
+//									isNextOrSecondNextKeyAccid = true;
+//									break;
+//								}
+//							}
+//						}
+//						// 2. If pitch is the leading tone for the minor parallel: spell as leading tone
+//						if (!isNextOrSecondNextKeyAccid) {
+//							int mpcMinor = KEY_SIG_MPCS.get(numAlt)[1];
+//							// Upper leading tone
+//							if (midiPitchClass == mpcMinor + 1) {
+//								pname = pcGrid[Arrays.asList(mpcGrid).indexOf(mpcMinor) + 1];
+//								// Only if the accidental has not already been indicated for this specific pitch in the bar
+//								if (!flatsInEffect.contains(pitch)) {
+//									accid = "f";
+//									// If pitch is already a flat: double flat
+//									if (Arrays.asList(mpcGrid).contains(midiPitchClass) &&
+//										KEY_ACCID_MPC_FLAT.contains(midiPitchClass)) {
+//										accid = "ff";
+//									}
+//									flatsInEffect.add(pitch);
+//								}
+//								isLeadingToneForMinor = true;
+//							}
+//							// Lower leading tone
+//							if (midiPitchClass == mpcMinor - 1) {
+//								pname = pcGrid[Arrays.asList(mpcGrid).indexOf(mpcMinor) - 1];
+//								// Only if the accidental has not already been indicated for this specific pitch in the bar
+//								if (!sharpsInEffect.contains(pitch)) {
+//									accid = "s";
+//									// If pitch is already a sharp: double sharp
+//									if (Arrays.asList(mpcGrid).contains(midiPitchClass) && 
+//										KEY_ACCID_MPC_SHARP.contains(midiPitchClass)) {
+//										accid = "x";
+//									}
+//									sharpsInEffect.add(pitch);
+//								}
+//								isLeadingToneForMinor = true;
+//							}
+//						}
+//						// 3. Else: spell as whichever flat of sharp has the earliest key accidental index, e.g.,
+//						//    - C# (2nd sharp) preferred over Db (4th flat)
+//						//    - Bb (1st flat) preferred over A# (5th sharp)) 
+//						if (!isNextOrSecondNextKeyAccid && !isLeadingToneForMinor) {
+//							int indInSharps = KEY_ACCID_MPC_SHARP.indexOf(midiPitchClass);
+//							int indInFlats = KEY_ACCID_MPC_FLAT.indexOf(midiPitchClass);
+//							System.out.println("la la la");
+//							System.out.println(bar);
+//							System.out.println(voice);
+//							System.out.println(midiPitchClass);
+//							System.out.println(indInFlats);
+//							System.out.println(indInSharps);
+//							if (indInSharps != indInFlats) {
+////								pname = pcGrid[Arrays.asList(mpcGrid).indexOf(
+////									(indInSharps < indInFlats ? midiPitchClass - 1 : midiPitchClass + 1))];
+////								accid = indInSharps < indInFlats ? "s" : "f";
+//								if (indInSharps < indInFlats) {
+//									pname = pcGrid[Arrays.asList(mpcGrid).indexOf(midiPitchClass - 1)];
+//									// Only if the accidental has not already been indicated for this specific pitch in the bar
+//									if (!sharpsInEffect.contains(pitch)) {
+//										accid = "s";
+//										// If pitch is already a sharp: double sharp
+//										if (Arrays.asList(mpcGrid).contains(midiPitchClass) && 
+//											KEY_ACCID_MPC_SHARP.contains(midiPitchClass)) {
+//											accid = "x";
+//										}
+//										sharpsInEffect.add(pitch);
+//									}
+//								}
+//								else {
+//									pname = pcGrid[Arrays.asList(mpcGrid).indexOf(midiPitchClass + 1)];
+//									// Only if the accidental has not already been indicated for this specific pitch in the bar
+//									if (!flatsInEffect.contains(pitch)) {
+//										accid = "f";
+//										// If pitch is already a flat: double flat
+//										if (Arrays.asList(mpcGrid).contains(midiPitchClass) &&
+//											KEY_ACCID_MPC_FLAT.contains(midiPitchClass)) {
+//											accid = "ff";
+//										}
+//										flatsInEffect.add(pitch);
+//									}
+//								}
+//							}
+//							else {
+//								if (numAlt > 0) {
+//									pname = pcGrid[Arrays.asList(mpcGrid).indexOf(midiPitchClass - 1)];
+//									// Only if the accidental has not already been indicated for this specific pitch in the bar
+//									if (!sharpsInEffect.contains(pitch)) {
+//										accid = "s";
+//										// If pitch is already a sharp: double sharp
+//										if (Arrays.asList(mpcGrid).contains(midiPitchClass) && 
+//											KEY_ACCID_MPC_SHARP.contains(midiPitchClass)) {
+//											accid = "x";
+//										}
+//										sharpsInEffect.add(pitch);
+//									}
+//								}
+//								else {
+//									pname = pcGrid[Arrays.asList(mpcGrid).indexOf(midiPitchClass + 1)];
+//									// Only if the accidental has not already been indicated for this specific pitch in the bar
+//									if (!flatsInEffect.contains(pitch)) {
+//										accid = "f";
+//										// If pitch is already a flat: double flat
+//										if (Arrays.asList(mpcGrid).contains(midiPitchClass) &&
+//											KEY_ACCID_MPC_FLAT.contains(midiPitchClass)) {
+//											accid = "ff";
+//										}
+//										flatsInEffect.add(pitch);
+//									}
+//								}
+//							}
+//						}
+//					}
+//				}
+//			}
+			
+//			pname = String.valueOf(pcGrid[pcInd]);
 			if (verbose) {
 				System.out.println("pname                    " + pname);
 				System.out.println("accid                    " + accid);
@@ -3182,8 +3808,6 @@ public class MEIExport {
 					// Add rest to fill up current bar (if applicable) 
 					Rational restCurrentBar = barEnd.sub(offset);
 					if (restCurrentBar.isGreater(Rational.ZERO)) {
-//						System.out.println("oeeeeeeeeeeeeeeee");
-//						System.out.println(voice);
 						Rational metPosRestCurrentBar = metPos.add(dur);
 //						Rational restCurrentBarTripletised = restCurrentBar;
 
@@ -3214,6 +3838,10 @@ public class MEIExport {
 			noteAttribPerVoiceStrings.get(voice).addAll(pitchOctAccTie);
 			noteAttribPerVoiceInts.get(voice).addAll(indBarOnsMpDurDots);
 		}
+		System.out.println("= * = * = * = * = * = * = * = * = * = * = * = * =");
+		System.out.println(summL);
+		System.out.println(summ);
+//		System.exit(0);
 
 		// Add unique IDs to all notes and rests
 		// Note: voice, bar, seq number in bar, pitch+oct, metPos, index in trans, index in tab)
@@ -3319,6 +3947,866 @@ public class MEIExport {
 		res.add(noteAttributesPerBarPerVoiceStr);		
 		return res;
 	}
+
+
+	public static List<Object> createGrids(int numAlt, int mode) {
+		Integer[][] mpcg = makeMIDIPitchClassGrid(mode);
+		String[][] ag = makeAlterationGrid(mpcg);
+		String[][] pcg = makePitchClassGrid(mode);
+		int keyInd = numAlt + 7;
+		Integer[] mpcGrid = mpcg[keyInd];
+		String[] altGrid = ag[keyInd];
+		String[] pcGrid = pcg[keyInd];
+
+		return Arrays.asList(new Object[]{mpcGrid, altGrid, pcGrid});
+	}
+
+
+	/**
+	 * Spells the given pitch, considering the given key signature as number of alterations. 
+	 * numAlt <= 0 indicates flats; numAlt > 0 indicates sharps (NB: Am/C is considered a key 
+	 * signature with zero flats.)
+	 * 
+	 * The method works only for key signatures with no more than five key accidentals (KA), i.e., 
+	 * key signatures without double flats or double sharps. However, alterations may occasionally 
+	 * lead to double sharps or flats.<br><br>
+	 * 
+	 * Sequence of determination
+	 * <ul>
+	 * <li>1. pitch is the next or second next KA.</li>
+	 * <li>2. pitch is a naturalised KA.</li>
+	 * <li>3. pitch is the upper or lower leading tone (ULT/LLT) for minor (or the minor parallel).</li>
+	 * <li>4. pitch is the raised third (R3) for minor (or the minor parallel).</li>
+	 * <li>5. pitch is raised sixth (R6) for minor (or the minor parallel).</li>
+	 * </ul>
+	 * 
+	 * This covers all non-in-key pitches within the octave. Examples
+	 * <ul>
+	 * <li>Am  (0b): A, Bb (1), B, C, C# (4), D, Eb (1), E, F, F# (5), G, G# (3), A</li>
+	 * <li>Dm  (1b): D, Eb (1), E, F, F# (4), G, Ab (1), A, Bb, B (2), C, C# (3), D</li>
+	 * <li>Gm  (2b): G, Ab (1), A, Bb, B (2), C, Db (1), D, Eb, E (2), F, F# (3), G</li>
+	 * <li>F#m (3#): F#, G (2), G#, A, A# (4), B, C (2), C#, D, D# (1), E, E# (3), F#</li>
+	 * </ul>
+	 *  
+	 * @param pitch
+	 * @param numAlt
+	 * @param mpcGrid
+	 * @param altGrid
+	 * @param pcGrid
+	 * @param accidsInEffect
+	 * @param bar
+	 * @param onset
+	 * @return A list containing
+	 *         <ul>
+	 *         <li>As element 0: a String[] containing pname and accid, in MEI terminology.</li>
+	 *         <li>As element 1: the updated <code>accidsInEffect</code> (if it is not <code>null</code>).</li>
+	 *         </ul>
+	 */
+	public static List<Object> spellPitch(int pitch, int bar, Rational onset, int numAlt, Integer[] mpcGrid, 
+		String[] altGrid, String[] pcGrid, List<List<Integer>> accidsInEffect) {
+		String pname = "";
+		String accid = "";
+
+		List<Integer> doubleFlatsInEffect = null;
+		List<Integer> flatsInEffect = null; 
+		List<Integer>  naturalsInEffect = null;
+		List<Integer> sharpsInEffect = null;
+		List<Integer> doubleSharpsInEffect = null;
+		if (accidsInEffect != null) {
+			doubleFlatsInEffect = accidsInEffect.get(0);
+			flatsInEffect = accidsInEffect.get(1);
+			naturalsInEffect = accidsInEffect.get(2);
+			sharpsInEffect = accidsInEffect.get(3);
+			doubleSharpsInEffect = accidsInEffect.get(4);
+		}
+
+		List<Integer> mpcGridList = Arrays.asList(mpcGrid);
+		int mpc = pitch % 12; // value is between and including [0, 11]
+		List<String> accids = Arrays.asList(new String[]{"ff", "f", "n", "s", "x"});
+		boolean considerContext = accidsInEffect != null && !accidsInEffect.contains(null);
+		boolean isMinor = mpcGrid[2] - mpcGrid[0] == 3 || Math.abs(mpcGrid[2] - mpcGrid[0]) == 9;
+
+		// Get the grids for the nominal major of minor (or the minor parallel), e.g., 
+		// E for Em/G; B for Bm/D; etc.		
+		Integer[] mpcGridNomMajOfMin = 
+			isMinor ? Arrays.copyOf(mpcGrid, mpcGrid.length) :
+			ArrayUtils.addAll(Arrays.copyOfRange(mpcGrid, 5, 7), Arrays.copyOfRange(mpcGrid, 0, 5));
+		mpcGridNomMajOfMin[2] = (mpcGridNomMajOfMin[2] + 1) % 12;
+		mpcGridNomMajOfMin[5] = (mpcGridNomMajOfMin[5] + 1) % 12;
+		mpcGridNomMajOfMin[6] = (mpcGridNomMajOfMin[6] + 1) % 12;
+		String[] altGridNomMajOfMin = 	
+			isMinor ? Arrays.copyOf(altGrid, altGrid.length) :
+			ArrayUtils.addAll(Arrays.copyOfRange(altGrid, 5, 7), Arrays.copyOfRange(altGrid, 0, 5));
+		altGridNomMajOfMin[2] = accids.get(accids.indexOf(altGridNomMajOfMin[2]) + 1);
+		altGridNomMajOfMin[5] = accids.get(accids.indexOf(altGridNomMajOfMin[5]) + 1);
+		altGridNomMajOfMin[6] = accids.get(accids.indexOf(altGridNomMajOfMin[6]) + 1);
+		String[] pcGridNomMajOfMin =
+			isMinor ? Arrays.copyOf(pcGrid, pcGrid.length) :
+			ArrayUtils.addAll(Arrays.copyOfRange(pcGrid, 5, 7), Arrays.copyOfRange(pcGrid, 0, 5));
+
+		// a. pitch is in key
+		if (mpcGridList.contains(mpc)) {
+			if (verbose) System.out.println("pitch is in key");
+			int pcInd = mpcGridList.indexOf(mpc);
+			pname = pcGrid[pcInd];
+			if (!considerContext) {
+				accid = altGrid[pcInd];
+			}
+			else {
+				// Previously double flat (but must be flat)
+				if (doubleFlatsInEffect.contains(pitch-1)) {
+					accid = "f";
+					doubleFlatsInEffect.remove(doubleFlatsInEffect.indexOf(pitch-1));
+				}
+				// Previously flat (but must be natural)
+				else if (flatsInEffect.contains(pitch-1)) {
+					accid = "n";
+					flatsInEffect.remove(flatsInEffect.indexOf(pitch-1));
+				}
+				// Previously natural (but must be flat)
+				else if (naturalsInEffect.contains(pitch+1) && altGrid[pcInd] == "f") {
+					accid = "f";
+					naturalsInEffect.remove(naturalsInEffect.indexOf(pitch+1));
+				}
+				// Previously natural (but must be sharp)
+				else if (naturalsInEffect.contains(pitch-1) && altGrid[pcInd] == "s") {
+					accid = "s";
+					naturalsInEffect.remove(naturalsInEffect.indexOf(pitch-1));
+				}
+				// Previously sharp (but must be natural)
+				else if (sharpsInEffect.contains(pitch+1)) {
+					accid = "n";
+					sharpsInEffect.remove(sharpsInEffect.indexOf(pitch+1));
+				}
+				// Previously double sharp (but must be sharp)
+				else if (doubleSharpsInEffect.contains(pitch+1)) {
+					accid = "f";
+					doubleSharpsInEffect.remove(doubleSharpsInEffect.indexOf(pitch+1));
+				}
+				// No accidental
+				else {
+					accid = "";
+				}
+			}
+		}
+		// b. pitch is not in key
+		else {
+			List<Integer> mpcKeySigs = getMIDIPitchClassKeySigs(numAlt);
+			boolean isNextOrSecondNextKA = false;
+			boolean isNaturalisedKA = false;
+			boolean isLLTForMinor = false;
+			boolean isR3ForMinor = false;
+
+			// 1. pitch is the next or second-next KA
+			// Flats
+			if (numAlt <= 0) {
+				System.out.println(mpcKeySigs);
+				System.out.println(numAlt);
+//				System.exit(0);
+				String alt = altGrid[mpcGridList.indexOf((mpc+1) % 12)];
+				int indLastKeyAccid = 
+					(numAlt == 0) ? -1 : KEY_ACCID_MPC_FLAT.indexOf(mpcKeySigs.get(mpcKeySigs.size()-1));
+				for (int incr : new Integer[]{1, 2}) {
+					if (KEY_ACCID_MPC_FLAT.get(indLastKeyAccid + incr) == mpc) {
+						if (verbose) System.out.println("pitch is next or second-next KA (flats)");
+						pname = KEY_ACCID_PC_FLAT.get(indLastKeyAccid + incr);
+						accid = accids.get(accids.indexOf(alt) - 1);
+						if (considerContext) {
+							// Since keys sigs with double KAs are not considered, accid can only be "f"
+							if (!flatsInEffect.contains(pitch)) {
+								flatsInEffect.add(pitch);	
+							}
+							else {
+								accid = "";
+							}
+						}
+						isNextOrSecondNextKA = true;
+						break;
+					}
+				}
+			}
+			// Sharps
+			else if (numAlt > 0) {
+				String alt = altGrid[mpcGridList.indexOf(((mpc-1) + 12) % 12)];
+				int indLastKeyAccid = 
+					(numAlt == 0) ? -1 : KEY_ACCID_MPC_SHARP.indexOf(mpcKeySigs.get(mpcKeySigs.size()-1));
+				for (int incr : new Integer[]{1, 2}) {
+					if (KEY_ACCID_MPC_SHARP.get(indLastKeyAccid + incr) == mpc) {
+						if (verbose) System.out.println("pitch is next or second-next KA (sharps)");
+						pname = KEY_ACCID_PC_SHARP.get(indLastKeyAccid + incr);
+						accid = accids.get(accids.indexOf(alt) + 1);
+						if (considerContext) {
+							// Since keys sigs with double KAs are not considered, accid can only be "s"
+							if (!sharpsInEffect.contains(pitch)) {
+								sharpsInEffect.add(pitch);
+							}
+							else {
+								accid = "";
+							}
+						}
+						isNextOrSecondNextKA = true;
+						break;
+					}
+				}
+			}
+			if (!isNextOrSecondNextKA) {
+				// 2. pitch is a naturalised KA
+				if (numAlt < 0 && mpcKeySigs.contains((pitch-1) % 12) ||
+					numAlt > 0 && mpcKeySigs.contains((pitch+1) % 12)) {
+					// Exception for LLT; continue to 3. below  
+					if (numAlt == 3 && mpc == 5 || numAlt == 4 && mpc == 0 || numAlt == 5 && mpc == 7) {
+						if (verbose) System.out.println("pitch is LLT (sharps) (hardcoded)");
+					}
+					else {
+						if (verbose) System.out.println("pitch is naturalised KA");
+						int pcInd = -1;
+						// Flats
+						if (numAlt < 0) {
+							if (mpcKeySigs.contains((pitch-1) % 12)) {
+								pcInd = mpcGridList.indexOf((pitch-1) % 12);
+							}
+						}
+						// Sharps
+						else {
+							if (mpcKeySigs.contains((pitch+1) % 12)) {
+								pcInd = mpcGridList.indexOf((pitch+1) % 12);
+							}
+						}
+						pname = pcGrid[pcInd];
+						accid = "n";
+						if (considerContext) {
+							// Since keys sigs with double KAs are not considered, accid can only be "n"
+							if (!naturalsInEffect.contains(pitch)) {
+								naturalsInEffect.add(pitch);
+							}
+							else { 
+								accid = "";
+							}
+						}
+						isNaturalisedKA = true;
+					}
+				}
+				if (!isNaturalisedKA) {
+					// 3. pitch is the upper or lower leading tone (ULT/LLT) for minor (or the minor parallel)
+					// a. The ULT case is fully covered above
+					//    - flats: the ULT is the next KA
+					//    - sharps: the ULT is the last KA, naturalised
+					// b. The LLT case is partly covered above
+					//	  - zero, one, or two flats: the LLT still has to be calculated
+					//    - three flats or more: the LLT is the third-last KA, naturalised   
+					//	  - one or two sharps: the LLT still has to be calculated
+					//    - three sharps or more: the LLT is the *enharmonic equivalent* of the
+					//      third-last KA, naturalised (E# = F; B# = C; Fx = G), and therefore 
+					//      caught at 2. above and hardcoded at 3.
+					if (mpc == mpcGridNomMajOfMin[mpcGridNomMajOfMin.length-1]) {
+						if (verbose) System.out.println("pitch is LLT for minor");
+						if (numAlt == 3 && mpc == 5 || numAlt == 4 && mpc == 0 || numAlt == 5 && mpc == 7) {
+							pname = numAlt == 3 ? "e" : (numAlt == 4 ? "b" : "f");
+							accid = numAlt == 3 ? "s" : (numAlt == 4 ? "s" : "x");
+						}
+						else {
+							pname = pcGridNomMajOfMin[pcGrid.length-1];
+							accid = altGridNomMajOfMin[pcGrid.length-1];
+							if (considerContext) {
+								// Since keys sigs with double KAs are not considered, accid can only be
+								// "n", "s", or "x"
+								if (accid.equals("n")) {
+									if (!naturalsInEffect.contains(pitch)) {
+										naturalsInEffect.add(pitch);
+									}
+									else { 
+										accid = "";
+									}
+								}
+								else if (accid.equals("s")) {
+									if (!sharpsInEffect.contains(pitch)) {
+										sharpsInEffect.add(pitch);
+									}
+									else {
+										accid = "";
+									}
+								}
+								else if (accid.equals("x")) {
+									if (!doubleSharpsInEffect.contains(pitch)) {
+										doubleSharpsInEffect.add(pitch);
+									}
+									else {
+										accid = "";
+									}
+								}
+							}
+							isLLTForMinor = true;
+						}
+					}
+					if (!isLLTForMinor) {
+						// 4. pitch is the raised third (R3) for minor (or the minor parallel)
+						//    This is partly covered above
+						//    - zero or one flats: the R3 still has to be calculated
+						//    - two flats or more: the R3 is the second-last KA, naturalised
+						//    - sharps: the R3 is the second-next KA
+						if (mpc == mpcGridNomMajOfMin[2]) {
+							if (verbose) System.out.println("pitch is R3 for minor");
+							pname = pcGridNomMajOfMin[2];
+							accid = altGridNomMajOfMin[2];
+							if (considerContext) {
+								// Since keys sigs with double KAs are not considered, accid can only be 
+								// "n" or "s"
+								if (accid.equals("n")) {
+									if (!naturalsInEffect.contains(pitch)) {
+										naturalsInEffect.add(pitch);
+									}
+									else {
+										accid = "";
+									}
+								}
+								else if (accid.equals("s")) {
+									if (!sharpsInEffect.contains(pitch)) {
+										sharpsInEffect.add(pitch);
+									}
+									else {
+										accid = "";
+									}
+								}
+							}
+							isR3ForMinor = true;							
+						}
+						if (!isR3ForMinor) {
+							// 5. pitch is the raised sixth (R6) for minor (or the minor parallel)
+							//    This is partly covered above
+							//    - zero flats: the R6 still has to be calculated
+							//    - one flat or more: the R6 is the last KA, naturalised
+							//    - sharps: the R6 is the next KA
+							if (mpc == mpcGridNomMajOfMin[5]) {
+								if (verbose) System.out.println("pitch is R6 for minor");
+								pname = pcGridNomMajOfMin[5];
+								accid = altGridNomMajOfMin[5];
+								if (considerContext) {
+									// Since keys sigs with double KAs are not considered, accid can only be
+									// "n" or "s"
+									if (accid.equals("n")) {	
+										if (!naturalsInEffect.contains(pitch)) {
+											naturalsInEffect.add(pitch);
+										}
+										else { 
+											accid = "";
+										}
+									}
+									else if (accid.equals("s")) {
+										if (!sharpsInEffect.contains(pitch)) {
+											sharpsInEffect.add(pitch);
+										}
+										else { 
+											accid = "";
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		String[] pa = new String[]{pname, accid};
+		return Arrays.asList(new Object[]{pa, accidsInEffect});
+	}
+
+
+	public static List<Object> spellPitchOLD(int pitch, int numAlt, Integer[] mpcGrid, String[] altGrid, 
+			String[] pcGrid, List<List<Integer>> accidsInEffect, NotationVoice nv, Rational onset) {
+			String pname = "";
+			String accid = "";
+
+			List<Integer> doubleFlatsInEffect = accidsInEffect.get(0);
+			List<Integer> flatsInEffect = accidsInEffect.get(1);
+			List<Integer> naturalsInEffect = accidsInEffect.get(2);
+			List<Integer> sharpsInEffect = accidsInEffect.get(3);
+			List<Integer> doubleSharpsInEffect = accidsInEffect.get(4);
+			
+			boolean considerContext = 
+				doubleFlatsInEffect != null && flatsInEffect != null && naturalsInEffect != null && 
+				sharpsInEffect != null && doubleSharpsInEffect != null;
+			boolean isMinor = mpcGrid[2] - mpcGrid[0] == 3 || Math.abs(mpcGrid[2] - mpcGrid[0]) == 9;
+			System.out.println(pitch % 12);
+			System.out.println(Arrays.asList(mpcGrid));
+			System.out.println(Arrays.asList(altGrid));
+			System.out.println(Arrays.asList(pcGrid));
+			
+			List<String> accids = Arrays.asList(new String[]{"ff", "f", "n", "s", "x"});
+			
+			Integer[] mpcGridNomMaj = null;
+			if (isMinor) {
+				// Get the nominal major 
+				mpcGridNomMaj = Arrays.copyOf(mpcGrid, mpcGrid.length);
+				mpcGridNomMaj[2] = (mpcGridNomMaj[2] + 1) % 12;
+				mpcGridNomMaj[5] = (mpcGridNomMaj[5] + 1) % 12;
+				mpcGridNomMaj[6] = (mpcGridNomMaj[6] + 1) % 12;
+			}
+			
+			List<Integer> mpcGridList = Arrays.asList(mpcGrid);
+			int mpc = pitch % 12;
+
+			// pitch is in key
+			if (mpcGridList.contains(mpc)) {
+				System.out.println("in key");
+				int pcInd = mpcGridList.indexOf(mpc);
+				pname = pcGrid[pcInd];
+				if (!considerContext) {
+					accid = altGrid[pcInd];
+				}
+				if (considerContext) {
+					// Previously double flat (but must be flat)
+					if (doubleFlatsInEffect.contains(pitch-1)) {
+						accid = "f";
+						doubleFlatsInEffect.remove(doubleFlatsInEffect.indexOf(pitch-1));
+					}
+					// Previously flat (but must be natural)
+					else if (flatsInEffect.contains(pitch-1)) {
+						accid = "n";
+						flatsInEffect.remove(flatsInEffect.indexOf(pitch-1));
+					}
+					// Previously natural (but must be flat)
+					else if (altGrid[pcInd] == "f" && naturalsInEffect.contains(pitch+1)) {
+						accid = "f";
+						naturalsInEffect.remove(naturalsInEffect.indexOf(pitch+1));
+					}
+					// Previously natural (but must be sharp)
+					else if (altGrid[pcInd] == "s" && naturalsInEffect.contains(pitch-1)) {
+						accid = "s";
+						naturalsInEffect.remove(naturalsInEffect.indexOf(pitch-1));
+					}
+					// Previously sharp (but must be natural)
+					else if (sharpsInEffect.contains(pitch+1)) {
+						accid = "n";
+						sharpsInEffect.remove(sharpsInEffect.indexOf(pitch+1));
+					}
+					// Previously double sharp (but must be sharp)
+					else if (doubleSharpsInEffect.contains(pitch+1)) {
+						accid = "f";
+						doubleSharpsInEffect.remove(doubleSharpsInEffect.indexOf(pitch+1));
+					}
+					// No accidental
+					else {
+						accid = "";
+					}
+				}
+			}
+			// pitch is not in key
+			else {
+				System.out.println("NOT in key");
+				List<Integer> mpcKeySigs = getMIDIPitchClassKeySigs(numAlt);
+				boolean isNaturalisedKA = false;
+				boolean isNextOrSecondNextKA = false;
+				boolean isLLTForMinor = false;
+								
+				// 1. If pitch is a naturalised key accidental (KA)
+				// NB: Since keys sigs with double flats/sharps are not considered, accid is 
+				// always "n" (and never "f" (from "ff") or "s" (from "ss"))
+				if (numAlt < 0 && mpcKeySigs.contains((pitch-1) % 12) ||
+					numAlt > 0 && mpcKeySigs.contains((pitch+1) % 12)) {
+					if (verbose) System.out.println("is naturalised KA");
+					int pcInd = -1;
+					// if-else needed to consistently spell double flats and sharps as naturalised KAs
+					// (see test examples for Bbm and G#m)
+					if (numAlt <= 0) {
+						// Natural for flat
+						if (mpcKeySigs.contains((pitch-1) % 12)) {
+							pcInd = mpcGridList.indexOf((pitch-1) % 12);
+						}
+						// Natural for sharp
+						else if (mpcKeySigs.contains((pitch+1) % 12)) {
+							pcInd = mpcGridList.indexOf((pitch+1) % 12);
+						}
+					}
+					else {
+						// Natural for sharp
+						if (mpcKeySigs.contains((pitch+1) % 12)) {
+							pcInd = mpcGridList.indexOf((pitch+1) % 12);
+						}
+						// Natural for flat
+						else if (mpcKeySigs.contains((pitch-1) % 12)) {
+							pcInd = mpcGridList.indexOf((pitch-1) % 12);
+						}
+					}
+					pname = pcGrid[pcInd];
+					if (!considerContext) {
+						accid = "n";
+					}
+					if (considerContext) {
+						// Only if the natural has not already been indicated for this specific pitch in the bar
+						if (!naturalsInEffect.contains(pitch)) {
+							accid = "n";
+							naturalsInEffect.add(pitch);
+						}
+					}
+					isNaturalisedKA = true;
+				}
+				// If not 1.: continue
+				if (!isNaturalisedKA) {
+//				else {
+					if (verbose) System.out.println("is accidentalised");
+
+//					// Find pitch of next note of different pitch. If there is none, the voice
+//					// ends with a sequence of the same pitches (i.e., with a repetition of 
+//					// the last pitch), and nextPitch remains -1
+//					int nextPitch = -1;	
+//					if (nv != null) {
+//						// If not last note
+//						if (!(nv.get(nv.size()-1).getMetricTime().equals(onset))) {
+//							for (int j = 0; j < nv.size() && nextPitch == -1; j++) {
+//								if (nv.get(j).getMetricTime().equals(onset)) {
+//									for (int k = j+1; k < nv.size(); k++) {
+//										int currNextPitch = nv.get(k).get(0).getMidiPitch();
+//										if (currNextPitch != pitch) {
+//											nextPitch = currNextPitch;
+//											break;
+//										}
+//									}
+//								}
+//							}
+//						}
+//					}
+//					boolean nextIsInKey = mpcGridList.contains(nextPitch % 12);
+//					// a. Direct leading tone (next different pitch is in-key and a semitone lower/higher)
+//					//    or last note in voice (do only if nv is not null)    
+//					if (nv != null && nextIsInKey && 
+//						(nextPitch == (pitch + 1) || nextPitch == (pitch - 1) || nextPitch == -1)) {
+//						// Sharps (if last note, assume sharp )
+//						if ((nextPitch != -1 && nextPitch == (pitch + 1)) || nextPitch == -1) {
+//							if (verbose) System.out.println("DLT, sharp");
+//							// pname is pc of un-sharpened pitch
+//							int pcInd = mpcGridList.indexOf((pitch-1) % 12);
+//							pname = pcGrid[pcInd];
+//							if (!considerContext) {
+//								accid = "s";
+//								// If pitch is already a sharp: double sharp
+//								if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_SHARP.contains(mpc)) {
+//									accid = "x";
+//								}
+//							}
+//							if (considerContext) {
+//								// Only if the accidental has not already been indicated for this specific pitch in the bar
+//								if (!sharpsInEffect.contains(pitch)) {
+//									accid = "s";
+//									// If pitch is already a sharp: double sharp
+//									if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_SHARP.contains(mpc)) {
+//										accid = "x";
+//									}
+//									sharpsInEffect.add(pitch);
+//								}
+//							}
+//						}
+//						// Flats
+//						else if (nextPitch != -1 && nextPitch == (pitch - 1)) {
+//							if (verbose) System.out.println("DLT, flat");
+//							// pname is pc of un-flattened pitch
+//							int pcInd = mpcGridList.indexOf((pitch+1) % 12);
+//							pname = String.valueOf(pcGrid[pcInd]);
+//							if (!considerContext) {
+//								accid = "f";
+//								// If pitch is already a flat: double flat
+//								if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_FLAT.contains(mpc)) {
+//									accid = "ff";
+//								}
+//							}
+//							if (considerContext) {
+//								// Only if the accidental has not already been indicated for this specific pitch in the bar
+//								if (!flatsInEffect.contains(pitch)) {
+//									accid = "f";
+//									// If pitch is already a flat: double flat
+//									if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_FLAT.contains(mpc)) {
+//										accid = "ff";
+//									}
+//									flatsInEffect.add(pitch);
+//								}
+//							}
+//						}
+//					}
+//					// b. Not a direct leading tone
+//					else {
+						 
+					// 2. If pitch is the next or second-next KA
+					// NB: It is assumed that double flats or double sharps are not needed, i.e., that the 
+					// key sigs used have no more than five KAs
+					// - Bb Eb Ab Db Gb Cb Fb
+					//   - 6 flats would require Fb and Bbb as next and second-next KA; 7 would require Bbb and Ebb; etc. 
+					// - F# C# G# D# A# E# B#
+					//   - 6 sharps would require B# and Fx as next and second-next KA; 7 would require Fx and Cx; etc.
+					// Flats (or no KA and minor)
+					if (numAlt < 0 || (numAlt == 0 && isMinor)) {
+						String alt = altGrid[mpcGridList.indexOf(mpc+1)];
+						int indLastKeyAccid = 
+							(numAlt == 0 && isMinor) ? -1 :
+							KEY_ACCID_MPC_FLAT.indexOf(mpcKeySigs.get(mpcKeySigs.size()-1));
+						for (int incr : new Integer[]{1, 2}) {
+							if (KEY_ACCID_MPC_FLAT.get(indLastKeyAccid + incr) == mpc) {
+								System.out.println("is KA, flat");
+								pname = KEY_ACCID_PC_FLAT.get(indLastKeyAccid + incr);
+								if (!considerContext) {
+									accid = accids.get(accids.indexOf(alt) - 1);
+//									accid = "f";
+//									// If pitch is already a flat: double flat
+//									if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_FLAT.contains(mpc)) {
+//										accid = "ff";
+//									}
+								}
+								if (considerContext) {
+									// Only if the accidental has not already been indicated for this specific pitch in the bar
+									if (!flatsInEffect.contains(pitch)) {
+										accid = accids.get(accids.indexOf(alt) - 1);
+//										accid = "f";
+//										// If pitch is already a flat: double flat
+//										if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_FLAT.contains(mpc)) {
+//											accid = "ff";
+//										}
+										// TODO add to correct list
+										flatsInEffect.add(pitch);
+									}
+								}
+								isNextOrSecondNextKA = true;
+								break;
+							}
+						}
+					}
+					// Sharps (or no KA and major)
+					else if (numAlt > 0 || (numAlt == 0 && !isMinor)) {
+						String alt = altGrid[mpcGridList.indexOf(mpc-1)];
+						int indLastKeyAccid = 
+							(numAlt == 0 && !isMinor) ? -1 :	
+							KEY_ACCID_MPC_SHARP.indexOf(mpcKeySigs.get(mpcKeySigs.size()-1));
+						for (int incr : new Integer[]{1, 2}) {
+							if (KEY_ACCID_MPC_SHARP.get(indLastKeyAccid + incr) == mpc) {
+								pname = KEY_ACCID_PC_SHARP.get(indLastKeyAccid + incr);
+								System.out.println("is KA, sharp");
+								if (!considerContext) {
+									accid = accids.get(accids.indexOf(alt) + 1);
+//									accid = "s";
+//									// If pitch is already a sharp: double sharp
+//									if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_SHARP.contains(mpc)) {
+//										accid = "x";
+//									}
+								}
+								if (considerContext) {
+									// Only if the accidental has not already been indicated for this specific pitch in the bar
+									if (!sharpsInEffect.contains(pitch)) {
+										accid = accids.get(accids.indexOf(alt) + 1);
+//										accid = "s";
+//										// If pitch is already a sharp: double sharp
+//										if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_SHARP.contains(mpc)) {
+//											accid = "x";
+//										}
+										// TODO add to correct list
+										sharpsInEffect.add(pitch);
+									}
+								}
+								isNextOrSecondNextKA = true;
+								break;
+							}
+						}	
+					}
+					// If not 2.: continue
+					if (!isNextOrSecondNextKA) {					
+//						int mpcMinor = KEY_SIG_MPCS.get(numAlt)[1];
+//						if (mpc == mpcMinor + 1) {
+//							System.out.println("is ULT");
+//							// If mpcMinor is not the last element of mpcGridList: take next
+//							if (mpcGridList.indexOf(mpcMinor) != (mpcGridList.size() - 1)) {
+//								pname = pcGrid[mpcGridList.indexOf(mpcMinor) + 1];
+//							}
+//							// Else: next is first element
+//							else {
+//								pname = pcGrid[0];
+//							}
+//							if (!considerContext) {
+//								accid = "f";
+//								// If pitch is already a flat: double flat
+//								if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_FLAT.contains(mpc)) {
+//									accid = "ff";
+//								}
+//							}
+//							if (considerContext) {
+//								// Only if the accidental has not already been indicated for this specific pitch in the bar
+//								if (!flatsInEffect.contains(pitch)) {
+//									accid = "f";
+//									// If pitch is already a flat: double flat
+//									if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_FLAT.contains(mpc)) {
+//										accid = "ff";
+//									}
+//									flatsInEffect.add(pitch);
+//								}
+//							}
+//							isLeadingToneForMinor = true;
+//						}
+						
+						// 3. If pitch is the lower leading tone (LLT) for the minor parallel
+						// NB: the upper leading tone (ULT) for minor is always covered above
+						//     - in case of flats, ULT is next KA: Bb for Am, Eb for Dm; Ab for Gm; Db for Cm; ...
+						//     - in case of sharps, ULT is last KA naturalised: F for Em; C for Bm; G for F#m; ...
+						// NB2: double flats (for ULT) and double sharps (for LLT) will be caught (wrongly!) above 
+						//      as naturalised KA, e.g.,
+						//      - Cb in Bbm will be caught as B
+						//      - Fx in G#m will be caught as G
+						if (isMinor && mpc == mpcGridNomMaj[mpcGridNomMaj.length-1]) {
+//						if (mpc == mpcMinor - 1) {
+							System.out.println("is LLT");
+							pname = pcGrid[pcGrid.length-1];
+							String alt = altGrid[pcGrid.length-1];
+							
+//							// If mpcMinor is not the first element of mpcGridList: take previous
+//							if (mpcGridList.indexOf(mpcMinor) != 0) {
+//								pname = pcGrid[mpcGridList.indexOf(mpcMinor) - 1];
+//							}
+//							// Else: previous is last element
+//							else {
+//								pname = pcGrid[mpcGridList.size() - 1];
+//							}
+							if (!considerContext) {
+								accid = accids.get(accids.indexOf(alt) + 1);
+//								accid = "s";
+//								// If pitch is already a sharp: double sharp
+//								if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_SHARP.contains(mpc)) {
+//									accid = "x";
+//								}
+							}
+							if (considerContext) {
+								// Only if the accidental has not already been indicated for this specific pitch in the bar
+								if (!sharpsInEffect.contains(pitch)) {
+									accid = accids.get(accids.indexOf(alt) + 1);
+//									accid = "s";
+//									// If pitch is already a sharp: double sharp
+//									if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_SHARP.contains(mpc)) {
+//										accid = "x";
+//									}
+									// TODO add to correct list
+									sharpsInEffect.add(pitch);
+								}
+							}
+							isLLTForMinor = true;
+						}
+						// If not 3.: continue
+						if (!isLLTForMinor) {
+							// 4. If pitch is 
+						}
+					}
+						// 3. Else: spell as whichever flat or sharp has the earliest key accidental index, e.g.,
+						//    - C# (2nd sharp) preferred over Db (4th flat)
+						//    - Bb (1st flat) preferred over A# (5th sharp)) 
+						if (!isNextOrSecondNextKA && !isLLTForMinor) {
+							int indInSharps = KEY_ACCID_MPC_SHARP.indexOf(mpc);
+							int indInFlats = KEY_ACCID_MPC_FLAT.indexOf(mpc);
+//							System.out.println(bar);
+//							System.out.println(voice);
+//							System.out.println(mpc);
+//							System.out.println(indInFlats);
+//							System.out.println(indInSharps);
+							
+							// NB: The KA index in flats and sharps being the same occurs only in the case of 
+							// G# == Ab, and this accidental is always covered above
+							// - in case of no KA: G# is LLT for Am
+							// - in case of flats: Ab is second-next KA for Dm; next KA for Gm; KA for Cm and up 
+							// - in case of sharps: G# is second-next KA for G; next KA for D; KA for A and up
+							if (indInSharps != indInFlats) {
+//								pname = pcGrid[mpcGridList.indexOf(
+//									(indInSharps < indInFlats ? midiPitchClass - 1 : midiPitchClass + 1))];
+//								accid = indInSharps < indInFlats ? "s" : "f";
+								if (indInSharps < indInFlats) {
+									System.out.println("index in sharps earlier");
+									pname = pcGrid[mpcGridList.indexOf(mpc - 1)];
+									if (!considerContext) {
+										accid = "s";
+										// If pitch is already a sharp: double sharp
+										if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_SHARP.contains(mpc)) {
+											accid = "x";
+										}
+									}
+									if (considerContext) {
+										// Only if the accidental has not already been indicated for this specific pitch in the bar
+										if (!sharpsInEffect.contains(pitch)) {
+											accid = "s";
+											// If pitch is already a sharp: double sharp
+											if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_SHARP.contains(mpc)) {
+												accid = "x";
+											}
+											sharpsInEffect.add(pitch);
+										}
+									}
+								}
+								else {
+									System.out.println("index in flats earlier");
+									pname = pcGrid[mpcGridList.indexOf(mpc + 1)];
+									if (!considerContext) {
+										accid = "f";
+										// If pitch is already a flat: double flat
+										if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_FLAT.contains(mpc)) {
+											accid = "ff";
+										}
+									}
+									if (considerContext) {
+										// Only if the accidental has not already been indicated for this specific pitch in the bar
+										if (!flatsInEffect.contains(pitch)) {
+											accid = "f";
+											// If pitch is already a flat: double flat
+											if (mpcGridList.contains(mpc) &&
+												KEY_ACCID_MPC_FLAT.contains(mpc)) {
+												accid = "ff";
+											}
+											flatsInEffect.add(pitch);
+										}
+									}
+								}
+							}
+//							else {
+//								if (numAlt > 0) {
+//									System.out.println("index in flats/sharps same, KS has sharps");
+//									pname = pcGrid[mpcGridList.indexOf(mpc - 1)];
+//									if (!considerContext) {
+//										accid = "s";
+//										// If pitch is already a sharp: double sharp
+//										if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_SHARP.contains(mpc)) {
+//											accid = "x";
+//										}
+//									}
+//									if (considerContext) {
+//										// Only if the accidental has not already been indicated for this specific pitch in the bar
+//										if (!sharpsInEffect.contains(pitch)) {
+//											accid = "s";
+//											// If pitch is already a sharp: double sharp
+//											if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_SHARP.contains(mpc)) {
+//												accid = "x";
+//											}
+//											sharpsInEffect.add(pitch);
+//										}
+//									}
+//								}
+//								else {
+//									System.out.println("index in flats/sharps same, KS has flats");
+//									pname = pcGrid[mpcGridList.indexOf(mpc + 1)];
+//									if (!considerContext) {
+//										accid = "f";
+//										// If pitch is already a flat: double flat
+//										if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_FLAT.contains(mpc)) {
+//											accid = "ff";
+//										}
+//									}
+//									if (considerContext) {
+//										// Only if the accidental has not already been indicated for this specific pitch in the bar
+//										if (!flatsInEffect.contains(pitch)) {
+//											accid = "f";
+//											// If pitch is already a flat: double flat
+//											if (mpcGridList.contains(mpc) && KEY_ACCID_MPC_FLAT.contains(mpc)) {
+//												accid = "ff";
+//											}
+//											flatsInEffect.add(pitch);
+//										}
+//									}
+//								}
+//							}
+						}
+					}
+				}
+			
+			String[] pa = new String[]{pname, accid};
+			return Arrays.asList(new Object[]{pa, accidsInEffect});
+		}
 
 
 	/**
@@ -3800,23 +5288,23 @@ public class MEIExport {
 	 * A MIDI pitch class is a note's MIDI pitch % 12, and has one of the values [0-11]. 
 	 * 
 	 * Example Ab major: [10, 3, 8, 1] (= Bb, Eb, Ab, Dd)
-	 * Example A major: [6, 1 8] (= F#, C#, G#)
+	 * Example A major: [6, 1, 8] (= F#, C#, G#)
 	 * 
 	 * @param key
 	 * @return
 	 */
 	// TESTED
-	static List<Integer> getMIDIPitchClassKeySigs(Integer[] key) {
+	static List<Integer> getMIDIPitchClassKeySigs(int numAlt/*Integer[] key*/) {
 		List<Integer> mpcKeySigs = new ArrayList<Integer>();
 		
-		int numAlt = key[Transcription.KI_KEY];
+//		int numAlt = key[Transcription.KI_KEY];
 		// Flats
 		if (numAlt < 0) {
-			mpcKeySigs.addAll(mpcFlats.subList(0, -numAlt));
+			mpcKeySigs.addAll(KEY_ACCID_MPC_FLAT.subList(0, -numAlt));
 		}
 		// Sharps
 		else if (numAlt > 0) {
-			mpcKeySigs.addAll(mpcSharps.subList(0, numAlt));
+			mpcKeySigs.addAll(KEY_ACCID_MPC_SHARP.subList(0, numAlt));
 		}
 		
 		return mpcKeySigs;
@@ -3831,24 +5319,33 @@ public class MEIExport {
 	 * Example C major: [0, 2, 4, 5, 7, 9, 11]
 	 * Example A major: [9, 11, 1, 2, 4, 6, 8]
 	 * 
+	 * @param mode
 	 * @return
 	 */
 	// TESTED
-	static Integer[][] makeMIDIPitchClassGrid() {
-		List<Integer> semiTones = Arrays.asList(new Integer[]{2, 2, 1, 2, 2, 2, 1});
+	static Integer[][] makeMIDIPitchClassGrid(int mode) {
+		List<Integer> semitones = Arrays.asList(new Integer[]{2, 2, 1, 2, 2, 2, 1});
 		
-		Integer[][] keyGrid = new Integer[keys.size()][7];
-		for (int i = 0; i < keys.size(); i++) {
-			int currBeginPitch = keys.get(i)[1];
+		Integer[][] mpcGrid = new Integer[KEY_SIG_MPCS.size()][7];
+		int i = 0;
+		for (Entry<Integer, Integer[]> entry : KEY_SIG_MPCS.entrySet()) {
+			int currBeginPitch = entry.getValue()[0];
 			List<Integer> asList = new ArrayList<Integer>();
 			asList.add(currBeginPitch);
-			for (int j = 0; j < semiTones.size()-1; j++) {
-				asList.add((asList.get(j) + semiTones.get(j)) % 12);
+			for (int j = 0; j < semitones.size()-1; j++) {
+				asList.add((asList.get(j) + semitones.get(j)) % 12);
 			}
-//			Collections.sort(asList);
-			keyGrid[i] = asList.toArray(new Integer[asList.size()]);
+			mpcGrid[i] = asList.toArray(new Integer[asList.size()]);
+			i++;
 		}
-		return keyGrid;
+		if (mode == 1) {
+			for (int j = 0; j < mpcGrid.length; j++) {
+				mpcGrid[j] = ArrayUtils.addAll(
+					Arrays.copyOfRange(mpcGrid[j], 5, 7), Arrays.copyOfRange(mpcGrid[j], 0, 5)
+				);
+			}
+		}
+		return mpcGrid;
 	}
 
 
@@ -3863,9 +5360,10 @@ public class MEIExport {
 	// TESTED
 	static String[][] makeAlterationGrid(Integer[][] MIDIPitchClassGrid) {
 		List<Integer> diatonicPitchCl = Arrays.asList(new Integer[]{0, 2, 4, 5, 7, 9, 11});
-		String[][] altGrid = new String[keys.size()][7];
-		for (int i = 0; i < keys.size(); i++) {
-			int currKey = keys.get(i)[0];
+		String[][] altGrid = new String[KEY_SIG_MPCS.size()][7];
+		int i = 0;
+		for (Entry<Integer, Integer[]> entry : KEY_SIG_MPCS.entrySet()) {
+			int currKey = entry.getKey();
 			String alt = "s";
 			if (currKey < 0) {
 				alt = "f";
@@ -3902,7 +5400,8 @@ public class MEIExport {
 					}
 				}
 			}
-			altGrid[i] = asList.toArray(new String[asList.size()]); 
+			altGrid[i] = asList.toArray(new String[asList.size()]);
+			i++;
 		}
 		return altGrid;
 	}
@@ -3914,10 +5413,11 @@ public class MEIExport {
 	 * A pitch class is a note's nominal pitch, and has one of the values 
 	 * ["c", "d", "e", "f", "g", "a", "b"].  
 	 * 
+	 * @mode 
 	 * @return
 	 */
 	// TESTED
-	static String[][] makePitchClassGrid() {
+	static String[][] makePitchClassGrid(int mode) {
 		String[] pitchCl = new String[]{"c", "d", "e", "f", "g", "a", "b"};		
 		List<String> pitchClasses = new ArrayList<String>();
 		for (String s : pitchCl) {
@@ -3925,18 +5425,25 @@ public class MEIExport {
 		}
 
 		int fromInd = 0;
-		String[][] pitchClassGrid = new String[keys.size()][7];
-		for (int i = 0; i < keys.size(); i++) {
+		String[][] pcGrid = new String[KEY_SIG_MPCS.size()][7];
+		for (int i = 0; i < KEY_SIG_MPCS.size(); i++) {
 			// Reorder pitchClasses: split at fromIdex and paste the first part after the second
 			List<String> asList = 
 				new ArrayList<String>(pitchClasses.subList(fromInd, pitchClasses.size())); 
 			List<String> secondHalf = pitchClasses.subList(0, fromInd);
 			asList.addAll(secondHalf);
-			pitchClassGrid[i] = asList.toArray(new String[asList.size()]);
+			pcGrid[i] = asList.toArray(new String[asList.size()]);
 			// Increment fromInd to be the index of the note a fifth higher
 			fromInd = (fromInd + 4) % 7;
 		}
-		return pitchClassGrid;
+		if (mode == 1) {
+			for (int j = 0; j < pcGrid.length; j++) {
+				pcGrid[j] = ArrayUtils.addAll(
+					Arrays.copyOfRange(pcGrid[j], 5, 7), Arrays.copyOfRange(pcGrid[j], 0, 5)
+				);
+			}
+		}
+		return pcGrid;
 	}
 
 
@@ -4813,13 +6320,13 @@ public class MEIExport {
 	}
 
 
-	private List<String[][]> combine() {
+	private List<String[][]> combine(int mode) {
 		List<String[][]> combined = new ArrayList<String[][]>();
-		Integer[][] mpcg = makeMIDIPitchClassGrid();
+		Integer[][] mpcg = makeMIDIPitchClassGrid(mode);
 		String[][] ag = makeAlterationGrid(mpcg);
-		String[][] pcg = makePitchClassGrid();
+		String[][] pcg = makePitchClassGrid(mode);
 		
-		for (int i = 0; i < keys.size(); i++) {
+		for (int i = 0; i < KEY_SIG_MPCS.size(); i++) {
 			String[][] curr = new String[3][7];
 			// MIDI pitch classes
 			 

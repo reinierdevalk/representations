@@ -40,7 +40,9 @@ public class TabImport {
 	}
 	
 	private static final String TAB_LETTERS = "abcdefghiklmnopq";
-	private static final String COURSE_NUMBERS = "123456789"; 
+	private static final String COURSE_NUMBERS = "0123456789"; 
+	private static final List<String> DBL_DIGITS = Arrays.asList("10", "11", "12");
+	private static final List<String> SGL_DIGITS = Arrays.asList("x", "y", "z");
 	private static final Map<String, String> RHYTHM_SYMBOLS;
 	static { RHYTHM_SYMBOLS = new LinkedHashMap<String, String>();
 		RHYTHM_SYMBOLS.put(" ", ""); // TODO why this?
@@ -294,6 +296,16 @@ public class TabImport {
 		List<String> meters = new ArrayList<>();
 		List<Integer> onsets = new ArrayList<>();
 		String[] tabwords = tc.split("\r\n");
+		// TODO deal properly with fingering dots following a tabword
+		for (int i = 0; i < tabwords.length; i++) {
+			String tabword = tabwords[i];
+			while (tabword.endsWith(".")) {
+				tabword = tabword.substring(0, tabword.lastIndexOf("."));
+				tabwords[i] = tabword;
+				System.out.println("new tabword = " + tabword);
+			}
+		}
+
 		// tripletActive is set to true when the first tabword of a triplet group is encountered,
 		// and set to false again when the first barline following the triplet group is encountered
 		// NB: triplets are assumed to be always followed by a barline TODO
@@ -302,7 +314,6 @@ public class TabImport {
 		for (int i = 0; i < tabwords.length; i++) {
 			String tabword = tabwords[i];
 			System.out.println("tabword = " + tabword);
-
 			String asTbp = "";
 			// A rhythmGroup is either a single RS or a group of beamed RS
 			int durCurrRhythmGroup = 0; // TODO only used to add to totalDur, which is not used
@@ -681,6 +692,8 @@ public class TabImport {
 	public static String ascii2tbp(String ascii) {
 		// Make encoding
 		List<List<String>> systemContents = getSystemContents(getSystems(ascii));
+		System.out.println("ccccccccccccccccccccccccccc");
+		systemContents.get(0).forEach(s -> System.out.println(s));
 		StringBuffer enc = getEncoding(systemContents);
 
 		// Make metadataString
@@ -870,10 +883,8 @@ public class TabImport {
 	 */
 	private static List<String[][]> getSystems(String s) {
 		List<String[][]> systems = new ArrayList<String[][]>();
-		
+
 		String[] lines = s.split("\r\n");
-//		String[] lines = ToolBox.readTextFile(f).split("\r\n");
-		
 		int numCourses = 0;
 		for (String line : lines) {
 			if (line.contains("|-") && !line.contains("Triplet")) {
@@ -884,7 +895,7 @@ public class TabImport {
 					break;
 				}
 			}
-		} 
+		}
 
 		int staffHeight = numCourses + 2; // +1 for line with rhythm signs; +1 for line with meter
 		for (int i = 0; i < lines.length; i++) {
@@ -910,14 +921,35 @@ public class TabImport {
 					}
 					// Add line to staff
 					for (int k = firstCharInd; k < currLine.length(); k++) {
-						staff[j][k-firstCharInd] = currLine.substring(k, k+1);
+						String currSym = currLine.substring(k, k+1);
+						// Meter/rhythm signs lines
+						if (j == 0 || j == 1) {
+							staff[j][k-firstCharInd] = currSym;
+						}
+						// Courses lines
+						else {
+							String symToAdd = currSym;
+							// Fret case: check for double-digit frets 
+							if (COURSE_NUMBERS.contains(currSym)) {
+								String nextSym = 
+									k < (currLine.length() - 1) ? currLine.substring(k+1, k+2) : null;
+								if (nextSym != null && COURSE_NUMBERS.contains(nextSym)) {
+									symToAdd = SGL_DIGITS.get(DBL_DIGITS.indexOf(currSym + nextSym));
+								}
+							}
+							staff[j][k-firstCharInd] = symToAdd;
+							// If appropriate: adapt nextSym to staff line segment
+							if (!currSym.equals(symToAdd)) {
+								staff[j][(k-firstCharInd) + 1] = "-";
+								k++;
+							}
+						}
 					}		
 				}
 				systems.add(staff);
 				i += (numCourses - 1);
 			}
 		}
-
 		return systems;
 	}
 
@@ -932,101 +964,218 @@ public class TabImport {
 	private static List<List<String>> getSystemContents(List<String[][]> systems) {
 		List<List<String>> allChords = new ArrayList<List<String>>();
 
-		String firstChord = null;
+		boolean hasTuningAlts = ToolBox.getItemsAtIndex(Arrays.asList(systems.get(0)), 1).contains("#");
+		boolean letters = false;
+		boolean numbers = false;
+		String nums = "0123456789";
 		for (String[][] system : systems) {
-			// Slice into chords
-			List<String> systemChords = new ArrayList<String>();			
-			for (int i = 0; i < system[0].length; i++) {
-				String currSlice = "";
-				for (int j = 0; j < system.length; j++) {
-					currSlice += system[j][i];
-				}
-				boolean isTuningSlice = true;
-				for (int j = 2; j < currSlice.length(); j++) { // start at 2 to skip meter and RS lines 
-					if (!TUNING_VOCAB.contains(currSlice.subSequence(j, j+1))) {
-						isTuningSlice = false;
-						break;
-					}
-				}
+			String[] l = system[0];
+			String[] meters = String.join("", l).trim().replaceAll(" +", " ").split(" ");
+			int meterInd = 0;
 
-				// Check for meter
-				String meter = "";
-				if ("123456789".contains(currSlice.substring(0, 1)) && 
-					!(system[0][i-1].equals("/") || system[0][i-2].equals("/"))) {	
-					// Add two chars before and after i to meter
-					for (int k = -2; k <= 2; k++) {
-						meter += (system[0][i+k]).trim();
-					}
-					currSlice = meter;
+			// Slice into slices
+			List<String> systemChords = new ArrayList<String>();
+			// Each system starts with tuning slice + alterations slice (if applicable) + barline slice 
+			int start = hasTuningAlts ? 3 : 2;
+			for (int i = start; i < l.length; i++) {
+				// A slice consists of eight elements: a meter line, a RS line, and six course lines
+				String currSlice = 
+					String.join("", ToolBox.getItemsAtIndex(Arrays.asList(system), i));
+
+				// Check if the first element of currSlice is the first char of a meter
+				boolean isSglDigitMeter = l[i-1].equals(" ") && nums.contains(l[i]) && l[i+1].equals("/");
+				boolean isDblDigitMeter = nums.contains(l[i]) && nums.contains(l[i+1]) && l[i+2].equals("/");
+				String meter = null;
+				if (isSglDigitMeter || isDblDigitMeter) {
+					meter = meters[meterInd];
+					meterInd++;
 				}
-				
-				// Remove meter line
-				if (!currSlice.equals(meter)) {
+//				if ("123456789".contains(currSlice.substring(0, 1)) && 
+//					!(system[0][i-1].equals("/") || system[0][i-2].equals("/"))) { // true if number is in count, not unit
+//					// Reconstruct meter; allow double digits in both count and unit 
+//					for (int k = -2; k <= 3; k++) {
+//						meter += (system[0][i+k]).trim();
+//					}
+//					currSlice = meter;
+//				}
+				// Add meter
+				if (meter != null) {
+					systemChords.add(meter);
+				}
+				// Add currSlice (if not an empty segment)
+				else {
+					// Remove meter line element from currSlice
+//					if (!currSlice.equals(meter)) {
 					currSlice = currSlice.substring(1, currSlice.length());
-				}
-				
-				// Add to systemChords (but not tuning, any slice with sharps after tuning, or empty segment)
-				if (!isTuningSlice && !currSlice.contains("##") && !currSlice.equals(EMPTY_SEGMENT)) {
-					if (firstChord == null && !currSlice.equals(BARLINE_EVENT)) {
-						firstChord = currSlice;
+//					}
+
+					if (!currSlice.equals(EMPTY_SEGMENT)) {
+						systemChords.add(currSlice);
 					}
-					systemChords.add(currSlice);
+//					System.out.println(isRest);
+//					if (
+//						!isTuningSlice && 
+//						!currSlice.contains("#") && 
+//						!currSlice.equals(EMPTY_SEGMENT)) {
+//						&& !isRest) {
+//						// Determine firstChord
+//						if (firstChord == null && !currSlice.equals(BARLINE_EVENT) && !currSlice.equals(meter) && !isRest) {
+//							// Do not include RS or empty RS space
+//							firstChord = currSlice.substring(1, currSlice.length());
+//							System.out.println("firstChord = " + firstChord);
+//						}
+//						systemChords.add(currSlice);
+//					}
+				
+					// If still needed: determine letters/numbers
+					if (letters == false && numbers == false) {
+						boolean isRest = 
+							!currSlice.startsWith(" ") && !currSlice.startsWith(".") && 
+							currSlice.substring(1).equals(EMPTY_SEGMENT.trim());
+						if (!currSlice.equals(BARLINE_EVENT) && meter == null && !isRest) {
+							for (char c : currSlice.toCharArray()) {
+								String s = Character.toString(c);
+								if (TAB_LETTERS.contains(s) || COURSE_NUMBERS.contains(s)) {
+									letters = TAB_LETTERS.contains(s);
+									numbers = COURSE_NUMBERS.contains(s);
+									break;
+								}
+							}
+						}
+					}
 				}
 			}
 			allChords.add(systemChords);
 		}
-
-		// Determine tuning and tss
-		List<String> tuningStringIndiv = new ArrayList<>();
-		for (String[] s : systems.get(0)) {		
-			String indiv = s[0];
-			// Skip meter and RS lines
-			if (!indiv.equals(" ")) {
-				if (s[1].equals("#")) {
-					indiv += s[1];
-				}
-				tuningStringIndiv.add(indiv);
+		
+		// Determine tuning and TabSymbolSet
+		String tuningStr = "";
+		String tuningStrRev = "";
+		String tuningSlice = 
+			String.join("", ToolBox.getItemsAtIndex(Arrays.asList(systems.get(0)), 0)).substring(2);
+		if (!hasTuningAlts) {	
+			tuningStr = tuningSlice;
+			tuningStrRev = new StringBuilder(tuningStr).reverse().toString();
+		}
+		else {
+			String alterationsSlice = 
+				String.join("", ToolBox.getItemsAtIndex(Arrays.asList(systems.get(0)), 1)).substring(2);
+			for (int i = 0; i < tuningSlice.length(); i++) {
+				tuningStr += (tuningSlice.substring(i, i+1) + alterationsSlice.substring(i, i+1)).trim();
+				int ind = (tuningSlice.length() - 1) - i;
+				tuningStrRev += (tuningSlice.substring(ind, ind+1) + alterationsSlice.substring(ind, ind+1)).trim();
 			}
 		}
-		String tuningString = "";
-		String tuningStringRev = "";
-		for (int i = 0; i < tuningStringIndiv.size(); i++) {
-			tuningString += tuningStringIndiv.get(i);
-			tuningStringRev += tuningStringIndiv.get((tuningStringIndiv.size()-1)-i);
-		}
-		
-		String tuning = null;
-		String tss = null;
+
+//		// Determine the first tablature symbol (a letter or a number)
+//		String symbol = null;
+//		for (int i = 0; i < systems.get(0)[0].length && symbol == null; i++) {
+//			String currSlice = String.join("", ToolBox.getItemsAtIndex(Arrays.asList(systems.get(0)), i));
+//			currSlice = currSlice.substring(2);
+//			System.out.println(">" + currSlice + "<");
+//			if (!currSlice.equals(tuningSlice) && !currSlice.equals(afterTuningSlice) && 
+//				!currSlice.equals(BARLINE_EVENT.trim()) && !currSlice.equals(EMPTY_SEGMENT.trim())) {
+//				System.out.println("yes");
+//				for (char c : currSlice.toCharArray()) {
+//					System.out.println(Character.toString(c));
+//					if (TAB_LETTERS.contains(Character.toString(c)) || COURSE_NUMBERS.contains(Character.toString(c))) {
+//						symbol = Character.toString(c);
+//						break;
+//					}
+//				}
+//			}
+//		}
+
+		String tuning = "";
+		String tss = "";
 		for (Tuning t : Tuning.values()) {	
 			// currTuning lists the tuning for the courses in the sequence (6)-(1)
+			// tuningStr lists the tuning for the courses top to bottom as on the page, i.e., in the 
+			// sequence (6)-(1) for Italian tablature, and (1)-(6) for French and Spanish tablature
 			String currTuning = String.join("", t.getCourses());
-			
-			// It tuningString equals currTuning
-			if (currTuning.equals(tuningString)) {
+			List<String> coursesEnh = t.getCoursesEnh();
+			String currTuningEnh = coursesEnh == null ? "" : String.join("", coursesEnh);
+			if (tuningStr.equals(currTuning) || tuningStr.equals(currTuningEnh)) {
 				tuning = t.getName();
 				tss = TabSymbolSet.ITALIAN.getName();
 				break;
 			}
-			// If tuningString equals the reverse of currTuning
-			else if (currTuning.equals(tuningStringRev)) {
+			else if (tuningStrRev.equals(currTuning) || tuningStrRev.equals(currTuningEnh)) {
 				tuning = t.getName();
-				for (int i = 0; i < firstChord.length(); i++) {
-					String symb = firstChord.substring(i, i+1);
-					if (!symb.equals("-")) {
-						if (COURSE_NUMBERS.contains(symb)) {
-							tss = TabSymbolSet.SPANISH.getName(); 
-							break;
-						}
-						else if (TAB_LETTERS.contains(symb)) {
-							tss = TabSymbolSet.FRENCH.getName();
-							break;
-						}			
-					}
-				}
+				tss = numbers ? TabSymbolSet.SPANISH.getName() : TabSymbolSet.FRENCH.getName();
+				break;
 			}
 		}
-		allChords.add(Arrays.asList(new String[]{tss, tuning}));
+		System.out.println(tss);
+		System.out.println(tuning);
 
+//		// Determine tuning and tss
+//		List<String> tuningStringIndiv = new ArrayList<>();
+//		for (String[] s : systems.get(0)) {		
+//			String indiv = s[0];
+//			// Skip meter and RS lines
+//			if (!indiv.equals(" ")) {
+//				if (s[1].equals("#")) {
+//					indiv += s[1];
+//				}
+//				tuningStringIndiv.add(indiv);
+//			}
+//		}
+//		String tuningString = "";
+//		String tuningStringRev = "";
+//		for (int i = 0; i < tuningStringIndiv.size(); i++) {
+//			tuningString += tuningStringIndiv.get(i);
+//			tuningStringRev += tuningStringIndiv.get((tuningStringIndiv.size()-1)-i);
+//		}
+//		
+////		String tuning = null;
+////		String tss = null;
+//		System.out.println(tuningString);
+//		System.out.println(tuningStringRev);
+//		System.out.println("===");
+//		for (Tuning t : Tuning.values()) {	
+//			// currTuning lists the tuning for the courses in the sequence (6)-(1)
+//			String currTuning = String.join("", t.getCourses());
+//			List<String> coursesEnh = t.getCoursesEnh();
+//			String currTuningEnh = coursesEnh == null ? "" : String.join("", coursesEnh);
+//			
+//			System.out.println(currTuning);
+//			System.out.println(currTuningEnh);
+//			
+//			// It tuningString equals currTuning
+//			if (tuningString.equals(currTuning) || tuningString.equals(currTuningEnh)) {
+////			if (currTuning.equals(tuningString) || currTuningEnh.equals(tuningString)) {
+//				tuning = t.getName();
+//				tss = TabSymbolSet.ITALIAN.getName();
+//				break;
+//			}
+//			// If tuningString equals the reverse of currTuning
+//			else if (tuningStringRev.equals(currTuning) || tuningStringRev.equals(currTuningEnh)) {
+////			else if (currTuning.equals(tuningStringRev) || currTuningEnh.equals(tuningStringRev)) {
+//				tuning = t.getName();
+//				System.out.println(firstChord);
+////				System.exit(0);
+//				for (int i = 0; i < firstChord.length(); i++) {
+//					String symb = firstChord.substring(i, i+1);
+//					if (!symb.equals("-")) {
+//						if (COURSE_NUMBERS.contains(symb)) {
+//							tss = TabSymbolSet.SPANISH.getName(); 
+//							break;
+//						}
+//						else if (TAB_LETTERS.contains(symb)) {
+//							tss = TabSymbolSet.FRENCH.getName();
+//							break;
+//						}			
+//					}
+//				}
+//			}
+//		}
+		allChords.add(Arrays.asList(new String[]{tss, tuning}));
+		System.out.println(tss);
+		for (List<String> s : allChords) {
+			System.out.println(s);
+		}
+//		System.exit(0);
 		return allChords;
 	}
 	
@@ -1040,7 +1189,9 @@ public class TabImport {
 	 * @return
 	 */
 	private static StringBuffer getEncoding(List<List<String>> systemContents) {		
-		int numCourses = systemContents.get(0).get(0).length() - 1;
+		int numCourses = EMPTY_SEGMENT.trim().length(); 
+//		int numCourses = systemContents.get(0).get(0).length() - 1;
+		
 		String tss = systemContents.get(systemContents.size()-1).get(0);
 		
 		StringBuffer tabPlusEncoding = new StringBuffer("");
@@ -1061,8 +1212,8 @@ public class TabImport {
 				}
 				// Non-barline or repeat dots event
 				if (!(event.equals(BARLINE_EVENT) || event.equals(REPEAT_DOTS_EVENT))) {
+					System.out.println("iehievent = " + event);
 					if (!tieActive) {
-//						System.out.println("-- " + event);
 						String tabPlusChord;
 						// MS
 						if (event.contains("/")) {
@@ -1112,14 +1263,19 @@ public class TabImport {
 							String chordOnly = event.substring(1);
 							if (tss.equals(TabSymbolSet.ITALIAN.getName())) {
 								chordOnly = new StringBuilder(chordOnly).reverse().toString();
-							}				
+							}
+							System.out.println("CO = " + chordOnly);
 							char[] chordAsArr = chordOnly.toCharArray();
 							for (int k = numCourses-1; k >= 0; k--) {
 								char currChar = chordAsArr[k];
 								if (currChar != '-') {
-									tabPlusChord += String.valueOf(currChar) + String.valueOf(k+1) + ss;
+									String s = String.valueOf(currChar);
+									String fret = !SGL_DIGITS.contains(s) ? s : DBL_DIGITS.get(SGL_DIGITS.indexOf(s));
+									String course = String.valueOf(k+1);
+									tabPlusChord += fret + course + ss;
 								}
 							}
+							System.out.println(tabPlusChord);
 						}
 						tabPlusChord += space + ss;
 						currSystem.append(tabPlusChord);
@@ -1174,5 +1330,4 @@ public class TabImport {
 		}
 		return tabPlusEncoding;
 	}
-
 }

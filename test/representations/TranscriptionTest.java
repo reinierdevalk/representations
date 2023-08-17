@@ -476,25 +476,30 @@ public class TranscriptionTest extends TestCase {
 	public void testMakeMeterInfo() {
 		// Tablature case (always not diminuted)
 		Transcription t1 = new Transcription();
-		Tablature tab1 = new Tablature(encodingTestpiece, true);
-		t1.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab1, Type.GROUND_TRUTH);
+		Tablature tab1 = new Tablature(encodingTestpiece);
+		t1.setType(Type.FROM_FILE);
+		t1.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab1, null);
 		t1.setName();
 		Transcription t2 = new Transcription();
-		Tablature tab2 = new Tablature(encodingTestGetMeterInfo, true);
-		t2.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo)), tab2, Type.GROUND_TRUTH);
+		Tablature tab2 = new Tablature(encodingTestGetMeterInfo);
+		t2.setType(Type.FROM_FILE);
+		t2.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo)), tab2, null);
 		t2.setName();
 		// Non-tablature case 
 		// a. Not diminuted
 		Transcription t3 = new Transcription();
-		t3.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, Type.GROUND_TRUTH);
+		t3.setType(Type.FROM_FILE);
+		t3.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, null);
 		t3.setName();
 		Transcription t4 = new Transcription();
-		t4.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo)), null, Type.GROUND_TRUTH);
+		t4.setType(Type.FROM_FILE);
+		t4.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo)), null, null);
 		t4.setName();
 		// b. Diminuted
 		Transcription t5 = new Transcription();
-		Tablature tab6 = new Tablature(encodingTestGetMeterInfo, true);
-		t5.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo)), tab6, Type.MAPPING);
+		Tablature tab5 = new Tablature(encodingTestGetMeterInfo);
+		t5.setType(Type.FROM_FILE);
+		t5.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo)), null, tab5.getMeterInfo());
 		t5.setName();
 
 		List<Integer[]> expected = Arrays.asList(
@@ -524,7 +529,8 @@ public class TranscriptionTest extends TestCase {
 			new Integer[]{2, 2, 9, 9, 99, 16}
 		);
 
-		List<Integer[]> actual = t1.makeMeterInfo();
+		List<Integer[]> actual = new ArrayList<>();
+		actual.addAll(t1.makeMeterInfo());
 		actual.addAll(t2.makeMeterInfo());
 		actual.addAll(t3.makeMeterInfo());
 		actual.addAll(t4.makeMeterInfo());
@@ -543,34 +549,40 @@ public class TranscriptionTest extends TestCase {
 	public void testMakeKeyInfo() {
 		// Tablature case (always not diminuted, always transposed)
 		Transcription t1 = new Transcription();
-		Tablature tab1 = new Tablature(encodingTestpiece, true); // transposes by -2
-		t1.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab1, Type.GROUND_TRUTH);
+		Tablature tab1 = new Tablature(encodingTestpiece);
+		t1.setType(Type.FROM_FILE);
+		t1.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab1, null);
 		t1.setName();
 		t1.setMeterInfo();
 		Transcription t2 = new Transcription();
-		Tablature tab2 = new Tablature(encodingTestGetMeterInfo, true); // transposes by 0
-		t2.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo)), tab2, Type.GROUND_TRUTH);
+		Tablature tab2 = new Tablature(encodingTestGetMeterInfo);
+		t2.setType(Type.FROM_FILE);
+		t2.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo)), tab2, null);
 		t2.setName();
 		t2.setMeterInfo();
 		// Non-tablature case (always not transposed)
 		// a. Not diminuted
 		Transcription t3 = new Transcription();
-		t3.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, Type.GROUND_TRUTH);
+		t3.setType(Type.FROM_FILE);
+		t3.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, null);
 		t3.setName();
 		t3.setMeterInfo();
 		Transcription t4 = new Transcription();
-		t4.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo)), null, Type.GROUND_TRUTH);
+		t4.setType(Type.FROM_FILE);
+		t4.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo)), null, null);
 		t4.setName();
 		t4.setMeterInfo();
 		// b. Diminuted
 		Transcription t5 = new Transcription();
-		Tablature tab5 = new Tablature(encodingTestGetMeterInfo, true);
-		t5.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo)), tab5, Type.MAPPING);
+		Tablature tab5 = new Tablature(encodingTestGetMeterInfo);
+		t5.setType(Type.FROM_FILE);
+		t5.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo)), null, tab5.getMeterInfo());
 		t5.setName();
 		t5.setMeterInfo();
 
 		List<Integer[]> expected = Arrays.asList(
-			new Integer[]{-2, 1, 1, 3, 0, 1}, // A minor --> G minor (because of A-tuning)
+			new Integer[]{0, 1, 1, 3, 0, 1},
+//			new Integer[]{-2, 1, 1, 3, 0, 1}, // A minor --> G minor (because of A-tuning)
 			//
 			new Integer[]{0, 0, 1, 3, 0, 1}, // C major 
 			new Integer[]{3, 1, 4, 5, 19, 4}, // F# minor
@@ -663,7 +675,8 @@ public class TranscriptionTest extends TestCase {
 	public void testMakeUnhandledNotes() {
 		// Tablature/non-tablature case
 		Transcription t = new Transcription();
-		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, Type.GROUND_TRUTH);
+		t.setType(Type.FROM_FILE);
+		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, null);
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
@@ -683,7 +696,8 @@ public class TranscriptionTest extends TestCase {
 	public void testFindVoice() {
 		// Tablature/non-tablature case
 		Transcription t = new Transcription();
-		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, Type.GROUND_TRUTH);
+		t.setType(Type.FROM_FILE);
+		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, null);
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
@@ -799,8 +813,9 @@ public class TranscriptionTest extends TestCase {
 	public void testHandleSNUs() {
 		// Tablature case
 		Transcription t = new Transcription();
-		Tablature tab = new Tablature(encodingTestpiece, true);
-		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, Type.GROUND_TRUTH);
+		Tablature tab = new Tablature(encodingTestpiece);
+		t.setType(Type.FROM_FILE);
+		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, null);
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
@@ -828,7 +843,7 @@ public class TranscriptionTest extends TestCase {
 		// Tablature case
 		Transcription t = new Transcription(midiTestpiece, encodingTestpiece);
 //		Transcription t = new Transcription();
-		Tablature tab = new Tablature(encodingTestpiece, true);
+		Tablature tab = new Tablature(encodingTestpiece);
 //		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, Type.GROUND_TRUTH);
 //		t.setName();
 //		t.setMeterInfo();
@@ -837,7 +852,7 @@ public class TranscriptionTest extends TestCase {
 		List<Note> argNotes = getUnhandledNotesFromPiece(t.getScorePiece(), "testpiece");
 
 		List<Integer[][]> expected = new ArrayList<Integer[][]>(Collections.nCopies(16, null));
-		expected.set(3, new Integer[][]{{63, 3, 4}});
+		expected.set(3, new Integer[][]{{65, 3, 4}});
 
 		List<Integer[][]> actual = new ArrayList<Integer[][]>();
 		List<List<TabSymbol>> tablatureChords = tab.getChords();
@@ -867,8 +882,9 @@ public class TranscriptionTest extends TestCase {
 	public void testHandleCourseCrossings() {
 		// Tablature case
 		Transcription t = new Transcription();
-		Tablature tab = new Tablature(encodingTestpiece, true);
-		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, Type.GROUND_TRUTH);
+		Tablature tab = new Tablature(encodingTestpiece);
+		t.setType(Type.FROM_FILE);
+		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, null);
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
@@ -897,11 +913,12 @@ public class TranscriptionTest extends TestCase {
 
 	public void testCheckAlignment() { // TODO remove?
 		// Tablature case
-		Tablature tab = new Tablature(encodingTestpiece, true);
+		Tablature tab = new Tablature(encodingTestpiece);
 		
 		// One note lacking in Transcription
 		Transcription t1 = new Transcription();
-		t1.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, Type.GROUND_TRUTH);
+		t1.setType(Type.FROM_FILE);
+		t1.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, null);
 		t1.setName();
 		t1.setMeterInfo();
 		t1.setKeyInfo();
@@ -912,7 +929,8 @@ public class TranscriptionTest extends TestCase {
 		
 		// Pitch misalignment
 		Transcription t2 = new Transcription();
-		t2.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, Type.GROUND_TRUTH);
+		t2.setType(Type.FROM_FILE);
+		t2.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, null);
 		t2.setName();
 		t2.setMeterInfo();
 		t2.setKeyInfo();
@@ -923,7 +941,8 @@ public class TranscriptionTest extends TestCase {
 		
 		// Onset time misalignment
 		Transcription t3 = new Transcription();
-		t3.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, Type.GROUND_TRUTH);
+		t3.setType(Type.FROM_FILE);
+		t3.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, null);
 		t3.setName();
 		t3.setMeterInfo();
 		t3.setKeyInfo();
@@ -934,7 +953,8 @@ public class TranscriptionTest extends TestCase {
 		
 		// Correctly aligned
 		Transcription t4 = new Transcription();
-		t4.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, Type.GROUND_TRUTH);
+		t4.setType(Type.FROM_FILE);
+		t4.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, null);
 		t4.setName();
 		t4.setMeterInfo();
 		t4.setKeyInfo();
@@ -966,7 +986,8 @@ public class TranscriptionTest extends TestCase {
 	public void testHandleUnisons() {
 		// Non-tablature case
 		Transcription t = new Transcription();
-		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, Type.GROUND_TRUTH);
+		t.setType(Type.FROM_FILE);
+		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, null);
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
@@ -1037,19 +1058,21 @@ public class TranscriptionTest extends TestCase {
 	public void testMakeNotes() {
 		// Tablature case
 		Transcription t1 = new Transcription();
-		Tablature tab = new Tablature(encodingTestpiece, true);
-		t1.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, Type.GROUND_TRUTH);
+		Tablature tab = new Tablature(encodingTestpiece);
+		t1.setType(Type.FROM_FILE);
+		t1.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, null);
 		t1.setName();
 		t1.setMeterInfo();
 		t1.setKeyInfo();
-		t1.setTaggedNotes(tab, Type.GROUND_TRUTH);
+		t1.setTaggedNotes(tab);
 		// Non-tablature case
 		Transcription t2 = new Transcription();
-		t2.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, Type.GROUND_TRUTH);
+		t2.setType(Type.FROM_FILE);
+		t2.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, null);
 		t2.setName();
 		t2.setMeterInfo();
 		t2.setKeyInfo();
-		t2.setTaggedNotes(null, Type.GROUND_TRUTH);
+		t2.setTaggedNotes(null);
 
 		List<List<Note>> expected = new ArrayList<>(); 
 		List<Note> expected1 = getHandledNotesFromPiece(t1.getScorePiece(), "testpiece", true);
@@ -1074,21 +1097,23 @@ public class TranscriptionTest extends TestCase {
 	public void testMakeVoiceLabels() {
 		// Tablature case
 		Transcription t1 = new Transcription();
-		Tablature tab = new Tablature(encodingTestpiece, true);
-		t1.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, Type.GROUND_TRUTH);
+		Tablature tab = new Tablature(encodingTestpiece);
+		t1.setType(Type.FROM_FILE);
+		t1.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, null);
 		t1.setName();
 		t1.setMeterInfo();
 		t1.setKeyInfo();
-		t1.setTaggedNotes(tab, Type.GROUND_TRUTH);
+		t1.setTaggedNotes(tab);
 		t1.setNotes();
 		t1.setChords();
 		// Non-tablature case
 		Transcription t2 = new Transcription();
-		t2.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, Type.GROUND_TRUTH);
+		t2.setType(Type.FROM_FILE);
+		t2.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, null);
 		t2.setName();
 		t2.setMeterInfo();
 		t2.setKeyInfo();
-		t2.setTaggedNotes(null, Type.GROUND_TRUTH);
+		t2.setTaggedNotes(null);
 		t2.setNotes();
 		t1.setChords();
 
@@ -1123,7 +1148,7 @@ public class TranscriptionTest extends TestCase {
 		// Tablature case
 		Transcription t1 = new Transcription(midiTestpiece, encodingTestpiece);
 //		Transcription t1 = new Transcription();
-		Tablature tab = new Tablature(encodingTestpiece, true);
+		Tablature tab = new Tablature(encodingTestpiece);
 //		t1.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, Type.GROUND_TRUTH);
 //		t1.setName();
 //		t1.setMeterInfo();
@@ -1170,12 +1195,13 @@ public class TranscriptionTest extends TestCase {
 	public void testMakeDurationLabels() {
 		// Tablature case
 		Transcription t = new Transcription();
-		Tablature tab = new Tablature(encodingTestpiece, true);
-		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, Type.GROUND_TRUTH);
+		Tablature tab = new Tablature(encodingTestpiece);
+		t.setType(Type.FROM_FILE);
+		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab, null);
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
-		t.setTaggedNotes(tab, Type.GROUND_TRUTH);
+		t.setTaggedNotes(tab);
 		t.setNotes();
 		t.setChords();
 		t.setVoiceLabels(null, true);
@@ -1215,7 +1241,7 @@ public class TranscriptionTest extends TestCase {
 
 	public void testMakeMinimumDurationLabels() {
 		// Tablature case
-		Tablature tab = new Tablature(encodingTestpiece, true);
+		Tablature tab = new Tablature(encodingTestpiece);
 
 		List<List<Double>> expected = Arrays.asList(
 			QUARTER, QUARTER, QUARTER, QUARTER, 
@@ -1252,12 +1278,13 @@ public class TranscriptionTest extends TestCase {
 	public void testMakeVoicesSNU() {
 		// Tablature case
 		Transcription t1 = new Transcription();
-		Tablature tab1 = new Tablature(encodingTestpiece, true);
-		t1.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab1, Type.GROUND_TRUTH);
+		Tablature tab1 = new Tablature(encodingTestpiece);
+		t1.setType(Type.FROM_FILE);
+		t1.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), tab1, null);
 		t1.setName();
 		t1.setMeterInfo();
 		t1.setKeyInfo();
-		t1.setTaggedNotes(tab1, Type.GROUND_TRUTH);
+		t1.setTaggedNotes(tab1);
 		t1.setNotes();
 		t1.setChords();
 		t1.setVoiceLabels(null, true);
@@ -1265,12 +1292,13 @@ public class TranscriptionTest extends TestCase {
 		t1.setDurationLabels(null);
 		t1.setMinimumDurationLabels(tab1);
 		Transcription t2 = new Transcription();
-		Tablature tab2 = new Tablature(encodingLasOn, true);
-		t2.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiLasOn)), tab2, Type.GROUND_TRUTH);
+		Tablature tab2 = new Tablature(encodingLasOn);
+		t2.setType(Type.FROM_FILE);
+		t2.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiLasOn)), tab2, null);
 		t2.setName();
 		t2.setMeterInfo();
 		t2.setKeyInfo();
-		t2.setTaggedNotes(tab2, Type.GROUND_TRUTH);
+		t2.setTaggedNotes(tab2);
 		t2.setNotes();
 		t2.setChords();
 		t2.setVoiceLabels(null, true);
@@ -1334,11 +1362,12 @@ public class TranscriptionTest extends TestCase {
 	public void testMakeVoicesUnison() {
 		// Non-tablature case
 		Transcription t = new Transcription();
-		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, Type.GROUND_TRUTH);
+		t.setType(Type.FROM_FILE);
+		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, null);
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
-		t.setTaggedNotes(null, Type.GROUND_TRUTH);
+		t.setTaggedNotes(null);
 		// Make the second unison note pair an EDU note pair with duration 1/4
 		TaggedNote tn16 = t.getTaggedNotes().get(16);
 		TaggedNote tn17 = t.getTaggedNotes().get(17);
@@ -1379,11 +1408,12 @@ public class TranscriptionTest extends TestCase {
 	public void testMakeVoicesEDU() {
 		// Non-tablature case
 		Transcription t = new Transcription();
-		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, Type.GROUND_TRUTH);
+		t.setType(Type.FROM_FILE);
+		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, null);
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
-		t.setTaggedNotes(null, Type.GROUND_TRUTH);
+		t.setTaggedNotes(null);
 		// Make the second unison note pair an EDU note pair with duration 1/4
 		TaggedNote tn16 = t.getTaggedNotes().get(16);
 		TaggedNote tn17 = t.getTaggedNotes().get(17);
@@ -1423,11 +1453,12 @@ public class TranscriptionTest extends TestCase {
 	public void testMakeVoicesIDU() {
 		// Non-tablature case
 		Transcription t = new Transcription();
-		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, Type.GROUND_TRUTH);
+		t.setType(Type.FROM_FILE);
+		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, null);
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
-		t.setTaggedNotes(null, Type.GROUND_TRUTH);
+		t.setTaggedNotes(null);
 		// Make the second unison note pair an EDU note pair with duration 1/4
 		TaggedNote tn16 = t.getTaggedNotes().get(16);
 		TaggedNote tn17 = t.getTaggedNotes().get(17);
@@ -1468,11 +1499,12 @@ public class TranscriptionTest extends TestCase {
 	public void testMakeBasicNoteProperties() {
 		// Non-tablature case
 		Transcription t = new Transcription();
-		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, Type.GROUND_TRUTH);
+		t.setType(Type.FROM_FILE);
+		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, null);
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
-		t.setTaggedNotes(null, Type.GROUND_TRUTH);
+		t.setTaggedNotes(null);
 		t.setNotes();
 		t.setChords();
 		t.setVoiceLabels(null, false);
@@ -1550,11 +1582,12 @@ public class TranscriptionTest extends TestCase {
 	public void testMakeNumberOfNewNotesPerChord() {
 		// Non-tablature case
 		Transcription t = new Transcription();
-		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, Type.GROUND_TRUTH);
+		t.setType(Type.FROM_FILE);
+		t.setScorePiece(new ScorePiece(MIDIImport.importMidiFile(midiTestpiece)), null, null);
 		t.setName();
 		t.setMeterInfo();
 		t.setKeyInfo();
-		t.setTaggedNotes(null, Type.GROUND_TRUTH);
+		t.setTaggedNotes(null);
 		t.setNotes();
 		t.setChords();
 		t.setVoiceLabels(null, false);
@@ -1870,7 +1903,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testAlignTabAndTransIndices() {
-		Tablature tablature = new Tablature(encodingTestpiece, false);
+		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece);
 		
 		List<List<List<Integer>>> expected = new ArrayList<>();
@@ -2005,7 +2038,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetTimePitchMatrix() {
-		Tablature tablature = new Tablature(encodingTestpiece, false);
+		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		Rational[][] expected = new Rational[39][3];
@@ -2197,7 +2230,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetNoteDensity() {
-		Tablature tablature = new Tablature(encodingTestpiece, false);
+		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<Integer> expected = Arrays.asList(new Integer[]{
@@ -3156,7 +3189,7 @@ public class TranscriptionTest extends TestCase {
 		for (int i = 0; i < fileNames.size(); i++) {
 			String piece = fileNames.get(i);
 			File enc = new File(prefixTab + piece + Encoding.EXTENSION);
-			Tablature tab = new Tablature(enc, false);
+			Tablature tab = new Tablature(enc);
 			Transcription t = new Transcription(new File(prefix + piece + MIDIImport.EXTENSION), enc);
 			actual.add(t.getImitativeVoiceEntries(
 				tab.getBasicTabSymbolProperties(), t.getDurationLabels(), null, voices.get(i), 
@@ -3465,7 +3498,7 @@ public class TranscriptionTest extends TestCase {
 		for (int i = 0; i < fileNames.size(); i++) {
 			String piece = fileNames.get(i);
 			File enc = new File(prefixTab + piece + Encoding.EXTENSION);
-			Tablature tab = new Tablature(enc, false);
+			Tablature tab = new Tablature(enc);
 			Transcription t = new Transcription(new File(prefix + piece + MIDIImport.EXTENSION), enc);
 			actual.add(t.getNonImitativeVoiceEntries(tab.getBasicTabSymbolProperties(), 
 				t.getDurationLabels(), null, voices.get(i), 3));
@@ -3474,7 +3507,7 @@ public class TranscriptionTest extends TestCase {
 		for (int i = 0; i < fileNames.size(); i++) {
 			String piece = fileNames.get(i);
 			File enc = new File(prefixTab + piece + Encoding.EXTENSION);
-			Tablature tab = new Tablature(enc, false);
+			Tablature tab = new Tablature(enc);
 			Transcription t = new Transcription(new File(prefix + piece + MIDIImport.EXTENSION), enc);
 			actual.add(t.getNonImitativeVoiceEntries(tab.getBasicTabSymbolProperties(), 
 				t.getMinimumDurationLabels(), null, voices.get(i), 3));
@@ -3770,7 +3803,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetNonUnisonNeighbourChord() {
-		Tablature tablature = new Tablature(encodingTestpiece, false);
+		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 		
 		// a. Previous
@@ -3891,7 +3924,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetChordInfo() {
-		Tablature tablature = new Tablature(encodingTestpiece, false);
+		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<List<List<Integer>>> expected = new ArrayList<List<List<Integer>>>();
@@ -4527,11 +4560,11 @@ public class TranscriptionTest extends TestCase {
  
     // Determine expected 
     Integer[][]expected = new Integer[Transcription.MAX_NUM_VOICES][2];
-    expected[0] = new Integer[]{62, 70};
-    expected[1] = new Integer[]{58, 67};
-    expected[2] = new Integer[]{55, 58};
-    expected[3] = new Integer[]{43, 55};
-    expected[4] = new Integer[]{43, 45};
+    expected[0] = new Integer[]{64, 72};
+    expected[1] = new Integer[]{60, 69};
+    expected[2] = new Integer[]{57, 60};
+    expected[3] = new Integer[]{45, 57};
+    expected[4] = new Integer[]{45, 47};
     	
     // Calculate actual
     Integer[][] actual = transcription.getLowestAndHighestPitchPerVoice();
@@ -4919,7 +4952,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetIndicesOfSustainedPreviousNotes() {
-		Tablature tablature = new Tablature(encodingTestpiece, true);
+		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
@@ -5035,25 +5068,25 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetPitchesOfSustainedPreviousNotesInChord() {
-		Tablature tablature = new Tablature(encodingTestpiece, true);
+		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
 		expected.add(Arrays.asList(new Integer[]{})); 
 		expected.add(Arrays.asList(new Integer[]{})); 
-		expected.add(Arrays.asList(new Integer[]{55, 70})); 
+		expected.add(Arrays.asList(new Integer[]{57, 72})); 
 		expected.add(Arrays.asList(new Integer[]{})); 
-		expected.add(Arrays.asList(new Integer[]{48, 57, 63})); 
+		expected.add(Arrays.asList(new Integer[]{50, 59, 65})); 
 		expected.add(Arrays.asList(new Integer[]{})); 
-		expected.add(Arrays.asList(new Integer[]{55})); 
-		expected.add(Arrays.asList(new Integer[]{55, 43, 67})); 
+		expected.add(Arrays.asList(new Integer[]{57})); 
+		expected.add(Arrays.asList(new Integer[]{57, 45, 69})); 
 		expected.add(Arrays.asList(new Integer[]{}));
-		expected.add(Arrays.asList(new Integer[]{43, 55, 62})); 
-		expected.add(Arrays.asList(new Integer[]{43, 55, 62})); 
-		expected.add(Arrays.asList(new Integer[]{43, 55, 62})); 
-		expected.add(Arrays.asList(new Integer[]{43, 55, 62})); 
-		expected.add(Arrays.asList(new Integer[]{43, 55, 62})); 
-		expected.add(Arrays.asList(new Integer[]{43, 55, 62}));
+		expected.add(Arrays.asList(new Integer[]{45, 57, 64})); 
+		expected.add(Arrays.asList(new Integer[]{45, 57, 64})); 
+		expected.add(Arrays.asList(new Integer[]{45, 57, 64})); 
+		expected.add(Arrays.asList(new Integer[]{45, 57, 64})); 
+		expected.add(Arrays.asList(new Integer[]{45, 57, 64})); 
+		expected.add(Arrays.asList(new Integer[]{45, 57, 64}));
 		expected.add(Arrays.asList(new Integer[]{}));
 
 		List<List<Integer>> actual = new ArrayList<List<Integer>>();
@@ -5119,7 +5152,7 @@ public class TranscriptionTest extends TestCase {
 	
 	
 	public void testGetVoicesOfSustainedPreviousNotesInChord() {
-		Tablature tablature = new Tablature(encodingTestpiece, true);
+		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
@@ -5791,7 +5824,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetVoiceCrossingInformationInChord() {
-		Tablature tablature = new Tablature(encodingTestpiece, false);
+		Tablature tablature = new Tablature(encodingTestpiece);
 
 		List<List<Integer>> voiceAssignments = getVoiceAssignments(true);
 
@@ -6040,292 +6073,617 @@ public class TranscriptionTest extends TestCase {
 
 
 	// OLD STUFF
-	public void testDetermineVoicesSNU() {
-		List<List<Double>> vl = new ArrayList<>();
-		vl.add(V_0); 
-		vl.add(V_1);
-		vl.add(Transcription.combineLabels(V_0, V_2));
-		vl.add(Transcription.combineLabels(V_0, V_2));
-		vl.add(Transcription.combineLabels(V_0, V_2));
-		vl.add(Transcription.combineLabels(V_0, V_2));
-
-		List<List<Double>> dl = new ArrayList<>();
-		dl.add(SIXTEENTH);
-		dl.add(EIGHTH);
-		dl.add(Transcription.combineLabels(EIGHTH, QUARTER));
-		dl.add(Transcription.combineLabels(EIGHTH, QUARTER));
-		dl.add(QUARTER);
-		dl.add(HALF);
-
-		List<Integer[]> vls = new ArrayList<>();
-		vls.add(null);
-		vls.add(null);
-		vls.add(new Integer[]{0, 2});
-		vls.add(new Integer[]{2, 0});
-		// NB: Doesn't happen in practice: the case where both voices have a note with the same 
-		// duration is treated like the case where the lowest voice has the note with the longest 
-		// duration -- meaning that vls would contain [2, 0] here
-		vls.add(new Integer[]{0, 2});
-		vls.add(new Integer[]{2, 0});
-
-		List<Integer[]> expected = new ArrayList<>();
-		expected.add(null);
-		expected.add(null);
-		// Different duration, voice 0 has longest note: voice 0 first
-		expected.add(new Integer[]{0, 2});
-		// Different duration, voice 2 has longest note: voice 2 first
-		expected.add(new Integer[]{2, 0});
-		// Same duration: always lowest voice first
-		expected.add(new Integer[]{2, 0});
-		// Same duration: always lowest voice first
-		expected.add(new Integer[]{2, 0});
-		
-		List<Integer[]> actual = Transcription.determineVoicesSNU(vl, dl, vls);
-		
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			if (expected.get(i) == null) {
-				assertEquals(expected.get(i), actual.get(i));
-			}
-			else {
-				assertEquals(expected.get(i).length, actual.get(i).length);
-				for (int j = 0; j < expected.get(i).length; j++) {
-					assertEquals(expected.get(i)[j], actual.get(i)[j]);
-				}
-			}
-		}	
-	}
-
-
-	public void testHandleCourseCrossingsOLD() {
-		Tablature tablature = new Tablature(encodingTestpiece, true);
-		Transcription transcription = new Transcription();
-		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
-		transcription.makeNoteSequence();
-		transcription.initialiseVoiceLabels(null); 
-		transcription.initialiseDurationLabels(null);
-		if (transcription.checkChords(tablature) == false) {
-			throw new RuntimeException("ERROR: Chord error (see console).");
-		}
-		transcription.handleSNUsOLD(tablature, Type.GROUND_TRUTH);
-
-		// a. NoteSequence
-		// NB: expectedNoteSeq cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes
-		// with the same pitch and onset time randomly
-		List<Note> expectedNotes = new ArrayList<Note>();
-		for (Note n : transcription.getNoteSequence()) {
-			expectedNotes.add(n);
-		}
-		expectedNotes.set(6, Transcription.createNote(72, new Rational(4, 4), new Rational(1, 4), null));
-		expectedNotes.set(7, Transcription.createNote(69, new Rational(4, 4), new Rational(1, 8), null));  
-		// b. Voice labels
-		List<List<Double>> expectedVoiceLabels = new ArrayList<List<Double>>(transcription.getVoiceLabels());
-		expectedVoiceLabels.set(6, V_0);
-		expectedVoiceLabels.set(7, V_1);
-		// c. Duration labels
-		List<List<Double>> expectedDurationLabels = new ArrayList<List<Double>>(transcription.getDurationLabels());
-		expectedDurationLabels.set(6, QUARTER);
-		expectedDurationLabels.set(7, EIGHTH);
-
-		// Calculate actual
-		transcription.handleCourseCrossingsOLD(tablature, Type.GROUND_TRUTH);
-		List<Note> actualNotes = new ArrayList<Note>();
-		for (Note n : transcription.getNoteSequence()) {
-			actualNotes.add(n);
-		}
-		List<List<Double>> actualVoiceLabels = transcription.getVoiceLabels();
-		List<List<Double>> actualDurationLabels = transcription.getDurationLabels();
-
-		// a. NoteSequence 
-		assertEquals(expectedNotes.size(), actualNotes.size());
-		for (int i = 0; i < expectedNotes.size(); i++) {
-			// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
-			// objects: therefore check that pitch, metricTime, and metricDuration are the same
-			assertEquals(expectedNotes.get(i).getMidiPitch(), actualNotes.get(i).getMidiPitch());
-			assertEquals(expectedNotes.get(i).getMetricTime(), actualNotes.get(i).getMetricTime());
-			assertEquals(expectedNotes.get(i).getMetricDuration(), actualNotes.get(i).getMetricDuration());
-		}
-		// b. Voice labels
-		assertEquals(expectedVoiceLabels.size(), actualVoiceLabels.size());
-		for (int i = 0; i < expectedVoiceLabels.size(); i++) {
-			assertEquals(expectedVoiceLabels.get(i).size(), actualVoiceLabels.get(i).size());
-			for (int j = 0; j < expectedVoiceLabels.get(i).size(); j++) {
-				assertEquals(expectedVoiceLabels.get(i).get(j), actualVoiceLabels.get(i).get(j));
-			}
-		}
-		assertEquals(expectedVoiceLabels, actualVoiceLabels);
-		// c. Duration labels
-		assertEquals(expectedDurationLabels.size(), actualDurationLabels.size());
-		for (int i = 0; i < expectedDurationLabels.size(); i++) {
-			assertEquals(expectedDurationLabels.get(i).size(), actualDurationLabels.get(i).size()); 
-			for (int j = 0; j < expectedDurationLabels.get(i).size(); j++) {
-			assertEquals(expectedDurationLabels.get(i).get(j), actualDurationLabels.get(i).get(j));
-			}
-		}
-		assertEquals(expectedDurationLabels, actualDurationLabels);
-	}
-
-
-//	public void testHandleCourseCrossingsOLD() {
-//		Tablature tablature = new Tablature(encodingTestpiece1);
-//		Transcription transcription = new Transcription();
-//    transcription.setFile(midiTestpiece1);
-//    transcription.setPiece();
-//    transcription.initialiseNoteSequence();
-//    transcription.initialiseVoiceLabels(); 
-//    transcription.initialiseDurationLabelsOLD();
-//    if (transcription.checkChords(tablature) == false) {
-//     	throw new RuntimeException("ERROR: Chord error (see console).");
-//    }
-//    transcription.handleCoDNotesOLD(tablature);
-//    
-//    // Determine expected
-//    // a. NoteSequence
-//    // NB: expectedNoteSeq cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes
-//    // with the same pitch and onset time randomly
-//    List<Note> expectedNotes = new ArrayList<Note>();
-//    for (Note n : transcription.getNoteSequence()) {
-//    	expectedNotes.add(n);
-//    }
-//    expectedNotes.set(6, Transcription.createNote(72, new Rational(4, 4), new Rational(1, 4)));
-//    expectedNotes.set(7, Transcription.createNote(69, new Rational(4, 4), new Rational(1, 8)));  
-//    // b. Voice labels
-//    List<List<Double>> expectedVoiceLabels = transcription.getVoiceLabels();
-//    expectedVoiceLabels.set(6, Arrays.asList(new Double[]{1.0, 0.0, 0.0, 0.0, 0.0}));
-//    expectedVoiceLabels.set(7, Arrays.asList(new Double[]{0.0, 1.0, 0.0, 0.0, 0.0}));
-//    // c. Duration labels
-//    List<List<List<Double>>> expectedDurationLabels = transcription.getDurationLabelsOLD();
-//    List<List<Double>> quarterDurationLabel = new ArrayList<List<Double>>();
-//    quarterDurationLabel.add(Transcription.QUARTER);
-//    List<List<Double>> eighthDurationLabel = new ArrayList<List<Double>>();
-//    quarterDurationLabel.add(Transcription.EIGHTH);
-//    expectedDurationLabels.set(6, quarterDurationLabel);
-//    expectedDurationLabels.set(7, eighthDurationLabel);
-//    
-//    // Calculate actual
-//    transcription.handleCourseCrossingsOLD(tablature);
-//    List<Note> actualNotes = new ArrayList<Note>();
-//    for (Note n : transcription.getNoteSequence()) {
-//    	actualNotes.add(n);
-//    }
-//    List<List<Double>> actualVoiceLabels = transcription.getVoiceLabels();
-//    List<List<List<Double>>> actualDurationLabels = transcription.getDurationLabelsOLD();
-//    
-//    // Assert equality
-//    // a. NoteSequence 
-//    assertEquals(expectedNotes.size(), actualNotes.size());
-//    for (int i = 0; i < expectedNotes.size(); i++) {
-//    	// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
-//    	// objects: therefore check that pitch, metricTime, and metricDuration are the same
-//    	assertEquals(expectedNotes.get(i).getMidiPitch(), actualNotes.get(i).getMidiPitch());
-//    	assertEquals(expectedNotes.get(i).getMetricTime(), actualNotes.get(i).getMetricTime());
-//    	assertEquals(expectedNotes.get(i).getMetricDuration(), actualNotes.get(i).getMetricDuration());
-//    }
-//    // b. Voice labels
-//    assertEquals(expectedVoiceLabels.size(), actualVoiceLabels.size());
-//    for (int i = 0; i < expectedVoiceLabels.size(); i++) {
-//    	assertEquals(expectedVoiceLabels.get(i).size(), actualVoiceLabels.get(i).size());
-//    	for (int j = 0; j < expectedVoiceLabels.get(i).size(); j++) {
-//    		assertEquals(expectedVoiceLabels.get(i).get(j), actualVoiceLabels.get(i).get(j));
-//    	}
-//    }
-//    assertEquals(expectedVoiceLabels, actualVoiceLabels);
-//    // c. Duration labels
-//    assertEquals(expectedDurationLabels.size(), actualDurationLabels.size());
-//		for (int i = 0; i < expectedDurationLabels.size(); i++) {
-//			assertEquals(expectedDurationLabels.get(i).size(), actualDurationLabels.get(i).size()); 
-//	  		for (int j = 0; j < expectedDurationLabels.get(i).size(); j++) {
-//   			assertEquals(expectedDurationLabels.get(i).get(j).size(), actualDurationLabels.get(i).get(j).size());
-//  			for (int k = 0; k < expectedDurationLabels.get(i).get(j).size(); k++) {
-//    			assertEquals(expectedDurationLabels.get(i).get(j).get(k), actualDurationLabels.get(i).get(j).get(k));
-//	  		}
-//  		}
-//  	}
-//  	assertEquals(expectedDurationLabels, actualDurationLabels);
-//	}
-
-
-	public void testSetAndGetEqualDurationUnisonsInfo() {
-		Transcription transcription = new Transcription();
-//		transcription.setFile(midiTestpiece1);
-		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
-//		transcription.setPiece(null);
-		transcription.makeNoteSequence();
-		// The voice labels must be initialised before the NoteSeqeunce is adapted, as initialiseVoiceLabels() needs
-		// the actual Note objects from the NoteSequence and not the adaptations made below
-		transcription.initialiseVoiceLabels(null); 
-//		transcription.setMeterInfo(midiTestpiece1);
-		transcription.setMeterInfo();
-		// Before calling handleUnisons(): adapt transcription so that all unisons become EDUs
-		NoteSequence noteSeq = transcription.getNoteSequence();
-		// Give all unison notes a duration of a quarter
-		// NB: Before handleUnisons() is called, all unison notes have been added to noteSeq with the one in the 
-		// lower voice first. That means that the notes at indices 12 and 16 need to be adapted
-		Note n12 = noteSeq.getNoteAt(12);
-		noteSeq.replaceNoteAt(12, Transcription.createNote(n12.getMidiPitch(), n12.getMetricTime(), new Rational(1, 4), null));
-		Note n16 = noteSeq.getNoteAt(16);
-		noteSeq.replaceNoteAt(16, Transcription.createNote(n16.getMidiPitch(), n16.getMetricTime(), new Rational(1, 4), null));  
-		transcription.handleUnisons(Type.GROUND_TRUTH);
-		transcription.setBasicNoteProperties();
-
-		List<Integer[]> expected = new ArrayList<Integer[]>();
-		for (int i = 0; i < noteSeq.size(); i++) {
-			expected.add(null);
-		}
-//		expected.set(12, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
-//		expected.set(13, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
-//		expected.set(16, Arrays.asList(new Double[]{0.0, 0.0, 1.0, 1.0, 0.0}));
-//		expected.set(17, Arrays.asList(new Double[]{0.0, 0.0, 1.0, 1.0, 0.0}));
-		expected.set(12, new Integer[]{1, 0, 13});
-		expected.set(13, new Integer[]{1, 0, 12});
-		expected.set(16, new Integer[]{3, 2, 17});
-		expected.set(17, new Integer[]{3, 2, 16});
-
-		List<Integer[]> actual = transcription.getVoicesEDU();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			if (expected.get(i) == null) {
-				assertEquals(expected.get(i), actual.get(i));
-			}
+//	public void testDetermineVoicesSNU() {
+//		List<List<Double>> vl = new ArrayList<>();
+//		vl.add(V_0); 
+//		vl.add(V_1);
+//		vl.add(Transcription.combineLabels(V_0, V_2));
+//		vl.add(Transcription.combineLabels(V_0, V_2));
+//		vl.add(Transcription.combineLabels(V_0, V_2));
+//		vl.add(Transcription.combineLabels(V_0, V_2));
+//
+//		List<List<Double>> dl = new ArrayList<>();
+//		dl.add(SIXTEENTH);
+//		dl.add(EIGHTH);
+//		dl.add(Transcription.combineLabels(EIGHTH, QUARTER));
+//		dl.add(Transcription.combineLabels(EIGHTH, QUARTER));
+//		dl.add(QUARTER);
+//		dl.add(HALF);
+//
+//		List<Integer[]> vls = new ArrayList<>();
+//		vls.add(null);
+//		vls.add(null);
+//		vls.add(new Integer[]{0, 2});
+//		vls.add(new Integer[]{2, 0});
+//		// NB: Doesn't happen in practice: the case where both voices have a note with the same 
+//		// duration is treated like the case where the lowest voice has the note with the longest 
+//		// duration -- meaning that vls would contain [2, 0] here
+//		vls.add(new Integer[]{0, 2});
+//		vls.add(new Integer[]{2, 0});
+//
+//		List<Integer[]> expected = new ArrayList<>();
+//		expected.add(null);
+//		expected.add(null);
+//		// Different duration, voice 0 has longest note: voice 0 first
+//		expected.add(new Integer[]{0, 2});
+//		// Different duration, voice 2 has longest note: voice 2 first
+//		expected.add(new Integer[]{2, 0});
+//		// Same duration: always lowest voice first
+//		expected.add(new Integer[]{2, 0});
+//		// Same duration: always lowest voice first
+//		expected.add(new Integer[]{2, 0});
+//		
+//		List<Integer[]> actual = Transcription.determineVoicesSNU(vl, dl, vls);
+//		
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			if (expected.get(i) == null) {
+//				assertEquals(expected.get(i), actual.get(i));
+//			}
 //			else {
-//				assertEquals(expected.get(i).size(), actual.get(i).size());
-//				for (int j = 0; j < expected.get(i).size(); j++) {
-//					assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+//				assertEquals(expected.get(i).length, actual.get(i).length);
+//				for (int j = 0; j < expected.get(i).length; j++) {
+//					assertEquals(expected.get(i)[j], actual.get(i)[j]);
 //				}
 //			}
-			else {
-				assertEquals(expected.get(i).length, actual.get(i).length);
-				for (int j = 0; j < expected.get(i).length; j++) {
-					assertEquals(expected.get(i)[j], actual.get(i)[j]);
-				}
-			}
-		}
-	}
-
-
-//	@SuppressWarnings("unchecked")
-//	public void testMakeNotes() {
+//		}	
+//	}
+//
+//
+//	public void testHandleCourseCrossingsOLD() {
+//		Tablature tablature = new Tablature(encodingTestpiece, true);
+//		Transcription transcription = new Transcription();
+//		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
+//		transcription.makeNoteSequence();
+//		transcription.initialiseVoiceLabels(null); 
+//		transcription.initialiseDurationLabels(null);
+//		if (transcription.checkChords(tablature) == false) {
+//			throw new RuntimeException("ERROR: Chord error (see console).");
+//		}
+//		transcription.handleSNUsOLD(tablature, Type.FROM_FILE);
+//
+//		// a. NoteSequence
+//		// NB: expectedNoteSeq cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes
+//		// with the same pitch and onset time randomly
+//		List<Note> expectedNotes = new ArrayList<Note>();
+//		for (Note n : transcription.getNoteSequence()) {
+//			expectedNotes.add(n);
+//		}
+//		expectedNotes.set(6, Transcription.createNote(72, new Rational(4, 4), new Rational(1, 4), null));
+//		expectedNotes.set(7, Transcription.createNote(69, new Rational(4, 4), new Rational(1, 8), null));  
+//		// b. Voice labels
+//		List<List<Double>> expectedVoiceLabels = new ArrayList<List<Double>>(transcription.getVoiceLabels());
+//		expectedVoiceLabels.set(6, V_0);
+//		expectedVoiceLabels.set(7, V_1);
+//		// c. Duration labels
+//		List<List<Double>> expectedDurationLabels = new ArrayList<List<Double>>(transcription.getDurationLabels());
+//		expectedDurationLabels.set(6, QUARTER);
+//		expectedDurationLabels.set(7, EIGHTH);
+//
+//		// Calculate actual
+//		transcription.handleCourseCrossingsOLD(tablature, Type.FROM_FILE);
+//		List<Note> actualNotes = new ArrayList<Note>();
+//		for (Note n : transcription.getNoteSequence()) {
+//			actualNotes.add(n);
+//		}
+//		List<List<Double>> actualVoiceLabels = transcription.getVoiceLabels();
+//		List<List<Double>> actualDurationLabels = transcription.getDurationLabels();
+//
+//		// a. NoteSequence 
+//		assertEquals(expectedNotes.size(), actualNotes.size());
+//		for (int i = 0; i < expectedNotes.size(); i++) {
+//			// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
+//			// objects: therefore check that pitch, metricTime, and metricDuration are the same
+//			assertEquals(expectedNotes.get(i).getMidiPitch(), actualNotes.get(i).getMidiPitch());
+//			assertEquals(expectedNotes.get(i).getMetricTime(), actualNotes.get(i).getMetricTime());
+//			assertEquals(expectedNotes.get(i).getMetricDuration(), actualNotes.get(i).getMetricDuration());
+//		}
+//		// b. Voice labels
+//		assertEquals(expectedVoiceLabels.size(), actualVoiceLabels.size());
+//		for (int i = 0; i < expectedVoiceLabels.size(); i++) {
+//			assertEquals(expectedVoiceLabels.get(i).size(), actualVoiceLabels.get(i).size());
+//			for (int j = 0; j < expectedVoiceLabels.get(i).size(); j++) {
+//				assertEquals(expectedVoiceLabels.get(i).get(j), actualVoiceLabels.get(i).get(j));
+//			}
+//		}
+//		assertEquals(expectedVoiceLabels, actualVoiceLabels);
+//		// c. Duration labels
+//		assertEquals(expectedDurationLabels.size(), actualDurationLabels.size());
+//		for (int i = 0; i < expectedDurationLabels.size(); i++) {
+//			assertEquals(expectedDurationLabels.get(i).size(), actualDurationLabels.get(i).size()); 
+//			for (int j = 0; j < expectedDurationLabels.get(i).size(); j++) {
+//			assertEquals(expectedDurationLabels.get(i).get(j), actualDurationLabels.get(i).get(j));
+//			}
+//		}
+//		assertEquals(expectedDurationLabels, actualDurationLabels);
+//	}
+//
+//
+////	public void testHandleCourseCrossingsOLD() {
+////		Tablature tablature = new Tablature(encodingTestpiece1);
+////		Transcription transcription = new Transcription();
+////    transcription.setFile(midiTestpiece1);
+////    transcription.setPiece();
+////    transcription.initialiseNoteSequence();
+////    transcription.initialiseVoiceLabels(); 
+////    transcription.initialiseDurationLabelsOLD();
+////    if (transcription.checkChords(tablature) == false) {
+////     	throw new RuntimeException("ERROR: Chord error (see console).");
+////    }
+////    transcription.handleCoDNotesOLD(tablature);
+////    
+////    // Determine expected
+////    // a. NoteSequence
+////    // NB: expectedNoteSeq cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes
+////    // with the same pitch and onset time randomly
+////    List<Note> expectedNotes = new ArrayList<Note>();
+////    for (Note n : transcription.getNoteSequence()) {
+////    	expectedNotes.add(n);
+////    }
+////    expectedNotes.set(6, Transcription.createNote(72, new Rational(4, 4), new Rational(1, 4)));
+////    expectedNotes.set(7, Transcription.createNote(69, new Rational(4, 4), new Rational(1, 8)));  
+////    // b. Voice labels
+////    List<List<Double>> expectedVoiceLabels = transcription.getVoiceLabels();
+////    expectedVoiceLabels.set(6, Arrays.asList(new Double[]{1.0, 0.0, 0.0, 0.0, 0.0}));
+////    expectedVoiceLabels.set(7, Arrays.asList(new Double[]{0.0, 1.0, 0.0, 0.0, 0.0}));
+////    // c. Duration labels
+////    List<List<List<Double>>> expectedDurationLabels = transcription.getDurationLabelsOLD();
+////    List<List<Double>> quarterDurationLabel = new ArrayList<List<Double>>();
+////    quarterDurationLabel.add(Transcription.QUARTER);
+////    List<List<Double>> eighthDurationLabel = new ArrayList<List<Double>>();
+////    quarterDurationLabel.add(Transcription.EIGHTH);
+////    expectedDurationLabels.set(6, quarterDurationLabel);
+////    expectedDurationLabels.set(7, eighthDurationLabel);
+////    
+////    // Calculate actual
+////    transcription.handleCourseCrossingsOLD(tablature);
+////    List<Note> actualNotes = new ArrayList<Note>();
+////    for (Note n : transcription.getNoteSequence()) {
+////    	actualNotes.add(n);
+////    }
+////    List<List<Double>> actualVoiceLabels = transcription.getVoiceLabels();
+////    List<List<List<Double>>> actualDurationLabels = transcription.getDurationLabelsOLD();
+////    
+////    // Assert equality
+////    // a. NoteSequence 
+////    assertEquals(expectedNotes.size(), actualNotes.size());
+////    for (int i = 0; i < expectedNotes.size(); i++) {
+////    	// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
+////    	// objects: therefore check that pitch, metricTime, and metricDuration are the same
+////    	assertEquals(expectedNotes.get(i).getMidiPitch(), actualNotes.get(i).getMidiPitch());
+////    	assertEquals(expectedNotes.get(i).getMetricTime(), actualNotes.get(i).getMetricTime());
+////    	assertEquals(expectedNotes.get(i).getMetricDuration(), actualNotes.get(i).getMetricDuration());
+////    }
+////    // b. Voice labels
+////    assertEquals(expectedVoiceLabels.size(), actualVoiceLabels.size());
+////    for (int i = 0; i < expectedVoiceLabels.size(); i++) {
+////    	assertEquals(expectedVoiceLabels.get(i).size(), actualVoiceLabels.get(i).size());
+////    	for (int j = 0; j < expectedVoiceLabels.get(i).size(); j++) {
+////    		assertEquals(expectedVoiceLabels.get(i).get(j), actualVoiceLabels.get(i).get(j));
+////    	}
+////    }
+////    assertEquals(expectedVoiceLabels, actualVoiceLabels);
+////    // c. Duration labels
+////    assertEquals(expectedDurationLabels.size(), actualDurationLabels.size());
+////		for (int i = 0; i < expectedDurationLabels.size(); i++) {
+////			assertEquals(expectedDurationLabels.get(i).size(), actualDurationLabels.get(i).size()); 
+////	  		for (int j = 0; j < expectedDurationLabels.get(i).size(); j++) {
+////   			assertEquals(expectedDurationLabels.get(i).get(j).size(), actualDurationLabels.get(i).get(j).size());
+////  			for (int k = 0; k < expectedDurationLabels.get(i).get(j).size(); k++) {
+////    			assertEquals(expectedDurationLabels.get(i).get(j).get(k), actualDurationLabels.get(i).get(j).get(k));
+////	  		}
+////  		}
+////  	}
+////  	assertEquals(expectedDurationLabels, actualDurationLabels);
+////	}
+//
+//
+//	public void testSetAndGetEqualDurationUnisonsInfo() {
+//		Transcription transcription = new Transcription();
+////		transcription.setFile(midiTestpiece1);
+//		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
+////		transcription.setPiece(null);
+//		transcription.makeNoteSequence();
+//		// The voice labels must be initialised before the NoteSeqeunce is adapted, as initialiseVoiceLabels() needs
+//		// the actual Note objects from the NoteSequence and not the adaptations made below
+//		transcription.initialiseVoiceLabels(null); 
+////		transcription.setMeterInfo(midiTestpiece1);
+//		transcription.setMeterInfo();
+//		// Before calling handleUnisons(): adapt transcription so that all unisons become EDUs
+//		NoteSequence noteSeq = transcription.getNoteSequence();
+//		// Give all unison notes a duration of a quarter
+//		// NB: Before handleUnisons() is called, all unison notes have been added to noteSeq with the one in the 
+//		// lower voice first. That means that the notes at indices 12 and 16 need to be adapted
+//		Note n12 = noteSeq.getNoteAt(12);
+//		noteSeq.replaceNoteAt(12, Transcription.createNote(n12.getMidiPitch(), n12.getMetricTime(), new Rational(1, 4), null));
+//		Note n16 = noteSeq.getNoteAt(16);
+//		noteSeq.replaceNoteAt(16, Transcription.createNote(n16.getMidiPitch(), n16.getMetricTime(), new Rational(1, 4), null));  
+//		transcription.handleUnisons(Type.FROM_FILE);
+//		transcription.setBasicNoteProperties();
+//
+//		List<Integer[]> expected = new ArrayList<Integer[]>();
+//		for (int i = 0; i < noteSeq.size(); i++) {
+//			expected.add(null);
+//		}
+////		expected.set(12, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
+////		expected.set(13, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
+////		expected.set(16, Arrays.asList(new Double[]{0.0, 0.0, 1.0, 1.0, 0.0}));
+////		expected.set(17, Arrays.asList(new Double[]{0.0, 0.0, 1.0, 1.0, 0.0}));
+//		expected.set(12, new Integer[]{1, 0, 13});
+//		expected.set(13, new Integer[]{1, 0, 12});
+//		expected.set(16, new Integer[]{3, 2, 17});
+//		expected.set(17, new Integer[]{3, 2, 16});
+//
+//		List<Integer[]> actual = transcription.getVoicesEDU();
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			if (expected.get(i) == null) {
+//				assertEquals(expected.get(i), actual.get(i));
+//			}
+////			else {
+////				assertEquals(expected.get(i).size(), actual.get(i).size());
+////				for (int j = 0; j < expected.get(i).size(); j++) {
+////					assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+////				}
+////			}
+//			else {
+//				assertEquals(expected.get(i).length, actual.get(i).length);
+//				for (int j = 0; j < expected.get(i).length; j++) {
+//					assertEquals(expected.get(i)[j], actual.get(i)[j]);
+//				}
+//			}
+//		}
+//	}
+//
+//
+////	@SuppressWarnings("unchecked")
+////	public void testMakeNotes() {
+////		Transcription t1 = new Transcription();
+////		Tablature tab = new Tablature(encodingTestpiece, false); 
+////		t1.setPiece(MIDIImport.importMidiFile(midiTestpiece));
+////		t1.setName();
+////		Transcription t2 = new Transcription();
+////		t2.setPiece(MIDIImport.importMidiFile(midiTestpiece));
+////		t2.setName();
+////
+////		List<List<Note>> expected = new ArrayList<>();
+////		List<Note> expected1 = getUnhandledNotesFromPiece(t1.getPiece(), "testpiece");
+////		Collections.swap(expected1, 6, 7); // course crossing
+////		expected1.remove(12); // SNU
+////		expected.add(expected1);
+////		List<Note> expected2 = getUnhandledNotesFromPiece(t2.getPiece(), "testpiece");
+////		Collections.swap(expected2, 12, 13); // unison
+////		expected.add(expected2);
+////
+////		List<List<Note>> actual = new ArrayList<>();
+////		actual.add((List<Note>) t1.makeNotes(tab).get(0));
+////		actual.add((List<Note>) t2.makeNotes(null).get(0));
+////
+////		assertEquals(expected.size(), actual.size());
+////		for (int i = 0; i < expected.size(); i++) {
+////			assertEquals(expected.get(i).size(), actual.get(i).size()); 
+////			for (int j = 0; j < expected.get(i).size(); j++) {
+////				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+////			}
+////		}
+////	}
+//
+//
+//	public void testMakeNoteSequence() {
+//		Transcription t = new Transcription();
+//		t.setPiece(MIDIImport.importMidiFile(midiTestpiece));
+//		t.setName();
+//
+//		NoteSequence expected = getNoteSequence(t.getScorePiece(), "testpiece");
+//
+//		NoteSequence actual = t.makeNoteSequence();
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i), actual.get(i));
+//		}
+//	}
+//
+//
+////	public void testMakeInitialNoteSequence() {
+////		Transcription t = new Transcription();
+////		t.setPiece(MIDIImport.importMidiFile(midiTestpiece));
+////		t.setName();
+////
+////		NoteSequence expected = getNoteSequence(t.getPiece(), "testpiece");
+////
+////		NoteSequence actual = t.makeInitialNoteSequence();
+////		// Account for inconsistent behaviour in ordering of equal-pitch notes
+////		if (actual.get(12).getMetricDuration().equals(new Rational(1, 4)) && 
+////			actual.get(13).getMetricDuration().equals(new Rational(1, 8))) {
+////			actual.swapNotes(12, 13);
+////			System.out.println("12 and 13 swapped");
+////		}
+////		if (actual.get(16).getMetricDuration().equals(new Rational(1, 4)) && 
+////			actual.get(17).getMetricDuration().equals(new Rational(1, 2))) {
+////			actual.swapNotes(16, 17);
+////			System.out.println("16 and 17 swapped");
+////		}
+////
+////		assertEquals(expected.size(), actual.size());
+////		for (int i = 0; i < expected.size(); i++) {
+////			assertEquals(expected.get(i), actual.get(i));
+////		}
+////	}
+//
+//
+////	public void testUniformiseInitialNoteSequence() {
+////		Transcription t = new Transcription();
+////		t.setPiece(MIDIImport.importMidiFile(midiTestpiece));
+////		t.setName();
+////		NoteSequence noteSeq = t.makeInitialNoteSequence(); 
+////
+////		// Account for inconsistent behaviour in ordering of equal-pitch notes
+////		if (noteSeq.get(12).getMetricDuration().equals(new Rational(1, 4)) &&
+////			noteSeq.get(13).getMetricDuration().equals(new Rational(1, 8))) {
+////			noteSeq.swapNotes(12, 13);
+////			System.out.println("12 and 13 swapped");
+////		}
+////		if (noteSeq.get(16).getMetricDuration().equals(new Rational(1, 4)) && 
+////			noteSeq.get(17).getMetricDuration().equals(new Rational(1, 2))) {
+////			noteSeq.swapNotes(16, 17);
+////			System.out.println("16 and 17 swapped");
+////		}
+////		// Order equal-pitch notes 12 and 13 incorrectly
+////		noteSeq.swapNotes(12, 13);
+////
+////		NoteSequence expected = getNoteSequence(t.getPiece(), "testpiece");
+////		
+////		NoteSequence actual = t.uniformiseInitialNoteSequence(noteSeq);
+////
+////		assertEquals(expected.size(), actual.size());
+////		for (int i = 0; i < expected.size(); i++) {
+////			assertEquals(expected.get(i), actual.get(i));
+////		}
+////	}
+//
+//
+////	public void testInitialiseNoteSequenceOLD() {
+////		Transcription transcription = new Transcription();
+//////		transcription.setFile(midiTestpiece1);
+////		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
+//////		transcription.setPiece(null);
+////		transcription.initialiseNoteSequence();
+////
+////		// Expected cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes with
+////		// the same pitch and onset time randomly -- now that in the lower voice first, then that in the higher
+////		List<Note> expected = new ArrayList<Note>();
+////		// Chord 0
+////		expected.add(Transcription.createNote(50, new Rational(3, 4), new Rational(1, 4)));
+////		expected.add(Transcription.createNote(57, new Rational(3, 4), new Rational(1, 4)));
+////		expected.add(Transcription.createNote(65, new Rational(3, 4), new Rational(1, 4)));
+////		expected.add(Transcription.createNote(69, new Rational(3, 4), new Rational(1, 4)));
+////		// Chord 1
+////		expected.add(Transcription.createNote(45, new Rational(4, 4), new Rational(3, 16)));
+////		expected.add(Transcription.createNote(57, new Rational(4, 4), new Rational(1, 4)));
+////		expected.add(Transcription.createNote(69, new Rational(4, 4), new Rational(1, 8)));
+////		expected.add(Transcription.createNote(72, new Rational(4, 4), new Rational(1, 4)));
+////		// Chord 2
+////		expected.add(Transcription.createNote(48, new Rational(19, 16), new Rational(1, 16)));
+////		// Chord 3
+////		expected.add(Transcription.createNote(47, new Rational(5, 4), new Rational(1, 8)));
+////		expected.add(Transcription.createNote(50, new Rational(5, 4), new Rational(1, 4)));
+////		expected.add(Transcription.createNote(59, new Rational(5, 4), new Rational(1, 4)));
+////		expected.add(Transcription.createNote(65, new Rational(5, 4), new Rational(1, 8)));
+////		expected.add(Transcription.createNote(65, new Rational(5, 4), new Rational(1, 4)));
+////		// Chord 4
+////		expected.add(Transcription.createNote(45, new Rational(11, 8), new Rational(1, 8)));
+////		// Chord 5
+////		expected.add(Transcription.createNote(45, new Rational(6, 4), new Rational(1, 4)));
+////		expected.add(Transcription.createNote(57, new Rational(6, 4), new Rational(1, 2)));
+////		expected.add(Transcription.createNote(57, new Rational(6, 4), new Rational(1, 4)));
+////		expected.add(Transcription.createNote(60, new Rational(6, 4), new Rational(1, 4)));
+////		expected.add(Transcription.createNote(69, new Rational(6, 4), new Rational(1, 4)));
+////		// Chord 6
+////		expected.add(Transcription.createNote(45, new Rational(7, 4), new Rational(1, 4)));
+////		expected.add(Transcription.createNote(60, new Rational(7, 4), new Rational(1, 8)));
+////		expected.add(Transcription.createNote(64, new Rational(7, 4), new Rational(1, 8)));
+////		expected.add(Transcription.createNote(69, new Rational(7, 4), new Rational(1, 4)));
+////		// Chord 7
+////		expected.add(Transcription.createNote(59, new Rational(15, 8), new Rational(1, 8)));
+////		expected.add(Transcription.createNote(68, new Rational(15, 8), new Rational(1, 8)));
+////		// Chord 8
+////		expected.add(Transcription.createNote(45, new Rational(8, 4), new Rational(1, 2)));
+////		expected.add(Transcription.createNote(57, new Rational(8, 4), new Rational(1, 2)));
+////		expected.add(Transcription.createNote(64, new Rational(8, 4), new Rational(1, 2)));
+////		expected.add(Transcription.createNote(69, new Rational(8, 4), new Rational(1, 16)));
+////		// Chords 9-14
+////		expected.add(Transcription.createNote(68, new Rational(33, 16), new Rational(1, 16)));
+////		expected.add(Transcription.createNote(69, new Rational(17, 8), new Rational(1, 32)));
+////		expected.add(Transcription.createNote(68, new Rational(69, 32), new Rational(1, 32)));
+////		expected.add(Transcription.createNote(66, new Rational(35, 16), new Rational(1, 32)));
+////		expected.add(Transcription.createNote(68, new Rational(71, 32), new Rational(1, 32)));
+////		expected.add(Transcription.createNote(69, new Rational(9, 4), new Rational(1, 4)));
+////		// Chord 15
+////		expected.add(Transcription.createNote(45, new Rational(11, 4), new Rational(1, 4)));
+////		expected.add(Transcription.createNote(57, new Rational(11, 4), new Rational(1, 4)));
+////		expected.add(Transcription.createNote(64, new Rational(11, 4), new Rational(1, 4)));
+////		expected.add(Transcription.createNote(69, new Rational(11, 4), new Rational(1, 4)));
+////
+////		NoteSequence noteSeq = transcription.getNoteSequence();
+////		List<Note> actual = new ArrayList<Note>();
+////		for (Note n : noteSeq) {
+////			actual.add(n);
+////		}
+////
+////		assertEquals(expected.size(), actual.size());
+////		for (int i = 0; i < expected.size(); i++) {
+//////			assert(expected.get(i).isEquivalent(actual.get(i)));
+////			// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
+////			// objects: therefore check that pitch, metricTime, and metricDuration are the same
+////			assertEquals(expected.get(i).getMidiPitch(), actual.get(i).getMidiPitch());
+////			assertEquals(expected.get(i).getMetricTime(), actual.get(i).getMetricTime());
+////			assertEquals(expected.get(i).getMetricDuration(), actual.get(i).getMetricDuration());
+////		}
+////	}
+//
+//
+//	public void testGetChordsFromNoteSequence() {
+////		// Populated NoteSequence
 //		Transcription t1 = new Transcription();
-//		Tablature tab = new Tablature(encodingTestpiece, false); 
 //		t1.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 //		t1.setName();
-//		Transcription t2 = new Transcription();
-//		t2.setPiece(MIDIImport.importMidiFile(midiTestpiece));
-//		t2.setName();
+//		t1.setNoteSequence();
+////		// Populated and uniformised (i.e., initialised) NoteSequence
+////		Transcription t2 = new Transcription();
+////		t2.setPiece(MIDIImport.importMidiFile(midiTestpiece));
+////		t2.setName();
+////		t2.makeNoteSequence();
+//		// Populated, uniformised, and unisons handled
+//		// TODO
+//		// Populated, uniformised, and SNUs and course crossings handled
+//		// TODO
+//
+//		List<Integer> chordSizes = Arrays.asList(new Integer[]{4, 4, 1, 5, 1, 5, 4, 2, 4, 1, 1, 1, 1, 1, 1, 4});
 //
 //		List<List<Note>> expected = new ArrayList<>();
-//		List<Note> expected1 = getUnhandledNotesFromPiece(t1.getPiece(), "testpiece");
-//		Collections.swap(expected1, 6, 7); // course crossing
-//		expected1.remove(12); // SNU
-//		expected.add(expected1);
-//		List<Note> expected2 = getUnhandledNotesFromPiece(t2.getPiece(), "testpiece");
-//		Collections.swap(expected2, 12, 13); // unison
-//		expected.add(expected2);
+////		// Populated NoteSequence
+//		NoteSequence noteSeq1 = getNoteSequence(t1.getScorePiece(), "testpiece");
+//		List<List<Note>> expected1 = new ArrayList<>();
+//		int start = 0;
+//		for (int chordSize : chordSizes) {
+//			List<Note> currChord = new ArrayList<>();
+//			for (int j = start; j < start + chordSize; j++) {
+//				currChord.add(noteSeq1.get(j));
+//			}
+//			expected1.add(currChord);
+//			start += chordSize;
+//		}
+//		expected.addAll(expected1);
+////		// Populated and uniformised (i.e., initialised) NoteSequence
+////		NoteSequence noteSeq2 = getNoteSequence(t2.getPiece(), "testpiece");
+////		List<List<Note>> expected2 = new ArrayList<>();
+////		start = 0;
+////		for (int chordSize : chordSizes) {
+////			List<Note> currChord = new ArrayList<>();
+////			for (int j = start; j < start + chordSize; j++) {
+////				currChord.add(noteSeq2.get(j));
+////			}
+////			expected2.add(currChord);
+////			start += chordSize;
+////		}
+////		// Swap the incorrectly ordered notes in chord 3
+////		Collections.swap(expected2.get(3), 3, 4);
+////		expected.addAll(expected2);
 //
-//		List<List<Note>> actual = new ArrayList<>();
-//		actual.add((List<Note>) t1.makeNotes(tab).get(0));
-//		actual.add((List<Note>) t2.makeNotes(null).get(0));
+//		List<List<Note>> actual = t1.getChordsFromNoteSequence();
+////		actual.addAll(t2.getChordsFromNoteSequence());
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i).size(), actual.get(i).size()); 
+//			for (int j = 0; j < expected.get(i).size(); j++) {
+//				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+//			}
+//		}	
+//	}
+//
+//
+//	public void testInitialiseVoiceLabels() {
+//		Transcription t = new Transcription();
+//		t.setPiece(MIDIImport.importMidiFile(midiTestpiece));
+//		t.setName();
+//		t.makeNoteSequence();
+//		t.initialiseVoiceLabels(null);
+//
+//		List<Double> v0 = V_0;
+//		List<Double> v1 = V_1;
+//		List<Double> v2 = V_2;
+//		List<Double> v3 = V_3;
+//		List<Double> v4 = V_4;
+//
+//		List<List<Double>> expected = new ArrayList<List<Double>>();
+//		// Chord 0
+//		expected.add(v3); expected.add(v2); expected.add(v1); expected.add(v0);
+//		// Chord 1 
+//		expected.add(v3); expected.add(v2); expected.add(v1); expected.add(v0);
+//		// Chord 2 
+//		expected.add(v3); 
+//		// Chord 3 
+//		expected.add(v4); expected.add(v3); expected.add(v2); expected.add(v1); expected.add(v0);
+//		// Chord 4
+//		expected.add(v4); 
+//		// Chord 5 
+//		expected.add(v4); expected.add(v3); expected.add(v2); expected.add(v1); expected.add(v0);
+//		// Chord 6 
+//		expected.add(v4); expected.add(v2); expected.add(v0); expected.add(v1);
+//		// Chord 7 
+//		expected.add(v2); expected.add(v0); 
+//		// Chord 8 
+//		expected.add(v3); expected.add(v2); expected.add(v1); expected.add(v0);
+//		// Chords 9-14
+//		expected.add(v0);
+//		expected.add(v0);
+//		expected.add(v0);
+//		expected.add(v0);
+//		expected.add(v0);
+//		expected.add(v0);
+//		// Chord 15
+//		expected.add(v3); expected.add(v2); expected.add(v1); expected.add(v0);
+//
+//		List<List<Double>> actual = t.getVoiceLabels();
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i).size(), actual.get(i).size());
+//			for (int j = 0; j < expected.get(i).size(); j++) {
+//				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+//			}
+//		}
+//		assertEquals(expected, actual);
+//	}
+//
+//
+//	public void testInitialiseDurationLabels() {
+//		Transcription t = new Transcription();
+//		t.setPiece(MIDIImport.importMidiFile(midiTestpiece));
+//		t.setName();
+//		t.makeNoteSequence();
+//		t.initialiseVoiceLabels(null);
+//		t.initialiseDurationLabels(null);
+//
+//		List<Double> th = THIRTYSECOND;
+//		List<Double> s = SIXTEENTH;
+//		List<Double> e = EIGHTH;
+//		List<Double> de = DOTTED_EIGHTH;
+//		List<Double> q = QUARTER;
+//		List<Double> h = HALF;
+//		
+//		List<List<Double>> expected = new ArrayList<List<Double>>();
+//		// Chord 0
+//		expected.add(q); expected.add(q); expected.add(q); expected.add(q);
+//		// Chord 1
+//		expected.add(de); expected.add(q); expected.add(e); expected.add(q);
+//		// Chord 2
+//		expected.add(s);
+//		// Chord 3
+//		expected.add(e); expected.add(q); expected.add(q); expected.add(e); expected.add(q);
+//		// Chord 4
+//		expected.add(e);
+//		// Chord 5
+//		expected.add(q); expected.add(h); expected.add(q); expected.add(q); expected.add(q);
+//		// Chord 6
+//		expected.add(q); expected.add(e); expected.add(e); expected.add(q);
+//		// Chord 7
+//		expected.add(e); expected.add(e);
+//		// Chord 8
+//		expected.add(h); expected.add(h); expected.add(h); expected.add(s);
+//		// Chords 9-14
+//		expected.add(s);
+//		expected.add(th);
+//		expected.add(th);
+//		expected.add(th);
+//		expected.add(th);
+//		expected.add(q);
+//		// Chord 15
+//		expected.add(q); expected.add(q); expected.add(q); expected.add(q);
+//
+//		List<List<Double>> actual = t.getDurationLabels();
 //
 //		assertEquals(expected.size(), actual.size());
 //		for (int i = 0; i < expected.size(); i++) {
@@ -6334,144 +6692,841 @@ public class TranscriptionTest extends TestCase {
 //				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
 //			}
 //		}
+//		assertEquals(expected, actual);
 //	}
-
-
-	public void testMakeNoteSequence() {
-		Transcription t = new Transcription();
-		t.setPiece(MIDIImport.importMidiFile(midiTestpiece));
-		t.setName();
-
-		NoteSequence expected = getNoteSequence(t.getScorePiece(), "testpiece");
-
-		NoteSequence actual = t.makeNoteSequence();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		}
-	}
-
-
-//	public void testMakeInitialNoteSequence() {
+//
+//
+//	public void testCheckChords() {
+//	}
+//
+//
+//	public void testHandleSNUsOLD() {
+//		Tablature tab = new Tablature(encodingTestpiece, true);
 //		Transcription t = new Transcription();
 //		t.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 //		t.setName();
-//
-//		NoteSequence expected = getNoteSequence(t.getPiece(), "testpiece");
-//
-//		NoteSequence actual = t.makeInitialNoteSequence();
-//		// Account for inconsistent behaviour in ordering of equal-pitch notes
-//		if (actual.get(12).getMetricDuration().equals(new Rational(1, 4)) && 
-//			actual.get(13).getMetricDuration().equals(new Rational(1, 8))) {
-//			actual.swapNotes(12, 13);
-//			System.out.println("12 and 13 swapped");
+//		t.setNotes(tab);
+//		t.setNoteSequence();
+//		t.initialiseVoiceLabels(null); 
+//		t.initialiseDurationLabels(null);
+//		if (t.checkChords(tab) == false) {
+//			throw new RuntimeException("ERROR: Chord error (see console).");
 //		}
-//		if (actual.get(16).getMetricDuration().equals(new Rational(1, 4)) && 
-//			actual.get(17).getMetricDuration().equals(new Rational(1, 2))) {
-//			actual.swapNotes(16, 17);
-//			System.out.println("16 and 17 swapped");
+//
+//		// a. NoteSequence
+//		// NB: expectedNoteSeq cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes
+//		// with the same pitch and onset time randomly
+//		List<Note> expectedNotes = new ArrayList<Note>();
+//		for (Note n : t.getNoteSequence()) {
+//			expectedNotes.add(n);
+//		}
+//		expectedNotes.remove(12); 
+//		// b. Voice labels
+//		List<List<Double>> expectedVoiceLabels = new ArrayList<List<Double>>(t.getVoiceLabels());
+//		expectedVoiceLabels.set(12, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
+//		expectedVoiceLabels.remove(13);
+//		// c. Duration labels
+//		List<List<Double>> expectedDurationLabels = new ArrayList<List<Double>>(t.getDurationLabels());
+//		List<Double> adaptedDurationLabel = new ArrayList<Double>(QUARTER);
+//		adaptedDurationLabel.set(3, 1.0);
+//		expectedDurationLabels.set(12, adaptedDurationLabel);
+//		expectedDurationLabels.remove(13);
+//
+//		t.handleSNUsOLD(tab, Type.FROM_FILE);
+//		List<Note> actualNotes = new ArrayList<Note>();
+//		for (Note n : t.getNoteSequence()) {
+//			actualNotes.add(n);
+//		}
+//		List<List<Double>> actualVoiceLabels = t.getVoiceLabels();
+//		List<List<Double>> actualDurationLabels = t.getDurationLabels();
+//
+//		// a. NoteSequence 
+//		assertEquals(expectedNotes.size(), actualNotes.size());
+//		for (int i = 0; i < expectedNotes.size(); i++) {
+//			// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
+//			// objects: therefore check that pitch, metricTime, and metricDuration are the same
+//			assertEquals(expectedNotes.get(i).getMidiPitch(), actualNotes.get(i).getMidiPitch());
+//			assertEquals(expectedNotes.get(i).getMetricTime(), actualNotes.get(i).getMetricTime());
+//			assertEquals(expectedNotes.get(i).getMetricDuration(), actualNotes.get(i).getMetricDuration());
+//		}
+//		// b. Voice labels
+//		assertEquals(expectedVoiceLabels.size(), actualVoiceLabels.size());
+//		for (int i = 0; i < expectedVoiceLabels.size(); i++) {
+//			assertEquals(expectedVoiceLabels.get(i).size(), actualVoiceLabels.get(i).size());
+//			for (int j = 0; j < expectedVoiceLabels.get(i).size(); j++) {
+//				assertEquals(expectedVoiceLabels.get(i).get(j), actualVoiceLabels.get(i).get(j));
+//			}
+//		}
+//		assertEquals(expectedVoiceLabels, actualVoiceLabels);
+//		// c. Duration labels
+//		assertEquals(expectedDurationLabels.size(), actualDurationLabels.size());
+//		for (int i = 0; i < expectedDurationLabels.size(); i++) {
+//			assertEquals(expectedDurationLabels.get(i).size(), actualDurationLabels.get(i).size()); 
+//	  		for (int j = 0; j < expectedDurationLabels.get(i).size(); j++) {
+//	  			assertEquals(expectedDurationLabels.get(i).get(j), actualDurationLabels.get(i).get(j));
+//	  		}
+//		}
+//		assertEquals(expectedDurationLabels, actualDurationLabels);  	
+//	}
+//
+//
+//	public void testSetAndGetChordVoiceLabelsNonTabOLD() {		    
+//		Transcription transcription = new Transcription(midiTestpiece);
+//
+//		List<Double> voice0 = V_0;
+//		List<Double> voice1 = V_1;
+//		List<Double> voice2 = V_2;
+//		List<Double> voice3 = V_3;
+//		List<Double> voice4 = V_4;
+//
+//		List<List<List<Double>>> expected = new ArrayList<List<List<Double>>>();
+//		// Chord 0
+//		List<List<Double>> chord0 = new ArrayList<List<Double>>(); 
+//		chord0.add(voice3); chord0.add(voice2); chord0.add(voice1); chord0.add(voice0);
+//		// Chord 1
+//		List<List<Double>> chord1 = new ArrayList<List<Double>>();
+//		chord1.add(voice3); chord1.add(voice2); chord1.add(voice1); chord1.add(voice0);
+//		// Chord 2
+//		List<List<Double>> chord2 = new ArrayList<List<Double>>();
+//		chord2.add(voice3);
+//		// Chord 3
+//		List<List<Double>> chord3 = new ArrayList<List<Double>>();
+//		chord3.add(voice4); chord3.add(voice3); chord3.add(voice2); chord3.add(voice0); chord3.add(voice1);
+//		// Chord 4
+//		List<List<Double>> chord4 = new ArrayList<List<Double>>();
+//		chord4.add(voice4);
+//		// Chord 5
+//		List<List<Double>> chord5 = new ArrayList<List<Double>>();
+//		chord5.add(voice4); chord5.add(voice3); chord5.add(voice2); chord5.add(voice1); chord5.add(voice0);
+//		// Chord 6
+//		List<List<Double>> chord6 = new ArrayList<List<Double>>();
+//		chord6.add(voice4); chord6.add(voice2); chord6.add(voice0); chord6.add(voice1);
+//		// Chord 7
+//		List<List<Double>> chord7 = new ArrayList<List<Double>>();
+//		chord7.add(voice2); chord7.add(voice0); 
+//		// Chord 8
+//		List<List<Double>> chord8 = new ArrayList<List<Double>>();
+//		chord8.add(voice3); chord8.add(voice2); chord8.add(voice1); chord8.add(voice0);
+//		// Chord 9-14
+//		List<List<Double>> chord9 = new ArrayList<List<Double>>();
+//		chord9.add(voice0);
+//		List<List<Double>> chord10 = new ArrayList<List<Double>>();
+//		chord10.add(voice0);
+//		List<List<Double>> chord11 = new ArrayList<List<Double>>();
+//		chord11.add(voice0);
+//		List<List<Double>> chord12 = new ArrayList<List<Double>>();
+//		chord12.add(voice0);
+//		List<List<Double>> chord13 = new ArrayList<List<Double>>();
+//		chord13.add(voice0);
+//		List<List<Double>> chord14 = new ArrayList<List<Double>>();
+//		chord14.add(voice0);
+//		// Chord 15
+//		List<List<Double>> chord15 = new ArrayList<List<Double>>();
+//		chord15.add(voice3); chord15.add(voice2); chord15.add(voice1); chord15.add(voice0);
+//
+//		expected.add(chord0); expected.add(chord1); expected.add(chord2); expected.add(chord3); expected.add(chord4); 
+//		expected.add(chord5); expected.add(chord6); expected.add(chord7); expected.add(chord8); expected.add(chord9);
+//		expected.add(chord10); expected.add(chord11); expected.add(chord12); expected.add(chord13); 
+//		expected.add(chord14); expected.add(chord15);
+//
+//		// Calculate actual
+////		List<List<List<Double>>> actual = transcription.getChordVoiceLabels(null);
+//		List<List<List<Double>>> actual = transcription.getChordVoiceLabels();
+//
+//		// Assert equality
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i).size(), actual.get(i).size()); 
+//			for (int j = 0; j < expected.get(i).size(); j++) {
+//				assertEquals(expected.get(i).get(j).size(), actual.get(i).get(j).size());
+//				for (int k = 0; k < expected.get(i).get(j).size(); k++) {
+//					assertEquals(expected.get(i).get(j).get(k), actual.get(i).get(j).get(k));
+//				}
+//			}
+//		}
+//	}
+//
+//
+//	public void testDeornamentPiece() {
+//		// Tablature case
+//		Transcription t1 = new Transcription();
+//		Tablature tab1 = new Tablature(encodingTestpiece, true); 
+//		t1.setPiece(MIDIImport.importMidiFile(midiTestpiece), tab1, null, Type.FROM_FILE);
+//		Piece p1 = t1.getScorePiece();
+//		List<Note> notes1 = getUnhandledNotesFromPiece(p1, "testpiece");
+//		MetricalTimeLine mt1 = p1.getMetricalTimeLine();
+//		SortedContainer<Marker> ht1 = p1.getHarmonyTrack();
+//		// Non-tablature case
+//		Transcription t2 = new Transcription();
+//		t2.setPiece(MIDIImport.importMidiFile(midiTestpiece), null, null, Type.FROM_FILE);
+//		Piece p2 = t2.getScorePiece();
+//		MetricalTimeLine mt2 = p2.getMetricalTimeLine();
+//		SortedContainer<Marker> ht2 = p2.getHarmonyTrack();
+//
+//		List<Piece> expected = new ArrayList<>();
+//		Piece expected1 = new Piece();
+//		NotationSystem ns1 = new NotationSystem();
+//		// Voice 0
+//		NotationStaff ns01 = new NotationStaff();
+//		NotationVoice nv01 = new NotationVoice();		
+//		List<Note> notesV01 = Arrays.asList(
+//			notes1.get(3),
+//			notes1.get(7),
+//			notes1.get(13),
+//			notes1.get(19),
+//			notes1.get(22),
+//			notes1.get(25),
+//			Transcription.createNote(67, new Rational(8, 4), new Rational(1, 4), mt1),
+//			notes1.get(35),
+//			notes1.get(39)
+//			
+////			expected0.add(Transcription.createNote(67, new Rational(3, 4), new Rational(1, 4), null));
+////			expected0.add(Transcription.createNote(70, new Rational(4, 4), new Rational(1, 4), null));
+////			expected0.add(Transcription.createNote(63, new Rational(5, 4), new Rational(1, 4), null));
+////			expected0.add(Transcription.createNote(67, new Rational(6, 4), new Rational(1, 4), null));
+////			expected0.add(Transcription.createNote(62, new Rational(7, 4), new Rational(1, 8), null));
+////			expected0.add(Transcription.createNote(66, new Rational(15, 8), new Rational(1, 8), null));
+////			expected0.add(Transcription.createNote(67, new Rational(8, 4), new Rational(1, 4), null));
+////			expected0.add(Transcription.createNote(67, new Rational(9, 4), new Rational(1, 4), null));
+////			expected0.add(Transcription.createNote(67, new Rational(11, 4), new Rational(1, 4), null));
+//			
+//			
+////			Transcription.createNote(67, new Rational(0, 4), new Rational(1, 4), mt1),
+////			Transcription.createNote(67, new Rational(2, 4), new Rational(1, 4), mt1),
+////			Transcription.createNote(66, new Rational(3, 4), new Rational(1, 32), mt1),
+////			Transcription.createNote(64, new Rational(25, 32), new Rational(1, 32), mt1),
+////			Transcription.createNote(66, new Rational(13, 16), new Rational(1, 32), mt1),
+////			Transcription.createNote(67, new Rational(27, 32), new Rational(1, 32), mt1),
+////			Transcription.createNote(66, new Rational(7, 8), new Rational(1, 16), mt1),
+////			Transcription.createNote(67, new Rational(15, 16), new Rational(1, 16), mt1),
+////			Transcription.createNote(66, new Rational(4, 4), new Rational(1, 8), mt1),
+////			Transcription.createNote(62, new Rational(9, 8), new Rational(1, 8), mt1),
+////			Transcription.createNote(67, new Rational(5, 4), new Rational(1, 4), mt1),
+////			Transcription.createNote(63, new Rational(13, 8), new Rational(1, 8), mt1),
+////			Transcription.createNote(70, new Rational(29, 16), new Rational(3, 16), mt1),
+////			Transcription.createNote(67, new Rational(8, 4), new Rational(1, 4), mt1)
+//		);
+//		notesV01.forEach(n -> {
+//			NotationChord nc = new NotationChord(); nc.add(n); nv01.add(nc);
+//		});
+//		ns01.add(nv01);
+//		ns1.add(ns01);
+//		// Voice 1
+//		NotationStaff ns11 = new NotationStaff();
+//		NotationVoice nv11 = new NotationVoice();
+//		List<Note> notesV11 = Arrays.asList(
+//			Transcription.createNote(62, new Rational(0, 4), new Rational(1, 4), mt1),
+//			Transcription.createNote(62, new Rational(15, 16), new Rational(1, 16), mt1),
+//			Transcription.createNote(67, new Rational(9, 8), new Rational(1, 8), mt1),
+//			Transcription.createNote(58, new Rational(5, 4), new Rational(1, 4), mt1),
+//			Transcription.createNote(63, new Rational(13, 8), new Rational(1, 8), mt1),
+//			Transcription.createNote(67, new Rational(29, 16), new Rational(3, 16), mt1),
+//			Transcription.createNote(63, new Rational(8, 4), new Rational(1, 4), mt1)
+//		);
+//		notesV11.forEach(n -> {
+//			NotationChord nc = new NotationChord(); nc.add(n); nv11.add(nc);
+//		});
+//		ns11.add(nv11);
+//		ns1.add(ns11);
+//		// Voice 2
+//		NotationStaff ns21 = new NotationStaff();
+//		NotationVoice nv21 = new NotationVoice();
+//		List<Note> notesV21 = Arrays.asList(
+//			Transcription.createNote(55, new Rational(0, 4), new Rational(1, 4), mt1),
+//			Transcription.createNote(55, new Rational(15, 16), new Rational(1, 16), mt1),
+//			Transcription.createNote(57, new Rational(4, 4), new Rational(1, 8), mt1),
+//			Transcription.createNote(58, new Rational(9, 8), new Rational(1, 8), mt1),
+//			Transcription.createNote(55, new Rational(5, 4), new Rational(1, 4), mt1),
+//			Transcription.createNote(57, new Rational(13, 8), new Rational(1, 8), mt1),
+//			Transcription.createNote(55, new Rational(29, 16), new Rational(3, 16), mt1),
+//			Transcription.createNote(55, new Rational(8, 4), new Rational(1, 4), mt1)
+//		);
+//		notesV21.forEach(n -> {
+//			NotationChord nc = new NotationChord(); nc.add(n); nv21.add(nc);
+//		});
+//		ns21.add(nv21);
+//		ns1.add(ns21);
+//		// Voice 3
+//		NotationStaff ns31 = new NotationStaff();
+//		NotationVoice nv31 = new NotationVoice();
+//		List<Note> notesV31 = Arrays.asList(new Note[]{
+//			Transcription.createNote(43, new Rational(0, 4), new Rational(1, 4), mt1),
+//			Transcription.createNote(43, new Rational(15, 16), new Rational(1, 16), mt1),
+//			Transcription.createNote(55, new Rational(5, 4), new Rational(1, 4), mt1),
+//			Transcription.createNote(48, new Rational(13, 8), new Rational(1, 8), mt1),
+//			Transcription.createNote(46, new Rational(7, 4), new Rational(1, 16), mt1),
+//			Transcription.createNote(43, new Rational(29, 16), new Rational(3, 16), mt1),
+//			Transcription.createNote(48, new Rational(8, 4), new Rational(1, 4), mt1)
+//		});
+//		notesV31.forEach(n -> {
+//			NotationChord nc = new NotationChord(); nc.add(n); nv31.add(nc);
+//		});
+//		ns31.add(nv31);
+//		ns1.add(ns31);
+//		// Voice 4
+//		NotationStaff ns41 = new NotationStaff();
+//		NotationVoice nv41 = new NotationVoice();
+//		List<Note> notesV41 = Arrays.asList(new Note[]{
+//			Transcription.createNote(43, new Rational(9, 8), new Rational(1, 8), mt1),
+//			Transcription.createNote(43, new Rational(5, 4), new Rational(1, 4), mt1),
+//			Transcription.createNote(43, new Rational(6, 4), new Rational(1, 8), mt1),
+//			Transcription.createNote(45, new Rational(13, 8), new Rational(1, 8), mt1)
+//		});
+//		notesV41.forEach(n -> {
+//			NotationChord nc = new NotationChord(); nc.add(n); nv41.add(nc);
+//		});
+//		ns41.add(nv41);
+//		ns1.add(ns41);
+//		expected1.setScore(ns1);
+//		expected1.setMetricalTimeLine(mt1);
+//		expected1.setHarmonyTrack(ht1);
+//		expected1.setName(p1.getName());
+//		expected.add(expected1);
+//
+//		Piece expected2 = new Piece();
+//		NotationSystem ns2 = new NotationSystem();
+//		// Voice 0
+//		NotationStaff ns02 = new NotationStaff();
+//		NotationVoice nv02 = new NotationVoice();		
+//		List<Note> notesV02 = Arrays.asList(
+//			Transcription.createNote(69, new Rational(0, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(69, new Rational(2, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(68, new Rational(3, 4), new Rational(1, 32), mt2),
+//			Transcription.createNote(66, new Rational(25, 32), new Rational(1, 32), mt2),
+//			Transcription.createNote(68, new Rational(13, 16), new Rational(1, 32), mt2),
+//			Transcription.createNote(69, new Rational(27, 32), new Rational(1, 32), mt2),
+//			Transcription.createNote(68, new Rational(7, 8), new Rational(1, 16), mt2),
+//			Transcription.createNote(69, new Rational(15, 16), new Rational(1, 16), mt2),
+//			Transcription.createNote(68, new Rational(4, 4), new Rational(1, 8), mt2),
+//			Transcription.createNote(64, new Rational(9, 8), new Rational(1, 8), mt2),
+//			Transcription.createNote(69, new Rational(5, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(65, new Rational(6, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(72, new Rational(7, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(69, new Rational(8, 4), new Rational(1, 4), mt2)
+//		);
+//		notesV02.forEach(n -> {
+//			NotationChord nc = new NotationChord(); nc.add(n); nv02.add(nc);
+//		});
+//		ns02.add(nv02);
+//		ns2.add(ns02);
+//		// Voice 1
+//		NotationStaff ns12 = new NotationStaff();
+//		NotationVoice nv12 = new NotationVoice();
+//		List<Note> notesV12 = Arrays.asList(
+//			Transcription.createNote(64, new Rational(0, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(64, new Rational(2, 4), new Rational(1, 2), mt2),
+//			Transcription.createNote(69, new Rational(4, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(60, new Rational(5, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(65, new Rational(13, 8), new Rational(1, 8), mt2),
+//			Transcription.createNote(69, new Rational(15, 8), new Rational(1, 8), mt2),
+//			Transcription.createNote(65, new Rational(8, 4), new Rational(1, 4), mt2)
+//		);
+//		notesV12.forEach(n -> {
+//			NotationChord nc = new NotationChord(); nc.add(n); nv12.add(nc);
+//		});
+//		ns12.add(nv12);
+//		ns2.add(ns12);
+//		// Voice 2
+//		NotationStaff ns22 = new NotationStaff();
+//		NotationVoice nv22 = new NotationVoice();
+//		List<Note> notesV22 = Arrays.asList(
+//			Transcription.createNote(57, new Rational(0, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(57, new Rational(2, 4), new Rational(1, 2), mt2),
+//			Transcription.createNote(59, new Rational(4, 4), new Rational(1, 8), mt2),
+//			Transcription.createNote(60, new Rational(9, 8), new Rational(1, 8), mt2),
+//			Transcription.createNote(57, new Rational(5, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(59, new Rational(6, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(57, new Rational(7, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(57, new Rational(8, 4), new Rational(1, 4), mt2)
+//		);
+//		notesV22.forEach(n -> {
+//			NotationChord nc = new NotationChord(); nc.add(n); nv22.add(nc);
+//		});
+//		ns22.add(nv22);
+//		ns2.add(ns22);
+//		// Voice 3
+//		NotationStaff ns32 = new NotationStaff();
+//		NotationVoice nv32 = new NotationVoice();
+//		List<Note> notesV32 = Arrays.asList(new Note[]{
+//			Transcription.createNote(45, new Rational(0, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(45, new Rational(2, 4), new Rational(1, 2), mt2),
+//			Transcription.createNote(57, new Rational(4, 4), new Rational(1, 2), mt2),
+//			Transcription.createNote(50, new Rational(6, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(48, new Rational(7, 4), new Rational(1, 16), mt2),
+//			Transcription.createNote(45, new Rational(29, 16), new Rational(3, 16), mt2),
+//			Transcription.createNote(50, new Rational(8, 4), new Rational(1, 4), mt2)
+//		});
+//		notesV32.forEach(n -> {
+//			NotationChord nc = new NotationChord(); nc.add(n); nv32.add(nc);
+//		});
+//		ns32.add(nv32);
+//		ns2.add(ns32);
+//		// Voice 4
+//		NotationStaff ns42 = new NotationStaff();
+//		NotationVoice nv42 = new NotationVoice();
+//		List<Note> notesV42 = Arrays.asList(new Note[]{
+//			Transcription.createNote(45, new Rational(4, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(45, new Rational(5, 4), new Rational(1, 4), mt2),
+//			Transcription.createNote(45, new Rational(6, 4), new Rational(1, 8), mt2),
+//			Transcription.createNote(47, new Rational(13, 8), new Rational(1, 8), mt2)
+//		});
+//		notesV42.forEach(n -> {
+//			NotationChord nc = new NotationChord(); nc.add(n); nv42.add(nc);
+//		});
+//		ns42.add(nv42);
+//		ns2.add(ns42);
+//		expected2.setScore(ns2);
+//		expected2.setMetricalTimeLine(mt2);
+//		expected2.setHarmonyTrack(ht2);
+//		expected2.setName(p2.getName());
+//		expected.add(expected2);
+//	}
+//
+//
+//	public void testDeornament() {
+//		// a. Tablature case
+//		Tablature tab = new Tablature(encodingTestpiece, false);
+//		Transcription t = new Transcription(midiTestpiece, encodingTestpiece);
+//		Transcription deornTrans = Transcription.deornament(t, tab, new Rational(1, 8));
+//		List<List<Note>> expected = new ArrayList<List<Note>>();
+//		// Voice 0
+//		List<Note> expected0 = new ArrayList<Note>();
+//		expected0.add(Transcription.createNote(67, new Rational(3, 4), new Rational(1, 4), null));
+//		expected0.add(Transcription.createNote(70, new Rational(4, 4), new Rational(1, 4), null));
+//		expected0.add(Transcription.createNote(63, new Rational(5, 4), new Rational(1, 4), null));
+//		expected0.add(Transcription.createNote(67, new Rational(6, 4), new Rational(1, 4), null));
+//		expected0.add(Transcription.createNote(62, new Rational(7, 4), new Rational(1, 8), null));
+//		expected0.add(Transcription.createNote(66, new Rational(15, 8), new Rational(1, 8), null));
+//		expected0.add(Transcription.createNote(67, new Rational(8, 4), new Rational(1, 4), null));
+//		expected0.add(Transcription.createNote(67, new Rational(9, 4), new Rational(1, 4), null));
+//		expected0.add(Transcription.createNote(67, new Rational(11, 4), new Rational(1, 4), null));
+//		// Voice 1
+//		List<Note> expected1 = new ArrayList<Note>();
+//		expected1.add(Transcription.createNote(63, new Rational(3, 4), new Rational(1, 4), null));
+//		expected1.add(Transcription.createNote(67, new Rational(4, 4), new Rational(1, 8), null));
+//		expected1.add(Transcription.createNote(63, new Rational(5, 4), new Rational(1, 8), null));
+//		expected1.add(Transcription.createNote(58, new Rational(6, 4), new Rational(1, 4), null));
+//		expected1.add(Transcription.createNote(67, new Rational(7, 4), new Rational(1, 4), null));
+//		expected1.add(Transcription.createNote(62, new Rational(8, 4), new Rational(1, 2), null));
+//		expected1.add(Transcription.createNote(62, new Rational(11, 4), new Rational(1, 4), null));
+//		// Voice 2
+//		List<Note> expected2 = new ArrayList<Note>();
+//		expected2.add(Transcription.createNote(55, new Rational(3, 4), new Rational(1, 4), null));
+//		expected2.add(Transcription.createNote(55, new Rational(4, 4), new Rational(1, 4), null));
+//		expected2.add(Transcription.createNote(57, new Rational(5, 4), new Rational(1, 4), null));
+//		expected2.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 4), null));
+//		expected2.add(Transcription.createNote(58, new Rational(7, 4), new Rational(1, 8), null));
+//		expected2.add(Transcription.createNote(57, new Rational(15, 8), new Rational(1, 8), null));
+//		expected2.add(Transcription.createNote(55, new Rational(8, 4), new Rational(1, 2), null));
+//		expected2.add(Transcription.createNote(55, new Rational(11, 4), new Rational(1, 4), null));
+//		// Voice 3
+//		List<Note> expected3 = new ArrayList<Note>();
+//		expected3.add(Transcription.createNote(48, new Rational(3, 4), new Rational(1, 4), null));
+//		expected3.add(Transcription.createNote(43, new Rational(4, 4), new Rational(1, 4), null));
+//		expected3.add(Transcription.createNote(48, new Rational(5, 4), new Rational(1, 4), null));
+//		expected3.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 2), null));
+//		expected3.add(Transcription.createNote(43, new Rational(8, 4), new Rational(1, 2), null));
+//		expected3.add(Transcription.createNote(43, new Rational(11, 4), new Rational(1, 4), null));
+//		// Voice 4
+//		List<Note> expected4 = new ArrayList<Note>();
+//		expected4.add(Transcription.createNote(45, new Rational(5, 4), new Rational(1, 8), null));
+//		expected4.add(Transcription.createNote(43, new Rational(11, 8), new Rational(1, 8), null));
+//		expected4.add(Transcription.createNote(43, new Rational(6, 4), new Rational(1, 4), null));
+//		expected4.add(Transcription.createNote(43, new Rational(7, 4), new Rational(1, 4), null));
+//
+//		expected.add(expected0); expected.add(expected1); expected.add(expected2);
+//		expected.add(expected3); expected.add(expected4);
+//
+//		List<List<Note>> actual = new ArrayList<List<Note>>();
+//		for (NotationStaff notationStaff: deornTrans.getScorePiece().getScore()) {
+//			for (NotationVoice notationVoice : notationStaff) {
+//				List<Note> currentActual = new ArrayList<Note>();
+//				for (NotationChord notationChord : notationVoice) {
+//					currentActual.add(notationChord.get(0));
+//				}
+//				actual.add(currentActual);
+//			}
+//		}
+//
+//		// b. Non-tablature case
+//		tab = null;
+//		t = new Transcription(midiTestpiece, null);
+//		deornTrans = Transcription.deornament(t, tab, new Rational(1, 8));
+//		// Voice 0
+//		List<Note> expected5 = new ArrayList<Note>();
+//		expected5.add(Transcription.createNote(69, new Rational(3, 4), new Rational(1, 4), null));
+//		expected5.add(Transcription.createNote(72, new Rational(4, 4), new Rational(1, 4), null));
+//		expected5.add(Transcription.createNote(65, new Rational(5, 4), new Rational(1, 4), null));
+//		expected5.add(Transcription.createNote(69, new Rational(6, 4), new Rational(1, 4), null));
+//		expected5.add(Transcription.createNote(64, new Rational(7, 4), new Rational(1, 8), null));
+//		expected5.add(Transcription.createNote(68, new Rational(15, 8), new Rational(1, 8), null));
+//		expected5.add(Transcription.createNote(69, new Rational(8, 4), new Rational(1, 4), null));
+//		expected5.add(Transcription.createNote(69, new Rational(9, 4), new Rational(1, 4), null));
+//		expected5.add(Transcription.createNote(69, new Rational(11, 4), new Rational(1, 4), null));
+//		// Voice 1
+//		List<Note> expected6 = new ArrayList<Note>();
+//		expected6.add(Transcription.createNote(65, new Rational(3, 4), new Rational(1, 4), null));
+//		expected6.add(Transcription.createNote(69, new Rational(4, 4), new Rational(1, 8), null));
+//		expected6.add(Transcription.createNote(65, new Rational(5, 4), new Rational(1, 8), null));
+//		expected6.add(Transcription.createNote(60, new Rational(6, 4), new Rational(1, 4), null));
+//		expected6.add(Transcription.createNote(69, new Rational(7, 4), new Rational(1, 4), null));
+//		expected6.add(Transcription.createNote(64, new Rational(8, 4), new Rational(1, 2), null));
+//		expected6.add(Transcription.createNote(64, new Rational(11, 4), new Rational(1, 4), null));
+//		// Voice 2
+//		List<Note> expected7 = new ArrayList<Note>();
+//		expected7.add(Transcription.createNote(57, new Rational(3, 4), new Rational(1, 4), null));
+//		expected7.add(Transcription.createNote(57, new Rational(4, 4), new Rational(1, 4), null));
+//		expected7.add(Transcription.createNote(59, new Rational(5, 4), new Rational(1, 4), null));
+//		expected7.add(Transcription.createNote(57, new Rational(6, 4), new Rational(1, 4), null));
+//		expected7.add(Transcription.createNote(60, new Rational(7, 4), new Rational(1, 8), null));
+//		expected7.add(Transcription.createNote(59, new Rational(15, 8), new Rational(1, 8), null));
+//		expected7.add(Transcription.createNote(57, new Rational(8, 4), new Rational(1, 2), null));
+//		expected7.add(Transcription.createNote(57, new Rational(11, 4), new Rational(1, 4), null));
+//		// Voice 3
+//		List<Note> expected8 = new ArrayList<Note>();
+//		expected8.add(Transcription.createNote(50, new Rational(3, 4), new Rational(1, 4), null));
+//		expected8.add(Transcription.createNote(45, new Rational(4, 4), new Rational(1, 4), null));
+//		expected8.add(Transcription.createNote(50, new Rational(5, 4), new Rational(1, 4), null));
+//		expected8.add(Transcription.createNote(57, new Rational(6, 4), new Rational(1, 2), null));
+//		expected8.add(Transcription.createNote(45, new Rational(8, 4), new Rational(1, 2), null));
+//		expected8.add(Transcription.createNote(45, new Rational(11, 4), new Rational(1, 4), null));
+//		// Voice 4
+//		List<Note> expected9 = new ArrayList<Note>();
+//		expected9.add(Transcription.createNote(47, new Rational(5, 4), new Rational(1, 8), null));
+//		expected9.add(Transcription.createNote(45, new Rational(11, 8), new Rational(1, 8), null));
+//		expected9.add(Transcription.createNote(45, new Rational(6, 4), new Rational(1, 4), null));
+//		expected9.add(Transcription.createNote(45, new Rational(7, 4), new Rational(1, 4), null));
+//
+//		expected.add(expected5); expected.add(expected6); expected.add(expected7);
+//		expected.add(expected8); expected.add(expected9);
+//
+//		for (NotationStaff notationStaff: deornTrans.getScorePiece().getScore()) {
+//			for (NotationVoice notationVoice : notationStaff) {
+//				List<Note> currentActual = new ArrayList<Note>();
+//				for (NotationChord notationChord : notationVoice) {
+//					currentActual.add(notationChord.get(0));
+//				}
+//				actual.add(currentActual);
+//			}
 //		}
 //
 //		assertEquals(expected.size(), actual.size());
 //		for (int i = 0; i < expected.size(); i++) {
-//			assertEquals(expected.get(i), actual.get(i));
+//			assertEquals(expected.get(i).size(), actual.get(i).size());
+//			for (int j = 0; j < expected.get(i).size(); j++) {
+//				// assertEquals(expected.get(i).get(j), actual.get(i).get(j)) does not work because the Notes are not 
+//				// the same objects: therefore check that pitch, metricTime, and metricDuration are the same
+//				assertEquals(expected.get(i).get(j).getMidiPitch(), actual.get(i).get(j).getMidiPitch());
+//				assertEquals(expected.get(i).get(j).getMetricTime(), actual.get(i).get(j).getMetricTime());
+//				assertEquals(expected.get(i).get(j).getMetricDuration(), actual.get(i).get(j).getMetricDuration());
+//			}
 //		}
 //	}
-
-
-//	public void testUniformiseInitialNoteSequence() {
-//		Transcription t = new Transcription();
-//		t.setPiece(MIDIImport.importMidiFile(midiTestpiece));
-//		t.setName();
-//		NoteSequence noteSeq = t.makeInitialNoteSequence(); 
 //
-//		// Account for inconsistent behaviour in ordering of equal-pitch notes
-//		if (noteSeq.get(12).getMetricDuration().equals(new Rational(1, 4)) &&
-//			noteSeq.get(13).getMetricDuration().equals(new Rational(1, 8))) {
-//			noteSeq.swapNotes(12, 13);
-//			System.out.println("12 and 13 swapped");
-//		}
-//		if (noteSeq.get(16).getMetricDuration().equals(new Rational(1, 4)) && 
-//			noteSeq.get(17).getMetricDuration().equals(new Rational(1, 2))) {
-//			noteSeq.swapNotes(16, 17);
-//			System.out.println("16 and 17 swapped");
-//		}
-//		// Order equal-pitch notes 12 and 13 incorrectly
-//		noteSeq.swapNotes(12, 13);
 //
-//		NoteSequence expected = getNoteSequence(t.getPiece(), "testpiece");
-//		
-//		NoteSequence actual = t.uniformiseInitialNoteSequence(noteSeq);
-//
-//		assertEquals(expected.size(), actual.size());
-//		for (int i = 0; i < expected.size(); i++) {
-//			assertEquals(expected.get(i), actual.get(i));
-//		}
-//	}
-
-
-//	public void testInitialiseNoteSequenceOLD() {
+//	public void testTransposeOLD() {      
+//		Tablature tablature = new Tablature(encodingTestpiece, false);
 //		Transcription transcription = new Transcription();
 ////		transcription.setFile(midiTestpiece1);
 //		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
 ////		transcription.setPiece(null);
-//		transcription.initialiseNoteSequence();
+//		transcription.makeNoteSequence();
+//		transcription.initialiseVoiceLabels(null); 
+//		transcription.initialiseDurationLabels(null);
+//		if (transcription.checkChords(tablature) == false) {
+//			throw new RuntimeException("ERROR: Chord error (see console).");
+//		}
+//		transcription.handleSNUsOLD(tablature, Type.FROM_FILE);
+//		transcription.handleCourseCrossingsOLD(tablature, Type.FROM_FILE);
+//		if (transcription.checkAlignment(tablature) == false) {
+//			throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
+//		}
 //
-//		// Expected cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes with
+//		// a. NoteSequence
+//		// NB: expectedNotes cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes
+//		// with the same pitch and onset time randomly -- now that in the lower voice first, then that in the higher
+//		List<Note> expectedNotes = new ArrayList<Note>();
+//		// Chord 0
+//		expectedNotes.add(Transcription.createNote(48, new Rational(3, 4), new Rational(1, 4), null));
+//		expectedNotes.add(Transcription.createNote(55, new Rational(3, 4), new Rational(1, 4), null));
+//		expectedNotes.add(Transcription.createNote(63, new Rational(3, 4), new Rational(1, 4), null));
+//		expectedNotes.add(Transcription.createNote(67, new Rational(3, 4), new Rational(1, 4), null));
+//		// Chord 1
+//		expectedNotes.add(Transcription.createNote(43, new Rational(4, 4), new Rational(3, 16), null));
+//		expectedNotes.add(Transcription.createNote(55, new Rational(4, 4), new Rational(1, 4), null));
+//		expectedNotes.add(Transcription.createNote(70, new Rational(4, 4), new Rational(1, 4), null));
+//		expectedNotes.add(Transcription.createNote(67, new Rational(4, 4), new Rational(1, 8), null));
+//		// Chord 2
+//		expectedNotes.add(Transcription.createNote(46, new Rational(19, 16), new Rational(1, 16), null));
+//		// Chord 3
+//		expectedNotes.add(Transcription.createNote(45, new Rational(5, 4), new Rational(1, 8), null));
+//		expectedNotes.add(Transcription.createNote(48, new Rational(5, 4), new Rational(1, 4), null));
+//		expectedNotes.add(Transcription.createNote(57, new Rational(5, 4), new Rational(1, 4), null));
+//		expectedNotes.add(Transcription.createNote(63, new Rational(5, 4), new Rational(1, 4), null));
+//		// Chord 4
+//		expectedNotes.add(Transcription.createNote(43, new Rational(11, 8), new Rational(1, 8), null));
+//		// Chord 5
+//		expectedNotes.add(Transcription.createNote(43, new Rational(6, 4), new Rational(1, 4), null));
+//		expectedNotes.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 2), null));
+//		expectedNotes.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 4), null));
+//		expectedNotes.add(Transcription.createNote(58, new Rational(6, 4), new Rational(1, 4), null));
+//		expectedNotes.add(Transcription.createNote(67, new Rational(6, 4), new Rational(1, 4), null));
+//		// Chord 6
+//		expectedNotes.add(Transcription.createNote(43, new Rational(7, 4), new Rational(1, 4), null));
+//		expectedNotes.add(Transcription.createNote(58, new Rational(7, 4), new Rational(1, 8), null));
+//		expectedNotes.add(Transcription.createNote(62, new Rational(7, 4), new Rational(1, 8), null));
+//		expectedNotes.add(Transcription.createNote(67, new Rational(7, 4), new Rational(1, 4), null));
+//		// Chord 7
+//		expectedNotes.add(Transcription.createNote(57, new Rational(15, 8), new Rational(1, 8), null));
+//		expectedNotes.add(Transcription.createNote(66, new Rational(15, 8), new Rational(1, 8), null));
+//		// Chord 8
+//		expectedNotes.add(Transcription.createNote(43, new Rational(8, 4), new Rational(1, 2), null));
+//		expectedNotes.add(Transcription.createNote(55, new Rational(8, 4), new Rational(1, 2), null));
+//		expectedNotes.add(Transcription.createNote(62, new Rational(8, 4), new Rational(1, 2), null));
+//		expectedNotes.add(Transcription.createNote(67, new Rational(8, 4), new Rational(1, 16), null));
+//		// Chords 9-14
+//		expectedNotes.add(Transcription.createNote(66, new Rational(33, 16), new Rational(1, 16), null));
+//		expectedNotes.add(Transcription.createNote(67, new Rational(17, 8), new Rational(1, 32), null));
+//		expectedNotes.add(Transcription.createNote(66, new Rational(69, 32), new Rational(1, 32), null));
+//		expectedNotes.add(Transcription.createNote(64, new Rational(35, 16), new Rational(1, 32), null));
+//		expectedNotes.add(Transcription.createNote(66, new Rational(71, 32), new Rational(1, 32), null));
+//		expectedNotes.add(Transcription.createNote(67, new Rational(9, 4), new Rational(1, 4), null));
+//		// Chord 14
+//		expectedNotes.add(Transcription.createNote(43, new Rational(11, 4), new Rational(1, 4), null));
+//		expectedNotes.add(Transcription.createNote(55, new Rational(11, 4), new Rational(1, 4), null));
+//		expectedNotes.add(Transcription.createNote(62, new Rational(11, 4), new Rational(1, 4), null));
+//		expectedNotes.add(Transcription.createNote(67, new Rational(11, 4), new Rational(1, 4), null));
+//
+//		// b. Piece
+//		Piece expectedPiece = new Piece();
+//		NotationSystem system = expectedPiece.createNotationSystem();
+//		// Voice 0
+//		NotationStaff staff0 = new NotationStaff(system); system.add(staff0);
+//		NotationVoice voice0 = new NotationVoice(staff0); staff0.add(voice0);
+//		voice0.add(Transcription.createNote(67, new Rational(3, 4), new Rational(1, 4), null));
+////		NotationChord nc00 = new NotationChord(); nc00.add(Transcription.createNote(67, new Rational(3, 4), new Rational(1, 4), null)); voice0.add(nc00);
+//		voice0.add(Transcription.createNote(70, new Rational(4, 4), new Rational(1, 4), null));
+//		voice0.add(Transcription.createNote(63, new Rational(5, 4), new Rational(1, 4), null));
+//		voice0.add(Transcription.createNote(67, new Rational(6, 4), new Rational(1, 4), null));
+//		voice0.add(Transcription.createNote(62, new Rational(7, 4), new Rational(1, 8), null));
+//		voice0.add(Transcription.createNote(66, new Rational(15, 8), new Rational(1, 8), null));
+//		voice0.add(Transcription.createNote(67, new Rational(8, 4), new Rational(1, 16), null));
+//		voice0.add(Transcription.createNote(66, new Rational(33, 16), new Rational(1, 16), null));
+//		voice0.add(Transcription.createNote(67, new Rational(17, 8), new Rational(1, 32), null));
+//		voice0.add(Transcription.createNote(66, new Rational(69, 32), new Rational(1, 32), null));
+//		voice0.add(Transcription.createNote(64, new Rational(35, 16), new Rational(1, 32), null));
+//		voice0.add(Transcription.createNote(66, new Rational(71, 32), new Rational(1, 32), null));
+//		voice0.add(Transcription.createNote(67, new Rational(9, 4), new Rational(1, 4), null));
+//		voice0.add(Transcription.createNote(67, new Rational(11, 4), new Rational(1, 4), null));    
+//		// Voice 1
+//		NotationStaff staff1 = new NotationStaff(system); system.add(staff1); 
+//		NotationVoice voice1 = new NotationVoice(staff1); staff1.add(voice1);
+//		voice1.add(Transcription.createNote(63, new Rational(3, 4), new Rational(1, 4), null));
+//		voice1.add(Transcription.createNote(67, new Rational(4, 4), new Rational(1, 8), null));
+//		voice1.add(Transcription.createNote(63, new Rational(5, 4), new Rational(1, 8), null));
+//		voice1.add(Transcription.createNote(58, new Rational(6, 4), new Rational(1, 4), null));
+//		voice1.add(Transcription.createNote(67, new Rational(7, 4), new Rational(1, 4), null));
+//		voice1.add(Transcription.createNote(62, new Rational(8, 4), new Rational(1, 2), null));
+//		voice1.add(Transcription.createNote(62, new Rational(11, 4), new Rational(1, 4), null));
+//		// Voice 2
+//		NotationStaff staff2 = new NotationStaff(system); system.add(staff2); 
+//		NotationVoice voice2 = new NotationVoice(staff2); staff2.add(voice2);
+//		voice2.add(Transcription.createNote(55, new Rational(3, 4), new Rational(1, 4), null));
+//		voice2.add(Transcription.createNote(55, new Rational(4, 4), new Rational(1, 4), null));
+//		voice2.add(Transcription.createNote(57, new Rational(5, 4), new Rational(1, 4), null));
+//		voice2.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 4), null));
+//		voice2.add(Transcription.createNote(58, new Rational(7, 4), new Rational(1, 8), null));
+//		voice2.add(Transcription.createNote(57, new Rational(15, 8), new Rational(1, 8), null));
+//		voice2.add(Transcription.createNote(55, new Rational(8, 4), new Rational(1, 2), null));
+//		voice2.add(Transcription.createNote(55, new Rational(11, 4), new Rational(1, 4), null));
+//		// Voice 3
+//		NotationStaff staff3 = new NotationStaff(system); system.add(staff3); 
+//		NotationVoice voice3 = new NotationVoice(staff3); staff3.add(voice3);
+//		voice3.add(Transcription.createNote(48, new Rational(3, 4), new Rational(1, 4), null));
+//		voice3.add(Transcription.createNote(43, new Rational(4, 4), new Rational(3, 16), null));
+//		voice3.add(Transcription.createNote(46, new Rational(19, 16), new Rational(1, 16), null));
+//		voice3.add(Transcription.createNote(48, new Rational(5, 4), new Rational(1, 4), null));
+//		voice3.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 2), null));
+//		voice3.add(Transcription.createNote(43, new Rational(8, 4), new Rational(1, 2), null));
+//		voice3.add(Transcription.createNote(43, new Rational(11, 4), new Rational(1, 4), null));
+//		// Voice 4
+//		NotationStaff staff4 = new NotationStaff(system); system.add(staff4);
+//		NotationVoice voice4 = new NotationVoice(staff4); staff4.add(voice4);
+//		voice4.add(Transcription.createNote(45, new Rational(5, 4), new Rational(1, 8), null));
+//		voice4.add(Transcription.createNote(43, new Rational(11, 8), new Rational(1, 8), null));
+//		voice4.add(Transcription.createNote(43, new Rational(6, 4), new Rational(1, 4), null));
+//		voice4.add(Transcription.createNote(43, new Rational(7, 4), new Rational(1, 4), null));
+//
+//		transcription.transpose(tablature.getTranspositionInterval());
+//		// a. noteSequence
+//		NoteSequence noteSeq = transcription.getNoteSequence();
+//		List<Note> actualNotes = new ArrayList<Note>();
+//		for (Note n : noteSeq) {
+//			actualNotes.add(n);
+//		}
+//		// b. piece
+//		Piece actualPiece = transcription.getScorePiece();
+//
+//		// Assert equality
+//		// a. noteSequence
+//		assertEquals(expectedNotes.size(), actualNotes.size());
+//		for (int i = 0; i < expectedNotes.size(); i++) {
+//			// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
+//			// objects: therefore check that pitch, metricTime, and metricDuration are the same
+//			assertEquals(expectedNotes.get(i).getMidiPitch(), actualNotes.get(i).getMidiPitch());
+//			assertEquals(expectedNotes.get(i).getMetricTime(), actualNotes.get(i).getMetricTime());
+//			assertEquals(expectedNotes.get(i).getMetricDuration(), actualNotes.get(i).getMetricDuration());
+//		} 
+//		// b. piece
+//		NotationSystem expectedNotationSystem = expectedPiece.getScore();
+//		NotationSystem actualNotationSystem = actualPiece.getScore();
+//		assertEquals(expectedNotationSystem.size(), actualNotationSystem.size());
+//		for (int i = 0; i < expectedNotationSystem.size(); i++) {
+//			// NotationStaff
+//			NotationStaff expectedNotationStaff = expectedNotationSystem.get(i);
+//			NotationStaff actualNotationStaff = actualNotationSystem.get(i);
+//			assertEquals(expectedNotationStaff.size(), actualNotationStaff.size());
+//			// NotationVoice
+//			NotationVoice expectedNotationVoice = expectedNotationStaff.get(0);
+//			NotationVoice actualNotationVoice = actualNotationStaff.get(0);
+//			assertEquals(expectedNotationVoice.size(), actualNotationVoice.size());
+//			for (int j = 0; j < expectedNotationVoice.size(); j++) {
+//				// NotationChord
+//				NotationChord expectedNotationChord = expectedNotationVoice.get(j);
+//				NotationChord actualNotationChord = actualNotationVoice.get(j);
+//				assertEquals(expectedNotationChord.size(), actualNotationChord.size());
+//				for (int k = 0; k < expectedNotationChord.size(); k++) {
+//					assertEquals(expectedNotationChord.get(k).getMidiPitch(), actualNotationChord.get(k).getMidiPitch());
+//					assertEquals(expectedNotationChord.get(k).getMetricTime(), actualNotationChord.get(k).getMetricTime());
+//					assertEquals(expectedNotationChord.get(k).getMetricDuration(), actualNotationChord.get(k).getMetricDuration());   	    
+//				}
+//			}
+//		}
+//	}
+//
+//
+//	public void testHandleUnisonsOLD() {
+//		Transcription t = new Transcription();
+//		t.setPiece(MIDIImport.importMidiFile(midiTestpiece));
+//		t.setName();
+//		t.setNotes(null);
+////		t.setNoteSequence();
+//		t.initialiseVoiceLabels(null);
+//		t.setMeterInfo();
+//		t.setKeyInfo();
+//
+//		NoteSequence expected = getNoteSequence(t.getScorePiece(), "testpiece");
+//		expected.swapNotes(12, 13);
+//		
+//		// a. NoteSequence
+////		// NB: expectedNoteSeq cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes
+////		// with the same pitch and onset time randomly
+////		List<Note> expectedNotes = new ArrayList<Note>();
+////		for (Note n : t.getNoteSequence()) {
+////			expectedNotes.add(n);
+////		}
+////		expectedNotes.set(12, Transcription.createNote(65, new Rational(5, 4), new Rational(1, 4)));
+////		expectedNotes.set(13, Transcription.createNote(65, new Rational(5, 4), new Rational(1, 8)));  
+//		// b. Voice labels
+//		List<List<Double>> expectedVoiceLabels = new ArrayList<List<Double>>(t.getVoiceLabels());
+//		expectedVoiceLabels.set(12, V_0);
+//		expectedVoiceLabels.set(13, V_1);
+//
+//		t.handleUnisons(Type.FROM_FILE);
+//		
+//		NoteSequence actual = t.getNoteSequence();
+////		List<Note> actualNotes = new ArrayList<Note>();
+////		for (Note n : t.getNoteSequence()) {
+////			actualNotes.add(n);
+////		}
+//		List<List<Double>> actualVoiceLabels = t.getVoiceLabels();
+//		
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i), actual.get(i));
+//		}
+//
+//		// a. NoteSequence
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i), actual.get(i));
+//		}
+////		assertEquals(expectedNotes.size(), actualNotes.size());
+////		for (int i = 0; i < expectedNotes.size(); i++) {
+////			// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
+////			// objects: therefore check that pitch, metricTime, and metricDuration are the same
+////			assertEquals(expectedNotes.get(i).getMidiPitch(), actualNotes.get(i).getMidiPitch());
+////			assertEquals(expectedNotes.get(i).getMetricTime(), actualNotes.get(i).getMetricTime());
+////			assertEquals(expectedNotes.get(i).getMetricDuration(), actualNotes.get(i).getMetricDuration());
+////		}
+//		// b. Voice labels
+//		assertEquals(expectedVoiceLabels.size(), actualVoiceLabels.size());
+//		for (int i = 0; i < expectedVoiceLabels.size(); i++) {
+//			assertEquals(expectedVoiceLabels.get(i).size(), actualVoiceLabels.get(i).size());
+//			for (int j = 0; j < expectedVoiceLabels.get(i).size(); j++) {
+//				assertEquals(expectedVoiceLabels.get(i).get(j), actualVoiceLabels.get(i).get(j));
+//			}
+//		}
+//		assertEquals(expectedVoiceLabels, actualVoiceLabels);
+//	}
+//	
+//	
+//	public void testSetAndGetNoteSequence() {
+//		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
+//
+//		// NB: Expected cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes with
 //		// the same pitch and onset time randomly -- now that in the lower voice first, then that in the higher
 //		List<Note> expected = new ArrayList<Note>();
 //		// Chord 0
-//		expected.add(Transcription.createNote(50, new Rational(3, 4), new Rational(1, 4)));
-//		expected.add(Transcription.createNote(57, new Rational(3, 4), new Rational(1, 4)));
-//		expected.add(Transcription.createNote(65, new Rational(3, 4), new Rational(1, 4)));
-//		expected.add(Transcription.createNote(69, new Rational(3, 4), new Rational(1, 4)));
+//		expected.add(Transcription.createNote(48, new Rational(3, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(55, new Rational(3, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(63, new Rational(3, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(67, new Rational(3, 4), new Rational(1, 4), null));
 //		// Chord 1
-//		expected.add(Transcription.createNote(45, new Rational(4, 4), new Rational(3, 16)));
-//		expected.add(Transcription.createNote(57, new Rational(4, 4), new Rational(1, 4)));
-//		expected.add(Transcription.createNote(69, new Rational(4, 4), new Rational(1, 8)));
-//		expected.add(Transcription.createNote(72, new Rational(4, 4), new Rational(1, 4)));
+//		expected.add(Transcription.createNote(43, new Rational(4, 4), new Rational(3, 16), null));
+//		expected.add(Transcription.createNote(55, new Rational(4, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(70, new Rational(4, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(67, new Rational(4, 4), new Rational(1, 8), null));
 //		// Chord 2
-//		expected.add(Transcription.createNote(48, new Rational(19, 16), new Rational(1, 16)));
+//		expected.add(Transcription.createNote(46, new Rational(19, 16), new Rational(1, 16), null));
 //		// Chord 3
-//		expected.add(Transcription.createNote(47, new Rational(5, 4), new Rational(1, 8)));
-//		expected.add(Transcription.createNote(50, new Rational(5, 4), new Rational(1, 4)));
-//		expected.add(Transcription.createNote(59, new Rational(5, 4), new Rational(1, 4)));
-//		expected.add(Transcription.createNote(65, new Rational(5, 4), new Rational(1, 8)));
-//		expected.add(Transcription.createNote(65, new Rational(5, 4), new Rational(1, 4)));
+//		expected.add(Transcription.createNote(45, new Rational(5, 4), new Rational(1, 8), null));
+//		expected.add(Transcription.createNote(48, new Rational(5, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(57, new Rational(5, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(63, new Rational(5, 4), new Rational(1, 4), null));
 //		// Chord 4
-//		expected.add(Transcription.createNote(45, new Rational(11, 8), new Rational(1, 8)));
+//		expected.add(Transcription.createNote(43, new Rational(11, 8), new Rational(1, 8), null));
 //		// Chord 5
-//		expected.add(Transcription.createNote(45, new Rational(6, 4), new Rational(1, 4)));
-//		expected.add(Transcription.createNote(57, new Rational(6, 4), new Rational(1, 2)));
-//		expected.add(Transcription.createNote(57, new Rational(6, 4), new Rational(1, 4)));
-//		expected.add(Transcription.createNote(60, new Rational(6, 4), new Rational(1, 4)));
-//		expected.add(Transcription.createNote(69, new Rational(6, 4), new Rational(1, 4)));
+//		expected.add(Transcription.createNote(43, new Rational(6, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 2), null));
+//		expected.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(58, new Rational(6, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(67, new Rational(6, 4), new Rational(1, 4), null));
 //		// Chord 6
-//		expected.add(Transcription.createNote(45, new Rational(7, 4), new Rational(1, 4)));
-//		expected.add(Transcription.createNote(60, new Rational(7, 4), new Rational(1, 8)));
-//		expected.add(Transcription.createNote(64, new Rational(7, 4), new Rational(1, 8)));
-//		expected.add(Transcription.createNote(69, new Rational(7, 4), new Rational(1, 4)));
+//		expected.add(Transcription.createNote(43, new Rational(7, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(58, new Rational(7, 4), new Rational(1, 8), null));
+//		expected.add(Transcription.createNote(62, new Rational(7, 4), new Rational(1, 8), null));
+//		expected.add(Transcription.createNote(67, new Rational(7, 4), new Rational(1, 4), null));
 //		// Chord 7
-//		expected.add(Transcription.createNote(59, new Rational(15, 8), new Rational(1, 8)));
-//		expected.add(Transcription.createNote(68, new Rational(15, 8), new Rational(1, 8)));
+//		expected.add(Transcription.createNote(57, new Rational(15, 8), new Rational(1, 8), null));
+//		expected.add(Transcription.createNote(66, new Rational(15, 8), new Rational(1, 8), null));
 //		// Chord 8
-//		expected.add(Transcription.createNote(45, new Rational(8, 4), new Rational(1, 2)));
-//		expected.add(Transcription.createNote(57, new Rational(8, 4), new Rational(1, 2)));
-//		expected.add(Transcription.createNote(64, new Rational(8, 4), new Rational(1, 2)));
-//		expected.add(Transcription.createNote(69, new Rational(8, 4), new Rational(1, 16)));
+//		expected.add(Transcription.createNote(43, new Rational(8, 4), new Rational(1, 2), null));
+//		expected.add(Transcription.createNote(55, new Rational(8, 4), new Rational(1, 2), null));
+//		expected.add(Transcription.createNote(62, new Rational(8, 4), new Rational(1, 2), null));
+//		expected.add(Transcription.createNote(67, new Rational(8, 4), new Rational(1, 16), null));
 //		// Chords 9-14
-//		expected.add(Transcription.createNote(68, new Rational(33, 16), new Rational(1, 16)));
-//		expected.add(Transcription.createNote(69, new Rational(17, 8), new Rational(1, 32)));
-//		expected.add(Transcription.createNote(68, new Rational(69, 32), new Rational(1, 32)));
-//		expected.add(Transcription.createNote(66, new Rational(35, 16), new Rational(1, 32)));
-//		expected.add(Transcription.createNote(68, new Rational(71, 32), new Rational(1, 32)));
-//		expected.add(Transcription.createNote(69, new Rational(9, 4), new Rational(1, 4)));
-//		// Chord 15
-//		expected.add(Transcription.createNote(45, new Rational(11, 4), new Rational(1, 4)));
-//		expected.add(Transcription.createNote(57, new Rational(11, 4), new Rational(1, 4)));
-//		expected.add(Transcription.createNote(64, new Rational(11, 4), new Rational(1, 4)));
-//		expected.add(Transcription.createNote(69, new Rational(11, 4), new Rational(1, 4)));
+//		expected.add(Transcription.createNote(66, new Rational(33, 16), new Rational(1, 16), null));
+//		expected.add(Transcription.createNote(67, new Rational(17, 8), new Rational(1, 32), null));
+//		expected.add(Transcription.createNote(66, new Rational(69, 32), new Rational(1, 32), null));
+//		expected.add(Transcription.createNote(64, new Rational(35, 16), new Rational(1, 32), null));
+//		expected.add(Transcription.createNote(66, new Rational(71, 32), new Rational(1, 32), null));
+//		expected.add(Transcription.createNote(67, new Rational(9, 4), new Rational(1, 4), null));
+//		// Chord 14
+//		expected.add(Transcription.createNote(43, new Rational(11, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(55, new Rational(11, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(62, new Rational(11, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(67, new Rational(11, 4), new Rational(1, 4), null));
 //
 //		NoteSequence noteSeq = transcription.getNoteSequence();
 //		List<Note> actual = new ArrayList<Note>();
@@ -6481,7 +7536,6 @@ public class TranscriptionTest extends TestCase {
 //
 //		assertEquals(expected.size(), actual.size());
 //		for (int i = 0; i < expected.size(); i++) {
-////			assert(expected.get(i).isEquivalent(actual.get(i)));
 //			// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
 //			// objects: therefore check that pitch, metricTime, and metricDuration are the same
 //			assertEquals(expected.get(i).getMidiPitch(), actual.get(i).getMidiPitch());
@@ -6489,1999 +7543,978 @@ public class TranscriptionTest extends TestCase {
 //			assertEquals(expected.get(i).getMetricDuration(), actual.get(i).getMetricDuration());
 //		}
 //	}
-
-
-	public void testGetChordsFromNoteSequence() {
-//		// Populated NoteSequence
-		Transcription t1 = new Transcription();
-		t1.setPiece(MIDIImport.importMidiFile(midiTestpiece));
-		t1.setName();
-		t1.setNoteSequence();
-//		// Populated and uniformised (i.e., initialised) NoteSequence
-//		Transcription t2 = new Transcription();
-//		t2.setPiece(MIDIImport.importMidiFile(midiTestpiece));
-//		t2.setName();
-//		t2.makeNoteSequence();
-		// Populated, uniformised, and unisons handled
-		// TODO
-		// Populated, uniformised, and SNUs and course crossings handled
-		// TODO
-
-		List<Integer> chordSizes = Arrays.asList(new Integer[]{4, 4, 1, 5, 1, 5, 4, 2, 4, 1, 1, 1, 1, 1, 1, 4});
-
-		List<List<Note>> expected = new ArrayList<>();
-//		// Populated NoteSequence
-		NoteSequence noteSeq1 = getNoteSequence(t1.getScorePiece(), "testpiece");
-		List<List<Note>> expected1 = new ArrayList<>();
-		int start = 0;
-		for (int chordSize : chordSizes) {
-			List<Note> currChord = new ArrayList<>();
-			for (int j = start; j < start + chordSize; j++) {
-				currChord.add(noteSeq1.get(j));
-			}
-			expected1.add(currChord);
-			start += chordSize;
-		}
-		expected.addAll(expected1);
-//		// Populated and uniformised (i.e., initialised) NoteSequence
-//		NoteSequence noteSeq2 = getNoteSequence(t2.getPiece(), "testpiece");
-//		List<List<Note>> expected2 = new ArrayList<>();
-//		start = 0;
-//		for (int chordSize : chordSizes) {
-//			List<Note> currChord = new ArrayList<>();
-//			for (int j = start; j < start + chordSize; j++) {
-//				currChord.add(noteSeq2.get(j));
-//			}
-//			expected2.add(currChord);
-//			start += chordSize;
+//
+//
+//	public void testSetAndGetNoteSequenceNonTab() {
+//		Transcription transcription = new Transcription(midiTestpiece);
+//		// Determine expected
+//
+//		// NB: Expected cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes with
+//		// the same pitch and onset time randomly -- now that in the lower voice first, then that in the higher
+//		List<Note> expected = new ArrayList<Note>();
+//		// Chord 0
+//		expected.add(Transcription.createNote(50, new Rational(3, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(57, new Rational(3, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(65, new Rational(3, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(69, new Rational(3, 4), new Rational(1, 4), null));
+//		// Chord 1
+//		expected.add(Transcription.createNote(45, new Rational(4, 4), new Rational(3, 16), null));
+//		expected.add(Transcription.createNote(57, new Rational(4, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(69, new Rational(4, 4), new Rational(1, 8), null));
+//		expected.add(Transcription.createNote(72, new Rational(4, 4), new Rational(1, 4), null));
+//		// Chord 2
+//		expected.add(Transcription.createNote(48, new Rational(19, 16), new Rational(1, 16), null));
+//		// Chord 3
+//		expected.add(Transcription.createNote(47, new Rational(5, 4), new Rational(1, 8), null));
+//		expected.add(Transcription.createNote(50, new Rational(5, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(59, new Rational(5, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(65, new Rational(5, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(65, new Rational(5, 4), new Rational(1, 8), null));
+//		// Chord 4
+//		expected.add(Transcription.createNote(45, new Rational(11, 8), new Rational(1, 8), null));
+//		// Chord 5
+//		expected.add(Transcription.createNote(45, new Rational(6, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(57, new Rational(6, 4), new Rational(1, 2), null));
+//		expected.add(Transcription.createNote(57, new Rational(6, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(60, new Rational(6, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(69, new Rational(6, 4), new Rational(1, 4), null));
+//		// Chord 6
+//		expected.add(Transcription.createNote(45, new Rational(7, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(60, new Rational(7, 4), new Rational(1, 8), null));
+//		expected.add(Transcription.createNote(64, new Rational(7, 4), new Rational(1, 8), null));
+//		expected.add(Transcription.createNote(69, new Rational(7, 4), new Rational(1, 4), null));
+//		// Chord 7
+//		expected.add(Transcription.createNote(59, new Rational(15, 8), new Rational(1, 8), null));
+//		expected.add(Transcription.createNote(68, new Rational(15, 8), new Rational(1, 8), null));
+//		// Chord 8
+//		expected.add(Transcription.createNote(45, new Rational(8, 4), new Rational(1, 2), null));
+//		expected.add(Transcription.createNote(57, new Rational(8, 4), new Rational(1, 2), null));
+//		expected.add(Transcription.createNote(64, new Rational(8, 4), new Rational(1, 2), null));
+//		expected.add(Transcription.createNote(69, new Rational(8, 4), new Rational(1, 16), null));
+//		// Chords 9-14
+//		expected.add(Transcription.createNote(68, new Rational(33, 16), new Rational(1, 16), null));
+//		expected.add(Transcription.createNote(69, new Rational(17, 8), new Rational(1, 32), null));
+//		expected.add(Transcription.createNote(68, new Rational(69, 32), new Rational(1, 32), null));
+//		expected.add(Transcription.createNote(66, new Rational(35, 16), new Rational(1, 32), null));
+//		expected.add(Transcription.createNote(68, new Rational(71, 32), new Rational(1, 32), null));
+//		expected.add(Transcription.createNote(69, new Rational(9, 4), new Rational(1, 4), null));
+//		// Chord 15
+//		expected.add(Transcription.createNote(45, new Rational(11, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(57, new Rational(11, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(64, new Rational(11, 4), new Rational(1, 4), null));
+//		expected.add(Transcription.createNote(69, new Rational(11, 4), new Rational(1, 4), null));
+//	
+//		// Calculate actual
+//		NoteSequence noteSeq = transcription.getNoteSequence();
+//		List<Note> actual = new ArrayList<Note>();
+//		for (Note n : noteSeq) {
+//			actual.add(n);
 //		}
-//		// Swap the incorrectly ordered notes in chord 3
-//		Collections.swap(expected2.get(3), 3, 4);
-//		expected.addAll(expected2);
-
-		List<List<Note>> actual = t1.getChordsFromNoteSequence();
-//		actual.addAll(t2.getChordsFromNoteSequence());
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size()); 
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
-			}
-		}	
-	}
-
-
-	public void testInitialiseVoiceLabels() {
-		Transcription t = new Transcription();
-		t.setPiece(MIDIImport.importMidiFile(midiTestpiece));
-		t.setName();
-		t.makeNoteSequence();
-		t.initialiseVoiceLabels(null);
-
-		List<Double> v0 = V_0;
-		List<Double> v1 = V_1;
-		List<Double> v2 = V_2;
-		List<Double> v3 = V_3;
-		List<Double> v4 = V_4;
-
-		List<List<Double>> expected = new ArrayList<List<Double>>();
-		// Chord 0
-		expected.add(v3); expected.add(v2); expected.add(v1); expected.add(v0);
-		// Chord 1 
-		expected.add(v3); expected.add(v2); expected.add(v1); expected.add(v0);
-		// Chord 2 
-		expected.add(v3); 
-		// Chord 3 
-		expected.add(v4); expected.add(v3); expected.add(v2); expected.add(v1); expected.add(v0);
-		// Chord 4
-		expected.add(v4); 
-		// Chord 5 
-		expected.add(v4); expected.add(v3); expected.add(v2); expected.add(v1); expected.add(v0);
-		// Chord 6 
-		expected.add(v4); expected.add(v2); expected.add(v0); expected.add(v1);
-		// Chord 7 
-		expected.add(v2); expected.add(v0); 
-		// Chord 8 
-		expected.add(v3); expected.add(v2); expected.add(v1); expected.add(v0);
-		// Chords 9-14
-		expected.add(v0);
-		expected.add(v0);
-		expected.add(v0);
-		expected.add(v0);
-		expected.add(v0);
-		expected.add(v0);
-		// Chord 15
-		expected.add(v3); expected.add(v2); expected.add(v1); expected.add(v0);
-
-		List<List<Double>> actual = t.getVoiceLabels();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size());
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
-			}
-		}
-		assertEquals(expected, actual);
-	}
-
-
-	public void testInitialiseDurationLabels() {
-		Transcription t = new Transcription();
-		t.setPiece(MIDIImport.importMidiFile(midiTestpiece));
-		t.setName();
-		t.makeNoteSequence();
-		t.initialiseVoiceLabels(null);
-		t.initialiseDurationLabels(null);
-
-		List<Double> th = THIRTYSECOND;
-		List<Double> s = SIXTEENTH;
-		List<Double> e = EIGHTH;
-		List<Double> de = DOTTED_EIGHTH;
-		List<Double> q = QUARTER;
-		List<Double> h = HALF;
-		
-		List<List<Double>> expected = new ArrayList<List<Double>>();
-		// Chord 0
-		expected.add(q); expected.add(q); expected.add(q); expected.add(q);
-		// Chord 1
-		expected.add(de); expected.add(q); expected.add(e); expected.add(q);
-		// Chord 2
-		expected.add(s);
-		// Chord 3
-		expected.add(e); expected.add(q); expected.add(q); expected.add(e); expected.add(q);
-		// Chord 4
-		expected.add(e);
-		// Chord 5
-		expected.add(q); expected.add(h); expected.add(q); expected.add(q); expected.add(q);
-		// Chord 6
-		expected.add(q); expected.add(e); expected.add(e); expected.add(q);
-		// Chord 7
-		expected.add(e); expected.add(e);
-		// Chord 8
-		expected.add(h); expected.add(h); expected.add(h); expected.add(s);
-		// Chords 9-14
-		expected.add(s);
-		expected.add(th);
-		expected.add(th);
-		expected.add(th);
-		expected.add(th);
-		expected.add(q);
-		// Chord 15
-		expected.add(q); expected.add(q); expected.add(q); expected.add(q);
-
-		List<List<Double>> actual = t.getDurationLabels();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size()); 
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
-			}
-		}
-		assertEquals(expected, actual);
-	}
-
-
-	public void testCheckChords() {
-	}
-
-
-	public void testHandleSNUsOLD() {
-		Tablature tab = new Tablature(encodingTestpiece, true);
-		Transcription t = new Transcription();
-		t.setPiece(MIDIImport.importMidiFile(midiTestpiece));
-		t.setName();
-		t.setNotes(tab);
-		t.setNoteSequence();
-		t.initialiseVoiceLabels(null); 
-		t.initialiseDurationLabels(null);
-		if (t.checkChords(tab) == false) {
-			throw new RuntimeException("ERROR: Chord error (see console).");
-		}
-
-		// a. NoteSequence
-		// NB: expectedNoteSeq cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes
-		// with the same pitch and onset time randomly
-		List<Note> expectedNotes = new ArrayList<Note>();
-		for (Note n : t.getNoteSequence()) {
-			expectedNotes.add(n);
-		}
-		expectedNotes.remove(12); 
-		// b. Voice labels
-		List<List<Double>> expectedVoiceLabels = new ArrayList<List<Double>>(t.getVoiceLabels());
-		expectedVoiceLabels.set(12, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
-		expectedVoiceLabels.remove(13);
-		// c. Duration labels
-		List<List<Double>> expectedDurationLabels = new ArrayList<List<Double>>(t.getDurationLabels());
-		List<Double> adaptedDurationLabel = new ArrayList<Double>(QUARTER);
-		adaptedDurationLabel.set(3, 1.0);
-		expectedDurationLabels.set(12, adaptedDurationLabel);
-		expectedDurationLabels.remove(13);
-
-		t.handleSNUsOLD(tab, Type.GROUND_TRUTH);
-		List<Note> actualNotes = new ArrayList<Note>();
-		for (Note n : t.getNoteSequence()) {
-			actualNotes.add(n);
-		}
-		List<List<Double>> actualVoiceLabels = t.getVoiceLabels();
-		List<List<Double>> actualDurationLabels = t.getDurationLabels();
-
-		// a. NoteSequence 
-		assertEquals(expectedNotes.size(), actualNotes.size());
-		for (int i = 0; i < expectedNotes.size(); i++) {
-			// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
-			// objects: therefore check that pitch, metricTime, and metricDuration are the same
-			assertEquals(expectedNotes.get(i).getMidiPitch(), actualNotes.get(i).getMidiPitch());
-			assertEquals(expectedNotes.get(i).getMetricTime(), actualNotes.get(i).getMetricTime());
-			assertEquals(expectedNotes.get(i).getMetricDuration(), actualNotes.get(i).getMetricDuration());
-		}
-		// b. Voice labels
-		assertEquals(expectedVoiceLabels.size(), actualVoiceLabels.size());
-		for (int i = 0; i < expectedVoiceLabels.size(); i++) {
-			assertEquals(expectedVoiceLabels.get(i).size(), actualVoiceLabels.get(i).size());
-			for (int j = 0; j < expectedVoiceLabels.get(i).size(); j++) {
-				assertEquals(expectedVoiceLabels.get(i).get(j), actualVoiceLabels.get(i).get(j));
-			}
-		}
-		assertEquals(expectedVoiceLabels, actualVoiceLabels);
-		// c. Duration labels
-		assertEquals(expectedDurationLabels.size(), actualDurationLabels.size());
-		for (int i = 0; i < expectedDurationLabels.size(); i++) {
-			assertEquals(expectedDurationLabels.get(i).size(), actualDurationLabels.get(i).size()); 
-	  		for (int j = 0; j < expectedDurationLabels.get(i).size(); j++) {
-	  			assertEquals(expectedDurationLabels.get(i).get(j), actualDurationLabels.get(i).get(j));
-	  		}
-		}
-		assertEquals(expectedDurationLabels, actualDurationLabels);  	
-	}
-
-
-	public void testSetAndGetChordVoiceLabelsNonTabOLD() {		    
-		Transcription transcription = new Transcription(midiTestpiece);
-
-		List<Double> voice0 = V_0;
-		List<Double> voice1 = V_1;
-		List<Double> voice2 = V_2;
-		List<Double> voice3 = V_3;
-		List<Double> voice4 = V_4;
-
-		List<List<List<Double>>> expected = new ArrayList<List<List<Double>>>();
-		// Chord 0
-		List<List<Double>> chord0 = new ArrayList<List<Double>>(); 
-		chord0.add(voice3); chord0.add(voice2); chord0.add(voice1); chord0.add(voice0);
-		// Chord 1
-		List<List<Double>> chord1 = new ArrayList<List<Double>>();
-		chord1.add(voice3); chord1.add(voice2); chord1.add(voice1); chord1.add(voice0);
-		// Chord 2
-		List<List<Double>> chord2 = new ArrayList<List<Double>>();
-		chord2.add(voice3);
-		// Chord 3
-		List<List<Double>> chord3 = new ArrayList<List<Double>>();
-		chord3.add(voice4); chord3.add(voice3); chord3.add(voice2); chord3.add(voice0); chord3.add(voice1);
-		// Chord 4
-		List<List<Double>> chord4 = new ArrayList<List<Double>>();
-		chord4.add(voice4);
-		// Chord 5
-		List<List<Double>> chord5 = new ArrayList<List<Double>>();
-		chord5.add(voice4); chord5.add(voice3); chord5.add(voice2); chord5.add(voice1); chord5.add(voice0);
-		// Chord 6
-		List<List<Double>> chord6 = new ArrayList<List<Double>>();
-		chord6.add(voice4); chord6.add(voice2); chord6.add(voice0); chord6.add(voice1);
-		// Chord 7
-		List<List<Double>> chord7 = new ArrayList<List<Double>>();
-		chord7.add(voice2); chord7.add(voice0); 
-		// Chord 8
-		List<List<Double>> chord8 = new ArrayList<List<Double>>();
-		chord8.add(voice3); chord8.add(voice2); chord8.add(voice1); chord8.add(voice0);
-		// Chord 9-14
-		List<List<Double>> chord9 = new ArrayList<List<Double>>();
-		chord9.add(voice0);
-		List<List<Double>> chord10 = new ArrayList<List<Double>>();
-		chord10.add(voice0);
-		List<List<Double>> chord11 = new ArrayList<List<Double>>();
-		chord11.add(voice0);
-		List<List<Double>> chord12 = new ArrayList<List<Double>>();
-		chord12.add(voice0);
-		List<List<Double>> chord13 = new ArrayList<List<Double>>();
-		chord13.add(voice0);
-		List<List<Double>> chord14 = new ArrayList<List<Double>>();
-		chord14.add(voice0);
-		// Chord 15
-		List<List<Double>> chord15 = new ArrayList<List<Double>>();
-		chord15.add(voice3); chord15.add(voice2); chord15.add(voice1); chord15.add(voice0);
-
-		expected.add(chord0); expected.add(chord1); expected.add(chord2); expected.add(chord3); expected.add(chord4); 
-		expected.add(chord5); expected.add(chord6); expected.add(chord7); expected.add(chord8); expected.add(chord9);
-		expected.add(chord10); expected.add(chord11); expected.add(chord12); expected.add(chord13); 
-		expected.add(chord14); expected.add(chord15);
-
-		// Calculate actual
-//		List<List<List<Double>>> actual = transcription.getChordVoiceLabels(null);
-		List<List<List<Double>>> actual = transcription.getChordVoiceLabels();
-
-		// Assert equality
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size()); 
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j).size(), actual.get(i).get(j).size());
-				for (int k = 0; k < expected.get(i).get(j).size(); k++) {
-					assertEquals(expected.get(i).get(j).get(k), actual.get(i).get(j).get(k));
-				}
-			}
-		}
-	}
-
-
-	public void testDeornamentPiece() {
-		// Tablature case
-		Transcription t1 = new Transcription();
-		Tablature tab1 = new Tablature(encodingTestpiece, true); 
-		t1.setPiece(MIDIImport.importMidiFile(midiTestpiece), tab1, null, Type.GROUND_TRUTH);
-		Piece p1 = t1.getScorePiece();
-		List<Note> notes1 = getUnhandledNotesFromPiece(p1, "testpiece");
-		MetricalTimeLine mt1 = p1.getMetricalTimeLine();
-		SortedContainer<Marker> ht1 = p1.getHarmonyTrack();
-		// Non-tablature case
-		Transcription t2 = new Transcription();
-		t2.setPiece(MIDIImport.importMidiFile(midiTestpiece), null, null, Type.GROUND_TRUTH);
-		Piece p2 = t2.getScorePiece();
-		MetricalTimeLine mt2 = p2.getMetricalTimeLine();
-		SortedContainer<Marker> ht2 = p2.getHarmonyTrack();
-
-		List<Piece> expected = new ArrayList<>();
-		Piece expected1 = new Piece();
-		NotationSystem ns1 = new NotationSystem();
-		// Voice 0
-		NotationStaff ns01 = new NotationStaff();
-		NotationVoice nv01 = new NotationVoice();		
-		List<Note> notesV01 = Arrays.asList(
-			notes1.get(3),
-			notes1.get(7),
-			notes1.get(13),
-			notes1.get(19),
-			notes1.get(22),
-			notes1.get(25),
-			Transcription.createNote(67, new Rational(8, 4), new Rational(1, 4), mt1),
-			notes1.get(35),
-			notes1.get(39)
-			
-//			expected0.add(Transcription.createNote(67, new Rational(3, 4), new Rational(1, 4), null));
-//			expected0.add(Transcription.createNote(70, new Rational(4, 4), new Rational(1, 4), null));
-//			expected0.add(Transcription.createNote(63, new Rational(5, 4), new Rational(1, 4), null));
-//			expected0.add(Transcription.createNote(67, new Rational(6, 4), new Rational(1, 4), null));
-//			expected0.add(Transcription.createNote(62, new Rational(7, 4), new Rational(1, 8), null));
-//			expected0.add(Transcription.createNote(66, new Rational(15, 8), new Rational(1, 8), null));
-//			expected0.add(Transcription.createNote(67, new Rational(8, 4), new Rational(1, 4), null));
-//			expected0.add(Transcription.createNote(67, new Rational(9, 4), new Rational(1, 4), null));
-//			expected0.add(Transcription.createNote(67, new Rational(11, 4), new Rational(1, 4), null));
-			
-			
-//			Transcription.createNote(67, new Rational(0, 4), new Rational(1, 4), mt1),
-//			Transcription.createNote(67, new Rational(2, 4), new Rational(1, 4), mt1),
-//			Transcription.createNote(66, new Rational(3, 4), new Rational(1, 32), mt1),
-//			Transcription.createNote(64, new Rational(25, 32), new Rational(1, 32), mt1),
-//			Transcription.createNote(66, new Rational(13, 16), new Rational(1, 32), mt1),
-//			Transcription.createNote(67, new Rational(27, 32), new Rational(1, 32), mt1),
-//			Transcription.createNote(66, new Rational(7, 8), new Rational(1, 16), mt1),
-//			Transcription.createNote(67, new Rational(15, 16), new Rational(1, 16), mt1),
-//			Transcription.createNote(66, new Rational(4, 4), new Rational(1, 8), mt1),
-//			Transcription.createNote(62, new Rational(9, 8), new Rational(1, 8), mt1),
-//			Transcription.createNote(67, new Rational(5, 4), new Rational(1, 4), mt1),
-//			Transcription.createNote(63, new Rational(13, 8), new Rational(1, 8), mt1),
-//			Transcription.createNote(70, new Rational(29, 16), new Rational(3, 16), mt1),
-//			Transcription.createNote(67, new Rational(8, 4), new Rational(1, 4), mt1)
-		);
-		notesV01.forEach(n -> {
-			NotationChord nc = new NotationChord(); nc.add(n); nv01.add(nc);
-		});
-		ns01.add(nv01);
-		ns1.add(ns01);
-		// Voice 1
-		NotationStaff ns11 = new NotationStaff();
-		NotationVoice nv11 = new NotationVoice();
-		List<Note> notesV11 = Arrays.asList(
-			Transcription.createNote(62, new Rational(0, 4), new Rational(1, 4), mt1),
-			Transcription.createNote(62, new Rational(15, 16), new Rational(1, 16), mt1),
-			Transcription.createNote(67, new Rational(9, 8), new Rational(1, 8), mt1),
-			Transcription.createNote(58, new Rational(5, 4), new Rational(1, 4), mt1),
-			Transcription.createNote(63, new Rational(13, 8), new Rational(1, 8), mt1),
-			Transcription.createNote(67, new Rational(29, 16), new Rational(3, 16), mt1),
-			Transcription.createNote(63, new Rational(8, 4), new Rational(1, 4), mt1)
-		);
-		notesV11.forEach(n -> {
-			NotationChord nc = new NotationChord(); nc.add(n); nv11.add(nc);
-		});
-		ns11.add(nv11);
-		ns1.add(ns11);
-		// Voice 2
-		NotationStaff ns21 = new NotationStaff();
-		NotationVoice nv21 = new NotationVoice();
-		List<Note> notesV21 = Arrays.asList(
-			Transcription.createNote(55, new Rational(0, 4), new Rational(1, 4), mt1),
-			Transcription.createNote(55, new Rational(15, 16), new Rational(1, 16), mt1),
-			Transcription.createNote(57, new Rational(4, 4), new Rational(1, 8), mt1),
-			Transcription.createNote(58, new Rational(9, 8), new Rational(1, 8), mt1),
-			Transcription.createNote(55, new Rational(5, 4), new Rational(1, 4), mt1),
-			Transcription.createNote(57, new Rational(13, 8), new Rational(1, 8), mt1),
-			Transcription.createNote(55, new Rational(29, 16), new Rational(3, 16), mt1),
-			Transcription.createNote(55, new Rational(8, 4), new Rational(1, 4), mt1)
-		);
-		notesV21.forEach(n -> {
-			NotationChord nc = new NotationChord(); nc.add(n); nv21.add(nc);
-		});
-		ns21.add(nv21);
-		ns1.add(ns21);
-		// Voice 3
-		NotationStaff ns31 = new NotationStaff();
-		NotationVoice nv31 = new NotationVoice();
-		List<Note> notesV31 = Arrays.asList(new Note[]{
-			Transcription.createNote(43, new Rational(0, 4), new Rational(1, 4), mt1),
-			Transcription.createNote(43, new Rational(15, 16), new Rational(1, 16), mt1),
-			Transcription.createNote(55, new Rational(5, 4), new Rational(1, 4), mt1),
-			Transcription.createNote(48, new Rational(13, 8), new Rational(1, 8), mt1),
-			Transcription.createNote(46, new Rational(7, 4), new Rational(1, 16), mt1),
-			Transcription.createNote(43, new Rational(29, 16), new Rational(3, 16), mt1),
-			Transcription.createNote(48, new Rational(8, 4), new Rational(1, 4), mt1)
-		});
-		notesV31.forEach(n -> {
-			NotationChord nc = new NotationChord(); nc.add(n); nv31.add(nc);
-		});
-		ns31.add(nv31);
-		ns1.add(ns31);
-		// Voice 4
-		NotationStaff ns41 = new NotationStaff();
-		NotationVoice nv41 = new NotationVoice();
-		List<Note> notesV41 = Arrays.asList(new Note[]{
-			Transcription.createNote(43, new Rational(9, 8), new Rational(1, 8), mt1),
-			Transcription.createNote(43, new Rational(5, 4), new Rational(1, 4), mt1),
-			Transcription.createNote(43, new Rational(6, 4), new Rational(1, 8), mt1),
-			Transcription.createNote(45, new Rational(13, 8), new Rational(1, 8), mt1)
-		});
-		notesV41.forEach(n -> {
-			NotationChord nc = new NotationChord(); nc.add(n); nv41.add(nc);
-		});
-		ns41.add(nv41);
-		ns1.add(ns41);
-		expected1.setScore(ns1);
-		expected1.setMetricalTimeLine(mt1);
-		expected1.setHarmonyTrack(ht1);
-		expected1.setName(p1.getName());
-		expected.add(expected1);
-
-		Piece expected2 = new Piece();
-		NotationSystem ns2 = new NotationSystem();
-		// Voice 0
-		NotationStaff ns02 = new NotationStaff();
-		NotationVoice nv02 = new NotationVoice();		
-		List<Note> notesV02 = Arrays.asList(
-			Transcription.createNote(69, new Rational(0, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(69, new Rational(2, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(68, new Rational(3, 4), new Rational(1, 32), mt2),
-			Transcription.createNote(66, new Rational(25, 32), new Rational(1, 32), mt2),
-			Transcription.createNote(68, new Rational(13, 16), new Rational(1, 32), mt2),
-			Transcription.createNote(69, new Rational(27, 32), new Rational(1, 32), mt2),
-			Transcription.createNote(68, new Rational(7, 8), new Rational(1, 16), mt2),
-			Transcription.createNote(69, new Rational(15, 16), new Rational(1, 16), mt2),
-			Transcription.createNote(68, new Rational(4, 4), new Rational(1, 8), mt2),
-			Transcription.createNote(64, new Rational(9, 8), new Rational(1, 8), mt2),
-			Transcription.createNote(69, new Rational(5, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(65, new Rational(6, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(72, new Rational(7, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(69, new Rational(8, 4), new Rational(1, 4), mt2)
-		);
-		notesV02.forEach(n -> {
-			NotationChord nc = new NotationChord(); nc.add(n); nv02.add(nc);
-		});
-		ns02.add(nv02);
-		ns2.add(ns02);
-		// Voice 1
-		NotationStaff ns12 = new NotationStaff();
-		NotationVoice nv12 = new NotationVoice();
-		List<Note> notesV12 = Arrays.asList(
-			Transcription.createNote(64, new Rational(0, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(64, new Rational(2, 4), new Rational(1, 2), mt2),
-			Transcription.createNote(69, new Rational(4, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(60, new Rational(5, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(65, new Rational(13, 8), new Rational(1, 8), mt2),
-			Transcription.createNote(69, new Rational(15, 8), new Rational(1, 8), mt2),
-			Transcription.createNote(65, new Rational(8, 4), new Rational(1, 4), mt2)
-		);
-		notesV12.forEach(n -> {
-			NotationChord nc = new NotationChord(); nc.add(n); nv12.add(nc);
-		});
-		ns12.add(nv12);
-		ns2.add(ns12);
-		// Voice 2
-		NotationStaff ns22 = new NotationStaff();
-		NotationVoice nv22 = new NotationVoice();
-		List<Note> notesV22 = Arrays.asList(
-			Transcription.createNote(57, new Rational(0, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(57, new Rational(2, 4), new Rational(1, 2), mt2),
-			Transcription.createNote(59, new Rational(4, 4), new Rational(1, 8), mt2),
-			Transcription.createNote(60, new Rational(9, 8), new Rational(1, 8), mt2),
-			Transcription.createNote(57, new Rational(5, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(59, new Rational(6, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(57, new Rational(7, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(57, new Rational(8, 4), new Rational(1, 4), mt2)
-		);
-		notesV22.forEach(n -> {
-			NotationChord nc = new NotationChord(); nc.add(n); nv22.add(nc);
-		});
-		ns22.add(nv22);
-		ns2.add(ns22);
-		// Voice 3
-		NotationStaff ns32 = new NotationStaff();
-		NotationVoice nv32 = new NotationVoice();
-		List<Note> notesV32 = Arrays.asList(new Note[]{
-			Transcription.createNote(45, new Rational(0, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(45, new Rational(2, 4), new Rational(1, 2), mt2),
-			Transcription.createNote(57, new Rational(4, 4), new Rational(1, 2), mt2),
-			Transcription.createNote(50, new Rational(6, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(48, new Rational(7, 4), new Rational(1, 16), mt2),
-			Transcription.createNote(45, new Rational(29, 16), new Rational(3, 16), mt2),
-			Transcription.createNote(50, new Rational(8, 4), new Rational(1, 4), mt2)
-		});
-		notesV32.forEach(n -> {
-			NotationChord nc = new NotationChord(); nc.add(n); nv32.add(nc);
-		});
-		ns32.add(nv32);
-		ns2.add(ns32);
-		// Voice 4
-		NotationStaff ns42 = new NotationStaff();
-		NotationVoice nv42 = new NotationVoice();
-		List<Note> notesV42 = Arrays.asList(new Note[]{
-			Transcription.createNote(45, new Rational(4, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(45, new Rational(5, 4), new Rational(1, 4), mt2),
-			Transcription.createNote(45, new Rational(6, 4), new Rational(1, 8), mt2),
-			Transcription.createNote(47, new Rational(13, 8), new Rational(1, 8), mt2)
-		});
-		notesV42.forEach(n -> {
-			NotationChord nc = new NotationChord(); nc.add(n); nv42.add(nc);
-		});
-		ns42.add(nv42);
-		ns2.add(ns42);
-		expected2.setScore(ns2);
-		expected2.setMetricalTimeLine(mt2);
-		expected2.setHarmonyTrack(ht2);
-		expected2.setName(p2.getName());
-		expected.add(expected2);
-	}
-
-
-	public void testDeornament() {
-		// a. Tablature case
-		Tablature tab = new Tablature(encodingTestpiece, false);
-		Transcription t = new Transcription(midiTestpiece, encodingTestpiece);
-		Transcription deornTrans = Transcription.deornament(t, tab, new Rational(1, 8));
-		List<List<Note>> expected = new ArrayList<List<Note>>();
-		// Voice 0
-		List<Note> expected0 = new ArrayList<Note>();
-		expected0.add(Transcription.createNote(67, new Rational(3, 4), new Rational(1, 4), null));
-		expected0.add(Transcription.createNote(70, new Rational(4, 4), new Rational(1, 4), null));
-		expected0.add(Transcription.createNote(63, new Rational(5, 4), new Rational(1, 4), null));
-		expected0.add(Transcription.createNote(67, new Rational(6, 4), new Rational(1, 4), null));
-		expected0.add(Transcription.createNote(62, new Rational(7, 4), new Rational(1, 8), null));
-		expected0.add(Transcription.createNote(66, new Rational(15, 8), new Rational(1, 8), null));
-		expected0.add(Transcription.createNote(67, new Rational(8, 4), new Rational(1, 4), null));
-		expected0.add(Transcription.createNote(67, new Rational(9, 4), new Rational(1, 4), null));
-		expected0.add(Transcription.createNote(67, new Rational(11, 4), new Rational(1, 4), null));
-		// Voice 1
-		List<Note> expected1 = new ArrayList<Note>();
-		expected1.add(Transcription.createNote(63, new Rational(3, 4), new Rational(1, 4), null));
-		expected1.add(Transcription.createNote(67, new Rational(4, 4), new Rational(1, 8), null));
-		expected1.add(Transcription.createNote(63, new Rational(5, 4), new Rational(1, 8), null));
-		expected1.add(Transcription.createNote(58, new Rational(6, 4), new Rational(1, 4), null));
-		expected1.add(Transcription.createNote(67, new Rational(7, 4), new Rational(1, 4), null));
-		expected1.add(Transcription.createNote(62, new Rational(8, 4), new Rational(1, 2), null));
-		expected1.add(Transcription.createNote(62, new Rational(11, 4), new Rational(1, 4), null));
-		// Voice 2
-		List<Note> expected2 = new ArrayList<Note>();
-		expected2.add(Transcription.createNote(55, new Rational(3, 4), new Rational(1, 4), null));
-		expected2.add(Transcription.createNote(55, new Rational(4, 4), new Rational(1, 4), null));
-		expected2.add(Transcription.createNote(57, new Rational(5, 4), new Rational(1, 4), null));
-		expected2.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 4), null));
-		expected2.add(Transcription.createNote(58, new Rational(7, 4), new Rational(1, 8), null));
-		expected2.add(Transcription.createNote(57, new Rational(15, 8), new Rational(1, 8), null));
-		expected2.add(Transcription.createNote(55, new Rational(8, 4), new Rational(1, 2), null));
-		expected2.add(Transcription.createNote(55, new Rational(11, 4), new Rational(1, 4), null));
-		// Voice 3
-		List<Note> expected3 = new ArrayList<Note>();
-		expected3.add(Transcription.createNote(48, new Rational(3, 4), new Rational(1, 4), null));
-		expected3.add(Transcription.createNote(43, new Rational(4, 4), new Rational(1, 4), null));
-		expected3.add(Transcription.createNote(48, new Rational(5, 4), new Rational(1, 4), null));
-		expected3.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 2), null));
-		expected3.add(Transcription.createNote(43, new Rational(8, 4), new Rational(1, 2), null));
-		expected3.add(Transcription.createNote(43, new Rational(11, 4), new Rational(1, 4), null));
-		// Voice 4
-		List<Note> expected4 = new ArrayList<Note>();
-		expected4.add(Transcription.createNote(45, new Rational(5, 4), new Rational(1, 8), null));
-		expected4.add(Transcription.createNote(43, new Rational(11, 8), new Rational(1, 8), null));
-		expected4.add(Transcription.createNote(43, new Rational(6, 4), new Rational(1, 4), null));
-		expected4.add(Transcription.createNote(43, new Rational(7, 4), new Rational(1, 4), null));
-
-		expected.add(expected0); expected.add(expected1); expected.add(expected2);
-		expected.add(expected3); expected.add(expected4);
-
-		List<List<Note>> actual = new ArrayList<List<Note>>();
-		for (NotationStaff notationStaff: deornTrans.getScorePiece().getScore()) {
-			for (NotationVoice notationVoice : notationStaff) {
-				List<Note> currentActual = new ArrayList<Note>();
-				for (NotationChord notationChord : notationVoice) {
-					currentActual.add(notationChord.get(0));
-				}
-				actual.add(currentActual);
-			}
-		}
-
-		// b. Non-tablature case
-		tab = null;
-		t = new Transcription(midiTestpiece, null);
-		deornTrans = Transcription.deornament(t, tab, new Rational(1, 8));
-		// Voice 0
-		List<Note> expected5 = new ArrayList<Note>();
-		expected5.add(Transcription.createNote(69, new Rational(3, 4), new Rational(1, 4), null));
-		expected5.add(Transcription.createNote(72, new Rational(4, 4), new Rational(1, 4), null));
-		expected5.add(Transcription.createNote(65, new Rational(5, 4), new Rational(1, 4), null));
-		expected5.add(Transcription.createNote(69, new Rational(6, 4), new Rational(1, 4), null));
-		expected5.add(Transcription.createNote(64, new Rational(7, 4), new Rational(1, 8), null));
-		expected5.add(Transcription.createNote(68, new Rational(15, 8), new Rational(1, 8), null));
-		expected5.add(Transcription.createNote(69, new Rational(8, 4), new Rational(1, 4), null));
-		expected5.add(Transcription.createNote(69, new Rational(9, 4), new Rational(1, 4), null));
-		expected5.add(Transcription.createNote(69, new Rational(11, 4), new Rational(1, 4), null));
-		// Voice 1
-		List<Note> expected6 = new ArrayList<Note>();
-		expected6.add(Transcription.createNote(65, new Rational(3, 4), new Rational(1, 4), null));
-		expected6.add(Transcription.createNote(69, new Rational(4, 4), new Rational(1, 8), null));
-		expected6.add(Transcription.createNote(65, new Rational(5, 4), new Rational(1, 8), null));
-		expected6.add(Transcription.createNote(60, new Rational(6, 4), new Rational(1, 4), null));
-		expected6.add(Transcription.createNote(69, new Rational(7, 4), new Rational(1, 4), null));
-		expected6.add(Transcription.createNote(64, new Rational(8, 4), new Rational(1, 2), null));
-		expected6.add(Transcription.createNote(64, new Rational(11, 4), new Rational(1, 4), null));
-		// Voice 2
-		List<Note> expected7 = new ArrayList<Note>();
-		expected7.add(Transcription.createNote(57, new Rational(3, 4), new Rational(1, 4), null));
-		expected7.add(Transcription.createNote(57, new Rational(4, 4), new Rational(1, 4), null));
-		expected7.add(Transcription.createNote(59, new Rational(5, 4), new Rational(1, 4), null));
-		expected7.add(Transcription.createNote(57, new Rational(6, 4), new Rational(1, 4), null));
-		expected7.add(Transcription.createNote(60, new Rational(7, 4), new Rational(1, 8), null));
-		expected7.add(Transcription.createNote(59, new Rational(15, 8), new Rational(1, 8), null));
-		expected7.add(Transcription.createNote(57, new Rational(8, 4), new Rational(1, 2), null));
-		expected7.add(Transcription.createNote(57, new Rational(11, 4), new Rational(1, 4), null));
-		// Voice 3
-		List<Note> expected8 = new ArrayList<Note>();
-		expected8.add(Transcription.createNote(50, new Rational(3, 4), new Rational(1, 4), null));
-		expected8.add(Transcription.createNote(45, new Rational(4, 4), new Rational(1, 4), null));
-		expected8.add(Transcription.createNote(50, new Rational(5, 4), new Rational(1, 4), null));
-		expected8.add(Transcription.createNote(57, new Rational(6, 4), new Rational(1, 2), null));
-		expected8.add(Transcription.createNote(45, new Rational(8, 4), new Rational(1, 2), null));
-		expected8.add(Transcription.createNote(45, new Rational(11, 4), new Rational(1, 4), null));
-		// Voice 4
-		List<Note> expected9 = new ArrayList<Note>();
-		expected9.add(Transcription.createNote(47, new Rational(5, 4), new Rational(1, 8), null));
-		expected9.add(Transcription.createNote(45, new Rational(11, 8), new Rational(1, 8), null));
-		expected9.add(Transcription.createNote(45, new Rational(6, 4), new Rational(1, 4), null));
-		expected9.add(Transcription.createNote(45, new Rational(7, 4), new Rational(1, 4), null));
-
-		expected.add(expected5); expected.add(expected6); expected.add(expected7);
-		expected.add(expected8); expected.add(expected9);
-
-		for (NotationStaff notationStaff: deornTrans.getScorePiece().getScore()) {
-			for (NotationVoice notationVoice : notationStaff) {
-				List<Note> currentActual = new ArrayList<Note>();
-				for (NotationChord notationChord : notationVoice) {
-					currentActual.add(notationChord.get(0));
-				}
-				actual.add(currentActual);
-			}
-		}
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size());
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				// assertEquals(expected.get(i).get(j), actual.get(i).get(j)) does not work because the Notes are not 
-				// the same objects: therefore check that pitch, metricTime, and metricDuration are the same
-				assertEquals(expected.get(i).get(j).getMidiPitch(), actual.get(i).get(j).getMidiPitch());
-				assertEquals(expected.get(i).get(j).getMetricTime(), actual.get(i).get(j).getMetricTime());
-				assertEquals(expected.get(i).get(j).getMetricDuration(), actual.get(i).get(j).getMetricDuration());
-			}
-		}
-	}
-
-
-	public void testTransposeOLD() {      
-		Tablature tablature = new Tablature(encodingTestpiece, false);
-		Transcription transcription = new Transcription();
-//		transcription.setFile(midiTestpiece1);
-		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
-//		transcription.setPiece(null);
-		transcription.makeNoteSequence();
-		transcription.initialiseVoiceLabels(null); 
-		transcription.initialiseDurationLabels(null);
-		if (transcription.checkChords(tablature) == false) {
-			throw new RuntimeException("ERROR: Chord error (see console).");
-		}
-		transcription.handleSNUsOLD(tablature, Type.GROUND_TRUTH);
-		transcription.handleCourseCrossingsOLD(tablature, Type.GROUND_TRUTH);
-		if (transcription.checkAlignment(tablature) == false) {
-			throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
-		}
-
-		// a. NoteSequence
-		// NB: expectedNotes cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes
-		// with the same pitch and onset time randomly -- now that in the lower voice first, then that in the higher
-		List<Note> expectedNotes = new ArrayList<Note>();
-		// Chord 0
-		expectedNotes.add(Transcription.createNote(48, new Rational(3, 4), new Rational(1, 4), null));
-		expectedNotes.add(Transcription.createNote(55, new Rational(3, 4), new Rational(1, 4), null));
-		expectedNotes.add(Transcription.createNote(63, new Rational(3, 4), new Rational(1, 4), null));
-		expectedNotes.add(Transcription.createNote(67, new Rational(3, 4), new Rational(1, 4), null));
-		// Chord 1
-		expectedNotes.add(Transcription.createNote(43, new Rational(4, 4), new Rational(3, 16), null));
-		expectedNotes.add(Transcription.createNote(55, new Rational(4, 4), new Rational(1, 4), null));
-		expectedNotes.add(Transcription.createNote(70, new Rational(4, 4), new Rational(1, 4), null));
-		expectedNotes.add(Transcription.createNote(67, new Rational(4, 4), new Rational(1, 8), null));
-		// Chord 2
-		expectedNotes.add(Transcription.createNote(46, new Rational(19, 16), new Rational(1, 16), null));
-		// Chord 3
-		expectedNotes.add(Transcription.createNote(45, new Rational(5, 4), new Rational(1, 8), null));
-		expectedNotes.add(Transcription.createNote(48, new Rational(5, 4), new Rational(1, 4), null));
-		expectedNotes.add(Transcription.createNote(57, new Rational(5, 4), new Rational(1, 4), null));
-		expectedNotes.add(Transcription.createNote(63, new Rational(5, 4), new Rational(1, 4), null));
-		// Chord 4
-		expectedNotes.add(Transcription.createNote(43, new Rational(11, 8), new Rational(1, 8), null));
-		// Chord 5
-		expectedNotes.add(Transcription.createNote(43, new Rational(6, 4), new Rational(1, 4), null));
-		expectedNotes.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 2), null));
-		expectedNotes.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 4), null));
-		expectedNotes.add(Transcription.createNote(58, new Rational(6, 4), new Rational(1, 4), null));
-		expectedNotes.add(Transcription.createNote(67, new Rational(6, 4), new Rational(1, 4), null));
-		// Chord 6
-		expectedNotes.add(Transcription.createNote(43, new Rational(7, 4), new Rational(1, 4), null));
-		expectedNotes.add(Transcription.createNote(58, new Rational(7, 4), new Rational(1, 8), null));
-		expectedNotes.add(Transcription.createNote(62, new Rational(7, 4), new Rational(1, 8), null));
-		expectedNotes.add(Transcription.createNote(67, new Rational(7, 4), new Rational(1, 4), null));
-		// Chord 7
-		expectedNotes.add(Transcription.createNote(57, new Rational(15, 8), new Rational(1, 8), null));
-		expectedNotes.add(Transcription.createNote(66, new Rational(15, 8), new Rational(1, 8), null));
-		// Chord 8
-		expectedNotes.add(Transcription.createNote(43, new Rational(8, 4), new Rational(1, 2), null));
-		expectedNotes.add(Transcription.createNote(55, new Rational(8, 4), new Rational(1, 2), null));
-		expectedNotes.add(Transcription.createNote(62, new Rational(8, 4), new Rational(1, 2), null));
-		expectedNotes.add(Transcription.createNote(67, new Rational(8, 4), new Rational(1, 16), null));
-		// Chords 9-14
-		expectedNotes.add(Transcription.createNote(66, new Rational(33, 16), new Rational(1, 16), null));
-		expectedNotes.add(Transcription.createNote(67, new Rational(17, 8), new Rational(1, 32), null));
-		expectedNotes.add(Transcription.createNote(66, new Rational(69, 32), new Rational(1, 32), null));
-		expectedNotes.add(Transcription.createNote(64, new Rational(35, 16), new Rational(1, 32), null));
-		expectedNotes.add(Transcription.createNote(66, new Rational(71, 32), new Rational(1, 32), null));
-		expectedNotes.add(Transcription.createNote(67, new Rational(9, 4), new Rational(1, 4), null));
-		// Chord 14
-		expectedNotes.add(Transcription.createNote(43, new Rational(11, 4), new Rational(1, 4), null));
-		expectedNotes.add(Transcription.createNote(55, new Rational(11, 4), new Rational(1, 4), null));
-		expectedNotes.add(Transcription.createNote(62, new Rational(11, 4), new Rational(1, 4), null));
-		expectedNotes.add(Transcription.createNote(67, new Rational(11, 4), new Rational(1, 4), null));
-
-		// b. Piece
-		Piece expectedPiece = new Piece();
-		NotationSystem system = expectedPiece.createNotationSystem();
-		// Voice 0
-		NotationStaff staff0 = new NotationStaff(system); system.add(staff0);
-		NotationVoice voice0 = new NotationVoice(staff0); staff0.add(voice0);
-		voice0.add(Transcription.createNote(67, new Rational(3, 4), new Rational(1, 4), null));
-//		NotationChord nc00 = new NotationChord(); nc00.add(Transcription.createNote(67, new Rational(3, 4), new Rational(1, 4), null)); voice0.add(nc00);
-		voice0.add(Transcription.createNote(70, new Rational(4, 4), new Rational(1, 4), null));
-		voice0.add(Transcription.createNote(63, new Rational(5, 4), new Rational(1, 4), null));
-		voice0.add(Transcription.createNote(67, new Rational(6, 4), new Rational(1, 4), null));
-		voice0.add(Transcription.createNote(62, new Rational(7, 4), new Rational(1, 8), null));
-		voice0.add(Transcription.createNote(66, new Rational(15, 8), new Rational(1, 8), null));
-		voice0.add(Transcription.createNote(67, new Rational(8, 4), new Rational(1, 16), null));
-		voice0.add(Transcription.createNote(66, new Rational(33, 16), new Rational(1, 16), null));
-		voice0.add(Transcription.createNote(67, new Rational(17, 8), new Rational(1, 32), null));
-		voice0.add(Transcription.createNote(66, new Rational(69, 32), new Rational(1, 32), null));
-		voice0.add(Transcription.createNote(64, new Rational(35, 16), new Rational(1, 32), null));
-		voice0.add(Transcription.createNote(66, new Rational(71, 32), new Rational(1, 32), null));
-		voice0.add(Transcription.createNote(67, new Rational(9, 4), new Rational(1, 4), null));
-		voice0.add(Transcription.createNote(67, new Rational(11, 4), new Rational(1, 4), null));    
-		// Voice 1
-		NotationStaff staff1 = new NotationStaff(system); system.add(staff1); 
-		NotationVoice voice1 = new NotationVoice(staff1); staff1.add(voice1);
-		voice1.add(Transcription.createNote(63, new Rational(3, 4), new Rational(1, 4), null));
-		voice1.add(Transcription.createNote(67, new Rational(4, 4), new Rational(1, 8), null));
-		voice1.add(Transcription.createNote(63, new Rational(5, 4), new Rational(1, 8), null));
-		voice1.add(Transcription.createNote(58, new Rational(6, 4), new Rational(1, 4), null));
-		voice1.add(Transcription.createNote(67, new Rational(7, 4), new Rational(1, 4), null));
-		voice1.add(Transcription.createNote(62, new Rational(8, 4), new Rational(1, 2), null));
-		voice1.add(Transcription.createNote(62, new Rational(11, 4), new Rational(1, 4), null));
-		// Voice 2
-		NotationStaff staff2 = new NotationStaff(system); system.add(staff2); 
-		NotationVoice voice2 = new NotationVoice(staff2); staff2.add(voice2);
-		voice2.add(Transcription.createNote(55, new Rational(3, 4), new Rational(1, 4), null));
-		voice2.add(Transcription.createNote(55, new Rational(4, 4), new Rational(1, 4), null));
-		voice2.add(Transcription.createNote(57, new Rational(5, 4), new Rational(1, 4), null));
-		voice2.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 4), null));
-		voice2.add(Transcription.createNote(58, new Rational(7, 4), new Rational(1, 8), null));
-		voice2.add(Transcription.createNote(57, new Rational(15, 8), new Rational(1, 8), null));
-		voice2.add(Transcription.createNote(55, new Rational(8, 4), new Rational(1, 2), null));
-		voice2.add(Transcription.createNote(55, new Rational(11, 4), new Rational(1, 4), null));
-		// Voice 3
-		NotationStaff staff3 = new NotationStaff(system); system.add(staff3); 
-		NotationVoice voice3 = new NotationVoice(staff3); staff3.add(voice3);
-		voice3.add(Transcription.createNote(48, new Rational(3, 4), new Rational(1, 4), null));
-		voice3.add(Transcription.createNote(43, new Rational(4, 4), new Rational(3, 16), null));
-		voice3.add(Transcription.createNote(46, new Rational(19, 16), new Rational(1, 16), null));
-		voice3.add(Transcription.createNote(48, new Rational(5, 4), new Rational(1, 4), null));
-		voice3.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 2), null));
-		voice3.add(Transcription.createNote(43, new Rational(8, 4), new Rational(1, 2), null));
-		voice3.add(Transcription.createNote(43, new Rational(11, 4), new Rational(1, 4), null));
-		// Voice 4
-		NotationStaff staff4 = new NotationStaff(system); system.add(staff4);
-		NotationVoice voice4 = new NotationVoice(staff4); staff4.add(voice4);
-		voice4.add(Transcription.createNote(45, new Rational(5, 4), new Rational(1, 8), null));
-		voice4.add(Transcription.createNote(43, new Rational(11, 8), new Rational(1, 8), null));
-		voice4.add(Transcription.createNote(43, new Rational(6, 4), new Rational(1, 4), null));
-		voice4.add(Transcription.createNote(43, new Rational(7, 4), new Rational(1, 4), null));
-
-		transcription.transpose(tablature.getTranspositionInterval());
-		// a. noteSequence
-		NoteSequence noteSeq = transcription.getNoteSequence();
-		List<Note> actualNotes = new ArrayList<Note>();
-		for (Note n : noteSeq) {
-			actualNotes.add(n);
-		}
-		// b. piece
-		Piece actualPiece = transcription.getScorePiece();
-
-		// Assert equality
-		// a. noteSequence
-		assertEquals(expectedNotes.size(), actualNotes.size());
-		for (int i = 0; i < expectedNotes.size(); i++) {
-			// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
-			// objects: therefore check that pitch, metricTime, and metricDuration are the same
-			assertEquals(expectedNotes.get(i).getMidiPitch(), actualNotes.get(i).getMidiPitch());
-			assertEquals(expectedNotes.get(i).getMetricTime(), actualNotes.get(i).getMetricTime());
-			assertEquals(expectedNotes.get(i).getMetricDuration(), actualNotes.get(i).getMetricDuration());
-		} 
-		// b. piece
-		NotationSystem expectedNotationSystem = expectedPiece.getScore();
-		NotationSystem actualNotationSystem = actualPiece.getScore();
-		assertEquals(expectedNotationSystem.size(), actualNotationSystem.size());
-		for (int i = 0; i < expectedNotationSystem.size(); i++) {
-			// NotationStaff
-			NotationStaff expectedNotationStaff = expectedNotationSystem.get(i);
-			NotationStaff actualNotationStaff = actualNotationSystem.get(i);
-			assertEquals(expectedNotationStaff.size(), actualNotationStaff.size());
-			// NotationVoice
-			NotationVoice expectedNotationVoice = expectedNotationStaff.get(0);
-			NotationVoice actualNotationVoice = actualNotationStaff.get(0);
-			assertEquals(expectedNotationVoice.size(), actualNotationVoice.size());
-			for (int j = 0; j < expectedNotationVoice.size(); j++) {
-				// NotationChord
-				NotationChord expectedNotationChord = expectedNotationVoice.get(j);
-				NotationChord actualNotationChord = actualNotationVoice.get(j);
-				assertEquals(expectedNotationChord.size(), actualNotationChord.size());
-				for (int k = 0; k < expectedNotationChord.size(); k++) {
-					assertEquals(expectedNotationChord.get(k).getMidiPitch(), actualNotationChord.get(k).getMidiPitch());
-					assertEquals(expectedNotationChord.get(k).getMetricTime(), actualNotationChord.get(k).getMetricTime());
-					assertEquals(expectedNotationChord.get(k).getMetricDuration(), actualNotationChord.get(k).getMetricDuration());   	    
-				}
-			}
-		}
-	}
-
-
-	public void testHandleUnisonsOLD() {
-		Transcription t = new Transcription();
-		t.setPiece(MIDIImport.importMidiFile(midiTestpiece));
-		t.setName();
-		t.setNotes(null);
-//		t.setNoteSequence();
-		t.initialiseVoiceLabels(null);
-		t.setMeterInfo();
-		t.setKeyInfo();
-
-		NoteSequence expected = getNoteSequence(t.getScorePiece(), "testpiece");
-		expected.swapNotes(12, 13);
-		
-		// a. NoteSequence
-//		// NB: expectedNoteSeq cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes
-//		// with the same pitch and onset time randomly
-//		List<Note> expectedNotes = new ArrayList<Note>();
-//		for (Note n : t.getNoteSequence()) {
-//			expectedNotes.add(n);
-//		}
-//		expectedNotes.set(12, Transcription.createNote(65, new Rational(5, 4), new Rational(1, 4)));
-//		expectedNotes.set(13, Transcription.createNote(65, new Rational(5, 4), new Rational(1, 8)));  
-		// b. Voice labels
-		List<List<Double>> expectedVoiceLabels = new ArrayList<List<Double>>(t.getVoiceLabels());
-		expectedVoiceLabels.set(12, V_0);
-		expectedVoiceLabels.set(13, V_1);
-
-		t.handleUnisons(Type.GROUND_TRUTH);
-		
-		NoteSequence actual = t.getNoteSequence();
-//		List<Note> actualNotes = new ArrayList<Note>();
-//		for (Note n : t.getNoteSequence()) {
-//			actualNotes.add(n);
-//		}
-		List<List<Double>> actualVoiceLabels = t.getVoiceLabels();
-		
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		}
-
-		// a. NoteSequence
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		}
-//		assertEquals(expectedNotes.size(), actualNotes.size());
-//		for (int i = 0; i < expectedNotes.size(); i++) {
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
 //			// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
 //			// objects: therefore check that pitch, metricTime, and metricDuration are the same
-//			assertEquals(expectedNotes.get(i).getMidiPitch(), actualNotes.get(i).getMidiPitch());
-//			assertEquals(expectedNotes.get(i).getMetricTime(), actualNotes.get(i).getMetricTime());
-//			assertEquals(expectedNotes.get(i).getMetricDuration(), actualNotes.get(i).getMetricDuration());
+//			assertEquals(expected.get(i).getMidiPitch(), actual.get(i).getMidiPitch());
+//			assertEquals(expected.get(i).getMetricTime(), actual.get(i).getMetricTime());
+//			assertEquals(expected.get(i).getMetricDuration(), actual.get(i).getMetricDuration());
 //		}
-		// b. Voice labels
-		assertEquals(expectedVoiceLabels.size(), actualVoiceLabels.size());
-		for (int i = 0; i < expectedVoiceLabels.size(); i++) {
-			assertEquals(expectedVoiceLabels.get(i).size(), actualVoiceLabels.get(i).size());
-			for (int j = 0; j < expectedVoiceLabels.get(i).size(); j++) {
-				assertEquals(expectedVoiceLabels.get(i).get(j), actualVoiceLabels.get(i).get(j));
-			}
-		}
-		assertEquals(expectedVoiceLabels, actualVoiceLabels);
-	}
-	
-	
-	public void testSetAndGetNoteSequence() {
-		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
-
-		// NB: Expected cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes with
-		// the same pitch and onset time randomly -- now that in the lower voice first, then that in the higher
-		List<Note> expected = new ArrayList<Note>();
-		// Chord 0
-		expected.add(Transcription.createNote(48, new Rational(3, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(55, new Rational(3, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(63, new Rational(3, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(67, new Rational(3, 4), new Rational(1, 4), null));
-		// Chord 1
-		expected.add(Transcription.createNote(43, new Rational(4, 4), new Rational(3, 16), null));
-		expected.add(Transcription.createNote(55, new Rational(4, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(70, new Rational(4, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(67, new Rational(4, 4), new Rational(1, 8), null));
-		// Chord 2
-		expected.add(Transcription.createNote(46, new Rational(19, 16), new Rational(1, 16), null));
-		// Chord 3
-		expected.add(Transcription.createNote(45, new Rational(5, 4), new Rational(1, 8), null));
-		expected.add(Transcription.createNote(48, new Rational(5, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(57, new Rational(5, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(63, new Rational(5, 4), new Rational(1, 4), null));
-		// Chord 4
-		expected.add(Transcription.createNote(43, new Rational(11, 8), new Rational(1, 8), null));
-		// Chord 5
-		expected.add(Transcription.createNote(43, new Rational(6, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 2), null));
-		expected.add(Transcription.createNote(55, new Rational(6, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(58, new Rational(6, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(67, new Rational(6, 4), new Rational(1, 4), null));
-		// Chord 6
-		expected.add(Transcription.createNote(43, new Rational(7, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(58, new Rational(7, 4), new Rational(1, 8), null));
-		expected.add(Transcription.createNote(62, new Rational(7, 4), new Rational(1, 8), null));
-		expected.add(Transcription.createNote(67, new Rational(7, 4), new Rational(1, 4), null));
-		// Chord 7
-		expected.add(Transcription.createNote(57, new Rational(15, 8), new Rational(1, 8), null));
-		expected.add(Transcription.createNote(66, new Rational(15, 8), new Rational(1, 8), null));
-		// Chord 8
-		expected.add(Transcription.createNote(43, new Rational(8, 4), new Rational(1, 2), null));
-		expected.add(Transcription.createNote(55, new Rational(8, 4), new Rational(1, 2), null));
-		expected.add(Transcription.createNote(62, new Rational(8, 4), new Rational(1, 2), null));
-		expected.add(Transcription.createNote(67, new Rational(8, 4), new Rational(1, 16), null));
-		// Chords 9-14
-		expected.add(Transcription.createNote(66, new Rational(33, 16), new Rational(1, 16), null));
-		expected.add(Transcription.createNote(67, new Rational(17, 8), new Rational(1, 32), null));
-		expected.add(Transcription.createNote(66, new Rational(69, 32), new Rational(1, 32), null));
-		expected.add(Transcription.createNote(64, new Rational(35, 16), new Rational(1, 32), null));
-		expected.add(Transcription.createNote(66, new Rational(71, 32), new Rational(1, 32), null));
-		expected.add(Transcription.createNote(67, new Rational(9, 4), new Rational(1, 4), null));
-		// Chord 14
-		expected.add(Transcription.createNote(43, new Rational(11, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(55, new Rational(11, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(62, new Rational(11, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(67, new Rational(11, 4), new Rational(1, 4), null));
-
-		NoteSequence noteSeq = transcription.getNoteSequence();
-		List<Note> actual = new ArrayList<Note>();
-		for (Note n : noteSeq) {
-			actual.add(n);
-		}
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
-			// objects: therefore check that pitch, metricTime, and metricDuration are the same
-			assertEquals(expected.get(i).getMidiPitch(), actual.get(i).getMidiPitch());
-			assertEquals(expected.get(i).getMetricTime(), actual.get(i).getMetricTime());
-			assertEquals(expected.get(i).getMetricDuration(), actual.get(i).getMetricDuration());
-		}
-	}
-
-
-	public void testSetAndGetNoteSequenceNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece);
-		// Determine expected
-
-		// NB: Expected cannot be a NoteSequence, as the NoteTimePitchComparator in the constructor adds notes with
-		// the same pitch and onset time randomly -- now that in the lower voice first, then that in the higher
-		List<Note> expected = new ArrayList<Note>();
-		// Chord 0
-		expected.add(Transcription.createNote(50, new Rational(3, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(57, new Rational(3, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(65, new Rational(3, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(69, new Rational(3, 4), new Rational(1, 4), null));
-		// Chord 1
-		expected.add(Transcription.createNote(45, new Rational(4, 4), new Rational(3, 16), null));
-		expected.add(Transcription.createNote(57, new Rational(4, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(69, new Rational(4, 4), new Rational(1, 8), null));
-		expected.add(Transcription.createNote(72, new Rational(4, 4), new Rational(1, 4), null));
-		// Chord 2
-		expected.add(Transcription.createNote(48, new Rational(19, 16), new Rational(1, 16), null));
-		// Chord 3
-		expected.add(Transcription.createNote(47, new Rational(5, 4), new Rational(1, 8), null));
-		expected.add(Transcription.createNote(50, new Rational(5, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(59, new Rational(5, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(65, new Rational(5, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(65, new Rational(5, 4), new Rational(1, 8), null));
-		// Chord 4
-		expected.add(Transcription.createNote(45, new Rational(11, 8), new Rational(1, 8), null));
-		// Chord 5
-		expected.add(Transcription.createNote(45, new Rational(6, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(57, new Rational(6, 4), new Rational(1, 2), null));
-		expected.add(Transcription.createNote(57, new Rational(6, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(60, new Rational(6, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(69, new Rational(6, 4), new Rational(1, 4), null));
-		// Chord 6
-		expected.add(Transcription.createNote(45, new Rational(7, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(60, new Rational(7, 4), new Rational(1, 8), null));
-		expected.add(Transcription.createNote(64, new Rational(7, 4), new Rational(1, 8), null));
-		expected.add(Transcription.createNote(69, new Rational(7, 4), new Rational(1, 4), null));
-		// Chord 7
-		expected.add(Transcription.createNote(59, new Rational(15, 8), new Rational(1, 8), null));
-		expected.add(Transcription.createNote(68, new Rational(15, 8), new Rational(1, 8), null));
-		// Chord 8
-		expected.add(Transcription.createNote(45, new Rational(8, 4), new Rational(1, 2), null));
-		expected.add(Transcription.createNote(57, new Rational(8, 4), new Rational(1, 2), null));
-		expected.add(Transcription.createNote(64, new Rational(8, 4), new Rational(1, 2), null));
-		expected.add(Transcription.createNote(69, new Rational(8, 4), new Rational(1, 16), null));
-		// Chords 9-14
-		expected.add(Transcription.createNote(68, new Rational(33, 16), new Rational(1, 16), null));
-		expected.add(Transcription.createNote(69, new Rational(17, 8), new Rational(1, 32), null));
-		expected.add(Transcription.createNote(68, new Rational(69, 32), new Rational(1, 32), null));
-		expected.add(Transcription.createNote(66, new Rational(35, 16), new Rational(1, 32), null));
-		expected.add(Transcription.createNote(68, new Rational(71, 32), new Rational(1, 32), null));
-		expected.add(Transcription.createNote(69, new Rational(9, 4), new Rational(1, 4), null));
-		// Chord 15
-		expected.add(Transcription.createNote(45, new Rational(11, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(57, new Rational(11, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(64, new Rational(11, 4), new Rational(1, 4), null));
-		expected.add(Transcription.createNote(69, new Rational(11, 4), new Rational(1, 4), null));
-	
-		// Calculate actual
-		NoteSequence noteSeq = transcription.getNoteSequence();
-		List<Note> actual = new ArrayList<Note>();
-		for (Note n : noteSeq) {
-			actual.add(n);
-		}
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
-			// objects: therefore check that pitch, metricTime, and metricDuration are the same
-			assertEquals(expected.get(i).getMidiPitch(), actual.get(i).getMidiPitch());
-			assertEquals(expected.get(i).getMetricTime(), actual.get(i).getMetricTime());
-			assertEquals(expected.get(i).getMetricDuration(), actual.get(i).getMetricDuration());
-		}
-	}
-
-
-	public void testSetAndGetVoiceLabels() {
-		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
-
-		List<Double> voice0 = V_0;
-		List<Double> voice1 = V_1;
-		List<Double> voice2 = V_2;
-		List<Double> voice3 = V_3;
-		List<Double> voice4 = V_4;
-		List<Double> voice0And1 = Transcription.combineLabels(voice0, voice1);
-
-		List<List<Double>> expected = new ArrayList<List<Double>>();
-		// Chord 0
-		expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
-		// Chord 1
-		expected.add(voice3); expected.add(voice2); expected.add(voice0); expected.add(voice1); 
-		// Chord 2
-		expected.add(voice3);
-		// Chord 3
-		expected.add(voice4); expected.add(voice3); expected.add(voice2); expected.add(voice0And1); 
-		// Chord 4
-		expected.add(voice4);
-		// Chord 5
-		expected.add(voice4); expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
-		// Chord 6
-		expected.add(voice4); expected.add(voice2); expected.add(voice0); expected.add(voice1); 
-		// Chord 7
-		expected.add(voice2); expected.add(voice0);  
-		// Chord 8
-		expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
-		// Chords 9-14
-		expected.add(voice0);
-		expected.add(voice0);
-		expected.add(voice0);
-		expected.add(voice0);
-		expected.add(voice0);
-		expected.add(voice0);
-		// Chord 15
-		expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
-
-		List<List<Double>> actual = transcription.getVoiceLabels();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size());
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
-			}
-		}
-		assertEquals(expected, actual);
-	}
-	
-	
-	public void testSetAndGetVoiceLabelsNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece);
-
-		List<Double> voice0 = V_0;
-		List<Double> voice1 = V_1;
-		List<Double> voice2 = V_2;
-		List<Double> voice3 = V_3;
-		List<Double> voice4 = V_4;
-
-		List<List<Double>> expected = new ArrayList<List<Double>>();
-		// Chord 0
-		expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
-		// Chord 1
-		expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
-		// Chord 2
-		expected.add(voice3);
-		// Chord 3
-		expected.add(voice4); expected.add(voice3); expected.add(voice2); expected.add(voice0); expected.add(voice1); 
-		// Chord 4
-		expected.add(voice4);
-		// Chord 5
-		expected.add(voice4); expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
-		// Chord 6
-		expected.add(voice4); expected.add(voice2); expected.add(voice0); expected.add(voice1); 
-		// Chord 7
-		expected.add(voice2); expected.add(voice0);  
-		// Chord 8
-		expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
-		// Chords 9-14
-		expected.add(voice0);
-		expected.add(voice0);
-		expected.add(voice0);
-		expected.add(voice0);
-		expected.add(voice0);
-		expected.add(voice0);
-		// Chord 15
-		expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
-
-		List<List<Double>> actual = transcription.getVoiceLabels();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size());
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
-			}
-		}
-		assertEquals(expected, actual);
-	}
-
-
-	public void testSetAndGetDurationLabels() {
-		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
-
-		List<Double> quarterAndEighth = new ArrayList<Double>(QUARTER);
-		quarterAndEighth.set(3, 1.0);
-
-		List<List<Double>> expected = new ArrayList<List<Double>>();
-		// Chord 0
-		expected.add(QUARTER); expected.add(QUARTER); expected.add(QUARTER);
-		expected.add(QUARTER);
-		// Chord 1
-		expected.add(DOTTED_EIGHTH); expected.add(QUARTER); expected.add(QUARTER);
-		expected.add(EIGHTH);
-		// Chord 2
-		expected.add(SIXTEENTH);
-		// Chord 3
-		expected.add(EIGHTH); expected.add(QUARTER); expected.add(QUARTER); 
-		expected.add(quarterAndEighth);
-		// Chord 4
-		expected.add(EIGHTH);
-		// Chord 5
-		expected.add(QUARTER); expected.add(HALF); expected.add(QUARTER); 
-		expected.add(QUARTER); expected.add(QUARTER);
-		// Chord 6
-		expected.add(QUARTER); expected.add(EIGHTH); expected.add(EIGHTH); 
-		expected.add(QUARTER);
-		// Chord 7
-		expected.add(EIGHTH); expected.add(EIGHTH);
-		// Chord 8
-		expected.add(HALF); expected.add(HALF); expected.add(HALF); 
-		expected.add(SIXTEENTH);
-		// Chords 9-14
-		expected.add(SIXTEENTH); 
-		expected.add(THIRTYSECOND); 
-		expected.add(THIRTYSECOND);
-		expected.add(THIRTYSECOND); 
-		expected.add(THIRTYSECOND); 
-		expected.add(QUARTER);
-		// Chord 15
-		expected.add(QUARTER); expected.add(QUARTER); expected.add(QUARTER);
-		expected.add(QUARTER);
-
-		List<List<Double>> actual = transcription.getDurationLabels();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size()); 
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
-//				for (int k = 0; k < expected.get(i).get(j).size(); k++) {
-//					assertEquals(expected.get(i).get(j).get(k), actual.get(i).get(j).get(k));
-//				}
-			}
-		}
-		assertEquals(expected, actual);
-	}
-
-
-//	public void testGetNumberOfCoDsInChord() {    
-//	Tablature tablature = new Tablature(encodingTestpiece1, true);
-//	Transcription transcription = new Transcription();
-////transcription.setFile(midiTestpiece1);
-//transcription.setPiece(MidiImport.importMidiFiles(midiTestpiece1));
-////transcription.setPiece(null);
-//transcription.initialiseNoteSequence();
-//transcription.initialiseVoiceLabels(); 
-//transcription.initialiseDurationLabels();
-//if (transcription.checkChords(tablature) == false) {
-// 	throw new RuntimeException("ERROR: Chord error (see console).");
-//}
-//
-//// Determine expected
-//List<Integer> expected = Arrays.asList(new Integer[]{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
-//
-//// Calculate actual
-//List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
-//List<Integer> actual = new ArrayList<Integer>();
-//for (int i = 0; i < transcription.getTranscriptionChords().size(); i++) {
-//	actual.add(transcription.getNumberOfCoDsInChord(tablatureChords, i));
-//}
-//
-//// Assert equality
-//assertEquals(expected.size(), actual.size());
-//	for (int i = 0; i < expected.size(); i++) {
-//		assertEquals(expected.get(i), actual.get(i));		
 //	}
-//	assertEquals(expected, actual);
-//}
-
-
-//public void testGetEqualDurationUnisonsInfoOLD() {
-//	Transcription transcription = new Transcription(midiTestpiece1, null);
-//	
-//	// Adapt transcription so that all unisons become EDUs
-//	// NB: listEqualDurationUnisons() gets the information from the NoteSequence only; therefore, the 
-//	// basicNoteProperties need not be adapted
-//	NoteSequence noteSeq = transcription.getNoteSequence();
-//	Note n13 = noteSeq.getNoteAt(13);
-//  noteSeq.replaceNoteAt(13, Transcription.createNote(n13.getMidiPitch(), n13.getMetricTime(), new Rational(1, 4)));
-//  // Swap so that the lower voice (now at index 13) gets the lower index, as must be the case with EDUnotes 
-//  noteSeq.swapNotes(12, 13);
-//  Note n16 = noteSeq.getNoteAt(16);
-//  noteSeq.replaceNoteAt(16, Transcription.createNote(n16.getMidiPitch(), n16.getMetricTime(), new Rational(1, 4)));
-//  
-//  // Determine expected
-//  List<List<Double>> expected = new ArrayList<List<Double>>();
-//  for (int i = 0; i < noteSeq.size(); i++) {
-//  	expected.add(null);
-//  }
-//  expected.set(12, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
-//  expected.set(13, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
-//  expected.set(16, Arrays.asList(new Double[]{0.0, 0.0, 1.0, 1.0, 0.0}));
-//  expected.set(17, Arrays.asList(new Double[]{0.0, 0.0, 1.0, 1.0, 0.0}));
-//  	  
-//  // Calculate actual
-//  List<List<Double>> actual = transcription.getEqualDurationUnisonsInfoOLD();
-//  
-//  // Assert equality
-//  assertEquals(expected.size(), actual.size());
-//  for (int i = 0; i < expected.size(); i++) {
-//  	if (expected.get(i) == null) {
-//  		assertEquals(expected.get(i), actual.get(i));
-//  	}
-//  	else {
-//		    assertEquals(expected.get(i).size(), actual.get(i).size());
-//		    for (int j = 0; j < expected.get(i).size(); j++) {
-//		    	assertEquals(expected.get(i).get(j), actual.get(i).get(j));
-//		    }
+//
+//
+//	public void testSetAndGetVoiceLabels() {
+//		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
+//
+//		List<Double> voice0 = V_0;
+//		List<Double> voice1 = V_1;
+//		List<Double> voice2 = V_2;
+//		List<Double> voice3 = V_3;
+//		List<Double> voice4 = V_4;
+//		List<Double> voice0And1 = Transcription.combineLabels(voice0, voice1);
+//
+//		List<List<Double>> expected = new ArrayList<List<Double>>();
+//		// Chord 0
+//		expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
+//		// Chord 1
+//		expected.add(voice3); expected.add(voice2); expected.add(voice0); expected.add(voice1); 
+//		// Chord 2
+//		expected.add(voice3);
+//		// Chord 3
+//		expected.add(voice4); expected.add(voice3); expected.add(voice2); expected.add(voice0And1); 
+//		// Chord 4
+//		expected.add(voice4);
+//		// Chord 5
+//		expected.add(voice4); expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
+//		// Chord 6
+//		expected.add(voice4); expected.add(voice2); expected.add(voice0); expected.add(voice1); 
+//		// Chord 7
+//		expected.add(voice2); expected.add(voice0);  
+//		// Chord 8
+//		expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
+//		// Chords 9-14
+//		expected.add(voice0);
+//		expected.add(voice0);
+//		expected.add(voice0);
+//		expected.add(voice0);
+//		expected.add(voice0);
+//		expected.add(voice0);
+//		// Chord 15
+//		expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
+//
+//		List<List<Double>> actual = transcription.getVoiceLabels();
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i).size(), actual.get(i).size());
+//			for (int j = 0; j < expected.get(i).size(); j++) {
+//				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+//			}
 //		}
-//  }
-//}
-
-
-//public void testGetNumberOfUnisonsInChord() {
-//	Transcription transcription = new Transcription();
-////transcription.setFile(midiTestpiece1);
-//transcription.setPiece(MidiImport.importMidiFiles(midiTestpiece1));
-////transcription.setPiece(null);
-//transcription.initialiseNoteSequence();
-//transcription.initialiseVoiceLabels();
-//transcription.setMeterInfo(midiTestpiece1);
-//	
-//	// Determine expected
-//	List<Integer> expected = Arrays.asList(new Integer[]{0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
-//	
-//	// Calculate actual
-//	List<Integer> actual = new ArrayList<Integer>();
-//	for (int i = 0; i < transcription.getTranscriptionChords().size(); i++) {
-//		actual.add(transcription.getNumberOfUnisonsInChord(i));
+//		assertEquals(expected, actual);
 //	}
 //	
-//	// Assert equality
-//	assertEquals(expected.size(), actual.size());
-//	for (int i = 0; i < expected.size(); i++) {
-//		assertEquals(expected.get(i), actual.get(i));
+//	
+//	public void testSetAndGetVoiceLabelsNonTab() {
+//		Transcription transcription = new Transcription(midiTestpiece);
+//
+//		List<Double> voice0 = V_0;
+//		List<Double> voice1 = V_1;
+//		List<Double> voice2 = V_2;
+//		List<Double> voice3 = V_3;
+//		List<Double> voice4 = V_4;
+//
+//		List<List<Double>> expected = new ArrayList<List<Double>>();
+//		// Chord 0
+//		expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
+//		// Chord 1
+//		expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
+//		// Chord 2
+//		expected.add(voice3);
+//		// Chord 3
+//		expected.add(voice4); expected.add(voice3); expected.add(voice2); expected.add(voice0); expected.add(voice1); 
+//		// Chord 4
+//		expected.add(voice4);
+//		// Chord 5
+//		expected.add(voice4); expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
+//		// Chord 6
+//		expected.add(voice4); expected.add(voice2); expected.add(voice0); expected.add(voice1); 
+//		// Chord 7
+//		expected.add(voice2); expected.add(voice0);  
+//		// Chord 8
+//		expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
+//		// Chords 9-14
+//		expected.add(voice0);
+//		expected.add(voice0);
+//		expected.add(voice0);
+//		expected.add(voice0);
+//		expected.add(voice0);
+//		expected.add(voice0);
+//		// Chord 15
+//		expected.add(voice3); expected.add(voice2); expected.add(voice1); expected.add(voice0); 
+//
+//		List<List<Double>> actual = transcription.getVoiceLabels();
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i).size(), actual.get(i).size());
+//			for (int j = 0; j < expected.get(i).size(); j++) {
+//				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+//			}
+//		}
+//		assertEquals(expected, actual);
 //	}
-//}
-
-
-	public void testSetAndGetVoicesCoDNotes() {
-		Tablature tablature1 = new Tablature(encodingTestpiece, true);
-		Transcription transcription1 = new Transcription(midiTestpiece, encodingTestpiece);
-		
+//
+//
+//	public void testSetAndGetDurationLabels() {
+//		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
+//
+//		List<Double> quarterAndEighth = new ArrayList<Double>(QUARTER);
+//		quarterAndEighth.set(3, 1.0);
+//
+//		List<List<Double>> expected = new ArrayList<List<Double>>();
+//		// Chord 0
+//		expected.add(QUARTER); expected.add(QUARTER); expected.add(QUARTER);
+//		expected.add(QUARTER);
+//		// Chord 1
+//		expected.add(DOTTED_EIGHTH); expected.add(QUARTER); expected.add(QUARTER);
+//		expected.add(EIGHTH);
+//		// Chord 2
+//		expected.add(SIXTEENTH);
+//		// Chord 3
+//		expected.add(EIGHTH); expected.add(QUARTER); expected.add(QUARTER); 
+//		expected.add(quarterAndEighth);
+//		// Chord 4
+//		expected.add(EIGHTH);
+//		// Chord 5
+//		expected.add(QUARTER); expected.add(HALF); expected.add(QUARTER); 
+//		expected.add(QUARTER); expected.add(QUARTER);
+//		// Chord 6
+//		expected.add(QUARTER); expected.add(EIGHTH); expected.add(EIGHTH); 
+//		expected.add(QUARTER);
+//		// Chord 7
+//		expected.add(EIGHTH); expected.add(EIGHTH);
+//		// Chord 8
+//		expected.add(HALF); expected.add(HALF); expected.add(HALF); 
+//		expected.add(SIXTEENTH);
+//		// Chords 9-14
+//		expected.add(SIXTEENTH); 
+//		expected.add(THIRTYSECOND); 
+//		expected.add(THIRTYSECOND);
+//		expected.add(THIRTYSECOND); 
+//		expected.add(THIRTYSECOND); 
+//		expected.add(QUARTER);
+//		// Chord 15
+//		expected.add(QUARTER); expected.add(QUARTER); expected.add(QUARTER);
+//		expected.add(QUARTER);
+//
+//		List<List<Double>> actual = transcription.getDurationLabels();
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i).size(), actual.get(i).size()); 
+//			for (int j = 0; j < expected.get(i).size(); j++) {
+//				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+////				for (int k = 0; k < expected.get(i).get(j).size(); k++) {
+////					assertEquals(expected.get(i).get(j).get(k), actual.get(i).get(j).get(k));
+////				}
+//			}
+//		}
+//		assertEquals(expected, actual);
+//	}
+//
+//
+////	public void testGetNumberOfCoDsInChord() {    
+////	Tablature tablature = new Tablature(encodingTestpiece1, true);
+////	Transcription transcription = new Transcription();
+//////transcription.setFile(midiTestpiece1);
+////transcription.setPiece(MidiImport.importMidiFiles(midiTestpiece1));
+//////transcription.setPiece(null);
+////transcription.initialiseNoteSequence();
+////transcription.initialiseVoiceLabels(); 
+////transcription.initialiseDurationLabels();
+////if (transcription.checkChords(tablature) == false) {
+//// 	throw new RuntimeException("ERROR: Chord error (see console).");
+////}
+////
+////// Determine expected
+////List<Integer> expected = Arrays.asList(new Integer[]{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+////
+////// Calculate actual
+////List<List<TabSymbol>> tablatureChords = tablature.getTablatureChords();
+////List<Integer> actual = new ArrayList<Integer>();
+////for (int i = 0; i < transcription.getTranscriptionChords().size(); i++) {
+////	actual.add(transcription.getNumberOfCoDsInChord(tablatureChords, i));
+////}
+////
+////// Assert equality
+////assertEquals(expected.size(), actual.size());
+////	for (int i = 0; i < expected.size(); i++) {
+////		assertEquals(expected.get(i), actual.get(i));		
+////	}
+////	assertEquals(expected, actual);
+////}
+//
+//
+////public void testGetEqualDurationUnisonsInfoOLD() {
+////	Transcription transcription = new Transcription(midiTestpiece1, null);
+////	
+////	// Adapt transcription so that all unisons become EDUs
+////	// NB: listEqualDurationUnisons() gets the information from the NoteSequence only; therefore, the 
+////	// basicNoteProperties need not be adapted
+////	NoteSequence noteSeq = transcription.getNoteSequence();
+////	Note n13 = noteSeq.getNoteAt(13);
+////  noteSeq.replaceNoteAt(13, Transcription.createNote(n13.getMidiPitch(), n13.getMetricTime(), new Rational(1, 4)));
+////  // Swap so that the lower voice (now at index 13) gets the lower index, as must be the case with EDUnotes 
+////  noteSeq.swapNotes(12, 13);
+////  Note n16 = noteSeq.getNoteAt(16);
+////  noteSeq.replaceNoteAt(16, Transcription.createNote(n16.getMidiPitch(), n16.getMetricTime(), new Rational(1, 4)));
+////  
+////  // Determine expected
+////  List<List<Double>> expected = new ArrayList<List<Double>>();
+////  for (int i = 0; i < noteSeq.size(); i++) {
+////  	expected.add(null);
+////  }
+////  expected.set(12, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
+////  expected.set(13, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
+////  expected.set(16, Arrays.asList(new Double[]{0.0, 0.0, 1.0, 1.0, 0.0}));
+////  expected.set(17, Arrays.asList(new Double[]{0.0, 0.0, 1.0, 1.0, 0.0}));
+////  	  
+////  // Calculate actual
+////  List<List<Double>> actual = transcription.getEqualDurationUnisonsInfoOLD();
+////  
+////  // Assert equality
+////  assertEquals(expected.size(), actual.size());
+////  for (int i = 0; i < expected.size(); i++) {
+////  	if (expected.get(i) == null) {
+////  		assertEquals(expected.get(i), actual.get(i));
+////  	}
+////  	else {
+////		    assertEquals(expected.get(i).size(), actual.get(i).size());
+////		    for (int j = 0; j < expected.get(i).size(); j++) {
+////		    	assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+////		    }
+////		}
+////  }
+////}
+//
+//
+////public void testGetNumberOfUnisonsInChord() {
+////	Transcription transcription = new Transcription();
+//////transcription.setFile(midiTestpiece1);
+////transcription.setPiece(MidiImport.importMidiFiles(midiTestpiece1));
+//////transcription.setPiece(null);
+////transcription.initialiseNoteSequence();
+////transcription.initialiseVoiceLabels();
+////transcription.setMeterInfo(midiTestpiece1);
+////	
+////	// Determine expected
+////	List<Integer> expected = Arrays.asList(new Integer[]{0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+////	
+////	// Calculate actual
+////	List<Integer> actual = new ArrayList<Integer>();
+////	for (int i = 0; i < transcription.getTranscriptionChords().size(); i++) {
+////		actual.add(transcription.getNumberOfUnisonsInChord(i));
+////	}
+////	
+////	// Assert equality
+////	assertEquals(expected.size(), actual.size());
+////	for (int i = 0; i < expected.size(); i++) {
+////		assertEquals(expected.get(i), actual.get(i));
+////	}
+////}
+//
+//
+//	public void testSetAndGetVoicesCoDNotes() {
+//		Tablature tablature1 = new Tablature(encodingTestpiece, true);
+//		Transcription transcription1 = new Transcription(midiTestpiece, encodingTestpiece);
+//		
+////		File encoding2 = 
+////			new File(Runner.encodingsPath + DatasetID.INT_4vv.getName() + "/4vv/phalese-1563_12-las_on.tbp");
+////		File midi2 = 
+////			new File(Runner.midiPath + DatasetID.INT_4vv.getName() + "/4vv/phalese-1563_12-las_on.mid");
 //		File encoding2 = 
-//			new File(Runner.encodingsPath + DatasetID.INT_4vv.getName() + "/4vv/phalese-1563_12-las_on.tbp");
+//			new File(MEIExport.rootDir + "data/annotated/encodings/" + "thesis-int" + "/4vv/phalese-1563_12-las_on.tbp");
 //		File midi2 = 
-//			new File(Runner.midiPath + DatasetID.INT_4vv.getName() + "/4vv/phalese-1563_12-las_on.mid");
-		File encoding2 = 
-			new File(MEIExport.rootDir + "data/annotated/encodings/" + "thesis-int" + "/4vv/phalese-1563_12-las_on.tbp");
-		File midi2 = 
-			new File(MEIExport.rootDir + "data/annotated/MIDI/" + "thesis-int" + "/4vv/phalese-1563_12-las_on.mid");
-		
-		Tablature tablature2 = new Tablature(encoding2, true);
-		Transcription transcription2 = new Transcription(midi2, encoding2);
-				
-		List<Integer[]> expected = new ArrayList<Integer[]>();
-		// a. For a piece with one CoD
-		List<Integer[]> expected1 = new ArrayList<Integer[]>();
-		for (int i = 0; i < tablature1.getBasicTabSymbolProperties().length; i++) {
-			expected1.add(null);
-		}
-		// CoD at metric position 2 1/4
-		expected1.set(12, new Integer[]{0, 1});
-		expected.addAll(expected1);
-		
-		// b. For a piece with multiple CoDs
-		List<Integer[]> expected2 = new ArrayList<Integer[]>();
-		for (int i = 0; i < tablature2.getBasicTabSymbolProperties().length; i++) {
-			expected2.add(null);
-		}
-		// CoD at metric position 7
-		expected2.set(86, new Integer[]{3, 2});
-		// CoD at metric position 7 1/4
-		expected2.set(91, new Integer[]{1, 2});
-		// CoD at metric position 14 3/4
-		expected2.set(256, new Integer[]{3, 2});
-		// CoD at metric position 17
-		expected2.set(301, new Integer[]{3, 2});
-		// CoD at metric position 17 1/4
-		expected2.set(306, new Integer[]{1, 2});
-		// CoD at metric position 21 1/2
-		expected2.set(391, new Integer[]{3, 2});
-		// CoD at metric position 23 1/2
-		expected2.set(422, new Integer[]{3, 2});
-		// CoD at metric position 29 1/2
-		expected2.set(524, new Integer[]{1, 0});
-		// CoD at metric position 33 3/4
-		expected2.set(579, new Integer[]{2, 0});
-		// CoD at metric position 35 1/4
-		expected2.set(600, new Integer[]{2, 1});
-		// CoD at metric position 42 1/4
-		expected2.set(716, new Integer[]{2, 1});
-		expected.addAll(expected2);
-
-		List<Integer[]> actual = new ArrayList<Integer[]>();
-		actual.addAll(transcription1.getVoicesSNU());
-		actual.addAll(transcription2.getVoicesSNU());
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			if (expected.get(i) == null) {
-				assertEquals(expected.get(i), actual.get(i));
-			}
-			else {
-				assertEquals(expected.get(i).length, actual.get(i).length);
-				for (int j = 0; j < expected.get(i).length; j++) {
-					assertEquals(expected.get(i)[j], actual.get(i)[j]);
-				}
-			}
-		}
-	}
-
-
-	public void testSetAndGetEqualDurationUnisonsInfo() {
-		Transcription transcription = new Transcription();
-//		transcription.setFile(midiTestpiece1);
-		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
-//		transcription.setPiece(null);
-		transcription.makeNoteSequence();
-		// The voice labels must be initialised before the NoteSeqeunce is adapted, as initialiseVoiceLabels() needs
-		// the actual Note objects from the NoteSequence and not the adaptations made below
-		transcription.initialiseVoiceLabels(null); 
-//		transcription.setMeterInfo(midiTestpiece1);
-		transcription.setMeterInfo();
-		// Before calling handleUnisons(): adapt transcription so that all unisons become EDUs
-		NoteSequence noteSeq = transcription.getNoteSequence();
-		// Give all unison notes a duration of a quarter
-		// NB: Before handleUnisons() is called, all unison notes have been added to noteSeq with the one in the 
-		// lower voice first. That means that the notes at indices 12 and 16 need to be adapted
-		Note n12 = noteSeq.getNoteAt(12);
-		noteSeq.replaceNoteAt(12, Transcription.createNote(n12.getMidiPitch(), n12.getMetricTime(), new Rational(1, 4), null));
-		Note n16 = noteSeq.getNoteAt(16);
-		noteSeq.replaceNoteAt(16, Transcription.createNote(n16.getMidiPitch(), n16.getMetricTime(), new Rational(1, 4), null));  
-		transcription.handleUnisons(Type.GROUND_TRUTH);
-		transcription.setBasicNoteProperties();
-
-		List<Integer[]> expected = new ArrayList<Integer[]>();
-		for (int i = 0; i < noteSeq.size(); i++) {
-			expected.add(null);
-		}
-//		expected.set(12, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
-//		expected.set(13, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
-//		expected.set(16, Arrays.asList(new Double[]{0.0, 0.0, 1.0, 1.0, 0.0}));
-//		expected.set(17, Arrays.asList(new Double[]{0.0, 0.0, 1.0, 1.0, 0.0}));
-		expected.set(12, new Integer[]{1, 0, 13});
-		expected.set(13, new Integer[]{1, 0, 12});
-		expected.set(16, new Integer[]{3, 2, 17});
-		expected.set(17, new Integer[]{3, 2, 16});
-
-		List<Integer[]> actual = transcription.getVoicesEDU();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			if (expected.get(i) == null) {
-				assertEquals(expected.get(i), actual.get(i));
-			}
+//			new File(MEIExport.rootDir + "data/annotated/MIDI/" + "thesis-int" + "/4vv/phalese-1563_12-las_on.mid");
+//		
+//		Tablature tablature2 = new Tablature(encoding2, true);
+//		Transcription transcription2 = new Transcription(midi2, encoding2);
+//				
+//		List<Integer[]> expected = new ArrayList<Integer[]>();
+//		// a. For a piece with one CoD
+//		List<Integer[]> expected1 = new ArrayList<Integer[]>();
+//		for (int i = 0; i < tablature1.getBasicTabSymbolProperties().length; i++) {
+//			expected1.add(null);
+//		}
+//		// CoD at metric position 2 1/4
+//		expected1.set(12, new Integer[]{0, 1});
+//		expected.addAll(expected1);
+//		
+//		// b. For a piece with multiple CoDs
+//		List<Integer[]> expected2 = new ArrayList<Integer[]>();
+//		for (int i = 0; i < tablature2.getBasicTabSymbolProperties().length; i++) {
+//			expected2.add(null);
+//		}
+//		// CoD at metric position 7
+//		expected2.set(86, new Integer[]{3, 2});
+//		// CoD at metric position 7 1/4
+//		expected2.set(91, new Integer[]{1, 2});
+//		// CoD at metric position 14 3/4
+//		expected2.set(256, new Integer[]{3, 2});
+//		// CoD at metric position 17
+//		expected2.set(301, new Integer[]{3, 2});
+//		// CoD at metric position 17 1/4
+//		expected2.set(306, new Integer[]{1, 2});
+//		// CoD at metric position 21 1/2
+//		expected2.set(391, new Integer[]{3, 2});
+//		// CoD at metric position 23 1/2
+//		expected2.set(422, new Integer[]{3, 2});
+//		// CoD at metric position 29 1/2
+//		expected2.set(524, new Integer[]{1, 0});
+//		// CoD at metric position 33 3/4
+//		expected2.set(579, new Integer[]{2, 0});
+//		// CoD at metric position 35 1/4
+//		expected2.set(600, new Integer[]{2, 1});
+//		// CoD at metric position 42 1/4
+//		expected2.set(716, new Integer[]{2, 1});
+//		expected.addAll(expected2);
+//
+//		List<Integer[]> actual = new ArrayList<Integer[]>();
+//		actual.addAll(transcription1.getVoicesSNU());
+//		actual.addAll(transcription2.getVoicesSNU());
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			if (expected.get(i) == null) {
+//				assertEquals(expected.get(i), actual.get(i));
+//			}
 //			else {
-//				assertEquals(expected.get(i).size(), actual.get(i).size());
-//				for (int j = 0; j < expected.get(i).size(); j++) {
-//					assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+//				assertEquals(expected.get(i).length, actual.get(i).length);
+//				for (int j = 0; j < expected.get(i).length; j++) {
+//					assertEquals(expected.get(i)[j], actual.get(i)[j]);
 //				}
 //			}
-			else {
-				assertEquals(expected.get(i).length, actual.get(i).length);
-				for (int j = 0; j < expected.get(i).length; j++) {
-					assertEquals(expected.get(i)[j], actual.get(i)[j]);
-				}
-			}
-		}
-	}
-
-
-	public void testGetAndSetChords(){
-//		Tablature tablature = new Tablature(encodingTestpiece1, true);
-		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
-
-		List<List<Note>> expected = new ArrayList<List<Note>>();
-		// Chord 0
-		expected.add(Arrays.asList(new Note[]{
-			Transcription.createNote(48, new Rational(3, 4), new Rational(1, 4), null), 
-			Transcription.createNote(55, new Rational(3, 4), new Rational(1, 4), null),
-			Transcription.createNote(63, new Rational(3, 4), new Rational(1, 4), null),
-			Transcription.createNote(67, new Rational(3, 4), new Rational(1, 4), null)}));
-		// Chord 1      
-		expected.add(Arrays.asList(new Note[]{
-			Transcription.createNote(43, new Rational(4, 4), new Rational(3, 16), null),
-			Transcription.createNote(55, new Rational(4, 4), new Rational(1, 4), null),
-			Transcription.createNote(70, new Rational(4, 4), new Rational(1, 4), null),
-			Transcription.createNote(67, new Rational(4, 4), new Rational(1, 8), null)}));
-		// Chord 2
-		expected.add(Arrays.asList(new Note[]{
-			Transcription.createNote(46, new Rational(19, 16), new Rational(1, 16), null)}));
-		// Chord 3
-		expected.add(Arrays.asList(new Note[]{	
-			Transcription.createNote(45, new Rational(5, 4), new Rational(1, 8), null),
-			Transcription.createNote(48, new Rational(5, 4), new Rational(1, 4), null),
-			Transcription.createNote(57, new Rational(5, 4), new Rational(1, 4), null),
-			Transcription.createNote(63, new Rational(5, 4), new Rational(1, 4), null)}));
-		// Chord 4
-		expected.add(Arrays.asList(new Note[]{
-			Transcription.createNote(43, new Rational(11, 8), new Rational(1, 8), null)}));
-		// Chord 5
-		expected.add(Arrays.asList(new Note[]{	
-			Transcription.createNote(43, new Rational(6, 4), new Rational(1, 4), null),
-			Transcription.createNote(55, new Rational(6, 4), new Rational(1, 2), null),
-			Transcription.createNote(55, new Rational(6, 4), new Rational(1, 4), null),
-			Transcription.createNote(58, new Rational(6, 4), new Rational(1, 4), null),
-			Transcription.createNote(67, new Rational(6, 4), new Rational(1, 4), null)}));
-		// Chord 6
-		expected.add(Arrays.asList(new Note[]{
-			Transcription.createNote(43, new Rational(7, 4), new Rational(1, 4), null),
-			Transcription.createNote(58, new Rational(7, 4), new Rational(1, 8), null),
-			Transcription.createNote(62, new Rational(7, 4), new Rational(1, 8), null),
-			Transcription.createNote(67, new Rational(7, 4), new Rational(1, 4), null)}));
-		// Chord 7
-		expected.add(Arrays.asList(new Note[]{
-			Transcription.createNote(57, new Rational(15, 8), new Rational(1, 8), null),
-			Transcription.createNote(66, new Rational(15, 8), new Rational(1, 8), null)}));	
-		// Chord 8
-		expected.add(Arrays.asList(new Note[]{
-			Transcription.createNote(43, new Rational(8, 4), new Rational(1, 2), null),
-			Transcription.createNote(55, new Rational(8, 4), new Rational(1, 2), null),
-			Transcription.createNote(62, new Rational(8, 4), new Rational(1, 2), null),
-			Transcription.createNote(67, new Rational(8, 4), new Rational(1, 16), null)}));
-		// Chords 9-14
-		expected.add(Arrays.asList(new Note[]{
-			Transcription.createNote(66, new Rational(33, 16), new Rational(1, 16), null)}));
-		expected.add(Arrays.asList(new Note[]{
-			Transcription.createNote(67, new Rational(17, 8), new Rational(1, 32), null)}));
-		expected.add(Arrays.asList(new Note[]{
-			Transcription.createNote(66, new Rational(69, 32), new Rational(1, 32), null)}));
-		expected.add(Arrays.asList(new Note[]{
-			Transcription.createNote(64, new Rational(35, 16), new Rational(1, 32), null)}));
-		expected.add(Arrays.asList(new Note[]{
-			Transcription.createNote(66, new Rational(71, 32), new Rational(1, 32), null)}));
-		expected.add(Arrays.asList(new Note[]{
-			Transcription.createNote(67, new Rational(9, 4), new Rational(1, 4), null)}));
-		// Chord 15
-		expected.add(Arrays.asList(new Note[]{
-			Transcription.createNote(43, new Rational(11, 4), new Rational(1, 4), null),
-			Transcription.createNote(55, new Rational(11, 4), new Rational(1, 4), null),
-			Transcription.createNote(62, new Rational(11, 4), new Rational(1, 4), null),
-			Transcription.createNote(67, new Rational(11, 4), new Rational(1, 4), null)}));
-
-		List<List<Note>> actual = transcription.getChords();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size()); 
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
-				// objects: therefore check that pitch, metricTime, and metricDuration are the same
-				assertEquals(expected.get(i).get(j).getMidiPitch(), actual.get(i).get(j).getMidiPitch());
-				assertEquals(expected.get(i).get(j).getMetricTime(), actual.get(i).get(j).getMetricTime());
-				assertEquals(expected.get(i).get(j).getMetricDuration(), actual.get(i).get(j).getMetricDuration());
-			}
-		}
-	}
-
-
-	public void testGetAndSetTranscriptionChordsNonTab(){
-		Transcription transcription = new Transcription(midiTestpiece);
-
-		List<List<Note>> expected = new ArrayList<List<Note>>();
-		// Chord 0
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(50, new Rational(3, 4), new Rational(1, 4), null),
-		Transcription.createNote(57, new Rational(3, 4), new Rational(1, 4), null),
-		Transcription.createNote(65, new Rational(3, 4), new Rational(1, 4), null),
-		Transcription.createNote(69, new Rational(3, 4), new Rational(1, 4), null)}));  
-		// Chord 1
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(45, new Rational(4, 4), new Rational(3, 16), null),
-		Transcription.createNote(57, new Rational(4, 4), new Rational(1, 4), null),
-		Transcription.createNote(69, new Rational(4, 4), new Rational(1, 8), null),
-		Transcription.createNote(72, new Rational(4, 4), new Rational(1, 4), null)}));
-		// Chord 2
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(48, new Rational(19, 16), new Rational(1, 16), null)}));
-		// Chord 3
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(47, new Rational(5, 4), new Rational(1, 8), null),
-		Transcription.createNote(50, new Rational(5, 4), new Rational(1, 4), null),
-		Transcription.createNote(59, new Rational(5, 4), new Rational(1, 4), null),
-		Transcription.createNote(65, new Rational(5, 4), new Rational(1, 4), null),
-		Transcription.createNote(65, new Rational(5, 4), new Rational(1, 8), null)}));
-		// Chord 4
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(45, new Rational(11, 8), new Rational(1, 8), null)}));
-		// Chord 5
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(45, new Rational(6, 4), new Rational(1, 4), null),
-		Transcription.createNote(57, new Rational(6, 4), new Rational(1, 2), null),
-		Transcription.createNote(57, new Rational(6, 4), new Rational(1, 4), null),
-		Transcription.createNote(60, new Rational(6, 4), new Rational(1, 4), null),
-		Transcription.createNote(69, new Rational(6, 4), new Rational(1, 4), null)}));
-		// Chord 6
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(45, new Rational(7, 4), new Rational(1, 4), null),
-		Transcription.createNote(60, new Rational(7, 4), new Rational(1, 8), null),
-		Transcription.createNote(64, new Rational(7, 4), new Rational(1, 8), null),
-		Transcription.createNote(69, new Rational(7, 4), new Rational(1, 4), null)}));
-		// Chord 7
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(59, new Rational(15, 8), new Rational(1, 8), null),
-		Transcription.createNote(68, new Rational(15, 8), new Rational(1, 8), null)}));
-		// Chord 8
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(45, new Rational(8, 4), new Rational(1, 2), null),
-		Transcription.createNote(57, new Rational(8, 4), new Rational(1, 2), null),
-		Transcription.createNote(64, new Rational(8, 4), new Rational(1, 2), null),
-		Transcription.createNote(69, new Rational(8, 4), new Rational(1, 16), null)}));
-		// Chords 9-14
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(68, new Rational(33, 16), new Rational(1, 16), null)}));
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(69, new Rational(17, 8), new Rational(1, 32), null)}));
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(68, new Rational(69, 32), new Rational(1, 32), null)}));
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(66, new Rational(35, 16), new Rational(1, 32), null)}));
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(68, new Rational(71, 32), new Rational(1, 32), null)}));
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(69, new Rational(9, 4), new Rational(1, 4), null)}));
-		// Chord 15
-		expected.add(Arrays.asList(new Note[]{
-		Transcription.createNote(45, new Rational(11, 4), new Rational(1, 4), null),
-		Transcription.createNote(57, new Rational(11, 4), new Rational(1, 4), null),
-		Transcription.createNote(64, new Rational(11, 4), new Rational(1, 4), null),
-		Transcription.createNote(69, new Rational(11, 4), new Rational(1, 4), null)}));
-
-		List<List<Note>> actual = transcription.getChords();
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size()); 
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
-				// objects: therefore check that pitch, metricTime, and metricDuration are the same
-				assertEquals(expected.get(i).get(j).getMidiPitch(), actual.get(i).get(j).getMidiPitch());
-				assertEquals(expected.get(i).get(j).getMetricTime(), actual.get(i).get(j).getMetricTime());
-				assertEquals(expected.get(i).get(j).getMetricDuration(), actual.get(i).get(j).getMetricDuration());
-			}
-		}
-	}
-
-
-	public void testContainsCoD() {
-		List<List<Double>> voiceLabels = new ArrayList<List<Double>>();
-		voiceLabels.add(Transcription.combineLabels(V_0, V_1));
-		voiceLabels.add(V_0);
-		voiceLabels.add(Transcription.combineLabels(V_0, V_2));
-		voiceLabels.add(V_2);
-		
-		List<Boolean> expected = Arrays.asList(new Boolean[]{true, false, true, false});
-		
-		List<Boolean> actual = new ArrayList<Boolean>();
-		for (List<Double> l : voiceLabels) {
-			actual.add(Transcription.containsCoD(l));
-		}
-		
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		}
-	}
-
-
-	private JFrame visualise(Transcription t, String windowTitle) {
-		ScoreEditor scoreEditor = new ScoreEditor(t.getScorePiece().getScore());
-		scoreEditor.setModus(Mode.SELECT_AND_EDIT);
-
-		JFrame fullScoreFrame = new JFrame(windowTitle);
-		fullScoreFrame.add(new JScrollPane(scoreEditor));
-		fullScoreFrame.setSize(800, 600);
-//		fullScoreFrame.setSize(1200, 1200);
-	    fullScoreFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-	    fullScoreFrame.setVisible(true);
-	    scoreEditor.setSize(20000, 20000);
-	    return fullScoreFrame;
-	}
-
-	
-	public void testAddNoteOLD() {
-		Transcription t = new Transcription(midiTestpiece, encodingTestpiece);
-//			new Transcription(new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_add_note.mid"),	
-//			new File(MEIExport.rootDir + "data/annotated/encodings/test/" + "test_add_note.tbp"));
-
-		// A Note is added to voice 1 in event 1. Assert that the corresponding NotationChord contains only one
-		// Note (d') before adding 
-		int voiceToAddNoteTo = 1;
-		Rational onsetTime = new Rational(1, 2);
-		NotationSystem system = t.getScorePiece().getScore();
-		NotationStaff staff = system.get(voiceToAddNoteTo);
-		NotationVoice voice = staff.get(0);
-		int chordNumber = voice.find(onsetTime);
-		NotationChord chord = voice.get(chordNumber);
-		assertEquals(1, chord.size());
-		assertEquals(62, chord.get(0).getMidiPitch());
-
-		// Make a new Note (b)
-		Note note = ScorePiece.createNote(59, onsetTime, new Rational(1, 2), -1, null);
-
-		// Add the Note to voice 1 at onsetTime
-		t.addNote(note, voiceToAddNoteTo, onsetTime);
-
-		// Assert that the NotationChord contains two Notes (b and d') after adding
-		assertEquals(2, chord.size());
-		assertEquals(59, chord.getLowestNote().getMidiPitch());
-		assertEquals(62, chord.getUppermostNote().getMidiPitch());
-
-		// Visualise
-//		transcription.setPieceName("test_add_note");
-		JFrame transcriptionFrame = visualise(t, "test_add_note");
-		int answer = JOptionPane.showOptionDialog(transcriptionFrame, "Event 1 = G - g - b, d' - g'?", "Confirm", 
-			JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
-		assertEquals(answer, JOptionPane.YES_OPTION);     
-	}
-
-
-	public void testAddNoteNonTab() {
+//		}
+//	}
+//
+//
+//	public void testSetAndGetEqualDurationUnisonsInfo() {
+//		Transcription transcription = new Transcription();
+////		transcription.setFile(midiTestpiece1);
+//		transcription.setPiece(MIDIImport.importMidiFile(midiTestpiece));
+////		transcription.setPiece(null);
+//		transcription.makeNoteSequence();
+//		// The voice labels must be initialised before the NoteSeqeunce is adapted, as initialiseVoiceLabels() needs
+//		// the actual Note objects from the NoteSequence and not the adaptations made below
+//		transcription.initialiseVoiceLabels(null); 
+////		transcription.setMeterInfo(midiTestpiece1);
+//		transcription.setMeterInfo();
+//		// Before calling handleUnisons(): adapt transcription so that all unisons become EDUs
+//		NoteSequence noteSeq = transcription.getNoteSequence();
+//		// Give all unison notes a duration of a quarter
+//		// NB: Before handleUnisons() is called, all unison notes have been added to noteSeq with the one in the 
+//		// lower voice first. That means that the notes at indices 12 and 16 need to be adapted
+//		Note n12 = noteSeq.getNoteAt(12);
+//		noteSeq.replaceNoteAt(12, Transcription.createNote(n12.getMidiPitch(), n12.getMetricTime(), new Rational(1, 4), null));
+//		Note n16 = noteSeq.getNoteAt(16);
+//		noteSeq.replaceNoteAt(16, Transcription.createNote(n16.getMidiPitch(), n16.getMetricTime(), new Rational(1, 4), null));  
+//		transcription.handleUnisons(Type.FROM_FILE);
+//		transcription.setBasicNoteProperties();
+//
+//		List<Integer[]> expected = new ArrayList<Integer[]>();
+//		for (int i = 0; i < noteSeq.size(); i++) {
+//			expected.add(null);
+//		}
+////		expected.set(12, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
+////		expected.set(13, Arrays.asList(new Double[]{1.0, 1.0, 0.0, 0.0, 0.0}));
+////		expected.set(16, Arrays.asList(new Double[]{0.0, 0.0, 1.0, 1.0, 0.0}));
+////		expected.set(17, Arrays.asList(new Double[]{0.0, 0.0, 1.0, 1.0, 0.0}));
+//		expected.set(12, new Integer[]{1, 0, 13});
+//		expected.set(13, new Integer[]{1, 0, 12});
+//		expected.set(16, new Integer[]{3, 2, 17});
+//		expected.set(17, new Integer[]{3, 2, 16});
+//
+//		List<Integer[]> actual = transcription.getVoicesEDU();
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			if (expected.get(i) == null) {
+//				assertEquals(expected.get(i), actual.get(i));
+//			}
+////			else {
+////				assertEquals(expected.get(i).size(), actual.get(i).size());
+////				for (int j = 0; j < expected.get(i).size(); j++) {
+////					assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+////				}
+////			}
+//			else {
+//				assertEquals(expected.get(i).length, actual.get(i).length);
+//				for (int j = 0; j < expected.get(i).length; j++) {
+//					assertEquals(expected.get(i)[j], actual.get(i)[j]);
+//				}
+//			}
+//		}
+//	}
+//
+//
+//	public void testGetAndSetChords(){
+////		Tablature tablature = new Tablature(encodingTestpiece1, true);
+//		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
+//
+//		List<List<Note>> expected = new ArrayList<List<Note>>();
+//		// Chord 0
+//		expected.add(Arrays.asList(new Note[]{
+//			Transcription.createNote(48, new Rational(3, 4), new Rational(1, 4), null), 
+//			Transcription.createNote(55, new Rational(3, 4), new Rational(1, 4), null),
+//			Transcription.createNote(63, new Rational(3, 4), new Rational(1, 4), null),
+//			Transcription.createNote(67, new Rational(3, 4), new Rational(1, 4), null)}));
+//		// Chord 1      
+//		expected.add(Arrays.asList(new Note[]{
+//			Transcription.createNote(43, new Rational(4, 4), new Rational(3, 16), null),
+//			Transcription.createNote(55, new Rational(4, 4), new Rational(1, 4), null),
+//			Transcription.createNote(70, new Rational(4, 4), new Rational(1, 4), null),
+//			Transcription.createNote(67, new Rational(4, 4), new Rational(1, 8), null)}));
+//		// Chord 2
+//		expected.add(Arrays.asList(new Note[]{
+//			Transcription.createNote(46, new Rational(19, 16), new Rational(1, 16), null)}));
+//		// Chord 3
+//		expected.add(Arrays.asList(new Note[]{	
+//			Transcription.createNote(45, new Rational(5, 4), new Rational(1, 8), null),
+//			Transcription.createNote(48, new Rational(5, 4), new Rational(1, 4), null),
+//			Transcription.createNote(57, new Rational(5, 4), new Rational(1, 4), null),
+//			Transcription.createNote(63, new Rational(5, 4), new Rational(1, 4), null)}));
+//		// Chord 4
+//		expected.add(Arrays.asList(new Note[]{
+//			Transcription.createNote(43, new Rational(11, 8), new Rational(1, 8), null)}));
+//		// Chord 5
+//		expected.add(Arrays.asList(new Note[]{	
+//			Transcription.createNote(43, new Rational(6, 4), new Rational(1, 4), null),
+//			Transcription.createNote(55, new Rational(6, 4), new Rational(1, 2), null),
+//			Transcription.createNote(55, new Rational(6, 4), new Rational(1, 4), null),
+//			Transcription.createNote(58, new Rational(6, 4), new Rational(1, 4), null),
+//			Transcription.createNote(67, new Rational(6, 4), new Rational(1, 4), null)}));
+//		// Chord 6
+//		expected.add(Arrays.asList(new Note[]{
+//			Transcription.createNote(43, new Rational(7, 4), new Rational(1, 4), null),
+//			Transcription.createNote(58, new Rational(7, 4), new Rational(1, 8), null),
+//			Transcription.createNote(62, new Rational(7, 4), new Rational(1, 8), null),
+//			Transcription.createNote(67, new Rational(7, 4), new Rational(1, 4), null)}));
+//		// Chord 7
+//		expected.add(Arrays.asList(new Note[]{
+//			Transcription.createNote(57, new Rational(15, 8), new Rational(1, 8), null),
+//			Transcription.createNote(66, new Rational(15, 8), new Rational(1, 8), null)}));	
+//		// Chord 8
+//		expected.add(Arrays.asList(new Note[]{
+//			Transcription.createNote(43, new Rational(8, 4), new Rational(1, 2), null),
+//			Transcription.createNote(55, new Rational(8, 4), new Rational(1, 2), null),
+//			Transcription.createNote(62, new Rational(8, 4), new Rational(1, 2), null),
+//			Transcription.createNote(67, new Rational(8, 4), new Rational(1, 16), null)}));
+//		// Chords 9-14
+//		expected.add(Arrays.asList(new Note[]{
+//			Transcription.createNote(66, new Rational(33, 16), new Rational(1, 16), null)}));
+//		expected.add(Arrays.asList(new Note[]{
+//			Transcription.createNote(67, new Rational(17, 8), new Rational(1, 32), null)}));
+//		expected.add(Arrays.asList(new Note[]{
+//			Transcription.createNote(66, new Rational(69, 32), new Rational(1, 32), null)}));
+//		expected.add(Arrays.asList(new Note[]{
+//			Transcription.createNote(64, new Rational(35, 16), new Rational(1, 32), null)}));
+//		expected.add(Arrays.asList(new Note[]{
+//			Transcription.createNote(66, new Rational(71, 32), new Rational(1, 32), null)}));
+//		expected.add(Arrays.asList(new Note[]{
+//			Transcription.createNote(67, new Rational(9, 4), new Rational(1, 4), null)}));
+//		// Chord 15
+//		expected.add(Arrays.asList(new Note[]{
+//			Transcription.createNote(43, new Rational(11, 4), new Rational(1, 4), null),
+//			Transcription.createNote(55, new Rational(11, 4), new Rational(1, 4), null),
+//			Transcription.createNote(62, new Rational(11, 4), new Rational(1, 4), null),
+//			Transcription.createNote(67, new Rational(11, 4), new Rational(1, 4), null)}));
+//
+//		List<List<Note>> actual = transcription.getChords();
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i).size(), actual.get(i).size()); 
+//			for (int j = 0; j < expected.get(i).size(); j++) {
+//				// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
+//				// objects: therefore check that pitch, metricTime, and metricDuration are the same
+//				assertEquals(expected.get(i).get(j).getMidiPitch(), actual.get(i).get(j).getMidiPitch());
+//				assertEquals(expected.get(i).get(j).getMetricTime(), actual.get(i).get(j).getMetricTime());
+//				assertEquals(expected.get(i).get(j).getMetricDuration(), actual.get(i).get(j).getMetricDuration());
+//			}
+//		}
+//	}
+//
+//
+//	public void testGetAndSetTranscriptionChordsNonTab(){
+//		Transcription transcription = new Transcription(midiTestpiece);
+//
+//		List<List<Note>> expected = new ArrayList<List<Note>>();
+//		// Chord 0
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(50, new Rational(3, 4), new Rational(1, 4), null),
+//		Transcription.createNote(57, new Rational(3, 4), new Rational(1, 4), null),
+//		Transcription.createNote(65, new Rational(3, 4), new Rational(1, 4), null),
+//		Transcription.createNote(69, new Rational(3, 4), new Rational(1, 4), null)}));  
+//		// Chord 1
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(45, new Rational(4, 4), new Rational(3, 16), null),
+//		Transcription.createNote(57, new Rational(4, 4), new Rational(1, 4), null),
+//		Transcription.createNote(69, new Rational(4, 4), new Rational(1, 8), null),
+//		Transcription.createNote(72, new Rational(4, 4), new Rational(1, 4), null)}));
+//		// Chord 2
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(48, new Rational(19, 16), new Rational(1, 16), null)}));
+//		// Chord 3
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(47, new Rational(5, 4), new Rational(1, 8), null),
+//		Transcription.createNote(50, new Rational(5, 4), new Rational(1, 4), null),
+//		Transcription.createNote(59, new Rational(5, 4), new Rational(1, 4), null),
+//		Transcription.createNote(65, new Rational(5, 4), new Rational(1, 4), null),
+//		Transcription.createNote(65, new Rational(5, 4), new Rational(1, 8), null)}));
+//		// Chord 4
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(45, new Rational(11, 8), new Rational(1, 8), null)}));
+//		// Chord 5
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(45, new Rational(6, 4), new Rational(1, 4), null),
+//		Transcription.createNote(57, new Rational(6, 4), new Rational(1, 2), null),
+//		Transcription.createNote(57, new Rational(6, 4), new Rational(1, 4), null),
+//		Transcription.createNote(60, new Rational(6, 4), new Rational(1, 4), null),
+//		Transcription.createNote(69, new Rational(6, 4), new Rational(1, 4), null)}));
+//		// Chord 6
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(45, new Rational(7, 4), new Rational(1, 4), null),
+//		Transcription.createNote(60, new Rational(7, 4), new Rational(1, 8), null),
+//		Transcription.createNote(64, new Rational(7, 4), new Rational(1, 8), null),
+//		Transcription.createNote(69, new Rational(7, 4), new Rational(1, 4), null)}));
+//		// Chord 7
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(59, new Rational(15, 8), new Rational(1, 8), null),
+//		Transcription.createNote(68, new Rational(15, 8), new Rational(1, 8), null)}));
+//		// Chord 8
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(45, new Rational(8, 4), new Rational(1, 2), null),
+//		Transcription.createNote(57, new Rational(8, 4), new Rational(1, 2), null),
+//		Transcription.createNote(64, new Rational(8, 4), new Rational(1, 2), null),
+//		Transcription.createNote(69, new Rational(8, 4), new Rational(1, 16), null)}));
+//		// Chords 9-14
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(68, new Rational(33, 16), new Rational(1, 16), null)}));
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(69, new Rational(17, 8), new Rational(1, 32), null)}));
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(68, new Rational(69, 32), new Rational(1, 32), null)}));
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(66, new Rational(35, 16), new Rational(1, 32), null)}));
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(68, new Rational(71, 32), new Rational(1, 32), null)}));
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(69, new Rational(9, 4), new Rational(1, 4), null)}));
+//		// Chord 15
+//		expected.add(Arrays.asList(new Note[]{
+//		Transcription.createNote(45, new Rational(11, 4), new Rational(1, 4), null),
+//		Transcription.createNote(57, new Rational(11, 4), new Rational(1, 4), null),
+//		Transcription.createNote(64, new Rational(11, 4), new Rational(1, 4), null),
+//		Transcription.createNote(69, new Rational(11, 4), new Rational(1, 4), null)}));
+//
+//		List<List<Note>> actual = transcription.getChords();
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i).size(), actual.get(i).size()); 
+//			for (int j = 0; j < expected.get(i).size(); j++) {
+//				// assertEquals(expected.get(i), actual.get(i)) does not work because the Notes are not the same
+//				// objects: therefore check that pitch, metricTime, and metricDuration are the same
+//				assertEquals(expected.get(i).get(j).getMidiPitch(), actual.get(i).get(j).getMidiPitch());
+//				assertEquals(expected.get(i).get(j).getMetricTime(), actual.get(i).get(j).getMetricTime());
+//				assertEquals(expected.get(i).get(j).getMetricDuration(), actual.get(i).get(j).getMetricDuration());
+//			}
+//		}
+//	}
+//
+//
+//	public void testContainsCoD() {
+//		List<List<Double>> voiceLabels = new ArrayList<List<Double>>();
+//		voiceLabels.add(Transcription.combineLabels(V_0, V_1));
+//		voiceLabels.add(V_0);
+//		voiceLabels.add(Transcription.combineLabels(V_0, V_2));
+//		voiceLabels.add(V_2);
+//		
+//		List<Boolean> expected = Arrays.asList(new Boolean[]{true, false, true, false});
+//		
+//		List<Boolean> actual = new ArrayList<Boolean>();
+//		for (List<Double> l : voiceLabels) {
+//			actual.add(Transcription.containsCoD(l));
+//		}
+//		
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i), actual.get(i));
+//		}
+//	}
+//
+//
+//	private JFrame visualise(Transcription t, String windowTitle) {
+//		ScoreEditor scoreEditor = new ScoreEditor(t.getScorePiece().getScore());
+//		scoreEditor.setModus(Mode.SELECT_AND_EDIT);
+//
+//		JFrame fullScoreFrame = new JFrame(windowTitle);
+//		fullScoreFrame.add(new JScrollPane(scoreEditor));
+//		fullScoreFrame.setSize(800, 600);
+////		fullScoreFrame.setSize(1200, 1200);
+//	    fullScoreFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+//	    fullScoreFrame.setVisible(true);
+//	    scoreEditor.setSize(20000, 20000);
+//	    return fullScoreFrame;
+//	}
+//
+//	
+//	public void testAddNoteOLD() {
+//		Transcription t = new Transcription(midiTestpiece, encodingTestpiece);
+////			new Transcription(new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_add_note.mid"),	
+////			new File(MEIExport.rootDir + "data/annotated/encodings/test/" + "test_add_note.tbp"));
+//
+//		// A Note is added to voice 1 in event 1. Assert that the corresponding NotationChord contains only one
+//		// Note (d') before adding 
+//		int voiceToAddNoteTo = 1;
+//		Rational onsetTime = new Rational(1, 2);
+//		NotationSystem system = t.getScorePiece().getScore();
+//		NotationStaff staff = system.get(voiceToAddNoteTo);
+//		NotationVoice voice = staff.get(0);
+//		int chordNumber = voice.find(onsetTime);
+//		NotationChord chord = voice.get(chordNumber);
+//		assertEquals(1, chord.size());
+//		assertEquals(62, chord.get(0).getMidiPitch());
+//
+//		// Make a new Note (b)
+//		Note note = ScorePiece.createNote(59, onsetTime, new Rational(1, 2), -1, null);
+//
+//		// Add the Note to voice 1 at onsetTime
+//		t.addNote(note, voiceToAddNoteTo, onsetTime);
+//
+//		// Assert that the NotationChord contains two Notes (b and d') after adding
+//		assertEquals(2, chord.size());
+//		assertEquals(59, chord.getLowestNote().getMidiPitch());
+//		assertEquals(62, chord.getUppermostNote().getMidiPitch());
+//
+//		// Visualise
+////		transcription.setPieceName("test_add_note");
+//		JFrame transcriptionFrame = visualise(t, "test_add_note");
+//		int answer = JOptionPane.showOptionDialog(transcriptionFrame, "Event 1 = G - g - b, d' - g'?", "Confirm", 
+//			JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
+//		assertEquals(answer, JOptionPane.YES_OPTION);     
+//	}
+//
+//
+//	public void testAddNoteNonTab() {
+////		Transcription transcription = 
+////			new Transcription(new File(Runner.midiPathTest + "test_add_note.mid"), null); 
 //		Transcription transcription = 
-//			new Transcription(new File(Runner.midiPathTest + "test_add_note.mid"), null); 
-		Transcription transcription = 
-			new Transcription(new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_add_note.mid")); 
-
-		// A Note is added to voice 1 in event 1. Assert that the corresponding NotationChord contains only one
-		// Note (d') before adding 
-		int voiceToAddNoteTo = 1;
-		Rational onsetTime = new Rational(1, 2);
-		NotationSystem system = transcription.getScorePiece().getScore();
-		NotationStaff staff = system.get(voiceToAddNoteTo);
-		NotationVoice voice = staff.get(0);
-		int chordNumber = voice.find(onsetTime);
-		NotationChord chord = voice.get(chordNumber);
-		assertEquals(1, chord.size());
-		assertEquals(62, chord.get(0).getMidiPitch());
-
-		// Make a new Note (b)
-		Note note = ScorePiece.createNote(59, onsetTime, new Rational(1, 2), -1, null);
-
-		// Add the Note to voice 1 at onsetTime
-		transcription.addNote(note, voiceToAddNoteTo, onsetTime);
-
-		// Assert that the NotationChord contains two Notes (b and d') after adding
-		assertEquals(2, chord.size());
-		assertEquals(59, chord.getLowestNote().getMidiPitch());
-		assertEquals(62, chord.getUppermostNote().getMidiPitch());
-
-		// Visualise
-		JFrame transcriptionFrame = visualise(transcription, "test_add_note");
-		int answer = JOptionPane.showOptionDialog(transcriptionFrame, "Event 1 = G - g - b, d' - g'?", "Confirm", 
-			JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
-		assertEquals(answer, JOptionPane.YES_OPTION);     
-	}
-
-
-	public void testRemoveNoteOLD() {
+//			new Transcription(new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_add_note.mid")); 
+//
+//		// A Note is added to voice 1 in event 1. Assert that the corresponding NotationChord contains only one
+//		// Note (d') before adding 
+//		int voiceToAddNoteTo = 1;
+//		Rational onsetTime = new Rational(1, 2);
+//		NotationSystem system = transcription.getScorePiece().getScore();
+//		NotationStaff staff = system.get(voiceToAddNoteTo);
+//		NotationVoice voice = staff.get(0);
+//		int chordNumber = voice.find(onsetTime);
+//		NotationChord chord = voice.get(chordNumber);
+//		assertEquals(1, chord.size());
+//		assertEquals(62, chord.get(0).getMidiPitch());
+//
+//		// Make a new Note (b)
+//		Note note = ScorePiece.createNote(59, onsetTime, new Rational(1, 2), -1, null);
+//
+//		// Add the Note to voice 1 at onsetTime
+//		transcription.addNote(note, voiceToAddNoteTo, onsetTime);
+//
+//		// Assert that the NotationChord contains two Notes (b and d') after adding
+//		assertEquals(2, chord.size());
+//		assertEquals(59, chord.getLowestNote().getMidiPitch());
+//		assertEquals(62, chord.getUppermostNote().getMidiPitch());
+//
+//		// Visualise
+//		JFrame transcriptionFrame = visualise(transcription, "test_add_note");
+//		int answer = JOptionPane.showOptionDialog(transcriptionFrame, "Event 1 = G - g - b, d' - g'?", "Confirm", 
+//			JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
+//		assertEquals(answer, JOptionPane.YES_OPTION);     
+//	}
+//
+//
+//	public void testRemoveNoteOLD() {
+////		Transcription transcription = 
+////			new Transcription(new File(Runner.midiPathTest + "test_remove_note.mid"), 
+////			new File(Runner.encodingsPathTest + "test_remove_note.tbp"));
 //		Transcription transcription = 
-//			new Transcription(new File(Runner.midiPathTest + "test_remove_note.mid"), 
-//			new File(Runner.encodingsPathTest + "test_remove_note.tbp"));
-		Transcription transcription = 
-			new Transcription(new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_remove_note.mid"), 
-			new File(MEIExport.rootDir + "data/annotated/encodings/test/" + "test_remove_note.tbp"));
-
-		// Two Notes are removed from voice 2 in event 1. Assert that the corresponding NotationChord contains three
-		// Notes (e, b, g) before removing 
-		int voiceNumber = 2;
-		Rational onsetTime = new Rational(1, 2);
-		NotationSystem system = transcription.getScorePiece().getScore();
-		NotationStaff staff = system.get(voiceNumber);
-		NotationVoice voice = staff.get(0);
-		int chordNumber = voice.find(onsetTime);
-		NotationChord chord = voice.get(chordNumber);
-		assertEquals(3, chord.size());
-
-		// Remove the Notes e and b from voice 2 at onsetTime
-		transcription.removeNote(52, voiceNumber, onsetTime);
-		transcription.removeNote(59, voiceNumber, onsetTime);
-
-		// Assert that the NotationChord contains only one Note (g) after removing
-		assertEquals(1, chord.size());
-		assertEquals(55, chord.get(0).getMidiPitch());
-
-		// Visualise
-		JFrame transcriptionFrame = visualise(transcription, "test_remove_note");
-		int answer = JOptionPane.showOptionDialog(transcriptionFrame, "Event 1 = G - g - d' - g'?", "Confirm", 
-			JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
-		assertEquals(answer, JOptionPane.YES_OPTION);     
-	}
-
-
-	public void testRemoveNoteNonTab() {
+//			new Transcription(new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_remove_note.mid"), 
+//			new File(MEIExport.rootDir + "data/annotated/encodings/test/" + "test_remove_note.tbp"));
+//
+//		// Two Notes are removed from voice 2 in event 1. Assert that the corresponding NotationChord contains three
+//		// Notes (e, b, g) before removing 
+//		int voiceNumber = 2;
+//		Rational onsetTime = new Rational(1, 2);
+//		NotationSystem system = transcription.getScorePiece().getScore();
+//		NotationStaff staff = system.get(voiceNumber);
+//		NotationVoice voice = staff.get(0);
+//		int chordNumber = voice.find(onsetTime);
+//		NotationChord chord = voice.get(chordNumber);
+//		assertEquals(3, chord.size());
+//
+//		// Remove the Notes e and b from voice 2 at onsetTime
+//		transcription.removeNote(52, voiceNumber, onsetTime);
+//		transcription.removeNote(59, voiceNumber, onsetTime);
+//
+//		// Assert that the NotationChord contains only one Note (g) after removing
+//		assertEquals(1, chord.size());
+//		assertEquals(55, chord.get(0).getMidiPitch());
+//
+//		// Visualise
+//		JFrame transcriptionFrame = visualise(transcription, "test_remove_note");
+//		int answer = JOptionPane.showOptionDialog(transcriptionFrame, "Event 1 = G - g - d' - g'?", "Confirm", 
+//			JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
+//		assertEquals(answer, JOptionPane.YES_OPTION);     
+//	}
+//
+//
+//	public void testRemoveNoteNonTab() {
+////		Transcription transcription = 
+////			new Transcription(new File(Runner.midiPathTest + "test_remove_note.mid"),	null);
 //		Transcription transcription = 
-//			new Transcription(new File(Runner.midiPathTest + "test_remove_note.mid"),	null);
-		Transcription transcription = 
-			new Transcription(new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_remove_note.mid"));
-
-		// Two Notes are removed from voice 2 in event 1. Assert that the corresponding NotationChord contains three
-		// Notes (e, b, g) before removing 
-		int voiceNumber = 2;
-		Rational onsetTime = new Rational(1, 2);
-		NotationSystem system = transcription.getScorePiece().getScore();
-		NotationStaff staff = system.get(voiceNumber);
-		NotationVoice voice = staff.get(0);
-		int chordNumber = voice.find(onsetTime);
-		NotationChord chord = voice.get(chordNumber);
-		assertEquals(3, chord.size());
-
-		// Remove the Notes e and b from voice 2 at onsetTime
-		transcription.removeNote(52, voiceNumber, onsetTime);
-		transcription.removeNote(59, voiceNumber, onsetTime);
-
-		// Assert that the NotationChord contains only one Note (g) after removing
-		assertEquals(1, chord.size());
-		assertEquals(55, chord.get(0).getMidiPitch());
-
-		// Visualise
-		JFrame transcriptionFrame = visualise(transcription, "test_remove_note");
-		int answer = JOptionPane.showOptionDialog(transcriptionFrame, "Event 1 = G - g - d' - g'?", "Confirm", 
-			JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
-		assertEquals(answer, JOptionPane.YES_OPTION);     
-	}
-
-
-	public void testCreatePiece() {
-		Tablature tablature = new Tablature(encodingTestpiece, true);
-		Integer[][] btp = tablature.getBasicTabSymbolProperties();
-		Integer[][] bnp = null;
-		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece); // not modelling duration
-		Transcription transcription2 = new Transcription(midiTestpiece, encodingTestpiece); // modelling duration
-		List<List<Double>> voiceLabels = transcription.getVoiceLabels();
-		List<List<Double>> durationLabels = transcription.getDurationLabels();
-
-		List<Piece> expected = new ArrayList<Piece>();
-		// a. Not modelling duration
-		Piece expectedNonDur = transcription.getScorePiece();
-
-		// Where necessary, adapt durations to their minimum duration
-		// Voice 0
-		NotationVoice v0 = expectedNonDur.getScore().get(0).get(0);
-		// Note 1
-		v0.get(1).get(0).setScoreNote(new ScoreNote(new ScorePitch(72), new Rational(4, 4), new Rational(3, 16)));
-		// Note 2
-		v0.get(2).get(0).setScoreNote(new ScoreNote(new ScorePitch(65), new Rational(5, 4), new Rational(1, 8)));
-		// Voice 1
-		NotationVoice v1 = expectedNonDur.getScore().get(1).get(0);
-		// Note 1
-		v1.get(1).get(0).setScoreNote(new ScoreNote(new ScorePitch(69), new Rational(4, 4), new Rational(3, 16)));
-		// Note 4
-		v1.get(4).get(0).setScoreNote(new ScoreNote(new ScorePitch(69), new Rational(7, 4), new Rational(1, 8)));
-		// Note 5
-		v1.get(5).get(0).setScoreNote(new ScoreNote(new ScorePitch(64), new Rational(8, 4), new Rational(1, 16)));
-		// Voice 2
-		NotationVoice v2 = expectedNonDur.getScore().get(2).get(0);
-		// Note 1
-		v2.get(1).get(0).setScoreNote(new ScoreNote(new ScorePitch(57), new Rational(4, 4), new Rational(3, 16)));
-		// Note 2 
-		v2.get(2).get(0).setScoreNote(new ScoreNote(new ScorePitch(59), new Rational(5, 4), new Rational(1, 8)));
-		// Note 6
-		v2.get(6).get(0).setScoreNote(new ScoreNote(new ScorePitch(57), new Rational(8, 4), new Rational(1, 16)));
-		// Voice 3
-		NotationVoice v3 = expectedNonDur.getScore().get(3).get(0);
-		// Note 3 
-		v3.get(3).get(0).setScoreNote(new ScoreNote(new ScorePitch(50), new Rational(5, 4), new Rational(1, 8)));
-		// Note 4
-		v3.get(4).get(0).setScoreNote(new ScoreNote(new ScorePitch(57), new Rational(6, 4), new Rational(1, 4)));
-		// Note 5
-		v3.get(5).get(0).setScoreNote(new ScoreNote(new ScorePitch(57), new Rational(8, 4), new Rational(1, 16)));
-		// Voice 4
-		NotationVoice v4 = expectedNonDur.getScore().get(4).get(0);
-		// Note 3
-		v4.get(3).get(0).setScoreNote(new ScoreNote(new ScorePitch(45), new Rational(7, 4), new Rational(1, 8)));
-		
-		expected.add(expectedNonDur);
-		
-		// b. Modelling duration
-		Piece expectedDur = transcription2.getScorePiece();
-		// Adapt the CoD at index 12 (the third note in voice 1) so that both notes have the same duration 
-		// (necessary because currently CoDs can only have one duration)
-		ScoreNote adaptedScoreNote = new ScoreNote(new ScorePitch(65), new Rational(5, 4), new Rational(1, 4));
-		expectedDur.getScore().get(1).get(0).get(2).get(0).setScoreNote(adaptedScoreNote);
-		// Also adapt durationLabels
-		durationLabels.set(12, QUARTER); // trp dur
-//		durationLabels.set(12, Transcription.createDurationLabel(8*3)); // trp dur
-//		durationLabels.set(12, Transcription.createDurationLabel(8));
-
-		expected.add(expectedDur);
-		
-		List<Piece> actual = new ArrayList<Piece>();
-		// a. Not modelling duration
-		actual.add(Transcription.createPiece(btp, bnp, voiceLabels, null, 5, 
-				expectedNonDur.getMetricalTimeLine(), expectedNonDur.getHarmonyTrack(), ""));
-		// b. Modelling duration
-		actual.add(Transcription.createPiece(btp, bnp, voiceLabels, durationLabels, 5,
-			expectedDur.getMetricalTimeLine(), expectedDur.getHarmonyTrack(), ""));
-
-		assertEquals(expected.size(), actual.size());
-		for (int num = 0; num < expected.size(); num++) {
-			NotationSystem systemExpected = expected.get(num).getScore();
-			NotationSystem systemActual = actual.get(num).getScore();
-			assertEquals(systemExpected.size(), systemActual.size());
-			// For each NotationStaff at index i
-	 		for (int i = 0; i < systemExpected.size(); i++) {
-				assertEquals(systemExpected.get(i).size(), systemActual.get(i).size());
-				// For each NotationVoice at index j
-				for (int j = 0; j < systemExpected.get(i).size(); j++) {
-					assertEquals(systemExpected.get(i).get(j).size(), systemActual.get(i).get(j).size());
-					// For each NotationChord at index k
-					for (int k = 0; k < systemExpected.get(i).get(j).size(); k++) {	
-						assertEquals(systemExpected.get(i).get(j).get(k).size(), systemActual.get(i).get(j).get(k).size());
-						// For each Note at index l
-						for (int l = 0; l < systemExpected.get(i).get(j).get(k).size(); l++) {
-//							assertEquals(pieceExpected.getScore().get(i).get(j).get(k).get(l), pieceActual.getScore().get(i).get(j).get(k).get(l));
-							// OR if assertEquals(expected.get(i).get(j), actual.get(i).get(j).get(k) does not work because the Notes 
-							// are not the same objects: check that pitch, metricTime, and metricDuration are the same
-							assertEquals(systemExpected.get(i).get(j).get(k).get(l).getMidiPitch(), 
-								systemActual.get(i).get(j).get(k).get(l).getMidiPitch());
-							assertEquals(systemExpected.get(i).get(j).get(k).get(l).getMetricTime(), 
-								systemActual.get(i).get(j).get(k).get(l).getMetricTime());
-							assertEquals(systemExpected.get(i).get(j).get(k).get(l).getMetricDuration(), 
-								systemActual.get(i).get(j).get(k).get(l).getMetricDuration());		
-						}
-					}		
-				}
-			}
-		}
-	}
-
-
-	public void testCreatePieceNonTab() {
-		Transcription transcription = new Transcription(midiTestpiece);
-		Integer[][] btp = null;
-		Integer[][] bnp = transcription.getBasicNoteProperties();
-		List<List<Double>> voiceLabels = transcription.getVoiceLabels();
-		List<List<Double>> durationLabels = null;
-
-		Piece expected = transcription.getScorePiece();
-
-		Piece actual = Transcription.createPiece(btp, bnp, voiceLabels, durationLabels, 5,
-			expected.getMetricalTimeLine(), expected.getHarmonyTrack(), "");
-
-		NotationSystem systemExpected = expected.getScore();
-		NotationSystem systemActual = actual.getScore();
-		assertEquals(systemExpected.size(), systemActual.size());
-		// For each NotationStaff at index i
- 		for (int i = 0; i < systemExpected.size(); i++) {
-			assertEquals(systemExpected.get(i).size(), systemActual.get(i).size());
-			// For each NotationVoice at index j
-			for (int j = 0; j < systemExpected.get(i).size(); j++) {
-				assertEquals(systemExpected.get(i).get(j).size(), systemActual.get(i).get(j).size());
-				// For each NotationChord at index k
-				for (int k = 0; k < systemExpected.get(i).get(j).size(); k++) {	
-					assertEquals(systemExpected.get(i).get(j).get(k).size(), systemActual.get(i).get(j).get(k).size());
-					// For each Note at index l
-					for (int l = 0; l < systemExpected.get(i).get(j).get(k).size(); l++) {
-//						assertEquals(pieceExpected.getScore().get(i).get(j).get(k).get(l), pieceActual.getScore().get(i).get(j).get(k).get(l));
-						// OR if assertEquals(expected.get(i).get(j), actual.get(i).get(j).get(k) does not work because the Notes 
-						// are not the same objects: check that pitch, metricTime, and metricDuration are the same
-						assertEquals(systemExpected.get(i).get(j).get(k).get(l).getMidiPitch(), 
-								systemActual.get(i).get(j).get(k).get(l).getMidiPitch());
-		     	  assertEquals(systemExpected.get(i).get(j).get(k).get(l).getMetricTime(), 
-		     	  		systemActual.get(i).get(j).get(k).get(l).getMetricTime());
-		    	  assertEquals(systemExpected.get(i).get(j).get(k).get(l).getMetricDuration(), 
-		    	  		systemActual.get(i).get(j).get(k).get(l).getMetricDuration());		
-					}
-				}		
-			}
-		}	
-	}
+//			new Transcription(new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_remove_note.mid"));
+//
+//		// Two Notes are removed from voice 2 in event 1. Assert that the corresponding NotationChord contains three
+//		// Notes (e, b, g) before removing 
+//		int voiceNumber = 2;
+//		Rational onsetTime = new Rational(1, 2);
+//		NotationSystem system = transcription.getScorePiece().getScore();
+//		NotationStaff staff = system.get(voiceNumber);
+//		NotationVoice voice = staff.get(0);
+//		int chordNumber = voice.find(onsetTime);
+//		NotationChord chord = voice.get(chordNumber);
+//		assertEquals(3, chord.size());
+//
+//		// Remove the Notes e and b from voice 2 at onsetTime
+//		transcription.removeNote(52, voiceNumber, onsetTime);
+//		transcription.removeNote(59, voiceNumber, onsetTime);
+//
+//		// Assert that the NotationChord contains only one Note (g) after removing
+//		assertEquals(1, chord.size());
+//		assertEquals(55, chord.get(0).getMidiPitch());
+//
+//		// Visualise
+//		JFrame transcriptionFrame = visualise(transcription, "test_remove_note");
+//		int answer = JOptionPane.showOptionDialog(transcriptionFrame, "Event 1 = G - g - d' - g'?", "Confirm", 
+//			JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
+//		assertEquals(answer, JOptionPane.YES_OPTION);     
+//	}
+//
+//
+//	public void testCreatePiece() {
+//		Tablature tablature = new Tablature(encodingTestpiece, true);
+//		Integer[][] btp = tablature.getBasicTabSymbolProperties();
+//		Integer[][] bnp = null;
+//		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece); // not modelling duration
+//		Transcription transcription2 = new Transcription(midiTestpiece, encodingTestpiece); // modelling duration
+//		List<List<Double>> voiceLabels = transcription.getVoiceLabels();
+//		List<List<Double>> durationLabels = transcription.getDurationLabels();
+//
+//		List<Piece> expected = new ArrayList<Piece>();
+//		// a. Not modelling duration
+//		Piece expectedNonDur = transcription.getScorePiece();
+//
+//		// Where necessary, adapt durations to their minimum duration
+//		// Voice 0
+//		NotationVoice v0 = expectedNonDur.getScore().get(0).get(0);
+//		// Note 1
+//		v0.get(1).get(0).setScoreNote(new ScoreNote(new ScorePitch(72), new Rational(4, 4), new Rational(3, 16)));
+//		// Note 2
+//		v0.get(2).get(0).setScoreNote(new ScoreNote(new ScorePitch(65), new Rational(5, 4), new Rational(1, 8)));
+//		// Voice 1
+//		NotationVoice v1 = expectedNonDur.getScore().get(1).get(0);
+//		// Note 1
+//		v1.get(1).get(0).setScoreNote(new ScoreNote(new ScorePitch(69), new Rational(4, 4), new Rational(3, 16)));
+//		// Note 4
+//		v1.get(4).get(0).setScoreNote(new ScoreNote(new ScorePitch(69), new Rational(7, 4), new Rational(1, 8)));
+//		// Note 5
+//		v1.get(5).get(0).setScoreNote(new ScoreNote(new ScorePitch(64), new Rational(8, 4), new Rational(1, 16)));
+//		// Voice 2
+//		NotationVoice v2 = expectedNonDur.getScore().get(2).get(0);
+//		// Note 1
+//		v2.get(1).get(0).setScoreNote(new ScoreNote(new ScorePitch(57), new Rational(4, 4), new Rational(3, 16)));
+//		// Note 2 
+//		v2.get(2).get(0).setScoreNote(new ScoreNote(new ScorePitch(59), new Rational(5, 4), new Rational(1, 8)));
+//		// Note 6
+//		v2.get(6).get(0).setScoreNote(new ScoreNote(new ScorePitch(57), new Rational(8, 4), new Rational(1, 16)));
+//		// Voice 3
+//		NotationVoice v3 = expectedNonDur.getScore().get(3).get(0);
+//		// Note 3 
+//		v3.get(3).get(0).setScoreNote(new ScoreNote(new ScorePitch(50), new Rational(5, 4), new Rational(1, 8)));
+//		// Note 4
+//		v3.get(4).get(0).setScoreNote(new ScoreNote(new ScorePitch(57), new Rational(6, 4), new Rational(1, 4)));
+//		// Note 5
+//		v3.get(5).get(0).setScoreNote(new ScoreNote(new ScorePitch(57), new Rational(8, 4), new Rational(1, 16)));
+//		// Voice 4
+//		NotationVoice v4 = expectedNonDur.getScore().get(4).get(0);
+//		// Note 3
+//		v4.get(3).get(0).setScoreNote(new ScoreNote(new ScorePitch(45), new Rational(7, 4), new Rational(1, 8)));
+//		
+//		expected.add(expectedNonDur);
+//		
+//		// b. Modelling duration
+//		Piece expectedDur = transcription2.getScorePiece();
+//		// Adapt the CoD at index 12 (the third note in voice 1) so that both notes have the same duration 
+//		// (necessary because currently CoDs can only have one duration)
+//		ScoreNote adaptedScoreNote = new ScoreNote(new ScorePitch(65), new Rational(5, 4), new Rational(1, 4));
+//		expectedDur.getScore().get(1).get(0).get(2).get(0).setScoreNote(adaptedScoreNote);
+//		// Also adapt durationLabels
+//		durationLabels.set(12, QUARTER); // trp dur
+////		durationLabels.set(12, Transcription.createDurationLabel(8*3)); // trp dur
+////		durationLabels.set(12, Transcription.createDurationLabel(8));
+//
+//		expected.add(expectedDur);
+//		
+//		List<Piece> actual = new ArrayList<Piece>();
+//		// a. Not modelling duration
+//		actual.add(Transcription.createPiece(btp, bnp, voiceLabels, null, 5, 
+//				expectedNonDur.getMetricalTimeLine(), expectedNonDur.getHarmonyTrack(), ""));
+//		// b. Modelling duration
+//		actual.add(Transcription.createPiece(btp, bnp, voiceLabels, durationLabels, 5,
+//			expectedDur.getMetricalTimeLine(), expectedDur.getHarmonyTrack(), ""));
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int num = 0; num < expected.size(); num++) {
+//			NotationSystem systemExpected = expected.get(num).getScore();
+//			NotationSystem systemActual = actual.get(num).getScore();
+//			assertEquals(systemExpected.size(), systemActual.size());
+//			// For each NotationStaff at index i
+//	 		for (int i = 0; i < systemExpected.size(); i++) {
+//				assertEquals(systemExpected.get(i).size(), systemActual.get(i).size());
+//				// For each NotationVoice at index j
+//				for (int j = 0; j < systemExpected.get(i).size(); j++) {
+//					assertEquals(systemExpected.get(i).get(j).size(), systemActual.get(i).get(j).size());
+//					// For each NotationChord at index k
+//					for (int k = 0; k < systemExpected.get(i).get(j).size(); k++) {	
+//						assertEquals(systemExpected.get(i).get(j).get(k).size(), systemActual.get(i).get(j).get(k).size());
+//						// For each Note at index l
+//						for (int l = 0; l < systemExpected.get(i).get(j).get(k).size(); l++) {
+////							assertEquals(pieceExpected.getScore().get(i).get(j).get(k).get(l), pieceActual.getScore().get(i).get(j).get(k).get(l));
+//							// OR if assertEquals(expected.get(i).get(j), actual.get(i).get(j).get(k) does not work because the Notes 
+//							// are not the same objects: check that pitch, metricTime, and metricDuration are the same
+//							assertEquals(systemExpected.get(i).get(j).get(k).get(l).getMidiPitch(), 
+//								systemActual.get(i).get(j).get(k).get(l).getMidiPitch());
+//							assertEquals(systemExpected.get(i).get(j).get(k).get(l).getMetricTime(), 
+//								systemActual.get(i).get(j).get(k).get(l).getMetricTime());
+//							assertEquals(systemExpected.get(i).get(j).get(k).get(l).getMetricDuration(), 
+//								systemActual.get(i).get(j).get(k).get(l).getMetricDuration());		
+//						}
+//					}		
+//				}
+//			}
+//		}
+//	}
+//
+//
+//	public void testCreatePieceNonTab() {
+//		Transcription transcription = new Transcription(midiTestpiece);
+//		Integer[][] btp = null;
+//		Integer[][] bnp = transcription.getBasicNoteProperties();
+//		List<List<Double>> voiceLabels = transcription.getVoiceLabels();
+//		List<List<Double>> durationLabels = null;
+//
+//		Piece expected = transcription.getScorePiece();
+//
+//		Piece actual = Transcription.createPiece(btp, bnp, voiceLabels, durationLabels, 5,
+//			expected.getMetricalTimeLine(), expected.getHarmonyTrack(), "");
+//
+//		NotationSystem systemExpected = expected.getScore();
+//		NotationSystem systemActual = actual.getScore();
+//		assertEquals(systemExpected.size(), systemActual.size());
+//		// For each NotationStaff at index i
+// 		for (int i = 0; i < systemExpected.size(); i++) {
+//			assertEquals(systemExpected.get(i).size(), systemActual.get(i).size());
+//			// For each NotationVoice at index j
+//			for (int j = 0; j < systemExpected.get(i).size(); j++) {
+//				assertEquals(systemExpected.get(i).get(j).size(), systemActual.get(i).get(j).size());
+//				// For each NotationChord at index k
+//				for (int k = 0; k < systemExpected.get(i).get(j).size(); k++) {	
+//					assertEquals(systemExpected.get(i).get(j).get(k).size(), systemActual.get(i).get(j).get(k).size());
+//					// For each Note at index l
+//					for (int l = 0; l < systemExpected.get(i).get(j).get(k).size(); l++) {
+////						assertEquals(pieceExpected.getScore().get(i).get(j).get(k).get(l), pieceActual.getScore().get(i).get(j).get(k).get(l));
+//						// OR if assertEquals(expected.get(i).get(j), actual.get(i).get(j).get(k) does not work because the Notes 
+//						// are not the same objects: check that pitch, metricTime, and metricDuration are the same
+//						assertEquals(systemExpected.get(i).get(j).get(k).get(l).getMidiPitch(), 
+//								systemActual.get(i).get(j).get(k).get(l).getMidiPitch());
+//		     	  assertEquals(systemExpected.get(i).get(j).get(k).get(l).getMetricTime(), 
+//		     	  		systemActual.get(i).get(j).get(k).get(l).getMetricTime());
+//		    	  assertEquals(systemExpected.get(i).get(j).get(k).get(l).getMetricDuration(), 
+//		    	  		systemActual.get(i).get(j).get(k).get(l).getMetricDuration());		
+//					}
+//				}		
+//			}
+//		}	
+//	}
 
 }

@@ -5,7 +5,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import de.uos.fmt.musitech.data.structure.Note;
@@ -167,6 +169,36 @@ public class Tablature implements Serializable {
 			getIntervals().forEach(i -> pitches.add(pitches.get(pitches.size() - 1) + i));
 			return pitches;
 		}
+
+		public List<String> getCoursesEnh() {
+			String tAsStr = String.join("", getCourses());
+			if (tAsStr.contains("b") || tAsStr.contains("#")) {
+				Map<String, String> enh = new LinkedHashMap<String, String>();
+				enh.put("Ab", "G#");
+				enh.put("Bb", "A#");
+				enh.put("Cb", "B");
+				enh.put("Db", "C#");
+				enh.put("Eb", "D#");
+				enh.put("Fb", "E");
+				enh.put("Gb", "F#");
+				enh.put("A#", "Bb");
+				enh.put("B#", "C");
+				enh.put("C#", "Db");
+				enh.put("D#", "Eb");
+				enh.put("E#", "F");
+				enh.put("F#", "Gb");
+				enh.put("G#", "Ab");
+				
+				List<String> cEnh = new ArrayList<>();
+				getCourses().forEach(c -> { 
+					cEnh.add((c.contains("b") || c.contains("#")) ? enh.get(c) : c);
+				});
+				return cEnh;
+			}
+			else {
+				return null;
+			}
+		}
 	}
 
 
@@ -186,33 +218,43 @@ public class Tablature implements Serializable {
 	public Tablature(Tablature t) {
 		init(t.getEncoding(), t.getNormaliseTuning());
 	}
-
-
+	
+	
 	/**
-	 * Creates a <code>Tablature</code> from a <code>.tbp</code> file.
+	 * Short constructor for a <code>Tablature</code>, non-normalised.
 	 * 
-	 * @param argFile
-	 * @param argNormaliseTuning
+	 * @param f A <code>.tbp</code> file.
 	 */
-	public Tablature(File argFile, boolean argNormaliseTuning) {
-		init(new Encoding(argFile), argNormaliseTuning);
+	public Tablature(File f) {
+		init(new Encoding(f), false);
 	}
 
 
 	/**
-	 * Creates a <code>Tablature</code> from an existing <code>Encoding</code>.
-	 *  
-	 * @param argEncoding
-	 * @param argNormaliseTuning
+	 * Full constructor for a <code>Tablature</code>.
+	 * 
+	 * @param f A <code>.tbp</code> file.
+	 * @param normalise Whether or not to normalise the <code>Tablature</code>.
 	 */
-	public Tablature(Encoding argEncoding, boolean argNormaliseTuning) {
-		init(argEncoding, argNormaliseTuning);
+	public Tablature(File f, boolean normalise) {
+		init(new Encoding(f), normalise);
 	}
 
 
-	private void init(Encoding argEncoding, boolean argNormaliseTuning) {
+	/**
+	 * Alternative constructor for a <code>Tablature</code>.
+	 *  
+	 * @param enc An existing <code>Encoding</code>.
+	 * @param normalise Whether or not to normalise the <code>Tablature</code>.
+	 */
+	public Tablature(Encoding enc, boolean normalise) {
+		init(enc, normalise);
+	}
+
+
+	private void init(Encoding argEncoding, boolean argNormalise) {
 		setEncoding(argEncoding);
-		setNormaliseTuning(argNormaliseTuning);
+		setNormaliseTuning(argNormalise);
 		setName();
 		setMeterInfo();
 		setTunings();
@@ -297,8 +339,9 @@ public class Tablature implements Serializable {
 			Tuning.getTuning(getEncoding().getMetadata().get(Encoding.METADATA_TAGS[Encoding.TUNING_IND]));
 		Tuning[] tuns = new Tuning[NUM_TUNINGS];
 		tuns[ENCODED_TUNING_IND] = encodedTun;
-		tuns[NORMALISED_TUNING_IND] = 
-			!getNormaliseTuning() ? encodedTun : (encodedTun.getIsDrop() ? Tuning.G6F : Tuning.G);
+		tuns[NORMALISED_TUNING_IND] = encodedTun.getIsDrop() ? Tuning.G6F : Tuning.G;
+//		tuns[NORMALISED_TUNING_IND] = 
+//			!getNormaliseTuning() ? encodedTun : (encodedTun.getIsDrop() ? Tuning.G6F : Tuning.G);
 		return tuns;
 	}
 
@@ -718,6 +761,7 @@ public class Tablature implements Serializable {
 	 * order.
 	 * 
 	 * @param argChord
+	 * @param t
 	 * @return
 	 */
 	// TESTED
@@ -1217,11 +1261,13 @@ public class Tablature implements Serializable {
 		int metricBar = 1;
 		int onsetTabInMetric = 0;
 		int remainderOfMetricBarLen = metricBarLengths.get(0);
+		System.out.println(tabBarLengths.size());
 		for (int i = 0; i < tabBarLengths.size(); i++) {
 			Integer[] barMetricBarsOnsetTabInMetricBar = new Integer[]{-1, -1, -1, -1, -1};
 			barMetricBarsOnsetTabInMetricBar[TAB_BAR_IND] = i + 1;
 			int currTabBarLen = tabBarLengths.get(i);
 //			int currMetricBarLen = metricBarLengths.get(metricBar -1);
+			System.out.println("i = " + i);
 
 			// There are three possible cases
 			// a. tab:metric = 1:1, i.e., each tab bar corresponds to one metric bar
@@ -1232,6 +1278,7 @@ public class Tablature implements Serializable {
 			// tab:metric = n:1, non-last tab bar: covers non-end of metric bar
 			// tab:metric = 3:2, first tab bar: covers beginning of first metric bar
 			if (currTabBarLen < remainderOfMetricBarLen) {
+				System.out.println("first");
 				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
 				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
 				// Set for next tab bar
@@ -1244,11 +1291,15 @@ public class Tablature implements Serializable {
 			// Case c
 			// tab:metric = 3:2, middle tab bar: covers end of first metric bar and beginning of second
 			else if (currTabBarLen > remainderOfMetricBarLen) {
+				System.out.println("second");
 				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
 				barMetricBarsOnsetTabInMetricBar[SECOND_METRIC_BAR_IND] = metricBar + 1;
 				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
 				// Set for next tab bar
 				metricBar++;
+				System.out.println(metricBarLengths);
+				System.out.println(currTabBarLen);
+				System.out.println(remainderOfMetricBarLen);
 				onsetTabInMetric = Math.abs(metricBarLengths.get(metricBar - 1) - (onsetTabInMetric + currTabBarLen));
 				remainderOfMetricBarLen = 
 					metricBarLengths.get(metricBar - 1) - (currTabBarLen - remainderOfMetricBarLen);
@@ -1260,6 +1311,7 @@ public class Tablature implements Serializable {
 			// tab:metric n:1, last tab bar: covers end of metric bar
 			// tab:metric 3:2, last tab bar: covers end of second metric bar
 			else if (currTabBarLen == remainderOfMetricBarLen) {
+				System.out.println("third");
 				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
 				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
 				// Set for next tab bar

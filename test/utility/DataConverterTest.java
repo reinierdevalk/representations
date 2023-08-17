@@ -126,7 +126,7 @@ public class DataConverterTest extends TestCase {
 
 
 	public void testGetVoiceAssignment() {
-		Tablature tablature = new Tablature(encodingTestpiece1, true);
+		Tablature tablature = new Tablature(encodingTestpiece1);
 		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
@@ -302,7 +302,7 @@ public class DataConverterTest extends TestCase {
 
 
 	public void testGetVoicesInChord() {
-		Tablature tablature = new Tablature(encodingTestpiece1, true);
+		Tablature tablature = new Tablature(encodingTestpiece1);
 		Transcription transcription = new Transcription(midiTestpiece1, encodingTestpiece1);
 
 		// For each chord: make the List of expected voices and add them to expectedVoices
@@ -326,10 +326,10 @@ public class DataConverterTest extends TestCase {
 		List<List<Integer>> expected3 = new ArrayList<List<Integer>>();
 		expected3.add(voice4); expected3.add(voice3); expected3.add(voice2); expected3.add(voice0And1);
 		// Chord 4
-		List<List<Integer>> expected4	= new ArrayList<List<Integer>>();
+		List<List<Integer>> expected4 = new ArrayList<List<Integer>>();
 		expected4.add(voice4);  
 		// Chord 5
-		List<List<Integer>> expected5	= new ArrayList<List<Integer>>();
+		List<List<Integer>> expected5 = new ArrayList<List<Integer>>();
 		expected5.add(voice4); expected5.add(voice3); expected5.add(voice2); expected5.add(voice1); expected5.add(voice0); 
 		// Chord6
 		List<List<Integer>> expected6 = new ArrayList<List<Integer>>();

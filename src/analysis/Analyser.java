@@ -1259,7 +1259,8 @@ public class Analyser {
 			File tablatureEncoding = 
 				new File(MEIExport.rootDir + "data/encodings/" + pieceName + Encoding.EXTENSION);
 
-			Tablature tablature = new Tablature(tablatureEncoding, false);
+			Tablature tablature = new Tablature(tablatureEncoding);
+//			Tablature tablature = new Tablature(tablatureEncoding, false);
 //			preprocessor.prepareInitialInformation(tablature, null, true);
 			Integer[][] basicTabSymbolProperties = tablature.getBasicTabSymbolProperties();
 			List<List<TabSymbol>> tablatureChords = tablature.getChords();
