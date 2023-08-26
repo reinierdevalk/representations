@@ -1967,6 +1967,8 @@ public class MEIExport {
 //		for (List<Integer> l : mismatchInds) {
 //			System.out.println(l);
 //		}
+		Encoding enc = tab.getEncoding();
+		List<Event> events = enc.getEvents();
 		
 		System.out.println("incorrect:");
 		System.out.println(mismatchInds.get(1));
@@ -2007,9 +2009,11 @@ public class MEIExport {
 			List<String[]> ornaments = new ArrayList<>();
 			ornaments.add(new String[]{"piece="+tab.getName()});
 			for (int i = 0 ; i < numVoices; i++) {
+				System.out.println("voice " + i);
 				List<Integer[]> currVoiceDataInt = dataIntPerVoice.get(i);
 				int numNotes = currVoiceDataInt.size();
 				for (int j = 0; j < numNotes - 1; j++) {
+					System.out.println("note " + j);
 					Integer[] currNoteDataInt = currVoiceDataInt.get(j);
 					Integer[] nextNoteDataInt = currVoiceDataInt.get(j+1);
 
@@ -2039,8 +2043,20 @@ public class MEIExport {
 							int dots = currNoteDataInt[INTS.indexOf("dots")];
 							// getRhythmSymbol() needs the undotted dur
 							dur = getUndottedNoteLength(dur, dots);
-							currRs = Symbol.getRhythmSymbol(dur, false, false, null).getSymbol() + 
-								".".repeat(dots);
+							
+							String e = events.get(btp[currIndTab][Tablature.TAB_EVENT_SEQ_NUM]).getEncoding();
+							RhythmSymbol rs = Symbol.getRhythmSymbol(
+								e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))
+							);
+							System.out.println(e);
+							System.out.println(rs);
+							
+							currRs = Symbol.getRhythmSymbol(
+								dur, 
+								e.startsWith(Symbol.CORONA_INDICATOR), 
+								rs.getBeam(), 
+								rs.isTriplet()
+							).getSymbol() + ".".repeat(dots);
 						}
 						// Add current RS
 						ornament.add(currRs);
@@ -2048,20 +2064,60 @@ public class MEIExport {
 						for (int k = j + 1; k < numNotes; k++) {
 							nextNoteDataInt = currVoiceDataInt.get(k);
 							int nextIndTab = nextNoteDataInt[INTS.indexOf("indTab")];
-							int nextPitch = btp[nextIndTab][Tablature.PITCH];
+							if (nextIndTab == -1) {
+								System.out.println(Arrays.asList(nextNoteDataInt));
+								System.out.println("k " + k);
+								System.out.println(ornament);
+							}
+							// If nextIndTab is -1, nextNoteDataInt represents a rest, and
+							// the ornament ends with a rest (+ interval 0)
+							int nextPitch = nextIndTab == -1 ? -1 : btp[nextIndTab][Tablature.PITCH];
 							if (startPitch == -1) {
 								startPitch = nextPitch;
 							}
-							int nextDur = btp[nextIndTab][Tablature.MIN_DURATION];
-							int nextDots = nextNoteDataInt[INTS.indexOf("dots")];
-							// getRhythmSymbol() needs the undotted dur
-							nextDur = getUndottedNoteLength(nextDur, nextDots);
-							String nextRs = Symbol.getRhythmSymbol(nextDur, false, false, null).getSymbol() + 
-								".".repeat(nextDots);
-							// Add interval from curr to next (or 0 if left border is a rest)
+							String nextRs;
+							if (nextIndTab != -1) {
+								int nextDur = btp[nextIndTab][Tablature.MIN_DURATION];
+								int nextDots = nextNoteDataInt[INTS.indexOf("dots")];
+								// getRhythmSymbol() needs the undotted dur
+								nextDur = getUndottedNoteLength(nextDur, nextDots);
+								System.out.println(nextDur);
+								if (j == 223 || j == 224 || j == 225 || j == 226 || j == 227) {
+									System.out.println(Arrays.asList(nextNoteDataInt));
+									System.out.println(Arrays.asList(dataStrPerVoice.get(i).get(k)));
+									String s = enc.getListsOfSymbols().get(1).get(nextIndTab);
+									int eInd = btp[nextIndTab][Tablature.TAB_EVENT_SEQ_NUM];
+									System.out.println(enc.getListsOfSymbols().get(0));
+									String e = events.get(eInd).getEncoding();
+									System.out.println(s);
+									System.out.println(e);
+								}
+
+								String e = events.get(btp[nextIndTab][Tablature.TAB_EVENT_SEQ_NUM]).getEncoding();
+								RhythmSymbol rs = Symbol.getRhythmSymbol(
+									e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))
+								);
+
+//								if (j == 227) {
+//									System.out.println(rs.getEncoding());
+//									System.out.println("->"+tripletType+"<-");
+//									System.out.println(rs.getBeam());
+////									System.exit(0);
+//								}
+								nextRs = Symbol.getRhythmSymbol(
+									nextDur, 
+									e.startsWith(Symbol.CORONA_INDICATOR), 
+									rs.getBeam(), 
+									rs.isTriplet()
+								).getSymbol() + ".".repeat(nextDots);
+							}
+							else {
+								nextRs = "R";
+							}
+							// Add interval from curr to next (or 0 if left/right border is a rest)
 							// and next RS
 							ornament.add(
-								currIndTab == -1 ? String.valueOf(0) :
+								(currIndTab == -1 || nextIndTab == -1) ? String.valueOf(0) :
 								String.valueOf(nextPitch - currPitch));
 							ornament.add(nextRs);
 							
@@ -2576,6 +2632,7 @@ public class MEIExport {
 				boolean tupletActive = false;
 				boolean beamActive = false; 
 				// For each note
+				int indentsAdded = 0;
 				for (int i = 0; i < currBarCurrVoiceStr.size(); i++) {
 					String[] note = currBarCurrVoiceStr.get(i);
 					Integer[] noteInt = currBarCurrVoiceInt.get(i);
@@ -2597,14 +2654,33 @@ public class MEIExport {
 //						sb.append(indent + tab.repeat(3) + "<beam>" + "\r\n");
 //					}
 
+					// WAS: check in sequence triplet - chord - beam
+					// Check for any beam to be added before noteStr
+					if (noteInt[INTS.indexOf("beamOpen")] == 1) {
+						barList.add(TAB.repeat(2) + "<beam>");
+						beamActive = true;
+						indentsAdded++;
+					}
+
+					// Check for any chord to be added before noteStr
+					if (i < currBarCurrVoiceStr.size()-1) {
+						Integer[] nextNoteInt = currBarCurrVoiceInt.get(i+1);
+						if (new Rational(currOnsNum, currOnsDen).equals(new Rational(
+							nextNoteInt[INTS.indexOf("onsetNum")], nextNoteInt[INTS.indexOf("onsetDen")]))) {
+							barList.add(
+								TAB.repeat(2 + indentsAdded) + "<chord dur='" + noteInt[INTS.indexOf("dur")] + "'>"
+							);
+							chordActive = true;
+							indentsAdded++;
+						}
+					}
+					
 					// Check for any tripletOpen to be added before noteStr
 					if (noteInt[INTS.indexOf("tripletOpen")] == 1) {
-//						System.out.println("diminution = " + diminution);
 						int tupletDur = -1;
 //						Rational tupletDur = null;
 						Rational onset = new Rational(currOnsNum, currOnsDen);
 //							currBarCurrVoiceInt.get(i)[INTS.indexOf("onsetDen")]);
-//						System.out.println("onset = " + onset);
 						for (Rational[] r : tripletOnsetPairs) {
 							if (onset.equals(r[0])) {
 //								tupletDur = r[2].getNumer();
@@ -2612,7 +2688,7 @@ public class MEIExport {
 								// tupletDurRat is expressed in RhythmSymbol duration (e.g., 
 								// minim = 24): convert to CMN equivalent (e.g., 24 * 1/96 = 1/4) 
 //								if (noteInt[INTS.indexOf("indTab")] != -1) {
-									tupletDurRat = tupletDurRat.mul(Tablature.SMALLEST_RHYTHMIC_VALUE);
+								tupletDurRat = tupletDurRat.mul(Tablature.SMALLEST_RHYTHMIC_VALUE);
 //								}
 								// Apply diminution and get MEI dur value (e.g., 1/4 * 2 = 1/2;
 								// MEI dur value is denom of 1/2)
@@ -2623,43 +2699,28 @@ public class MEIExport {
 								break;
 							}
 						}
-						barList.add(TAB.repeat(2) + "<tuplet dur='" + tupletDur + "' num='3' numbase='2'>");
+						barList.add(
+							TAB.repeat(2 + indentsAdded) + "<tuplet dur='" + tupletDur + "' num='3' numbase='2'>"
+						);
 						tupletActive = true;
+						indentsAdded++;
 					}
 
-					// Check for any chord to be added before noteStr
-					if (i < currBarCurrVoiceStr.size()-1) {
-						Integer[] nextNoteInt = currBarCurrVoiceInt.get(i+1);
-						if (new Rational(currOnsNum, currOnsDen).equals(new Rational(
-							nextNoteInt[INTS.indexOf("onsetNum")], nextNoteInt[INTS.indexOf("onsetDen")]))) {
-//						if (currOnsNum == currBarCurrVoiceInt.get(i+1)[INTS.indexOf("onsetNum")]) {
-							barList.add(TAB.repeat(2) + "<chord dur='" + noteInt[INTS.indexOf("dur")] + "'>");
-							chordActive = true;
-//							System.out.println("currBarCurrVoiceInt.get(i+1):");
-//							System.out.println(Arrays.toString(currBarCurrVoiceInt.get(i+1)));
-//							System.out.println(currOnsNum);
-//							System.out.println("chordActive");
-						}
-					}
-					// Check for any beams to be added before noteStr
-					if (noteInt[INTS.indexOf("beamOpen")] == 1) {
-						barList.add(TAB.repeat(2) + "<beam>");
-						beamActive = true;
-					}
-					
-					String noteStr = TAB.repeat(2); //"";
-					// Add indent for any tuplet and/or chord
-					if (tupletActive) {
-						noteStr += TAB;
-					}
-					if (chordActive) {
-						noteStr += TAB;
-					}
-					if (beamActive) {
-						noteStr += TAB;
-					}
-					noteStr = (note[STRINGS.indexOf("pname")] == null) ? noteStr + "<rest " :
+					String noteStr = TAB.repeat(2 + indentsAdded);
+//					// Add indent for any tuplet and/or chord
+//					if (tupletActive) {
+//						noteStr += TAB;
+//					}
+//					if (chordActive) {
+//						noteStr += TAB;
+//					}
+//					if (beamActive) {
+//						noteStr += TAB;
+//					}
+					noteStr = 
+						(note[STRINGS.indexOf("pname")] == null) ? noteStr + "<rest " : 
 						noteStr + "<note ";
+					
 //					if (note[STRINGS.indexOf("pname")] == null) {
 //						noteStr += "<rest "; 
 //					}
@@ -2701,7 +2762,7 @@ public class MEIExport {
 						}
 					}
 					else {
-						if (highlightNotes) { // zondag
+						if (highlightNotes) {
 							int index = (tabInd != -1) ? tabInd : noteInt[INTS.indexOf("ind")];
 							if (inc.contains(index)) {
 								noteStr += "color='red'" + " ";
@@ -2722,29 +2783,32 @@ public class MEIExport {
 					noteStr = noteStr.replaceAll("\\s+$", "");
 					noteStr = noteStr + "/>";
 					barList.add(noteStr);
-					// If there is an active in-voice chord: check if it must be closed
+					
+					// Close any active triplet, chord, beam
+					// Triplet
+					if (noteInt[INTS.indexOf("tripletClose")] == 1) {
+						indentsAdded--;
+						barList.add(TAB.repeat(2 + indentsAdded) + "</tuplet>");
+						tupletActive = false;
+					}
+					// Chord
 					if (chordActive) {
 						Rational currOnset = new Rational(currOnsNum, currOnsDen);
-//						System.out.println(currOnset);
 						Rational nextOnset = 
 							(i == currBarCurrVoiceStr.size()-1) ? null :
 							new Rational(currBarCurrVoiceInt.get(i+1)[INTS.indexOf("onsetNum")],
 							currBarCurrVoiceInt.get(i+1)[INTS.indexOf("onsetDen")]);
 						if ((i < currBarCurrVoiceStr.size()-1 && nextOnset.isGreater(currOnset)) ||
 							i == currBarCurrVoiceStr.size()-1) {
-//							System.out.println("CLOSE CHORD");
-							barList.add(TAB.repeat(2) + "</chord>");
+							indentsAdded--;
+							barList.add(TAB.repeat(2 + indentsAdded) + "</chord>");
 							chordActive = false;
 						}
 					}
-					// Check for any tripletClose to be placed after noteStr
-					if (noteInt[INTS.indexOf("tripletClose")] == 1) {
-						barList.add(TAB.repeat(2) + "</tuplet>");
-						tupletActive = false;
-					}
-					// Check for any beamClose to be placed after noteStr
+					// Beam
 					if (noteInt[INTS.indexOf("beamClose")] == 1) {
-						barList.add(TAB.repeat(2) + "</beam>");
+						indentsAdded--;
+						barList.add(TAB.repeat(2 + indentsAdded) + "</beam>");
 						beamActive = false;
 					}
 				}
@@ -3989,13 +4053,13 @@ public class MEIExport {
 	 * </ul>
 	 *  
 	 * @param pitch
+	 * @param bar
+	 * @param onset
 	 * @param numAlt
 	 * @param mpcGrid
 	 * @param altGrid
 	 * @param pcGrid
 	 * @param accidsInEffect
-	 * @param bar
-	 * @param onset
 	 * @return A list containing
 	 *         <ul>
 	 *         <li>As element 0: a String[] containing pname and accid, in MEI terminology.</li>
@@ -4100,9 +4164,6 @@ public class MEIExport {
 			// 1. pitch is the next or second-next KA
 			// Flats
 			if (numAlt <= 0) {
-				System.out.println(mpcKeySigs);
-				System.out.println(numAlt);
-//				System.exit(0);
 				String alt = altGrid[mpcGridList.indexOf((mpc+1) % 12)];
 				int indLastKeyAccid = 
 					(numAlt == 0) ? -1 : KEY_ACCID_MPC_FLAT.indexOf(mpcKeySigs.get(mpcKeySigs.size()-1));
@@ -4129,7 +4190,7 @@ public class MEIExport {
 			else if (numAlt > 0) {
 				String alt = altGrid[mpcGridList.indexOf(((mpc-1) + 12) % 12)];
 				int indLastKeyAccid = 
-					(numAlt == 0) ? -1 : KEY_ACCID_MPC_SHARP.indexOf(mpcKeySigs.get(mpcKeySigs.size()-1));
+					/*(numAlt == 0) ? -1 : */ KEY_ACCID_MPC_SHARP.indexOf(mpcKeySigs.get(mpcKeySigs.size()-1));
 				for (int incr : new Integer[]{1, 2}) {
 					if (KEY_ACCID_MPC_SHARP.get(indLastKeyAccid + incr) == mpc) {
 						if (verbose) System.out.println("pitch is next or second-next KA (sharps)");

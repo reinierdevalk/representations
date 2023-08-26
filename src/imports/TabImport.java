@@ -238,7 +238,9 @@ public class TabImport {
 		// Make metadataString
 		String notation = rulesMap.get("notation");
 		// Ensure correct capitalisation
-		notation = notation.substring(0, 1).toUpperCase() + notation.substring(1).toLowerCase();		
+		if (notation != null) {
+			notation = notation.substring(0, 1).toUpperCase() + notation.substring(1).toLowerCase();
+		}
 		String tss = notation != null ? notations.get(notation) : notations.get("French");
 		String[] metadata = new String[]{
 			rulesMap.get("author") != null ? rulesMap.get("author") : "", // author TODO

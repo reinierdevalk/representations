@@ -567,7 +567,7 @@ public class Encoding implements Serializable {
 	 * <li> as element 3: mensurationSigns: contains all the individual MS in the encoding</li>
 	 * <li> as element 4: barlines: contains all the barlines (incl. double, repeat, etc.)  
 	 *                    in the encoding</li>
-	 * <li> as element 5: allEvents: contains all the individual events in the encoding</li>
+	 * <li> [as element 5: allEvents: contains all the individual events in the encoding</li>] TODO remove
 	 * </ul>
 	 */
 	public List<List<String>> getListsOfSymbols() {
@@ -1818,7 +1818,7 @@ public class Encoding implements Serializable {
 											rPrev.getEncoding().startsWith(Symbol.CORONA_INDICATOR),
 											rPrev.getBeam(),
 											rPrev.isTriplet()
-												).getEncoding();
+										).getEncoding();
 										ePrevDeorn += ePrev.substring(ePrev.indexOf(ss));
 										eventsAugm.set(eventsAugm.lastIndexOf(ePrev), ePrevDeorn);
 										i = j-1;
