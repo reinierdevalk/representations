@@ -1278,7 +1278,6 @@ public class Tablature implements Serializable {
 			// tab:metric = n:1, non-last tab bar: covers non-end of metric bar
 			// tab:metric = 3:2, first tab bar: covers beginning of first metric bar
 			if (currTabBarLen < remainderOfMetricBarLen) {
-				System.out.println("first");
 				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
 				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
 				// Set for next tab bar
@@ -1291,15 +1290,11 @@ public class Tablature implements Serializable {
 			// Case c
 			// tab:metric = 3:2, middle tab bar: covers end of first metric bar and beginning of second
 			else if (currTabBarLen > remainderOfMetricBarLen) {
-				System.out.println("second");
 				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
 				barMetricBarsOnsetTabInMetricBar[SECOND_METRIC_BAR_IND] = metricBar + 1;
 				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
 				// Set for next tab bar
 				metricBar++;
-				System.out.println(metricBarLengths);
-				System.out.println(currTabBarLen);
-				System.out.println(remainderOfMetricBarLen);
 				onsetTabInMetric = Math.abs(metricBarLengths.get(metricBar - 1) - (onsetTabInMetric + currTabBarLen));
 				remainderOfMetricBarLen = 
 					metricBarLengths.get(metricBar - 1) - (currTabBarLen - remainderOfMetricBarLen);
@@ -1311,7 +1306,6 @@ public class Tablature implements Serializable {
 			// tab:metric n:1, last tab bar: covers end of metric bar
 			// tab:metric 3:2, last tab bar: covers end of second metric bar
 			else if (currTabBarLen == remainderOfMetricBarLen) {
-				System.out.println("third");
 				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
 				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
 				// Set for next tab bar

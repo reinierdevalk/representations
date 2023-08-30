@@ -2666,7 +2666,8 @@ public class MEIExport {
 					if (i < currBarCurrVoiceStr.size()-1) {
 						Integer[] nextNoteInt = currBarCurrVoiceInt.get(i+1);
 						if (new Rational(currOnsNum, currOnsDen).equals(new Rational(
-							nextNoteInt[INTS.indexOf("onsetNum")], nextNoteInt[INTS.indexOf("onsetDen")]))) {
+							nextNoteInt[INTS.indexOf("onsetNum")], nextNoteInt[INTS.indexOf("onsetDen")]))
+							&& !chordActive) {
 							barList.add(
 								TAB.repeat(2 + indentsAdded) + "<chord dur='" + noteInt[INTS.indexOf("dur")] + "'>"
 							);
