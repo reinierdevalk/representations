@@ -1,6 +1,6 @@
 package tbp;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,10 +10,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import de.uos.fmt.musitech.utility.math.Rational;
 import representations.Tablature.Tuning;
 import tbp.TabSymbol.TabSymbolSet;
 
 public class TabSymbolTest {
+
+	private static final Rational HALF = new Rational(1, 2);
+	private static final Rational DOTTED_HALF = new Rational(3, 4);
+
 
 	@Before
 	public void setUp() throws Exception {
@@ -22,6 +27,26 @@ public class TabSymbolTest {
 
 	@After
 	public void tearDown() throws Exception {
+	}
+
+
+	@Test
+	public void testGetTabSymbolDur() {
+		List<Rational> rs = Arrays.asList(new Rational[]{				
+			HALF, DOTTED_HALF, new Rational(15, 16), new Rational(5, 4)
+		});
+		List<Integer> expected = Arrays.asList(new Integer[]{48, 72, 90, 120});
+
+		List<Integer> actual = new ArrayList<>();
+		for (Rational r : rs) {
+			actual.add(TabSymbol.getTabSymbolDur(r));
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		} 
+		assertEquals(expected, actual);
 	}
 
 

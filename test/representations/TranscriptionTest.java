@@ -43,6 +43,7 @@ import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import imports.MIDIImport;
 import junit.framework.TestCase;
+import tools.labels.LabelTools;
 import path.Path;
 import representations.Transcription.TaggedNote;
 import representations.Transcription.Type;
@@ -52,8 +53,7 @@ import structure.TimelineTest;
 import tbp.Encoding;
 import tbp.Symbol;
 import tbp.TabSymbol;
-import utility.DataConverter;
-import utility.NoteTimePitchComparator;
+//import tools.music.NoteTimePitchComparator;
 
 public class TranscriptionTest extends TestCase {
 
@@ -112,11 +112,11 @@ public class TranscriptionTest extends TestCase {
 //		midiTestGetMeterInfoDimNoAna = new File(Runner.midiPathTest + "test_get_meter_key_info_diminuted_no_anacrusis.mid");
 		
 //		String s = MEIExport.rootDir;
-		String p = Path.ROOT_PATH + Path.DATA_DIR;
-		String mp = p + Path.MIDI_PATH; // = F:/research/data/annotated/MIDI/
-		String ep = p + Path.ENCODINGS_PATH; // = F:/research/data/annotated/encodings/
-		String mpJos = p + Path.MIDI_PATH_JOSQUINTAB; // = F:/research/data/annotated/josquintab/MIDI/
-		String epJos = p + Path.ENCODINGS_PATH_JOSQUINTAB; // = F:/research/data/annotated/josquintab/tab/
+		String p = Path.ROOT_PATH_DEPLOYMENT_DEV;
+		String mp = p + Path.MIDI_REL_PATH; // = F:/research/data/annotated/MIDI/
+		String ep = p + Path.ENCODINGS_REL_PATH; // = F:/research/data/annotated/encodings/
+		String mpJos = p + Path.MIDI_REL_PATH_JOSQUINTAB; // = F:/research/data/annotated/josquintab/MIDI/
+		String epJos = p + Path.ENCODINGS_REL_PATH_JOSQUINTAB; // = F:/research/data/annotated/josquintab/tab/
 		
 		encodingTestpiece = new File(ep + "test/" + "testpiece.tbp");
 		encodingTestGetMeterInfo = new File(ep + "test/" + "test_get_meter_info.tbp");
@@ -402,75 +402,75 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
-	private NoteSequence getNoteSequence(Piece p, String piece) {
-		NoteSequence noteSeq = new NoteSequence(new NoteTimePitchComparator());
-		if (piece.equals("testpiece")) {
-			NotationSystem ns = p.getScore();
-			// Chord 0
-			noteSeq.add(ns.get(3).get(0).get(0).get(0)); // D3
-			noteSeq.add(ns.get(2).get(0).get(0).get(0)); // A3
-			noteSeq.add(ns.get(1).get(0).get(0).get(0)); // F4
-			noteSeq.add(ns.get(0).get(0).get(0).get(0)); // A4
-			// Chord 1
-			noteSeq.add(ns.get(3).get(0).get(1).get(0)); // A2
-			noteSeq.add(ns.get(2).get(0).get(1).get(0)); // A3
-			noteSeq.add(ns.get(1).get(0).get(1).get(0)); // A4
-			noteSeq.add(ns.get(0).get(0).get(1).get(0)); // C5
-			// Chord 2
-			noteSeq.add(ns.get(3).get(0).get(2).get(0)); // C3
-			// Chord 3
-			noteSeq.add(ns.get(4).get(0).get(0).get(0)); // B2
-			noteSeq.add(ns.get(3).get(0).get(3).get(0)); // D3
-			noteSeq.add(ns.get(2).get(0).get(2).get(0)); // B3
-			noteSeq.add(ns.get(1).get(0).get(2).get(0)); // F4
-			noteSeq.add(ns.get(0).get(0).get(2).get(0)); // F4
-			// Chord 4
-			noteSeq.add(ns.get(4).get(0).get(1).get(0)); // A2
-			// Chord 5
-			noteSeq.add(ns.get(4).get(0).get(2).get(0)); // A2
-			noteSeq.add(ns.get(3).get(0).get(4).get(0)); // A3
-			noteSeq.add(ns.get(2).get(0).get(3).get(0)); // A3
-			noteSeq.add(ns.get(1).get(0).get(3).get(0)); // C4
-			noteSeq.add(ns.get(0).get(0).get(3).get(0)); // A4
-			// Chord 6
-			noteSeq.add(ns.get(4).get(0).get(3).get(0)); // A2
-			noteSeq.add(ns.get(2).get(0).get(4).get(0)); // C4
-			noteSeq.add(ns.get(0).get(0).get(4).get(0)); // E4
-			noteSeq.add(ns.get(1).get(0).get(4).get(0)); // A4
-			// Chord 7
-			noteSeq.add(ns.get(2).get(0).get(5).get(0)); // B3
-			noteSeq.add(ns.get(0).get(0).get(5).get(0)); // G#4
-			// Chord 8
-			noteSeq.add(ns.get(3).get(0).get(5).get(0)); // A2
-			noteSeq.add(ns.get(2).get(0).get(6).get(0)); // A3
-			noteSeq.add(ns.get(1).get(0).get(5).get(0)); // E4
-			noteSeq.add(ns.get(0).get(0).get(6).get(0)); // A4
-			// Chord 9-14
-			noteSeq.add(ns.get(0).get(0).get(7).get(0)); // G#4
-			noteSeq.add(ns.get(0).get(0).get(8).get(0)); // A4
-			noteSeq.add(ns.get(0).get(0).get(9).get(0)); // G#4
-			noteSeq.add(ns.get(0).get(0).get(10).get(0)); // F#4
-			noteSeq.add(ns.get(0).get(0).get(11).get(0)); // G#4
-			noteSeq.add(ns.get(0).get(0).get(12).get(0)); // A4
-			// Chord 15
-			noteSeq.add(ns.get(3).get(0).get(6).get(0)); // A2
-			noteSeq.add(ns.get(2).get(0).get(7).get(0)); // A3
-			noteSeq.add(ns.get(1).get(0).get(6).get(0)); // E4
-			noteSeq.add(ns.get(0).get(0).get(13).get(0)); // A4
-
-			// The NoteSequence orders equal-pitch notes randomly; make sure that
-			// both pairs are ordered correctly
-			if (noteSeq.get(12).getMetricDuration().equals(new Rational(1, 4)) &&
-				noteSeq.get(13).getMetricDuration().equals(new Rational(1, 8))) {
-				noteSeq.swapNotes(12, 13);
-			}
-			if (noteSeq.get(16).getMetricDuration().equals(new Rational(1, 4)) &&
-				noteSeq.get(17).getMetricDuration().equals(new Rational(1, 2))) {
-				noteSeq.swapNotes(16, 17);
-			}
-		}
-		return noteSeq;
-	}
+//	private NoteSequence getNoteSequence(Piece p, String piece) {
+//		NoteSequence noteSeq = new NoteSequence(new NoteTimePitchComparator());
+//		if (piece.equals("testpiece")) {
+//			NotationSystem ns = p.getScore();
+//			// Chord 0
+//			noteSeq.add(ns.get(3).get(0).get(0).get(0)); // D3
+//			noteSeq.add(ns.get(2).get(0).get(0).get(0)); // A3
+//			noteSeq.add(ns.get(1).get(0).get(0).get(0)); // F4
+//			noteSeq.add(ns.get(0).get(0).get(0).get(0)); // A4
+//			// Chord 1
+//			noteSeq.add(ns.get(3).get(0).get(1).get(0)); // A2
+//			noteSeq.add(ns.get(2).get(0).get(1).get(0)); // A3
+//			noteSeq.add(ns.get(1).get(0).get(1).get(0)); // A4
+//			noteSeq.add(ns.get(0).get(0).get(1).get(0)); // C5
+//			// Chord 2
+//			noteSeq.add(ns.get(3).get(0).get(2).get(0)); // C3
+//			// Chord 3
+//			noteSeq.add(ns.get(4).get(0).get(0).get(0)); // B2
+//			noteSeq.add(ns.get(3).get(0).get(3).get(0)); // D3
+//			noteSeq.add(ns.get(2).get(0).get(2).get(0)); // B3
+//			noteSeq.add(ns.get(1).get(0).get(2).get(0)); // F4
+//			noteSeq.add(ns.get(0).get(0).get(2).get(0)); // F4
+//			// Chord 4
+//			noteSeq.add(ns.get(4).get(0).get(1).get(0)); // A2
+//			// Chord 5
+//			noteSeq.add(ns.get(4).get(0).get(2).get(0)); // A2
+//			noteSeq.add(ns.get(3).get(0).get(4).get(0)); // A3
+//			noteSeq.add(ns.get(2).get(0).get(3).get(0)); // A3
+//			noteSeq.add(ns.get(1).get(0).get(3).get(0)); // C4
+//			noteSeq.add(ns.get(0).get(0).get(3).get(0)); // A4
+//			// Chord 6
+//			noteSeq.add(ns.get(4).get(0).get(3).get(0)); // A2
+//			noteSeq.add(ns.get(2).get(0).get(4).get(0)); // C4
+//			noteSeq.add(ns.get(0).get(0).get(4).get(0)); // E4
+//			noteSeq.add(ns.get(1).get(0).get(4).get(0)); // A4
+//			// Chord 7
+//			noteSeq.add(ns.get(2).get(0).get(5).get(0)); // B3
+//			noteSeq.add(ns.get(0).get(0).get(5).get(0)); // G#4
+//			// Chord 8
+//			noteSeq.add(ns.get(3).get(0).get(5).get(0)); // A2
+//			noteSeq.add(ns.get(2).get(0).get(6).get(0)); // A3
+//			noteSeq.add(ns.get(1).get(0).get(5).get(0)); // E4
+//			noteSeq.add(ns.get(0).get(0).get(6).get(0)); // A4
+//			// Chord 9-14
+//			noteSeq.add(ns.get(0).get(0).get(7).get(0)); // G#4
+//			noteSeq.add(ns.get(0).get(0).get(8).get(0)); // A4
+//			noteSeq.add(ns.get(0).get(0).get(9).get(0)); // G#4
+//			noteSeq.add(ns.get(0).get(0).get(10).get(0)); // F#4
+//			noteSeq.add(ns.get(0).get(0).get(11).get(0)); // G#4
+//			noteSeq.add(ns.get(0).get(0).get(12).get(0)); // A4
+//			// Chord 15
+//			noteSeq.add(ns.get(3).get(0).get(6).get(0)); // A2
+//			noteSeq.add(ns.get(2).get(0).get(7).get(0)); // A3
+//			noteSeq.add(ns.get(1).get(0).get(6).get(0)); // E4
+//			noteSeq.add(ns.get(0).get(0).get(13).get(0)); // A4
+//
+//			// The NoteSequence orders equal-pitch notes randomly; make sure that
+//			// both pairs are ordered correctly
+//			if (noteSeq.get(12).getMetricDuration().equals(new Rational(1, 4)) &&
+//				noteSeq.get(13).getMetricDuration().equals(new Rational(1, 8))) {
+//				noteSeq.swapNotes(12, 13);
+//			}
+//			if (noteSeq.get(16).getMetricDuration().equals(new Rational(1, 4)) &&
+//				noteSeq.get(17).getMetricDuration().equals(new Rational(1, 2))) {
+//				noteSeq.swapNotes(16, 17);
+//			}
+//		}
+//		return noteSeq;
+//	}
 
 
 	public void testMakeMeterInfo() {
@@ -1856,7 +1856,7 @@ public class TranscriptionTest extends TestCase {
 
 	public void testGetMirrorPoint() {
 		// Tablature/non-tablature case
-		String path = Path.ROOT_PATH + "data/annotated/MIDI/" + "bach-WTC";
+		String path = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_REL_PATH + "bach-WTC/";
 		List<Transcription> trans = Arrays.asList(
 			// a. No anacrusis
 			// Onset/offset of last note in last bar in all voices but the lowest, which ends
@@ -1864,21 +1864,21 @@ public class TranscriptionTest extends TestCase {
 			new Transcription(midiTestpiece),
 			// Onset/offset of last note in last bar in upper three voices and with bars in between 
 			// in lowest voice
-			new Transcription(new File(path + "/thesis/4vv/" + "bach-WTC1-fuga_1-BWV_846.mid")),
+			new Transcription(new File(path + "thesis/4vv/" + "bach-WTC1-fuga_1-BWV_846.mid")),
 			// Onset/offset of last note either in penultimate or in last bar, differing per voice;
 			// all voices ending with rests
-			new Transcription(new File(path + "/thesis/4vv/" + "bach-WTC2-fuga_16-BWV_885.mid")),
+			new Transcription(new File(path + "thesis/4vv/" + "bach-WTC2-fuga_16-BWV_885.mid")),
 			// b. With anacrusis
 			// Onset/offset of last note in last bar in all voices
-			new Transcription(new File(path + "/thesis/3vv/" + "bach-WTC1-fuga_11-BWV_856.mid")),
+			new Transcription(new File(path + "thesis/3vv/" + "bach-WTC1-fuga_11-BWV_856.mid")),
 			// Onset/offset of last note in last bar in all voices
-			new Transcription(new File(path + "/thesis/3vv/" + "bach-WTC2-fuga_10-BWV_879.mid")),
+			new Transcription(new File(path + "thesis/3vv/" + "bach-WTC2-fuga_10-BWV_879.mid")),
 			// Onset/offset of last note in last bar in all voices
-			new Transcription(new File(path + "/thesis/3vv/" + "bach-WTC2-fuga_12-BWV_881.mid")),
+			new Transcription(new File(path + "thesis/3vv/" + "bach-WTC2-fuga_12-BWV_881.mid")),
 			// Onset/offset of last note in last bar in all voices 
-			new Transcription(new File(path + "/thesis/3vv/" + "bach-WTC2-fuga_13-BWV_882.mid")),
+			new Transcription(new File(path + "thesis/3vv/" + "bach-WTC2-fuga_13-BWV_882.mid")),
 			// Onset/offset of last note in penultimate/last bar in all voices
-			new Transcription(new File(path + "/thesis/3vv/" + "bach-WTC2-fuga_24-BWV_893.mid"))
+			new Transcription(new File(path + "thesis/3vv/" + "bach-WTC2-fuga_24-BWV_893.mid"))
 		);
 
 		List<Rational> expected = Arrays.asList(
@@ -2354,7 +2354,7 @@ public class TranscriptionTest extends TestCase {
 		expected.add(bwv858n2avg);
 
 		List<List<List<Double>>> actual = new ArrayList<List<List<Double>>>();
-		String prefix = "F:/research/data/annotated/MIDI/bach-WTC/thesis/3vv/";
+		String prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_REL_PATH + "bach-WTC/thesis/3vv/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			"bach-WTC1-fuga_2-BWV_847",	
 			"bach-WTC1-fuga_2-BWV_847",	
@@ -2459,7 +2459,7 @@ public class TranscriptionTest extends TestCase {
 		expected.add(bwv858n2avg);
 
 		List<List<List<Double>>> actual = new ArrayList<List<List<Double>>>();
-		String prefix = "F:/research/data/annotated/MIDI/bach-WTC/thesis/3vv/";
+		String prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_REL_PATH + "bach-WTC/thesis/3vv/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			"bach-WTC1-fuga_2-BWV_847",	
 			"bach-WTC1-fuga_2-BWV_847",	
@@ -3103,7 +3103,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetVoiceEntriesOLDER_EXT() {
-		String prefix = "F:/research/data/annotated/MIDI/bach-INV/thesis/";
+		String prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_REL_PATH + "bach-INV/thesis/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			"3vv/bach-INV-inventio_1-BWV_787",
 			"3vv/bach-INV-inventio_2-BWV_788",
@@ -3137,8 +3137,8 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetImitativeVoiceEntries() {
-		String prefixTab = "F:/research/data/annotated/encodings/thesis-int/";
-		String prefix = "F:/research/data/annotated/MIDI/thesis-int/";
+		String prefixTab = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.ENCODINGS_REL_PATH + "thesis-int/";
+		String prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_REL_PATH + "thesis-int/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			// 3vv (using full durations)
 			"3vv/newsidler-1536_7-mess_pensees", // correct
@@ -3219,7 +3219,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetImitativeVoiceEntriesNonTab() {
-		String prefix = "F:/research/data/annotated/MIDI/bach-WTC/thesis/";
+		String prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_REL_PATH + "bach-WTC/thesis/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			// 3vv
 			"3vv/bach-WTC1-fuga_2-BWV_847", // correct
@@ -3363,8 +3363,9 @@ public class TranscriptionTest extends TestCase {
 	//						no motif is found at density 2, 3 (non-literal motif repetition)
 	// WTC 4vv --> n=3: all imitative (all correct)
 	public void testGetNonImitativeVoiceEntries() {
-		String prefixTab = "F:/research/data/annotated/encodings/thesis-int/";
-		String prefix = "F:/research/data/annotated/MIDI/thesis-int/";
+		String prefixTab = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.ENCODINGS_REL_PATH + "thesis-int/";
+		String prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_REL_PATH + "thesis-int/";
+		
 		List<String> fileNames = Arrays.asList(new String[]{
 			// 3vv
 			"3vv/newsidler-1536_7-disant_adiu", // correct (full & minimum) TODO fix SNU
@@ -3536,7 +3537,7 @@ public class TranscriptionTest extends TestCase {
 
 
 	public void testGetNonImitativeVoiceEntriesNonTab() {
-		String prefix = "F:/research/data/annotated/MIDI/bach-inv/thesis/";
+		String prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_REL_PATH + "bach-inv/thesis/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			// inv 2vv
 			"2vv/bach-INV-inventio_5-BWV_776", // correct
@@ -3727,7 +3728,7 @@ public class TranscriptionTest extends TestCase {
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3});
 		for (int i = 0; i < fileNames.size(); i++) {
 			if (fileNames.get(i).contains("WTC")) {
-				prefix = "F:/research/data/annotated/MIDI/bach-WTC/thesis/";
+				prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_REL_PATH + "bach-WTC/thesis/";
 			}
 			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.EXTENSION));
 			actual.add(t.getNonImitativeVoiceEntries(null, null, t.getBasicNoteProperties(), 
@@ -5344,9 +5345,9 @@ public class TranscriptionTest extends TestCase {
 			List<Integer> currentPitchesInChord = Transcription.getPitchesInChord(chords.get(i));
 			List<Integer> currentVoiceAssignment = voiceAssignments.get(i);
 			List<List<Double>> currentVoiceLabels = 
-				DataConverter.getChordVoiceLabels(currentVoiceAssignment);
+				LabelTools.getChordVoiceLabels(currentVoiceAssignment);
 			List<List<Integer>> currentVoicesInChord = 
-				DataConverter.getVoicesInChord(currentVoiceLabels);
+				LabelTools.getVoicesInChord(currentVoiceLabels);
 			actual.add(Transcription.getAllPitchesAndVoicesInChord(basicNoteProperties, currentPitchesInChord,
 				currentVoicesInChord, allVoiceLabels, lowestNoteIndex));
 			lowestNoteIndex += transcription.getChords().get(i).size();
@@ -5409,9 +5410,9 @@ public class TranscriptionTest extends TestCase {
 		List<List<List<Integer>>> allPossibleVoicesNoCoD = new ArrayList<List<List<Integer>>>();
 		for (List<Integer> voiceAssignment : allPossibleVoiceAssignmentsNoCoD) {
 			List<List<Double>> currentVoiceLabels = 
-				DataConverter.getChordVoiceLabels(voiceAssignment);
+				LabelTools.getChordVoiceLabels(voiceAssignment);
 			List<List<Integer>> currentVoicesInChord = 
-				DataConverter.getVoicesInChord(currentVoiceLabels);
+				LabelTools.getVoicesInChord(currentVoiceLabels);
 			allPossibleVoicesNoCoD.add(currentVoicesInChord);
 		}
 
@@ -5459,9 +5460,9 @@ public class TranscriptionTest extends TestCase {
 		List<List<List<Integer>>> allPossibleVoicesOneCoD = new ArrayList<List<List<Integer>>>();
 		for (List<Integer> voiceAssignment : allPossibleVoiceAssignmentsOneCoD) {
 			List<List<Double>> currentVoiceLabels = 
-				DataConverter.getChordVoiceLabels(voiceAssignment);
+				LabelTools.getChordVoiceLabels(voiceAssignment);
 			List<List<Integer>> currentVoicesInChord = 
-				DataConverter.getVoicesInChord(currentVoiceLabels);
+				LabelTools.getVoicesInChord(currentVoiceLabels);
 			allPossibleVoicesOneCoD.add(currentVoicesInChord);
 		}
 
@@ -5477,9 +5478,9 @@ public class TranscriptionTest extends TestCase {
 		List<List<List<Integer>>> allPossibleVoicesTwoCoDs = new ArrayList<List<List<Integer>>>();
 		for (List<Integer> voiceAssignment : allPossibleVoiceAssignmentsTwoCoDs) {
 			List<List<Double>> currentVoiceLabels = 
-				DataConverter.getChordVoiceLabels(voiceAssignment);
+				LabelTools.getChordVoiceLabels(voiceAssignment);
 			List<List<Integer>> currentVoicesInChord = 
-				DataConverter.getVoicesInChord(currentVoiceLabels);
+				LabelTools.getVoicesInChord(currentVoiceLabels);
 			allPossibleVoicesTwoCoDs.add(currentVoicesInChord);
 		}
 
@@ -5859,9 +5860,9 @@ public class TranscriptionTest extends TestCase {
 //				FeatureGenerator.getPitchesInChord(basicTabSymbolProperties, null, lowestNoteIndex);
 			List<Integer> currentPitchesInChord = tablature.getPitchesInChord(i);
 			List<List<Double>> currentChordVoiceLabels = 
-				DataConverter.getChordVoiceLabels(currentVoiceAssignment);
+				LabelTools.getChordVoiceLabels(currentVoiceAssignment);
 			List<List<Integer>> currentVoicesInChord = 
-				DataConverter.getVoicesInChord(currentChordVoiceLabels);
+				LabelTools.getVoicesInChord(currentChordVoiceLabels);
 			actual.add(Transcription.getVoiceCrossingInformationInChord(currentPitchesInChord, 
 				currentVoicesInChord));
 //			lowestNoteIndex += tablature.getTablatureChords().get(i).size();
@@ -5922,9 +5923,9 @@ public class TranscriptionTest extends TestCase {
 //				FeatureGenerator.getPitchesInChord(null, basicNoteProperties, lowestNoteIndex);
 			List<Integer> currentPitchesInChord = Transcription.getPitchesInChord(chords.get(i));
 			List<List<Double>> currentChordVoiceLabels = 
-				DataConverter.getChordVoiceLabels(currentVoiceAssignment);
+				LabelTools.getChordVoiceLabels(currentVoiceAssignment);
 			List<List<Integer>> currentVoicesInChord = 
-				DataConverter.getVoicesInChord(currentChordVoiceLabels);
+				LabelTools.getVoicesInChord(currentChordVoiceLabels);
 			List<List<Integer>> currentAllPitchesAndVoicesInChord = 
 				Transcription.getAllPitchesAndVoicesInChord(basicNoteProperties, currentPitchesInChord, 
 				currentVoicesInChord, voiceLabels, lowestNoteIndex);   

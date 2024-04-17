@@ -5,33 +5,30 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import de.uos.fmt.musitech.utility.math.Rational;
-import structure.metric.Utils;
+import representations.Tablature;
 import tbp.Encoding;
+import tbp.Event;
+import tbp.RhythmSymbol;
 import tbp.Symbol;
 import tools.ToolBox;
+import tools.music.TimeMeterTools;
 
+/**
+ * @author Reinier de Valk
+ * @version 19.02.2024 (last well-formedness check)
+ */
 public class Timeline implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-//	// From Transcription
-//	public static final int MI_NUM = 0;
-//	public static final int MI_DEN = 1;
-//	public static final int MI_FIRST_BAR = 2;
-//	public static final int MI_LAST_BAR = 3;
-//	public static final int MI_NUM_MT_FIRST_BAR = 4;
-//	public static final int MI_DEN_MT_FIRST_BAR = 5;
-//	public static final int MI_DIM = 6;
-
-//	private static final int MI_SIZE_TAB = 7;
-//	public static final int MI_SIZE_TRANS = 6;
-
+	private List<Integer[]> barInfo;
 	private List<Integer[]> bars;
 	private List<Integer> diminutions;
 	private List<Integer[]> timeSignatures;
-//	private List<Integer[]> meterInfo;
 	private List<Integer[]> diminutionPerBar;
 
 
@@ -43,16 +40,16 @@ public class Timeline implements Serializable {
 	}
 
 
-	public Timeline(Encoding encoding) {
-		init(encoding);
+	public Timeline(Encoding encoding, boolean isAgnostic) {
+		init(encoding, isAgnostic);
 	}
 
 
-	private void init(Encoding encoding) {
-		setBars(encoding);
-		setDiminutions(encoding);
-		setTimeSignatures(encoding);
-//		setMeterInfo(encoding);		
+	private void init(Encoding encoding, boolean isAgnostic) {
+		setBarInfo(encoding);
+		setBars(encoding, isAgnostic);
+		setDiminutions(encoding, isAgnostic);
+		setTimeSignatures(encoding, isAgnostic);
 		setDiminutionPerBar();
 	}
 
@@ -62,104 +59,214 @@ public class Timeline implements Serializable {
 	//  S E T T E R S  
 	//  for instance variables
 	//
-//	void setMeterInfo(Encoding encoding) {
-//		meterInfo = makeMeterInfo(encoding);
-//	}
-
-
-	void setBars(Encoding encoding) {
-		bars = makeBars(encoding);
+	void setBarInfo(Encoding encoding) {
+		barInfo = makeBarInfo(encoding);
 	}
 
 
 	// TESTED
-	List<Integer[]> makeBars(Encoding encoding) {
-		List<Integer[]> b = new ArrayList<>();
-		List<String> meterBars = new ArrayList<>();
-		Arrays.stream(encoding.getMetadata()
-			.get(Encoding.METADATA_TAGS[Encoding.METER_INFO_IND]).split(";"))
-			.forEach(m -> meterBars.add(m.trim()));
-		for (String m : meterBars) {
-			String bars = m.substring(m.indexOf("(") + 1, m.indexOf(")")).trim();
-			b.add(new Integer[]{
-				bars.contains("-") ? Integer.valueOf(bars.split("-")[0]) : Integer.valueOf(bars),
-				bars.contains("-") ? Integer.valueOf(bars.split("-")[1]) : Integer.valueOf(bars)
-			});
+	List<Integer[]> makeBarInfo(Encoding encoding) {
+		List<Integer[]> bi = new ArrayList<>();
+
+		List<Event> events = Encoding.removeDecorativeBarlineEvents(encoding.getEvents());
+		int barLenInSrv = 0;
+		int onset = 0;
+		int durPrevE = -1;
+		for (int i = 0; i < events.size(); i++) {
+			Event currEvent = events.get(i);
+			String e = currEvent.getEncoding();
+			int currBar = currEvent.getBar();
+			// If the event is not a barline event or a MS event
+			if (!Encoding.assertEventType(e, null, "barline") && 
+				!Encoding.assertEventType(e, null, "MensurationSign")) {
+				RhythmSymbol rs = Symbol.getRhythmSymbol(
+					e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))
+				);
+				int durE = rs != null ? rs.getDuration() : durPrevE;
+				if (rs != null) {
+					durPrevE = durE;
+				}
+				barLenInSrv += durE;
+			}
+			// Add to list if the next event belongs to the next bar or if event is the last
+			if (i <= events.size() - 1) {
+				Integer[] curr = new Integer[]{onset, barLenInSrv, onset + barLenInSrv};
+				// Next event belongs to the next bar 
+				if (i < events.size() - 1) {
+					if (events.get(i + 1).getBar() == currBar + 1) {
+						bi.add(curr);
+						onset += barLenInSrv;
+						barLenInSrv = 0;
+					}
+				}
+				// Event is the last
+				else {
+					bi.add(curr);
+				}
+			}
 		}
+
+		return bi; 
+	}
+
+
+	void setBars(Encoding encoding, boolean isAgnostic) {
+		bars = makeBars(encoding, isAgnostic);
+	}
+
+
+	// TESTED
+	List<Integer[]> makeBars(Encoding encoding, boolean isAgnostic) {
+		List<Integer[]> b = new ArrayList<>();
+
+		boolean miProvided = !encoding.getMetadata().get(
+			Encoding.METADATA_TAGS[Encoding.METER_INFO_IND]).equals("");
+
+		// meterInfo determines bars (deviating barlines are ignored)
+		if (!isAgnostic && miProvided) {
+			List<String> meterBars = new ArrayList<>();
+			Arrays.stream(encoding.getMetadata()
+				.get(Encoding.METADATA_TAGS[Encoding.METER_INFO_IND]).split(";"))
+				.forEach(m -> meterBars.add(m.trim()));
+			for (String m : meterBars) {
+				String bars = m.substring(m.indexOf("(") + 1, m.indexOf(")")).trim();
+				b.add(new Integer[]{
+					bars.contains("-") ? Integer.valueOf(bars.split("-")[0]) : Integer.valueOf(bars),
+					bars.contains("-") ? Integer.valueOf(bars.split("-")[1]) : Integer.valueOf(bars)
+				});
+			}
+		}
+		// barlines determine bars
+		else {
+			List<Integer[]> bi = getBarInfo();
+			int barLen = bi.get(0)[1];
+			int startBar = 1;
+			for (int i = 0; i < bi.size(); i++) {
+				int currBar = i + 1;
+				int currBarLen = bi.get(i)[1];
+				if (currBarLen != barLen) {
+					b.add(new Integer[]{startBar, currBar - 1});
+					barLen = currBarLen;
+					startBar = currBar;
+				}
+				// Last bar
+				if (i == bi.size() - 1) {
+					b.add(new Integer[]{startBar, currBar});
+				}
+			}
+		}
+
 		return b;
 	}
 
 
-	void setDiminutions(Encoding encoding) {
-		diminutions = makeDiminutions(encoding);
+	void setDiminutions(Encoding encoding, boolean isAgnostic) {
+		diminutions = makeDiminutions(encoding, isAgnostic);
 	}
 
 
 	// TESTED
-	List<Integer> makeDiminutions(Encoding encoding) {
-		List<Integer> d = new ArrayList<>();
-		Arrays.stream(encoding.getMetadata().get(Encoding.METADATA_TAGS[Encoding.DIMINUTION_IND]).split(";"))
-			.forEach(m -> d.add(Integer.valueOf(m.trim())));
-		return d;
+	List<Integer> makeDiminutions(Encoding encoding, boolean isAgnostic) {
+		boolean miProvided = !encoding.getMetadata().get(
+			Encoding.METADATA_TAGS[Encoding.METER_INFO_IND]).equals("");
+
+		// meterInfo determines diminutions
+		if (!isAgnostic && miProvided) {
+			List<Integer> d = new ArrayList<>();
+			Arrays.stream(encoding.getMetadata().get(Encoding.METADATA_TAGS[Encoding.DIMINUTION_IND]).split(";"))
+				.forEach(m -> d.add(Integer.valueOf(m.trim())));
+			return d;
+		}
+		// bars determine diminutions
+		else {
+			return new ArrayList<>(Collections.nCopies(getBars().size(), 1));
+		}
 	}
 
 
-	void setTimeSignatures(Encoding encoding) {
-		timeSignatures = makeTimeSignatures(encoding);
+	void setTimeSignatures(Encoding encoding, boolean isAgnostic) {
+		timeSignatures = makeTimeSignatures(encoding, isAgnostic);
 	}
 
 
 	// TESTED
-	List<Integer[]> makeTimeSignatures(Encoding encoding) {
+	List<Integer[]> makeTimeSignatures(Encoding encoding, boolean isAgnostic) {
 		List<Integer[]> ts = new ArrayList<>();
-		List<String> meterBars = new ArrayList<>();
-		Arrays.stream(encoding.getMetadata()
-			.get(Encoding.METADATA_TAGS[Encoding.METER_INFO_IND]).split(";"))
-			.forEach(m -> meterBars.add(m.trim()));
 		List<Integer[]> bars = getBars();
-		for (int i = 0; i < meterBars.size(); i++) {
-			String m = meterBars.get(i);
-			String meter = m.substring(0, m.indexOf("(")).trim();
-			ts.add(new Integer[]{
-				Integer.valueOf(meter.split("/")[0]), 
-				Integer.valueOf(meter.split("/")[1]),
-				i == 0 ? 0 : getTimeSignatureOnset(i, ts, bars)
-			});
-		}		
+
+		boolean miProvided = !encoding.getMetadata().get(
+			Encoding.METADATA_TAGS[Encoding.METER_INFO_IND]).equals("");
+		
+		// meterInfo determines time sigs
+		if (!isAgnostic && miProvided) {
+			List<String> meterBars = new ArrayList<>();
+			Arrays.stream(encoding.getMetadata()
+				.get(Encoding.METADATA_TAGS[Encoding.METER_INFO_IND]).split(";"))
+				.forEach(m -> meterBars.add(m.trim()));			
+			for (int i = 0; i < meterBars.size(); i++) {
+				String m = meterBars.get(i);
+				String meter = m.substring(0, m.indexOf("(")).trim();
+				ts.add(new Integer[]{
+					Integer.valueOf(meter.split("/")[0]), 
+					Integer.valueOf(meter.split("/")[1]),
+					i == 0 ? 0 : getTimeSignatureOnset(i, ts, bars)
+				});
+			}		
+		}
+		// bar lengths determine time sigs
+		else {			
+			List<Integer[]> bi = getBarInfo();
+			int barLen = bi.get(0)[1];
+			int tsInd = 0;
+			for (int i = 0; i < bi.size(); i++) {
+				int currBarLen = bi.get(i)[1];
+				if (currBarLen != barLen) {
+					Rational meter = calculateMeter(
+						new Rational(barLen, Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom())
+					);
+					ts.add(new Integer[]{
+						meter.getNumer(), 
+						meter.getDenom(), 
+						tsInd == 0 ? 0 : getTimeSignatureOnset(tsInd, ts, bars)});
+					barLen = currBarLen;
+					tsInd++; 
+				}
+				// Last bar
+				if (i == bi.size() - 1) {
+					Rational meter = calculateMeter(
+						new Rational(barLen, Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom())
+					);
+					ts.add(new Integer[]{
+						meter.getNumer(), 
+						meter.getDenom(),
+						tsInd == 0 ? 0 : getTimeSignatureOnset(tsInd, ts, bars)
+					});
+				}
+			}
+		}
+
 		return ts;
 	}
 
 
-//	// TESTED
-//	List<Integer[]> makeMeterInfo(Encoding encoding) {
-//		List<Integer[]> meterInfo = new ArrayList<>();
-//
-//		Rational prevMeterAsRat = Rational.ZERO;
-//		int prevNumBars = 0;
-//		Rational prevMt = Rational.ZERO;
-//		for (Integer[] in : encoding.getMetersBarsDiminutions()) {
-//			Integer[] currentMeterInfo = new Integer[MI_SIZE_TAB];
-//			// 1. Meter
-//			currentMeterInfo[MI_NUM] = in[0];
-//			currentMeterInfo[MI_DEN] = in[1];
-//			// 2. Bar number(s)
-//			currentMeterInfo[MI_FIRST_BAR] = in[2];
-//			currentMeterInfo[MI_LAST_BAR] = in[3];
-//			// 3. Metric times
-//			Rational currMt = prevMt.add(prevMeterAsRat.mul(prevNumBars));
-//			currMt.reduce();
-//			currentMeterInfo[MI_NUM_MT_FIRST_BAR] = currMt.getNumer();
-//			currentMeterInfo[MI_DEN_MT_FIRST_BAR] = currMt.getDenom();
-//			// 4. Diminution
-//			currentMeterInfo[MI_DIM] = in[4];
-//
-//			meterInfo.add(currentMeterInfo);
-//			prevNumBars = (in[3] - in[2]) + 1;
-//			prevMt = currMt;
-//			prevMeterAsRat = new Rational(in[0], in[1]);
-//		}
-//		return meterInfo;
-//	}
+	// TESTED
+	static Rational calculateMeter(Rational meter) {
+		// Reduce and handle exceptions
+		meter.reduce();
+		if (meter.equals(Rational.ONE)) {
+			meter = new Rational(2, 2);
+		}
+		if (meter.equals(new Rational(3, 2))) {
+			meter = new Rational(3, 2);
+		}
+		if (meter.equals(new Rational(2, 1))) {
+			meter = new Rational(4, 2);
+		}
+		if (meter.equals(new Rational(1, 2))) {
+			meter = new Rational(2, 4);
+		}
+		return meter;
+	}
 
 
 	void setDiminutionPerBar() {
@@ -192,28 +299,26 @@ public class Timeline implements Serializable {
 	//  G E T T E R S
 	//  for instance variables
 	//
-//	/**
-//	 * Gets the meterInfo.
-//	 * 
-//	 * @return A list whose elements represent the meters in the piece. Each element contains<br>
-//	 *         <ul>
-//	 *         <li> As element 0: the numerator of the meter.</li>
-//	 *         <li> As element 1: the denominator of the meter.</li>
-//	 *         <li> As element 2: the first (metric) bar in the meter.</li>
-//	 *         <li> As element 3: the last (metric) bar in the meter.</li>
-//	 *         <li> As element 4: the numerator of the metric time of that first bar.</li>
-//	 *         <li> As element 5: the denominator of the metric time of that first bar.</li>
-//	 *         <li> As element 6: the diminution for the meter.</li>
-//	 *         </ul>
-//	 *         
-//	 *         An anacrusis bar would be denoted with bar number 0; however, the current 
-//	 *         approach is to pre-pad an anacrusis bar with rests, making it a complete bar.
-//	 */
-//	public List<Integer[]> getMeterInfo() {
-//		return meterInfo;
-//	}
+	/**
+	 * Gets information on the barring.
+	 * 
+	 * @return A list of Integer[]s, each representing a bar and containing<br>
+	 *         <ul>
+	 *         <li>as element 0: its onset, in multiples of Tablature.SMALLEST_RHYTHMIC_VALUE</li>
+	 *         <li>as element 1: its length, in multiples of Tablature.SMALLEST_RHYTHMIC_VALUE</li>
+	 *         <li>as element 2: its offset, in multiples of Tablature.SMALLEST_RHYTHMIC_VALUE</li>
+	 *         </ul>
+	 */
+	public List<Integer[]> getBarInfo() {
+		return barInfo;
+	}
 
 
+	/**
+	 * Gets the bars for each time signature.
+	 * 
+	 * @return
+	 */
 	public List<Integer[]> getBars() {
 		return bars;
 	}
@@ -224,6 +329,11 @@ public class Timeline implements Serializable {
 	}
 
 
+	/**
+	 * Gets the time signatures.
+	 * 
+	 * @return
+	 */
 	public List<Integer[]> getTimeSignatures() {
 		return timeSignatures;
 	}
@@ -278,22 +388,6 @@ public class Timeline implements Serializable {
 	public int getDiminution(int bar) {
 		List<Integer[]> dpb = getDiminutionPerBar();
 		return dpb.get(ToolBox.getItemsAtIndex(dpb, 0).indexOf(bar))[1];
-	}
-
-
-	/**
-	 * Gets the number of metric bars.
-	 * 
-	 * @return An Integer[] containing<br>
-	 * <ul>
-	 * <li>as element 0: the number of metric bars, not counting any anacrusis</li>
-	 * <li>as element 1: 1 if there is an anacrusis; 0 if not</li>
-	 * </ul>
-	 */
-	// TESTED
-	public Integer[] getNumberOfMetricBars() {
-		List<Integer[]> bars = getBars();
-		return new Integer[]{bars.get(bars.size()-1)[1], 0};
 	}
 
 
@@ -362,6 +456,75 @@ public class Timeline implements Serializable {
 	}
 
 
+	// TESTED BUT NOT IN USE -->
+	/**
+	 * Calculates the metric length (in <code>TabSymbol</code> duration) of the TimeLine.
+	 * @return
+	 */
+	// TESTED
+	public int getLength() {
+		List<Integer[]> tss = getTimeSignatures();
+		List<Integer[]> bars = getBars();
+		List<Integer> inds = IntStream.range(0, tss.size()).boxed().collect(Collectors.toList());
+
+		// Calculate the duration of the bars for each tss. E.g.,
+		// Four bars of 2/2 = 2/2 * 96 * 4 = 384
+		// Four bars of 3/4 = 3/4 * 96 * 4 = 288
+		// Four bars of 3/2 = 3/2 * 96 * 4 = 576
+		List<Integer> dursTss = new ArrayList<>();
+		inds.forEach(i -> dursTss.add(
+			((int) new Rational(tss.get(i)[0], tss.get(i)[1]).mul(RhythmSymbol.BREVIS.getDuration()).toDouble())
+			* 
+			((bars.get(i)[1] - bars.get(i)[0]) + 1) 
+			)
+		);
+
+		return ToolBox.sumListInteger(dursTss);
+	}
+
+
+	/**
+	 * Gets the number of metric bars.
+	 * 
+	 * @return An Integer[] containing<br>
+	 * <ul>
+	 * <li>as element 0: the number of metric bars, not counting any anacrusis</li>
+	 * <li>as element 1: 1 if there is an anacrusis; 0 if not</li>
+	 * </ul>
+	 */
+	// TESTED
+	Integer[] getNumberOfMetricBars() {
+		List<Integer[]> bars = getBars();
+		return new Integer[]{bars.get(bars.size()-1)[1], 0};
+	}
+
+
+	// DEPRECATED -->
+	/**
+	 * Given an undiminuted metric position, gets the diminuted metric position. 
+	 * 
+	 * @param mp The undiminuted metric position.
+	 * @param meterSectionOnsets The meter section onsets (undiminuted). 
+	 * @param meterSectionOnsetsDim The meter section onsets (diminuted).
+	 * @param diminutions The meter section diminutions.
+	 * @return
+	 */
+	private static Rational getDiminutedMetricPositionOLD(Rational mp, List<Rational> meterSectionOnsets, 
+		List<Rational> meterSectionOnsetsDim, List<Integer> diminutions) {
+
+		int section = getMeterSectionOLD(mp, meterSectionOnsets);
+
+		// Set mp relative to undiminuted meter section onset
+		mp = mp.sub(meterSectionOnsets.get(section));
+		// Diminute mp
+		mp = TimeMeterTools.diminute(mp, diminutions.get(section));
+		// Set mp relative to diminuted meter section onset 
+		mp = meterSectionOnsetsDim.get(section).add(mp);
+
+		return mp;
+	}
+
+
 	/**
 	 * Given an undiminuted metric position, gets the meter section.
 	 * 
@@ -369,7 +532,6 @@ public class Timeline implements Serializable {
 	 * @param meterSectionOnsets
 	 * @return
 	 */
-	// TESTED
 	private static int getMeterSectionOLD(Rational mp, List<Rational> meterSectionOnsets) {
 		int numSections = meterSectionOnsets.size();
 		for (int i = 0; i < numSections; i++) {
@@ -389,58 +551,6 @@ public class Timeline implements Serializable {
 
 
 	/**
-	 * Given an undiminuted time, gets the meter section.
-	 * 
-	 * @param time
-	 * @param meterSectionTimes
-	 * @return
-	 */
-	// TESTED
-	private static int getMeterSectionOLD(long time, List<Long> meterSectionTimes) {
-		int numSections = meterSectionTimes.size();
-		for (int i = 0; i < numSections; i++) {
-			// If there is a next section: check if time is in section at i
-			if (i < numSections - 1) {
-				if (time >= meterSectionTimes.get(i) && time < meterSectionTimes.get(i+1)) {
-					return i;
-				}
-			}
-			// If not: time is in last section
-			else {
-				return i;
-			}
-		}
-		return -1;
-	}
-
-
-	/**
-	 * Given an undiminuted metric position, gets the diminuted metric position. 
-	 * 
-	 * @param mp The undiminuted metric position.
-	 * @param meterSectionOnsets The meter section onsets (undiminuted). 
-	 * @param meterSectionOnsetsDim The meter section onsets (diminuted).
-	 * @param diminutions The meter section diminutions.
-	 * @return
-	 */
-	// TESTED
-	private static Rational getDiminutedMetricPositionOLD(Rational mp, List<Rational> meterSectionOnsets, 
-		List<Rational> meterSectionOnsetsDim, List<Integer> diminutions) {
-
-		int section = getMeterSectionOLD(mp, meterSectionOnsets);
-
-		// Set mp relative to undiminuted meter section onset
-		mp = mp.sub(meterSectionOnsets.get(section));
-		// Diminute mp
-		mp = Utils.diminute(mp, diminutions.get(section));
-		// Set mp relative to diminuted meter section onset 
-		mp = meterSectionOnsetsDim.get(section).add(mp);
-
-		return mp;
-	}
-
-
-	/**
 	 * Given an undiminuted time, gets the diminuted time.
 	 * 
 	 * @param mp The undiminuted time.
@@ -449,7 +559,6 @@ public class Timeline implements Serializable {
 	 * @param diminutions The meter section diminutions.
 	 * @return
 	 */
-	// TESTED
 	private static long getDiminutedTimeNOTINUSE(long time, List<Long> meterSectionTimes, 
 		List<Long> meterSectionTimesDim, List<Integer> diminutions) {
 		
@@ -468,12 +577,36 @@ public class Timeline implements Serializable {
 	}
 
 
+	/**
+	 * Given an undiminuted time, gets the meter section.
+	 * 
+	 * @param time
+	 * @param meterSectionTimes
+	 * @return
+	 */
+	private static int getMeterSectionOLD(long time, List<Long> meterSectionTimes) {
+		int numSections = meterSectionTimes.size();
+		for (int i = 0; i < numSections; i++) {
+			// If there is a next section: check if time is in section at i
+			if (i < numSections - 1) {
+				if (time >= meterSectionTimes.get(i) && time < meterSectionTimes.get(i+1)) {
+					return i;
+				}
+			}
+			// If not: time is in last section
+			else {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+
 //	void setUndiminutedMeterInfoOBS(Encoding encoding) {
 //		undiminutedMeterInfoOBS = makeUndiminutedMeterInfoOBS(encoding);
 //	}
 
 
-//	// TESTED
 //	List<Integer[]> makeUndiminutedMeterInfoOBS(Encoding encoding) {
 //		List<Integer[]> undiminutedMeterInfo = new ArrayList<>();
 //
@@ -530,7 +663,6 @@ public class Timeline implements Serializable {
 //	}
 
 
-//	// TESTED
 //	List<Integer[]> makeMeterInfoOBS(Encoding encoding) {
 //		List<Integer[]> mi = new ArrayList<>();
 //

@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import de.uos.fmt.musitech.utility.math.Rational;
 import representations.Tablature;
 import representations.Tablature.Tuning;
 import structure.Timeline;
@@ -24,7 +25,7 @@ import tools.ToolBox;
 
 /**
  * @author Reinier de Valk
- * @version 12.04.2023 (last well-formedness check)
+ * @version 19.02.2024 (last well-formedness check)
  */
 public class Encoding implements Serializable {
 	private static final long serialVersionUID = 1L;
@@ -88,6 +89,7 @@ public class Encoding implements Serializable {
 	private TabSymbolSet tabSymbolSet;
 	private List<Event> events;
 	private Timeline timeline;
+	private Timeline timelineAgnostic;
 	private List<List<String>> listsOfSymbols;
 	private List<List<Integer>> listsOfStatistics;
 
@@ -140,6 +142,7 @@ public class Encoding implements Serializable {
 		if (stage == Stage.RULES_CHECKED) {
 			setEvents();
 			setTimeline();
+			setTimelineAgnostic();
 			setListsOfSymbols();
 			setListsOfStatistics();
 		}
@@ -262,6 +265,8 @@ public class Encoding implements Serializable {
 		// List all comments
 		List<String> nonEditorialComments = new ArrayList<>();
 		List<String> editorialComments = new ArrayList<>();
+
+
 		for (int i = 0; i < rawEnc.length(); i++) {
 			int ombInd = rawEnc.indexOf(omb, i);
 			int cmbInd = rawEnc.indexOf(cmb, ombInd + 1);
@@ -280,6 +285,7 @@ public class Encoding implements Serializable {
 			}
 			i = cmbInd;
 		}
+
 		// Remove all non-editorial comments from rawEnc
 		for (String comment : nonEditorialComments) {
 			rawEnc = rawEnc.replace(comment, "");
@@ -353,7 +359,12 @@ public class Encoding implements Serializable {
 
 
 	void setTimeline() {
-		timeline = new Timeline(this);
+		timeline = new Timeline(this, false);
+	}
+
+
+	void setTimelineAgnostic() {
+		timelineAgnostic = new Timeline(this, true);
 	}
 
 
@@ -555,6 +566,11 @@ public class Encoding implements Serializable {
 	}
 
 
+	public Timeline getTimelineAgnostic() {
+		return timelineAgnostic;
+	}
+
+
 	/**
 	 * Gets the lists of symbols.
 	 * 
@@ -567,7 +583,6 @@ public class Encoding implements Serializable {
 	 * <li> as element 3: mensurationSigns: contains all the individual MS in the encoding</li>
 	 * <li> as element 4: barlines: contains all the barlines (incl. double, repeat, etc.)  
 	 *                    in the encoding</li>
-	 * <li> [as element 5: allEvents: contains all the individual events in the encoding</li>] TODO remove
 	 * </ul>
 	 */
 	public List<List<String>> getListsOfSymbols() {
@@ -815,52 +830,71 @@ public class Encoding implements Serializable {
 				int end = -1;
 				String e = "";
 
-				// No content
-				if (c.equals("")) {
-					start = indT;
-					end = indT + t.length();
-					e = "METADATA ERROR -- Insert valid " + tagStrs.get(tagNum) + ".";
-				}
 				// Invalid TabSymbolSet, Tuning
-				else if (Arrays.asList(TABSYMBOLSET_TAG, TUNING_TAG).contains(t)) {
-					if (!validNames.get(tagNum).contains(c)) {
-						start = indC;
-						end = indC + c.length();
+				if (Arrays.asList(TABSYMBOLSET_TAG, TUNING_TAG).contains(t)) {
+					// No content: highlight tag
+					if (c.equals("")) {
+						start = indT;
+						end = indT + t.length();
 						e = "METADATA ERROR -- Insert valid " + tagStrs.get(tagNum) + ".";
+					}
+					// Invalid content: highlight content
+					else {
+						if (!validNames.get(tagNum).contains(c)) {
+							start = indC;
+							end = indC + c.length();
+							e = "METADATA ERROR -- Insert valid " + tagStrs.get(tagNum) + ".";
+						}
 					}
 				}
 				// Invalid diminution
-				else if (Arrays.asList(DIMINUTION_TAG).contains(t)) { // TODO
-					// as meterInfo
+				else if (Arrays.asList(DIMINUTION_TAG).contains(t)) {
+					// Invalid content: highlight content
+					if (!c.equals("")) {
+						List<String> dimItems = 
+							Arrays.stream(c.split(";")).map(String::trim).collect(Collectors.toList());
+						for (String dimItem : dimItems) {
+							int indDimItem = rawEnc.indexOf(dimItem, indC);
+							if (!validNames.get(tagNum).contains(dimItem)) {
+								e = "METADATA ERROR -- Insert valid diminution.";
+								start = indDimItem;
+								end = indDimItem + dimItem.length();
+								break;
+							}
+						}
+					}
 				}
 				// Invalid meterInfo
 				else if (t.equals(METER_INFO_TAG)) {
-					List<String> miItems = 
-						Arrays.stream(c.split(";")).map(String::trim).collect(Collectors.toList());
-					List<Integer> prevBarNums = new ArrayList<>(Arrays.asList(-1));
-					for (String miItem : miItems) {
-						int indMiItem = rawEnc.indexOf(miItem);
-						// Check formatting 
-						if (!miItem.contains(" ")) {
-							e = "METADATA ERROR -- Insert valid time signature and bars.";
-						}
-						// Check meter validity and bars validity
-						else {
-							String meterStr = miItem.substring(0, miItem.indexOf(" ")).trim();
-							String barsStr = miItem.substring(miItem.indexOf(" ")).trim();
-							int barsStrCheck = checkBarsString(barsStr, prevBarNums.get(prevBarNums.size() - 1)); 
-							prevBarNums.add(barsStrCheck);
-							if (!validNames.get(tagNum).contains(meterStr)) {
-								e = "METADATA ERROR -- Insert valid time signature.";
+					// No content allowed
+					if (!c.equals("")) {
+						List<String> miItems = 
+							Arrays.stream(c.split(";")).map(String::trim).collect(Collectors.toList());
+						List<Integer> prevBarNums = new ArrayList<>(Arrays.asList(-1));
+						for (String miItem : miItems) {
+							int indMiItem = rawEnc.indexOf(miItem, indC);
+							// Check formatting 
+							if (!miItem.contains(" ")) {
+								e = "METADATA ERROR -- Insert valid time signature and bars.";
 							}
-							else if (barsStrCheck == -1) {
-								e = "METADATA ERROR -- Insert valid bars.";
-							}						
-						}
-						if (!e.equals("")) {
-							start = indMiItem;
-							end = indMiItem + miItem.length();
-							break;
+							// Check meter validity and bars validity
+							else {
+								String meterStr = miItem.substring(0, miItem.indexOf(" ")).trim();
+								String barsStr = miItem.substring(miItem.indexOf(" ")).trim();
+								int barsStrCheck = checkBarsString(barsStr, prevBarNums.get(prevBarNums.size() - 1)); 
+								prevBarNums.add(barsStrCheck);
+								if (!validNames.get(tagNum).contains(meterStr)) {
+									e = "METADATA ERROR -- Insert valid time signature.";
+								}
+								else if (barsStrCheck == -1) {
+									e = "METADATA ERROR -- Insert valid bars.";
+								}						
+							}
+							if (!e.equals("")) {
+								start = indMiItem;
+								end = indMiItem + miItem.length();
+								break;
+							}
 						}
 					}
 				}
@@ -1286,16 +1320,21 @@ public class Encoding implements Serializable {
 						}
 						List<String> symbols = Arrays.asList(event.split("\\" + ss));
 						// LAYOUT RULE 7: A vertical sonority can contain only one TabSymbol per course
+						// NB: exception is German lute tablature (see Ochsenkun)
 						List<Integer> courses = new ArrayList<>();
 						symbols.forEach(item -> { if (Symbol.getTabSymbol(item, tss) != null) {
 							courses.add(Symbol.getTabSymbol(item, tss).getCourse());}});
 						List<Integer> uniqueCourses = 
 							courses.stream().distinct().collect(Collectors.toList());
-						boolean lr7Broken = courses.size() > uniqueCourses.size();
+						boolean lr7Broken = (courses.size() > uniqueCourses.size()) && 
+							!tss.getType().equals("German");
+//						boolean lr7Broken = courses.size() > uniqueCourses.size();
+
 						// LAYOUT RULE 8: A vertical sonority must be encoded in a fixed 
 						// sequence. I.e.,
 						// - Any RS must be encoded first
 						// - Any TS must follow, encoded with the one on the lowest course first 
+						//   NB: exception is German lute tablature (see Ochsenkun)
 						List<Integer> orderedReversedCourses = 
 							courses.stream().sorted(Comparator.reverseOrder()).collect(
 							Collectors.toList());
@@ -1304,7 +1343,11 @@ public class Encoding implements Serializable {
 							symbolIsRs.add(Symbol.getRhythmSymbol(item) != null));					
 						boolean firstIsNotRs = (symbols.size() > 1 && symbolIsRs.contains(true) && 
 							symbolIsRs.indexOf(true) != 0);
-						boolean lr8Broken = firstIsNotRs || !courses.equals(orderedReversedCourses);
+						
+						boolean lr8Broken = firstIsNotRs || (
+							!courses.equals(orderedReversedCourses) && !tss.getType().equals("German")
+						);
+//						boolean lr8Broken = firstIsNotRs || !courses.equals(orderedReversedCourses);
 						if (lr7Broken || lr8Broken) {
 							int errorInd = 
 								inds.indexOf((cleanEnc.substring(leftIndEvent, 
@@ -1487,7 +1530,8 @@ public class Encoding implements Serializable {
 	 * 
 	 * @param event
 	 * @param tss
-	 * @param type One of "TabSymbol", "RhythmSymbol", "rest", "MensurationSign", "barline".
+	 * @param type One of "TabSymbol" (contains TabSymbols), "RhythmSymbol" (starts with 
+	 *             RhythmSymbol), "rest", "MensurationSign", "barline".
 	 * @return
 	 */
 	// TESTED
@@ -1503,29 +1547,31 @@ public class Encoding implements Serializable {
 			event = event.substring(0, event.indexOf(space));
 		}
 
-		if (type.equals("TabSymbol")) {
-			for (String s : event.split("\\" + ss)) {
-				if (Symbol.getTabSymbol(s, tss) != null) {
-					return true;
+		if (!event.equals("")) {
+			if (type.equals("TabSymbol")) {
+				for (String s : event.split("\\" + ss)) {
+					if (Symbol.getTabSymbol(s, tss) != null) {
+						return true;
+					}
 				}
 			}
-		}
-		else if (type.equals("RhythmSymbol")) {
-			return Symbol.getRhythmSymbol(event.substring(0, event.indexOf(ss))) != null;
-		}
-		else if (type.equals("rest")) {
-			return (Symbol.getRhythmSymbol(event.substring(0, event.indexOf(ss))) != null) &&
-				(event.indexOf(ss) == event.lastIndexOf(ss));
-		}		
-		else if (type.equals("MensurationSign")) {
-			return Symbol.getMensurationSign(event.substring(0, event.indexOf(ss))) != null;
-		}
-		else if (type.equals("barline")) {
-			return Symbol.getConstantMusicalSymbol(event.substring(0, event.indexOf(ss))) != null &&
-				Symbol.getConstantMusicalSymbol(event.substring(0, event.indexOf(ss))).isBarline();
-		} 
-		else {
-			return false;
+			else if (type.equals("RhythmSymbol")) {
+				return Symbol.getRhythmSymbol(event.substring(0, event.indexOf(ss))) != null;
+			}
+			else if (type.equals("rest")) {
+				return (Symbol.getRhythmSymbol(event.substring(0, event.indexOf(ss))) != null) &&
+					(event.indexOf(ss) == event.lastIndexOf(ss));
+			}		
+			else if (type.equals("MensurationSign")) {
+				return Symbol.getMensurationSign(event.substring(0, event.indexOf(ss))) != null;
+			}
+			else if (type.equals("barline")) {
+				return Symbol.getConstantMusicalSymbol(event.substring(0, event.indexOf(ss))) != null &&
+					Symbol.getConstantMusicalSymbol(event.substring(0, event.indexOf(ss))).isBarline();
+			} 
+			else {
+				return false;
+			}
 		}
 		return false;
 	}
@@ -1630,11 +1676,14 @@ public class Encoding implements Serializable {
 	 */
 	// NOT TESTED (wrapper method)
 	public void augment(int thresholdDur, int rescaleFactor, String augmentation) {		
-		String rawEncAugm = 
-			augmentHeader(getHeader(), getTimeline(), getMetadata(), rescaleFactor, augmentation) + 				
-			"\r\n\r\n" + 
-			recompose(augmentEvents(decompose(true, true), getTimeline(), getTabSymbolSet(), 
-			thresholdDur, rescaleFactor, augmentation));
+		String rawEncAugm = augmentHeader(
+			getHeader(), getTimeline(), getMetadata(), rescaleFactor, augmentation
+		) + 
+		"\r\n\r\n" + 
+		recompose(augmentEvents(
+			decompose(true, true), getTimeline(), getTabSymbolSet(), 
+			thresholdDur, rescaleFactor, augmentation)
+		);
 		this.init(rawEncAugm, getPiecename(), Stage.RULES_CHECKED);
 	}
 
@@ -1888,6 +1937,11 @@ public class Encoding implements Serializable {
 
 		List<List<Integer>> barlineSegmentInds = getStaffSegmentIndices("barline");
 		List<List<Integer>> footnoteSegmentInds = getStaffSegmentIndices("footnote");
+		
+		List<Integer[]> sl = getStaffLength();
+		int staffLength = sl.get(0)[0];
+		int longestStaff = sl.get(0)[1];
+		boolean longestStaffStartsWithBarline = sl.get(1)[longestStaff] == 1;
 
 		// Add selected metadata values
 		if (showHeader) {
@@ -1977,35 +2031,25 @@ public class Encoding implements Serializable {
 				lastEncSymbol = encSymbol;
 			}
 			// Make staff and populate it
-			Staff staff = new Staff(tssSelected.getType(), getStaffLength());
+			Staff staff = new Staff(tssSelected.getType(), staffLength);
 			staff.populate(staffContent);
 			// Add footnotes
 			List<Integer> currFootnoteSegmentInds = footnoteSegmentInds.get(staffInd);
 			staff.addFootnoteNumbers(currFootnoteSegmentInds, firstFootnote);
 			firstFootnote += currFootnoteSegmentInds.size();
 			// Add bar numbers
-//			boolean containsBarLines = false;
-//			for (List<Integer> l : barlineSegmentInds) {
-//				if (l.size() != 0) {
-//					containsBarLines = true;
-//					break;
-//				}
-//			}
-
-
-			boolean startsWithBarline = 
-				Symbol.getConstantMusicalSymbol(firstEncSymbol) != null && 
-				Symbol.getConstantMusicalSymbol(firstEncSymbol).isBarline();
-			boolean endsWithBarline = 
-				Symbol.getConstantMusicalSymbol(lastEncSymbol) != null && 
-				Symbol.getConstantMusicalSymbol(lastEncSymbol).isBarline();
+			boolean startsWithBarline = assertEventType(firstEncSymbol, null, "barline");
+			boolean endsWithBarline = assertEventType(lastEncSymbol, null, "barline");
 			if (barlineSegmentInds.get(staffInd).size() > 0) {
 				staff.addBarNumbers(barlineSegmentInds.get(staffInd), firstBar, 
 					startsWithUnfinishedBar, startsWithBarline,	endsWithBarline);
 			}
 
 			// System traversed? Add to tab and update information for the next system
-			tab += staff.visualise() + SPACE_BETWEEN_STAFFS;
+			tab += staff.visualise(
+				!startsWithBarline, staffLength + 
+				(longestStaffStartsWithBarline ? Staff.LEFT_MARGIN - 1 : Staff.LEFT_MARGIN)
+			) + SPACE_BETWEEN_STAFFS;
 			startsWithUnfinishedBar = endsWithBarline ? false : true;
 			if (staffInd < barlineSegmentInds.size() - 1) {
 				firstBar = getSystemBarNumbers().get(staffInd + 1).get(0);
@@ -2014,7 +2058,7 @@ public class Encoding implements Serializable {
 			sbiInd = nextSbiInd;
 			nextSbiInd = cleanEnc.indexOf(sbi, sbiInd + 1);
 		}
-		
+
 		// Add formatted footnotes
 		if (showFootnotes) {
 			tab += SPACE_BETWEEN_STAFFS.repeat(2);
@@ -2036,7 +2080,7 @@ public class Encoding implements Serializable {
 	 * <li>In case of a system without any events of the given type, the <code>List</code>
 	 *     remains empty.</li>
 	 * <li>In case of a barline that spans multiple segments, the index of the first 
-	 *     segment is given.</li>
+	 *     pipe segment is given.</li>
 	 * </ul>
 	 */
 	// TESTED
@@ -2102,13 +2146,24 @@ public class Encoding implements Serializable {
 	 *  system. The number of segments needed for a system can be calculated by looking at the 
 	 *  CMS only, as it equals the sum of (i) twice the system's number of spaces (each space 
 	 *  is preceded by an event, and both the event and the space need one segment); and (ii) 
-	 *  the total length of all the system's barlines.
+	 *  the total length of all the system's barlines (including any decorative opening barline).
 	 *  
-	 *  @return The lenght of the staff, measured in staff segments.
+	 *  @return A <code>List</code> of <code>Integer[]</code>s, containing
+	 * <ul>
+	 * <li>As element 0: an <code>Integer[]</code> containing</li>
+	 *     <ul>
+	 *     <li>As element 0: the length of the staff, measured in staff segments.</li>
+	 *     <li>As element 1: the sequence number (0-based) of that staff.</li>
+	 *     </ul>
+	 * </li>
+	 * <li>As element 1: an <code>Integer[]</code> containing, for each staff, whether (1)
+	 *     or not (0) that staff starts with a decorative opening barline.
+	 * </li>
+	 * </ul>
 	 **/
 	// TESTED
-	int getStaffLength() {
-		int largestStaffLength = 0;
+	List<Integer[]> getStaffLength() {
+		List<Integer[]> slInfo = new ArrayList<>();
 
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		String sp = Symbol.SPACE.getEncoding();
@@ -2118,7 +2173,11 @@ public class Encoding implements Serializable {
 		String cleanEncoding = getCleanEncoding();
 		String[] allSystems = cleanEncoding.substring(0, cleanEncoding.indexOf(ebi)).split(sbi);
 
-		for (String system : allSystems) {
+		slInfo.add(new Integer[]{0, 0});
+		slInfo.add(new Integer[allSystems.length]);
+
+		for (int i = 0; i < allSystems.length; i++) {
+			String system = allSystems[i];
 			int lengthCurrSystem = 0;
 			int ssIndex = -1;
 			int nextSsIndex = system.indexOf(ss, ssIndex + 1);
@@ -2138,13 +2197,20 @@ public class Encoding implements Serializable {
 				}
 				ssIndex = nextSsIndex;
 				nextSsIndex = system.indexOf(ss, ssIndex + 1);
+
 			}
 			// Reset
-			if (lengthCurrSystem > largestStaffLength) {
-				largestStaffLength = lengthCurrSystem;
+			if (lengthCurrSystem > slInfo.get(0)[0]) {
+				slInfo.get(0)[0] = lengthCurrSystem;
+				slInfo.get(0)[1] = i;
 			}
+			// Update 
+			slInfo.get(1)[i] = Encoding.assertEventType(
+				system.substring(0, system.indexOf(ss)), null, "barline"
+			) ? 1 : 0;
 		}
-		return largestStaffLength;
+
+		return slInfo;
 	}
 
 
@@ -2189,11 +2255,13 @@ public class Encoding implements Serializable {
 		String ebi = Symbol.END_BREAK_INDICATOR;
 		String sts = Staff.STAFF_SEGMENT;
 		int numTabs = 3;
-		String emptyLine = ToolBox.tabify("", numTabs);
+		String emptyLine = ToolBox.tabify("", numTabs, false);
 
 		// Get all footnoteEvents
 		List<Event> footnoteEvents = new ArrayList<>();
-		getEvents().forEach(e -> { if (e.getFootnote() != null) { footnoteEvents.add(e); }});
+		getEvents().forEach(e -> { 
+			if (e.getFootnote() != null) { footnoteEvents.add(e); }
+		});
 
 		// Remove any follow-up footnotes; collect no-barline and misplaced-barline bars
 		List<Event> footnotes = new ArrayList<>();
@@ -2217,8 +2285,12 @@ public class Encoding implements Serializable {
 			}
 		}
 
-		// Get header (NB: not all fields are actually needed)
+		// Get header; remove meterInfo (NB: not all fields are actually needed)
 		String hdr = getHeader();
+		int startInd = hdr.indexOf(METER_INFO_TAG);
+		int endInd = hdr.indexOf(CLOSE_METADATA_BRACKET, startInd);
+		String miStr = hdr.substring(startInd, endInd);
+		hdr = hdr.replace(miStr, METER_INFO_TAG + ":");
 
 		// 1. Add footnote lists to allFootnoteLists. A footnote list is a list of 
 		// Staff.STAFF_LINES strings, representing the individual lines of a footnote
@@ -2249,130 +2321,127 @@ public class Encoding implements Serializable {
 					currFnEnc += sp + ss;
 				}
 
-				// Check if the encoding has any doubled symbols: two symbols on a single 
-				// course, either by mistake or intentionally (German tablature unisons)
-				// a. No doubled symbols 
-				if (!currFnEnc.contains("/")) {
-					currFnStaffPart = 
-						new Encoding(hdr + "\r\n" + currFnEnc + ebi, "", 
-						Stage.RULES_CHECKED).visualise(argTss, false, false, true);
-				}	
-				// b. Doubled symbols
-				else {
-					// 1. Add each footnote event (split into lines) to allCurrFnEventStaffPartSplit
-					List<String[]> allCurrFnEventStaffPartSplit = new ArrayList<>();
-					for (String currFnEventEnc : currFnEnc.split(sp + ss)) {
-						currFnEventEnc += sp + ss;
-						String currFnEventStaffPart;
-						String[] currFnEventStaffPartSplit;
-						// If the event contains a doubled symbol 
-						if (currFnEventEnc.contains("/")) {
-//							System.out.println(currFnEventEnc);
-							// 1. Make currFnEventStaffPart
-							// Remove doubled symbol from currFnEventEnc
-							String toRemove = 
-								currFnEventEnc.substring(currFnEventEnc.indexOf("/"), 
-								currFnEventEnc.indexOf(ss, currFnEventEnc.indexOf("/")) + 1);
-							currFnEventEnc = currFnEventEnc.replace(toRemove, "");
-							currFnEventStaffPart = 
-								new Encoding(hdr + "\r\n" + currFnEventEnc + ebi, "", 
-								Stage.RULES_CHECKED).visualise(argTss, false, false, true);
-//							System.out.println(toRemove);
-//							System.out.println(currFnEventEnc);
-//							System.out.println(currFnEventStaffPart);
-	
-							// 2. Split currFnEventStaffPart into lines and adapt them
-							currFnEventStaffPartSplit = currFnEventStaffPart.split("\n");
-//							System.out.println(Arrays.asList(currFnEventStaffPartSplit));
-							// Get doubled symbol and changeLine for doubled symbol
-							String dbld = 
-								toRemove.substring(toRemove.indexOf("/") + 1, toRemove.indexOf(ss));
-							TabSymbol tsInArgTss = 
-								Symbol.getTabSymbolEquivalent(Symbol.getTabSymbol(dbld, getTabSymbolSet()),
-								argTss);
-							String fret = tsInArgTss.getSymbol();
-							int course = tsInArgTss.getCourse();
-							int changeLine = -1;
-							if (argTss == TabSymbolSet.FRENCH || argTss == TabSymbolSet.SPANISH) {
-								changeLine = Staff.TOP_LINE + (course - 1);
-							}
-							else if (argTss == TabSymbolSet.ITALIAN) {
-								changeLine = Staff.BOTTOM_LINE - (course - 1);
-							}
-							for (int i = 0; i < currFnEventStaffPartSplit.length; i++) {
-								String line = currFnEventStaffPartSplit[i];
-								// Insert staff segments
-								if (line.contains(sts) && i != Staff.RHYTHM_LINE) {
-									line = ToolBox.insertIntoString(line, sts.repeat(2),
-										(line.lastIndexOf(sts) + 1));
-								}
-								// Add empty string
-								else {
-									line = line + " ".repeat(2);
-								}
-								// Add doubled symbol
-								if (i == changeLine) {
-									int ind = ToolBox.getFirstIndexOfNot(line, 
-										Arrays.asList(new String[]{" "}));
-									String toReplace = 
-										line.substring(ind, line.lastIndexOf(sts) + 1);
-									String replacement = 
-										toReplace.substring(0, 1) + "/" + fret + sts;
-									line = line.replace(toReplace, replacement);
-								}
-								currFnEventStaffPartSplit[i] = line;
-							}
-							// 3. Add
-							allCurrFnEventStaffPartSplit.add(currFnEventStaffPartSplit);
-						}							
-						// If the event does not contain a doubled symbol
-						else {
-							// 1. Make currFnEventStaffPart
-							currFnEventStaffPart = 
-								new Encoding(hdr + "\r\n" + currFnEventEnc + ebi, "",
-								Stage.RULES_CHECKED).visualise(argTss, false, false, true);
-							// 2. Split currFnEventStaffPart into lines
-							currFnEventStaffPartSplit = currFnEventStaffPart.split("\n");
-							// 3. Add
-							allCurrFnEventStaffPartSplit.add(currFnEventStaffPartSplit);
+				// 1. Add each footnote event (split into lines) to allCurrFnEventStaffPartSplit
+				List<String[]> allCurrFnEventStaffPartSplit = new ArrayList<>();
+				for (String currFnEventEnc : currFnEnc.split(sp + ss)) {
+					// The encoding can have doubled symbols: two symbols on a single course,
+					// either by mistake or intentionally (German tablature unisons)
+					// Count unique symbols
+					String[] currFnEventEncSplit = currFnEventEnc.split("\\" + ss);
+					int numUniqueSymbols = Arrays.asList(currFnEventEncSplit)
+						.stream().distinct().collect(Collectors.toList()).size();
+
+					// Re-add space and SS 
+					currFnEventEnc += sp + ss;
+
+					String currFnEventStaffPart;
+					String[] currFnEventStaffPartSplit;
+					// If the event does not contain a doubled symbol, or if the tablature style 
+					// to visualise is German
+					if (currFnEventEncSplit.length == numUniqueSymbols || argTss.getType().equals("German")) {
+						// 1. Make currFnEventStaffPart
+						currFnEventStaffPart = new Encoding(
+							hdr + "\r\n" + currFnEventEnc + ebi, "", Stage.RULES_CHECKED
+						).visualise(argTss, false, false, true);
+						// 2. Split currFnEventStaffPart into lines
+						currFnEventStaffPartSplit = currFnEventStaffPart.split("\n");
+						// 3. Add
+						allCurrFnEventStaffPartSplit.add(currFnEventStaffPartSplit);
+					}					
+					// If the event contains a doubled symbol
+					else {
+						String dbld = ToolBox.getDuplicates(Arrays.asList(currFnEventEncSplit)).get(0);
+
+						// 1. Make currFnEventStaffPart
+						// Remove doubled symbol from currFnEventEnc
+						currFnEventEnc = currFnEventEnc.replaceFirst(dbld, "");
+						currFnEventStaffPart = new Encoding(
+							hdr + "\r\n" + currFnEventEnc + ebi, "", Stage.RULES_CHECKED
+						).visualise(argTss, false, false, true);
+
+						// 2. Split currFnEventStaffPart into lines and adapt them
+						currFnEventStaffPartSplit = currFnEventStaffPart.split("\n");
+						// Get changeLine for doubled symbol
+						TabSymbol tsInArgTss = Symbol.getTabSymbolEquivalent(
+							Symbol.getTabSymbol(dbld, getTabSymbolSet()), argTss
+						);
+						String fret = tsInArgTss.getSymbol();
+						int course = tsInArgTss.getCourse();
+						int changeLine = -1;
+						if (argTss == TabSymbolSet.FRENCH || argTss == TabSymbolSet.SPANISH) {
+							changeLine = Staff.TOP_LINE + (course - 1);
 						}
-					}
-					// 2. Combine allCurrFnEventStaffPartSplit into currFnStaffPart
-					int numLines = allCurrFnEventStaffPartSplit.get(0).length;
-					int numEvents = allCurrFnEventStaffPartSplit.size();
-					// For each line
-					for (int i = 0; i < numLines; i++) {
-						// For each event
-						for (int j = 0; j < numEvents; j++) {
-							// Get line i for event j
-							String l = allCurrFnEventStaffPartSplit.get(j)[i];
-							// Remove whitespace if there is more than one event
-							if (numEvents > 1) {
-								// First and middle event : remove right margin
-								if (j == 0 || (j > 0 && j < numEvents-1)) {
-									l = l.substring(0, l.length() - Staff.RIGHT_MARGIN);
-								}
-								// Middle event and last event: remove left margin
-								if ((j > 0 && j < numEvents-1) || (j == numEvents-1)) {
-									l = l.substring(Staff.LEFT_MARGIN);
-								}
+						else if (argTss == TabSymbolSet.ITALIAN) {
+							changeLine = Staff.BOTTOM_LINE - (course - 1);
+						}
+						for (int i = 0; i < currFnEventStaffPartSplit.length; i++) {
+							String line = currFnEventStaffPartSplit[i];
+							// Insert staff segments
+							if (line.contains(sts) && i != Staff.RHYTHM_LINE) {
+								line = ToolBox.insertIntoString(
+									line, sts.repeat(2), (line.lastIndexOf(sts) + 1)
+								);
 							}
-							currFnStaffPart += l;
+							// Add empty string
+							else {
+								line = line + " ".repeat(2);
+							}
+							// Add doubled symbol
+							if (i == changeLine) {
+								int ind = ToolBox.getFirstIndexOfNot(
+									line, Arrays.asList(new String[]{" "})
+								);
+								String toReplace = line.substring(
+									ind, line.lastIndexOf(sts) + 1
+								);
+								String replacement = 
+									toReplace.substring(0, 1) + "/" + fret + sts;
+								line = line.replace(toReplace, replacement);
+							}
+							currFnEventStaffPartSplit[i] = line;
 						}
-						if (i < numLines-1) {
-							currFnStaffPart += "\n"; 
-						}
+						// 3. Add
+						allCurrFnEventStaffPartSplit.add(currFnEventStaffPartSplit);
 					}
 				}
+
+				// 2. Combine allCurrFnEventStaffPartSplit into currFnStaffPart
+				int numLines = allCurrFnEventStaffPartSplit.get(0).length;
+				int numEvents = allCurrFnEventStaffPartSplit.size();
+				// For each line
+				for (int i = 0; i < numLines; i++) {
+					// For each event
+					for (int j = 0; j < numEvents; j++) {
+						// Get line i for event j
+						String l = allCurrFnEventStaffPartSplit.get(j)[i];
+						// Remove whitespace if there is more than one event
+						if (numEvents > 1) {
+							// First and middle event : remove right margin
+							if (j == 0 || (j > 0 && j < numEvents-1)) {
+								l = l.substring(0, l.length() - Staff.RIGHT_MARGIN);
+							}
+							// Middle event and last event: remove left margin
+							if ((j > 0 && j < numEvents-1) || (j == numEvents-1)) {
+								l = l.substring(Staff.LEFT_MARGIN);
+							}
+						}
+						currFnStaffPart += l;
+					}
+					if (i < numLines-1) {
+						currFnStaffPart += "\n"; 
+					}
+				}
+
 				// Split currFnStaffPart into lines. currFnStaffPartSplit has Staff.STAFF_LINES
-				// lines, and both begins with an empty line and ens with one (for the 
+				// lines, and both begins with an empty line and ends with one (for the 
 				// content of Staff.BAR_NUMS_LINE and Staff.FOOTNOTES_LINE, respectively)
 				String[] currFnStaffPartSplit = currFnStaffPart.split("\n");
 
 				// 2. Get the text part of the footnote (generally, 'in source')
-				String currFnTextPart = 
-					currFnStr.substring(currFnStr.lastIndexOf("'") + 1, 
-					currFnStr.length()).trim();
+				String currFnTextPart = currFnStr.substring(
+					currFnStr.lastIndexOf("'") + 1, currFnStr.length()
+				).trim();
+
 				// Break the text part into lines and add them to the staff part lines, 
 				// starting at Staff.UPPER_MIDDLE_LINE
 				int lenLine = 
@@ -2390,7 +2459,7 @@ public class Encoding implements Serializable {
 						i < Staff.UPPER_MIDDLE_LINE + currFnTextPartBroken.size()) {
 						// Prepend prefix: footnote number for first line; buffer for other
 						line = (i == Staff.UPPER_MIDDLE_LINE) ? currFnNumStr + line : 
-							fnNumBuffer + line; 
+							fnNumBuffer + line;
 						// Append text part
 						line += " " + currFnTextPartBroken.get(i - Staff.UPPER_MIDDLE_LINE);
 					}
@@ -2407,7 +2476,7 @@ public class Encoding implements Serializable {
 							line = fnNumBuffer + line;
 						}
 					}
-					currFnList.add(ToolBox.tabify(line, numTabs));
+					currFnList.add(ToolBox.tabify(line, numTabs, false));
 				}
 			}
 			// b. Text footnote
@@ -2420,9 +2489,10 @@ public class Encoding implements Serializable {
 				// Break footnote into lines and add
 				int maxLen = ((ToolBox.TAB_LEN * numTabs) - 1) - (currFnNumStr.length() + 1);
 				for (String line : ToolBox.breakIntoLines(currFnStr, maxLen)) {
+					boolean footnoteTextLine = currFnList.size() == Staff.UPPER_MIDDLE_LINE;
 					currFnList.add(ToolBox.tabify(
-						((currFnList.size() == Staff.UPPER_MIDDLE_LINE) ?
-						currFnNumStr : fnNumBuffer) + " " + line, numTabs));
+						((footnoteTextLine ? currFnNumStr : fnNumBuffer) + " " + line), 
+						numTabs, false));
 				}
 				// Append with empty lines
 				for (int j = currFnList.size(); j < Staff.LEN_STAFF_GRID; j++) {
@@ -2450,10 +2520,12 @@ public class Encoding implements Serializable {
 			allFootnoteLists.add(null);
 			numFn = allFootnoteLists.size();
 		}
+
 		// Create and stringify footnote list groups
 		for (int i = 0; i < numFn; i+=fnListGroupSize) {
 			List<List<String>> currFnListGroup = 
 				allFootnoteLists.subList(i, i + fnListGroupSize);
+
 			String currFnListGroupStr = "";
 			// For each line in the footnote list
 			for (int j = 0; j < currFnListGroup.get(0).size() ; j++) {
@@ -2495,6 +2567,7 @@ public class Encoding implements Serializable {
 					(i == 0 ? "\r\n" : ""));
 			}
 		}
+
 		return footnotesStr;
 	}
 
@@ -2629,6 +2702,57 @@ public class Encoding implements Serializable {
 	}
 
 
+	// TESTED BUT NOT IN USE -->
+	// TESTED
+	static int getTotalEventLength(List<Event> events, TabSymbolSet tss) {
+		int eventsLength = 0;
+		int prev = -1;
+		for (Event e : events) {
+			String eStr = e.getEncoding();
+			if (assertEventType(eStr, tss, "RhythmSymbol") || assertEventType(eStr, tss, "rest")) {
+				int dur = Symbol.getRhythmSymbol(
+					eStr.substring(0, eStr.indexOf(Symbol.SYMBOL_SEPARATOR))).getDuration();
+				eventsLength += dur;
+				prev = dur;
+			}
+			else {
+				if (assertEventType(eStr, tss, "TabSymbol")) {
+					eventsLength += prev;
+				}
+			}
+		}
+		return eventsLength;
+	}
+
+
+	// DEPRECATED -->
+	private static String[] checkComplianceToMetricStructure(Timeline tl, TabSymbolSet tss, List<Event> events) {
+		int timelineLength = tl.getLength();
+		int eventsLength = getTotalEventLength(events, tss);
+
+		if (timelineLength != eventsLength) {
+			int diff = Math.abs(timelineLength - eventsLength);
+			int numNotes = 0;
+			String type = "";
+			if (diff % RhythmSymbol.MINIM.getDuration() == 0) {
+				numNotes = (int) new Rational(diff, RhythmSymbol.MINIM.getDuration()).toDouble();
+				type = "quarter";
+			}
+			else if (diff % RhythmSymbol.SEMIMINIM.getDuration() == 0) {
+				numNotes = (int) new Rational(diff, RhythmSymbol.SEMIMINIM.getDuration()).toDouble();
+				type = "eighth";
+			}
+			else {
+				numNotes = diff;
+			}
+			return new String[]{
+				String.valueOf(numNotes), type, timelineLength > eventsLength ? "short" : "long"
+			};
+		}
+		return null;
+	}
+
+
 	/**
 	 * Gets all the events. 
 	 * 
@@ -2636,7 +2760,6 @@ public class Encoding implements Serializable {
 	 * kept in place (i.e, form separate events). A rhythm symbol (the last active one)
 	 * is assigned to each event that is lacking one.
 	 */
-	// TESTED
 	private List<String> getEventsOLD() {
 		String enc = splitHeaderAndEncodingOLD()[1];
 
@@ -2730,7 +2853,6 @@ public class Encoding implements Serializable {
      * <li>A <code>String[]</code> containing the relevant error information if not.</li>
      * </ul>
 	 */
-	// NOT TESTED (wrapper method)
 	private static String[] checkEncodingOLD(String rawEnc, String cleanEnc, TabSymbolSet tss) {
 		Integer[] indsAligned = alignRawAndCleanEncoding(rawEnc, cleanEnc);
 		String[] checkVR = checkValidityRules(cleanEnc, indsAligned);
@@ -3249,7 +3371,6 @@ public class Encoding implements Serializable {
 //	 *     segment is given.</li>
 //	 * </ul>
 //	 */
-//	// TESTED
 //	private List<List<Integer>> getStaffSegmentIndicesOLD(String type) {
 //		List<List<Integer>> segmentIndices = new ArrayList<>();
 //
@@ -3499,7 +3620,6 @@ public class Encoding implements Serializable {
 	 * @param  meterInfo
 	 * @return
 	 */
-	// TESTED
 	private void reverseOLD(List<Integer[]> meterInfo) {
 		String header = getHeader();
 
@@ -3571,7 +3691,6 @@ public class Encoding implements Serializable {
 	 * @param dur The given duration (as a <code>RhythmSymbol</code> duration). 
 	 * @return
 	 */
-	// TESTED
 	private Encoding deornamentOLD(int dur) {
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
@@ -3653,7 +3772,6 @@ public class Encoding implements Serializable {
 	 * @param factor
 	 * @return
 	 */
-	// TESTED
 	private Encoding stretchOLD(List<Integer[]> meterInfo, double factor) {
 		String header = getHeader();
 
@@ -3721,7 +3839,6 @@ public class Encoding implements Serializable {
 	 * 
 	 * @return
 	 */
-	// TESTED
 	private String deornamentCleanEncodingOLD(int thresholdDur) {
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		String sbi = Symbol.SYSTEM_BREAK_INDICATOR;
@@ -3880,7 +3997,7 @@ public class Encoding implements Serializable {
 	private String reverseCleanEncoding() {
 		List<String> events = decompose(true, true);
 		Collections.reverse(events);
-		events.forEach(e -> System.out.println(e));
+//		events.forEach(e -> System.out.println(e));
 		return recompose(events.subList(1, events.size())) + events.get(0);
 	}
 

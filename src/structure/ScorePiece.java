@@ -26,11 +26,11 @@ import de.uos.fmt.musitech.data.time.TimeSignature;
 import de.uos.fmt.musitech.data.time.TimeSignatureMarker;
 import de.uos.fmt.musitech.data.time.TimedMetrical;
 import de.uos.fmt.musitech.utility.math.Rational;
+import tools.labels.LabelTools;
 import representations.Tablature;
 import representations.Transcription;
-import structure.metric.Utils;
 import tools.ToolBox;
-import utility.DataConverter;
+import tools.music.TimeMeterTools;
 
 /**
  * Convenience class, complementing <code>Piece</code>. 
@@ -304,9 +304,9 @@ public class ScorePiece extends Piece {
 	// TESTED
 	static TimedMetrical calculateEndMarker(long tLastTimedMetrical, double tmpLastTimedMetrical, 
 		Rational mtLastTimedMetrical, int dim) {
-		Rational r = Utils.diminute(new Rational(10, 1), dim);
+		Rational r = TimeMeterTools.diminute(new Rational(10, 1), dim);
 		return new TimedMetrical(
-			tLastTimedMetrical + Utils.calculateTime(r, tmpLastTimedMetrical), 
+			tLastTimedMetrical + TimeMeterTools.calculateTime(r, tmpLastTimedMetrical), 
 			mtLastTimedMetrical.add(r));
 	}
 
@@ -377,10 +377,10 @@ public class ScorePiece extends Piece {
 				// When not modelling duration, durLabels == null
 				Rational mDur = 
 					durLabels == null ? new Rational(btp[i][Tablature.MIN_DURATION], Tablature.SRV_DEN) :
-					DataConverter.convertIntoDuration(durLabels.get(i))[0]; // each label contains only one element as only one duration is predicted
+					LabelTools.convertIntoDuration(durLabels.get(i))[0]; // each label contains only one element as only one duration is predicted
 				Note note = ScorePiece.createNote(btp[i][Tablature.PITCH], mt, mDur, -1, mtl);
 				// Add Note to voice(s)
-				DataConverter.convertIntoListOfVoices(voiceLabels.get(i)).forEach(v -> 
+				LabelTools.convertIntoListOfVoices(voiceLabels.get(i)).forEach(v -> 
 					ns.get(v).get(0).add(note));
 			}
 		}
@@ -395,7 +395,7 @@ public class ScorePiece extends Piece {
 					bnp[i][Transcription.DUR_DENOM]);
 				Note note = ScorePiece.createNote(bnp[i][Transcription.PITCH], mt, mDur, -1, mtl);
 				// Add Note voice(s)
-				DataConverter.convertIntoListOfVoices(voiceLabels.get(i)).forEach(v ->
+				LabelTools.convertIntoListOfVoices(voiceLabels.get(i)).forEach(v ->
 					ns.get(v).get(0).add(note));
 			}
 		}
@@ -663,7 +663,7 @@ public class ScorePiece extends Piece {
 		List<Rational> msosTabUndim = new ArrayList<>();
 		for (int i = 0; i < mi.size(); i++) {
 			Integer[] currMi = mi.get(i);
-			metersTabUndim.add(Utils.undiminuteMeter(
+			metersTabUndim.add(TimeMeterTools.undiminuteMeter(
 				new Rational(currMi[Tablature.MI_NUM], currMi[Tablature.MI_DEN]), 
 				currMi[Tablature.MI_DIM]));
 			Rational msoTabUndim;
@@ -757,7 +757,7 @@ public class ScorePiece extends Piece {
 				long time = mtl.getTime(m.getMetricTime());
 				double tempo = mtl.getTempo(time);
 				int dim = diminutions.get(ind);
-				double tempoDim = Utils.diminute(tempo, dim);
+				double tempoDim = TimeMeterTools.diminute(tempo, dim);
 				tempiDim.add(new Double[]{tempoDim, (double) time});
 				ind++;
 			}
@@ -796,7 +796,7 @@ public class ScorePiece extends Piece {
 				long t = mtl.getTime(mtUndim); // NB: is not diminuted
 				TimeSignature tsUndim = tsm.getTimeSignature();
 				TimeSignature tsDim = 
-					new TimeSignature(Utils.diminuteMeter(new Rational(tsUndim.getNumerator(), 
+					new TimeSignature(TimeMeterTools.diminuteMeter(new Rational(tsUndim.getNumerator(), 
 					tsUndim.getDenominator()), diminutions.get(ind)));
 				mtlDim = addToMetricalTimeLine(mtlDim, mtDim, t, tsDim, tempiDim);
 				if (mtDim.isGreater(mtLastTimedMetrical)) {
@@ -879,7 +879,7 @@ public class ScorePiece extends Piece {
 					ScoreNote sn = n.getScoreNote();
 					Rational onsDim = smtl.getDiminutedMetricTime(mt, smtlDim, diminutions);
 					sn.setMetricTime(onsDim);
-					Rational durDim = Utils.diminute(n.getMetricDuration(), diminutions.get(sec));
+					Rational durDim = TimeMeterTools.diminute(n.getMetricDuration(), diminutions.get(sec));
 					sn.setMetricDuration(durDim);
 					n.setScoreNote(sn);
 					// Adapt PerformanceNote
@@ -1181,7 +1181,7 @@ public class ScorePiece extends Piece {
 					tsAugm = new TimeSignature(
 						ts.getDenominator() == 1 && rescaleFactor > 1 ?	
 						new Rational(meter.getNumer() * rescaleFactor, meter.getDenom()) :
-						Utils.undiminuteMeter(meter, rescaleFactor)
+						TimeMeterTools.undiminuteMeter(meter, rescaleFactor)
 					);
 				}
 				

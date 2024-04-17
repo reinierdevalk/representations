@@ -7,11 +7,17 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import representations.Tablature;
 import representations.Tablature.Tuning;
 import tbp.ConstantMusicalSymbol;
 import tbp.Encoding;
+import tbp.Encoding.Stage;
 import tbp.MensurationSign;
 import tbp.RhythmSymbol;
 import tbp.Symbol;
@@ -32,11 +38,13 @@ public class TabImport {
 		MENSURATION_SIGNS.put("3/4", Symbol.THREE.getEncoding());
 		MENSURATION_SIGNS.put("3/4", Symbol.O.getEncoding());
 		MENSURATION_SIGNS.put("4/4", Symbol.C.getEncoding());
+		MENSURATION_SIGNS.put("7/4", Symbol.SEVEN.getEncoding());
 
 		MENSURATION_SIGNS.put("2/2", Symbol.CUT_C.getEncoding());
 		MENSURATION_SIGNS.put("3/2", Symbol.THREE.makeVariant(2, -1).getEncoding());
 		MENSURATION_SIGNS.put("4/2", Symbol.FOUR.makeVariant(2, -1).getEncoding());
 		MENSURATION_SIGNS.put("6/2", Symbol.SIX.makeVariant(2, -1).getEncoding());
+		MENSURATION_SIGNS.put("2/8", Symbol.TWO.makeVariant(8, -1).getEncoding());
 	}
 	
 	private static final String TAB_LETTERS = "abcdefghiklmnopq";
@@ -65,136 +73,172 @@ public class TabImport {
 
 
 	public static void main(String[] args) {
-		// To convert an ASCII tab or TabCode file into a tab+ file		
-		List<String> pieces = Arrays.asList(new String[]{
-//			"ah_golden_hairs-NEW",	
-//			"an_aged_dame-II",
-//			"as_caesar_wept-II",
-//			"blame_i_confess-II",
+		if (args.length == 0) {
+			// To convert an ASCII tab or TabCode file into a tab+ file		
+			List<String> pieces = Arrays.asList(new String[]{
+//				"ah_golden_hairs-NEW",	
+//				"an_aged_dame-II",
+//				"as_caesar_wept-II",
+//				"blame_i_confess-II",
 ////			"delight_is_dead-II",
-//			"in_angels_weed-II",
-//			"in_tower_most_high",
-//			"o_lord_bow_down-II",
-//			"o_that_we_woeful_wretches-NEW",
-//			"quis_me_statim-II",
-//			"rejoyce_unto_the_lord-NEW",
-//			"sith_death-NEW",
-//			"the_lord_is_only_my_support-NEW",
-//			"the_man_is_blest-NEW",
-//			"while_phoebus-II"
+//				"in_angels_weed-II",
+//				"in_tower_most_high",
+//				"o_lord_bow_down-II",
+//				"o_that_we_woeful_wretches-NEW",
+//				"quis_me_statim-II",
+//				"rejoyce_unto_the_lord-NEW",
+//				"sith_death-NEW",
+//				"the_lord_is_only_my_support-NEW",
+//				"the_man_is_blest-NEW",
+//				"while_phoebus-II"
 
-//			"1132_13_o_sio_potessi_donna_berchem_solo"	
+//				"1132_13_o_sio_potessi_donna_berchem_solo"	
 				
-//			"capirola-1520-et_in_terra_pax",	
+//				"capirola-1520-et_in_terra_pax",	
 				
-//			"3610_033_inter_natos_mulierum_morales_T-rev"
-//			"3618_041_benedictus_from_missa_de_l_homme_arme_morales_T"
+//				"3610_033_inter_natos_mulierum_morales_T-rev"
+//				"3618_041_benedictus_from_missa_de_l_homme_arme_morales_T"
 				
-			// Mass sections
-//			"3584_001_pleni_missa_hercules_josquin",
-//			"3585_002_benedictus_de_missa_pange_lingua_josquin",
-//			"3643_066_credo_de_beata_virgine_jospuin_T-1",
-//			"3643_066_credo_de_beata_virgine_jospuin_T-2",
-//			"4471_40_cum_sancto_spiritu",
-//			"5106_10_misa_de_faysan_regres_2_gloria",
-//			"5107_11_misa_de_faysan_regres_pleni",
-//			"5188_15_sanctus_and_hosanna_from_missa_hercules-1",
-//			"5188_15_sanctus_and_hosanna_from_missa_hercules-2"	
-//			"5189_16_sanctus_and_hosanna_from_missa_faisant_regrets-1",
-//			"5189_16_sanctus_and_hosanna_from_missa_faisant_regrets-2",
-//			"5190_17_cum_spiritu_sanctu_from_missa_sine_nomine",
-//			"5266_15_cum_sancto_spiritu_desprez"
+				// Mass sections
+//				"3584_001_pleni_missa_hercules_josquin",
+//				"3585_002_benedictus_de_missa_pange_lingua_josquin",
+//				"3643_066_credo_de_beata_virgine_jospuin_T-1",
+//				"3643_066_credo_de_beata_virgine_jospuin_T-2",
+//				"4471_40_cum_sancto_spiritu",
+//				"5106_10_misa_de_faysan_regres_2_gloria",
+//				"5107_11_misa_de_faysan_regres_pleni",
+//				"5188_15_sanctus_and_hosanna_from_missa_hercules-1",
+//				"5188_15_sanctus_and_hosanna_from_missa_hercules-2"	
+//				"5189_16_sanctus_and_hosanna_from_missa_faisant_regrets-1",
+//				"5189_16_sanctus_and_hosanna_from_missa_faisant_regrets-2",
+//				"5190_17_cum_spiritu_sanctu_from_missa_sine_nomine",
+//				"5266_15_cum_sancto_spiritu_desprez"
 	
-			// Motets
-//			"5265_14_absalon_fili_me_desprez",
-//			"3647_070_benedicta_est_coelorum_josquin_T",
-//			"4964_01a_benedictum_es_coelorum_josquin"
-//			"4965_01b_per_illud_ave_josquin",
-//			"4966_01c_nunc_mater_josquin",
-//trrr			"5254_03_benedicta_es_coelorum_desprez-1",
-//			"5254_03_benedicta_es_coelorum_desprez-2",
-//			"5254_03_benedicta_es_coelorum_desprez-3",
-//			"5702_benedicta-1",
-//			"5702_benedicta-2",
-//			"5702_benedicta-3",
-//			"3591_008_fecit_potentiam_josquin",	
-//			"5263_12_in_exitu_israel_de_egipto_desprez-1",
-//			"5263_12_in_exitu_israel_de_egipto_desprez-2",
-//trrr			"5263_12_in_exitu_israel_de_egipto_desprez-3",
-//			"5256_05_inviolata_integra_desprez-1",
-//trrr			"5256_05_inviolata_integra_desprez-2",
-//			"5256_05_inviolata_integra_desprez-3",
-//			"4465_33-34_memor_esto-1", 
+				// Motets
+//				"5265_14_absalon_fili_me_desprez",
+//				"3647_070_benedicta_est_coelorum_josquin_T",
+//				"4964_01a_benedictum_es_coelorum_josquin"
+//				"4965_01b_per_illud_ave_josquin",
+//				"4966_01c_nunc_mater_josquin",
+//trrr				"5254_03_benedicta_es_coelorum_desprez-1",
+//				"5254_03_benedicta_es_coelorum_desprez-2",
+//				"5254_03_benedicta_es_coelorum_desprez-3",
+//				"5702_benedicta-1",
+//				"5702_benedicta-2",
+//				"5702_benedicta-3",
+//				"3591_008_fecit_potentiam_josquin",	
+//				"5263_12_in_exitu_israel_de_egipto_desprez-1",
+//				"5263_12_in_exitu_israel_de_egipto_desprez-2",
+//trrr				"5263_12_in_exitu_israel_de_egipto_desprez-3",
+//				"5256_05_inviolata_integra_desprez-1",
+//trrr				"5256_05_inviolata_integra_desprez-2",
+//				"5256_05_inviolata_integra_desprez-3",
+//				"4465_33-34_memor_esto-1", 
 //trrr			
-//			"4465_33-34_memor_esto-2"
-//			"932_milano_108_pater_noster_josquin-1",
-//			"932_milano_108_pater_noster_josquin-2"
-//			"5252_01_pater_noster_desprez-1",
-//			"5252_01_pater_noster_desprez-2",
-//			"3649_072_praeter_rerum_seriem_josquin_T",
-//			"5253_02_praeter_rerum_seriem_desprez-1",
-//			"5253_02_praeter_rerum_seriem_desprez-2",
-//			"5694_03_motet_praeter_rerum_seriem_josquin-1",
-//			"5694_03_motet_praeter_rerum_seriem_josquin-2",
-//			"1274_12_qui_habitat_in_adjutorio-1",
-//			"1274_12_qui_habitat_in_adjutorio-2"
-//			"5264_13_qui_habitat_in_adjutorio_desprez-1",
-//			"5264_13_qui_habitat_in_adjutorio_desprez-2",
-//			"933_milano_109_stabat_mater_dolorosa_josquin",
-//			"5255_04_stabat_mater_dolorosa_desprez-1",
-//trrr			"5255_04_stabat_mater_dolorosa_desprez-2",
+//				"4465_33-34_memor_esto-2"
+//				"932_milano_108_pater_noster_josquin-1",
+//				"932_milano_108_pater_noster_josquin-2"
+//				"5252_01_pater_noster_desprez-1",
+//				"5252_01_pater_noster_desprez-2",
+//				"3649_072_praeter_rerum_seriem_josquin_T",
+//				"5253_02_praeter_rerum_seriem_desprez-1",
+//				"5253_02_praeter_rerum_seriem_desprez-2",
+//				"5694_03_motet_praeter_rerum_seriem_josquin-1",
+//				"5694_03_motet_praeter_rerum_seriem_josquin-2",
+//				"1274_12_qui_habitat_in_adjutorio-1",
+//				"1274_12_qui_habitat_in_adjutorio-2"
+//				"5264_13_qui_habitat_in_adjutorio_desprez-1",
+//				"5264_13_qui_habitat_in_adjutorio_desprez-2",
+//				"933_milano_109_stabat_mater_dolorosa_josquin",
+//				"5255_04_stabat_mater_dolorosa_desprez-1",
+//trrr				"5255_04_stabat_mater_dolorosa_desprez-2",
 		
-			// Chansons
-//			"4400_45_ach_unfall_was",
-//			"4481_49_ach_unfal_wes_zeigst_du_mich",
-//			"4406_51_adieu_mes_amours",
-//			"4467_37_adieu_mes_amours",
-//			"1025_adieu_mes_amours",
-//			"1030_coment_peult_avoir_joye",
-//			"1275_13_faulte_d_argent",
-//			"3638_061_lauda_sion_gombert_T",
-//			"5148_51_respice_in_me_deus._F#_lute_T",
-//			"5260_09_date_siceram_morentibus_sermisy",
-//			"4438_07_la_plus_des_plus",
-//			"4443_12_la_bernardina",
-//			"1033_la_bernadina_solo_orig",
-//			"5191_18_mille_regres",
-//			"4482_50_mille_regrets_P",
-//			"4469_39_plus_nulz_regrets_P",	
-//			"922_milano_098_que_voulez_vous_dire_de_moi"
+				// Chansons
+//				"4400_45_ach_unfall_was",
+//				"4481_49_ach_unfal_wes_zeigst_du_mich",
+//				"4406_51_adieu_mes_amours",
+//				"4467_37_adieu_mes_amours",
+//				"1025_adieu_mes_amours",
+//				"1030_coment_peult_avoir_joye",
+//				"1275_13_faulte_d_argent",
+//				"3638_061_lauda_sion_gombert_T",
+//				"5148_51_respice_in_me_deus._F#_lute_T",
+//				"5260_09_date_siceram_morentibus_sermisy",
+//				"4438_07_la_plus_des_plus",
+//				"4443_12_la_bernardina",
+//				"1033_la_bernadina_solo_orig",
+//				"5191_18_mille_regres",
+//				"4482_50_mille_regrets_P",
+//				"4469_39_plus_nulz_regrets_P",	
+//				"922_milano_098_que_voulez_vous_dire_de_moi"
 
-//			"3610_033_inter_natos_mulierum_morales_T-rev"
-			"je_prens_en_gre-tab-rests"	
-		});
+//				"3610_033_inter_natos_mulierum_morales_T-rev"
+//				"je_prens_en_gre-tab-rests"
+//				"4465_33-34_memor_esto-2"
+
+//				"945_milano_119_martin_menoit_janequin", // OK
+//				"1026_allez_regretz", // NOK anacrusis
+				"1244_23a_d_ou_vient_cela_solo",
+//				"4638_08_bonjour_mon_coeur_lasso", // OK 
+//				"5422_39_d_amour_me_plains_pathie", // NOK tuning ind --> CORR works
+//				"5432_47_je_prens_en_gre_clement" // NOK end 
+			});
 				
-		String tbp;
-//		String path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/tab/";
-//		String path = "C:/Users/Reinier/Desktop/Byrd-Scores-notes-Aug19/preproc/tab/";
-		String path = "C:/Users/Reinier/Desktop/tours/";
-//		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/tab/";
-		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/";
-		path = "F:/research/data/annotated/josquintab/tab/";
-//		path = "F:/research/projects/byrd/";
-//		path = "C:/Users/Reinier/Desktop/test-capirola/";
-		path = "C:/Users/Reinier/Desktop/luteconv_v1.4.7/";
-		
-		// From TabCode
-		for (String s : pieces) {
-			File f = new File(path + s + ".tc"); 
+			String tbp;
+//			String path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/tab/";
+//			String path = "C:/Users/Reinier/Desktop/Byrd-Scores-notes-Aug19/preproc/tab/";
+			String path = "C:/Users/Reinier/Desktop/tours/";
+//			path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/tab/";
+			path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/tab/";
+			path = "F:/research/data/annotated/josquintab/tab/";
+//			path = "F:/research/projects/byrd/";
+//			path = "C:/Users/Reinier/Desktop/test-capirola/";
+//			path = "C:/Users/Reinier/Desktop/luteconv_v1.4.7/";
+			path = "C:/Users/Reinier/Desktop/";
+			path = "C:/Users/Reinier/Downloads/chanson_folder/chanson_folder/corrected/";
+			path = "F:/research/data/user/in/";
+			
+			// All pieces in a folder
+			pieces = Stream.of(new File(path).listFiles())
+//				.filter(file -> !file.isDirectory())
+				.filter(file -> file.getName().endsWith(".tc"))
+				.map(File::getName)
+				.collect(Collectors.toList());
+			for (int i = 0;i < pieces.size(); i++) {
+				pieces.set(i, FilenameUtils.getBaseName(pieces.get(i)));
+
+			}
+			System.out.println(pieces);
+			
+			// From TabCode
+			for (String s : pieces) {
+				File f = new File(path + s + ".tc");
+				System.out.println(f);
+				String tc = ToolBox.readTextFile(f).trim();
+				tbp = tc2tbp(tc);
+				ToolBox.storeTextFile(tbp, new File(path + s + Encoding.EXTENSION));
+			}
+			System.exit(0);
+
+			// From ASCII
+			for (String s : pieces) {
+				File f = new File(path + s + ".tab");
+				String ascii = ToolBox.readTextFile(f).trim();
+				tbp = ascii2tbp(ascii);
+				ToolBox.storeTextFile(tbp, new File(path + s + "XXX" + Encoding.EXTENSION));
+			}
+		}
+		else {
+			String inPath = args[0];
+			String outPath = args[1];
+			String filename = args[2];
+			File f = new File(inPath + "/" + filename + ".tc");
+			System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+			System.out.println(f);
 			String tc = ToolBox.readTextFile(f).trim();
-			tbp = tc2tbp(tc);
-			ToolBox.storeTextFile(tbp, new File(path + s + Encoding.EXTENSION));
+			String tbp = tc2tbp(tc);
+			ToolBox.storeTextFile(tbp, new File(outPath + "/" + filename + Encoding.EXTENSION));
 		}
-		System.exit(0);
-
-		// From ASCII
-		for (String s : pieces) {
-			File f = new File(path + s + ".tab");
-			String ascii = ToolBox.readTextFile(f).trim();
-			tbp = ascii2tbp(ascii);
-			ToolBox.storeTextFile(tbp, new File(path + s + "XXX" + Encoding.EXTENSION));
-		}
-
 	}
 
 
@@ -205,12 +249,13 @@ public class TabImport {
 	 * @return
 	 */
 	public static String tc2tbp(String tc) {
-//		String tc = ToolBox.readTextFile(tabcode).trim();
-
 		Map<Integer, String> tunings = new LinkedHashMap<Integer, String>();
 		tunings.put(65, "F");
 		tunings.put(67, "G");
 		tunings.put(69, "A");
+		String[] scordaturaPc = new String[]{
+			"C", "", "D", "Eb", "E", "F", "", "G", "", "A", "Bb", "B"
+		};
 
 		Map<String, String> notations = new LinkedHashMap<String, String>();
 		notations.put("French", TabSymbolSet.FRENCH.getType());
@@ -231,35 +276,69 @@ public class TabImport {
 				rules.substring(rules.indexOf(">") + 1, rules.indexOf("</")));
 			rules = rules.substring(rules.indexOf(">", rules.indexOf("</")) + 1);
 		}
-		
-		// Make encoding
+
+		// 1. Make encoding string
 		StringBuffer tbpEncoding = getEncoding(tc);
-		
-		// Make metadataString
-		String notation = rulesMap.get("notation");
-		// Ensure correct capitalisation
-		if (notation != null) {
-			notation = notation.substring(0, 1).toUpperCase() + notation.substring(1).toLowerCase();
-		}
-		String tss = notation != null ? notations.get(notation) : notations.get("French");
-		String[] metadata = new String[]{
-			rulesMap.get("author") != null ? rulesMap.get("author") : "", // author TODO
-			rulesMap.get("title") != null ? rulesMap.get("title") : "", // title TODO
-			rulesMap.get("source") != null ? rulesMap.get("source") : "", // source TODO
-			tss, // TabSymbolSet  
+//		System.out.println(tbpEncoding.toString());
+
+		// TODO
+		// meterInfo: if converted from non-tbp file: following information in that file should work
+		//			  --> use (1) MSs and (2) barlines as clues. it doesn't matter if MS are missing
+		//            if handmade: do what you want. either as above, or specify each MS in the encoding
+
+		// 2. Make metadata string (without meterInfo and diminution)
+		String tss = 
+			rulesMap.get("notation") != null ? 
+			notations.get(StringUtils.capitalize(rulesMap.get("notation").toLowerCase())) : 
+			notations.get("French");
+//			rulesMap.get("notation").substring(0, 1).toUpperCase() + 
+//			rulesMap.get("notation").substring(1).toLowerCase();
+//		String notation = rulesMap.get("notation");
+//		// Ensure correct capitalisation
+//		if (notation != null) {
+//			notation = notation.substring(0, 1).toUpperCase() + notation.substring(1).toLowerCase();
+//		}
+//		String tss = notation != null ? notations.get(notation) : notations.get("French");
+
+		// Tuning (with any scordatura)
+		String tuning = 
 			rulesMap.get("pitch") != null ? 
-				tunings.get(Integer.parseInt(rulesMap.get("pitch"))) : tunings.get(67), // Tuning
-//			rulesMap.get("tuningSeventhCourse") != null ? 
-//				rulesMap.get("tuningSeventhCourse") : "", // TuningSeventhCourse
-			rulesMap.get("meterInfo") != null ? 
-				rulesMap.get("meterInfo") : createMeterInfoString(tbpEncoding.toString(), tss), // meterinfo
-			rulesMap.get("durScale") != null ? 
-				rulesMap.get("durScale") : "1" // diminution	
+			tunings.get(Integer.parseInt(rulesMap.get("pitch"))) : 
+			tunings.get(67);
+		if (rulesMap.containsKey("tuning") && rulesMap.get("tuning").equals("(-5 -5 -4 -5 -7)")) {
+			tuning += "6" + scordaturaPc[(Integer.parseInt(rulesMap.get("pitch")) - 2) % 12];
+		}
+		String[] metadata = new String[]{
+			rulesMap.get("author") != null ? rulesMap.get("author") : "",
+			rulesMap.get("title") != null ? rulesMap.get("title") : "",
+			rulesMap.get("source") != null ? rulesMap.get("source") : "",
+			tss,  
+			tuning,
+			"",
+//			rulesMap.get("meterInfo") != null ? rulesMap.get("meterInfo") : miStr, 
+			""
+//			rulesMap.get("durScale") != null ? rulesMap.get("durScale") : 
+//				"1" + "; 1".repeat(StringTools.frequencyOfChar(miStr, ';'))
 		};
-		System.out.println(Arrays.toString(metadata));
+
+		// Make Encoding
+		Encoding enc = new Encoding(
+			createMetaData(metadata, Encoding.METADATA_TAGS) + tbpEncoding.toString(), "", 
+			Stage.RULES_CHECKED
+		);
+
+//		List<String[]> msi = tab.getMensurationSigns();
+//		tbi.forEach(in -> System.out.println(Arrays.asList(in)));
+//		System.exit(0);
+		
+		String miStr = createMeterInfoString(tbpEncoding.toString(), tss);
 		
 		StringBuffer metadataStr = 
 			new StringBuffer(createMetaData(metadata, Encoding.METADATA_TAGS));
+		
+		System.out.println(metadataStr.toString());
+//		System.exit(0);
+		
 //		StringBuffer metadataStr = new StringBuffer(Encoding.createMetadata(metadata));
 		return metadataStr.append(tbpEncoding).toString();
 	}
@@ -271,11 +350,15 @@ public class TabImport {
 		Map<String, String> mensurationSigns = new LinkedHashMap<String, String>();
 		mensurationSigns.put("2:4", Symbol.TWO.getEncoding());
 		mensurationSigns.put("3:4", Symbol.THREE.getEncoding());
+		mensurationSigns.put("5:4", Symbol.FIVE.getEncoding());
+		mensurationSigns.put("6:4", Symbol.SIX.getEncoding());
+		mensurationSigns.put("7:4", Symbol.SEVEN.getEncoding());
 		mensurationSigns.put("C/", Symbol.CUT_C.getEncoding());
 		mensurationSigns.put("3:2", Symbol.THREE.makeVariant(2, -1).getEncoding());
 		mensurationSigns.put("6:2", Symbol.SIX.makeVariant(2, -1).getEncoding());
 		mensurationSigns.put("2:1", Symbol.TWO.makeVariant(1, -1).getEncoding());
 		mensurationSigns.put("3:1", Symbol.THREE.makeVariant(1, -1).getEncoding());
+		mensurationSigns.put("2:8", Symbol.TWO.makeVariant(8, -1).getEncoding());
 
 		String tcSysBreak = "{^}";
 		String tcPageBreak = "{>}{^}";
@@ -301,12 +384,19 @@ public class TabImport {
 		// TODO deal properly with fingering dots following a tabword
 		for (int i = 0; i < tabwords.length; i++) {
 			String tabword = tabwords[i];
-			while (tabword.endsWith(".")) {
-				tabword = tabword.substring(0, tabword.lastIndexOf("."));
-				tabwords[i] = tabword;
-				System.out.println("new tabword = " + tabword);
+			
+			// Not if (dotted) rest
+			if (!RHYTHM_SYMBOLS.containsKey(tabword)) {
+				while (tabword.endsWith(".")) {
+					tabword = tabword.substring(0, tabword.lastIndexOf("."));
+					tabwords[i] = tabword;
+//@					System.out.println("new tabword = " + tabword);
+				}
 			}
 		}
+//		for (int i = 0; i < tabwords.length; i++) {
+//			System.out.println(tabwords[i]);
+//		}
 
 		// tripletActive is set to true when the first tabword of a triplet group is encountered,
 		// and set to false again when the first barline following the triplet group is encountered
@@ -315,7 +405,7 @@ public class TabImport {
 		int tripletLength = 0;
 		for (int i = 0; i < tabwords.length; i++) {
 			String tabword = tabwords[i];
-			System.out.println("tabword = " + tabword);
+//@			System.out.println("tabword = " + tabword);
 			String asTbp = "";
 			// A rhythmGroup is either a single RS or a group of beamed RS
 			int durCurrRhythmGroup = 0; // TODO only used to add to totalDur, which is not used
@@ -356,23 +446,23 @@ public class TabImport {
 				// In TabCode, only the first note of a triplet group is preceded by a 3, so in 
 				// convertTabword() only that first note will be converted to a tbp triplet variant 
 				if (rs.startsWith(RhythmSymbol.TRIPLET_INDICATOR)) {
-					System.out.println("triplet AAN");
-					System.out.println(rs);
-					System.out.println(tabword);
+//@					System.out.println("triplet AAN");
+//@					System.out.println(rs);
+//@					System.out.println(tabword);
 					tripletActive = true;
 					String tripletUnitRs = 
 						RhythmSymbol.TRIPLET_INDICATOR +
 						RHYTHM_SYMBOLS.get(tabword.substring(tabword.indexOf("(")+1, 
 						tabword.indexOf(")")));
-					System.out.println(":" + tripletUnitRs);
+//@					System.out.println(":" + tripletUnitRs);
 					int durTripletUnit = Symbol.getRhythmSymbol(tripletUnitRs).getDuration();
 					int dur = Symbol.getRhythmSymbol(rs).getDuration();
-					System.out.println(durTripletUnit);
-					System.out.println(rs);
-					System.out.println(dur);
-					System.out.println("full triplet length = " + (3 * durTripletUnit));
+//@					System.out.println(durTripletUnit);
+//@					System.out.println(rs);
+//@					System.out.println(dur);
+//@					System.out.println("full triplet length = " + (3 * durTripletUnit));
 					tripletLength = (3 * durTripletUnit) - dur ;
-					System.out.println("TL 1 --> " + tripletLength);
+//@					System.out.println("TL 1 --> " + tripletLength);
 					// Make triplet RS a tripletOpen RS
 					converted = 
 						RhythmSymbol.TRIPLET_INDICATOR + RhythmSymbol.TRIPLET_OPEN +
@@ -387,10 +477,10 @@ public class TabImport {
 					rs = Symbol.getRhythmSymbol(rs).makeVariant(0, false, true).get(1).getEncoding(); // DJUU
 //					rs = RhythmSymbol.getTripletVariant(rs).getEncoding();
 					tripletLength -= Symbol.getRhythmSymbol(rs).getDuration();
-					System.out.println("TL 2 --> " + tripletLength);
+//@					System.out.println("TL 2 --> " + tripletLength);
 					// If last note of the triplet
 					if (tripletLength == 0) {
-						System.out.println("triplet UIT");
+//@						System.out.println("triplet UIT");
 						tripletActive = false;
 						// Make triplet RS a tripletClose RS
 						rs = RhythmSymbol.TRIPLET_INDICATOR + RhythmSymbol.TRIPLET_CLOSE +
@@ -398,11 +488,11 @@ public class TabImport {
 					}
 					// If middle note of the triplet
 					else {
-						System.out.println("triplet MID");
+//@						System.out.println("triplet MID");
 					}
 					converted = rs + ss + converted.substring(converted.indexOf(ss) + 1);
 				}
-				System.out.println("converted = " + converted);
+//@				System.out.println("converted = " + converted);
 				asTbp += converted;
 				int durFirst = // TODO why add to durCurrRhythmGroup?
 					durCurrRhythmGroup + Symbol.getRhythmSymbol(rs).getDuration();
@@ -411,14 +501,18 @@ public class TabImport {
 			}
 			// Beamed tabword
 			else if (tabword.startsWith("[")) {
-				System.out.println("is beamed");
+//@				System.out.println("is beamed");
 				String converted = convertTabword(tabword, false);
 //				asTbp += converted;
 				
+				System.out.println("^^^^^^^^^^^^^^^^");
+				System.out.println(tabword);
+				System.out.println(converted);
+
 				String rs = converted.substring(0, converted.indexOf(ss));
-				System.out.println(rs);
+//@				System.out.println(rs);
 				if (rs.startsWith(RhythmSymbol.TRIPLET_INDICATOR)) {
-					System.out.println("triplet AAN (beamed)");
+//@					System.out.println("triplet AAN (beamed)");
 					tripletActive = true;
 					String tripletUnitRs = 
 						RhythmSymbol.TRIPLET_INDICATOR +	
@@ -426,9 +520,9 @@ public class TabImport {
 						tabword.indexOf(")")));
 					int durTripletUnit = Symbol.getRhythmSymbol(tripletUnitRs).getDuration();
 					int dur = Symbol.getRhythmSymbol(rs).getDuration();
-					System.out.println("full triplet length = " + (3 * durTripletUnit));
+//@					System.out.println("full triplet length = " + (3 * durTripletUnit));
 					tripletLength = (3 * durTripletUnit) - dur ;
-					System.out.println("TL 3 --> " + tripletLength);
+//@					System.out.println("TL 3 --> " + tripletLength);
 					// Make triplet RS a tripletOpen RS
 					converted = 
 						RhythmSymbol.TRIPLET_INDICATOR + RhythmSymbol.TRIPLET_OPEN +
@@ -440,10 +534,10 @@ public class TabImport {
 					rs = Symbol.getRhythmSymbol(rs).makeVariant(0, false, true).get(1).getEncoding(); // DJUU
 //					rs = RhythmSymbol.getTripletVariant(rs).getEncoding();
 					tripletLength -= Symbol.getRhythmSymbol(rs).getDuration();
-					System.out.println("TL 4 --> " + tripletLength);
+//@					System.out.println("TL 4 --> " + tripletLength);
 					// If last note of the triplet
 					if (tripletLength == 0) {
-						System.out.println("triplet UIT (beamed)");
+//@						System.out.println("triplet UIT (beamed)");
 						tripletActive = false;
 						// Make triplet RS a tripletClose RS
 						rs = RhythmSymbol.TRIPLET_INDICATOR + RhythmSymbol.TRIPLET_CLOSE +
@@ -451,11 +545,11 @@ public class TabImport {
 					}
 					// If middle note of the triplet
 					else {
-						System.out.println("triplet MID (beamed)");
+//@						System.out.println("triplet MID (beamed)");
 					}
 					converted = rs + ss + converted.substring(converted.indexOf(ss) + 1);
 				}
-				System.out.println("converted = " + converted);
+//@				System.out.println("converted = " + converted);
 				asTbp += converted;
 				int durFirst = Symbol.getRhythmSymbol(rs).getDuration();
 				durCurrRhythmGroup += durFirst;
@@ -478,12 +572,12 @@ public class TabImport {
 						// rsNext never starts with a tripletIndicator, but can be part of a 
 						// triplet group
 						if (tripletActive) {
-							System.out.println("triplet LAST in non-final BG");
+//@							System.out.println("triplet LAST in non-final BG");
 							// Assume mid triplet RS; beam == false (any beam is already in rs)
 							rsNext = Symbol.getRhythmSymbol(rsNext).makeVariant(0, false, true).get(1).getEncoding(); // DJUU
 //							rsNext = RhythmSymbol.getTripletVariant(rsNext).getEncoding();
 							tripletLength -= Symbol.getRhythmSymbol(rsNext).getDuration();
-							System.out.println("TL 5 --> " + tripletLength);
+//@							System.out.println("TL 5 --> " + tripletLength);
 							if (tripletLength == 0) {
 								tripletActive = false;
 								// Make triplet RS a tripletClose RS
@@ -495,7 +589,7 @@ public class TabImport {
 //							System.out.println("nextTabword = " + nextTabword);
 //							System.out.println("convertedNext = " + convertedNext);
 						}
-						System.out.println("convertedNext = " + convertedNext);
+//@						System.out.println("convertedNext = " + convertedNext);
 						asTbp += convertedNext;
 						durCurrRhythmGroup += durFirst;
 						i = j; 
@@ -503,7 +597,7 @@ public class TabImport {
 					}
 					// If tabword in middle of beaming group (which, in TabCode, has no RS)
 					else {
-						System.out.println("triplet (mid) in BG");
+//@						System.out.println("triplet (mid) in BG");
 						String convertedNext = convertTabword(beamedRS + nextTabword, true);
 						String rsNext = convertedNext.substring(0, convertedNext.indexOf(ss));
 						// rsNext never starts with a tripletIndicator, but can be part of a
@@ -513,11 +607,11 @@ public class TabImport {
 							rsNext = Symbol.getRhythmSymbol(rsNext).makeVariant(0, false, true).get(1).getEncoding(); // DJUU
 //							rsNext = RhythmSymbol.getTripletVariant(rsNext).getEncoding();
 							tripletLength -= Symbol.getRhythmSymbol(rsNext).getDuration();
-							System.out.println("TL 6 --> " + tripletLength);
+//@							System.out.println("TL 6 --> " + tripletLength);
 //							System.out.println("rsNext = " + rsNext);
 							if (tripletLength == 0) { // TODO remove: this never happens
 								tripletActive = false;
-								System.out.println("triplet UIT in BG");
+//@								System.out.println("triplet UIT in BG");
 							}
 							convertedNext = 
 								rsNext + ss + convertedNext.substring(convertedNext.indexOf(ss) + 1);
@@ -525,7 +619,7 @@ public class TabImport {
 //							System.out.println("convertedNext = " + convertedNext);
 //							System.exit(0);
 						}
-						System.out.println("convertedNext = " + convertedNext);
+//@						System.out.println("convertedNext = " + convertedNext);
 						asTbp += convertedNext; 
 						durCurrRhythmGroup += durFirst;
 					}
@@ -543,7 +637,6 @@ public class TabImport {
 			tbpEncoding.append("\r\n"); 
 		}
 		tbpEncoding.append(Symbol.END_BREAK_INDICATOR);
-		
 		return tbpEncoding;
 	}
 
@@ -562,9 +655,11 @@ public class TabImport {
 		int lenTripletUnit = "(Q)".length();
 
 		Map<String, String> beams = new LinkedHashMap<String, String>();
+		beams.put("[", Symbol.MINIM.makeVariant(0, false, false).get(0).getEncoding()); // special case
 		beams.put("[[", Symbol.SEMIMINIM.makeVariant(0, true, false).get(0).getEncoding());
 		beams.put("[[[", Symbol.FUSA.makeVariant(0, true, false).get(0).getEncoding());
 		beams.put("[[[[", Symbol.SEMIFUSA.makeVariant(0, true, false).get(0).getEncoding());
+		beams.put("]", Symbol.MINIM.getEncoding());
 		beams.put("]]", Symbol.SEMIMINIM.getEncoding());
 		beams.put("]]]", Symbol.FUSA.getEncoding());
 		beams.put("]]]]", Symbol.SEMIFUSA.getEncoding());
@@ -573,12 +668,14 @@ public class TabImport {
 		String rs = "";
 		String convertedRS = "";
 		String tabwordNoRS = "";
+		System.out.println(tabword);
 		// Regular RS
 		if (RHYTHM_SYMBOLS.containsKey(tabword.substring(0, 1))) {
 			// Take into account dotted RS and (dotted) triplet
 			int indAfterRS = 1;
 			boolean isTriplet = tabword.substring(0, 1).equals("3");
 			boolean isDotted = tabword.contains(".");
+
 //			if (tabword.length() > 1 && 
 //				(tabword.substring(1, 2).equals(".") || tabword.substring(0, 1).equals("3"))) {
 //				indAfterRS = 2;
@@ -595,7 +692,7 @@ public class TabImport {
 			if (tabword.length() > 1 && isTriplet && isDotted) {
 				indAfterRS = 3 + lenTripletUnit;
 			}
-			System.out.println("indAfterRS = " + indAfterRS);
+//@			System.out.println("indAfterRS = " + indAfterRS);
 //			if (tabword.length() <= 2) {
 //				tabwordNoRS = tabword.substring(indAfterRS); 
 //			}
@@ -719,7 +816,25 @@ public class TabImport {
 
 
 	/**
-	 * Given the clean encoding, calculates the meter info string. Barring is ignored, and each
+	 * Calculates the meterInfo string from the tab barring and mensuration. The meter changes 
+	 * (1) whenever a MensurationSign is encountered, or (2) whenever the length of a bar changes.
+	 * 
+	 * @param tabBarInfo
+	 * @return
+	 */
+	static String createMeterInfoString(List<Integer[]> tabBarInfo) {
+		List<Integer[]> mensSigns = new ArrayList<>();
+		mensSigns.add(new Integer[]{2, 2});
+		List<Integer[]> barsPerMeter = new ArrayList<>();
+		// meterInfo: if converted from non-tbp file: following information in that file should work
+		//			  --> use (1) MSs and (2) barlines as clues. it doesn't matter if MS are missing
+		//            if handmade: do what you want. either as above, or specify each MS in the encoding
+		return null;
+	}
+
+
+	/**
+	 * Given the clean encoding, calculates the meterInfo string. Barring is ignored, and each
 	 * bar end is instead determined by the bar duration under the current mensuration sign. It is 
 	 * assumed that the piece contains no errors. 
 	 * 

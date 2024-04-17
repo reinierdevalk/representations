@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import junit.framework.TestCase;
+import path.Path;
 import representations.Transcription;
 
 public class MIDIExportTest extends TestCase {
@@ -17,7 +18,9 @@ public class MIDIExportTest extends TestCase {
 		super.setUp();
 //		Runner.setPathsToCodeAndData(UI.getRootDir(), false);
 //		midiTestGetMeterInfoDiminuted = new File(Runner.midiPathTest + "test_get_meter_key_info_diminuted.mid");
-		midiTestGetMeterInfo = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_get_meter_key_info.mid");
+		midiTestGetMeterInfo = new File(
+			Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_REL_PATH + Path.TEST_DIR + "test_get_meter_key_info.mid"
+		);
 //		midiTestGetMeterInfoDiminuted = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "test_get_meter_key_info_diminuted.mid");
 	}
 

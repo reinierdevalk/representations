@@ -364,7 +364,7 @@ public class Staff {
 		// staff (see a.)
 		int barCount = firstBar;
 		// Remove any decorative opening barline index
-		if (indices.get(0) == 0) {
+		if (startsWithBarline) {
 			indices = indices.subList(1, indices.size());
 		}
 		for (int i = 0; i < indices.size(); i++) {
@@ -394,17 +394,19 @@ public class Staff {
 	//  visualising
 	//
 	/** 
-	 * Visualises the Staff as a string.
+	 * Visualises the <code>Staff</code> as a <code>String</code>.
 	 * 
-	 * @return 
+	 * @param shiftToRight Whether or not to shift the staff to the right by <code>LEFT_MARGIN</code>.
+	 * @param width The total width (in segments) the staff takes.
+	 * @return The <code>Staff</code> as a <code>String</code>.
 	 */
-	public String visualise() {
-		String[][] sd = getStaffGrid();
+	public String visualise(boolean shiftToRight, int width) {
+		String[][] sg = getStaffGrid();
 		String staffStr = "";
 
 		// If the first non-empty string is not an OPEN_BAR_NUM_BRACKET, the staff 
 		// starts with a bar number. Only if the staff contains bar numbers
-		List<String> bnlAsList = Arrays.asList(sd[BAR_NUMS_LINE]);
+		List<String> bnlAsList = Arrays.asList(sg[BAR_NUMS_LINE]);
 		boolean startsWithBarNum =
 			bnlAsList.contains(CLOSE_BAR_NUM_BRACKET) && !String.join("", 
 			bnlAsList).trim().substring(0, 1).equals(OPEN_BAR_NUM_BRACKET) ? true : 
@@ -412,27 +414,25 @@ public class Staff {
 
 		// If the first non-empty string is not an OPEN_FOOTNOTE_PAR, the staff 
 		// starts with a footnote. Only if the staff contains footnotes
-		List<String> flAsList = Arrays.asList(sd[FOOTNOTES_LINE]);
+		List<String> flAsList = Arrays.asList(sg[FOOTNOTES_LINE]);
 		boolean startsWithFootnote =
 			flAsList.contains(CLOSE_FOOTNOTE_PAR) && !String.join("", 
 			flAsList).trim().substring(0, 1).equals(OPEN_FOOTNOTE_PAR) ? true : 
 			false;
 
-		boolean hasDecOpenBarline = 
-			Symbol.getConstantMusicalSymbol(sd[TOP_LINE][0]) != null &&
-			Symbol.getConstantMusicalSymbol(sd[TOP_LINE][0]).isBarline();			
-//			ConstantMusicalSymbol.isBarline(sd[TOP_LINE][0]);
+		boolean hasDecOpenBarline = Encoding.assertEventType(sg[TOP_LINE][0], null, "barline")
+			|| sg[UPPER_MIDDLE_LINE][0].equals(REPEAT_DOT);
 
-		for (int i = 0; i < sd.length; i++) {
-			String[] staffLine = sd[i];
+		for (int i = 0; i < sg.length; i++) {
+			String[] staffLine = sg[i];
 			String staffLineStr = "";
 			// Create the string for staffLine
 			for (String segment: staffLine) {
 				staffLineStr += segment;
 			}
 
-			// Shift. If the staff starts with a decorative barline, reduce shift with 1
-			int shift = !hasDecOpenBarline ? LEFT_MARGIN: LEFT_MARGIN - 1;
+			// Shift to right if the staff has no decorative opening barline
+			int shift = shiftToRight ? LEFT_MARGIN : LEFT_MARGIN - 1;
 			// a. Shift rhythm symbol line and tablature lines
 			if (i >= RHYTHM_LINE && i <= DIAPASONS_LINE_OTHER) {
 				staffLineStr = " ".repeat(shift) + staffLineStr;	
@@ -441,22 +441,24 @@ public class Staff {
 			if (i == BAR_NUMS_LINE) {
 				staffLineStr = 
 					!startsWithBarNum ? " ".repeat(shift) + staffLineStr :
-					" ".repeat(LEFT_MARGIN-1) + OPEN_BAR_NUM_BRACKET + 
+					" ".repeat(LEFT_MARGIN - 1) + OPEN_BAR_NUM_BRACKET + 
 					(!hasDecOpenBarline ? staffLineStr : staffLineStr.substring(1));
 			}
-			// c. Shit footnotes line
+			// c. Shift footnotes line
 			if (i == FOOTNOTES_LINE) {
 				staffLineStr = 
 					!startsWithFootnote ? " ".repeat(shift) + staffLineStr :
-					" ".repeat(LEFT_MARGIN-1) + OPEN_FOOTNOTE_PAR + 
+					" ".repeat(LEFT_MARGIN - 1) + OPEN_FOOTNOTE_PAR + 
 					(!hasDecOpenBarline ? staffLineStr : staffLineStr.substring(1));
 			}
-			// Add extra staff or space segment at end of shifted staff (before RIGHT_MARGIN)
-			if (hasDecOpenBarline) {
-				if (i >= TOP_LINE && i <= BOTTOM_LINE) {	
-					staffLineStr = staffLineStr.replace(
-						SPACE_SEGMENT.repeat(RIGHT_MARGIN), 
-						STAFF_SEGMENT + SPACE_SEGMENT.repeat(RIGHT_MARGIN));
+
+			// Add extra staff- or space segment at the end if needed. Applies when the longest 
+			// staff in the piece has no decorative opening barline (and therefore a shift), but
+			// the current staff (if it is not the longest) does have one (and therefore no shift)
+			if ((staffLine.length - RIGHT_MARGIN) + shift < width) {
+				if (i >= TOP_LINE && i <= BOTTOM_LINE) {
+					String sp = SPACE_SEGMENT.repeat(RIGHT_MARGIN); 
+					staffLineStr = staffLineStr.replace(sp, STAFF_SEGMENT + sp);
 				}
 				else {
 					staffLineStr += SPACE_SEGMENT;

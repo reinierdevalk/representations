@@ -46,23 +46,25 @@ public class Symbol {
 	public static final MensurationSign TWO	= new MensurationSign("M2", "2", new Integer[]{2, 4});
 	public static final MensurationSign THREE = new MensurationSign("M3", "3", new Integer[]{3, 4});
 	public static final MensurationSign FOUR = new MensurationSign("M4", "4", new Integer[]{4, 4});
-	public static final MensurationSign FIVE = new MensurationSign("M5", "4", new Integer[]{5, 4});
+	public static final MensurationSign FIVE = new MensurationSign("M5", "5", new Integer[]{5, 4});
 	public static final MensurationSign SIX	= new MensurationSign("M6", "6", new Integer[]{6, 4});
+	public static final MensurationSign SEVEN = new MensurationSign("M7", "7", new Integer[]{7, 4});
 	public static final MensurationSign O = new MensurationSign("MO", "O", new Integer[]{3, 4});
 	public static final MensurationSign C = new MensurationSign("MC", "C", new Integer[]{4, 4});
 	public static final MensurationSign CUT_C = new MensurationSign("MC\\", "\u00A2", new Integer[]{2, 2});	
 	public static final Map<String, MensurationSign> MENSURATION_SIGNS;
 	static {
 		List<MensurationSign> mss = Arrays.asList(
-			TWO, THREE, FOUR, SIX, O, C, CUT_C,
+			TWO, THREE, FOUR, FIVE, SIX, SEVEN, O, C, CUT_C,
 			THREE.makeVariant(-1, 4),
 			THREE.makeVariant(2, -1),
 			FOUR.makeVariant(2, -1),
 			SIX.makeVariant(2, -1),
 			TWO.makeVariant(1, -1),
 			THREE.makeVariant(1, -1),
-			THREE.makeVariant(8, -1),
 			TWO.makeVariant(4, -1),
+			TWO.makeVariant(8, -1),
+			THREE.makeVariant(8, -1),
 			FIVE.makeVariant(16, -1)
 		); 
 		MENSURATION_SIGNS = new LinkedHashMap<String, MensurationSign>();
@@ -195,6 +197,7 @@ public class Symbol {
 
 	// TESTED
 	public static MensurationSign getMensurationSign(String e) {
+		// Check for double MS 
 		return !MENSURATION_SIGNS.containsKey(e) ? null : MENSURATION_SIGNS.get(e);
 	}
 

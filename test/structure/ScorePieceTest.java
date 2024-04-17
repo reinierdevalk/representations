@@ -31,9 +31,9 @@ import path.Path;
 import representations.Tablature;
 import representations.Transcription;
 import representations.TranscriptionTest;
-import structure.metric.Utils;
-import structure.metric.UtilsTest;
 import tbp.Symbol;
+import tools.music.TimeMeterTools;
+import tools.music.TimeMeterToolsTest;
 
 public class ScorePieceTest extends TestCase {
 	
@@ -69,19 +69,19 @@ public class ScorePieceTest extends TestCase {
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
-		String s = Path.ROOT_PATH;
-		String jtp = s + Path.DATA_DIR + Path.MIDI_PATH_JOSQUINTAB;
-		String jtpTab = s + Path.DATA_DIR + Path.ENCODINGS_PATH_JOSQUINTAB;
+		String s = Path.ROOT_PATH_DEPLOYMENT_DEV;
+		String jtp = s + Path.MIDI_REL_PATH_JOSQUINTAB;
+		String jtpTab = s + Path.ENCODINGS_REL_PATH_JOSQUINTAB;
 		
-		encodingTestpiece = new File(s + "data/annotated/encodings/test/" + "testpiece.tbp");
-		encodingTestGetMeterInfo = new File(s + "data/annotated/encodings/test/" + "test_get_meter_info.tbp");
+		encodingTestpiece = new File(s + Path.ENCODINGS_REL_PATH + Path.TEST_DIR + "testpiece.tbp");
+		encodingTestGetMeterInfo = new File(s + Path.ENCODINGS_REL_PATH + Path.TEST_DIR + "test_get_meter_info.tbp");
 		encodingMemorEsto = new File(jtpTab + "4465_33-34_memor_esto-2.tbp");
 		encodingQuiHabitat = new File(jtpTab + "5264_13_qui_habitat_in_adjutorio_desprez-2.tbp");
 		encodingPreterRerum = new File(jtpTab + "5694_03_motet_praeter_rerum_seriem_josquin-2.tbp");
 		encodingInExitu = new File(jtpTab + "5263_12_in_exitu_israel_de_egipto_desprez-3.tbp");
 		
-		midiTestpiece = new File(s + "data/annotated/MIDI/test/" + "testpiece.mid");
-		midiTestGetMeterKeyInfo = new File(s + "data/annotated/MIDI/test/" + "test_get_meter_key_info.mid");
+		midiTestpiece = new File(s + Path.MIDI_REL_PATH + Path.TEST_DIR + "testpiece.mid");
+		midiTestGetMeterKeyInfo = new File(s + Path.MIDI_REL_PATH + Path.TEST_DIR + "test_get_meter_key_info.mid");
 		midiMemorEsto = new File(jtp + "Jos1714-Memor_esto_verbi_tui-166-325.mid");
 		midiQuiHabitat = new File(jtp + "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282.mid");
 		midiPreterRerum = new File(jtp + "Jos2411-Preter_rerum_seriem-88-185.mid");
@@ -118,7 +118,7 @@ public class ScorePieceTest extends TestCase {
 			mtl.add(new TimeSignatureMarker(new TimeSignature(TWO_TWO), Rational.ZERO));
 			mtl.add((Marker) new TimedMetrical(0, Rational.ZERO));
 			// Add endMarker (mt = 10/1)
-			mtl.add((Marker) new TimedMetrical(Utils.calculateTime(new Rational(10, 1), UtilsTest.T_100), new Rational(10, 1)));
+			mtl.add((Marker) new TimedMetrical(TimeMeterTools.calculateTime(new Rational(10, 1), TimeMeterToolsTest.T_100), new Rational(10, 1)));
 		}
 		// Six meter sections: 3/4, 2/1, 3/1, 2/2, 5/16, 2/4 ; tempo = t100, t100, t100, t100, t100, t100
 		if (piece.equals("testGetMeterKeyInfo")) {
@@ -148,7 +148,7 @@ public class ScorePieceTest extends TestCase {
 			// Adapt endMarker (added through last TempoMarker) (mt = 369/16)
 			TimedMetrical em = (TimedMetrical) mtl.get(mtl.size()-1);
 			em.setMetricTime(new Rational(369, 16));
-			em.setTime(s1 + s2 + s3 + s4 + s5 + Utils.calculateTime(new Rational(10, 1), UtilsTest.T_100));
+			em.setTime(s1 + s2 + s3 + s4 + s5 + TimeMeterTools.calculateTime(new Rational(10, 1), TimeMeterToolsTest.T_100));
 		}
 		// One meter section: 2/1; tempo = t289
 		else if (piece.equals("memor esto")) {
@@ -156,7 +156,7 @@ public class ScorePieceTest extends TestCase {
 			mtl.add(new TimeSignatureMarker(new TimeSignature(TWO_ONE), Rational.ZERO));
 			mtl.add((Marker) new TimedMetrical(0, Rational.ZERO));
 			// Add endMarker (mt = 10/1)
-			mtl.add((Marker) new TimedMetrical(Utils.calculateTime(new Rational(10, 1), UtilsTest.T_289), new Rational(10, 1)));
+			mtl.add((Marker) new TimedMetrical(TimeMeterTools.calculateTime(new Rational(10, 1), TimeMeterToolsTest.T_289), new Rational(10, 1)));
 		}
 		// Two meter sections: 3/1, 2/1; tempo = t439, t289
 		else if (piece.equals("qui habitat")) {
@@ -170,7 +170,7 @@ public class ScorePieceTest extends TestCase {
 			// Adapt endMarker (added through last TempoMarker) (mt = 85/1)
 			TimedMetrical em = (TimedMetrical) mtl.get(mtl.size()-1);
 			em.setMetricTime(new Rational(85, 1));
-			em.setTime(s1 + Utils.calculateTime(new Rational(10, 1), UtilsTest.T_289));
+			em.setTime(s1 + TimeMeterTools.calculateTime(new Rational(10, 1), TimeMeterToolsTest.T_289));
 		}
 		// Three meter sections: 2/1, 3/1, 2/1; tempo = t289, t439, t289
 		else if (piece.equals("preter rerum")) {
@@ -188,7 +188,7 @@ public class ScorePieceTest extends TestCase {
 			// Adapt endMarker (added through last TempoMarker) (mt = 222/1)
 			TimedMetrical em = (TimedMetrical) mtl.get(mtl.size()-1);
 			em.setMetricTime(new Rational(222, 1));
-			em.setTime(s1 + s2 + Utils.calculateTime(new Rational(10, 1), UtilsTest.T_289));
+			em.setTime(s1 + s2 + TimeMeterTools.calculateTime(new Rational(10, 1), TimeMeterToolsTest.T_289));
 		}
 		// Seven meter sections: 2/1, 3/1, 2/1, 3/1, 2/1, 3/1, 2/1; tempo = t99, t439, t289, t439, t289, t439, t289
 		else if (piece.equals("in exitu")) {
@@ -223,7 +223,7 @@ public class ScorePieceTest extends TestCase {
 			TimedMetrical em = (TimedMetrical) mtl.get(mtl.size()-1);
 			em.setMetricTime(new Rational(258, 1));
 			em.setTime(s1 + s2 + s3 + s4 + s5 + s6 + 
-				Utils.calculateTime(new Rational(10, 1), UtilsTest.T_289));
+				TimeMeterTools.calculateTime(new Rational(10, 1), TimeMeterToolsTest.T_289));
 		}
 		return mtl;
 	}
@@ -242,13 +242,13 @@ public class ScorePieceTest extends TestCase {
 			KeyMarker km = new KeyMarker(Rational.ZERO, 0);
 			km.setAlterationNumAndMode(0, KeyMarker.Mode.MODE_MAJOR); km.setRoot('C'); km.setRootAlteration(0);
 			ht.add(km);
-			km = new KeyMarker(new Rational(19, 4), Utils.calculateTime(new Rational(19, 4), 100.0));
+			km = new KeyMarker(new Rational(19, 4), TimeMeterTools.calculateTime(new Rational(19, 4), 100.0));
 			km.setAlterationNumAndMode(3, KeyMarker.Mode.MODE_MINOR); km.setRoot('A'); km.setRootAlteration(0);
 			ht.add(km);
-			km = new KeyMarker(new Rational(43, 4), Utils.calculateTime(new Rational(43, 4), 100.0));
+			km = new KeyMarker(new Rational(43, 4), TimeMeterTools.calculateTime(new Rational(43, 4), 100.0));
 			km.setAlterationNumAndMode(-2, KeyMarker.Mode.MODE_MAJOR); km.setRoot('B'); km.setRootAlteration(1);
 			ht.add(km);
-			km = new KeyMarker(new Rational(51, 4), Utils.calculateTime(new Rational(51, 4), 100.0));
+			km = new KeyMarker(new Rational(51, 4), TimeMeterTools.calculateTime(new Rational(51, 4), 100.0));
 			km.setAlterationNumAndMode(1, KeyMarker.Mode.MODE_MINOR); km.setRoot('G'); km.setRootAlteration(0);
 			ht.add(km);
 		}
@@ -265,54 +265,54 @@ public class ScorePieceTest extends TestCase {
 		// Six meter sections
 		if (piece.equals("testGetMeterKeyInfo")) {
 			switch (section) {
-				case "1": return Utils.calculateTime(new Rational(3-0, 4), UtilsTest.T_100); // 1800000
-				case "2": return Utils.calculateTime(new Rational(19-3, 4), UtilsTest.T_100); // 9600000
-				case "3": return Utils.calculateTime(new Rational(43-19, 4), UtilsTest.T_100); // 14400000
-				case "4": return Utils.calculateTime(new Rational(51-43, 4), UtilsTest.T_100); // 4800000
-				case "5": return Utils.calculateTime(new Rational(209-204, 16), UtilsTest.T_100); // 750000
-				case "6": return Utils.calculateTime(new Rational(217-209, 16), UtilsTest.T_100); // 1200000
+				case "1": return TimeMeterTools.calculateTime(new Rational(3-0, 4), TimeMeterToolsTest.T_100); // 1800000
+				case "2": return TimeMeterTools.calculateTime(new Rational(19-3, 4), TimeMeterToolsTest.T_100); // 9600000
+				case "3": return TimeMeterTools.calculateTime(new Rational(43-19, 4), TimeMeterToolsTest.T_100); // 14400000
+				case "4": return TimeMeterTools.calculateTime(new Rational(51-43, 4), TimeMeterToolsTest.T_100); // 4800000
+				case "5": return TimeMeterTools.calculateTime(new Rational(209-204, 16), TimeMeterToolsTest.T_100); // 750000
+				case "6": return TimeMeterTools.calculateTime(new Rational(217-209, 16), TimeMeterToolsTest.T_100); // 1200000
 				default: return (long) -1.0;
 			}
 		}
 		// Seven meter sections
 		if (piece.equals("memor esto")) {
 			switch (section) {
-				case "1a": return Utils.calculateTime(new Rational(126-0, 1), UtilsTest.T_289); // 104276088
-				case "1b": return Utils.calculateTime(new Rational(148-126, 1), UtilsTest.T_289); // 18206936 
-				case "1c": return Utils.calculateTime(new Rational(198-148, 1), UtilsTest.T_289); // 41379400 
-				case "1d": return Utils.calculateTime(new Rational(204-198, 1), UtilsTest.T_289); // 4965528 
-				case "1e": return Utils.calculateTime(new Rational(216-204, 1), UtilsTest.T_289); // 9931056 
-				case "1f": return Utils.calculateTime(new Rational(226-216, 1), UtilsTest.T_289); // 8275880
+				case "1a": return TimeMeterTools.calculateTime(new Rational(126-0, 1), TimeMeterToolsTest.T_289); // 104276088
+				case "1b": return TimeMeterTools.calculateTime(new Rational(148-126, 1), TimeMeterToolsTest.T_289); // 18206936 
+				case "1c": return TimeMeterTools.calculateTime(new Rational(198-148, 1), TimeMeterToolsTest.T_289); // 41379400 
+				case "1d": return TimeMeterTools.calculateTime(new Rational(204-198, 1), TimeMeterToolsTest.T_289); // 4965528 
+				case "1e": return TimeMeterTools.calculateTime(new Rational(216-204, 1), TimeMeterToolsTest.T_289); // 9931056 
+				case "1f": return TimeMeterTools.calculateTime(new Rational(226-216, 1), TimeMeterToolsTest.T_289); // 8275880
 				default: return (long) -1.0;
 			}
 		}
 		// Two meter sections
 		else if (piece.equals("qui habitat")) {
 			switch (section) {
-				case "1": return Utils.calculateTime(new Rational(75-0, 1), UtilsTest.T_439); // 41002200
+				case "1": return TimeMeterTools.calculateTime(new Rational(75-0, 1), TimeMeterToolsTest.T_439); // 41002200
 				default: return (long) -1.0;
 			}
 		}
 		// Three meter sections
 		else if (piece.equals("preter rerum")) {
 			switch (section) {
-				case "1": return Utils.calculateTime(new Rational(104-0, 1), UtilsTest.T_289); // 86069152
-				case "2": return Utils.calculateTime(new Rational(212-104, 1), UtilsTest.T_439); // 59043168
+				case "1": return TimeMeterTools.calculateTime(new Rational(104-0, 1), TimeMeterToolsTest.T_289); // 86069152
+				case "2": return TimeMeterTools.calculateTime(new Rational(212-104, 1), TimeMeterToolsTest.T_439); // 59043168
 				default: return (long) -1.0;
 			}
 		}
 		// Nine meter sections
 		else if (piece.equals("in exitu")) {
 			switch (section) {
-				case "1": return Utils.calculateTime(new Rational(28-0, 1), UtilsTest.T_99); // 67200000
-				case "2": return Utils.calculateTime(new Rational(76-28, 1), UtilsTest.T_439); // 26241408
-				case "3": return Utils.calculateTime(new Rational(90-76, 1), UtilsTest.T_289); // 11586232
-				case "4": return Utils.calculateTime(new Rational(180-90, 1), UtilsTest.T_439); // 49202640
-				case "5": return Utils.calculateTime(new Rational(230-180, 1), UtilsTest.T_289); // 41379400
-				case "5a": return Utils.calculateTime(new Rational(192-180, 1), UtilsTest.T_289); // 9931056
-				case "5b": return Utils.calculateTime(new Rational(204-192, 1), UtilsTest.T_289); // 9931056
-				case "5c": return Utils.calculateTime(new Rational(230-204, 1), UtilsTest.T_289); // 21517288
-				case "6": return Utils.calculateTime(new Rational(248-230, 1), UtilsTest.T_439); // 9840528
+				case "1": return TimeMeterTools.calculateTime(new Rational(28-0, 1), TimeMeterToolsTest.T_99); // 67200000
+				case "2": return TimeMeterTools.calculateTime(new Rational(76-28, 1), TimeMeterToolsTest.T_439); // 26241408
+				case "3": return TimeMeterTools.calculateTime(new Rational(90-76, 1), TimeMeterToolsTest.T_289); // 11586232
+				case "4": return TimeMeterTools.calculateTime(new Rational(180-90, 1), TimeMeterToolsTest.T_439); // 49202640
+				case "5": return TimeMeterTools.calculateTime(new Rational(230-180, 1), TimeMeterToolsTest.T_289); // 41379400
+				case "5a": return TimeMeterTools.calculateTime(new Rational(192-180, 1), TimeMeterToolsTest.T_289); // 9931056
+				case "5b": return TimeMeterTools.calculateTime(new Rational(204-192, 1), TimeMeterToolsTest.T_289); // 9931056
+				case "5c": return TimeMeterTools.calculateTime(new Rational(230-204, 1), TimeMeterToolsTest.T_289); // 21517288
+				case "6": return TimeMeterTools.calculateTime(new Rational(248-230, 1), TimeMeterToolsTest.T_439); // 9840528
 				default: return (long) -1.0;
 			}
 		}
@@ -604,11 +604,11 @@ public class ScorePieceTest extends TestCase {
 			tIn, tIn
 		);
 		List<Double> tmps = Arrays.asList(
-			UtilsTest.T_100, UtilsTest.T_100, // per piece, values for non-aligned and aligned
-			UtilsTest.T_289, UtilsTest.T_289, 
-			UtilsTest.T_289, UtilsTest.T_289,
-			UtilsTest.T_289, UtilsTest.T_289,
-			UtilsTest.T_289, UtilsTest.T_289
+			TimeMeterToolsTest.T_100, TimeMeterToolsTest.T_100, // per piece, values for non-aligned and aligned
+			TimeMeterToolsTest.T_289, TimeMeterToolsTest.T_289, 
+			TimeMeterToolsTest.T_289, TimeMeterToolsTest.T_289,
+			TimeMeterToolsTest.T_289, TimeMeterToolsTest.T_289,
+			TimeMeterToolsTest.T_289, TimeMeterToolsTest.T_289
 		);
 		List<Rational> mts = Arrays.asList(
 			Rational.ZERO, Rational.ZERO, // per piece, values for non-aligned and aligned
@@ -632,7 +632,7 @@ public class ScorePieceTest extends TestCase {
 						Rational mt = ((TimedMetrical) m).getMetricTime();
 						double tempo = metl.getTempo(t);
 						expected.add(new TimedMetrical(
-							t + Utils.calculateTime(new Rational(10, 1), tempo), 
+							t + TimeMeterTools.calculateTime(new Rational(10, 1), tempo), 
 							mt.add(new Rational(10, 1))));
 						break;
 					}
@@ -969,7 +969,7 @@ public class ScorePieceTest extends TestCase {
 		// Adapt endMarker (added through last TempoMarker) (mt = 236/1)
 		TimedMetrical em = (TimedMetrical) mtlMemorEsto.get(mtlMemorEsto.size()-1);
 		em.setMetricTime(new Rational(236, 1));
-		em.setTime(s1a + s1b + s1c + s1d + s1e + s1f + Utils.calculateTime(new Rational(10, 1), UtilsTest.T_289));
+		em.setTime(s1a + s1b + s1c + s1d + s1e + s1f + TimeMeterTools.calculateTime(new Rational(10, 1), TimeMeterToolsTest.T_289));
 		expected.add(mtlMemorEsto);
 		// Two meter sections, none added
 		MetricalTimeLine mtlQuiHabitat = getCleanMetricalTimeLine("qui habitat");
@@ -1066,7 +1066,7 @@ public class ScorePieceTest extends TestCase {
 		// Adapt endMarker (mt = 207/2 + (10/1)/2) = 217/2)
 		TimedMetrical em = (TimedMetrical) mtlMemorEsto.get(mtlMemorEsto.size()-1);
 		em.setMetricTime(new Rational(217, 2));
-		em.setTime(s1a + s1b + s1c + s1d + s1e + s1f + Utils.calculateTime(new Rational(10, 1).div(2), UtilsTest.T_289/2));
+		em.setTime(s1a + s1b + s1c + s1d + s1e + s1f + TimeMeterTools.calculateTime(new Rational(10, 1).div(2), TimeMeterToolsTest.T_289/2));
 		expected.add(mtlMemorEsto);		
 		// Two meter sections, diminutions = 4, 2
 		MetricalTimeLine mtlQuiHabitat = getCleanMetricalTimeLine("qui habitat");
@@ -1081,7 +1081,7 @@ public class ScorePieceTest extends TestCase {
 		// Adapt endMarker (mt = 75/4 + (10/1)/2 = 95/4)
 		TimedMetrical emQuiHabitat = (TimedMetrical) mtlQuiHabitat.get(mtlQuiHabitat.size()-1);
 		emQuiHabitat.setMetricTime(new Rational(95, 4));
-		emQuiHabitat.setTime(s1 + Utils.calculateTime(new Rational(10, 1).div(2), UtilsTest.T_289/2));
+		emQuiHabitat.setTime(s1 + TimeMeterTools.calculateTime(new Rational(10, 1).div(2), TimeMeterToolsTest.T_289/2));
 		expected.add(mtlQuiHabitat);
 		// Three meter sections, diminutions = 1, 2, 1
 		MetricalTimeLine mtlPreterRerum = getCleanMetricalTimeLine("preter rerum");
@@ -1101,7 +1101,7 @@ public class ScorePieceTest extends TestCase {
 		// Adapt endMarker (mt = 158/1 + (10/1)/1 = 168/1)
 		em = (TimedMetrical) mtlPreterRerum.get(mtlPreterRerum.size()-1);
 		em.setMetricTime(new Rational(168, 1));
-		em.setTime(s1 + s2 + Utils.calculateTime(new Rational(10, 1), UtilsTest.T_289));
+		em.setTime(s1 + s2 + TimeMeterTools.calculateTime(new Rational(10, 1), TimeMeterToolsTest.T_289));
 		expected.add(mtlPreterRerum);
 		// Nine meter sections, diminutions = 2, 4, 2, 4, 2, 4, 2, 4, 2
 		MetricalTimeLine mtlInExitu = getCleanMetricalTimeLine("in exitu");
@@ -1151,7 +1151,7 @@ public class ScorePieceTest extends TestCase {
 		// Adapt endMarker (mt = 82/1 + (10/1)/2 = 87/1)
 		em = (TimedMetrical) mtlInExitu.get(mtlInExitu.size()-1);
 		em.setMetricTime(new Rational(87, 1));
-		em.setTime(s1 + s2 + s3 + s4 + s5a + s5b + s5c + s6 + Utils.calculateTime(new Rational(10, 1).div(2), UtilsTest.T_289/2));
+		em.setTime(s1 + s2 + s3 + s4 + s5a + s5b + s5c + s6 + TimeMeterTools.calculateTime(new Rational(10, 1).div(2), TimeMeterToolsTest.T_289/2));
 		expected.add(mtlInExitu);
 
 		List<MetricalTimeLine> actual = new ArrayList<>();
@@ -1667,7 +1667,7 @@ public class ScorePieceTest extends TestCase {
 		TimedMetrical em1 = (TimedMetrical) expected1.get(expected1.size()-1);
 		em1.setMetricTime(new Rational(365, 16));
 		em1.setTime(s1Rev + s2Rev + s3Rev + s4Rev + s5Rev + 
-			Utils.calculateTime(new Rational(10, 1), UtilsTest.T_100));
+			TimeMeterTools.calculateTime(new Rational(10, 1), TimeMeterToolsTest.T_100));
 		expected.add(expected1);
 
 		MetricalTimeLine expected2 = new MetricalTimeLine();
@@ -1728,7 +1728,7 @@ public class ScorePieceTest extends TestCase {
 		TimedMetrical em2 = (TimedMetrical) expected2.get(expected2.size()-1);
 		em2.setMetricTime(new Rational(369, 32));
 		em2.setTime(s1Resc + s2Resc + s3Resc + s4Resc + s5Resc + 
-			Utils.calculateTime(new Rational(10, 1).div(2), UtilsTest.T_100));
+			TimeMeterTools.calculateTime(new Rational(10, 1).div(2), TimeMeterToolsTest.T_100));
 		expected.add(expected2);
 
 		MetricalTimeLine expected3 = new MetricalTimeLine();
@@ -1766,7 +1766,7 @@ public class ScorePieceTest extends TestCase {
 		TimedMetrical em3 = (TimedMetrical) expected3.get(expected3.size()-1);
 		em3.setMetricTime(new Rational(369, 8));
 		em3.setTime(s1Resc * 4 + s2Resc * 4 + s3Resc * 4 + s4Resc * 4 + s5Resc * 4 + 
-			Utils.calculateTime(new Rational(10, 1).mul(2), UtilsTest.T_100));
+			TimeMeterTools.calculateTime(new Rational(10, 1).mul(2), TimeMeterToolsTest.T_100));
 		expected.add(expected3);
 
 		List<MetricalTimeLine> actual = new ArrayList<>();

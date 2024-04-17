@@ -48,22 +48,24 @@ import de.uos.fmt.musitech.score.ScoreEditor.Mode;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import imports.MIDIImport;
+import path.Path;
+import tools.labels.LabelTools;
 import representations.Tablature.Tuning;
 import structure.ScoreMetricalTimeLine;
 import structure.ScorePiece;
 import structure.Timeline;
-import structure.metric.Utils;
 import tbp.Encoding;
 import tbp.TabSymbol;
 import tools.ToolBox;
-import utility.DataConverter;
-import utility.NoteTimePitchComparator;
+//import tools.music.NoteTimePitchComparator;
+import tools.music.TimeMeterTools;
 
 public class Transcription implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	public static int MAX_NUM_VOICES = 5;
-	public static int DUR_LABEL_MULTIPLIER = 1; // TODO set to 2 for Byrd and 3 for JosquIntab
+	public static int DUR_LABEL_MULTIPLIER = 1; // TODO set to 2 for Byrd (to allow for note twice the length of a W) 
+	                                            // and 3 for JosquIntab (to allow for note three times the length of a W)
 	public static int MAX_TABSYMBOL_DUR = (Tablature.SRV_DEN / 3) * DUR_LABEL_MULTIPLIER; // trp dur
 	public static final int INCORRECT_IND = 0;
 	public static final int ORNAMENTATION_IND = 1;
@@ -771,7 +773,7 @@ public class Transcription implements Serializable {
 
 //		MetricalTimeLine mtl = getScorePiece().getMetricalTimeLine();
 		SortedContainer<Marker> keySigs = getScorePiece().getHarmonyTrack();
-		List<Integer[]> meterInfo = getMeterInfo();
+		List<Integer[]> mi = getMeterInfo();
 		ScoreMetricalTimeLine smtl = getScorePiece().getScoreMetricalTimeLine();
 		int numKeySigs = keySigs.size();
 		for (int i = 0; i < numKeySigs; i++) {
@@ -798,7 +800,7 @@ public class Transcription implements Serializable {
 				lastBar = firstBarNext - 1;
 			}
 			else {
-				lastBar = meterInfo.get(meterInfo.size() -1)[MI_LAST_BAR];
+				lastBar = mi.get(mi.size() -1)[MI_LAST_BAR];
 			}
 			currKeyInfo[KI_KEY] = key;
 			currKeyInfo[KI_MODE] = mode;
@@ -857,7 +859,7 @@ public class Transcription implements Serializable {
 
 		// Make unhandled notes
 		List<Note> argNotes = makeUnhandledNotes();
-		System.out.println(argNotes.size());
+//		System.out.println(argNotes.size());
 		
 
 		// In the tablature case: handle SNUs and course crossings
@@ -877,7 +879,7 @@ public class Transcription implements Serializable {
 			// Check alignment
 			if (checkAlignment(argTaggedNotes, tab) == false) {
 				System.out.println(alignmentCheck);
-				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");      	
+				throw new RuntimeException("ERROR: Misalignment in Tablature and Transcription (see console).");
 			}
 		}
 		// In the non-tablature case: handle unisons
@@ -1742,9 +1744,9 @@ public class Transcription implements Serializable {
 		getTaggedNotes().forEach(tn -> 	
 			argDurLabels.add(createDurationLabel(
 				tn.getDurations() == null ? 
-					new Integer[]{Tablature.getTabSymbolDur(tn.getNote().getMetricDuration())} :
-				new Integer[]{Tablature.getTabSymbolDur(tn.getDurations()[0]), 
-					Tablature.getTabSymbolDur(tn.getDurations()[1])}	
+					new Integer[]{TabSymbol.getTabSymbolDur(tn.getNote().getMetricDuration())} :
+				new Integer[]{TabSymbol.getTabSymbolDur(tn.getDurations()[0]), 
+					TabSymbol.getTabSymbolDur(tn.getDurations()[1])}	
 //				(Integer[]) Arrays.stream(tn.getDurations()).map(d -> Tablature.getTabSymbolDur(d)).toArray()
 		)));
 		return argDurLabels;
@@ -2553,7 +2555,7 @@ public class Transcription implements Serializable {
 			// For each note: check whether the note at index j belongs to currentVoice. If so, add it to notesInCurrentVoice 
 			for (int j = 0; j < voiceLabels.size(); j++) {
 				List<Double> actualVoiceLabel = voiceLabels.get(j);
-				List<Integer> actualVoices = DataConverter.convertIntoListOfVoices(actualVoiceLabel);
+				List<Integer> actualVoices = LabelTools.convertIntoListOfVoices(actualVoiceLabel);
 				if (actualVoices.contains(currentVoice)) {
 					notesInCurrentVoice.add(j);
 				}
@@ -2716,7 +2718,7 @@ public class Transcription implements Serializable {
 				// both cases this is the first element of durationCurrentPreviousNote
 				List<Double> durationLabelCurrentPreviousNote = durationLabels.get(i);
 				durationCurrentPreviousNote = 
-					DataConverter.convertIntoDuration(durationLabelCurrentPreviousNote)[0];
+					LabelTools.convertIntoDuration(durationLabelCurrentPreviousNote)[0];
 			}
 			// b. In the non-tablature case
 			else if (bnp != null) {
@@ -2801,11 +2803,11 @@ public class Transcription implements Serializable {
 
 		for (int i : indicesOfSustainedPreviousNotes) {
 			List<Double> currentVoiceLabel = allVoiceLabels.get(i);
-			List<Integer> currentVoices = DataConverter.convertIntoListOfVoices(currentVoiceLabel);
+			List<Integer> currentVoices = LabelTools.convertIntoListOfVoices(currentVoiceLabel);
 
 			// Take into account CoD
 			if (currentVoices.size() > 1) {
-				Rational[] duration = DataConverter.convertIntoDuration(durationLabels.get(i));
+				Rational[] duration = LabelTools.convertIntoDuration(durationLabels.get(i));
 				// If both CoDnotes have the same duration: offset time of both exceeds onset time of chord; add both
 				if (duration.length == 1) {
 					voicesOfSustainedPreviousNotes.add(currentVoices.get(0));
@@ -3415,7 +3417,7 @@ public class Transcription implements Serializable {
 //				Rational offsetCurr = onsetCurr.add(
 //					new Rational(btp[i][4], Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom()));
 				Rational offsetCurr = 
-					onsetCurr.add(DataConverter.convertIntoDuration(durationLabels.get(i))[0]);
+					onsetCurr.add(LabelTools.convertIntoDuration(durationLabels.get(i))[0]);
 				tpm[i] = new Rational[]{onsetCurr, offsetCurr, new Rational(pitchCurr, 1)};
 			}
 		}
@@ -3529,7 +3531,7 @@ public class Transcription implements Serializable {
 		Rational granularity = new Rational(1, 32);
 		for (int i = 0; i < n; i++) {
 			Rational curr = 
-				(btp != null) ?	DataConverter.convertIntoDuration(durationLabels.get(i))[0] :
+				(btp != null) ?	LabelTools.convertIntoDuration(durationLabels.get(i))[0] :
 				new Rational(bnp[i][DUR_NUMER], bnp[i][DUR_DENOM]);
 			headMotif.add(quantiseDuration(curr, granularity));
 		}
@@ -3566,7 +3568,7 @@ public class Transcription implements Serializable {
 				System.out.println("density increase");
 				System.out.println( 
 					((btp != null) ? "onset time " + new Rational(btp[i][Tablature.ONSET_TIME], Tablature.SRV_DEN) :
-					"bar " + Utils.getMetricPositionAsString(getMetricPositionsNotes().get(i))));
+					"bar " + TimeMeterTools.getMetricPositionAsString(getMetricPositionsNotes().get(i))));
 				System.out.println("new density = " + noteDensities.get(i));
 				density = noteDensities.get(i);
 				int config = -1;
@@ -3578,7 +3580,7 @@ public class Transcription implements Serializable {
 					bnp[i][CHORD_SIZE_AS_NUM_ONSETS]);
 				for (int j = i; j < i + chordSz ; j++) {
 					Rational curr =
-						(btp != null) ? DataConverter.convertIntoDuration(durationLabels.get(j))[0] :	
+						(btp != null) ? LabelTools.convertIntoDuration(durationLabels.get(j))[0] :	
 						new Rational(bnp[j][DUR_NUMER], bnp[j][DUR_DENOM]);
 					curr = quantiseDuration(curr, granularity);
 					if (curr.equals(headMotif.get(0))) {
@@ -3605,7 +3607,7 @@ public class Transcription implements Serializable {
 						// with the first HMN 
 						for (int j = i-1; j >= 0; j--) {
 							Rational curr = 
-								(btp != null) ? DataConverter.convertIntoDuration(durationLabels.get(j))[0] : 
+								(btp != null) ? LabelTools.convertIntoDuration(durationLabels.get(j))[0] : 
 								new Rational(bnp[j][DUR_NUMER], bnp[j][DUR_DENOM]);
 							curr = quantiseDuration(curr, granularity);
 							if (curr.equals(headMotif.get(0))) {
@@ -3653,7 +3655,7 @@ public class Transcription implements Serializable {
 								new Rational(bnp[j][ONSET_TIME_NUMER], bnp[j][ONSET_TIME_DENOM]);
 							if (currOns.equals(nextOns)) {
 								Rational currDur = 
-									(btp != null) ? DataConverter.convertIntoDuration(durationLabels.get(j))[0] :
+									(btp != null) ? LabelTools.convertIntoDuration(durationLabels.get(j))[0] :
 									new Rational(bnp[j][DUR_NUMER], bnp[j][DUR_DENOM]);
 								currDur = quantiseDuration(currDur, granularity);
 								if (currDur.equals(headMotif.get(ind))) {
@@ -4565,7 +4567,7 @@ public class Transcription implements Serializable {
 //				isDur = 1;
 //			}
 			if (btp != null) {
-				Rational dur = DataConverter.convertIntoDuration(durationLabels.get(i))[0];
+				Rational dur = LabelTools.convertIntoDuration(durationLabels.get(i))[0];
 				List<Integer> curr = new ArrayList<Integer>();
 				curr.add(btp[i][Tablature.PITCH]);
 				curr.add(dur.getNumer());
@@ -7013,7 +7015,7 @@ public class Transcription implements Serializable {
 		for (int i = 0; i < allChordVoiceLabels.size(); i++) {
 			List<List<Double>> curr = allChordVoiceLabels.get(i);
 			List<Integer> currVoiceAssignment = 
-				DataConverter.getVoiceAssignment(curr, highestNumVoices);
+				LabelTools.getVoiceAssignment(curr, highestNumVoices);
 			voiceAssignments.add(currVoiceAssignment);
 		}		
 		return voiceAssignments;
@@ -7155,7 +7157,7 @@ public class Transcription implements Serializable {
 
 			// a. Get the voice crossing information within the chord (Type 1)
 			List<List<Double>> currentChordVoiceLabels = chordVoiceLabels.get(i);
-			List<List<Integer>> voicesInChord = DataConverter.getVoicesInChord(currentChordVoiceLabels);
+			List<List<Integer>> voicesInChord = LabelTools.getVoicesInChord(currentChordVoiceLabels);
 			List<List<Integer>> vcInfo = 
 				getVoiceCrossingInformationInChord(pitchesInChord, voicesInChord);
 			if (vcInfo.get(0).size() != 0) {
@@ -7187,7 +7189,7 @@ public class Transcription implements Serializable {
 					pitchCurrNote = basicNoteProperties[j][PITCH];
 				}
 				List<Double> voiceLabelCurrNote = voiceLabels.get(j);
-				List<Integer> voicesCurrNote = DataConverter.convertIntoListOfVoices(voiceLabelCurrNote);
+				List<Integer> voicesCurrNote = LabelTools.convertIntoListOfVoices(voiceLabelCurrNote);
 				// Find sustained notes
 				for (int k = 0; k < notes.size(); k++) { // k is index of note before current note 
 //				for (int k = 0; k < noteSeq.size(); k++) { // k is index of note before current note 
@@ -7207,7 +7209,7 @@ public class Transcription implements Serializable {
 							int pitchPrevNote = n.getMidiPitch();
 							List<Double> voiceLabelPrevNote = voiceLabels.get(k);
 							List<Integer> voicesPrevNote = 
-								DataConverter.convertIntoListOfVoices(voiceLabelPrevNote);
+								LabelTools.convertIntoListOfVoices(voiceLabelPrevNote);
 							// For each note in the chord: voice crossing with sustained note if that sustained note
 							// -has a lower voice number (i.e., is in a higher voice) and a lower pitch
 							// -has a higher voice number (i.e., is in a lower voice) and a higher pitch
@@ -8226,7 +8228,7 @@ public class Transcription implements Serializable {
 			// Get original metric time and diminution
 			Rational currMt = 
 				new Rational(currNote[ONSET_TIME_NUMER], currNote[ONSET_TIME_DENOM]);
-			int currDim = Utils.getDiminution(currMt, mi);
+			int currDim = TimeMeterTools.getDiminution(currMt, mi);
 			// Get the diminuted metric time for the chord the note at index i is in
 			Rational currMtDim;
 			// If the chord is the first chord of the piece
@@ -8235,14 +8237,14 @@ public class Transcription implements Serializable {
 					currMtDim = currMt;
 				}
 				else {
-					currMtDim = Utils.diminute(currMt, currDim);
+					currMtDim = TimeMeterTools.diminute(currMt, currDim);
 //						(currDim > 0) ? currMt.div(currDim) : currMt.mul(Math.abs(currDim));							
 				}
 			}
 			// If the chord is a chord after the first: to get currMtDim, add the
 			// diminuted difference between currMt and prevMt to prevMtDim
 			else {
-				Rational mtIncrease = Utils.diminute(currMt.sub(prevMt), prevDim);
+				Rational mtIncrease = TimeMeterTools.diminute(currMt.sub(prevMt), prevDim);
 //					prevDim > 0 ? (currMt.sub(prevMt)).div(prevDim) : 
 //					(currMt.sub(prevMt)).mul(Math.abs(prevDim));
 				currMtDim = prevMtDim.add(mtIncrease);
@@ -8256,7 +8258,7 @@ public class Transcription implements Serializable {
 				curr[ONSET_TIME_DENOM] = currMtDim.getDenom();
 				// Duration
 				Rational currDur = new Rational(curr[DUR_NUMER], curr[DUR_DENOM]);
-				Rational currDurDim = Utils.diminute(currDur, currDim);
+				Rational currDurDim = TimeMeterTools.diminute(currDur, currDim);
 //					(currDim > 0) ? currDur.div(currDim) : currDur.mul(Math.abs(currDim));
 				curr[DUR_NUMER] = currDurDim.getNumer();
 				curr[DUR_DENOM] = currDurDim.getDenom();
@@ -8364,8 +8366,8 @@ public class Transcription implements Serializable {
 						int indFirst = indLonger;
 						int indSecond = indShorter;
 						isEDU = 0;
-						first = DataConverter.convertIntoListOfVoices(voiceLab.get(indFirst)).get(0);
-						second = DataConverter.convertIntoListOfVoices(voiceLab.get(indSecond)).get(0);
+						first = LabelTools.convertIntoListOfVoices(voiceLab.get(indFirst)).get(0);
+						second = LabelTools.convertIntoListOfVoices(voiceLab.get(indSecond)).get(0);
 //						voicesIDU.set(indLower, new Integer[]{first, second, indUpper, 0});
 //						voicesIDU.set(indUpper, new Integer[]{first, second, indLower, 0});
 //						voicesUnison.set(indLower, new Integer[]{first, second, indUpper, 0});
@@ -8375,8 +8377,8 @@ public class Transcription implements Serializable {
 						int indFirst = indLower;
 						int indSecond = indUpper;
 						isEDU = 1;
-						first = DataConverter.convertIntoListOfVoices(voiceLab.get(indFirst)).get(0);
-						second = DataConverter.convertIntoListOfVoices(voiceLab.get(indSecond)).get(0);
+						first = LabelTools.convertIntoListOfVoices(voiceLab.get(indFirst)).get(0);
+						second = LabelTools.convertIntoListOfVoices(voiceLab.get(indSecond)).get(0);
 //						voicesEDU.set(indLower, new Integer[]{first, second, indUpper, 1});
 //						voicesEDU.set(indUpper, new Integer[]{first, second, indLower, 1});
 //						voicesUnison.set(indLower, new Integer[]{first, second, indUpper, 1});
@@ -8451,8 +8453,8 @@ public class Transcription implements Serializable {
 					// a. Indices of the lower and upper unison note   
 					int indLower = notesPreceding + unisonInfo[j][1];
 					int indUpper = notesPreceding + unisonInfo[j][2];
-					int voiceLower = DataConverter.convertIntoListOfVoices(voiceLab.get(indLower)).get(0);
-					int voiceUpper = DataConverter.convertIntoListOfVoices(voiceLab.get(indUpper)).get(0); 
+					int voiceLower = LabelTools.convertIntoListOfVoices(voiceLab.get(indLower)).get(0);
+					int voiceUpper = LabelTools.convertIntoListOfVoices(voiceLab.get(indUpper)).get(0); 
 					boolean isEDU = 
 						noteSeq.get(indLower).getMetricDuration().equals(noteSeq.get(indUpper).getMetricDuration());
 					voicesUnison.set(indLower, new Integer[]{voiceLower, voiceUpper, indUpper, isEDU ? 1 : 0});
@@ -8560,8 +8562,8 @@ public class Transcription implements Serializable {
 						// have different durations.
 						int indFirst = !durLower.equals(durUpper) ? indLonger : indLower;
 						int indSecond = !durLower.equals(durUpper) ? indShorter : indUpper;
-						first = DataConverter.convertIntoListOfVoices(voiceLab.get(indFirst)).get(0);
-						second = DataConverter.convertIntoListOfVoices(voiceLab.get(indSecond)).get(0);
+						first = LabelTools.convertIntoListOfVoices(voiceLab.get(indFirst)).get(0);
+						second = LabelTools.convertIntoListOfVoices(voiceLab.get(indSecond)).get(0);
 					}
 					else {
 						// Determine first and second voice from combined voice label. The SNU notes always 
@@ -8569,8 +8571,8 @@ public class Transcription implements Serializable {
 						// lower voice from the combined voice label
 						int indFirst = indLower;
 						int indSecond = indFirst;
-						first = DataConverter.convertIntoListOfVoices(voiceLab.get(indFirst)).get(1);
-						second = DataConverter.convertIntoListOfVoices(voiceLab.get(indSecond)).get(0);
+						first = LabelTools.convertIntoListOfVoices(voiceLab.get(indFirst)).get(1);
+						second = LabelTools.convertIntoListOfVoices(voiceLab.get(indSecond)).get(0);
 					}
 					voicesSNU.set(indLower, new Integer[]{first, second});
 
@@ -9223,7 +9225,7 @@ public class Transcription implements Serializable {
 
 		// TODO Make copy rather than store and retrieve
 		String fPath = "C:/Users/Reinier/Desktop/copy.mid";
-		fPath = MEIExport.rootDir + "copy.mid";
+		fPath = Path.ROOT_PATH + "copy.mid";
 //		MIDIExport.exportMidiFile(p, Arrays.asList(new Integer[]{MIDIExport.DEFAULT_INSTR}), fPath);
 		Piece pUn = MIDIImport.importMidiFile(new File(fPath));
 		new File(fPath).delete();
@@ -9663,7 +9665,7 @@ public class Transcription implements Serializable {
 					meterResc = new Rational(meter.getNumer() * rescaleFactor, meter.getDenom());
 				}
 				else {
-					meterResc = Utils.undiminuteMeter(meter, rescaleFactor);
+					meterResc = TimeMeterTools.undiminuteMeter(meter, rescaleFactor);
 				}
 				TimeSignature tsResc = new TimeSignature(meterResc);
 				Rational mtResc = 
@@ -9992,10 +9994,10 @@ public class Transcription implements Serializable {
 				// When not modelling duration, durLabels == null
 				Rational mDur = 
 					durLabels == null ? new Rational(btp[i][Tablature.MIN_DURATION], Tablature.SRV_DEN) :
-					DataConverter.convertIntoDuration(durLabels.get(i))[0]; // TODO [0] is possible because each element in durations currently contains only one Rational
+						LabelTools.convertIntoDuration(durLabels.get(i))[0]; // TODO [0] is possible because each element in durations currently contains only one Rational
 				Note note = ScorePiece.createNote(btp[i][Tablature.PITCH], mt, mDur, -1, null);
 				// Add Note to voice(s)
-				DataConverter.convertIntoListOfVoices(voiceLabels.get(i)).forEach(v -> 
+				LabelTools.convertIntoListOfVoices(voiceLabels.get(i)).forEach(v -> 
 					piece.getScore().get(v).get(0).add(note));
 //				List<Integer> currVoices = DataConverter.convertIntoListOfVoices(voiceLabels.get(i));
 //				for (int v : currVoices) {
@@ -10015,7 +10017,7 @@ public class Transcription implements Serializable {
 					bnp[i][Transcription.DUR_DENOM]);
 				Note note = ScorePiece.createNote(bnp[i][Transcription.PITCH], mt, mDur, -1, null);
 				// Add Note voice(s)
-				DataConverter.convertIntoListOfVoices(voiceLabels.get(i)).forEach(v ->
+				LabelTools.convertIntoListOfVoices(voiceLabels.get(i)).forEach(v ->
 					piece.getScore().get(v).get(0).add(note));
 //				List<Integer> currentVoices = DataConverter.convertIntoListOfVoices(voiceLabels.get(i));
 //				for (int v : currentVoices) {

@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import de.uos.fmt.musitech.utility.math.Rational;
+import representations.Tablature;
 import representations.Tablature.Tuning;
 
 /**
@@ -159,6 +161,22 @@ public class TabSymbol extends Symbol implements Serializable {
 
 	public int getFingeringDots() {
 		return fingeringDots;
+	}
+
+
+	////////////////////////////////
+	//
+	//  C L A S S  M E T H O D S
+	//
+	/**
+	 * Returns the TabSymbol duration of the given CMN duration.
+	 *  
+	 * @param dur
+	 * @return
+	 */
+	// TESTED
+	public static int getTabSymbolDur(Rational dur) { // TODO to TabSymbol
+		return dur.mul(Tablature.SRV_DEN).getNumer();
 	}
 
 

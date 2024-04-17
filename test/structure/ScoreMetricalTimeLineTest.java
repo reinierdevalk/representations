@@ -28,15 +28,15 @@ public class ScoreMetricalTimeLineTest {
 
 	@Before
 	public void setUp() throws Exception {
-		String root = Path.getRootPath() + Path.getDataDir(); 
+		String root = Path.ROOT_PATH_DEPLOYMENT_DEV; 
 		encodingTestpiece = 
-			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "testpiece.tbp");
+			new File(root + Path.ENCODINGS_REL_PATH + Path.TEST_DIR + "testpiece.tbp");
 		encodingTestGetMeterInfo = 
-			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "test_get_meter_info.tbp");
+			new File(root + Path.ENCODINGS_REL_PATH + Path.TEST_DIR + "test_get_meter_info.tbp");
 		midiTestpiece = 
-			new File(root + Path.getMIDIPath() + Path.getTestDir() + "testpiece.mid");
+			new File(root + Path.MIDI_REL_PATH + Path.TEST_DIR + "testpiece.mid");
 		midiTestGetMeterKeyInfo = 
-			new File(root + Path.getMIDIPath() + Path.getTestDir() + "test_get_meter_key_info.mid");
+			new File(root + Path.MIDI_REL_PATH + Path.TEST_DIR + "test_get_meter_key_info.mid");
 	}
 
 

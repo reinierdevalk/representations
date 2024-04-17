@@ -93,11 +93,13 @@ def compute_beams(bars_curr_voice):
 					if 'note' in xml_note:
 						m21_bar.append(music21.note.Note('C', quarterLength=note_length))                    
 					elif 'rest' in xml_note:
-						m21_bar.append(music21.note.Rest('rest', quarterLength=note_length))
+						m21_bar.append(music21.note.Rest(quarterLength=note_length))
+#						m21_bar.append(music21.note.Rest('rest', quarterLength=note_length)) # key 'rest' no longer valid after music21 upgrade
 				else:
 					split = time_sig[1:-1].split('/')
 					note_length = int(int(split[0]) / int(split[1]))
-					m21_bar.append(music21.note.Rest('rest', quarterLength=4))
+					m21_bar.append(music21.note.Rest(quarterLength=4))
+#					m21_bar.append(music21.note.Rest('rest', quarterLength=4)) # key 'rest' no longer valid after music21 upgrade
 
 		# Make beams
 		m21_bar.makeBeams(inPlace=True)

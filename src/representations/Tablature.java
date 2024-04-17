@@ -25,17 +25,19 @@ import tools.ToolBox;
 
 /**
  * @author Reinier de Valk
- * @version 10.04.2023 (last well-formedness check)
+ * @version 19.02.2024 (last well-formedness check)
  */
 public class Tablature implements Serializable {
 	private static final long serialVersionUID = 1L;
 
-	public static final Rational SMALLEST_RHYTHMIC_VALUE = 
-		new Rational(RhythmSymbol.SEMIFUSA.getDuration()/3, RhythmSymbol.BREVIS.getDuration());
+	public static final Rational SMALLEST_RHYTHMIC_VALUE = new Rational(
+		RhythmSymbol.SEMIFUSA.getDuration()/3, RhythmSymbol.BREVIS.getDuration()
+	);
 	public static final int SRV_DEN = SMALLEST_RHYTHMIC_VALUE.getDenom();
 	public static final int TAB_BAR_IND = 0;
 	public static final int METRIC_BAR_IND = 1;
-	public static final int SECOND_METRIC_BAR_IND = 2;
+	public static final int LAST_METRIC_BAR_IND = 2;
+	public static final int BAR_OFFSETS_ALIGN_IND = 3;
 	public static final int TAB_BAR_REL_ONSET_IND = 3;
 	public static final int METRIC_BAR_REMAINDER_IND = 4;
 
@@ -71,67 +73,81 @@ public class Tablature implements Serializable {
 	private boolean normaliseTuning;
 	private String name;
 	private List<Integer[]> meterInfo;
+	private List<Integer[]> meterInfoAgnostic;
 	private Tuning[] tunings;
 	private Integer[][] basicTabSymbolProperties;
 	private List<List<TabSymbol>> chords;
 	private List<Integer> numberOfNotesPerChord;
 
-	public static enum Tuning  {
+	public static enum Tuning  {		
 		// Six courses, standard tuning
-		D("D", -5, false, Arrays.asList(new String[]{"D", "G", "C", "E", "A", "D"}), 38,
+		// NB For use of Tuning.REN before declaration, see 
+		// https://stackoverflow.com/questions/9270313/private-static-final-variable-inside-an-enum
+		D("D", Tuning.REN, -5, false, Arrays.asList(new String[]{"D", "G", "C", "E", "A", "D"}), 38, 
 			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
-		F("F", -2, false, Arrays.asList(new String[]{"F", "Bb", "Eb", "G", "C", "F"}), 41,
+		E("E", Tuning.REN, -3, false, Arrays.asList(new String[]{"E", "A", "D", "F#", "B", "E"}), 40,
 			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
-		F_ENH("F", -2, false, Arrays.asList(new String[]{"F", "A#", "D#", "G", "C", "F"}), 41,
+		F("F", Tuning.REN, -2, false, Arrays.asList(new String[]{"F", "Bb", "Eb", "G", "C", "F"}), 41,
 			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
-		Fx("F#", -1, false, Arrays.asList(new String[]{"F#", "B", "E", "G#", "C#", "F#"}), 42,
+		F_ENH("F", Tuning.REN, -2, false, Arrays.asList(new String[]{"F", "A#", "D#", "G", "C", "F"}), 41,
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
+		Fx("F#", Tuning.REN, -1, false, Arrays.asList(new String[]{"F#", "B", "E", "G#", "C#", "F#"}), 42,
 			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})), // 5148_51_respice_in_me_deus._F#_lute_T.tbp
-		G("G", 0, false, Arrays.asList(new String[]{"G", "C", "F", "A", "D", "G"}), 43,
+		G("G", Tuning.REN, 0, false, Arrays.asList(new String[]{"G", "C", "F", "A", "D", "G"}), 43,
 			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
-		A("A", 2, false, Arrays.asList(new String[]{"A", "D", "G", "B", "E", "A"}), 45,
+		A("A", Tuning.REN, 2, false, Arrays.asList(new String[]{"A", "D", "G", "B", "E", "A"}), 45,
 			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
-		C_HIGH("C_HIGH", 5, false, Arrays.asList(new String[]{"C", "F", "Bb", "D", "G", "C"}), 48,
+		C_HIGH("C_HIGH", Tuning.REN, 5, false, Arrays.asList(new String[]{"C", "F", "Bb", "D", "G", "C"}), 48,
 			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})), // 1030_coment_peult_avoir_joye.tbp
 		// Six courses, drop tuning
-		C6Bb("C6Bb", -7, true, Arrays.asList(new String[]{"Bb", "F", "Bb", "D", "G", "C"}), 34,
+		C6Bb("C6Bb", Tuning.REN, -7, true, Arrays.asList(new String[]{"Bb", "F", "Bb", "D", "G", "C"}), 34,
 			Arrays.asList(new Integer[]{7, 5, 4, 5, 5})),
-		G6F("G6F", 0, true, Arrays.asList(new String[]{"F", "C", "F", "A", "D", "G"}), 41,
+		G6F("G6F", Tuning.REN, 0, true, Arrays.asList(new String[]{"F", "C", "F", "A", "D", "G"}), 41,
 			Arrays.asList(new Integer[]{7, 5, 4, 5, 5})),
-		A6G("A6G", 2, true, Arrays.asList(new String[]{"G", "D", "G", "B", "E", "A"}), 43,
+		A6G("A6G", Tuning.REN, 2, true, Arrays.asList(new String[]{"G", "D", "G", "B", "E", "A"}), 43,
 			Arrays.asList(new Integer[]{7, 5, 4, 5, 5})),
 		// Seven courses
-		G7F("G7F", 0, false, Arrays.asList(new String[]{"F", "G", "C", "F", "A", "D", "G"}), 41,
+		G7F("G7F", Tuning.REN, 0, false, Arrays.asList(new String[]{"F", "G", "C", "F", "A", "D", "G"}), 41,
 			Arrays.asList(new Integer[]{2, 5, 5, 4, 5, 5})),
-		G7D("G7D", 0, false, Arrays.asList(new String[]{"D", "G", "C", "F", "A", "D", "G"}), 38,
+		G7D("G7D", Tuning.REN, 0, false, Arrays.asList(new String[]{"D", "G", "C", "F", "A", "D", "G"}), 38,
 			Arrays.asList(new Integer[]{5, 5, 5, 4, 5, 5})),
-		A7G("A7G", 2, false, Arrays.asList(new String[]{"G", "A", "D", "G", "B", "E", "A"}), 43,
+		A7G("A7G", Tuning.REN, 2, false, Arrays.asList(new String[]{"G", "A", "D", "G", "B", "E", "A"}), 43,
 			Arrays.asList(new Integer[]{2, 5, 5, 4, 5, 5})),
-		A7E("A7E", 2, false, Arrays.asList(new String[]{"E", "A", "D", "G", "B", "E", "A"}), 40,
+		A7E("A7E", Tuning.REN, 2, false, Arrays.asList(new String[]{"E", "A", "D", "G", "B", "E", "A"}), 40,
 			Arrays.asList(new Integer[]{5, 5, 5, 4, 5, 5})),
 		// Eight courses
-		G8("G8", 0, false, Arrays.asList(new String[]{"D", "F", "G", "C", "F", "A", "D", "G"}), 38,
+		G8("G8", Tuning.REN, 0, false, Arrays.asList(new String[]{"D", "F", "G", "C", "F", "A", "D", "G"}), 38,
 			Arrays.asList(new Integer[]{3, 2, 5, 5, 4, 5, 5})),
-		A8("A8", 2, false, Arrays.asList(new String[]{"E", "G", "A", "D", "G", "B", "E", "A"}), 40,
+		A8("A8", Tuning.REN, 2, false, Arrays.asList(new String[]{"E", "G", "A", "D", "G", "B", "E", "A"}), 40,
 			Arrays.asList(new Integer[]{3, 2, 5, 5, 4, 5, 5}));
 
+		public static final String REN = "Renaissance";
+		public static final String BAR = "Baroque";
+		
 		private String name;
+		private String era;
 		private int transposition;
 		private boolean isDrop;
 		private List<String> courses;
 		private int pitchLowestCourse;
 		private List<Integer> intervals;
-
-		Tuning(String n, int t, boolean d, List<String> c, int p, List<Integer> i) {
+		
+		Tuning(String n, String e, int t, boolean d, List<String> c, int p, List<Integer> i) {
 			name = n;
+			era = e;
 			transposition = t;
 			isDrop = d;
 			courses = c;
 			pitchLowestCourse = p;
-			intervals = i;	
+			intervals = i;
 		}
 
 		public String getName() {
 			return name;
+		}
+
+		public String getEra() {
+			return era;
 		}
 
 		public int getTransposition() {
@@ -257,6 +273,7 @@ public class Tablature implements Serializable {
 		setNormaliseTuning(argNormalise);
 		setName();
 		setMeterInfo();
+		setMeterInfoAgnostic();
 		setTunings();
 		setBasicTabSymbolProperties();
 		setChords();
@@ -285,15 +302,42 @@ public class Tablature implements Serializable {
 
 
 	void setMeterInfo() {
-		meterInfo = makeMeterInfo(); 
+		meterInfo = makeMeterInfo(false); 
 	}
 
 
 	// TESTED
-	List<Integer[]> makeMeterInfo() {
+	List<Integer[]> makeMeterInfo(boolean isAgnostic) {
 		List<Integer[]> mi = new ArrayList<>();
 
-		Timeline tl = getEncoding().getTimeline();
+		Encoding enc = getEncoding();
+		Timeline tl = !isAgnostic ? enc.getTimeline() : enc.getTimelineAgnostic();
+//		if (!isAgnostic) {
+//			tl = enc.getTimeline();
+//		}
+//		else {
+//			tl = enc.getTimelineAgnostic();
+//			// If the METER_INFO content is empty: use existing Timeline
+//			if (enc.getMetadata().get(Encoding.METADATA_TAGS[Encoding.METER_INFO_IND]).equals("")) {
+//				tl = enc.getTimeline();
+//			}
+//			// If not: remove METER_INFO and DIMINUTION content; make new Timeline
+//			else {
+//				String rawEnc = enc.getRawEncoding();
+//				for (String tag : Arrays.asList(Encoding.METER_INFO_TAG, Encoding.DIMINUTION_TAG)) {
+//					tag += ":";
+//					int startInd = rawEnc.indexOf(tag) + tag.length();
+//					rawEnc = rawEnc.replace(
+//						rawEnc.substring(startInd, 
+//						rawEnc.indexOf(Encoding.CLOSE_METADATA_BRACKET, startInd)), ""
+//					);
+//				}
+//				tl = new Encoding(
+//					rawEnc, enc.getPiecename(), Stage.RULES_CHECKED
+//				).getTimeline();
+//			}
+//		}
+
 		List<Integer[]> ts = tl.getTimeSignatures();
 		List<Integer[]> bars = tl.getBars();
 		List<Integer> diminutions = tl.getDiminutions();
@@ -324,7 +368,13 @@ public class Tablature implements Serializable {
 			currMi[MI_DIM] = diminutions.get(i);
 			mi.add(currMi);
 		}
+
 		return mi;
+	}
+
+
+	void setMeterInfoAgnostic() {
+		meterInfoAgnostic = makeMeterInfo(true); 
 	}
 
 
@@ -558,7 +608,8 @@ public class Tablature implements Serializable {
 	/**
 	 * Gets the meterInfo.
 	 * 
-	 * @return A list whose elements represent the meters in the tablature. Each element contains<br>
+	 * @return A list whose elements represent the meters in the tablature. 
+	 *         Each element contains<br>
 	 *         <ul>
 	 *         <li> As element 0: the numerator of the meter.</li>
 	 *         <li> As element 1: the denominator of the meter.</li>
@@ -570,10 +621,22 @@ public class Tablature implements Serializable {
 	 *         </ul>
 	 *         
 	 *         An anacrusis bar would be denoted with bar number 0; however, the current 
-	 *         approach is to pre-pad an anacrusis bar with rests, making it a complete bar.
+	 *         approach (when meterInfo is provided in the Encoding) is to pre-pad an 
+	 *         anacrusis bar with rests, making it a complete bar.
 	 */
 	public List<Integer[]> getMeterInfo() {
 		return meterInfo;
+	}
+
+
+	/**
+	 * Gets the meterInfo, calculated directly from the Tablature (and ignoring 
+	 * the content of the METER_INFO tag in the Encoding).
+	 * 
+	 * @return
+	 */
+	public List<Integer[]> getMeterInfoAgnostic() {
+		return meterInfoAgnostic;
 	}
 
 
@@ -699,18 +762,6 @@ public class Tablature implements Serializable {
 
 
 	/**
-	 * Returns the TabSymbol duration of the given CMN duration.
-	 *  
-	 * @param dur
-	 * @return
-	 */
-	// TESTED
-	public static int getTabSymbolDur(Rational dur) {
-		return dur.mul(SRV_DEN).getNumer();
-	}
-
-
-	/**
 	 * Converts the TabSymbol at the given note index into a Note.
 	 * 
 	 * @param btp The basic TabSymbol properties
@@ -726,30 +777,6 @@ public class Tablature implements Serializable {
 			-1,
 			null
 		);
-	}
-
-
-	//////////////////////////////////////
-	//
-	//  I N S T A N C E  M E T H O D S
-	//  pitch
-	//
-	/**
-	 * Gets the pitches in the chord at the given index. Element 0 of the List represents the
-	 * lowest note's pitch, element 1 the second-lowest note's, etc. 
-	 * 
-	 * NB: If the chord contains course crossings, the list returned will not be in numerical 
-	 * order.
-	 * 
-	 * @param chordIndex
-	 * @return
-	 */
-	// TESTED
-	public List<Integer> getPitchesInChord(int chordIndex) {
-		List<Integer> pitchesInChord = new ArrayList<Integer>();
-		Arrays.stream(getBasicTabSymbolPropertiesChord(chordIndex)).forEach(in -> 
-			pitchesInChord.add(in[PITCH]));
-		return pitchesInChord;
 	}
 
 
@@ -772,24 +799,24 @@ public class Tablature implements Serializable {
 	}
 
 
-	/**
-	 * Gets the pitches in the given chord. Element 0 of the List represents the lowest 
-	 * note's pitch, element 1 the second-lowest note's, etc. 
-	 * 
-	 * NB: If the chord contains course crossings, the list returned will not be in numerical 
-	 * order.
-	 * 
-	 * @param argChord
-	 * @return
-	 */
-	// TESTED
-	private List<Integer> getPitchesInChordOLD(List<TabSymbol> argChord) {
-		List<Integer> pitchesInChord = new ArrayList<Integer>();
-		argChord.forEach(ts -> pitchesInChord.add(
-			ts.getPitch(getNormaliseTuning() ? getTunings()[NORMALISED_TUNING_IND] : 
-			getTunings()[ENCODED_TUNING_IND])));
-		return pitchesInChord;
-	}
+//	/**
+//	 * Gets the pitches in the given chord. Element 0 of the List represents the lowest 
+//	 * note's pitch, element 1 the second-lowest note's, etc. 
+//	 * 
+//	 * NB: If the chord contains course crossings, the list returned will not be in numerical 
+//	 * order.
+//	 * 
+//	 * @param argChord
+//	 * @return
+//	 */
+//	// TESTED
+//	private List<Integer> getPitchesInChordOLD(List<TabSymbol> argChord) {
+//		List<Integer> pitchesInChord = new ArrayList<Integer>();
+//		argChord.forEach(ts -> pitchesInChord.add(
+//			ts.getPitch(getNormaliseTuning() ? getTunings()[NORMALISED_TUNING_IND] : 
+//			getTunings()[ENCODED_TUNING_IND])));
+//		return pitchesInChord;
+//	}
 
 
 	/**
@@ -836,22 +863,22 @@ public class Tablature implements Serializable {
 	}
 
 
-	/**
-	 * Determines the number of unisons in the chord at the given index. A unison occurs when
-	 * two different Tablature notes in the same chord have the same pitch.   
-	 * 
-	 * @param chordIndex
-	 * @return
-	 */
-	// TESTED
-	public int getNumberOfUnisonsInChord(int chordIndex) {
-		if (getUnisonInfo(chordIndex) == null) {
-			return 0;
-		}
-		else {
-			return getUnisonInfo(chordIndex).size();
-		}
-	}
+//	/**
+//	 * Determines the number of unisons in the chord at the given index. A unison occurs when
+//	 * two different Tablature notes in the same chord have the same pitch.   
+//	 * 
+//	 * @param chordIndex
+//	 * @return
+//	 */
+//	// TESTED
+//	public int getNumberOfUnisonsInChord(int chordIndex) {
+//		if (getUnisonInfo(chordIndex) == null) {
+//			return 0;
+//		}
+//		else {
+//			return getUnisonInfo(chordIndex).size();
+//		}
+//	}
 
 
 	/**
@@ -898,21 +925,45 @@ public class Tablature implements Serializable {
 	}
 
 
+//	/**
+//	 * Determines the number of course crossings in the chord at the given index. A course crossing occurs
+//	 * when an onset on course x has a pitch that is higher than that of an onset on course y above it.
+//	 * 
+//	 * @param chordIndex
+//	 * @return 
+//	 */
+//	// TESTED
+//	public int getNumberOfCourseCrossingsInChord(List<TabSymbol> chord /*int chordIndex*/) {
+//		if (getCourseCrossingInfo(chord) == null) {
+//			return 0;
+//		}
+//		else {
+//			return getCourseCrossingInfo(chord).size();
+//		}
+//	}
+
+
+	//////////////////////////////////////
+	//
+	//  I N S T A N C E  M E T H O D S
+	//  pitch
+	//
 	/**
-	 * Determines the number of course crossings in the chord at the given index. A course crossing occurs
-	 * when an onset on course x has a pitch that is higher than that of an onset on course y above it.
+	 * Gets the pitches in the chord at the given index. Element 0 of the List represents the
+	 * lowest note's pitch, element 1 the second-lowest note's, etc. 
+	 * 
+	 * NB: If the chord contains course crossings, the list returned will not be in numerical 
+	 * order.
 	 * 
 	 * @param chordIndex
-	 * @return 
+	 * @return
 	 */
 	// TESTED
-	public int getNumberOfCourseCrossingsInChord(List<TabSymbol> chord /*int chordIndex*/) {
-		if (getCourseCrossingInfo(chord) == null) {
-			return 0;
-		}
-		else {
-			return getCourseCrossingInfo(chord).size();
-		}
+	public List<Integer> getPitchesInChord(int chordIndex) {
+		List<Integer> pitchesInChord = new ArrayList<Integer>();
+		Arrays.stream(getBasicTabSymbolPropertiesChord(chordIndex)).forEach(in -> 
+			pitchesInChord.add(in[PITCH]));
+		return pitchesInChord;
 	}
 
 
@@ -1003,25 +1054,6 @@ public class Tablature implements Serializable {
 			i += chordSize-1;
 		}
 		return allMetricTimes;
-	}
-
-
-	/**
-	 * Returns the minimum durations for all chords.
-	 * 
-	 * @return
-	 */
-	// TESTED
-	public List<Rational> getMinimumDurationPerChord() {
-		List<Rational> allMinimumDurations = new ArrayList<>();
-		Integer[][] btp = getBasicTabSymbolProperties();
-		for (int i = 0; i < btp.length; i++) {
-			Integer[] in = btp[i];
-			Rational currMinDur = new Rational(in[MIN_DURATION], SRV_DEN);
-			allMinimumDurations.add(currMinDur);
-			i += in[CHORD_SIZE_AS_NUM_ONSETS]-1;
-		}
-		return allMinimumDurations;
 	}
 
 
@@ -1119,11 +1151,11 @@ public class Tablature implements Serializable {
 	//  meter
 	//
 	/**
-	 * Gets, for each MensurationSign in the encoding, the sign's encoding, its tab bar,
-	 * and its metric bar.
+	 * Gets, for each MensurationSign in the Encoding, the sign's encoding, its tab bar, 
+	 * and its onset time (measured in Tablature.SRV_DEN).
 	 * 
 	 * NB: This method belongs to Tablature and not Timeline: MS are specific to the 
-	 *     tablature and are often not in sync with the meters (e.g., are left out).
+	 *     tablature and are not always applied consistently (e.g., are left out).
 	 *     
 	 * @return
 	 */
@@ -1131,196 +1163,43 @@ public class Tablature implements Serializable {
 	public List<String[]> getMensurationSigns() {
 		List<String[]> tabMeters = new ArrayList<>();
 		String ss = Symbol.SYMBOL_SEPARATOR;
-		List<Integer[]> tabBarsToMetricBars = mapTabBarsToMetricBars();
+		TabSymbolSet tss = getEncoding().getTabSymbolSet();
 		List<Event> events = 
 			Encoding.removeDecorativeBarlineEvents(getEncoding().getEvents());
 
+		int onset = 0;
+		int prevDur = -1;
 		for (int i = 0; i < events.size(); i++) {
 			Event event = events.get(i);
 			String e = event.getEncoding();
 			int bar = event.getBar();
+
+			boolean isRsEvent = Encoding.assertEventType(e, tss, "RhythmSymbol");
+			boolean isRestEvent = Encoding.assertEventType(e, tss, "rest");
+			boolean isMsEvent = Encoding.assertEventType(e, tss, "MensurationSign");
+			boolean isTsEventNoRs = Encoding.assertEventType(e, tss, "TabSymbol") && !isRsEvent;
+
 			// If the first symbol in the encoded event is a MS
-			if (Symbol.getMensurationSign(e.substring(0, e.indexOf(ss))) != null) {
+			if (isMsEvent) {	
 				// Add complete event (which will be a MS event) without trailing SS
 				tabMeters.add(new String[]{
 					e.substring(0, e.lastIndexOf(ss)), 
-					String.valueOf(bar), 
-					String.valueOf(tabBarsToMetricBars.get(bar-1)[METRIC_BAR_IND])
+					String.valueOf(bar),
+					String.valueOf(onset)
 				});
+			}
+			
+			// Update onset and prevDur
+			if (isRsEvent || isRestEvent) {
+				int dur = Symbol.getRhythmSymbol(e.substring(0, e.indexOf(ss))).getDuration(); 
+				onset += dur;
+				prevDur = dur;
+			}
+			if (isTsEventNoRs) {
+				onset += prevDur;
 			}
 		}
 		return tabMeters;
-	}
-
-
-	/**
-	 * Gets the number of tablature bars, as specified by the number of barlines (where
-	 * decorative initial barlines are not counted).
-	 * 
-	 * NB: This method belongs to Tablature and not Timeline: tablature bars are specific to 
-	 *     the tablature and are often not in sync with the metric bars.
-	 * 
-	 * @return
-	 */
-	// TESTED
-	public int getNumberOfTabBars() {
-		int numBarlines = 0;
-		for (Event e : Encoding.removeDecorativeBarlineEvents(getEncoding().getEvents())) {
-			String firstSymbol = 
-				e.getEncoding().substring(0, 
-				e.getEncoding().lastIndexOf(Symbol.SYMBOL_SEPARATOR));
-			if (Symbol.getConstantMusicalSymbol(firstSymbol) != null && 
-				Symbol.getConstantMusicalSymbol(firstSymbol).isBarline()) {
-				numBarlines++;
-			}
-		}
-		return numBarlines;
-	}
-
-
-	/**
-	 * Get, for each tab bar, the metric bar it belongs to.<br><br> 
-	 * 
-	 * Cases:<br>
-	 * tab bar:metric bar = 1:1<br>
-	 * tab bar:metric bar = n:1<br>
-	 * tab bar:metric bar = 3:2<br><br>
-	 * 
-	 * Examples:<br>
-	 * tab bar:metric bar = n:1<br> 
-	 * metric bars: 2/2 H   H | H   H | H   H | H   H |<br>
-	 * tab bars   : 2/2 H | H | H | H | H | H | H | H |<br> 
- 	 * returns [[1, 1, -1], [2, 1, -1], [3, 2, -1], [4, 2, -1], [5, 3, -1], [6, 3, -1], [7, 4, -1], [8, 4, -1]]<br><br>
- 	 * 
- 	 * tab bar:metric bar = 3:2<br>  
-	 * metric bars: 3/2 H H   H | H   H H | H H   H | H   H H |<br>
-	 * tab bars   : 3/2 H H | H   H | H H | H H | H   H | H H |<br> 
- 	 * returns [[1, 1, -1], [2, 1, 2], [3, 2, -1], [4, 3, -1], [5, 3, 4], [6, 4, -1]]<br><br>
-	 * 
-	 * NB: This method belongs to Tablature and not Timeline: tablature bars are specific to 
-	 *     the tablature and are often not in sync with the metric bars.
-	 * 
-	 * @return A list of Integer[]s, each representing a tab bar and containing<br>
-	 *         <ul>
-	 *         <li>as element 0: the tab bar</li>
-	 *         <li>as element 1: the metric bar the tab bar belongs to</li>
-	 *         <li>as element 2: any second metric bar the tab bar belongs to (3:2 case) or -1 (other cases)</li>
-	 *         <li>as element 3: the relative onset (in multiples of SMALLEST_RHYTHMIC_VALUE) of the tab bar 
-	 *                           in the metric bar</li>
-	 *         <li>as element 4: the remainder of the metric bar (in multiples of SMALLEST_RHYTHMIC_VALUE) at the
-	 *                           end of the tab bar</li>                  
-	 *         </ul>
-	 */
-	// TESTED
-	public List<Integer[]> mapTabBarsToMetricBars() {
-		List<Integer[]> mapped = new ArrayList<>();
-
-		String ss = Symbol.SYMBOL_SEPARATOR;
-		// Get metric bar lengths in SMALLEST_RHYTHMIC_VALUE
-		List<Integer> metricBarLengths = new ArrayList<>();
-		for (Integer[] in : getMeterInfo()) {
-			Rational currMeter = new Rational(in[MI_NUM], in[MI_DEN]);
-			int barLenInSrv = (int) currMeter.div(SMALLEST_RHYTHMIC_VALUE).toDouble();
-			int numBarsInMeter = (in[MI_LAST_BAR] - in[MI_FIRST_BAR]) + 1;
-			metricBarLengths.addAll(Collections.nCopies(numBarsInMeter, barLenInSrv));
-		}
-
-		// Get tablature bar lengths in SMALLEST_RHYTHMIC_VALUE
-		List<Integer> tabBarLengths = new ArrayList<>();
-		List<Event> events = Encoding.removeDecorativeBarlineEvents(getEncoding().getEvents());
-		int durBar = 0;
-		int durPrevE = -1;
-		for (int i = 0; i < events.size(); i++) {
-			Event currEvent = events.get(i);
-			String e = currEvent.getEncoding();
-			int currBar = currEvent.getBar();
-			// If the event is not a barline event or a MS event
-			if (!Encoding.assertEventType(e, null, "barline") && 
-				!Encoding.assertEventType(e, null, "MensurationSign")) {
-				RhythmSymbol rs = Symbol.getRhythmSymbol(e.substring(0, e.indexOf(ss)));
-				int durE = rs != null ? rs.getDuration() : durPrevE;
-				if (rs != null) {
-					durPrevE = durE;
-				}
-				durBar += durE;
-			}
-			// Add to list if the next event belongs to the next bar or if event is the last
-			if (i < events.size() - 1) {
-				if (events.get(i + 1).getBar() == currBar + 1) {
-					tabBarLengths.add(durBar);
-					durBar = 0;
-				}
-			}
-			// Last event
-			else {
-				tabBarLengths.add(durBar);
-			}
-		}
-
-		// Map
-		int metricBar = 1;
-		int onsetTabInMetric = 0;
-		int remainderOfMetricBarLen = metricBarLengths.get(0);
-		System.out.println(tabBarLengths.size());
-		for (int i = 0; i < tabBarLengths.size(); i++) {
-			Integer[] barMetricBarsOnsetTabInMetricBar = new Integer[]{-1, -1, -1, -1, -1};
-			barMetricBarsOnsetTabInMetricBar[TAB_BAR_IND] = i + 1;
-			int currTabBarLen = tabBarLengths.get(i);
-//			int currMetricBarLen = metricBarLengths.get(metricBar -1);
-			System.out.println("i = " + i);
-
-			// There are three possible cases
-			// a. tab:metric = 1:1, i.e., each tab bar corresponds to one metric bar
-			// b. tab:metric = n:1, i.e., n tab bars correspond to one metric bar
-			// c. tab:metric = 3:2, i.e., three tab bars correspond to two metric bars
-			//
-			// Cases b and c 
-			// tab:metric = n:1, non-last tab bar: covers non-end of metric bar
-			// tab:metric = 3:2, first tab bar: covers beginning of first metric bar
-			if (currTabBarLen < remainderOfMetricBarLen) {
-				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
-				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
-				// Set for next tab bar
-//				onsetTabInMetric = currMetricBarLen - (currMetricBarLen - currTabBarLen);
-				onsetTabInMetric += currTabBarLen;
-				remainderOfMetricBarLen -= currTabBarLen;
-				// Set metricBar remainder
-				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_REMAINDER_IND] = remainderOfMetricBarLen;
- 			}
-			// Case c
-			// tab:metric = 3:2, middle tab bar: covers end of first metric bar and beginning of second
-			else if (currTabBarLen > remainderOfMetricBarLen) {
-				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
-				barMetricBarsOnsetTabInMetricBar[SECOND_METRIC_BAR_IND] = metricBar + 1;
-				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
-				// Set for next tab bar
-				metricBar++;
-				onsetTabInMetric = Math.abs(metricBarLengths.get(metricBar - 1) - (onsetTabInMetric + currTabBarLen));
-				remainderOfMetricBarLen = 
-					metricBarLengths.get(metricBar - 1) - (currTabBarLen - remainderOfMetricBarLen);
-				// Set metricBar remainder
-				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_REMAINDER_IND] = remainderOfMetricBarLen;
-			}
-			// Cases a, b, and c
-			// tab:metric 1:1
-			// tab:metric n:1, last tab bar: covers end of metric bar
-			// tab:metric 3:2, last tab bar: covers end of second metric bar
-			else if (currTabBarLen == remainderOfMetricBarLen) {
-				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
-				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
-				// Set for next tab bar
-				metricBar++;
-				onsetTabInMetric = 0;
-				// If not last metric bar
-				if (metricBar <= metricBarLengths.size()) {
-					remainderOfMetricBarLen = metricBarLengths.get(metricBar-1);
-				}
-				// Set metricBar remainder
-				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_REMAINDER_IND] = 0;
-			}
-			mapped.add(barMetricBarsOnsetTabInMetricBar);
-		}
-		return mapped;
 	}
 
 
@@ -1441,6 +1320,202 @@ public class Tablature implements Serializable {
 	}
 
 
+	// TESTED BUT NOT IN USE -->
+	/**
+	 * Returns the minimum durations for all chords.
+	 * 
+	 * @return
+	 */
+	// TESTED
+	List<Rational> getMinimumDurationPerChord() {
+		List<Rational> allMinimumDurations = new ArrayList<>();
+		Integer[][] btp = getBasicTabSymbolProperties();
+		for (int i = 0; i < btp.length; i++) {
+			Integer[] in = btp[i];
+			Rational currMinDur = new Rational(in[MIN_DURATION], SRV_DEN);
+			allMinimumDurations.add(currMinDur);
+			i += in[CHORD_SIZE_AS_NUM_ONSETS]-1;
+		}
+		return allMinimumDurations;
+	}
+
+
+	/**
+	 * Gets the number of tablature bars, as specified by the number of barlines (where
+	 * decorative initial barlines are not counted).
+	 * 
+	 * @return
+	 */
+	// TESTED
+	int getNumberOfBarlines() {
+		int numBarlines = 0;
+		for (Event e : Encoding.removeDecorativeBarlineEvents(getEncoding().getEvents())) {
+			String firstSymbol = 
+				e.getEncoding().substring(0, 
+				e.getEncoding().lastIndexOf(Symbol.SYMBOL_SEPARATOR));
+			if (Symbol.getConstantMusicalSymbol(firstSymbol) != null && 
+				Symbol.getConstantMusicalSymbol(firstSymbol).isBarline()) {
+				numBarlines++;
+			}
+		}
+		return numBarlines;
+	}
+
+
+	/**
+	 * Get, for each tab bar, the metric bar it belongs to.<br><br> 
+	 * 
+	 * Cases:<br>
+	 * tab bar:metric bar = 1:1<br>
+	 * tab bar:metric bar = n:1<br>
+	 * tab bar:metric bar = 3:2<br><br>
+	 * 
+	 * Examples:<br>
+	 * tab bar:metric bar = n:1<br> 
+	 * metric bars: 2/2 H   H | H   H | H   H | H   H |<br>
+	 * tab bars   : 2/2 H | H | H | H | H | H | H | H |<br> 
+ 	 * returns [[1, 1, -1], [2, 1, -1], [3, 2, -1], [4, 2, -1], [5, 3, -1], [6, 3, -1], [7, 4, -1], [8, 4, -1]]<br><br>
+ 	 * 
+ 	 * tab bar:metric bar = 3:2<br>  
+	 * metric bars: 3/2 H H   H | H   H H | H H   H | H   H H |<br>
+	 * tab bars   : 3/2 H H | H   H | H H | H H | H   H | H H |<br> 
+ 	 * returns [[1, 1, -1], [2, 1, 2], [3, 2, -1], [4, 3, -1], [5, 3, 4], [6, 4, -1]]<br><br>
+	 * 
+	 * NB: This method belongs to Tablature and not Timeline: tablature bars are specific to 
+	 *     the tablature and are often not in sync with the metric bars.
+	 * 
+	 * @return A list of Integer[]s, each representing a tab bar and containing<br>
+	 *         <ul>
+	 *         <li>as element 0: the tab bar</li>
+	 *         <li>as element 1: the first metric bar the tab bar belongs to</li>
+	 *         <li>as element 2: the last metric bar the tab bar belongs to (can be the same as element 1)</li>
+	 *         <li>as element 3: whether (1) or not (0) the tab bar ends together with the last metric bar</li>
+	 *         </ul>
+	 */
+	// TESTED
+	List<Integer[]> mapBarsToMetricBars() {
+		List<Integer[]> mapped = new ArrayList<>();
+
+		List<Integer[]> tbi = getBarInfo();
+		List<Integer[]> mbi = getMetricBarInfo();
+		for (int i = 0; i < tbi.size(); i++) {
+			Integer[] curr = new Integer[]{-1, -1, -1, -1};
+			int currTabBarLen = tbi.get(i)[1];
+			int currTabBarOnset = tbi.get(i)[0];
+			int currTabBarOffset = currTabBarOnset + currTabBarLen;
+			curr[TAB_BAR_IND] = i + 1;
+			for (int j = 0; j < mbi.size(); j++) {
+				Integer[] in = mbi.get(j);
+				int currMetricBarOnset = in[0]; // 1
+				int currMetricBarOffset = in[2];
+				if (currTabBarOnset >= currMetricBarOnset && currTabBarOnset < currMetricBarOffset) {
+					curr[METRIC_BAR_IND] = j+1;
+					for (int k = j; k < mbi.size(); k++) {
+						currMetricBarOffset = mbi.get(k)[2];
+						if (currTabBarOffset <= currMetricBarOffset) {
+							curr[LAST_METRIC_BAR_IND] = k+1;
+							curr[BAR_OFFSETS_ALIGN_IND] = 
+								currTabBarOffset < currMetricBarOffset ? 0 : 1;
+							break;
+						}
+					}
+					break;
+				}
+			}
+			mapped.add(curr);
+		}
+
+		return mapped;
+	}
+
+
+	/**
+	 * Gets information on the tab barring.
+	 * 
+	 * @return A list of Integer[]s, each representing a bar and containing<br>
+	 *         <ul>
+	 *         <li>as element 0: its onset, in multiples of SMALLEST_RHYTHMIC_VALUE</li>
+	 *         <li>as element 1: its length, in multiples of SMALLEST_RHYTHMIC_VALUE</li>
+	 *         <li>as element 2: its offset, in multiples of SMALLEST_RHYTHMIC_VALUE</li>
+	 *         </ul>
+	 */
+	// TESTED
+	List<Integer[]> getBarInfo() {		
+		List<Integer[]> bi = new ArrayList<>();
+		
+		List<Event> events = Encoding.removeDecorativeBarlineEvents(
+			getEncoding().getEvents()
+		);
+		int barLenInSrv = 0;
+		int onset = 0;
+		int durPrevE = -1;
+		for (int i = 0; i < events.size(); i++) {
+			Event currEvent = events.get(i);
+			String e = currEvent.getEncoding();
+			int currBar = currEvent.getBar();
+			// If the event is not a barline event or a MS event
+			if (!Encoding.assertEventType(e, null, "barline") && 
+				!Encoding.assertEventType(e, null, "MensurationSign")) {
+				RhythmSymbol rs = Symbol.getRhythmSymbol(
+					e.substring(0, e.indexOf(Symbol.SYMBOL_SEPARATOR))
+				);
+				int durE = rs != null ? rs.getDuration() : durPrevE;
+				if (rs != null) {
+					durPrevE = durE;
+				}
+				barLenInSrv += durE;
+			}
+			// Add to list if the next event belongs to the next bar or if event is the last
+			if (i <= events.size() - 1) {
+				Integer[] curr = new Integer[]{onset, barLenInSrv, onset + barLenInSrv};
+				// Next event belongs to the next bar 
+				if (i < events.size() - 1) {
+					if (events.get(i + 1).getBar() == currBar + 1) {
+						bi.add(curr);
+						onset += barLenInSrv;
+						barLenInSrv = 0;
+					}
+				}
+				// Event is the last
+				else {
+					bi.add(curr);
+				}
+			}
+		}
+
+		return bi;
+	}
+
+
+	/**
+	 * Gets information on the metric barring.
+	 * 
+	 * @return A list of Integer[]s, each representing a metric bar and containing<br>
+	 *         <ul>
+	 *         <li>as element 0: its onset, in multiples of SMALLEST_RHYTHMIC_VALUE</li>
+	 *         <li>as element 1: its length, in multiples of SMALLEST_RHYTHMIC_VALUE</li>
+	 *         <li>as element 2: its offset, in multiples of SMALLEST_RHYTHMIC_VALUE</li>
+	 *         </ul>
+	 */
+	// TESTED
+	List<Integer[]> getMetricBarInfo() {
+		List<Integer[]> mbi = new ArrayList<>();
+		int onset = 0;
+		for (Integer[] in : getMeterInfo()) {
+			Rational currMeter = new Rational(in[MI_NUM], in[MI_DEN]);
+			int barLenInSrv = (int) currMeter.div(SMALLEST_RHYTHMIC_VALUE).toDouble();
+			int numBarsInMeter = (in[MI_LAST_BAR] - in[MI_FIRST_BAR]) + 1;
+			for (int i = 0; i < numBarsInMeter; i++) {
+				mbi.add(new Integer[]{onset, barLenInSrv, onset + barLenInSrv});
+				onset += barLenInSrv;
+			}
+		}
+
+		return mbi;
+	}
+
+
+	// DEPRECATED -->
 	/**
 	 * Converts the TabSymbol at the given onsetIndex into a Note. Alternative to the method
 	 * with the same name.
@@ -1612,7 +1687,6 @@ public class Tablature implements Serializable {
 //	 * @param factor The factor to stretch the durations by.
 //	 * @return
 //	 */
-//	// TESTED
 //	public void stretch(double factor) {
 //		this.init(
 //			getEncoding().stretch(getTimeline().getMeterInfo(), factor),
@@ -1660,6 +1734,150 @@ public class Tablature implements Serializable {
 
 
 	/**
+	 * Get, for each tab bar, the metric bar it belongs to.<br><br> 
+	 * 
+	 * Cases:<br>
+	 * tab bar:metric bar = 1:1<br>
+	 * tab bar:metric bar = n:1<br>
+	 * tab bar:metric bar = 3:2<br><br>
+	 * 
+	 * Examples:<br>
+	 * tab bar:metric bar = n:1<br> 
+	 * metric bars: 2/2 H   H | H   H | H   H | H   H |<br>
+	 * tab bars   : 2/2 H | H | H | H | H | H | H | H |<br> 
+ 	 * returns [[1, 1, -1], [2, 1, -1], [3, 2, -1], [4, 2, -1], [5, 3, -1], [6, 3, -1], [7, 4, -1], [8, 4, -1]]<br><br>
+ 	 * 
+ 	 * tab bar:metric bar = 3:2<br>  
+	 * metric bars: 3/2 H H   H | H   H H | H H   H | H   H H |<br>
+	 * tab bars   : 3/2 H H | H   H | H H | H H | H   H | H H |<br> 
+ 	 * returns [[1, 1, -1], [2, 1, 2], [3, 2, -1], [4, 3, -1], [5, 3, 4], [6, 4, -1]]<br><br>
+	 * 
+	 * NB: This method belongs to Tablature and not Timeline: tablature bars are specific to 
+	 *     the tablature and are often not in sync with the metric bars.
+	 * 
+	 * @return A list of Integer[]s, each representing a tab bar and containing<br>
+	 *         <ul>
+	 *         <li>as element 0: the tab bar</li>
+	 *         <li>as element 1: the metric bar the tab bar belongs to</li>
+	 *         <li>as element 2: any second metric bar the tab bar belongs to (3:2 case) or -1 (other cases)</li>
+	 *         <li>as element 3: the relative onset (in multiples of SMALLEST_RHYTHMIC_VALUE) of the tab bar 
+	 *                           in the metric bar</li>
+	 *         <li>as element 4: the remainder of the metric bar (in multiples of SMALLEST_RHYTHMIC_VALUE) at the
+	 *                           end of the tab bar</li>                  
+	 *         </ul>
+	 */
+	private List<Integer[]> mapTabBarsToMetricBarsOLD() {
+		List<Integer[]> mapped = new ArrayList<>();
+
+		String ss = Symbol.SYMBOL_SEPARATOR;
+		// Get metric bar lengths in SMALLEST_RHYTHMIC_VALUE
+		List<Integer> metricBarLengths = new ArrayList<>();
+		for (Integer[] in : getMeterInfo()) {
+			Rational currMeter = new Rational(in[MI_NUM], in[MI_DEN]);
+			int barLenInSrv = (int) currMeter.div(SMALLEST_RHYTHMIC_VALUE).toDouble();
+			int numBarsInMeter = (in[MI_LAST_BAR] - in[MI_FIRST_BAR]) + 1;
+			metricBarLengths.addAll(Collections.nCopies(numBarsInMeter, barLenInSrv));
+		}
+
+		// Get tablature bar lengths in SMALLEST_RHYTHMIC_VALUE
+		List<Integer> tabBarLengths = new ArrayList<>();
+		List<Event> events = Encoding.removeDecorativeBarlineEvents(getEncoding().getEvents());
+		int durBar = 0;
+		int durPrevE = -1;
+		for (int i = 0; i < events.size(); i++) {
+			Event currEvent = events.get(i);
+			String e = currEvent.getEncoding();
+			int currBar = currEvent.getBar();
+			// If the event is not a barline event or a MS event
+			if (!Encoding.assertEventType(e, null, "barline") && 
+				!Encoding.assertEventType(e, null, "MensurationSign")) {
+				RhythmSymbol rs = Symbol.getRhythmSymbol(e.substring(0, e.indexOf(ss)));
+				int durE = rs != null ? rs.getDuration() : durPrevE;
+				if (rs != null) {
+					durPrevE = durE;
+				}
+				durBar += durE;
+			}
+			// Add to list if the next event belongs to the next bar or if event is the last
+			if (i < events.size() - 1) {
+				if (events.get(i + 1).getBar() == currBar + 1) {
+					tabBarLengths.add(durBar);
+					durBar = 0;
+				}
+			}
+			// Last event
+			else {
+				tabBarLengths.add(durBar);
+			}
+		}
+
+		// Map
+		int TAB_BAR_REL_ONSET_IND = 3;
+		int METRIC_BAR_REMAINDER_IND = 4;
+		int metricBar = 1;
+		int onsetTabInMetric = 0;
+		int remainderOfMetricBarLen = metricBarLengths.get(0);
+		for (int i = 0; i < tabBarLengths.size(); i++) {
+			Integer[] barMetricBarsOnsetTabInMetricBar = new Integer[]{-1, -1, -1, -1, -1};
+			barMetricBarsOnsetTabInMetricBar[TAB_BAR_IND] = i + 1;
+			int currTabBarLen = tabBarLengths.get(i);
+
+			// There are three possible cases
+			// a. tab:metric = 1:1, i.e., each tab bar corresponds to one metric bar
+			// b. tab:metric = n:1, i.e., n tab bars correspond to one metric bar
+			// c. tab:metric = 3:2, i.e., three tab bars correspond to two metric bars
+			//
+			// Cases b and c 
+			// tab:metric = n:1, non-last tab bar: covers non-end of metric bar
+			// tab:metric = 3:2, first tab bar: covers beginning of first metric bar
+			if (currTabBarLen < remainderOfMetricBarLen) {
+				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
+				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
+				// Set for next tab bar
+//				onsetTabInMetric = currMetricBarLen - (currMetricBarLen - currTabBarLen);
+				onsetTabInMetric += currTabBarLen;
+				remainderOfMetricBarLen -= currTabBarLen;
+				// Set metricBar remainder
+				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_REMAINDER_IND] = remainderOfMetricBarLen;
+ 			}
+			// Case c
+			// tab:metric = 3:2, middle tab bar: covers end of first metric bar and beginning of second
+			else if (currTabBarLen > remainderOfMetricBarLen) {
+				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
+				barMetricBarsOnsetTabInMetricBar[LAST_METRIC_BAR_IND] = metricBar + 1;
+				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
+				// Set for next tab bar
+				metricBar++;
+				onsetTabInMetric = Math.abs(metricBarLengths.get(metricBar - 1) - (onsetTabInMetric + currTabBarLen));
+				remainderOfMetricBarLen = 
+					metricBarLengths.get(metricBar - 1) - (currTabBarLen - remainderOfMetricBarLen);
+				// Set metricBar remainder
+				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_REMAINDER_IND] = remainderOfMetricBarLen;
+			}
+			// Cases a, b, and c
+			// tab:metric 1:1
+			// tab:metric n:1, last tab bar: covers end of metric bar
+			// tab:metric 3:2, last tab bar: covers end of second metric bar
+			else if (currTabBarLen == remainderOfMetricBarLen) {
+				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_IND] = metricBar;
+				barMetricBarsOnsetTabInMetricBar[TAB_BAR_REL_ONSET_IND] = onsetTabInMetric;
+				// Set for next tab bar
+				metricBar++;
+				onsetTabInMetric = 0;
+				// If not last metric bar
+				if (metricBar <= metricBarLengths.size()) {
+					remainderOfMetricBarLen = metricBarLengths.get(metricBar-1);
+				}
+				// Set metricBar remainder
+				barMetricBarsOnsetTabInMetricBar[METRIC_BAR_REMAINDER_IND] = 0;
+			}
+			mapped.add(barMetricBarsOnsetTabInMetricBar);
+		}
+		return mapped;
+	}
+
+
+	/**
 	 * Get, for each tab bar, the metric bar it belongs to. A metric bar can have 
 	 * multiple tab bars. Example :<br> 
 	 * metric bars: 2/2 H H | H H | H   H | H   H | H H | H H |<br>
@@ -1675,7 +1893,7 @@ public class Tablature implements Serializable {
 	 *         <li>as element 1: the metric bar the tab bar belongs to</li>
 	 *         </ul>
 	 */
-	private List<Integer[]> mapTabBarsToMetricBarsOLD() {
+	private List<Integer[]> mapTabBarsToMetricBarsOLDEST() {
 		List<Integer[]> mapped = new ArrayList<>();
 
 		String ss = Symbol.SYMBOL_SEPARATOR;
@@ -1737,7 +1955,6 @@ public class Tablature implements Serializable {
 	}
 
 
-	// TESTED
 	private List<List<Integer>> adaptToDiminutions(List<Integer> durOfTabSymbols, 
 		List<Integer> onsetOfTabSymbols) {
 		List<List<Integer>> res = new ArrayList<>();
@@ -1772,8 +1989,8 @@ public class Tablature implements Serializable {
 			}
 			// Represent Rational r as integer using cross-multiplication
 			// num(r)/den(r) = x/32 --> x * den(r) = num(r) * 32 --> x = (num(r) * 32) / den(r)
-			int beatZeroAsInt = getTabSymbolDur(beatZero);
-			int beatZeroAdaptedAsInt = getTabSymbolDur(beatZeroAdapted);
+			int beatZeroAsInt = TabSymbol.getTabSymbolDur(beatZero);
+			int beatZeroAdaptedAsInt = TabSymbol.getTabSymbolDur(beatZeroAdapted);
 
 			metricTimesBeatZero.add(metricTimesBeatZero.get(i-1) + beatZeroAsInt);
 			metricTimesBeatZeroAdapted.add(metricTimesBeatZeroAdapted.get(i-1) + beatZeroAdaptedAsInt);

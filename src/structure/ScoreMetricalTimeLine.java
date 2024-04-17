@@ -6,7 +6,7 @@ import java.util.List;
 
 import de.uos.fmt.musitech.data.time.MetricalTimeLine;
 import de.uos.fmt.musitech.utility.math.Rational;
-import structure.metric.Utils;
+import tools.music.TimeMeterTools;
 
 /**
  * Convenience class, complementing <code>MetricalTimeLine</code>. 
@@ -165,7 +165,7 @@ public class ScoreMetricalTimeLine extends MetricalTimeLine {
 		// Set mp relative to undiminuted meter section onset
 		mp = mp.sub(getMeterSectionOnsets().get(section));
 		// Diminute mp
-		mp = Utils.diminute(mp, diminutions.get(section));
+		mp = TimeMeterTools.diminute(mp, diminutions.get(section));
 		// Set mp relative to diminuted meter section onset
 		mp = smtlDim.getMeterSectionOnsets().get(section).add(mp);
 

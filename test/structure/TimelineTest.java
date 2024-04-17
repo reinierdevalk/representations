@@ -1,7 +1,5 @@
 package structure;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,30 +13,42 @@ import de.uos.fmt.musitech.utility.math.Rational;
 import junit.framework.TestCase;
 import path.Path;
 import representations.Tablature;
-import structure.Timeline;
-import structure.metric.Utils;
 import tbp.Encoding;
 
 public class TimelineTest extends TestCase {
 	
 	private File encodingTestpiece;
 	private File encodingTestGetMeterInfo;
-	private File midiTestpiece;
-	private File midiTestGetMeterKeyInfo; 
+	private File encodingNewsidler;
+	private File encodingBarbetta;
+	private File encodingNarvaez;
+//	private File midiTestpiece;
+//	private File midiTestGetMeterKeyInfo; 
 
 	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
-		String root = Path.getRootPath() + Path.getDataDir(); 
-		encodingTestpiece = 
-			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "testpiece.tbp");
-		encodingTestGetMeterInfo = 
-			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "test_get_meter_info.tbp");
-		midiTestpiece = 
-			new File(root + Path.getMIDIPath() + Path.getTestDir() + "testpiece.mid");
-		midiTestGetMeterKeyInfo = 
-			new File(root + Path.getMIDIPath() + Path.getTestDir() + "test_get_meter_key_info.mid");
+		String root = Path.ROOT_PATH_DEPLOYMENT_DEV; 
+		encodingTestpiece = new File(
+			root + Path.ENCODINGS_REL_PATH + Path.TEST_DIR + "testpiece.tbp"
+		);
+		encodingTestGetMeterInfo = new File(
+			root + Path.ENCODINGS_REL_PATH + Path.TEST_DIR + "test_get_meter_info.tbp"
+		);
+		encodingNewsidler = new File(
+			root + Path.ENCODINGS_REL_PATH + "/thesis-int/3vv/" + "newsidler-1544_2-nun_volget.tbp"
+		);
+		encodingBarbetta = new File(
+			root + Path.ENCODINGS_REL_PATH + "/thesis-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp"
+		);
+		encodingNarvaez = new File(
+			root + Path.ENCODINGS_REL_PATH_JOSQUINTAB + "5190_17_cum_spiritu_sanctu_from_missa_sine_nomine.tbp"
+		);
+//		midiTestpiece = 
+//			new File(root + Path.MIDI_REL_PATH + Path.TEST_DIR + "testpiece.mid");
+//		midiTestGetMeterKeyInfo = 
+//			new File(root + Path.MIDI_REL_PATH + Path.TEST_DIR + "test_get_meter_key_info.mid");
 	}
 
 
@@ -156,19 +166,113 @@ public class TimelineTest extends TestCase {
 	}
 
 
-	public void testMakeBars() {
-		Encoding e = new Encoding(encodingTestGetMeterInfo);
-		Timeline t = new Timeline();
+	public void testMakeBarInfo() {
+		Encoding e1 = new Encoding(encodingTestpiece);
+		Encoding e2 = new Encoding(encodingBarbetta);
+		Encoding e3 = new Encoding(encodingNarvaez);
+		Encoding e4 = new Encoding(encodingNewsidler);
+
+		Timeline t1 = new Timeline();
+		Timeline t2 = new Timeline();
+		Timeline t3 = new Timeline();
+		Timeline t4 = new Timeline();
 
 		List<Integer[]> expected = new ArrayList<>();
-		expected.add(new Integer[]{1, 1});
-		expected.add(new Integer[]{2, 3});
-		expected.add(new Integer[]{4, 5});
-		expected.add(new Integer[]{6, 7});
-		expected.add(new Integer[]{8, 8});
-		expected.add(new Integer[]{9, 9});
+		// For encodingTestPiece
+		expected.add(new Integer[]{0, 96, 96});
+		expected.add(new Integer[]{96, 96, 192});
+		expected.add(new Integer[]{192, 18, 210});
+		expected.add(new Integer[]{210, 78, 288});
 
-		List<Integer[]> actual = t.makeBars(e);
+		// For encodingBarbetta
+		int onset = 0;
+		int barlen = 48;
+		for (int i = 1; i <= 60; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+
+		// For encodingNarvaez
+		onset = 0;
+		barlen = 96;
+		for (int i = 1; i <= 90; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+
+		// For encodingNewsidler
+		onset = 0;
+		barlen = 96;
+		for (int i = 1; i <= 41; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+		barlen = 72; 
+		for (int i = 42; i <= 49; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+		barlen = 96; 
+		for (int i = 50; i <= 96; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+
+		List<Integer[]> actual = new ArrayList<>();
+		actual.addAll(t1.makeBarInfo(e1));
+		actual.addAll(t2.makeBarInfo(e2));
+		actual.addAll(t3.makeBarInfo(e3));
+		actual.addAll(t4.makeBarInfo(e4));
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+	  		assertEquals(expected.get(i).length, actual.get(i).length);
+	  		for (int j = 0; j < expected.get(i).length; j++) {
+	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
+	  		}
+		}
+	}
+
+
+	public void testMakeBars() {
+		Encoding e1 = new Encoding(encodingTestpiece);
+		Encoding e2 = new Encoding(encodingTestGetMeterInfo);		
+		
+		// Not agnostic of mi
+		Timeline t1 = new Timeline();
+		t1.setBarInfo(e1);
+		Timeline t2 = new Timeline();
+		t2.setBarInfo(e2);
+		// Agnostic of mi
+		Timeline t3 = new Timeline();
+		t3.setBarInfo(e1);
+		Timeline t4 = new Timeline();
+		t4.setBarInfo(e2);
+
+		List<Integer[]> forE2 = new ArrayList<>();
+		forE2.add(new Integer[]{1, 1});
+		forE2.add(new Integer[]{2, 3});
+		forE2.add(new Integer[]{4, 5});
+		forE2.add(new Integer[]{6, 7});
+		forE2.add(new Integer[]{8, 8});
+		forE2.add(new Integer[]{9, 9});
+
+		List<Integer[]> expected = new ArrayList<>();
+		expected.add(new Integer[]{1, 3});
+		//
+		expected.addAll(forE2);
+		//
+		expected.add(new Integer[]{1, 2});
+		expected.add(new Integer[]{3, 3});
+		expected.add(new Integer[]{4, 4});
+		//
+		expected.addAll(forE2);
+
+		List<Integer[]> actual = new ArrayList<>();
+		actual.addAll(t1.makeBars(e1, false));
+		actual.addAll(t1.makeBars(e2, false));
+		actual.addAll(t3.makeBars(e1, true));
+		actual.addAll(t4.makeBars(e2, true));
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -181,37 +285,95 @@ public class TimelineTest extends TestCase {
 
 
 	public void testMakeDiminutions() {
-		Encoding e = new Encoding(encodingTestGetMeterInfo);
-		Timeline t = new Timeline();
-		t.setBars(e);
+		Encoding e1 = new Encoding(encodingTestpiece);
+		Encoding e2 = new Encoding(encodingTestGetMeterInfo);
 
-		List<Integer> expected = Arrays.asList(2, 2, 4, 1, 1, -2);
+		// Not agnostic of mi
+		Timeline t1 = new Timeline();
+		t1.setBarInfo(e1);
+		t1.setBars(e1, false);
+		Timeline t2 = new Timeline();
+		t2.setBarInfo(e2);
+		t2.setBars(e2, false);
+		// Agnostic of mi
+		Timeline t3 = new Timeline();
+		t3.setBarInfo(e1);
+		t3.setBars(e1, true);
+		Timeline t4 = new Timeline();
+		t4.setBarInfo(e2);
+		t4.setBars(e2, true);
 
-		List<Integer> actual = t.makeDiminutions(e);
+		List<Integer> expected = Arrays.asList(
+			1,
+			//
+			2, 2, 4, 1, 1, -2,
+			//
+			1, 1, 1,
+			//
+			1, 1, 1, 1, 1, 1
+		);
+
+		List<Integer> actual = new ArrayList<>();
+		actual.addAll(t1.makeDiminutions(e1, false));
+		actual.addAll(t2.makeDiminutions(e2, false));
+		actual.addAll(t3.makeDiminutions(e1, true));
+		actual.addAll(t4.makeDiminutions(e2, true));
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));		
 		}
-		assertEquals(expected, actual);	
+		assertEquals(expected, actual);
 	}
 
 
 	public void testMakeTimeSignatures() {
-		Encoding e = new Encoding(encodingTestGetMeterInfo);
-		Timeline t = new Timeline();
-		t.setBars(e);
-		t.setDiminutions(e);
+		Encoding e1 = new Encoding(encodingTestpiece);
+		Encoding e2 = new Encoding(encodingTestGetMeterInfo);
+
+		// Not agnostic of mi
+		Timeline t1 = new Timeline();
+		t1.setBarInfo(e1);
+		t1.setBars(e1, false);
+		t1.setDiminutions(e1, false);
+		Timeline t2 = new Timeline();
+		t2.setBarInfo(e2);
+		t2.setBars(e2, false);
+		t2.setDiminutions(e2, false);
+		// Agnostic of mi
+		Timeline t3 = new Timeline();
+		t3.setBarInfo(e1);
+		t3.setBars(e1, true);
+		t3.setDiminutions(e1, true);
+		Timeline t4 = new Timeline();
+		t4.setBarInfo(e2);
+		t4.setBars(e2, true);
+		t4.setDiminutions(e2, true);
+
+		List<Integer[]> forE2 = new ArrayList<>();
+		forE2.add(new Integer[]{3, 8, 0}); // mt = 0; length = 36
+		forE2.add(new Integer[]{2, 2, 0 + 36}); // mt = 36; length = 192
+		forE2.add(new Integer[]{3, 4, 0 + 36 + 192}); // mt = 228; length = 144
+		forE2.add(new Integer[]{2, 2, 0 + 36 + 192 + 144}); // mt = 372;  length = 192
+		forE2.add(new Integer[]{5, 16, 0 + 36 + 192 + 144 + 192}); // mt = 564; length = 30
+		forE2.add(new Integer[]{2, 2, 0 + 36 + 192 + 144 + 192 + 30}); // mt = 594
 
 		List<Integer[]> expected = new ArrayList<>();
-		expected.add(new Integer[]{3, 8, 0}); // mt = 0; length = 36
-		expected.add(new Integer[]{2, 2, 0 + 36}); // mt = 36; length = 192
-		expected.add(new Integer[]{3, 4, 0 + 36 + 192}); // mt = 228; length = 144
-		expected.add(new Integer[]{2, 2, 0 + 36 + 192 + 144}); // mt = 372;  length = 192
-		expected.add(new Integer[]{5, 16, 0 + 36 + 192 + 144 + 192}); // mt = 564; length = 30
-		expected.add(new Integer[]{2, 2, 0 + 36 + 192 + 144 + 192 + 30}); // mt = 594
+		expected.add(new Integer[]{2, 2, 0});
+		//
+		expected.addAll(forE2);
+		//
+		expected.add(new Integer[]{2, 2, 0});
+		expected.add(new Integer[]{3, 16, 192});
+		expected.add(new Integer[]{13, 16, 210});
+		//
+		expected.addAll(forE2);
 
-		List<Integer[]> actual = t.makeTimeSignatures(e);
+		List<Integer[]> actual = new ArrayList<>();
+		actual.addAll(t1.makeTimeSignatures(e1, false));
+		actual.addAll(t2.makeTimeSignatures(e2, false));
+		actual.addAll(t3.makeTimeSignatures(e1, true));
+		actual.addAll(t4.makeTimeSignatures(e2, true));
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -224,22 +386,25 @@ public class TimelineTest extends TestCase {
 
 
 	public void testMakeDiminutionPerBar() {
-		Encoding e1 = new Encoding(encodingTestGetMeterInfo);
-		Timeline tl1 = new Timeline(e1);
-		tl1.setBars(e1);
-		tl1.setDiminutions(e1);
-//		tl1.setMeterInfo(e1);
-		tl1.setTimeSignatures(e1);
+		Encoding e1 = new Encoding(encodingTestpiece);
+		Encoding e2 = new Encoding(encodingTestGetMeterInfo);
 
-		Encoding e2 = new Encoding(encodingTestpiece);
-		Timeline tl2 = new Timeline(e2);
-		tl2.setBars(e2);
-		tl2.setDiminutions(e2);
-//		tl2.setMeterInfo(e2);
-		tl2.setTimeSignatures(e2);
+		Timeline tl1 = new Timeline();
+		tl1.setBarInfo(e1);
+		tl1.setBars(e1, false);
+		tl1.setDiminutions(e1, false);
+		tl1.setTimeSignatures(e1, false);
+		Timeline tl2 = new Timeline();
+		tl2.setBarInfo(e2);
+		tl2.setBars(e2, false);
+		tl2.setDiminutions(e2, false);
+		tl2.setTimeSignatures(e2, false);
 
-		// For testGetMeterInfo
 		List<Integer[]> expected = new ArrayList<>();
+		expected.add(new Integer[]{1, 1});
+		expected.add(new Integer[]{2, 1});
+		expected.add(new Integer[]{3, 1});
+		//
 		expected.add(new Integer[]{1, 2});
 		expected.add(new Integer[]{2, 2});
 		expected.add(new Integer[]{3, 2});
@@ -249,10 +414,6 @@ public class TimelineTest extends TestCase {
 		expected.add(new Integer[]{7, 1});
 		expected.add(new Integer[]{8, 1});
 		expected.add(new Integer[]{9, -2});
-		// For testPiece
-		expected.add(new Integer[]{1, 1});
-		expected.add(new Integer[]{2, 1});
-		expected.add(new Integer[]{3, 1});
 
 		List<Integer[]> actual = tl1.makeDiminutionPerBar();
 		actual.addAll(tl2.makeDiminutionPerBar());
@@ -318,15 +479,15 @@ public class TimelineTest extends TestCase {
 
 	public void testGetDiminution() {				
 		List<Integer> expected = new ArrayList<>();
-		// For testGetMeterInfo
-		expected.addAll(Arrays.asList(new Integer[]{2, 2, 2, 4, 4, 1, 1, 1, -2}));
 		// For testpiece
 		expected.addAll(Arrays.asList(new Integer[]{1, 1, 1}));
+		// For testGetMeterInfo
+		expected.addAll(Arrays.asList(new Integer[]{2, 2, 2, 4, 4, 1, 1, 1, -2}));
 
 		List<Integer> actual = new ArrayList<>();
 		List<Timeline> tls = Arrays.asList(new Timeline[]{
-			new Timeline(new Encoding(encodingTestGetMeterInfo)),
-			new Timeline(new Encoding(encodingTestpiece))});
+			new Timeline(new Encoding(encodingTestpiece), false),
+			new Timeline(new Encoding(encodingTestGetMeterInfo), false)});
 		for (Timeline tl : tls) {
 			// Take into account anacrusis
 			boolean anacrusis = tl.getNumberOfMetricBars()[1] == 1;
@@ -342,25 +503,6 @@ public class TimelineTest extends TestCase {
 			assertEquals(expected.get(i), actual.get(i));
 		}
 		assertEquals(expected, actual);
-	}
-
-
-	public void testGetNumberOfMetricBars() {		
-		List<Integer[]> expected = new ArrayList<>();
-		expected.add(new Integer[]{9, 0});
-		expected.add(new Integer[]{3, 0});
-
-		List<Integer[]> actual = new ArrayList<>();
-		actual.add(new Timeline(new Encoding(encodingTestGetMeterInfo)).getNumberOfMetricBars());
-		actual.add(new Timeline(new Encoding(encodingTestpiece)).getNumberOfMetricBars());
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-	  		assertEquals(expected.get(i).length, actual.get(i).length);
-	  		for (int j = 0; j < expected.get(i).length; j++) {
-	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
-	  		}
-		}
 	}
 
 
@@ -387,6 +529,51 @@ public class TimelineTest extends TestCase {
 			for (int j = 0; j < expected.get(i).length; j++) {
 				assertEquals(expected.get(i)[j], actual.get(i)[j]);
 			}
+		}
+	}
+
+
+	// TESTED BUT NOT IN USE -->
+	public void testGetLength() {
+		List<Timeline> tls = Arrays.asList(
+			new Timeline(new Encoding(encodingTestpiece), false),
+			new Timeline(new Encoding(encodingTestGetMeterInfo), false)
+		);
+
+		List<Integer> expected = Arrays.asList(288, 690);
+		
+		List<Integer> actual = new ArrayList<>();
+		for (Timeline tl : tls) {
+			actual.add(tl.getLength());
+		}
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));		
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testGetNumberOfMetricBars() {		
+		List<Integer[]> expected = new ArrayList<>();
+		expected.add(new Integer[]{9, 0});
+		expected.add(new Integer[]{3, 0});
+
+		List<Integer[]> actual = new ArrayList<>();
+		actual.add(new Timeline(
+			new Encoding(encodingTestGetMeterInfo), false
+			).getNumberOfMetricBars());
+		actual.add(new Timeline(
+			new Encoding(encodingTestpiece), false
+			).getNumberOfMetricBars());
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+	  		assertEquals(expected.get(i).length, actual.get(i).length);
+	  		for (int j = 0; j < expected.get(i).length; j++) {
+	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
+	  		}
 		}
 	}
 

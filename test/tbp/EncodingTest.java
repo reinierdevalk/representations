@@ -24,6 +24,9 @@ public class EncodingTest extends TestCase {
 
 	private File encodingTestpiece;
 	private File encodingTestGetMeterInfo;
+//	private File encodingNewsidler;
+//	private File encodingNarvaez;
+//	private File encodingBarbetta;
 	private String miniRawEncoding;
 
 
@@ -31,12 +34,22 @@ public class EncodingTest extends TestCase {
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
-		String root = Path.getRootPath() + Path.getDataDir(); 
-		encodingTestpiece = 
-			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "testpiece.tbp");
-		encodingTestGetMeterInfo = 
-			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "test_get_meter_info.tbp");
-//		miniRawEncoding = "{}{}{}{French}{}{}{}MC\\.>.sb.>.|.mi.a3.a2.a1.>.b1.>.|./MO.M34.>.mi.>.|.mi.a4.a3.a2.>.|.b2.>./|.MC\\.>.*.>.mi*.>.mi.b5.b4.b3.>.b3.>.||.//";
+		String root = Path.ROOT_PATH_DEPLOYMENT_DEV; 
+		encodingTestpiece = new File(
+			root + Path.ENCODINGS_REL_PATH + Path.TEST_DIR + "testpiece.tbp"
+		);
+		encodingTestGetMeterInfo = new File(
+			root + Path.ENCODINGS_REL_PATH + Path.TEST_DIR + "test_get_meter_info.tbp"
+		);
+//		encodingNewsidler = new File(
+//			root + Path.ENCODINGS_REL_PATH + "/thesis-int/3vv/" + "newsidler-1544_2-nun_volget.tbp"
+//		);
+//		encodingBarbetta = new File(
+//			root + Path.ENCODINGS_REL_PATH + "/thesis-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp"
+//		);
+//		encodingNarvaez = new File(
+//			root + Path.ENCODINGS_REL_PATH_JOSQUINTAB + "5190_17_cum_spiritu_sanctu_from_missa_sine_nomine.tbp"
+//		);
 		miniRawEncoding = 
 			"{AUTHOR:a}{TITLE:t}{SOURCE:c}{TABSYMBOLSET:French}{Tuning:G}{METER_INFO:2/2 (1-2)}{DIMINUTION:1}" + 
 			"MC\\.>.sb.>.|.mi.a3.a2.a1.>.b1.>.|./" + 
@@ -294,6 +307,8 @@ public class EncodingTest extends TestCase {
 		encoding.setHeader();
 		encoding.setTabSymbolSet();
 		encoding.setEvents();
+		encoding.setTimeline();
+		encoding.setTimelineAgnostic();
 
 		List<List<String>> expected = new ArrayList<List<String>>();
 		// allSymbols
@@ -354,6 +369,8 @@ public class EncodingTest extends TestCase {
 		encoding.setHeader();
 		encoding.setTabSymbolSet();
 		encoding.setEvents();
+		encoding.setTimeline();
+		encoding.setTimelineAgnostic();
 		encoding.setListsOfSymbols();
 
 		List<List<Integer>> expected = new ArrayList<List<Integer>>();
@@ -494,8 +511,8 @@ public class EncodingTest extends TestCase {
 		String ta = "{TABSYMBOLSET:French}"; // inds 29-49
 		String tu = "{TUNING: A}"; // inds 50-60
 		String me = "{METER_INFO:2/2 (1-2); 3/2 (3-4)}"; // inds 61-93
-		String di = "{DIMINUTION: -2}"; // inds 94-109
-		String en = "\nencoding"; // inds 110-118 
+		String di = "{DIMINUTION: -2; 2}"; // inds 94-112
+		String en = "\nencoding"; // inds 113-121 
 		String correct = au + ti + so + ta + tu + me + di + en;
 		List<String> rawEncodings = new ArrayList<String>();
 		// Missing tag
@@ -520,7 +537,7 @@ public class EncodingTest extends TestCase {
 		rawEncodings.add(correct.replace(me, "{METER_INFO:2/2 (2-1); 3/2 (3-4)}"));
 		rawEncodings.add(correct.replace(me, "{METER_INFO:2/2 (1); 3/2 (3-4)}"));
 		// 5. Invalid diminution
-		rawEncodings.add(correct.replace(di, "{DIMINUTION: D}"));
+		rawEncodings.add(correct.replace(di, "{DIMINUTION: -2; D}"));
 		// Correct encoding
 		rawEncodings.add(correct);
 
@@ -538,7 +555,7 @@ public class EncodingTest extends TestCase {
 		expected.add(new String[]{"73", "83", e + "Insert valid bars.", ""});
 		expected.add(new String[]{"73", "82", e + "Insert valid bars.", ""});
 		expected.add(new String[]{"82", "91", e + "Insert valid bars.", ""});
-		expected.add(new String[]{"107", "108", e + "Insert valid diminution.", ""});		
+		expected.add(new String[]{"111", "112", e + "Insert valid diminution.", ""});		
 		expected.add(null);
 
 		List<String[]> actual = new ArrayList<String[]>();
@@ -1258,16 +1275,26 @@ public class EncodingTest extends TestCase {
 	@Test
 	public void testGetStaffLength() {
 		Encoding encoding = new Encoding(encodingTestpiece);
-		int expected = 24;
-		int actual = encoding.getStaffLength();
-		assertEquals(expected, actual);
+		List<Integer[]> expected = Arrays.asList(
+			new Integer[]{24, 0},
+			new Integer[]{0, 1}
+		);
+		List<Integer[]> actual = encoding.getStaffLength();
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).length, actual.get(i).length);
+			for (int j = 0; j < expected.get(i).length; j++) {
+				assertEquals(expected.get(i)[j], actual.get(i)[j]);
+			}
+		}
 	}
 
 
 	@Test
-	public void testSystemBarNumbers() {
-		Encoding encoding1 = new Encoding(encodingTestpiece);
-		Encoding encoding2 = new Encoding(new File("F:/research/data/annotated/encodings/thesis-int/3vv/newsidler-1536_7-disant_adiu.tbp"));
+	public void testGetSystemBarNumbers() {
+		Encoding encoding1 = new Encoding(encodingTestpiece);	
+		Encoding encoding2 = new Encoding(new File(Path.ROOT_PATH_DEPLOYMENT_DEV + Path.ENCODINGS_REL_PATH + "thesis-int/3vv/newsidler-1536_7-disant_adiu.tbp"));
 
 		List<List<Integer>> expected = new ArrayList<>();
 		// encoding1
@@ -1293,6 +1320,69 @@ public class EncodingTest extends TestCase {
 			}
 		}
 	}
+
+
+//	public void testGetBarInfo() {
+//		Encoding e1 = new Encoding(encodingTestpiece);
+//		Encoding e2 = new Encoding(encodingBarbetta);
+//		Encoding e3 = new Encoding(encodingNarvaez);
+//		Encoding e4 = new Encoding(encodingNewsidler);
+//
+//		List<Integer[]> expected = new ArrayList<>();
+//		// For encodingTestPiece
+//		expected.add(new Integer[]{0, 96, 96});
+//		expected.add(new Integer[]{96, 96, 192});
+//		expected.add(new Integer[]{192, 18, 210});
+//		expected.add(new Integer[]{210, 78, 288});
+//
+//		// For encodingBarbetta
+//		int onset = 0;
+//		int barlen = 48;
+//		for (int i = 1; i <= 60; i++) {
+//			expected.add(new Integer[]{onset, barlen, onset+barlen});
+//			onset += barlen; 
+//		}
+//
+//		// For encodingNarvaez
+//		onset = 0;
+//		barlen = 96;
+//		for (int i = 1; i <= 90; i++) {
+//			expected.add(new Integer[]{onset, barlen, onset+barlen});
+//			onset += barlen; 
+//		}
+//
+//		// For encodingNewsidler
+//		onset = 0;
+//		barlen = 96;
+//		for (int i = 1; i <= 41; i++) {
+//			expected.add(new Integer[]{onset, barlen, onset+barlen});
+//			onset += barlen; 
+//		}
+//		barlen = 72; 
+//		for (int i = 42; i <= 49; i++) {
+//			expected.add(new Integer[]{onset, barlen, onset+barlen});
+//			onset += barlen; 
+//		}
+//		barlen = 96; 
+//		for (int i = 50; i <= 96; i++) {
+//			expected.add(new Integer[]{onset, barlen, onset+barlen});
+//			onset += barlen; 
+//		}
+//
+//		List<Integer[]> actual = new ArrayList<>();
+//		actual.addAll(e1.getBarInfo());
+//		actual.addAll(e2.getBarInfo());
+//		actual.addAll(e3.getBarInfo());
+//		actual.addAll(e4.getBarInfo());
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//	  		assertEquals(expected.get(i).length, actual.get(i).length);
+//	  		for (int j = 0; j < expected.get(i).length; j++) {
+//	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
+//	  		}
+//		}
+//	}
 
 
 	@Test
@@ -1338,14 +1428,36 @@ public class EncodingTest extends TestCase {
 	@Test
 	public void testContainsTriplets() {
 		Encoding encoding1 = new Encoding(encodingTestpiece);
-		Encoding encoding2 = new Encoding(new File(
-		"F:/research/data/annotated/josquintab/tab/5254_03_benedicta_es_coelorum_desprez-1.tbp"));
-	
+		Encoding encoding2 = new Encoding(
+			new File(Path.ROOT_PATH_DEPLOYMENT_DEV + Path.ENCODINGS_REL_PATH_JOSQUINTAB + 
+				"5254_03_benedicta_es_coelorum_desprez-1.tbp")
+		);
+
 		List<Boolean> expected = Arrays.asList(new Boolean[]{false, true});
 		
 		List<Boolean> actual = Arrays.asList(new Boolean[]{
 			encoding1.containsTriplets(), encoding2.containsTriplets()});
 		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	// TESTED BUT NOT IN USE -->
+	public void testGetTotalEventLength() {		
+		Encoding encoding = new Encoding(encodingTestpiece);
+		List<Event> e = encoding.getEvents();
+		List<Event> e2 = e.subList(3, e.size()); // skip first three events (MS, rest, rest)
+
+		List<Integer> expected = Arrays.asList(288, 216);
+
+		List<Integer> actual = new ArrayList<>();
+		actual.add(Encoding.getTotalEventLength(e, encoding.getTabSymbolSet()));
+		actual.add(Encoding.getTotalEventLength(e2, encoding.getTabSymbolSet()));
+
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			assertEquals(expected.get(i), actual.get(i));

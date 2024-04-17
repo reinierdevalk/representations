@@ -1,3 +1,4 @@
+
 package tbp;
 
 import java.awt.Color;
@@ -46,7 +47,6 @@ import org.apache.commons.io.FilenameUtils;
 
 import exports.MEIExport;
 import imports.TabImport;
-import path.Path;
 import representations.Tablature;
 import tbp.Encoding.Stage;
 import tbp.TabSymbol.TabSymbolSet;
@@ -139,7 +139,8 @@ public class Viewer extends JFrame{
 		setTabTextArea();
 		setTabStyleButtonGroup();
 		setRhythmFlagsCheckBox();
-		setFileChooser(new File(Path.ROOT_PATH_USER + Path.ENCODINGS_PATH)); 
+		setFileChooser(new File("F:/research/data/user/in/"));
+//		setFileChooser(new File(Path.ROOT_PATH_DEPLOYMENT_DEV + Path.ENCODINGS_REL_PATH)); 
 		setFile(null);
 		setImportFile(null);
 		// b. JFrame instance variables
@@ -649,13 +650,13 @@ public class Viewer extends JFrame{
 				else {
 					Encoding e = new Encoding(
 						etaContent, FilenameUtils.getBaseName(getFile().getName()), Stage.RULES_CHECKED
-					); 
+					);
 					if (exportType.equals(ASCII)) {
 						content = makeASCIITab(e);
 					}
 					else if (exportType.equals(MEI)) {
 						content = MEIExport.exportMEIFile(
-							null, new Tablature(e, false), null, false, false, true, 
+							null, new Tablature(e, false), null, false, false, /*true,*/ 
 							new String[]{null, "tab+Editor"}
 						);
 					}

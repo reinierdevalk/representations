@@ -21,7 +21,6 @@ import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.Piece;
 import imports.MIDIImport;
 import representations.Transcription;
-import tbp.Encoding;
 import tools.ToolBox;
 
 

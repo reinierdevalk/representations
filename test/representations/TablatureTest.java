@@ -32,8 +32,9 @@ public class TablatureTest extends TestCase {
 	private File encodingTestGetMeterInfo;
 	private File encodingNewsidler;
 	private File encodingNewsidlerCumSancto;
-	private File encodingNarvaez;
 	private File encodingBarbetta;
+	private File encodingNarvaez;
+
 	private File midiTestpiece;
 	private static final int TRANSP_INT = -2;
 	private static final Rational THIRTY_SECOND = new Rational(1, 32);
@@ -41,28 +42,33 @@ public class TablatureTest extends TestCase {
 	private static final Rational EIGHTH = new Rational(1, 8);
 	private static final Rational DOTTED_EIGHTH = new Rational(3, 16);
 	private static final Rational QUARTER = new Rational(1, 4);
-	private static final Rational HALF = new Rational(1, 2);
-	private static final Rational DOTTED_HALF = new Rational(3, 4);
 
 
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
-		String root = Path.getRootPath() + Path.getDataDir(); 
-		encodingTestpiece = 
-			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "testpiece.tbp");
-		encodingTestGetMeterInfo = 
-			new File(root + Path.getEncodingsPath() + Path.getTestDir() + "test_get_meter_info.tbp");
-		encodingNewsidler = 
-			new File(root + Path.getEncodingsPath() + "/thesis-int/3vv/" + "newsidler-1544_2-nun_volget.tbp");
-		encodingNewsidlerCumSancto =
-			new File(root + "/annotated/josquintab/tab/" + "4471_40_cum_sancto_spiritu.tbp");
-		encodingBarbetta = 
-			new File(root + Path.getEncodingsPath() + "/thesis-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp");
-		encodingNarvaez =
-			new File(root + "/annotated/josquintab/tab/" + "5190_17_cum_spiritu_sanctu_from_missa_sine_nomine.tbp");
-		midiTestpiece = 
-			new File(root + Path.getMIDIPath() + Path.getTestDir() + "testpiece.mid");
+		String root = Path.ROOT_PATH_DEPLOYMENT_DEV;
+		encodingTestpiece = new File(
+			root + Path.ENCODINGS_REL_PATH + Path.TEST_DIR + "testpiece.tbp"
+		);
+		encodingTestGetMeterInfo = new File(
+			root + Path.ENCODINGS_REL_PATH + Path.TEST_DIR + "test_get_meter_info.tbp"
+		);
+		encodingNewsidler = new File(
+			root + Path.ENCODINGS_REL_PATH + "/thesis-int/3vv/" + "newsidler-1544_2-nun_volget.tbp"
+		);
+		encodingNewsidlerCumSancto = new File(
+			root + Path.ENCODINGS_REL_PATH_JOSQUINTAB + "4471_40_cum_sancto_spiritu.tbp"
+		);
+		encodingBarbetta = new File(
+			root + Path.ENCODINGS_REL_PATH + "/thesis-int/4vv/" + "barbetta-1582_1-il_nest-corrected.tbp"
+		);
+		encodingNarvaez = new File(
+			root + Path.ENCODINGS_REL_PATH_JOSQUINTAB + "5190_17_cum_spiritu_sanctu_from_missa_sine_nomine.tbp"
+		);
+		midiTestpiece = new File(
+			root + Path.MIDI_REL_PATH + Path.TEST_DIR + "testpiece.mid"
+		);
 	}
 
 
@@ -537,9 +543,14 @@ public class TablatureTest extends TestCase {
 		t2.setEncoding(new Encoding(encodingTestGetMeterInfo));
 		t2.setNormaliseTuning(false);
 		t2.setName();
+		Tablature t3 = new Tablature();
+		t3.setEncoding(new Encoding(encodingNewsidler));
+		t3.setNormaliseTuning(false);
+		t3.setName();
 
 		List<Integer[]> expected = new ArrayList<Integer[]>();
-		// t1		
+		// mi provided
+		// t1
 		expected.add(new Integer[]{2, 2, 1, 3, 0, 1, 1});
 		// t2
 		expected.add(new Integer[]{3, 8, 1, 1, 0, 1, 2});
@@ -548,10 +559,21 @@ public class TablatureTest extends TestCase {
 		expected.add(new Integer[]{2, 2, 6, 7, 31, 8, 1});
 		expected.add(new Integer[]{5, 16, 8, 8, 47, 8, 1});
 		expected.add(new Integer[]{2, 2, 9, 9, 99, 16, -2});
+		// Agnostic of mi
+		// t1
+		expected.add(new Integer[]{2, 2, 1, 2, 0, 1, 1});
+		expected.add(new Integer[]{3, 16, 3, 3, 2, 1, 1});
+		expected.add(new Integer[]{13, 16, 4, 4, 35, 16, 1});
+		// t3
+		expected.add(new Integer[]{2, 2, 1, 41, 0, 1, 1});
+		expected.add(new Integer[]{3, 4, 42, 49, 41, 1, 1});
+		expected.add(new Integer[]{2, 2, 50, 96, 47, 1, 1});
 
 		List<Integer[]> actual = new ArrayList<>();
-		actual.addAll(t1.makeMeterInfo());
-		actual.addAll(t2.makeMeterInfo());
+		actual.addAll(t1.makeMeterInfo(false));
+		actual.addAll(t2.makeMeterInfo(false));
+		actual.addAll(t1.makeMeterInfo(true));
+		actual.addAll(t3.makeMeterInfo(true));
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -588,7 +610,7 @@ public class TablatureTest extends TestCase {
 		t.setMeterInfo();
 		t.setTunings();
 
-		Integer[][] expected = getBtp(true); // TODO
+		Integer[][] expected = getBtp(false);
 		Integer[][] actual = t.makeBasicTabSymbolProperties();
 
 		assertEquals(expected.length, actual.length);
@@ -777,38 +799,23 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testGetTabSymbolDur() {
-		List<Rational> rs = Arrays.asList(new Rational[]{				
-			HALF, DOTTED_HALF, new Rational(15, 16), new Rational(5, 4)
-		});
-		List<Integer> expected = Arrays.asList(new Integer[]{48, 72, 90, 120});
-
-		List<Integer> actual = new ArrayList<>();
-		for (Rational r : rs) {
-			actual.add(Tablature.getTabSymbolDur(r));
-		}
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		} 
-		assertEquals(expected, actual);
-	}
-
-
 	public void testConvertTabSymbolToNote() {		
 		List<Note> expected = new ArrayList<>();
 		Integer[][] btp = getBtp(false);
 		for (Integer[] in : btp) {
+			Rational currDur = new Rational(in[Tablature.MIN_DURATION], Tablature.SRV_DEN);
+			// Determine how often currDur fits in a quarter note 
+			double quarterFits = (new Rational(1, 4).div(currDur)).toDouble();
 			expected.add(new Note(
 				new ScoreNote(
 					new ScorePitch(in[Tablature.PITCH]), 
 					new Rational(in[Tablature.ONSET_TIME], Tablature.SRV_DEN), 
-					new Rational(in[Tablature.MIN_DURATION], Tablature.SRV_DEN)
+					currDur
 				), 
 				MidiNote.convert(new PerformanceNote(
-//					0, 0, 127,
-					0, 600000, 90, // default instance variable values; see PerformanceNote()
+					0, // default instance variable value (?); see PerformanceNote()
+					(int) (600000 / quarterFits), // 600000 equals a quarter note
+					90, // default instance variable value; see PerformanceNote()
 					in[Tablature.PITCH]) 
 				)
 			));
@@ -821,34 +828,12 @@ public class TablatureTest extends TestCase {
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
-			System.out.println(expected.get(i));
-			System.out.println(actual.get(i));
 			assert(expected.get(i).isEquivalent(actual.get(i)));
 		}
 	}
 
 
-	public void testGetPitchesInChord() {
-		Tablature tablature = new Tablature(encodingTestpiece);
-
-		List<List<Integer>> expected = getPitchesInChord(false);
-
-		List<List<Integer>> actual = new ArrayList<List<Integer>>();
-		for (int i = 0; i < tablature.getChords().size(); i++) {
-		 	actual.add(tablature.getPitchesInChord(i));
-		}
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-		 	assertEquals(expected.get(i).size(), actual.get(i).size());
-		 	for (int j = 0; j < expected.get(i).size(); j++) {
-		 		assertEquals(expected.get(i).get(j), actual.get(i).get(j));
-		 	}
-		}
-	}
-
-
-	public void testGetPitchesInChordAlt() {
+	public void testGetPitchesInChordStaticAlt() {
 		Tablature tab = new Tablature(encodingTestpiece);
 
 		List<List<Integer>> expected = getPitchesInChord(false);
@@ -919,21 +904,21 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testGetNumberOfUnisonsInChord() {
-		Tablature tablature = new Tablature(encodingTestpiece);
-
-		List<Integer> expected = 
-			Arrays.asList(new Integer[]{0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
-		List<Integer> actual = new ArrayList<Integer>();
-		for (int i = 0; i < tablature.getChords().size(); i++) {
-			actual.add(tablature.getNumberOfUnisonsInChord(i));
-		}
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		}
-	}
+//	public void testGetNumberOfUnisonsInChord() {
+//		Tablature tablature = new Tablature(encodingTestpiece);
+//
+//		List<Integer> expected = 
+//			Arrays.asList(new Integer[]{0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+//		List<Integer> actual = new ArrayList<Integer>();
+//		for (int i = 0; i < tablature.getChords().size(); i++) {
+//			actual.add(tablature.getNumberOfUnisonsInChord(i));
+//		}
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i), actual.get(i));
+//		}
+//	}
 
 
 	public void testGetCourseCrossingInfo() {
@@ -970,22 +955,42 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testGetNumberOfCourseCrossingsInChord() {
+//	public void testGetNumberOfCourseCrossingsInChord() {
+//		Tablature tablature = new Tablature(encodingTestpiece);
+//
+//		List<Integer> expected = Arrays.asList(new Integer[]{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+//
+//		List<Integer> actual = new ArrayList<Integer>();
+//		List<List<TabSymbol>> chords = tablature.getChords();
+//		for (int i = 0; i < chords.size(); i++) {
+//			actual.add(tablature.getNumberOfCourseCrossingsInChord(chords.get(i)));
+//		}
+//
+//		assertEquals(expected.size(), actual.size());
+//		for (int i = 0; i < expected.size(); i++) {
+//			assertEquals(expected.get(i), actual.get(i));
+//		}
+//		assertEquals(expected, actual);
+//	}
+
+
+	public void testGetPitchesInChord() {
 		Tablature tablature = new Tablature(encodingTestpiece);
 
-		List<Integer> expected = Arrays.asList(new Integer[]{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+		List<List<Integer>> expected = getPitchesInChord(false);
 
-		List<Integer> actual = new ArrayList<Integer>();
-		List<List<TabSymbol>> chords = tablature.getChords();
-		for (int i = 0; i < chords.size(); i++) {
-			actual.add(tablature.getNumberOfCourseCrossingsInChord(chords.get(i)));
+		List<List<Integer>> actual = new ArrayList<List<Integer>>();
+		for (int i = 0; i < tablature.getChords().size(); i++) {
+		 	actual.add(tablature.getPitchesInChord(i));
 		}
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
+		 	assertEquals(expected.get(i).size(), actual.get(i).size());
+		 	for (int j = 0; j < expected.get(i).size(); j++) {
+		 		assertEquals(expected.get(i).get(j), actual.get(i).get(j));
+		 	}
 		}
-		assertEquals(expected, actual);
 	}
 
 
@@ -1052,36 +1057,6 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	public void testGetMinimumDurationPerChord() {
-		Tablature t1 = new Tablature(encodingTestpiece);
-		Tablature t2 = new Tablature(encodingTestGetMeterInfo);
-
-		List<Rational> expected = new ArrayList<>();
-		// testpiece
-		List<Rational> md1 = new ArrayList<>();
-		getMinimumDurationPerChord().get(0).forEach(i -> md1.add(new Rational(i, Tablature.SRV_DEN)));
-		expected.addAll(md1);
-		
-		// testGetMeterInfo
-		List<Rational> md2 = new ArrayList<>();
-		getMinimumDurationPerChord().get(1).forEach(i -> md2.add(new Rational(i, Tablature.SRV_DEN)));
-		expected.addAll(md2);
-
-		List<Rational> actual = t1.getMinimumDurationPerChord();
-		actual.addAll(t2.getMinimumDurationPerChord());
-
-		System.out.println(expected);
-		System.out.println("----");
-		System.out.println(actual);
-		
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		} 
-		assertEquals(expected, actual);
-	}
-
-
 	public void testGetTripletOnsetPairs() {
 		// No triplets
 		Tablature tablature = new Tablature(encodingTestpiece);
@@ -1129,7 +1104,7 @@ public class TablatureTest extends TestCase {
 				for (int j = 0; j < expected.get(i).length; j++) {
 					assertEquals(expected.get(i)[j], actual.get(i)[j]);
 				}
-			}
+			}			
 		}
 	}
 
@@ -1140,13 +1115,16 @@ public class TablatureTest extends TestCase {
 
 		List<String[]> expected = new ArrayList<>();
 		// t1
-		expected.add(new String[]{"MC\\", "1", "1"});
+		expected.add(new String[]{"MC\\", "1", "0"});
 		// t2
-		expected.add(new String[]{"MO.M34", "42", "42"});
-		expected.add(new String[]{"MC\\", "50", "46"});
+		expected.add(new String[]{"MO.M34", "42", "3936"}); // 41 * 2/2 * Tablature.SRV_DEN
+		expected.add(new String[]{"MC\\", "50", String.valueOf(3936+576)}); // + (8 * 3/4 * Tablature.SRV_DEN) = 3936 + 576
 
-		List<String[]> actual = t1.getMensurationSigns();
+		List<String[]> actual = new ArrayList<>();
+		actual.addAll(t1.getMensurationSigns());
 		actual.addAll(t2.getMensurationSigns());
+		
+		t2.getMensurationSigns().forEach(s -> System.out.println(Arrays.asList(s)));
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -1154,124 +1132,6 @@ public class TablatureTest extends TestCase {
 			for (int j = 0; j < expected.get(i).length; j++) {
 				assertEquals(expected.get(i)[j], actual.get(i)[j]);
 			}
-		}
-	}
-
-
-	public void testGetNumberOfTabBars() {
-		List<Integer> expected = Arrays.asList(9, 4, 96);
-
-		List<Integer> actual = new ArrayList<>();
-		// No decorative opening barlines and non-metric barlines
-		actual.add(new Tablature(encodingTestGetMeterInfo).getNumberOfTabBars());
-		// Non-metric barlines
-		actual.add(new Tablature(encodingTestpiece).getNumberOfTabBars());
-		// Decorative opening barline and non-metric barlines 
-		actual.add(new Tablature(encodingNewsidler).getNumberOfTabBars());
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i), actual.get(i));
-		}
-		assertEquals(expected, actual);
-	}
-
-
-	public void testMapTabBarsToMetricBars() {
-		// One tab bar in one metric bar (tab bar:metric bar 1:1)
-		Tablature t1 = new Tablature(encodingTestpiece);
-		// Two tab bars in one metric bar (tab bar:metric bar n:1, n=2)
-		Tablature t2 = new Tablature(encodingBarbetta);
-		// Three tab bars in one metric bar (tab bar:metric bar n:1, n=3)
-		Tablature t3 = new Tablature(encodingNarvaez);
-		// Three tab bars in two metric bars (tab bar:metric bar 3:2)
-		Tablature t4 = new Tablature(encodingNewsidlerCumSancto);
-
-		List<Integer[]> expected = new ArrayList<>();
-		// For encodingTestPiece
-		expected.add(new Integer[]{1, 1, -1, 0, 0});
-		expected.add(new Integer[]{2, 2, -1, 0, 0});
-		expected.add(new Integer[]{3, 3, -1, 0, 78});
-		expected.add(new Integer[]{4, 3, -1, 18, 0});
-
-		// For encodingBarbetta
-		int tabBar = 1;
-		for (int i = 1; i <= 30; i++) {
-			expected.add(new Integer[]{tabBar, i, -1, 0, 48});
-			tabBar++;
-			expected.add(new Integer[]{tabBar, i, -1, 48, 0});
-			tabBar++;
-		}
-		
-		// For encodingNarvaez
-		tabBar = 1;
-		for (int i = 1; i <= 30; i++) {
-			expected.add(new Integer[]{tabBar, i, -1, 0, 192});
-			tabBar++;
-			expected.add(new Integer[]{tabBar, i, -1, 96, 96});
-			tabBar++;
-			expected.add(new Integer[]{tabBar, i, -1, 192, 0});
-			tabBar++;
-		}
-
-		// For encodingNewsidlerCumSancto
-		expected.add(new Integer[]{1, 1, -1, 0, 48});
-		expected.add(new Integer[]{2, 1, 2, 96, 96});
-		expected.add(new Integer[]{3, 2, -1, 48, 0});
-		expected.add(new Integer[]{4, 3, -1, 0, 48});
-		expected.add(new Integer[]{5, 3, 4, 96, 96});
-		expected.add(new Integer[]{6, 4, -1, 48, 0});
-		expected.add(new Integer[]{7, 5, -1, 0, 48});
-		expected.add(new Integer[]{8, 5, 6, 96, 96});
-		expected.add(new Integer[]{9, 6, -1, 48, 0});
-		expected.add(new Integer[]{10, 7, -1, 0, 48});
-		expected.add(new Integer[]{11, 7, 8, 96, 96});
-		expected.add(new Integer[]{12, 8, -1, 48, 0});
-		expected.add(new Integer[]{13, 9, -1, 0, 48});
-		expected.add(new Integer[]{14, 9, 10, 96, 96});
-		expected.add(new Integer[]{15, 10, -1, 48, 0});
-		expected.add(new Integer[]{16, 11, -1, 0, 48});
-		expected.add(new Integer[]{17, 11, 12, 96, 96});
-		expected.add(new Integer[]{18, 12, -1, 48, 0});
-		expected.add(new Integer[]{19, 13, -1, 0, 48});
-		expected.add(new Integer[]{20, 13, 14, 96, 96});
-		expected.add(new Integer[]{21, 14, -1, 48, 0});
-		expected.add(new Integer[]{22, 15, -1, 0, 48});
-		expected.add(new Integer[]{23, 15, 16, 96, 96});
-		expected.add(new Integer[]{24, 16, -1, 48, 0});
-		expected.add(new Integer[]{25, 17, -1, 0, 48});
-		expected.add(new Integer[]{26, 17, 18, 96, 96});
-		expected.add(new Integer[]{27, 18, -1, 48, 0});
-		expected.add(new Integer[]{28, 19, -1, 0, 48});
-		expected.add(new Integer[]{29, 19, 20, 96, 96});
-		expected.add(new Integer[]{30, 20, -1, 48, 0});
-		expected.add(new Integer[]{31, 21, -1, 0, 48});
-		expected.add(new Integer[]{32, 21, 22, 96, 96});
-		expected.add(new Integer[]{33, 22, -1, 48, 0});
-		expected.add(new Integer[]{34, 23, -1, 0, 48});
-		expected.add(new Integer[]{35, 23, 24, 96, 96});
-		expected.add(new Integer[]{36, 24, -1, 48, 0});
-		
-		expected.add(new Integer[]{37, 25, -1, 0, 48});
-		expected.add(new Integer[]{38, 25, 26, 96, 96});
-		expected.add(new Integer[]{39, 26, -1, 48, 0});
-		
-		expected.add(new Integer[]{40, 27, -1, 0, 72});
-		expected.add(new Integer[]{41, 27, 28, 72, 96});
-		expected.add(new Integer[]{42, 28, -1, 48, 0});
-
-		List<Integer[]> actual = new ArrayList<>();
-		actual.addAll(t1.mapTabBarsToMetricBars());
-		actual.addAll(t2.mapTabBarsToMetricBars());
-		actual.addAll(t3.mapTabBarsToMetricBars());
-		actual.addAll(t4.mapTabBarsToMetricBars());
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-	  		assertEquals(expected.get(i).length, actual.get(i).length);
-	  		for (int j = 0; j < expected.get(i).length; j++) {
-	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
-	  		}
 		}
 	}
 
@@ -1401,6 +1261,290 @@ public class TablatureTest extends TestCase {
 		int expected = 5;
 		int actual = new Tablature(encodingTestpiece).getLargestTablatureChord();
 		assertEquals(expected, actual);
+	}
+
+
+	// TESTED BUT NOT IN USE -->
+	public void testGetMinimumDurationPerChord() {
+		Tablature t1 = new Tablature(encodingTestpiece);
+		Tablature t2 = new Tablature(encodingTestGetMeterInfo);
+
+		List<Rational> expected = new ArrayList<>();
+		// testpiece
+		List<Rational> md1 = new ArrayList<>();
+		getMinimumDurationPerChord().get(0).forEach(i -> md1.add(new Rational(i, Tablature.SRV_DEN)));
+		expected.addAll(md1);
+		
+		// testGetMeterInfo
+		List<Rational> md2 = new ArrayList<>();
+		getMinimumDurationPerChord().get(1).forEach(i -> md2.add(new Rational(i, Tablature.SRV_DEN)));
+		expected.addAll(md2);
+
+		List<Rational> actual = t1.getMinimumDurationPerChord();
+		actual.addAll(t2.getMinimumDurationPerChord());
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		} 
+		assertEquals(expected, actual);
+	}
+
+
+	public void testGetNumberOfBarlines() {
+		List<Integer> expected = Arrays.asList(9, 4, 96);
+
+		List<Integer> actual = new ArrayList<>();
+		// No decorative opening barlines and non-metric barlines
+		actual.add(new Tablature(encodingTestGetMeterInfo).getNumberOfBarlines());
+		// Non-metric barlines
+		actual.add(new Tablature(encodingTestpiece).getNumberOfBarlines());
+		// Decorative opening barline and non-metric barlines 
+		actual.add(new Tablature(encodingNewsidler).getNumberOfBarlines());
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testMapBarsToMetricBars() {
+		// One tab bar in one metric bar (tab bar:metric bar 1:1)
+		Tablature t1 = new Tablature(encodingTestpiece);
+		// Two tab bars in one metric bar (tab bar:metric bar n:1, n=2)
+		Tablature t2 = new Tablature(encodingBarbetta);
+		// Three tab bars in one metric bar (tab bar:metric bar n:1, n=3)
+		Tablature t3 = new Tablature(encodingNarvaez);
+		// Three tab bars in two metric bars (tab bar:metric bar 3:2)
+		Tablature t4 = new Tablature(encodingNewsidlerCumSancto);
+
+		List<Integer[]> expected = new ArrayList<>();
+		// For encodingTestPiece
+		expected.add(new Integer[]{1, 1, 1, 1});
+		expected.add(new Integer[]{2, 2, 2, 1});
+		expected.add(new Integer[]{3, 3, 3, 0});
+		expected.add(new Integer[]{4, 3, 3, 1});
+
+		// For encodingBarbetta
+		int tabBar = 1;
+		for (int i = 1; i <= 30; i++) {
+			expected.add(new Integer[]{tabBar, i, i, 0});
+			tabBar++;
+			expected.add(new Integer[]{tabBar, i, i, 1});
+			tabBar++;
+		}
+
+		// For encodingNarvaez
+		tabBar = 1;
+		for (int i = 1; i <= 30; i++) {
+			expected.add(new Integer[]{tabBar, i, i, 0});
+			tabBar++;
+			expected.add(new Integer[]{tabBar, i, i, 0});
+			tabBar++;
+			expected.add(new Integer[]{tabBar, i, i, 1});
+			tabBar++;
+		}
+
+		// For encodingNewsidlerCumSancto
+		expected.add(new Integer[]{1, 1, 1, 0});
+		expected.add(new Integer[]{2, 1, 2, 0});
+		expected.add(new Integer[]{3, 2, 2, 1});
+		//
+		expected.add(new Integer[]{4, 3, 3, 0});
+		expected.add(new Integer[]{5, 3, 4, 0});
+		expected.add(new Integer[]{6, 4, 4, 1});
+		//
+		expected.add(new Integer[]{7, 5, 5, 0});
+		expected.add(new Integer[]{8, 5, 6, 0});
+		expected.add(new Integer[]{9, 6, 6, 1});
+		//
+		expected.add(new Integer[]{10, 7, 7, 0});
+		expected.add(new Integer[]{11, 7, 8, 0});
+		expected.add(new Integer[]{12, 8, 8, 1});
+		//
+		expected.add(new Integer[]{13, 9, 9, 0});
+		expected.add(new Integer[]{14, 9, 10, 0});
+		expected.add(new Integer[]{15, 10, 10, 1});
+		//
+		expected.add(new Integer[]{16, 11, 11, 0});
+		expected.add(new Integer[]{17, 11, 12, 0});
+		expected.add(new Integer[]{18, 12, 12, 1});
+		//
+		expected.add(new Integer[]{19, 13, 13, 0});
+		expected.add(new Integer[]{20, 13, 14, 0});
+		expected.add(new Integer[]{21, 14, 14, 1});
+		//
+		expected.add(new Integer[]{22, 15, 15, 0});
+		expected.add(new Integer[]{23, 15, 16, 0});
+		expected.add(new Integer[]{24, 16, 16, 1});
+		//
+		expected.add(new Integer[]{25, 17, 17, 0});
+		expected.add(new Integer[]{26, 17, 18, 0});
+		expected.add(new Integer[]{27, 18, 18, 1});
+		//
+		expected.add(new Integer[]{28, 19, 19, 0});
+		expected.add(new Integer[]{29, 19, 20, 0});
+		expected.add(new Integer[]{30, 20, 20, 1});
+		//
+		expected.add(new Integer[]{31, 21, 21, 0});
+		expected.add(new Integer[]{32, 21, 22, 0});
+		expected.add(new Integer[]{33, 22, 22, 1});
+		//
+		expected.add(new Integer[]{34, 23, 23, 0});
+		expected.add(new Integer[]{35, 23, 24, 0});
+		expected.add(new Integer[]{36, 24, 24, 1});
+		//
+		expected.add(new Integer[]{37, 25, 25, 0});
+		expected.add(new Integer[]{38, 25, 26, 0});
+		expected.add(new Integer[]{39, 26, 26, 1});
+		//
+		expected.add(new Integer[]{40, 27, 27, 0});
+		expected.add(new Integer[]{41, 27, 28, 0});
+		expected.add(new Integer[]{42, 28, 28, 1});
+
+		List<Integer[]> actual = new ArrayList<>();
+		actual.addAll(t1.mapBarsToMetricBars());
+		actual.addAll(t2.mapBarsToMetricBars());
+		actual.addAll(t3.mapBarsToMetricBars());
+		actual.addAll(t4.mapBarsToMetricBars());
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+	  		assertEquals(expected.get(i).length, actual.get(i).length);
+	  		for (int j = 0; j < expected.get(i).length; j++) {
+	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
+	  		}
+		}
+	}
+
+
+	public void testGetBarInfo() {
+		Tablature t1 = new Tablature(encodingTestpiece);
+		Tablature t2 = new Tablature(encodingBarbetta);
+		Tablature t3 = new Tablature(encodingNarvaez);
+		Tablature t4 = new Tablature(encodingNewsidler);
+
+		List<Integer[]> expected = new ArrayList<>();
+		// For encodingTestPiece
+		expected.add(new Integer[]{0, 96, 96});
+		expected.add(new Integer[]{96, 96, 192});
+		expected.add(new Integer[]{192, 18, 210});
+		expected.add(new Integer[]{210, 78, 288});
+
+		// For encodingBarbetta
+		int onset = 0;
+		int barlen = 48;
+		for (int i = 1; i <= 60; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+
+		// For encodingNarvaez
+		onset = 0;
+		barlen = 96;
+		for (int i = 1; i <= 90; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+
+		// For encodingNewsidler
+		onset = 0;
+		barlen = 96;
+		for (int i = 1; i <= 41; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+		barlen = 72; 
+		for (int i = 42; i <= 49; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+		barlen = 96; 
+		for (int i = 50; i <= 96; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+
+		List<Integer[]> actual = new ArrayList<>();
+		actual.addAll(t1.getBarInfo());
+		actual.addAll(t2.getBarInfo());
+		actual.addAll(t3.getBarInfo());
+		actual.addAll(t4.getBarInfo());
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+	  		assertEquals(expected.get(i).length, actual.get(i).length);
+	  		for (int j = 0; j < expected.get(i).length; j++) {
+	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
+	  		}
+		}
+	}
+
+
+	public void testGetMetricBarInfo() {
+		Tablature t1 = new Tablature(encodingTestpiece);
+		Tablature t2 = new Tablature(encodingBarbetta);
+		Tablature t3 = new Tablature(encodingNarvaez);
+		Tablature t4 = new Tablature(encodingNewsidler);
+
+		List<Integer[]> expected = new ArrayList<>();
+		// For encodingTestPiece
+		int onset = 0; 
+		int barlen = 96;
+		for (int i = 1; i <= 3; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+
+		// For encodingBarbetta
+		onset = 0;
+		barlen = 96;
+		for (int i = 1; i <= 30; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+
+		// For encodingNarvaez
+		onset = 0;
+		barlen = 3*96;
+		for (int i = 1; i <= 30; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+
+		// For encodingNewsidler
+		onset = 0;
+		barlen = 96;
+		for (int i = 1; i <= 41; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+		barlen = 144; 
+		for (int i = 42; i <= 45; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+		barlen = 96; 
+		for (int i = 46; i <= 92; i++) {
+			expected.add(new Integer[]{onset, barlen, onset+barlen});
+			onset += barlen; 
+		}
+
+		List<Integer[]> actual = new ArrayList<>();
+		actual.addAll(t1.getMetricBarInfo());
+		actual.addAll(t2.getMetricBarInfo());
+		actual.addAll(t3.getMetricBarInfo());
+		actual.addAll(t4.getMetricBarInfo());
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+	  		assertEquals(expected.get(i).length, actual.get(i).length);
+	  		for (int j = 0; j < expected.get(i).length; j++) {
+	  			assertEquals(expected.get(i)[j], actual.get(i)[j]);
+	  		}
+		}
 	}
 
 
