@@ -1038,7 +1038,6 @@ public class EncodingTest extends TestCase {
 		for (String s : comments) {
 			actual.add(Encoding.removeComment(s));
 		}
-
 		assertEquals(expected, actual);
 	}
 

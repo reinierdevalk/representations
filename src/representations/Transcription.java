@@ -908,7 +908,7 @@ public class Transcription implements Serializable {
 
 
 	// TESTED
-	int findVoice(Note note) {
+	public int findVoice(Note note) {
 		NotationSystem ns = getScorePiece().getScore();
 		for (int i = 0; i < ns.size(); i++) {
 			if (ns.get(i).get(0).containsRecursive(note)) {

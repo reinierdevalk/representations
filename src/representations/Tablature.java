@@ -31,7 +31,7 @@ public class Tablature implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	public static final Rational SMALLEST_RHYTHMIC_VALUE = new Rational(
-		RhythmSymbol.SEMIFUSA.getDuration()/3, RhythmSymbol.BREVIS.getDuration()
+		RhythmSymbol.SEMIFUSA.getDuration()/3, RhythmSymbol.BREVIS.getDuration() // 1/96
 	);
 	public static final int SRV_DEN = SMALLEST_RHYTHMIC_VALUE.getDenom();
 	public static final int TAB_BAR_IND = 0;

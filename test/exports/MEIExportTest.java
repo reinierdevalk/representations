@@ -4,8 +4,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import de.uos.fmt.musitech.utility.math.Rational;
 import junit.framework.TestCase;
@@ -15,6 +13,7 @@ import representations.Transcription;
 import tbp.Encoding;
 import tbp.Event;
 import tbp.Symbol;
+import tools.ToolBox;
 
 public class MEIExportTest extends TestCase {
 
@@ -63,18 +62,18 @@ public class MEIExportTest extends TestCase {
 		Tablature t2 = new Tablature(encodingNewsidler, false);
 		Transcription tr2 = new Transcription(midiNewsidler, encodingNewsidler);
 		
-		for (Integer[] in : t2.getMeterInfoAgnostic()) {
-			System.out.println(Arrays.asList(in));
-		}
-		System.out.println("----");
-		for (Integer[] in : tr2.getMeterInfo()) {
-			System.out.println(Arrays.asList(in));
-		}
-		System.out.println("----");
-		for (Integer[] in : tr2.getKeyInfo()) {
-			System.out.println(Arrays.asList(in));
-		}
-		System.exit(0);
+//		for (Integer[] in : t2.getMeterInfoAgnostic()) {
+//			System.out.println(Arrays.asList(in));
+//		}
+//		System.out.println("----");
+//		for (Integer[] in : tr2.getMeterInfo()) {
+//			System.out.println(Arrays.asList(in));
+//		}
+//		System.out.println("----");
+//		for (Integer[] in : tr2.getKeyInfo()) {
+//			System.out.println(Arrays.asList(in));
+//		}
+//		System.exit(0);
 
 		List<Integer[]> ki1 = tr1.getKeyInfo(); // bars 1-3 (= tab bars 1-4)
 		List<Integer[]> ki2 = tr2.getKeyInfo();
@@ -83,18 +82,16 @@ public class MEIExportTest extends TestCase {
 		ki2.get(0)[Transcription.KI_LAST_BAR] = 43; // bars 1-43 (= tab bars 1-45)
 		ki2.add(new Integer[]{-1, 0, 44, 92, 44, 1}); // bars 44-92 (= tab bars 46-96)
 
-		List<List<Integer[]>> expected = new ArrayList<>();
-		expected.add(Arrays.asList(new Integer[][]{
-			new Integer[]{0, 1, 1, 4, 0, 1}
-		}));
-		expected.add(Arrays.asList(new Integer[][]{
-			new Integer[]{-1, 0, 1, 45, 0, 1},
-			new Integer[]{-1, 0, 46, 96, 44, 1}
-		}));
+		List<List<Integer[]>> expected = Arrays.asList(
+			Arrays.asList(new Integer[][]{new Integer[]{0, 1, 1, 4, 0, 1}}),
+			Arrays.asList(new Integer[][]{new Integer[]{-1, 0, 1, 45, 0, 1},
+				new Integer[]{-1, 0, 46, 96, 44, 1}})
+		);
 
-		List<List<Integer[]>> actual = new ArrayList<>();
-		actual.add(MEIExport.rebarKeyInfo(t1, ki1));
-		actual.add(MEIExport.rebarKeyInfo(t2, ki2));
+		List<List<Integer[]>> actual = Arrays.asList(
+			MEIExport.rebarKeyInfo(t1, ki1),
+			MEIExport.rebarKeyInfo(t2, ki2)
+		);
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {			
@@ -114,17 +111,17 @@ public class MEIExportTest extends TestCase {
 		Transcription tr1 = new Transcription(midiTestpiece, encodingTestpiece);
 		Tablature t2 = new Tablature(encodingNewsidler, false);
 		Transcription tr2 = new Transcription(midiNewsidler, encodingNewsidler);
+		// Add fake second key signature change to ki
+		List<Integer[]> tr2kiExt = new ArrayList<>(tr2.getKeyInfo());
+		tr2kiExt.add(new Integer[]{2, 0, 46, 96, 44, 1});
 
 		List<List<List<Integer[]>>> expected = new ArrayList<>();
-		List<List<Integer[]>> expected1 = new ArrayList<>();
-		expected1.add(
+		List<List<Integer[]>> expected1 = Arrays.asList(
 			Arrays.asList(
 				new Integer[]{2, 2, 1, 2, 0, 1, 1, 1},
 				new Integer[]{3, 16, 3, 3, 2, 1, 1, 1},
 				new Integer[]{13, 16, 4, 4, 35, 16, 1, 1}
-			)
-		);
-		expected1.add(
+			),
 			Arrays.asList(
 				new Integer[]{0, 1, 1, 2, 0, 1, 1},
 				new Integer[]{0, 1, 3, 3, 2, 1, 0},
@@ -133,15 +130,12 @@ public class MEIExportTest extends TestCase {
 		);
 		expected.add(expected1);
 		//
-		List<List<Integer[]>> expected2a = new ArrayList<>();
-		expected2a.add(
+		List<List<Integer[]>> expected2a = Arrays.asList(
 			Arrays.asList(
 				new Integer[]{2, 2, 1, 41, 0, 1, 1, 1},
 				new Integer[]{3, 4, 42, 49, 41, 1, 1, 1},
 				new Integer[]{2, 2, 50, 96, 47, 1, 1, 1}
-			)
-		);
-		expected2a.add(
+			),
 			Arrays.asList(
 				new Integer[]{-1, 0, 1, 41, 0, 1, 1},
 				new Integer[]{-1, 0, 42, 49, 41, 1, 0},
@@ -150,16 +144,13 @@ public class MEIExportTest extends TestCase {
 		);
 		expected.add(expected2a);
 		//
-		List<List<Integer[]>> expected2b = new ArrayList<>();
-		expected2b.add(
+		List<List<Integer[]>> expected2b = Arrays.asList(
 			Arrays.asList(
 				new Integer[]{2, 2, 1,  41, 0,  1, 1, 1},
 				new Integer[]{3, 4, 42, 45, 41, 1, 1, 1},
 				new Integer[]{3, 4, 46, 49, 44, 1, 1, 0},
 				new Integer[]{2, 2, 50, 96, 47, 1, 1, 1}
-			)
-		);
-		expected2b.add(
+			),
 			Arrays.asList(
 				new Integer[]{-1, 0, 1, 41, 0, 1, 1},
 				new Integer[]{-1, 0, 42, 45, 41, 1, 0},
@@ -169,18 +160,9 @@ public class MEIExportTest extends TestCase {
 		);
 		expected.add(expected2b);
 
-		List<List<List<Integer[]>>> actual = new ArrayList<>();	
-		actual.add(
-			MEIExport.alignMeterAndKeyInfo(t1.getMeterInfoAgnostic(), tr1.getKeyInfo())
-		);
-		//
-		actual.add(
-			MEIExport.alignMeterAndKeyInfo(t2.getMeterInfoAgnostic(), tr2.getKeyInfo())
-		);
-		// Add fake second key signature change to ki
-		List<Integer[]> tr2kiExt = new ArrayList<>(tr2.getKeyInfo());
-		tr2kiExt.add(new Integer[]{2, 0, 46, 96, 44, 1});
-		actual.add(
+		List<List<List<Integer[]>>> actual = Arrays.asList(
+			MEIExport.alignMeterAndKeyInfo(t1.getMeterInfoAgnostic(), tr1.getKeyInfo()),
+			MEIExport.alignMeterAndKeyInfo(t2.getMeterInfoAgnostic(), tr2.getKeyInfo()),
 			MEIExport.alignMeterAndKeyInfo(t2.getMeterInfoAgnostic(), tr2kiExt)
 		);
 
@@ -308,53 +290,73 @@ public class MEIExportTest extends TestCase {
 	}
 
 
+	public void testMakeOpeningTag() {
+		List<String> expected = Arrays.asList(
+			"<note pname='c' oct='4' dur='4' xml:id='n1'/>", 
+			"<rest dur='2' dots='1' xml:id='r1'>"
+		);
+
+		List<String> actual = Arrays.asList(
+			MEIExport.makeOpeningTag("note", true, 
+				new String[][]{
+					{"pname", "c"}, {"oct", "4"}, {"dur", "4"}, null, {"xml:id", "n1"}
+				}
+			),
+			MEIExport.makeOpeningTag("rest", false, 
+				new String[][]{
+					null, {"dur", "2"}, {"dots", "1"}, null, {"xml:id", "r1"}
+				}
+			)
+		);
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+	}
+
+
 	public void testGetXMLDur() {
 		Encoding encoding = new Encoding(encodingTestpiece);
 		
-		List<Integer[]> expected = new ArrayList<>();
-		// Bar 1
-		expected.add(null);
-		expected.add(new Integer[]{2, 0});
-		expected.add(new Integer[]{4, 0});
-		expected.add(new Integer[]{4, 0});
-		expected.add(null);
-		// Bar 2
-		expected.add(new Integer[]{8, 1});
-		expected.add(new Integer[]{16, 0});
-		expected.add(new Integer[]{8, 0});
-		expected.add(null);
-		expected.add(new Integer[]{4, 0});
-		expected.add(new Integer[]{8, 0});
-		expected.add(null);
-		expected.add(null);
-		// Bar 3
-		expected.add(new Integer[]{16, 0});
-		expected.add(null);
-		expected.add(new Integer[]{32, 0});
-		expected.add(null);
-		expected.add(null);
-		// Bar 4
-		expected.add(null);
-		expected.add(null);
-		expected.add(new Integer[]{4, 0});		
-		expected.add(new Integer[]{4, 0});
-		expected.add(new Integer[]{4, 0});
-		expected.add(null);
+		List<Integer[]> expected = Arrays.asList(
+			// Bar 1
+			null,
+			new Integer[]{2, 0},
+			new Integer[]{4, 0},
+			new Integer[]{4, 0},
+			null,
+			// Bar 2
+			new Integer[]{8, 1},
+			new Integer[]{16, 0},
+			new Integer[]{8, 0},
+			null,
+			new Integer[]{4, 0},
+			new Integer[]{8, 0},
+			null, null,
+			// Bar 3
+			new Integer[]{16, 0},
+			null,
+			new Integer[]{32, 0},
+			null, null,
+			// Bar 4
+			null, null,
+			new Integer[]{4, 0},		
+			new Integer[]{4, 0},
+			new Integer[]{4, 0},
+			null
+		);
 
 		List<Integer[]> actual = new ArrayList<>();
 		List<String> events = new ArrayList<>();
-//		List<List<String[]>> ebl = encoding.getExtendedEventsPerBar(true);
 		List<Event> ebl = Encoding.removeDecorativeBarlineEvents(encoding.getEvents());
-//		for (List<String[]> l : ebl) {
 		for (Event e : ebl) {
 			events.add(e.getEncoding().substring(0, 
 				e.getEncoding().lastIndexOf(Symbol.SYMBOL_SEPARATOR)));
 		}
-//		}
-		for (String event : events) {
-			if (!event.equals(Symbol.SYSTEM_BREAK_INDICATOR) &&
-				!event.equals(Symbol.END_BREAK_INDICATOR)) {
-				actual.add(MEIExport.getXMLDur(event));
+		for (String s : events) {
+			if (!s.equals(Symbol.SYSTEM_BREAK_INDICATOR) && !s.equals(Symbol.END_BREAK_INDICATOR)) {
+				actual.add(MEIExport.getXMLDur(s));
 			}
 		}
 
@@ -372,24 +374,90 @@ public class MEIExportTest extends TestCase {
 	}
 
 
+	public void testGetXMLDurAlt() {
+		List<Rational> rs = Arrays.asList(
+			Rational.ONE,
+			new Rational(1, 2),
+			new Rational(1, 4),
+			new Rational(1, 8),
+			new Rational(2, 1),
+			new Rational(4, 1),
+			new Rational(7, 2)
+		);
+
+		List<Integer> expected = Arrays.asList(
+			1, 2, 4, 8, -1, -2, 0
+		);
+
+		List<Integer> actual = new ArrayList<>();
+		rs.forEach(r -> actual.add(MEIExport.getXMLDur(r)));
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+		 	assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
+	public void testMakeNoteXMLID() {
+		List<String> expected = Arrays.asList(
+			"n0.0.1.0.c4.0:1",
+			"n1.1.1.1.d4.1:4",
+			"n2.2.1.2.e4.1:2"
+		);
+
+		List<String> actual = Arrays.asList(
+			MEIExport.makeNoteXMLID(0, 0, 1, 0, "c", "4", Rational.ZERO),
+			MEIExport.makeNoteXMLID(1, 1, 1, 1, "d", "4", new Rational(1, 4)),
+			MEIExport.makeNoteXMLID(2, 2, 1, 2, "e", "4", new Rational(1, 2))
+		);
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+	}
+
+
+	public void testMakeRestXMLID() {
+		List<String> expected = Arrays.asList(
+			"r.0.1.0.0:1",
+			"r.1.1.1.1:4",
+			"r.2.1.2.1:2"
+		);
+
+		List<String> actual = Arrays.asList(
+			MEIExport.makeRestXMLID(0, 1, 0, Rational.ZERO),
+			MEIExport.makeRestXMLID(1, 1, 1, new Rational(1, 4)),
+			MEIExport.makeRestXMLID(2, 1, 2, new Rational(1, 2))
+		);
+
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+	}
+
+
 	public void testGetDurFromXMLDur() {
-		List<Integer> expected = Arrays.asList(new Integer[]{
+		List<Integer> expected = Arrays.asList(
 			96, 144, 168, // brevis; 0, 1, 2 dots
 			48, 72, 84, // semibrevis; 0, 1, 2 dots 
 			24, 36, 42, // minim; 0, 1, 2 dots
 			12, 18, 21 // semiminim; 0, 1, 2 dots
-		});
+		);
 
-		List<Integer> XMLDurs = Arrays.asList(new Integer[]{
-			1, 1, 1, 2, 2, 2, 4, 4, 4, 8, 8, 8});
-		
-		List<Integer> dots = Arrays.asList(new Integer[]{
+		List<Integer> XMLDurs = Arrays.asList(
+			1, 1, 1, 2, 2, 2, 4, 4, 4, 8, 8, 8);
+
+		List<Integer> dots = Arrays.asList(
 			0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2
-		});
+		);
 		List<Integer> actual = new ArrayList<>();
-		for (int i = 0; i < XMLDurs.size(); i++) {
-			actual.add(MEIExport.getDurFromXMLDur(XMLDurs.get(i), dots.get(i)));
-		}
+		ToolBox.getRange(0, XMLDurs.size()).forEach(i -> 
+			actual.add(MEIExport.getDurFromXMLDur(XMLDurs.get(i), dots.get(i)))
+		);
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
