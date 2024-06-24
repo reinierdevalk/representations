@@ -404,7 +404,6 @@ public class Tablature implements Serializable {
 	// TESTED
 	Integer[][] makeBasicTabSymbolProperties() {
 		TabSymbolSet tss = getEncoding().getTabSymbolSet();
-
 		List<List<String>> symbols = getEncoding().getListsOfSymbols();
 		List<String> listOfTabSymbols = symbols.get(Encoding.TAB_SYMBOLS_IND);
 		List<List<Integer>> stats = getEncoding().getListsOfStatistics();
