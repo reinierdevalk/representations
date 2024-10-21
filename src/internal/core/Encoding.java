@@ -1679,17 +1679,19 @@ public class Encoding implements Serializable {
 	 * 
 	 * @param thresholdDur
 	 * @param rescaleFactor
+	 * @param ornIndsToSkip
 	 * @param augmentation
 	 */
 	// NOT TESTED (wrapper method)
-	public void augment(int thresholdDur, int rescaleFactor, String augmentation) {		
+	public void augment(int thresholdDur, List<Integer> ornIndsToSkip, int rescaleFactor, 
+		String augmentation) {		
 		String rawEncAugm = augmentHeader(
 			getHeader(), getTimeline(), getMetadata(), rescaleFactor, augmentation
 		) + 
 		"\r\n\r\n" + 
 		recompose(augmentEvents(
 			decompose(true, true), getTimeline(), getTabSymbolSet(), 
-			thresholdDur, rescaleFactor, augmentation)
+			thresholdDur, ornIndsToSkip, rescaleFactor, augmentation)
 		);
 		this.init(rawEncAugm, getPiecename(), Stage.RULES_CHECKED);
 	}
@@ -1759,6 +1761,7 @@ public class Encoding implements Serializable {
 	 * @param tl
 	 * @param tss
 	 * @param thresholdDur
+	 * @param ornIndsToSkip
 	 * @param rescaleFactor
 	 * @param augmentation If augmentation is "reverse", any MensurationSigns not encoded 
 	 *        explicitly in the given list of events (i.e., only appearing in the meter info) 
@@ -1767,7 +1770,7 @@ public class Encoding implements Serializable {
 	 */
 	// TESTED
 	static List<String> augmentEvents(List<String> events, Timeline tl, TabSymbolSet tss, 
-		int thresholdDur, int rescaleFactor, String augmentation) {
+		int thresholdDur, List<Integer> ornIndsToSkip, int rescaleFactor, String augmentation) {
 
 		String ss = Symbol.SYMBOL_SEPARATOR;
 		String ebi = Symbol.END_BREAK_INDICATOR;
@@ -1840,7 +1843,8 @@ public class Encoding implements Serializable {
 			}
 			eventsAugm.add(ebi);
 		}
-		else {			
+		else {
+			int noteInd = 0;
 			for (int i = 0; i < events.size(); i++) {
 				String e = events.get(i);
 				// If e is a RS event
@@ -1848,11 +1852,14 @@ public class Encoding implements Serializable {
 					String[] symbols = e.split("\\" + ss);
 					RhythmSymbol r = Symbol.getRhythmSymbol(symbols[0]);
 					if (augmentation.equals("deornament")) {
+						int currNoteInd = noteInd;
+						int numNotesInEvent = symbols.length - 2;
 						// If e is ornamental (in which case it consists of only a RS, a TS, and a space) and 
 						// not part of an ornamental sequence at the beginning of the Encoding (in which case 
 						// eventsAugm is still empty)
 						// NB: It is assumed that an ornamental sequence is not interrupted by (ornamental) rests 
-						if (r.getDuration() < thresholdDur && symbols.length == 3 && eventsAugm.size() > 0) {
+						if (r.getDuration() < thresholdDur && symbols.length == 3 && eventsAugm.size() > 0
+							&& !ornIndsToSkip.contains(currNoteInd)) {
 							int durOrnSeq = r.getDuration();
 							for (int j = i+1; j < events.size(); j++) {
 								String eNext = events.get(j);
@@ -1861,7 +1868,9 @@ public class Encoding implements Serializable {
 									String[] symbolsNext = eNext.split("\\" + ss);
 									RhythmSymbol rNext = Symbol.getRhythmSymbol(symbolsNext[0]);
 									// If eNext is ornamental: increment duration of ornamental sequence
-									if (rNext.getDuration() < thresholdDur && symbolsNext.length == 3) {
+									if (rNext.getDuration() < thresholdDur && symbolsNext.length == 3 && 
+										!ornIndsToSkip.contains(currNoteInd + 1)) {
+										currNoteInd++;
 										durOrnSeq += rNext.getDuration();
 									}
 									// If not: make ePrevDeorn, which replaces ePrev
@@ -1886,10 +1895,12 @@ public class Encoding implements Serializable {
 									eventsAugm.add(eNext);
 								}
 							}
+							noteInd = currNoteInd + numNotesInEvent;
 						}
 						// If e is not ornamental
 						else {
 							eventsAugm.add(e);
+							noteInd += numNotesInEvent;
 						}
 					}
 					else if (augmentation.equals("rescale")) {

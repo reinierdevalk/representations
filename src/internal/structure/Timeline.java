@@ -168,7 +168,7 @@ public class Timeline implements Serializable {
 	List<Integer> makeDiminutions(Encoding encoding, boolean isAgnostic) {
 		boolean miProvided = !encoding.getMetadata().get(
 			Encoding.METADATA_TAGS[Encoding.METER_INFO_IND]).equals("");
-
+		
 		// meterInfo determines diminutions
 		if (!isAgnostic && miProvided) {
 			List<Integer> d = new ArrayList<>();

@@ -86,6 +86,10 @@ public class ScorePiece extends Piece {
 	private ScoreMetricalTimeLine scoreMetricalTimeLine;
 
 
+	public static void main(String[] args) {
+	}
+
+
 	///////////////////////////////
 	//
 	//  C O N S T R U C T O R S
@@ -657,8 +661,6 @@ public class ScorePiece extends Piece {
 		// =           2/1, 3/1, 2/1, 3/1, 2/1, 2/1, 2/1, 3/1, 2/1
 		// in Piece    2/1, 3/1, 2/1, 3/1, 2/1,           3/1, 2/1
 
-		System.out.println(mtl);
-		
 		// 1. Get undiminuted meters and meter section onsets from meterInfoTab to enable aligning
 		List<Rational> metersTabUndim = new ArrayList<>();
 		List<Rational> msosTabUndim = new ArrayList<>();

@@ -72,7 +72,8 @@ public class Transcription implements Serializable {
 	public static final int ORNAMENTATION_IND = 1;
 	public static final int REPETITION_IND = 2;
 	public static final int FICTA_IND = 3;
-	public static final int OTHER_IND = 4;
+	public static final int ADAPTATION_IND = 4;
+	public static final int SPECIAL_ORN_IND = 5;
 
 	private Type type;
 	private ScorePiece scorePiece;
@@ -239,6 +240,10 @@ public class Transcription implements Serializable {
 	}
 
 
+	public static void main(String[] args) {
+	}
+
+
 	///////////////////////////////
 	//
 	//  C O N S T R U C T O R S
@@ -310,7 +315,6 @@ public class Transcription implements Serializable {
 			(f[0].getName().endsWith(MIDIImport.EXTENSION) ? f[0] : f[1]);
 		File encF = f.length == 1 ? null : 
 			(f[0].getName().endsWith(Encoding.EXTENSION) ? f[0] : f[1]);
-
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midF));
 		Encoding enc = encF != null ? new Encoding(encF) : null;
 		init(sp, enc, null, null, normalise, mi, Type.FROM_FILE);
@@ -2155,6 +2159,7 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED
+	// TODO: to utils.tools.labels.LabelTools
 	public static List<Double> createVoiceLabel(Integer[] voices) {
 		Double[] voiceLabel = new Double[MAX_NUM_VOICES];
 		Arrays.setAll(voiceLabel, ind -> Arrays.asList(voices).contains(ind) ? 1.0 : 0.0);
@@ -2174,11 +2179,14 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED
+	// TODO: to utils.tools.labels.LabelTools
 	public static List<Double> createDurationLabel(Integer[] durations) {
-		List<Integer> durs = 
-			Arrays.asList(durations).stream().map(d -> ((d/3) - 1)).collect(Collectors.toList());
+		List<Integer> durs = Arrays.asList(durations).stream()
+			.map(d -> ((d/3) - 1))
+			.collect(Collectors.toList());
 		Double[] durLabel = new Double[MAX_TABSYMBOL_DUR];
 		Arrays.setAll(durLabel, ind -> durs.contains(ind) ? 1.0 : 0.0);
+
 		return Arrays.asList(durLabel);
 	}
 
@@ -2321,6 +2329,12 @@ public class Transcription implements Serializable {
 				pitchesPerChordTrans.add(chord);
 			}
 		}
+
+//		for (List<Integer[]> l : pitchesPerChordTab) {
+//			System.out.println("-------");
+//			l.forEach(in -> System.out.println(Arrays.asList(in)));
+//		}
+//		System.exit(0);
 
 		// Make tabToTransInd; add indices to list per chord
 		List<List<Integer>> tabToTransInd = new ArrayList<>();
@@ -7203,7 +7217,10 @@ public class Transcription implements Serializable {
 				pitchesInChord = getPitchesInChord(currChord);
 			}
 
-			Timeline tl = tab != null ? tab.getEncoding().getTimeline() : null;
+			Timeline tl = (tab != null ? tab.getEncoding().getTimeline() : null);
+			System.out.println(tab);
+			System.out.println(tl);
+			System.out.println(tab != null);
 			String currMeasure = "" + 
 				tab != null ? 
 				(tl.getMetricPosition((int) onsetCurrNote.mul(Tablature.SRV_DEN).toDouble())[0].getNumer() + " " +

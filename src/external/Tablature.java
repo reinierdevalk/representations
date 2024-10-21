@@ -1221,18 +1221,22 @@ public class Tablature implements Serializable {
 	 * 
 	 * NB: See also <code>Transcription.augment()</code>.<br><br>
 	 * 
-	 * @param thresholdDur  Applies only if augmentation is "deornament". The threshold duration (a 
-	 *                      RhythmSymbol duration); all single-note chords with a duration shorter than 
-	 *                      this duration are considered ornamental and are removed.
-	 * @param rescaleFactor Applies only if augmentation is "rescale". A positive value doubles
-	 *                      all durations (e.g., 4/4 becomes 4/2); a negative value halves them 
-	 *                      (4/4 becomes 4/8).
+	 * @param thresholdDur   Applies only if augmentation is "deornament". The threshold duration (a 
+	 *                       RhythmSymbol duration); all single-note chords with a duration shorter than 
+	 *                       this duration are considered ornamental and are removed.
+	 * @param  ornIndsToSkip Applies only if augmentation is "deornament". Notes at these indices have 
+	 *                       a special status, are therefore not considered ornamentation, and are not 
+	 *                       removed.
+	 * @param rescaleFactor  Applies only if augmentation is "rescale". A positive value doubles
+	 *                       all durations (e.g., 4/4 becomes 4/2); a negative value halves them 
+	 *                       (4/4 becomes 4/8).
 	 * @param augmentation  One of "reverse", "deornament", or "rescale".
 	 */
 	// NOT TESTED (wrapper method)
-	public void augment(int thresholdDur, int rescaleFactor, String augmentation) {
+	public void augment(int thresholdDur, List<Integer> ornIndsToSkip, int rescaleFactor, 
+		String augmentation) {
 		Encoding e = getEncoding();
-		e.augment(thresholdDur, rescaleFactor, augmentation);
+		e.augment(thresholdDur, ornIndsToSkip, rescaleFactor, augmentation);
 		this.init(e, getNormaliseTuning());
 	}
 
@@ -2031,7 +2035,7 @@ public class Tablature implements Serializable {
 
 	private void reverse() {
 		Encoding e = getEncoding();
-		e.augment(-1, -1, "reverse");
+		e.augment(-1, null, -1, "reverse");
 		this.init(e, getNormaliseTuning());
 //			getEncoding().reverse(getTimeline().getMeterInfo()), 
 //			getNormaliseTuning());
@@ -2040,7 +2044,7 @@ public class Tablature implements Serializable {
 
 	private void deornament(int dur) {
 		Encoding e = getEncoding();
-		e.augment(dur, 1, "deornament");
+		e.augment(dur, new ArrayList<Integer>(), 1, "deornament");
 		this.init(e, getNormaliseTuning());
 //		this.init(getEncoding().deornament(getTabSymbolDur(dur)), 
 //			getNormaliseTuning());
@@ -2049,7 +2053,7 @@ public class Tablature implements Serializable {
 
 	private void rescale(int factor) {
 		Encoding e = getEncoding();
-		e.augment(-1, factor, "rescale");
+		e.augment(-1, null, factor, "rescale");
 		this.init(e, getNormaliseTuning());
 //		this.init(getEncoding().deornament(getTabSymbolDur(dur)), 
 //			getNormaliseTuning());
