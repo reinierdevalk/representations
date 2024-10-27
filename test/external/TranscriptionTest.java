@@ -1,5 +1,11 @@
 package external;
 
+import static org.junit.Assert.*;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,15 +27,15 @@ import external.Transcription.Type;
 import internal.core.Encoding;
 import internal.core.ScorePiece;
 import internal.structure.TimelineTest;
-import junit.framework.TestCase;
 import tbp.symbols.Symbol;
 import tbp.symbols.TabSymbol;
 import tools.labels.LabelTools;
 //import tools.music.NoteTimePitchComparator;
 import tools.path.PathTools;
 
-public class TranscriptionTest extends TestCase {
+public class TranscriptionTest {
 
+	private Map<String, String> paths;
 	private File encodingTestpiece;
 	private File encodingTestGetMeterInfo;
 //	private File encodingMemorEsto;
@@ -69,14 +75,14 @@ public class TranscriptionTest extends TestCase {
 	// TODO: where appropriate, test for both tab and non-tab case 
 	// TODO: methods from init(): check sequence of previous methods 
 	
-	public TranscriptionTest(String name) {
-		super(name);
-	}
+	
+//	public TranscriptionTest(String name) {
+//		super(name);
+//	}
 
 
-	@Override
-	protected void setUp() throws Exception {
-		super.setUp();
+	@Before
+	public void setUp() throws Exception {
 //		Runner.setPathsToCodeAndData(UI.getRootDir(), false);
 ////		testPaths = new String[]{Runner.encodingsPathTest, Runner.midiPathTest, Runner.midiPathTest};
 //		encodingTestpiece1 = new File(Runner.encodingsPathTest + "testpiece.tbp");
@@ -84,7 +90,7 @@ public class TranscriptionTest extends TestCase {
 //		midiTestGetMeterInfoDim = new File(Runner.midiPathTest + "test_get_meter_key_info_diminuted.mid");
 //		midiTestGetMeterInfoDimNoAna = new File(Runner.midiPathTest + "test_get_meter_key_info_diminuted_no_anacrusis.mid");
 		
-		Map<String, String> paths = PathTools.getPaths();
+		paths = PathTools.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
 		String epj = paths.get("ENCODINGS_PATH_JOSQUINTAB");
 		String td = "test";
@@ -145,9 +151,8 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
-	@Override
-	protected void tearDown() throws Exception {
-		super.tearDown();
+	@After
+	public void tearDown() throws Exception {
 	}
 
 
@@ -475,6 +480,7 @@ public class TranscriptionTest extends TestCase {
 //	}
 
 
+	@Test
 	public void testMakeMeterInfo() {
 		// Tablature case (always not diminuted)
 		Transcription t1 = new Transcription();
@@ -548,6 +554,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeKeyInfo() {
 		// Tablature case (always not diminuted, always transposed)
 		Transcription t1 = new Transcription();
@@ -674,6 +681,7 @@ public class TranscriptionTest extends TestCase {
 //	}
 
 
+	@Test
 	public void testMakeUnhandledNotes() {
 		// Tablature/non-tablature case
 		Transcription t = new Transcription();
@@ -695,6 +703,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testFindVoice() {
 		// Tablature/non-tablature case
 		Transcription t = new Transcription();
@@ -742,6 +751,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetPitchFrequency() {
 		Note c4 = ScorePiece.createNote(60, new Rational(1, 4), new Rational(1, 4), -1, null);
 		Note e4 = ScorePiece.createNote(64, new Rational(1, 4), new Rational(1, 4), -1, null);
@@ -778,6 +788,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetChordsFromNotes() {
 		// Tablature/non-tablature case
 		Transcription t = new Transcription(midiTestpiece);
@@ -812,6 +823,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testHandleSNUs() {
 		// Tablature case
 		Transcription t = new Transcription();
@@ -841,6 +853,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetSNUInfo() {
 		// Tablature case
 		Transcription t = new Transcription(midiTestpiece, encodingTestpiece);
@@ -866,7 +879,9 @@ public class TranscriptionTest extends TestCase {
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			if (expected.get(i) == null) {
-				assertEquals(expected.get(i), actual.get(i));
+				assertNull(expected.get(i));
+				assertNull(actual.get(i));
+//				assertEquals(expected.get(i), actual.get(i));
 			}
 			else {
 				assertEquals(expected.get(i).length, actual.get(i).length);
@@ -881,6 +896,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testHandleCourseCrossings() {
 		// Tablature case
 		Transcription t = new Transcription();
@@ -913,6 +929,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testCheckAlignment() { // TODO remove?
 		// Tablature case
 		Tablature tab = new Tablature(encodingTestpiece);
@@ -985,6 +1002,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testHandleUnisons() {
 		// Non-tablature case
 		Transcription t = new Transcription();
@@ -1018,6 +1036,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetUnisonInfo() {
 		// Non-tablature case
 		Transcription t = new Transcription(midiTestpiece);
@@ -1042,7 +1061,9 @@ public class TranscriptionTest extends TestCase {
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			if (expected.get(i) == null) {
-				assertEquals(expected.get(i), actual.get(i));
+				assertNull(expected.get(i));
+				assertNull(actual.get(i));
+//				assertEquals(expected.get(i), actual.get(i));
 			}
 			else {
 				assertEquals(expected.get(i).length, actual.get(i).length);
@@ -1057,6 +1078,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeNotes() {
 		// Tablature case
 		Transcription t1 = new Transcription();
@@ -1096,6 +1118,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeVoiceLabels() {
 		// Tablature case
 		Transcription t1 = new Transcription();
@@ -1146,6 +1169,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeChordVoiceLabels() {
 		// Tablature case
 		Transcription t1 = new Transcription(midiTestpiece, encodingTestpiece);
@@ -1194,6 +1218,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeDurationLabels() {
 		// Tablature case
 		Transcription t = new Transcription();
@@ -1241,6 +1266,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeMinimumDurationLabels() {
 		// Tablature case
 		Tablature tab = new Tablature(encodingTestpiece);
@@ -1277,6 +1303,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeVoicesSNU() {
 		// Tablature case
 		Transcription t1 = new Transcription();
@@ -1349,7 +1376,9 @@ public class TranscriptionTest extends TestCase {
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			if (expected.get(i) == null) {
-				assertEquals(expected.get(i), actual.get(i));
+				assertNull(expected.get(i));
+				assertNull(actual.get(i));
+//				assertEquals(expected.get(i), actual.get(i));
 			}
 			else {
 				assertEquals(expected.get(i).length, actual.get(i).length);
@@ -1361,6 +1390,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeVoicesUnison() {
 		// Non-tablature case
 		Transcription t = new Transcription();
@@ -1395,7 +1425,9 @@ public class TranscriptionTest extends TestCase {
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			if (expected.get(i) == null) {
-				assertEquals(expected.get(i), actual.get(i));
+				assertNull(expected.get(i));
+				assertNull(actual.get(i));
+//				assertEquals(expected.get(i), actual.get(i));
 			}
 			else {
 				assertEquals(expected.get(i).length, actual.get(i).length);
@@ -1407,6 +1439,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeVoicesEDU() {
 		// Non-tablature case
 		Transcription t = new Transcription();
@@ -1440,7 +1473,9 @@ public class TranscriptionTest extends TestCase {
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			if (expected.get(i) == null) {
-				assertEquals(expected.get(i), actual.get(i));
+				assertNull(expected.get(i));
+				assertNull(actual.get(i));
+//				assertEquals(expected.get(i), actual.get(i));
 			}
 			else {
 				assertEquals(expected.get(i).length, actual.get(i).length);
@@ -1452,6 +1487,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeVoicesIDU() {
 		// Non-tablature case
 		Transcription t = new Transcription();
@@ -1486,7 +1522,9 @@ public class TranscriptionTest extends TestCase {
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			if (expected.get(i) == null) {
-				assertEquals(expected.get(i), actual.get(i));
+				assertNull(expected.get(i));
+				assertNull(actual.get(i));
+//				assertEquals(expected.get(i), actual.get(i));
 			}
 			else {
 				assertEquals(expected.get(i).length, actual.get(i).length);
@@ -1498,6 +1536,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeBasicNoteProperties() {
 		// Non-tablature case
 		Transcription t = new Transcription();
@@ -1581,6 +1620,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeNumberOfNewNotesPerChord() {
 		// Non-tablature case
 		Transcription t = new Transcription();
@@ -1611,6 +1651,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testCreateVoiceLabel() {
 		List<List<Double>> expected = Arrays.asList(
 			Arrays.asList(new Double[]{1.0, 0.0, 0.0, 0.0, 0.0}),
@@ -1643,6 +1684,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testCreateDurationLabel() {
 		List<Double> empty = Collections.nCopies(Transcription.MAX_TABSYMBOL_DUR, 0.0);
 		List<List<Double>> expected = new ArrayList<List<Double>>(); 		
@@ -1717,6 +1759,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetNumberOfNotes() {
 		// Non-tablature case
 		Transcription t = new Transcription(midiTestpiece);
@@ -1726,6 +1769,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetNumberOfVoices() {
 		List<Transcription> transcriptions = Arrays.asList(		
 			// Tablature case
@@ -1753,6 +1797,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetMetricPositionsNotes() {
 		// Non-tablature case
 		// a. For a piece with no meter changes
@@ -1776,6 +1821,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetMetricPositionsChords() {
 		// Tablature/non-tablature case
 		Transcription transcription = new Transcription(midiTestpiece);
@@ -1809,6 +1855,7 @@ public class TranscriptionTest extends TestCase {
  	}
 
 
+	@Test
 	public void testGetVoiceAssignments() {
 		List<List<Integer>> expected = new ArrayList<>();
 		// Tablature case
@@ -1854,7 +1901,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 	// CLEAN UP TO HERE :)
-
+	@Test
 	public void testGetLocalMeterInfo() {
 		Transcription tr = new Transcription(midiTestGetMeterKeyInfo);
 
@@ -1901,6 +1948,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetLocalKeyInfo() {
 		Transcription tr = new Transcription(midiTestGetMeterKeyInfo);
 
@@ -1939,9 +1987,9 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetMirrorPoint() {
 		// Tablature/non-tablature case
-		Map<String, String> paths = PathTools.getPaths();
 		String path = PathTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-WTC",
@@ -1992,6 +2040,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testAlignTabAndTransIndices() {
 		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece);
@@ -2127,6 +2176,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetTimePitchMatrix() {
 		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
@@ -2250,8 +2300,9 @@ public class TranscriptionTest extends TestCase {
 	    	}
 	    }
 	}
-	
-	
+
+
+	@Test
 	public void testGetTimePitchMatrixNonTab() {
 		Transcription transcription = new Transcription(midiTestpiece, null);
 
@@ -2319,6 +2370,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetNoteDensity() {
 		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
@@ -2349,6 +2401,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetNoteDensityNonTab() {
 		Transcription transcription = new Transcription(midiTestpiece);
 
@@ -2379,6 +2432,7 @@ public class TranscriptionTest extends TestCase {
 
 //	public static String opt = "O P T\n"; 
 //	public static String optCost = "C O S T\n"; 
+	@Test
 	public void testGetVoiceEntriesOLDEST() {		
 		List<List<List<Double>>> expected = new ArrayList<List<List<Double>>>();
 		// BWV 847, n=1 (ASB)
@@ -2444,7 +2498,6 @@ public class TranscriptionTest extends TestCase {
 		expected.add(bwv858n2avg);
 
 		List<List<List<Double>>> actual = new ArrayList<List<List<Double>>>();
-		Map<String, String> paths = PathTools.getPaths();
 		String prefix = PathTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-WTC",
@@ -2489,8 +2542,9 @@ public class TranscriptionTest extends TestCase {
 			}
 		}
 	}
-	
-	
+
+
+	@Test
 	public void testGetVoiceEntriesOLD() {		
 		List<List<List<Double>>> expected = new ArrayList<List<List<Double>>>();
 		// BWV 847, n=1 (ASB)
@@ -2556,7 +2610,6 @@ public class TranscriptionTest extends TestCase {
 		expected.add(bwv858n2avg);
 
 		List<List<List<Double>>> actual = new ArrayList<List<List<Double>>>();
-		Map<String, String> paths = PathTools.getPaths();
 		String prefix = PathTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-WTC",
@@ -2601,8 +2654,9 @@ public class TranscriptionTest extends TestCase {
 			}
 		}
 	}
-	
-	
+
+
+	@Test
 	public void testDetermineVoiceEntries() { // TODO remove?
 		String prefix = "F:/research/data/MIDI/bach-INV/thesis/3vv/";
 		List<String> pieceNames = Arrays.asList(new String[]{
@@ -2691,6 +2745,7 @@ public class TranscriptionTest extends TestCase {
 //	}
 
 
+	@Test
 	public void testCalculateConfigCost() {
 		// Example taken from Inventio 13 a3 (BWV 799) 
 		// Config 0
@@ -2761,6 +2816,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testDetermineConfigs() {
 		List<List<Integer>> leftCh= new ArrayList<List<Integer>>();
 		leftCh.add(Arrays.asList(new Integer[]{20, 10, null, null}));
@@ -3206,8 +3262,8 @@ public class TranscriptionTest extends TestCase {
 //	}
 
 
+	@Test
 	public void testGetVoiceEntriesOLDER_EXT() {
-		Map<String, String> paths = PathTools.getPaths();
 		String prefix = PathTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-inv",
@@ -3246,8 +3302,8 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetImitativeVoiceEntries() {
-		Map<String, String> paths = PathTools.getPaths();
 		String prefixTab = PathTools.getPathString(Arrays.asList(
 			paths.get("ENCODINGS_PATH"),
 			"thesis-int"
@@ -3337,8 +3393,8 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetImitativeVoiceEntriesNonTab() {
-		Map<String, String> paths = PathTools.getPaths();
 		String prefix = PathTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-WTC",
@@ -3466,7 +3522,8 @@ public class TranscriptionTest extends TestCase {
 		}
 		assertEquals(expected, actual);
 	}
-	
+
+
 	// determineVoiceEntriesHIGHLEVEL() flags the intabulations as follows:
 	// int 3vv --> n=3: all non-imitative except mess_pensees, nun_volget, pleni_de (all correct)
 	// int 4vv --> n=3: all non-imitative except absolon_fili (at n=2), in_exitu (at n=2),
@@ -3487,8 +3544,8 @@ public class TranscriptionTest extends TestCase {
 	//					881 is  flagged as non-imitative at n=3 because 
 	//						no motif is found at density 2, 3 (non-literal motif repetition)
 	// WTC 4vv --> n=3: all imitative (all correct)
+	@Test
 	public void testGetNonImitativeVoiceEntries() {
-		Map<String, String> paths = PathTools.getPaths();
 		String prefixTab = PathTools.getPathString(Arrays.asList(
 			paths.get("ENCODINGS_PATH"),
 			"thesis-int"
@@ -3670,8 +3727,8 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetNonImitativeVoiceEntriesNonTab() {
-		Map<String, String> paths = PathTools.getPaths();
 		String prefix = PathTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-inv",
@@ -3902,6 +3959,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testQuantiseDuration() {
 		List<Rational> with16th = Arrays.asList(new Rational[]{
 			new Rational(4, 64), // to 1/16 (with 1/16)
@@ -3948,6 +4006,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetNonUnisonNeighbourChord() {
 		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
@@ -4010,6 +4069,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetNonUnisonNeighbourChordNonTab() {
 		Transcription transcription = new Transcription(midiTestpiece);
 		
@@ -4069,6 +4129,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetChordInfo() {
 		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
@@ -4206,6 +4267,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetChordInfoNonTab() {	
 		Transcription transcription = new Transcription(midiTestpiece);
 
@@ -4342,6 +4404,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetMeter() {
 		Transcription tr = new Transcription(midiTestGetMeterKeyInfo);
 		
@@ -4380,8 +4443,9 @@ public class TranscriptionTest extends TestCase {
 			assertEquals(expected.get(i), actual.get(i));
 		}
 	}
-	
-	
+
+
+	@Test
 	public void testGetMeterBar() {
 		Transcription tr = new Transcription(midiTestGetMeterKeyInfo);
 		
@@ -4410,6 +4474,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetBasicNotePropertiesChord() {		
 		Transcription transcription = new Transcription(midiTestpiece);
 
@@ -4505,6 +4570,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetPitchesInChord() {
 		Transcription transcription = new Transcription(midiTestpiece);
 
@@ -4553,6 +4619,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetPitchesInChordWithLowestNoteIndex() {	  	  
 		Transcription transcription = new Transcription(midiTestpiece);
 
@@ -4593,6 +4660,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetIndicesPerChord() {
 		Transcription transcription = new Transcription(midiTestpiece);
 		
@@ -4658,6 +4726,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetLargestTranscriptionChord() {
 		Transcription transcription = new Transcription(midiTestpiece);
 
@@ -4695,11 +4764,9 @@ public class TranscriptionTest extends TestCase {
 //	  	}
 //	  }  
 //	}
-	
-	
-	
 
 
+	@Test
 	public void testGetLowestAndHighestPitchPerVoice() {
 //    Tablature tablature = new Tablature(encodingTestpiece1, true);
     Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
@@ -4724,8 +4791,9 @@ public class TranscriptionTest extends TestCase {
     	}
     }
 	}
-	
-	
+
+
+	@Test
 	public void testGetLowestAndHighestPitchPerVoiceNonTab() {
     Transcription transcription = new Transcription(midiTestpiece);
    
@@ -4751,6 +4819,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testListNotesPerVoice() {
 //    Tablature tablature = new Tablature(encodingTestpiece1, true);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
@@ -4781,6 +4850,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testListNotesPerVoiceNonTab() {
 		Transcription transcription = new Transcription(midiTestpiece);
 
@@ -4810,6 +4880,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testListNotesPerVoiceAltNonTab() {
 		Transcription transcription = new Transcription(midiTestpiece);
 
@@ -4850,6 +4921,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetLastNotesInVoices() {
 		Transcription transcription = new Transcription(midiTestpiece);
 		
@@ -4981,6 +5053,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetAdjacentNoteInVoice() {
 		Transcription transcription = new Transcription(midiTestpiece);
 
@@ -5097,6 +5170,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetIndicesOfSustainedPreviousNotes() {
 		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
@@ -5158,6 +5232,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetIndicesOfSustainedPreviousNotesNonTab() {
 		Transcription transcription = new Transcription(midiTestpiece);
 
@@ -5213,6 +5288,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetPitchesOfSustainedPreviousNotesInChord() {
 		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
@@ -5256,6 +5332,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetPitchesOfSustainedPreviousNotesInChordNonTab() {
 		Transcription transcription = new Transcription(midiTestpiece);
 
@@ -5295,8 +5372,9 @@ public class TranscriptionTest extends TestCase {
 			}
 		}
 	}
-	
-	
+
+
+	@Test
 	public void testGetVoicesOfSustainedPreviousNotesInChord() {
 		Tablature tablature = new Tablature(encodingTestpiece);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
@@ -5352,6 +5430,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetVoicesOfSustainedPreviousNotesInChordNonTab() {
 		Transcription transcription = new Transcription(midiTestpiece);
 
@@ -5405,11 +5484,13 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetAllPitchesAndVoicesInChord() {
 		// TODO?
 	}
 
 
+	@Test
 	public void testGetAllPitchesAndVoicesInChordNonTab() {
 		Transcription transcription = new Transcription(midiTestpiece);
 
@@ -5512,6 +5593,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetVoiceCrossingInformationInChordExtended() {    
 		// Make the basicTabSymbolProperties for a fictional piece consisting of three chords  
 		// a. A chord without CoD: sb.a6.a4.b2.g1
@@ -5969,6 +6051,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetVoiceCrossingInformationInChord() {
 		Tablature tablature = new Tablature(encodingTestpiece);
 
@@ -6021,6 +6104,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetVoiceCrossingInformationInChordNonTab() {
 		Transcription transcription = new Transcription(midiTestpiece);
 		List<List<Integer>> voiceAssignments = getVoiceAssignments(false);
@@ -6093,6 +6177,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetVoiceRangeInformation() {
 		Transcription transcription = new Transcription(midiTestpiece);
 		
@@ -6115,6 +6200,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGenerateChordDictionary() {
 		Transcription transcription = new Transcription(midiTestpiece);
 			
@@ -6146,8 +6232,9 @@ public class TranscriptionTest extends TestCase {
 		}
 		assertEquals(expected, actual);
 	}
-	
-	
+
+
+	@Test
 	public void testGenerateVoiceAssignmentDictionary(){
 //		Tablature tablature = new Tablature(encodingTestpiece1, true);
 		Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
@@ -6181,6 +6268,7 @@ public class TranscriptionTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGenerateVoiceAssignmentDictionaryNonTab(){
 //		Tablature tablature = new Tablature(encodingTestpiece1, true);
 		Transcription transcription = new Transcription(midiTestpiece);
@@ -6237,7 +6325,6 @@ public class TranscriptionTest extends TestCase {
 //		dl.add(HALF);
 //
 //		List<Integer[]> vls = new ArrayList<>();
-//		vls.add(null);
 //		vls.add(null);
 //		vls.add(new Integer[]{0, 2});
 //		vls.add(new Integer[]{2, 0});

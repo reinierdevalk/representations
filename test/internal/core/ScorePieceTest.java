@@ -1,5 +1,11 @@
 package internal.core;
 
+import static org.junit.Assert.*;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,13 +38,12 @@ import external.Transcription;
 import external.TranscriptionTest;
 import internal.core.ScorePiece;
 import internal.structure.ScoreMetricalTimeLine;
-import junit.framework.TestCase;
 import tbp.symbols.Symbol;
 import tools.music.TimeMeterTools;
 import tools.music.TimeMeterToolsTest;
 import tools.path.PathTools;
 
-public class ScorePieceTest extends TestCase {
+public class ScorePieceTest {
 	
 	private File encodingTestpiece;
 	private File encodingTestGetMeterInfo;
@@ -69,10 +74,9 @@ public class ScorePieceTest extends TestCase {
 	private static final Rational H = new Rational(1, 2);
 
 
-	@Override
-	protected void setUp() throws Exception {
-		super.setUp();
-		Map<String, String> paths = PathTools.getPaths();
+	@Before
+	public void setUp() throws Exception {
+		Map<String, String> paths = PathTools.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
 		String td = "test";
 		String mp = paths.get("MIDI_PATH");
@@ -102,9 +106,8 @@ public class ScorePieceTest extends TestCase {
 		midiInExitu = new File(mpj + "Jos1704-In_exitu_Israel_de_Egypto-281-401.mid");	
 	}
 
-	@Override
-	protected void tearDown() throws Exception {
-		super.tearDown();
+	@After
+	public void tearDown() throws Exception {
 	}
 
 
@@ -526,6 +529,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testCleanMetricalTimeLine() {
 		// Tablature/non-tablature case
 		List<String> pieceNames = Arrays.asList(
@@ -558,6 +562,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testCleanTimedMetricals() {
 		// Tablature/non-tablature case
 		List<File> files = Arrays.asList(
@@ -586,6 +591,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testCalculateEndMarker() {
 		// Tablature/non-tablature case
 		List<String> pieceNames = Arrays.asList(
@@ -669,6 +675,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testCleanHarmonyTrack() {
 		// Tablature/non-tablature case
 		List<String> pieceNames = Arrays.asList(
@@ -697,6 +704,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeScore() {
 		// Tablature case
 		Tablature tab = new Tablature(encodingTestpiece);
@@ -782,6 +790,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testCreateNote() {
 		// Tablature/non-tablature case
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));
@@ -847,6 +856,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testTransposeHarmonyTrack() {
 		// Tablature case
 		List<String> pieceNames = Arrays.asList(
@@ -899,6 +909,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testTransposeNumAccidentals() {		
 		List<Integer> accid = Arrays.asList(0, -3, -2, 3, 2);
 		List<Integer> transp = Arrays.asList(-1, -3, 4, -2, 0);
@@ -917,6 +928,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testTransposeNotationSystem() {
 		// Tablature case
 		Piece p = MIDIImport.importMidiFile(midiTestpiece);
@@ -930,6 +942,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testAlignMetricalTimeLine() {
 		// Tablature case
 		List<Tablature> tabs = Arrays.asList(
@@ -1020,6 +1033,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testDiminuteMetricalTimeLine() {
 		// Tablature case
 		List<Tablature> tabs = Arrays.asList(
@@ -1180,6 +1194,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testDiminuteHarmonyTrack() {
 		// Tablature case
 		List<String> pieceNames = Arrays.asList(
@@ -1237,6 +1252,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testDiminuteNotationSystem() {
 		// Tablature case
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestGetMeterKeyInfo));
@@ -1346,6 +1362,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testAddNote() {
 		// Tablature/non-tablature case
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));
@@ -1455,6 +1472,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testRemoveNote() {
 		// Tablature/non-tablature case
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));
@@ -1560,6 +1578,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testCompleteDurations() {
 		// Tablature/non-tablature case
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));
@@ -1612,6 +1631,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testAugmentMetricalTimeLine() {
 		// Tablature/non-tablature case
 		Transcription t1 = new Transcription(midiTestGetMeterKeyInfo); // reverse
@@ -1807,6 +1827,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testAugmentHarmonyTrack() {
 		// Tablature/non-tablature case
 		Transcription t1 = new Transcription(midiTestGetMeterKeyInfo); // reverse
@@ -1903,6 +1924,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testAugmentNotationSystem() {
 		// Tablature/non-tablature case
 		Transcription t1 = new Transcription(midiTestpiece); // reverse
@@ -2211,6 +2233,7 @@ public class ScorePieceTest extends TestCase {
 	}
 
 
+	@Test
 	public void testCopyNotationSystem() {
 		// Tablature/non-tablature case
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midiTestpiece));

@@ -1,6 +1,6 @@
 package internal.core;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -14,16 +14,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import internal.core.Encoding;
 import internal.core.Encoding.Stage;
 import internal.structure.Event;
-import junit.framework.TestCase;
 import tbp.symbols.Symbol;
 import tbp.symbols.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 import tools.path.PathTools;
 
-public class EncodingTest extends TestCase {
+public class EncodingTest {
 
 	private File encodingTestpiece;
 	private File encodingTestGetMeterInfo;
@@ -31,13 +29,12 @@ public class EncodingTest extends TestCase {
 //	private File encodingNarvaez;
 //	private File encodingBarbetta;
 	private String miniRawEncoding;
+	private Map<String, String> paths;
 
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
-		super.setUp();
-		Map<String, String> paths = PathTools.getPaths();
+		paths = PathTools.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
 		String td = "test";
 		
@@ -65,7 +62,6 @@ public class EncodingTest extends TestCase {
 	}
 
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 	}
@@ -305,6 +301,7 @@ public class EncodingTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeListOfSymbols() {
 		Encoding encoding = new Encoding();
 		encoding.setPiecename("testpiece");
@@ -367,6 +364,7 @@ public class EncodingTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeListOfStatistics() {
 		Encoding encoding = new Encoding();
 		encoding.setPiecename("testpiece");
@@ -1226,16 +1224,16 @@ public class EncodingTest extends TestCase {
 		List<List<String>> actual = Arrays.asList(
 			Encoding.augmentEvents(e1.decompose(true, true), 
 				e1.getTimeline(), e1.getTabSymbolSet(), 
-				-1, -1, "reverse"),
+				-1, new ArrayList<Integer>(), -1, "reverse"),
 			Encoding.augmentEvents(e2.decompose(true, true),
 				e2.getTimeline(), e2.getTabSymbolSet(), 
-				-1, -1, "reverse"),
+				-1, new ArrayList<Integer>(), -1, "reverse"),
 			Encoding.augmentEvents(e3.decompose(true, true), 
 				null, null, 
-				Symbol.SEMIMINIM.getDuration(), -1, "deornament"),
+				Symbol.SEMIMINIM.getDuration(), new ArrayList<Integer>(), -1, "deornament"),
 			Encoding.augmentEvents(e4.decompose(true, true), 
 				null, null, 
-				-1, 2, "rescale")
+				-1, new ArrayList<Integer>(), 2, "rescale")
 		);
 
 		assertEquals(expected.size(), actual.size());
@@ -1299,7 +1297,6 @@ public class EncodingTest extends TestCase {
 
 	@Test
 	public void testGetSystemBarNumbers() {
-		Map<String, String> paths = PathTools.getPaths();
 		String erp = paths.get("ENCODINGS_PATH");
 
 		Encoding encoding1 = new Encoding(encodingTestpiece);	
@@ -1439,7 +1436,6 @@ public class EncodingTest extends TestCase {
 
 	@Test
 	public void testContainsTriplets() {
-		Map<String, String> paths = PathTools.getPaths();
 		String epj = paths.get("ENCODINGS_PATH_JOSQUINTAB");
 		
 		Encoding encoding1 = new Encoding(encodingTestpiece);
@@ -1463,6 +1459,7 @@ public class EncodingTest extends TestCase {
 
 
 	// TESTED BUT NOT IN USE -->
+	@Test
 	public void testGetTotalEventLength() {		
 		Encoding encoding = new Encoding(encodingTestpiece);
 		List<Event> e = encoding.getEvents();

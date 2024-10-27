@@ -1,5 +1,11 @@
 package internal.structure;
 
+import static org.junit.Assert.*;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -7,18 +13,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.After;
-import org.junit.Before;
-
 import de.uos.fmt.musitech.utility.math.Rational;
 import external.Tablature;
 import internal.core.Encoding;
 import internal.structure.Timeline;
-import junit.framework.TestCase;
 import tools.path.PathTools;
 
-public class TimelineTest extends TestCase {
-	
+public class TimelineTest {
+
 	private File encodingTestpiece;
 	private File encodingTestGetMeterInfo;
 	private File encodingNewsidler;
@@ -27,11 +29,10 @@ public class TimelineTest extends TestCase {
 //	private File midiTestpiece;
 //	private File midiTestGetMeterKeyInfo; 
 
-	@Override
+
 	@Before
 	public void setUp() throws Exception {
-		super.setUp();
-		Map<String, String> paths = PathTools.getPaths();
+		Map<String, String> paths = PathTools.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
 		String epj = paths.get("ENCODINGS_PATH_JOSQUINTAB");
 		String td = "test";
@@ -54,7 +55,6 @@ public class TimelineTest extends TestCase {
 	}
 
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 	}
@@ -168,6 +168,7 @@ public class TimelineTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeBarInfo() {
 		Encoding e1 = new Encoding(encodingTestpiece);
 		Encoding e2 = new Encoding(encodingBarbetta);
@@ -236,6 +237,7 @@ public class TimelineTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeBars() {
 		Encoding e1 = new Encoding(encodingTestpiece);
 		Encoding e2 = new Encoding(encodingTestGetMeterInfo);		
@@ -286,6 +288,7 @@ public class TimelineTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeDiminutions() {
 		Encoding e1 = new Encoding(encodingTestpiece);
 		Encoding e2 = new Encoding(encodingTestGetMeterInfo);
@@ -329,6 +332,7 @@ public class TimelineTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeTimeSignatures() {
 		Encoding e1 = new Encoding(encodingTestpiece);
 		Encoding e2 = new Encoding(encodingTestGetMeterInfo);
@@ -387,6 +391,7 @@ public class TimelineTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeDiminutionPerBar() {
 		Encoding e1 = new Encoding(encodingTestpiece);
 		Encoding e2 = new Encoding(encodingTestGetMeterInfo);
@@ -430,6 +435,7 @@ public class TimelineTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetTimeSignatureOnset() {
 		Encoding e = new Encoding(encodingTestGetMeterInfo);
 		List<Integer[]> ts = e.getTimeline().getTimeSignatures();
@@ -479,6 +485,7 @@ public class TimelineTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetDiminution() {				
 		List<Integer> expected = new ArrayList<>();
 		// For testpiece
@@ -508,6 +515,7 @@ public class TimelineTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetMetricPosition() {
 		List<Tablature> tabs = Arrays.asList(
 			new Tablature(encodingTestpiece),
@@ -536,6 +544,7 @@ public class TimelineTest extends TestCase {
 
 
 	// TESTED BUT NOT IN USE -->
+	@Test
 	public void testGetLength() {
 		List<Timeline> tls = Arrays.asList(
 			new Timeline(new Encoding(encodingTestpiece), false),
@@ -557,6 +566,7 @@ public class TimelineTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetNumberOfMetricBars() {		
 		List<Integer[]> expected = new ArrayList<>();
 		expected.add(new Integer[]{9, 0});

@@ -17,9 +17,7 @@ import de.uos.fmt.musitech.data.time.MetricalTimeLine;
 import de.uos.fmt.musitech.utility.math.Rational;
 import external.Tablature;
 import external.Transcription;
-import external.Transcription.Type;
 import internal.core.ScorePiece;
-import internal.structure.ScoreMetricalTimeLine;
 import tools.path.PathTools;
 
 public class ScoreMetricalTimeLineTest {
@@ -31,7 +29,7 @@ public class ScoreMetricalTimeLineTest {
 
 	@Before
 	public void setUp() throws Exception {
-		Map<String, String> paths = PathTools.getPaths();
+		Map<String, String> paths = PathTools.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
 		String td = "test";
 		String mp = paths.get("MIDI_PATH");

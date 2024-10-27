@@ -1,5 +1,11 @@
 package external;
 
+import static org.junit.Assert.*;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,14 +28,13 @@ import external.Transcription;
 import external.Tablature.Tuning;
 import internal.core.Encoding;
 import internal.core.Encoding.Stage;
-import junit.framework.TestCase;
 import tbp.symbols.Symbol;
 import tbp.symbols.TabSymbol;
 import tbp.symbols.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 import tools.path.PathTools;
 
-public class TablatureTest extends TestCase {
+public class TablatureTest {
 
 	private File encodingTestpiece;
 	private File encodingTestGetMeterInfo;
@@ -47,10 +52,9 @@ public class TablatureTest extends TestCase {
 	private static final Rational QUARTER = new Rational(1, 4);
 
 
-	@Override
-	protected void setUp() throws Exception {
-		super.setUp();
-		Map<String, String> paths = PathTools.getPaths();
+	@Before
+	public void setUp() throws Exception {
+		Map<String, String> paths = PathTools.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
 		String epj = paths.get("ENCODINGS_PATH_JOSQUINTAB");
 		String td = "test";
@@ -79,9 +83,8 @@ public class TablatureTest extends TestCase {
 	}
 
 
-	@Override
-	protected void tearDown() throws Exception {
-		super.tearDown();
+	@After
+	public void tearDown() throws Exception {
 	}
 
 
@@ -541,6 +544,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeMeterInfo() {
 		Tablature t1 = new Tablature();
 		t1.setEncoding(new Encoding(encodingTestpiece));
@@ -592,6 +596,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeTunings() {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
@@ -609,6 +614,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeBasicTabSymbolProperties() {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
@@ -630,6 +636,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetDurationsAndOnsets() {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
@@ -657,6 +664,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetMaximumDuration() {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
@@ -689,6 +697,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeChords() {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
@@ -712,6 +721,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMakeNumberOfNotesPerChord() {
 		Tablature t = new Tablature();
 		t.setEncoding(new Encoding(encodingTestpiece));
@@ -734,6 +744,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetPitchesInChordStatic() {
 		Tablature tablature = new Tablature(encodingTestpiece);
 
@@ -758,6 +769,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetMinimumDurationOfNote() {
 		Tablature tab = new Tablature(encodingTestpiece);
 		Transcription trans = new Transcription(midiTestpiece, encodingTestpiece);
@@ -806,6 +818,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testConvertTabSymbolToNote() {		
 		List<Note> expected = new ArrayList<>();
 		Integer[][] btp = getBtp(false);
@@ -840,6 +853,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetPitchesInChordStaticAlt() {
 		Tablature tab = new Tablature(encodingTestpiece);
 
@@ -862,6 +876,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetUnisonInfo() {
 		Tablature tab = new Tablature(encodingTestpiece);
 		List<List<TabSymbol>> chords = tab.getChords();
@@ -928,6 +943,7 @@ public class TablatureTest extends TestCase {
 //	}
 
 
+	@Test
 	public void testGetCourseCrossingInfo() {
 		Tablature tab = new Tablature(encodingTestpiece);
 		List<List<TabSymbol>> chords = tab.getChords();
@@ -981,6 +997,7 @@ public class TablatureTest extends TestCase {
 //	}
 
 
+	@Test
 	public void testGetPitchesInChord() {
 		Tablature tablature = new Tablature(encodingTestpiece);
 
@@ -1001,6 +1018,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGenerateChordDictionary() {
 		Tablature tablature = new Tablature(encodingTestpiece);
 
@@ -1022,12 +1040,14 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetTranspositionInterval() {
 		assertEquals(-2, new Tablature(encodingTestpiece).getTranspositionInterval());
 		assertEquals(0, new Tablature(encodingTestGetMeterInfo).getTranspositionInterval());
 	}
 
 
+	@Test
 	public void testGetMetricTimePerChord() {
 		Tablature t1 = new Tablature(encodingTestpiece);
 		Tablature t2 = new Tablature(encodingTestGetMeterInfo);
@@ -1064,6 +1084,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetTripletOnsetPairs() {
 		// No triplets
 		Tablature tablature = new Tablature(encodingTestpiece);
@@ -1104,7 +1125,9 @@ public class TablatureTest extends TestCase {
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
 			if (expected.get(i) == null) {
-				assertEquals(expected.get(i), actual.get(i));
+				assertNull(expected.get(i));
+				assertNull(actual.get(i));
+//				assertEquals(expected.get(i), actual.get(i));
 			}
 			else {
 				assertEquals(expected.get(i).length, actual.get(i).length);
@@ -1116,6 +1139,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetMensurationSigns() {
 		Tablature t1 = new Tablature(encodingTestpiece);
 		Tablature t2 = new Tablature(encodingNewsidler);
@@ -1143,6 +1167,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetBasicTabSymbolPropertiesChord() {
 		Tablature tablature = new Tablature(encodingTestpiece);
 		Integer[][] btp = getBtp(false);
@@ -1194,6 +1219,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetNumberOfNotes() {
 		int expected = 39;
 		int actual = new Tablature(encodingTestpiece).getNumberOfNotes();
@@ -1202,6 +1228,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetIndicesPerChord() {
 		Tablature t = new Tablature(encodingTestpiece);
 
@@ -1262,8 +1289,9 @@ public class TablatureTest extends TestCase {
 		}
 		assertEquals(expected, actual);
 	}
-	
-	
+
+
+	@Test
 	public void testGetLargestTablatureChord() {
 		int expected = 5;
 		int actual = new Tablature(encodingTestpiece).getLargestTablatureChord();
@@ -1272,6 +1300,7 @@ public class TablatureTest extends TestCase {
 
 
 	// TESTED BUT NOT IN USE -->
+	@Test
 	public void testGetMinimumDurationPerChord() {
 		Tablature t1 = new Tablature(encodingTestpiece);
 		Tablature t2 = new Tablature(encodingTestGetMeterInfo);
@@ -1298,6 +1327,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetNumberOfBarlines() {
 		List<Integer> expected = Arrays.asList(9, 4, 96);
 
@@ -1317,6 +1347,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testMapBarsToMetricBars() {
 		// One tab bar in one metric bar (tab bar:metric bar 1:1)
 		Tablature t1 = new Tablature(encodingTestpiece);
@@ -1427,6 +1458,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetBarInfo() {
 		Tablature t1 = new Tablature(encodingTestpiece);
 		Tablature t2 = new Tablature(encodingBarbetta);
@@ -1490,6 +1522,7 @@ public class TablatureTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetMetricBarInfo() {
 		Tablature t1 = new Tablature(encodingTestpiece);
 		Tablature t2 = new Tablature(encodingBarbetta);
