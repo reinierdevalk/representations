@@ -38,7 +38,6 @@ public class EncodingTest {
 		String ep = paths.get("ENCODINGS_PATH");
 		String td = "test";
 		
-//		String rp = Path.ROOT_PATH_DEPLOYMENT_DEV; 
 		encodingTestpiece = new File(PathTools.getPathString(
 			Arrays.asList(ep, td)) + "testpiece.tbp"
 		);
@@ -1302,7 +1301,6 @@ public class EncodingTest {
 		Encoding encoding1 = new Encoding(encodingTestpiece);	
 		Encoding encoding2 = new Encoding(
 			new File(PathTools.getPathString(Arrays.asList(erp, "thesis-int", "3vv")) + "newsidler-1536_7-disant_adiu.tbp")
-//			new File(Path.ROOT_PATH_DEPLOYMENT_DEV + Path.ENCODINGS_PATH + "thesis-int/3vv/newsidler-1536_7-disant_adiu.tbp")
 		);
 
 		List<List<Integer>> expected = new ArrayList<>();
@@ -1441,8 +1439,6 @@ public class EncodingTest {
 		Encoding encoding1 = new Encoding(encodingTestpiece);
 		Encoding encoding2 = new Encoding(
 			new File(PathTools.getPathString(Arrays.asList(epj)) + "5254_03_benedicta_es_coelorum_desprez-1.tbp")
-//			new File(Path.ROOT_PATH_DEPLOYMENT_DEV + Path.ENCODINGS_PATH_JOSQUINTAB + 
-//				"5254_03_benedicta_es_coelorum_desprez-1.tbp")
 		);
 
 		List<Boolean> expected = Arrays.asList(new Boolean[]{false, true});

@@ -100,7 +100,6 @@ public class TranscriptionTest {
 //		String epJos = PathTools.getPathString(Arrays.asList(epj));
 		
 //		String s = MEIExport.rootDir;
-///		String p = Path.ROOT_PATH_DEPLOYMENT_DEV;
 ///		String mp = p + Path.MIDI_PATH; // = F:/research/data/annotated/MIDI/
 ///		String ep = p + Path.ENCODINGS_PATH; // = F:/research/data/annotated/encodings/
 ///		String mpJos = p + Path.MIDI_PATH_JOSQUINTAB; // = F:/research/data/annotated/josquintab/MIDI/
@@ -2504,7 +2503,6 @@ public class TranscriptionTest {
 			"thesis",
 			"3vv"
 		));
-//		String prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_PATH + "bach-WTC/thesis/3vv/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			"bach-WTC1-fuga_2-BWV_847",	
 			"bach-WTC1-fuga_2-BWV_847",	
@@ -2616,7 +2614,6 @@ public class TranscriptionTest {
 			"thesis",
 			"3vv"
 		));
-//		String prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_PATH + "bach-WTC/thesis/3vv/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			"bach-WTC1-fuga_2-BWV_847",	
 			"bach-WTC1-fuga_2-BWV_847",	
@@ -3269,7 +3266,6 @@ public class TranscriptionTest {
 			"bach-inv",
 			"thesis"
 		));
-//		String prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_PATH + "bach-INV/thesis/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			"3vv/bach-INV-inventio_1-BWV_787",
 			"3vv/bach-INV-inventio_2-BWV_788",
@@ -3308,12 +3304,10 @@ public class TranscriptionTest {
 			paths.get("ENCODINGS_PATH"),
 			"thesis-int"
 		));
-//		String prefixTab = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.ENCODINGS_PATH + "thesis-int/";
 		String prefix = PathTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"thesis-int"
 		));
-//		String prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_PATH + "thesis-int/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			// 3vv (using full durations)
 			"3vv/newsidler-1536_7-mess_pensees", // correct
@@ -3400,7 +3394,6 @@ public class TranscriptionTest {
 			"bach-WTC",
 			"thesis"
 		));
-//		String prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_PATH + "bach-WTC/thesis/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			// 3vv
 			"3vv/bach-WTC1-fuga_2-BWV_847", // correct
@@ -3550,12 +3543,10 @@ public class TranscriptionTest {
 			paths.get("ENCODINGS_PATH"),
 			"thesis-int"
 		));
-//		String prefixTab = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.ENCODINGS_PATH + "thesis-int/";
 		String prefix = PathTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"thesis-int"
 		));
-//		String prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_PATH + "thesis-int/";
 		
 		List<String> fileNames = Arrays.asList(new String[]{
 			// 3vv
@@ -3734,7 +3725,6 @@ public class TranscriptionTest {
 			"bach-inv",
 			"thesis"
 		));
-//		String prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_PATH + "bach-inv/thesis/";
 		List<String> fileNames = Arrays.asList(new String[]{
 			// inv 2vv
 			"2vv/bach-INV-inventio_5-BWV_776", // correct
@@ -3930,7 +3920,6 @@ public class TranscriptionTest {
 					"bach-WTC",
 					"thesis"
 				));
-//				prefix = Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_PATH + "bach-WTC/thesis/";
 			}
 			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.EXTENSION));
 			actual.add(t.getNonImitativeVoiceEntries(null, null, t.getBasicNoteProperties(), 
