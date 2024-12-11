@@ -63,8 +63,7 @@ public class Transcription implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	public static int MAX_NUM_VOICES = 5;
-	public static int DUR_LABEL_MULTIPLIER = 1; // TODO set to 2 for Byrd (to allow for note twice the length of a W) 
-	                                            // and 3 for JosquIntab (to allow for note three times the length of a W)
+	public static int DUR_LABEL_MULTIPLIER = 1; // TODO set to 2 for Byrd and 3 for JosquIntab (to allow for note 2 (3) times the length of a W) 
 	public static int MAX_TABSYMBOL_DUR = (Tablature.SRV_DEN / 3) * DUR_LABEL_MULTIPLIER; // trp dur
 	public static final Rational SMALLEST_RHYTHMIC_VALUE = new Rational(1, 128);
 	
@@ -540,7 +539,7 @@ public class Transcription implements Serializable {
 		if (isTabCase) {
 //			setVoicesSNU();
 			setDurationLabels(t == Type.PREDICTED ? argDurLabels : null);
-			setMinimumDurationLabels(tab);
+			setMinimumDurationLabels(tab, MAX_TABSYMBOL_DUR);
 //			if (t != Type.PREDICTED) {
 //				setDurationLabels(null);
 ////				initialiseDurationLabels(null); // needs <noteSequence>
@@ -1697,12 +1696,15 @@ public class Transcription implements Serializable {
 		List<List<Double>> argVoiceLabels = new ArrayList<List<Double>>(); 
 		getTaggedNotes().forEach(tn -> {
 			if (argIsTablatureCase) {
-				argVoiceLabels.add(createVoiceLabel(
-					tn.getVoices() == null ? new Integer[]{findVoice(tn.getNote())} : 
-					tn.getVoices()));
+				argVoiceLabels.add(LabelTools.createVoiceLabel(
+					tn.getVoices() == null ? new Integer[]{findVoice(tn.getNote())} : tn.getVoices(), 
+					MAX_NUM_VOICES)
+				);
 			}
 			else {
-				argVoiceLabels.add(createVoiceLabel(new Integer[]{findVoice(tn.getNote())}));
+				argVoiceLabels.add(LabelTools.createVoiceLabel(
+					new Integer[]{findVoice(tn.getNote())}, MAX_NUM_VOICES)
+				);
 			}
 		});
 		return argVoiceLabels;
@@ -1747,27 +1749,27 @@ public class Transcription implements Serializable {
 	List<List<Double>> makeDurationLabels() {
 		List<List<Double>> argDurLabels = new ArrayList<List<Double>>(); 
 		getTaggedNotes().forEach(tn -> 	
-			argDurLabels.add(createDurationLabel(
-				tn.getDurations() == null ? 
-					new Integer[]{TabSymbol.getTabSymbolDur(tn.getNote().getMetricDuration())} :
+			argDurLabels.add(LabelTools.createDurationLabel(
+				tn.getDurations() == null ? new Integer[]{TabSymbol.getTabSymbolDur(tn.getNote().getMetricDuration())} :
 				new Integer[]{TabSymbol.getTabSymbolDur(tn.getDurations()[0]), 
-					TabSymbol.getTabSymbolDur(tn.getDurations()[1])}	
+					TabSymbol.getTabSymbolDur(tn.getDurations()[1])},
+				MAX_TABSYMBOL_DUR
 //				(Integer[]) Arrays.stream(tn.getDurations()).map(d -> Tablature.getTabSymbolDur(d)).toArray()
 		)));
 		return argDurLabels;
 	}
 
 
-	void setMinimumDurationLabels(Tablature tab) {
-		minimumDurationLabels = makeMinimumDurationLabels(tab);
+	void setMinimumDurationLabels(Tablature tab, int maxTabSymDur) {
+		minimumDurationLabels = makeMinimumDurationLabels(tab, maxTabSymDur);
 	}
 
 
 	// TESTED
-	static List<List<Double>> makeMinimumDurationLabels(Tablature tab) {
+	static List<List<Double>> makeMinimumDurationLabels(Tablature tab, int maxTabSymDur) {
 		List<List<Double>> minDurLabels = new ArrayList<>();
 		Arrays.stream(tab.getBasicTabSymbolProperties()).forEach(in -> 
-			minDurLabels.add(createDurationLabel(new Integer[]{in[Tablature.MIN_DURATION]})));
+			minDurLabels.add(LabelTools.createDurationLabel(new Integer[]{in[Tablature.MIN_DURATION]}, maxTabSymDur)));
 //		for (Integer[] in : tab.getBasicTabSymbolProperties()) {
 //			minDurLabels.add(createDurationLabel(new Integer[]{in[Tablature.MIN_DURATION]}));
 //		}
@@ -2152,46 +2154,6 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Creates a voice label encoding the given voice(s).
-	 *   
-	 * @param voice The voices, integers ranging from 0 (the highest voice) to 
-	 *              MAX_NUM_VOICES - 1 (the lowest voice). 
-	 * @return
-	 */
-	// TESTED
-	// TODO: to utils.tools.labels.LabelTools
-	public static List<Double> createVoiceLabel(Integer[] voices) {
-		Double[] voiceLabel = new Double[MAX_NUM_VOICES];
-		Arrays.setAll(voiceLabel, ind -> Arrays.asList(voices).contains(ind) ? 1.0 : 0.0);
-		return Arrays.asList(voiceLabel);
-	}
-
-
-	/**
-	 * Creates a duration label encoding the given duration(s).
-	 * 
-	 * NB: Tablature case only.
-	 *  
-	 * @param durations The durations as TabSymbol durations (brevis = whole note = 96, 
-	 * 				    semibrevis = half note = 48, etc.), integers ranging from 0 (the 
-	 *                  shortest duration) to MAX_TABSYMBOL_DUR - 1 (the longest duration). 
-	 *                  TabSymbol durations are always divisible by 3.
-	 * @return
-	 */
-	// TESTED
-	// TODO: to utils.tools.labels.LabelTools
-	public static List<Double> createDurationLabel(Integer[] durations) {
-		List<Integer> durs = Arrays.asList(durations).stream()
-			.map(d -> ((d/3) - 1))
-			.collect(Collectors.toList());
-		Double[] durLabel = new Double[MAX_TABSYMBOL_DUR];
-		Arrays.setAll(durLabel, ind -> durs.contains(ind) ? 1.0 : 0.0);
-
-		return Arrays.asList(durLabel);
-	}
-
-
-	/**
 	 * Gets the number of notes.
 	 * 
 	 * @return
@@ -2564,10 +2526,13 @@ public class Transcription implements Serializable {
 		List<List<Integer>> notesPerVoice = new ArrayList<List<Integer>>();
 
 		// For each voice
-		for (int i = 0; i < MAX_NUM_VOICES; i++) {
+		int maxNumVoices = voiceLabels.get(0).size();
+		for (int i = 0; i < maxNumVoices; i++) { // Schmier
+//		for (int i = 0; i < MAX_NUM_VOICES; i++) { // Schmier
 			int currentVoice = i;
 			List<Integer> notesInCurrentVoice = new ArrayList<Integer>();
-			// For each note: check whether the note at index j belongs to currentVoice. If so, add it to notesInCurrentVoice 
+			// For each note: check whether the note at index j belongs to currentVoice. 
+			// If so, add it to notesInCurrentVoice 
 			for (int j = 0; j < voiceLabels.size(); j++) {
 				List<Double> actualVoiceLabel = voiceLabels.get(j);
 				List<Integer> actualVoices = LabelTools.convertIntoListOfVoices(actualVoiceLabel);
@@ -7150,6 +7115,7 @@ public class Transcription implements Serializable {
 	 */
 	public Integer[] getVoiceCrossingInformation(Tablature tab) {
 		String voiceCrossingInformation = "voice crossing information for " + getName() + "\r\n";
+		int mnv = MAX_NUM_VOICES;
 		int totalTypeOne = 0;
 		int totalTypeTwo = 0;
 
@@ -7354,20 +7320,19 @@ public class Transcription implements Serializable {
 				int numVoices = getNumberOfVoices();
 				if (numVoices == 4) {
 					// Only voice 4 is allowed to be empty
-					if (i != MAX_NUM_VOICES-1) {
+					if (i != mnv-1) {
 						throw new RuntimeException("Voice " + i + " does not contain any notes.");
 					}
 				}
 				if (numVoices == 3) {
 					// Only voice 3 and 4 are allowed to be empty
-					if (i != MAX_NUM_VOICES-1 && i != MAX_NUM_VOICES-2) {
+					if (i != mnv-1 && i != mnv-2) {
 						throw new RuntimeException("Voice " + i + " does not contain any notes.");
 					}
 				}
 				if (numVoices == 2) {
 					// Only voice 2, 3 and 4 are allowed to be empty
-					if (i != MAX_NUM_VOICES-1 && i != MAX_NUM_VOICES-2 &&
-						i != MAX_NUM_VOICES-3) {
+					if (i != mnv-1 && i != mnv-2 && i != mnv-3) {
 						throw new RuntimeException("Voice " + i + " does not contain any notes.");
 					}
 				}
@@ -8001,9 +7966,9 @@ public class Transcription implements Serializable {
 	 * @return
 	 */
 	// TESTED
-	private static List<Double> createDurationLabelOLD(int duration) {		
+	private static List<Double> createDurationLabelOLD(int duration, int maxTabSymDur) {		
 		List<Double> durationLabel = new ArrayList<Double>();
-		for (int i = 0; i < MAX_TABSYMBOL_DUR; i++) {
+		for (int i = 0; i < maxTabSymDur; i++) {
 			durationLabel.add(0.0);
 		}
 		int posInLabel = (duration - 1) / 3;

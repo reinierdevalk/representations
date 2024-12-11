@@ -17,8 +17,8 @@ import de.uos.fmt.musitech.data.time.MetricalTimeLine;
 import de.uos.fmt.musitech.utility.math.Rational;
 import external.Tablature;
 import external.Transcription;
+import interfaces.CLInterface;
 import internal.core.ScorePiece;
-import tools.path.PathTools;
 
 public class ScoreMetricalTimeLineTest {
 	
@@ -29,20 +29,20 @@ public class ScoreMetricalTimeLineTest {
 
 	@Before
 	public void setUp() throws Exception {
-		Map<String, String> paths = PathTools.getPaths(true);
+		Map<String, String> paths = CLInterface.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
 		String td = "test";
 		String mp = paths.get("MIDI_PATH");
-		encodingTestpiece = new File(PathTools.getPathString(
+		encodingTestpiece = new File(CLInterface.getPathString(
 			Arrays.asList(ep, td)) + "testpiece.tbp"
 		);
-		encodingTestGetMeterInfo = new File(PathTools.getPathString(
+		encodingTestGetMeterInfo = new File(CLInterface.getPathString(
 			Arrays.asList(ep, td)) + "test_get_meter_info.tbp"
 		);
-		midiTestpiece = new File(PathTools.getPathString(
+		midiTestpiece = new File(CLInterface.getPathString(
 			Arrays.asList(mp, td)) + "testpiece.mid"
 		);
-		midiTestGetMeterKeyInfo = new File(PathTools.getPathString(
+		midiTestGetMeterKeyInfo = new File(CLInterface.getPathString(
 			Arrays.asList(mp, td)) + "test_get_meter_key_info.mid"
 		);
 	}

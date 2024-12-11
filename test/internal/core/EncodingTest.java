@@ -14,12 +14,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import interfaces.CLInterface;
 import internal.core.Encoding.Stage;
 import internal.structure.Event;
 import tbp.symbols.Symbol;
 import tbp.symbols.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
-import tools.path.PathTools;
 
 public class EncodingTest {
 
@@ -34,14 +34,14 @@ public class EncodingTest {
 
 	@Before
 	public void setUp() throws Exception {
-		paths = PathTools.getPaths(true);
+		paths = CLInterface.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
 		String td = "test";
 		
-		encodingTestpiece = new File(PathTools.getPathString(
+		encodingTestpiece = new File(CLInterface.getPathString(
 			Arrays.asList(ep, td)) + "testpiece.tbp"
 		);
-		encodingTestGetMeterInfo = new File(PathTools.getPathString(
+		encodingTestGetMeterInfo = new File(CLInterface.getPathString(
 			Arrays.asList(ep, td)) + "test_get_meter_info.tbp"
 		);
 //		encodingNewsidler = new File(
@@ -1300,7 +1300,7 @@ public class EncodingTest {
 
 		Encoding encoding1 = new Encoding(encodingTestpiece);	
 		Encoding encoding2 = new Encoding(
-			new File(PathTools.getPathString(Arrays.asList(erp, "thesis-int", "3vv")) + "newsidler-1536_7-disant_adiu.tbp")
+			new File(CLInterface.getPathString(Arrays.asList(erp, "thesis-int", "3vv")) + "newsidler-1536_7-disant_adiu.tbp")
 		);
 
 		List<List<Integer>> expected = new ArrayList<>();
@@ -1438,7 +1438,7 @@ public class EncodingTest {
 		
 		Encoding encoding1 = new Encoding(encodingTestpiece);
 		Encoding encoding2 = new Encoding(
-			new File(PathTools.getPathString(Arrays.asList(epj)) + "5254_03_benedicta_es_coelorum_desprez-1.tbp")
+			new File(CLInterface.getPathString(Arrays.asList(epj)) + "5254_03_benedicta_es_coelorum_desprez-1.tbp")
 		);
 
 		List<Boolean> expected = Arrays.asList(new Boolean[]{false, true});

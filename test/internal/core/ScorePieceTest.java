@@ -36,12 +36,13 @@ import de.uos.fmt.musitech.utility.math.Rational;
 import external.Tablature;
 import external.Transcription;
 import external.TranscriptionTest;
+import interfaces.CLInterface;
 import internal.core.ScorePiece;
 import internal.structure.ScoreMetricalTimeLine;
 import tbp.symbols.Symbol;
+import tools.labels.LabelTools;
 import tools.music.TimeMeterTools;
 import tools.music.TimeMeterToolsTest;
-import tools.path.PathTools;
 
 public class ScorePieceTest {
 	
@@ -72,21 +73,25 @@ public class ScorePieceTest {
 	private static final Rational Q = new Rational(1, 4);
 	private static final Rational DQ = new Rational(3, 8);
 	private static final Rational H = new Rational(1, 2);
+	
+	private int mtsd;
 
 
 	@Before
 	public void setUp() throws Exception {
-		Map<String, String> paths = PathTools.getPaths(true);
-		String ep = paths.get("ENCODINGS_PATH");
-		String td = "test";
-		String mp = paths.get("MIDI_PATH");
-		String mpj = PathTools.getPathString(Arrays.asList(paths.get("MIDI_PATH_JOSQUINTAB")));
-		String epj = PathTools.getPathString(Arrays.asList(paths.get("ENCODINGS_PATH_JOSQUINTAB")));
+		mtsd = Transcription.MAX_TABSYMBOL_DUR;
 
-		encodingTestpiece = new File(PathTools.getPathString(
+		Map<String, String> paths = CLInterface.getPaths(true);
+		String ep = paths.get("ENCODINGS_PATH");
+		String td = CLInterface.getPathString(Arrays.asList("test", "5vv"));
+		String mp = paths.get("MIDI_PATH");
+		String mpj = CLInterface.getPathString(Arrays.asList(paths.get("MIDI_PATH_JOSQUINTAB")));
+		String epj = CLInterface.getPathString(Arrays.asList(paths.get("ENCODINGS_PATH_JOSQUINTAB")));
+
+		encodingTestpiece = new File(CLInterface.getPathString(
 			Arrays.asList(ep, td)) + "testpiece.tbp"
 		);
-		encodingTestGetMeterInfo = new File(PathTools.getPathString(
+		encodingTestGetMeterInfo = new File(CLInterface.getPathString(
 			Arrays.asList(ep, td)) + "test_get_meter_info.tbp"
 		);
 		encodingMemorEsto = new File(epj + "4465_33-34_memor_esto-2.tbp");
@@ -94,10 +99,10 @@ public class ScorePieceTest {
 		encodingPreterRerum = new File(epj + "5694_03_motet_praeter_rerum_seriem_josquin-2.tbp");
 		encodingInExitu = new File(epj + "5263_12_in_exitu_israel_de_egipto_desprez-3.tbp");
 		
-		midiTestpiece = new File(PathTools.getPathString(
+		midiTestpiece = new File(CLInterface.getPathString(
 			Arrays.asList(mp, td)) + "testpiece.mid"
 		);
-		midiTestGetMeterKeyInfo = new File(PathTools.getPathString(
+		midiTestGetMeterKeyInfo = new File(CLInterface.getPathString(
 			Arrays.asList(mp, td)) + "test_get_meter_key_info.mid"
 		);
 		midiMemorEsto = new File(mpj + "Jos1714-Memor_esto_verbi_tui-166-325.mid");
@@ -714,7 +719,7 @@ public class ScorePieceTest {
 		List<List<Double>> vl1 = t1.getVoiceLabels();
 		List<List<Double>> dl1 = t1.getDurationLabels();
 		// Adapt dl of SNU note to have only one duration (only one duration is predicted for SNUs)
-		dl1.set(12, Transcription.createDurationLabel(new Integer[]{Symbol.MINIM.getDuration()}));
+		dl1.set(12, LabelTools.createDurationLabel(new Integer[]{Symbol.MINIM.getDuration()}, mtsd));
 		// Non-tablature case
 		Transcription t2 = new Transcription(midiTestpiece);
 		MetricalTimeLine mtl2 = t2.getScorePiece().getMetricalTimeLine();

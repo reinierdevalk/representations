@@ -25,6 +25,7 @@ import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.utility.math.Rational;
 import external.Tablature;
 import external.Transcription;
+import interfaces.CLInterface;
 import external.Tablature.Tuning;
 import internal.core.Encoding;
 import internal.core.Encoding.Stage;
@@ -32,7 +33,6 @@ import tbp.symbols.Symbol;
 import tbp.symbols.TabSymbol;
 import tbp.symbols.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
-import tools.path.PathTools;
 
 public class TablatureTest {
 
@@ -54,30 +54,30 @@ public class TablatureTest {
 
 	@Before
 	public void setUp() throws Exception {
-		Map<String, String> paths = PathTools.getPaths(true);
+		Map<String, String> paths = CLInterface.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
 		String epj = paths.get("ENCODINGS_PATH_JOSQUINTAB");
-		String td = "test";
+		String td = "test/5vv/";
 		String mp = paths.get("MIDI_PATH");
-		encodingTestpiece = new File(PathTools.getPathString(
+		encodingTestpiece = new File(CLInterface.getPathString(
 			Arrays.asList(ep, td)) + "testpiece.tbp"
 		);
-		encodingTestGetMeterInfo = new File(PathTools.getPathString(
+		encodingTestGetMeterInfo = new File(CLInterface.getPathString(
 			Arrays.asList(ep, td))	+ "test_get_meter_info.tbp"
 		);
-		encodingNewsidler = new File(PathTools.getPathString(
+		encodingNewsidler = new File(CLInterface.getPathString(
 			Arrays.asList(ep, "thesis-int", "3vv")) + "newsidler-1544_2-nun_volget.tbp"
 		);
-		encodingNewsidlerCumSancto = new File(PathTools.getPathString(
+		encodingNewsidlerCumSancto = new File(CLInterface.getPathString(
 			Arrays.asList(epj)) + "4471_40_cum_sancto_spiritu.tbp"
 		);
-		encodingBarbetta = new File(PathTools.getPathString(
+		encodingBarbetta = new File(CLInterface.getPathString(
 			Arrays.asList(ep, "thesis-int", "4vv")) + "barbetta-1582_1-il_nest-corrected.tbp"
 		);
-		encodingNarvaez = new File(PathTools.getPathString(
+		encodingNarvaez = new File(CLInterface.getPathString(
 			Arrays.asList(epj)) + "5190_17_cum_spiritu_sanctu_from_missa_sine_nomine.tbp"
 		);
-		midiTestpiece = new File(PathTools.getPathString(
+		midiTestpiece = new File(CLInterface.getPathString(
 			Arrays.asList(mp, td)) + "testpiece.mid"
 		);
 	}

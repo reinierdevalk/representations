@@ -1,10 +1,7 @@
 package external;
 
-import static org.junit.Assert.*;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -14,24 +11,25 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import conversion.imports.MIDIImport;
 import de.uos.fmt.musitech.data.score.NotationSystem;
 import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.Piece;
 import de.uos.fmt.musitech.utility.math.Rational;
-import external.Tablature;
-import external.Transcription;
 import external.Transcription.TaggedNote;
 import external.Transcription.Type;
+import interfaces.CLInterface;
 import internal.core.Encoding;
 import internal.core.ScorePiece;
 import internal.structure.TimelineTest;
-import tbp.symbols.Symbol;
 import tbp.symbols.TabSymbol;
 import tools.labels.LabelTools;
 //import tools.music.NoteTimePitchComparator;
-import tools.path.PathTools;
 
 public class TranscriptionTest {
 
@@ -58,42 +56,51 @@ public class TranscriptionTest {
 	private File midiHerrGott;
 //	private File midiBWV846;
 	
-	private static final List<Double> THIRTYSECOND = Transcription.createDurationLabel(new Integer[]{1*3});
-	private static final List<Double> SIXTEENTH = Transcription.createDurationLabel(new Integer[]{2*3});
-	private static final List<Double> EIGHTH = Transcription.createDurationLabel(new Integer[]{4*3});
-	private static final List<Double> EIGHTH_QUARTER_SNU = Transcription.createDurationLabel(new Integer[]{4*3, 8*3});
-	private static final List<Double> QUARTER = Transcription.createDurationLabel(new Integer[]{8*3});
-	private static final List<Double> DOTTED_EIGHTH = Transcription.createDurationLabel(new Integer[]{6*3});
-	private static final List<Double> HALF = Transcription.createDurationLabel(new Integer[]{16*3});
-	private static final List<Double> V_0 = Transcription.createVoiceLabel(new Integer[]{0});
-	private static final List<Double> V_0_1 = Transcription.createVoiceLabel(new Integer[]{0, 1});
-	private static final List<Double> V_1 = Transcription.createVoiceLabel(new Integer[]{1});
-	private static final List<Double> V_2 = Transcription.createVoiceLabel(new Integer[]{2});
-	private static final List<Double> V_3 = Transcription.createVoiceLabel(new Integer[]{3});
-	private static final List<Double> V_4 = Transcription.createVoiceLabel(new Integer[]{4});
+	private List<Double> v0;
+	private List<Double> v01;
+	private List<Double> v1;
+	private List<Double> v2;
+	private List<Double> v3;
+	private List<Double> v4;
 
+	private List<Double> thirtysecond;
+	private List<Double> sixteenth;
+	private List<Double> eighth;
+	private List<Double> eighthQuarterSNU;
+	private List<Double> quarter;
+	private List<Double> dottedEighth;
+	private List<Double> half;
+
+	private int mnv;
+	private int mtsd;
 	// TODO: where appropriate, test for both tab and non-tab case 
 	// TODO: methods from init(): check sequence of previous methods 
 	
-	
-//	public TranscriptionTest(String name) {
-//		super(name);
-//	}
-
 
 	@Before
 	public void setUp() throws Exception {
-//		Runner.setPathsToCodeAndData(UI.getRootDir(), false);
-////		testPaths = new String[]{Runner.encodingsPathTest, Runner.midiPathTest, Runner.midiPathTest};
-//		encodingTestpiece1 = new File(Runner.encodingsPathTest + "testpiece.tbp");
-//		midiTestpiece1 = new File(Runner.midiPathTest + "testpiece.mid");
-//		midiTestGetMeterInfoDim = new File(Runner.midiPathTest + "test_get_meter_key_info_diminuted.mid");
-//		midiTestGetMeterInfoDimNoAna = new File(Runner.midiPathTest + "test_get_meter_key_info_diminuted_no_anacrusis.mid");
+		mnv = Transcription.MAX_NUM_VOICES;
+		mtsd = Transcription.MAX_TABSYMBOL_DUR;
+
+		v0 = LabelTools.createVoiceLabel(new Integer[]{0}, mnv);
+		v01 = LabelTools.createVoiceLabel(new Integer[]{0, 1}, mnv);
+		v1 = LabelTools.createVoiceLabel(new Integer[]{1}, mnv);
+		v2 = LabelTools.createVoiceLabel(new Integer[]{2}, mnv);
+		v3 = LabelTools.createVoiceLabel(new Integer[]{3}, mnv);
+		v4 = LabelTools.createVoiceLabel(new Integer[]{4}, mnv);
 		
-		paths = PathTools.getPaths(true);
+		thirtysecond = LabelTools.createDurationLabel(new Integer[]{1*3}, mtsd);
+		sixteenth = LabelTools.createDurationLabel(new Integer[]{2*3}, mtsd);
+		eighth = LabelTools.createDurationLabel(new Integer[]{4*3}, mtsd);
+		eighthQuarterSNU = LabelTools.createDurationLabel(new Integer[]{4*3, 8*3}, mtsd);
+		quarter = LabelTools.createDurationLabel(new Integer[]{8*3}, mtsd);
+		dottedEighth = LabelTools.createDurationLabel(new Integer[]{6*3}, mtsd);
+		half = LabelTools.createDurationLabel(new Integer[]{16*3}, mtsd);
+
+		paths = CLInterface.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
 		String epj = paths.get("ENCODINGS_PATH_JOSQUINTAB");
-		String td = "test";
+		String td = "test/5vv/";
 		String mp = paths.get("MIDI_PATH");
 		String mpj = paths.get("MIDI_PATH_JOSQUINTAB");
 //		String mpJos = PathTools.getPathString(Arrays.asList(mpj));
@@ -105,40 +112,40 @@ public class TranscriptionTest {
 ///		String mpJos = p + Path.MIDI_PATH_JOSQUINTAB; // = F:/research/data/annotated/josquintab/MIDI/
 ///		String epJos = p + Path.ENCODINGS_PATH_JOSQUINTAB; // = F:/research/data/annotated/josquintab/tab/
 		
-		encodingTestpiece = new File(PathTools.getPathString(
+		encodingTestpiece = new File(CLInterface.getPathString(
 			Arrays.asList(ep, td)) + "testpiece.tbp"
 		);
-		encodingTestGetMeterInfo = new File(PathTools.getPathString(
+		encodingTestGetMeterInfo = new File(CLInterface.getPathString(
 			Arrays.asList(ep, td)) + "test_get_meter_info.tbp"
 		);
 //		encodingMemorEsto = new File(jtpTab + "4465_33-34_memor_esto-2.tbp");
 //		encodingQuiHabitat = new File(jtpTab + "5264_13_qui_habitat_in_adjutorio_desprez-2.tbp");
 //		encodingPreterRerum = new File(jtpTab + "5694_03_motet_praeter_rerum_seriem_josquin-2.tbp");
 //		encodingInExitu = new File(jtpTab + "5263_12_in_exitu_israel_de_egipto_desprez-3.tbp");
-		encodingLasOn = new File(PathTools.getPathString(
+		encodingLasOn = new File(CLInterface.getPathString(
 			Arrays.asList(ep, "thesis-int", "4vv")) + "phalese-1563_12-las_on.tbp"
 		);
-		encodingElslein = new File(PathTools.getPathString(
+		encodingElslein = new File(CLInterface.getPathString(
 			Arrays.asList(ep, "thesis-int", "3vv")) + "judenkuenig-1523_2-elslein_liebes.tbp"
 		);
-		encodingHerrGott = new File(PathTools.getPathString(
+		encodingHerrGott = new File(CLInterface.getPathString(
 			Arrays.asList(ep, "thesis-int", "4vv")) + "ochsenkun-1558_5-herr_gott.tbp"
 		);
-		midiLasOn = new File(PathTools.getPathString(
+		midiLasOn = new File(CLInterface.getPathString(
 			Arrays.asList(mp, "thesis-int", "4vv")) + "phalese-1563_12-las_on.mid"
 		);
-		midiElslein = new File(PathTools.getPathString(
+		midiElslein = new File(CLInterface.getPathString(
 			Arrays.asList(mp, "thesis-int","3vv")) + "judenkuenig-1523_2-elslein_liebes.mid"
 		);
-		midiHerrGott = new File(PathTools.getPathString(
+		midiHerrGott = new File(CLInterface.getPathString(
 			Arrays.asList(mp, "thesis-int", "4vv")) + "ochsenkun-1558_5-herr_gott.mid"
 		);
 //		midiBWV846 = new File(s + "data/annotated/MIDI/bach-WTC/thesis/4vv/" + "bach-WTC1-fuga_12-BWV_857.mid");
 
-		midiTestpiece = new File(PathTools.getPathString(
+		midiTestpiece = new File(CLInterface.getPathString(
 			Arrays.asList(mp, td)) + "testpiece.mid"
 		);
-		midiTestGetMeterKeyInfo = new File(PathTools.getPathString(
+		midiTestGetMeterKeyInfo = new File(CLInterface.getPathString(
 			Arrays.asList(mp, td)) + "test_get_meter_key_info.mid"
 		);
 //		midiTestGetMeterKeyInfoDiminuted = new File(mp + "test/" + "test_get_meter_key_info_diminuted.mid");
@@ -158,42 +165,42 @@ public class TranscriptionTest {
 	private List<List<List<Double>>> getChordVoiceLabels(boolean isTablatureCase) {
 		if (isTablatureCase) {
 			return Arrays.asList(
-				Arrays.asList(V_3, V_2, V_1, V_0),
-				Arrays.asList(V_3, V_2, V_0, V_1),
-				Arrays.asList(V_3),
-				Arrays.asList(V_4, V_3, V_2, V_0_1),
-				Arrays.asList(V_4),
-				Arrays.asList(V_4, V_3, V_2, V_1, V_0),
-				Arrays.asList(V_4, V_2, V_0, V_1),
-				Arrays.asList(V_2, V_0),
-				Arrays.asList(V_3, V_2, V_1, V_0),
-				Arrays.asList(V_0),
-				Arrays.asList(V_0),
-				Arrays.asList(V_0),
-				Arrays.asList(V_0),
-				Arrays.asList(V_0),
-				Arrays.asList(V_0),
-				Arrays.asList(V_3, V_2, V_1, V_0)
+				Arrays.asList(v3, v2, v1, v0),
+				Arrays.asList(v3, v2, v0, v1),
+				Arrays.asList(v3),
+				Arrays.asList(v4, v3, v2, v01),
+				Arrays.asList(v4),
+				Arrays.asList(v4, v3, v2, v1, v0),
+				Arrays.asList(v4, v2, v0, v1),
+				Arrays.asList(v2, v0),
+				Arrays.asList(v3, v2, v1, v0),
+				Arrays.asList(v0),
+				Arrays.asList(v0),
+				Arrays.asList(v0),
+				Arrays.asList(v0),
+				Arrays.asList(v0),
+				Arrays.asList(v0),
+				Arrays.asList(v3, v2, v1, v0)
 			);
 		}
 		else {
 			return Arrays.asList(
-				Arrays.asList(V_3, V_2, V_1, V_0),
-				Arrays.asList(V_3, V_2, V_1, V_0),
-				Arrays.asList(V_3),
-				Arrays.asList(V_4, V_3, V_2, V_0, V_1),
-				Arrays.asList(V_4),
-				Arrays.asList(V_4, V_3, V_2, V_1, V_0),
-				Arrays.asList(V_4, V_2, V_0, V_1),
-				Arrays.asList(V_2, V_0),
-				Arrays.asList(V_3, V_2, V_1, V_0),
-				Arrays.asList(V_0),
-				Arrays.asList(V_0),
-				Arrays.asList(V_0),
-				Arrays.asList(V_0),
-				Arrays.asList(V_0),
-				Arrays.asList(V_0),
-				Arrays.asList(V_3, V_2, V_1, V_0)
+				Arrays.asList(v3, v2, v1, v0),
+				Arrays.asList(v3, v2, v1, v0),
+				Arrays.asList(v3),
+				Arrays.asList(v4, v3, v2, v0, v1),
+				Arrays.asList(v4),
+				Arrays.asList(v4, v3, v2, v1, v0),
+				Arrays.asList(v4, v2, v0, v1),
+				Arrays.asList(v2, v0),
+				Arrays.asList(v3, v2, v1, v0),
+				Arrays.asList(v0),
+				Arrays.asList(v0),
+				Arrays.asList(v0),
+				Arrays.asList(v0),
+				Arrays.asList(v0),
+				Arrays.asList(v0),
+				Arrays.asList(v3, v2, v1, v0)
 			);
 		}
 	}
@@ -1234,22 +1241,22 @@ public class TranscriptionTest {
 		t.setChordVoiceLabels(tab);
 
 		List<List<Double>> expected = Arrays.asList(
-			QUARTER, QUARTER, QUARTER, QUARTER, 
-			DOTTED_EIGHTH, QUARTER, QUARTER, EIGHTH,
-			SIXTEENTH,
-			EIGHTH, QUARTER, QUARTER, EIGHTH_QUARTER_SNU,
-			EIGHTH,
-			QUARTER, HALF, QUARTER, QUARTER, QUARTER,
-			QUARTER, EIGHTH, EIGHTH, QUARTER,
-			EIGHTH, EIGHTH,
-			HALF, HALF, HALF, SIXTEENTH,
-			SIXTEENTH,
-			THIRTYSECOND,
-			THIRTYSECOND,
-			THIRTYSECOND,
-			THIRTYSECOND,
-			QUARTER,
-			QUARTER, QUARTER, QUARTER, QUARTER
+			quarter, quarter, quarter, quarter, 
+			dottedEighth, quarter, quarter, eighth,
+			sixteenth,
+			eighth, quarter, quarter, eighthQuarterSNU,
+			eighth,
+			quarter, half, quarter, quarter, quarter,
+			quarter, eighth, eighth, quarter,
+			eighth, eighth,
+			half, half, half, sixteenth,
+			sixteenth,
+			thirtysecond,
+			thirtysecond,
+			thirtysecond,
+			thirtysecond,
+			quarter,
+			quarter, quarter, quarter, quarter
 		);
 
 		List<List<Double>> actual = t.makeDurationLabels();
@@ -1271,25 +1278,25 @@ public class TranscriptionTest {
 		Tablature tab = new Tablature(encodingTestpiece);
 
 		List<List<Double>> expected = Arrays.asList(
-			QUARTER, QUARTER, QUARTER, QUARTER, 
-			DOTTED_EIGHTH, DOTTED_EIGHTH, DOTTED_EIGHTH, DOTTED_EIGHTH,
-			SIXTEENTH,
-			EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-			EIGHTH,
-			QUARTER, QUARTER, QUARTER, QUARTER, QUARTER,
-			EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-			EIGHTH, EIGHTH,
-			SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH,
-			SIXTEENTH,
-			THIRTYSECOND,
-			THIRTYSECOND,
-			THIRTYSECOND,
-			THIRTYSECOND,
-			QUARTER,
-			QUARTER, QUARTER, QUARTER, QUARTER
+			quarter, quarter, quarter, quarter, 
+			dottedEighth, dottedEighth, dottedEighth, dottedEighth,
+			sixteenth,
+			eighth, eighth, eighth, eighth,
+			eighth,
+			quarter, quarter, quarter, quarter, quarter,
+			eighth, eighth, eighth, eighth,
+			eighth, eighth,
+			sixteenth, sixteenth, sixteenth, sixteenth,
+			sixteenth,
+			thirtysecond,
+			thirtysecond,
+			thirtysecond,
+			thirtysecond,
+			quarter,
+			quarter, quarter, quarter, quarter
 		);
 
-		List<List<Double>> actual = Transcription.makeMinimumDurationLabels(tab);
+		List<List<Double>> actual = Transcription.makeMinimumDurationLabels(tab, mtsd);
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {
@@ -1318,7 +1325,7 @@ public class TranscriptionTest {
 		t1.setVoiceLabels(null, true);
 		t1.setChordVoiceLabels(tab1);
 		t1.setDurationLabels(null);
-		t1.setMinimumDurationLabels(tab1);
+		t1.setMinimumDurationLabels(tab1, mtsd);
 		Transcription t2 = new Transcription();
 		Tablature tab2 = new Tablature(encodingLasOn);
 		t2.setType(Type.FROM_FILE);
@@ -1332,7 +1339,7 @@ public class TranscriptionTest {
 		t2.setVoiceLabels(null, true);
 		t2.setChordVoiceLabels(tab2);
 		t2.setDurationLabels(null);
-		t2.setMinimumDurationLabels(tab2);
+		t2.setMinimumDurationLabels(tab2, mtsd);
 
 		List<Integer[]> expected = new ArrayList<Integer[]>();
 		// a. For a piece with one CoD
@@ -1651,114 +1658,6 @@ public class TranscriptionTest {
 
 
 	@Test
-	public void testCreateVoiceLabel() {
-		List<List<Double>> expected = Arrays.asList(
-			Arrays.asList(new Double[]{1.0, 0.0, 0.0, 0.0, 0.0}),
-			Arrays.asList(new Double[]{0.0, 1.0, 0.0, 0.0, 0.0}),
-			Arrays.asList(new Double[]{0.0, 0.0, 1.0, 0.0, 0.0}),
-			Arrays.asList(new Double[]{1.0, 0.0, 0.0, 1.0, 0.0}),
-			Arrays.asList(new Double[]{1.0, 0.0, 0.0, 0.0, 1.0})
-		);
-				
-		List<List<Double>> actual = new ArrayList<List<Double>>();
-		List<Integer[]> voices = Arrays.asList(
-			new Integer[]{0},
-			new Integer[]{1},
-			new Integer[]{2},
-			new Integer[]{3, 0},
-			new Integer[]{4, 0}
-		);
-		for (Integer[] in : voices) {
-			actual.add(Transcription.createVoiceLabel(in));
-		}
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size());
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
-			}
-		}
-		assertEquals(expected, actual);
-	}
-
-
-	@Test
-	public void testCreateDurationLabel() {
-		List<Double> empty = Collections.nCopies(Transcription.MAX_TABSYMBOL_DUR, 0.0);
-		List<List<Double>> expected = new ArrayList<List<Double>>(); 		
-		// Thirty-second
-		List<Double> t = new ArrayList<Double>(empty);
-		t.set(0, 1.0);
-		expected.add(t);
-		// Sixteenth
-		List<Double> s = new ArrayList<Double>(empty);
-		s.set(1, 1.0);
-		expected.add(s);
-		// Eighth
-		List<Double> e = new ArrayList<Double>(empty);
-		e.set(3, 1.0);
-		expected.add(e);
-		// Dotted eighth
-		List<Double> de = new ArrayList<Double>(empty);
-		de.set(5, 1.0);
-		expected.add(de);
-		// Quarter
-		List<Double> q = new ArrayList<Double>(empty);
-		q.set(7, 1.0);
-		expected.add(q);
-		// Half
-		List<Double> h = new ArrayList<Double>(empty);
-		h.set(15, 1.0);
-		expected.add(h);
-		// Dotted half
-		List<Double> dh = new ArrayList<Double>(empty);
-		dh.set(23, 1.0);
-		expected.add(dh);
-		// Whole
-		List<Double> w = new ArrayList<Double>(empty);
-		w.set(31, 1.0);
-		expected.add(w);
-		// Sixteenth and dotted half
-		List<Double> sAndDh = new ArrayList<Double>(empty);
-		sAndDh.set(1, 1.0); sAndDh.set(23, 1.0);
-		expected.add(sAndDh);
-		// Quarter and half
-		List<Double> qAndH = new ArrayList<Double>(empty);
-		qAndH.set(7, 1.0); qAndH.set(15, 1.0);
-		expected.add(qAndH);
-
-		List<List<Double>> actual = new ArrayList<List<Double>>();
-		List<Integer[]> durations = Arrays.asList(
-			new Integer[]{Symbol.SEMIFUSA.getDuration()}, // 3
-			new Integer[]{Symbol.FUSA.getDuration()}, // 6
-			new Integer[]{Symbol.SEMIMINIM.getDuration()}, // 12
-			new Integer[]{Symbol.SEMIMINIM.makeVariant(1, false, false).get(0).getDuration()}, // 18
-			new Integer[]{Symbol.MINIM.getDuration()}, // 24
-			new Integer[]{Symbol.SEMIBREVIS.getDuration()}, // 48
-			new Integer[]{Symbol.SEMIBREVIS.makeVariant(1, false, false).get(0).getDuration()}, // 72
-			new Integer[]{Symbol.BREVIS.getDuration()}, // 96
-			new Integer[]{Symbol.FUSA.getDuration(), 
-				Symbol.SEMIBREVIS.makeVariant(1, false, false).get(0).getDuration()}, // 6 and 72
-			new Integer[]{Symbol.MINIM.getDuration(), Symbol.SEMIBREVIS.getDuration()} // 24 and 48
-		);
-//		durations = durations.stream().map(p -> p * 3).collect(Collectors.toList());
-		for (Integer[] in : durations) {
-			actual.add(Transcription.createDurationLabel(in));
-		}
-
-		assertEquals(expected.size(), actual.size());
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(expected.get(i).size(), actual.get(i).size());
-			for (int j = 0; j < expected.get(i).size(); j++) {
-				assertEquals(expected.get(i).get(j), actual.get(i).get(j));
-			}
-		}
-		assertEquals(expected, actual);
-	}
-
-
-	@Test
 	public void testGetNumberOfNotes() {
 		// Non-tablature case
 		Transcription t = new Transcription(midiTestpiece);
@@ -1989,7 +1888,7 @@ public class TranscriptionTest {
 	@Test
 	public void testGetMirrorPoint() {
 		// Tablature/non-tablature case
-		String path = PathTools.getPathString(Arrays.asList(
+		String path = CLInterface.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-WTC",
 			"thesis"
@@ -2497,7 +2396,7 @@ public class TranscriptionTest {
 		expected.add(bwv858n2avg);
 
 		List<List<List<Double>>> actual = new ArrayList<List<List<Double>>>();
-		String prefix = PathTools.getPathString(Arrays.asList(
+		String prefix = CLInterface.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-WTC",
 			"thesis",
@@ -2608,7 +2507,7 @@ public class TranscriptionTest {
 		expected.add(bwv858n2avg);
 
 		List<List<List<Double>>> actual = new ArrayList<List<List<Double>>>();
-		String prefix = PathTools.getPathString(Arrays.asList(
+		String prefix = CLInterface.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-WTC",
 			"thesis",
@@ -3261,7 +3160,7 @@ public class TranscriptionTest {
 
 	@Test
 	public void testGetVoiceEntriesOLDER_EXT() {
-		String prefix = PathTools.getPathString(Arrays.asList(
+		String prefix = CLInterface.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-inv",
 			"thesis"
@@ -3300,11 +3199,11 @@ public class TranscriptionTest {
 
 	@Test
 	public void testGetImitativeVoiceEntries() {
-		String prefixTab = PathTools.getPathString(Arrays.asList(
+		String prefixTab = CLInterface.getPathString(Arrays.asList(
 			paths.get("ENCODINGS_PATH"),
 			"thesis-int"
 		));
-		String prefix = PathTools.getPathString(Arrays.asList(
+		String prefix = CLInterface.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"thesis-int"
 		));
@@ -3389,7 +3288,7 @@ public class TranscriptionTest {
 
 	@Test
 	public void testGetImitativeVoiceEntriesNonTab() {
-		String prefix = PathTools.getPathString(Arrays.asList(
+		String prefix = CLInterface.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-WTC",
 			"thesis"
@@ -3539,11 +3438,11 @@ public class TranscriptionTest {
 	// WTC 4vv --> n=3: all imitative (all correct)
 	@Test
 	public void testGetNonImitativeVoiceEntries() {
-		String prefixTab = PathTools.getPathString(Arrays.asList(
+		String prefixTab = CLInterface.getPathString(Arrays.asList(
 			paths.get("ENCODINGS_PATH"),
 			"thesis-int"
 		));
-		String prefix = PathTools.getPathString(Arrays.asList(
+		String prefix = CLInterface.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"thesis-int"
 		));
@@ -3720,7 +3619,7 @@ public class TranscriptionTest {
 
 	@Test
 	public void testGetNonImitativeVoiceEntriesNonTab() {
-		String prefix = PathTools.getPathString(Arrays.asList(
+		String prefix = CLInterface.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-inv",
 			"thesis"
@@ -3915,7 +3814,7 @@ public class TranscriptionTest {
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3});
 		for (int i = 0; i < fileNames.size(); i++) {
 			if (fileNames.get(i).contains("WTC")) {
-				prefix = PathTools.getPathString(Arrays.asList(
+				prefix = CLInterface.getPathString(Arrays.asList(
 					paths.get("MIDI_PATH"),
 					"bach-WTC",
 					"thesis"
@@ -4761,7 +4660,7 @@ public class TranscriptionTest {
     Transcription transcription = new Transcription(midiTestpiece, encodingTestpiece);
  
     // Determine expected 
-    Integer[][]expected = new Integer[Transcription.MAX_NUM_VOICES][2];
+    Integer[][]expected = new Integer[mnv][2];
     expected[0] = new Integer[]{64, 72};
     expected[1] = new Integer[]{60, 69};
     expected[2] = new Integer[]{57, 60};
@@ -4787,7 +4686,7 @@ public class TranscriptionTest {
     Transcription transcription = new Transcription(midiTestpiece);
    
     // Determine expected 
-    Integer[][]expected = new Integer[Transcription.MAX_NUM_VOICES][2];
+    Integer[][]expected = new Integer[mnv][2];
     expected[0] = new Integer[]{64, 72};
     expected[1] = new Integer[]{60, 69};
     expected[2] = new Integer[]{57, 60};
@@ -5560,7 +5459,7 @@ public class TranscriptionTest {
 			List<Integer> currentPitchesInChord = Transcription.getPitchesInChord(chords.get(i));
 			List<Integer> currentVoiceAssignment = voiceAssignments.get(i);
 			List<List<Double>> currentVoiceLabels = 
-				LabelTools.getChordVoiceLabels(currentVoiceAssignment);
+				LabelTools.getChordVoiceLabels(currentVoiceAssignment, mnv);
 			List<List<Integer>> currentVoicesInChord = 
 				LabelTools.getVoicesInChord(currentVoiceLabels);
 			actual.add(Transcription.getAllPitchesAndVoicesInChord(basicNoteProperties, currentPitchesInChord,
@@ -5626,7 +5525,7 @@ public class TranscriptionTest {
 		List<List<List<Integer>>> allPossibleVoicesNoCoD = new ArrayList<List<List<Integer>>>();
 		for (List<Integer> voiceAssignment : allPossibleVoiceAssignmentsNoCoD) {
 			List<List<Double>> currentVoiceLabels = 
-				LabelTools.getChordVoiceLabels(voiceAssignment);
+				LabelTools.getChordVoiceLabels(voiceAssignment, mnv);
 			List<List<Integer>> currentVoicesInChord = 
 				LabelTools.getVoicesInChord(currentVoiceLabels);
 			allPossibleVoicesNoCoD.add(currentVoicesInChord);
@@ -5676,7 +5575,7 @@ public class TranscriptionTest {
 		List<List<List<Integer>>> allPossibleVoicesOneCoD = new ArrayList<List<List<Integer>>>();
 		for (List<Integer> voiceAssignment : allPossibleVoiceAssignmentsOneCoD) {
 			List<List<Double>> currentVoiceLabels = 
-				LabelTools.getChordVoiceLabels(voiceAssignment);
+				LabelTools.getChordVoiceLabels(voiceAssignment, mnv);
 			List<List<Integer>> currentVoicesInChord = 
 				LabelTools.getVoicesInChord(currentVoiceLabels);
 			allPossibleVoicesOneCoD.add(currentVoicesInChord);
@@ -5694,7 +5593,7 @@ public class TranscriptionTest {
 		List<List<List<Integer>>> allPossibleVoicesTwoCoDs = new ArrayList<List<List<Integer>>>();
 		for (List<Integer> voiceAssignment : allPossibleVoiceAssignmentsTwoCoDs) {
 			List<List<Double>> currentVoiceLabels = 
-				LabelTools.getChordVoiceLabels(voiceAssignment);
+				LabelTools.getChordVoiceLabels(voiceAssignment, mnv);
 			List<List<Integer>> currentVoicesInChord = 
 				LabelTools.getVoicesInChord(currentVoiceLabels);
 			allPossibleVoicesTwoCoDs.add(currentVoicesInChord);
@@ -6077,7 +5976,7 @@ public class TranscriptionTest {
 //				FeatureGenerator.getPitchesInChord(basicTabSymbolProperties, null, lowestNoteIndex);
 			List<Integer> currentPitchesInChord = tablature.getPitchesInChord(i);
 			List<List<Double>> currentChordVoiceLabels = 
-				LabelTools.getChordVoiceLabels(currentVoiceAssignment);
+				LabelTools.getChordVoiceLabels(currentVoiceAssignment, mnv);
 			List<List<Integer>> currentVoicesInChord = 
 				LabelTools.getVoicesInChord(currentChordVoiceLabels);
 			actual.add(Transcription.getVoiceCrossingInformationInChord(currentPitchesInChord, 
@@ -6141,7 +6040,7 @@ public class TranscriptionTest {
 //				FeatureGenerator.getPitchesInChord(null, basicNoteProperties, lowestNoteIndex);
 			List<Integer> currentPitchesInChord = Transcription.getPitchesInChord(chords.get(i));
 			List<List<Double>> currentChordVoiceLabels = 
-				LabelTools.getChordVoiceLabels(currentVoiceAssignment);
+				LabelTools.getChordVoiceLabels(currentVoiceAssignment, mnv);
 			List<List<Integer>> currentVoicesInChord = 
 				LabelTools.getVoicesInChord(currentChordVoiceLabels);
 			List<List<Integer>> currentAllPitchesAndVoicesInChord = 

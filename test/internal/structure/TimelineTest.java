@@ -15,9 +15,9 @@ import java.util.Map;
 
 import de.uos.fmt.musitech.utility.math.Rational;
 import external.Tablature;
+import interfaces.CLInterface;
 import internal.core.Encoding;
 import internal.structure.Timeline;
-import tools.path.PathTools;
 
 public class TimelineTest {
 
@@ -32,24 +32,24 @@ public class TimelineTest {
 
 	@Before
 	public void setUp() throws Exception {
-		Map<String, String> paths = PathTools.getPaths(true);
+		Map<String, String> paths = CLInterface.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
 		String epj = paths.get("ENCODINGS_PATH_JOSQUINTAB");
 		String td = "test";
 
-		encodingTestpiece = new File(PathTools.getPathString(
+		encodingTestpiece = new File(CLInterface.getPathString(
 			Arrays.asList(ep, td)) + "testpiece.tbp"
 		);
-		encodingTestGetMeterInfo = new File(PathTools.getPathString(
+		encodingTestGetMeterInfo = new File(CLInterface.getPathString(
 			Arrays.asList(ep, td)) + "test_get_meter_info.tbp"
 		);
-		encodingNewsidler = new File(PathTools.getPathString(
+		encodingNewsidler = new File(CLInterface.getPathString(
 			Arrays.asList(ep, "thesis-int", "3vv")) + "newsidler-1544_2-nun_volget.tbp"
 		);
-		encodingBarbetta = new File(PathTools.getPathString(
+		encodingBarbetta = new File(CLInterface.getPathString(
 			Arrays.asList(ep, "thesis-int", "4vv")) + "barbetta-1582_1-il_nest-corrected.tbp"
 		);
-		encodingNarvaez = new File(PathTools.getPathString(
+		encodingNarvaez = new File(CLInterface.getPathString(
 			Arrays.asList(epj)) + "5190_17_cum_spiritu_sanctu_from_missa_sine_nomine.tbp"
 		);
 	}
