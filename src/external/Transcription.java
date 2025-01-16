@@ -512,15 +512,16 @@ public class Transcription implements Serializable {
 		// a TablatureTranscriptionPair with the Transcription during training, but is used for
 		// - transposition of the ScorePiece, if applicable (w/ setScorePiece()) 
 		// - alignment of the Transcription and Tablature (w/ setTaggedNotes())
-		//   - checking chords 
-		//   - handling of SNUs 
+		//   - checking chords
+		//   - handling of SNUs
 		//   - handling of course crossings
-		//   - checking final alignment 
+		//   - checking final alignment
 		// - setting the chordVoiceLabels
 		// - setting the minimumDurationLabels
 		Tablature tab = 
-			argEncoding != null ? new Tablature(argEncoding, (t != Type.PREDICTED ? normalise : true)) 
-			: null;
+			argEncoding != null ? new Tablature(argEncoding, normalise) : null;
+//			argEncoding != null ? new Tablature(argEncoding, (t != Type.PREDICTED ? normalise : true)) 
+//			: null;
 		boolean isTabCase = tab != null;
 
 		setType(t);
