@@ -100,12 +100,11 @@ public class TranscriptionTest {
 		paths = CLInterface.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
 		String epj = paths.get("ENCODINGS_PATH_JOSQUINTAB");
-		String td = "test/5vv/";
 		String mp = paths.get("MIDI_PATH");
 		String mpj = paths.get("MIDI_PATH_JOSQUINTAB");
+		String td = "test/5vv/";
 //		String mpJos = PathTools.getPathString(Arrays.asList(mpj));
 //		String epJos = PathTools.getPathString(Arrays.asList(epj));
-		
 //		String s = MEIExport.rootDir;
 ///		String mp = p + Path.MIDI_PATH; // = F:/research/data/annotated/MIDI/
 ///		String ep = p + Path.ENCODINGS_PATH; // = F:/research/data/annotated/encodings/
