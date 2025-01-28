@@ -311,9 +311,9 @@ public class Transcription implements Serializable {
 	 */
 	public Transcription(boolean normalise, List<Integer[]> mi, File... f) {
 		File midF = f.length == 1 ? f[0] : 
-			(f[0].getName().endsWith(MIDIImport.EXTENSION) ? f[0] : f[1]);
+			(f[0].getName().endsWith(MIDIImport.MID_EXT) ? f[0] : f[1]);
 		File encF = f.length == 1 ? null : 
-			(f[0].getName().endsWith(Encoding.EXTENSION) ? f[0] : f[1]);
+			(f[0].getName().endsWith(Encoding.TBP_EXT) ? f[0] : f[1]);
 		ScorePiece sp = new ScorePiece(MIDIImport.importMidiFile(midF));
 		Encoding enc = encF != null ? new Encoding(encF) : null;
 		init(sp, enc, null, null, normalise, mi, Type.FROM_FILE);
@@ -695,7 +695,7 @@ public class Transcription implements Serializable {
 	void setName() {
 		String n = getScorePiece().getName(); 
 		name = 
-			n.contains(MIDIImport.EXTENSION) ? n.substring(0, n.indexOf(MIDIImport.EXTENSION)) : n;
+			n.contains(MIDIImport.MID_EXT) ? n.substring(0, n.indexOf(MIDIImport.MID_EXT)) : n;
 	}
 
 

@@ -2421,7 +2421,7 @@ public class TranscriptionTest {
 		});
 		for (int i = 0; i < fileNames.size(); i++) {
 			System.out.println(fileNames.get(i));
-			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.EXTENSION));
+			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.MID_EXT));
 			actual.add(t.getVoiceEntriesOLDEST(t.getNumberOfVoices(), ns.get(i), useAvgs.get(i)));
 		}
 //		System.out.println(opt);
@@ -2532,7 +2532,7 @@ public class TranscriptionTest {
 		});
 		for (int i = 0; i < fileNames.size(); i++) {
 			System.out.println(fileNames.get(i));
-			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.EXTENSION));
+			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.MID_EXT));
 			actual.add(t.getVoiceEntriesOLD(t.getNumberOfVoices(), ns.get(i), useAvgs.get(i)));
 		}
 //		System.out.println(opt);
@@ -3185,7 +3185,7 @@ public class TranscriptionTest {
 		List<List<List<Integer>>> actual = new ArrayList<List<List<Integer>>>();
 		List<Integer> voices = Arrays.asList(new Integer[]{3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4});
 		for (int i = 0; i < fileNames.size(); i++) { 
-			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.EXTENSION));
+			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.MID_EXT));
 			List<List<Double>> res = t.getVoiceEntriesOLDER_EXT(3, 3, false);
 			System.out.println(t.getName());
 			for (List<Double> l : res) {
@@ -3255,9 +3255,9 @@ public class TranscriptionTest {
 		List<Integer> ns = Arrays.asList(new Integer[]{3, 3, 3, 2, 3});
 		for (int i = 0; i < fileNames.size(); i++) {
 			String piece = fileNames.get(i);
-			File enc = new File(prefixTab + piece + Encoding.EXTENSION);
+			File enc = new File(prefixTab + piece + Encoding.TBP_EXT);
 			Tablature tab = new Tablature(enc);
-			Transcription t = new Transcription(new File(prefix + piece + MIDIImport.EXTENSION), enc);
+			Transcription t = new Transcription(new File(prefix + piece + MIDIImport.MID_EXT), enc);
 			actual.add(t.getImitativeVoiceEntries(
 				tab.getBasicTabSymbolProperties(), t.getDurationLabels(), null, voices.get(i), 
 				ns.get(i)));
@@ -3388,7 +3388,7 @@ public class TranscriptionTest {
 		List<Integer> voices = Arrays.asList(new Integer[]{3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4});
 		for (int i = 0; i < fileNames.size(); i++) {
 			Transcription t = 
-				new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.EXTENSION));
+				new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.MID_EXT));
 			actual.add(t.getImitativeVoiceEntries(null, null, t.getBasicNoteProperties(), 
 				voices.get(i), 3));
 		}
@@ -3578,18 +3578,18 @@ public class TranscriptionTest {
 		// Full durations
 		for (int i = 0; i < fileNames.size(); i++) {
 			String piece = fileNames.get(i);
-			File enc = new File(prefixTab + piece + Encoding.EXTENSION);
+			File enc = new File(prefixTab + piece + Encoding.TBP_EXT);
 			Tablature tab = new Tablature(enc);
-			Transcription t = new Transcription(new File(prefix + piece + MIDIImport.EXTENSION), enc);
+			Transcription t = new Transcription(new File(prefix + piece + MIDIImport.MID_EXT), enc);
 			actual.add(t.getNonImitativeVoiceEntries(tab.getBasicTabSymbolProperties(), 
 				t.getDurationLabels(), null, voices.get(i), 3));
 		}
 		// Minimum durations
 		for (int i = 0; i < fileNames.size(); i++) {
 			String piece = fileNames.get(i);
-			File enc = new File(prefixTab + piece + Encoding.EXTENSION);
+			File enc = new File(prefixTab + piece + Encoding.TBP_EXT);
 			Tablature tab = new Tablature(enc);
-			Transcription t = new Transcription(new File(prefix + piece + MIDIImport.EXTENSION), enc);
+			Transcription t = new Transcription(new File(prefix + piece + MIDIImport.MID_EXT), enc);
 			actual.add(t.getNonImitativeVoiceEntries(tab.getBasicTabSymbolProperties(), 
 				t.getMinimumDurationLabels(), null, voices.get(i), 3));
 		}
@@ -3819,7 +3819,7 @@ public class TranscriptionTest {
 					"thesis"
 				));
 			}
-			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.EXTENSION));
+			Transcription t = new Transcription(new File(prefix + fileNames.get(i) + MIDIImport.MID_EXT));
 			actual.add(t.getNonImitativeVoiceEntries(null, null, t.getBasicNoteProperties(), 
 				voices.get(i), 3));
 		}

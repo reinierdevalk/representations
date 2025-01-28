@@ -37,7 +37,7 @@ import tools.ToolBox;
 public class Encoding implements Serializable {
 	private static final long serialVersionUID = 1L;
 
-	public static final String EXTENSION = ".tbp"; 
+	public static final String TBP_EXT = ".tbp"; 
 	public static final String FOOTNOTE_INDICATOR = "@";
 	public static final String OPEN_METADATA_BRACKET = "{";
 	public static final String CLOSE_METADATA_BRACKET = "}";
@@ -105,6 +105,10 @@ public class Encoding implements Serializable {
 	}
 
 
+	public static void main(String[] args) {
+	}
+
+
 	///////////////////////////////
 	//
 	//  C O N S T R U C T O R S
@@ -120,7 +124,7 @@ public class Encoding implements Serializable {
 	 * @param f
 	 */
 	public Encoding(File f) {
-		init(ToolBox.readTextFile(f), ToolBox.getFilename(f, EXTENSION), Stage.RULES_CHECKED);
+		init(ToolBox.readTextFile(f), ToolBox.getFilename(f, TBP_EXT), Stage.RULES_CHECKED);
 	}
 
 
