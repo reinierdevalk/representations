@@ -369,7 +369,7 @@ public class Transcription implements Serializable {
 	 * @param argPredDurLabels
 	 */
 	public Transcription(ScorePiece argPredScorePiece, Encoding argEncoding,  
-		List<List<Double>> argPredVoiceLabels, List<List<Double>> argPredDurLabels) {
+		List<List<Double>> argPredVoiceLabels, List<List<Double>> argPredDurLabels, boolean normalise) {
 		
 //		Encoding argEncoding = argEncoding != null ? new Encoding(argEncoding) : null;
 
@@ -382,7 +382,7 @@ public class Transcription implements Serializable {
 //		boolean isGroundTruthTranscription = false;
 		init(argPredScorePiece, argEncoding, /*null,*/ 
 			/*normaliseTuning, isGroundTruthTranscription,*/
-			argPredVoiceLabels, argPredDurLabels, false, null, Type.PREDICTED);
+			argPredVoiceLabels, argPredDurLabels, normalise, null, Type.PREDICTED);
 			
 //		// Set the predicted class fields. When creating a ground truth Transcription, this happens inside
 //		// handleCoDNotes() and handleCourseCrossings(), but when creating a predicted Transcription this step
