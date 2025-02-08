@@ -36,7 +36,7 @@ public class EncodingTest {
 	public void setUp() throws Exception {
 		paths = CLInterface.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
-		String td = "test";
+		String td = "test/5vv/";
 		
 		encodingTestpiece = new File(CLInterface.getPathString(
 			Arrays.asList(ep, td)) + "testpiece.tbp"
@@ -1451,6 +1451,17 @@ public class EncodingTest {
 			assertEquals(expected.get(i), actual.get(i));
 		}
 		assertEquals(expected, actual);
+	}
+	
+	
+	@Test
+	public void testOverwriteTuning() {
+		Encoding encoding = new Encoding(encodingTestpiece);
+		encoding.overwriteTuning("F");
+		assertEquals(encoding.getMetadata().get(Encoding.TUNING_TAG), "F");
+		
+		encoding.overwriteTuning("C");
+		assertEquals(encoding.getMetadata().get(Encoding.TUNING_TAG), "C");
 	}
 
 

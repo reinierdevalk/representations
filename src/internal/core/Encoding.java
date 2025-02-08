@@ -2701,6 +2701,11 @@ public class Encoding implements Serializable {
 	}
 
 
+	public void overwriteTuning(String tuning) {
+		getMetadata().put(TUNING_TAG, tuning);
+	}
+
+
 	@Override
 	public boolean equals(Object o) {
 		if (o == this) {
