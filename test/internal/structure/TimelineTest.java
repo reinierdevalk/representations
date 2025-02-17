@@ -18,6 +18,7 @@ import external.Tablature;
 import interfaces.CLInterface;
 import internal.core.Encoding;
 import internal.structure.Timeline;
+import tools.text.StringTools;
 
 public class TimelineTest {
 
@@ -37,19 +38,19 @@ public class TimelineTest {
 		String epj = paths.get("ENCODINGS_PATH_JOSQUINTAB");
 		String td = "test";
 
-		encodingTestpiece = new File(CLInterface.getPathString(
+		encodingTestpiece = new File(StringTools.getPathString(
 			Arrays.asList(ep, td)) + "testpiece.tbp"
 		);
-		encodingTestGetMeterInfo = new File(CLInterface.getPathString(
+		encodingTestGetMeterInfo = new File(StringTools.getPathString(
 			Arrays.asList(ep, td)) + "test_get_meter_info.tbp"
 		);
-		encodingNewsidler = new File(CLInterface.getPathString(
+		encodingNewsidler = new File(StringTools.getPathString(
 			Arrays.asList(ep, "thesis-int", "3vv")) + "newsidler-1544_2-nun_volget.tbp"
 		);
-		encodingBarbetta = new File(CLInterface.getPathString(
+		encodingBarbetta = new File(StringTools.getPathString(
 			Arrays.asList(ep, "thesis-int", "4vv")) + "barbetta-1582_1-il_nest-corrected.tbp"
 		);
-		encodingNarvaez = new File(CLInterface.getPathString(
+		encodingNarvaez = new File(StringTools.getPathString(
 			Arrays.asList(epj)) + "5190_17_cum_spiritu_sanctu_from_missa_sine_nomine.tbp"
 		);
 	}

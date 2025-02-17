@@ -43,6 +43,7 @@ import tbp.symbols.Symbol;
 import tools.labels.LabelTools;
 import tools.music.TimeMeterTools;
 import tools.music.TimeMeterToolsTest;
+import tools.text.StringTools;
 
 public class ScorePieceTest {
 	
@@ -83,15 +84,15 @@ public class ScorePieceTest {
 
 		Map<String, String> paths = CLInterface.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
-		String td = CLInterface.getPathString(Arrays.asList("test", "5vv"));
+		String td = StringTools.getPathString(Arrays.asList("test", "5vv"));
 		String mp = paths.get("MIDI_PATH");
-		String mpj = CLInterface.getPathString(Arrays.asList(paths.get("MIDI_PATH_JOSQUINTAB")));
-		String epj = CLInterface.getPathString(Arrays.asList(paths.get("ENCODINGS_PATH_JOSQUINTAB")));
+		String mpj = StringTools.getPathString(Arrays.asList(paths.get("MIDI_PATH_JOSQUINTAB")));
+		String epj = StringTools.getPathString(Arrays.asList(paths.get("ENCODINGS_PATH_JOSQUINTAB")));
 
-		encodingTestpiece = new File(CLInterface.getPathString(
+		encodingTestpiece = new File(StringTools.getPathString(
 			Arrays.asList(ep, td)) + "testpiece.tbp"
 		);
-		encodingTestGetMeterInfo = new File(CLInterface.getPathString(
+		encodingTestGetMeterInfo = new File(StringTools.getPathString(
 			Arrays.asList(ep, td)) + "test_get_meter_info.tbp"
 		);
 		encodingMemorEsto = new File(epj + "4465_33-34_memor_esto-2.tbp");
@@ -99,10 +100,10 @@ public class ScorePieceTest {
 		encodingPreterRerum = new File(epj + "5694_03_motet_praeter_rerum_seriem_josquin-2.tbp");
 		encodingInExitu = new File(epj + "5263_12_in_exitu_israel_de_egipto_desprez-3.tbp");
 		
-		midiTestpiece = new File(CLInterface.getPathString(
+		midiTestpiece = new File(StringTools.getPathString(
 			Arrays.asList(mp, td)) + "testpiece.mid"
 		);
-		midiTestGetMeterKeyInfo = new File(CLInterface.getPathString(
+		midiTestGetMeterKeyInfo = new File(StringTools.getPathString(
 			Arrays.asList(mp, td)) + "test_get_meter_key_info.mid"
 		);
 		midiMemorEsto = new File(mpj + "Jos1714-Memor_esto_verbi_tui-166-325.mid");

@@ -19,6 +19,7 @@ import external.Tablature;
 import external.Transcription;
 import interfaces.CLInterface;
 import internal.core.ScorePiece;
+import tools.text.StringTools;
 
 public class ScoreMetricalTimeLineTest {
 	
@@ -33,16 +34,16 @@ public class ScoreMetricalTimeLineTest {
 		String ep = paths.get("ENCODINGS_PATH");
 		String td = "test";
 		String mp = paths.get("MIDI_PATH");
-		encodingTestpiece = new File(CLInterface.getPathString(
+		encodingTestpiece = new File(StringTools.getPathString(
 			Arrays.asList(ep, td)) + "testpiece.tbp"
 		);
-		encodingTestGetMeterInfo = new File(CLInterface.getPathString(
+		encodingTestGetMeterInfo = new File(StringTools.getPathString(
 			Arrays.asList(ep, td)) + "test_get_meter_info.tbp"
 		);
-		midiTestpiece = new File(CLInterface.getPathString(
+		midiTestpiece = new File(StringTools.getPathString(
 			Arrays.asList(mp, td)) + "testpiece.mid"
 		);
-		midiTestGetMeterKeyInfo = new File(CLInterface.getPathString(
+		midiTestGetMeterKeyInfo = new File(StringTools.getPathString(
 			Arrays.asList(mp, td)) + "test_get_meter_key_info.mid"
 		);
 	}

@@ -30,6 +30,7 @@ import internal.structure.TimelineTest;
 import tbp.symbols.TabSymbol;
 import tools.labels.LabelTools;
 //import tools.music.NoteTimePitchComparator;
+import tools.text.StringTools;
 
 public class TranscriptionTest {
 
@@ -111,40 +112,40 @@ public class TranscriptionTest {
 ///		String mpJos = p + Path.MIDI_PATH_JOSQUINTAB; // = F:/research/data/annotated/josquintab/MIDI/
 ///		String epJos = p + Path.ENCODINGS_PATH_JOSQUINTAB; // = F:/research/data/annotated/josquintab/tab/
 		
-		encodingTestpiece = new File(CLInterface.getPathString(
+		encodingTestpiece = new File(StringTools.getPathString(
 			Arrays.asList(ep, td)) + "testpiece.tbp"
 		);
-		encodingTestGetMeterInfo = new File(CLInterface.getPathString(
+		encodingTestGetMeterInfo = new File(StringTools.getPathString(
 			Arrays.asList(ep, td)) + "test_get_meter_info.tbp"
 		);
 //		encodingMemorEsto = new File(jtpTab + "4465_33-34_memor_esto-2.tbp");
 //		encodingQuiHabitat = new File(jtpTab + "5264_13_qui_habitat_in_adjutorio_desprez-2.tbp");
 //		encodingPreterRerum = new File(jtpTab + "5694_03_motet_praeter_rerum_seriem_josquin-2.tbp");
 //		encodingInExitu = new File(jtpTab + "5263_12_in_exitu_israel_de_egipto_desprez-3.tbp");
-		encodingLasOn = new File(CLInterface.getPathString(
+		encodingLasOn = new File(StringTools.getPathString(
 			Arrays.asList(ep, "thesis-int", "4vv")) + "phalese-1563_12-las_on.tbp"
 		);
-		encodingElslein = new File(CLInterface.getPathString(
+		encodingElslein = new File(StringTools.getPathString(
 			Arrays.asList(ep, "thesis-int", "3vv")) + "judenkuenig-1523_2-elslein_liebes.tbp"
 		);
-		encodingHerrGott = new File(CLInterface.getPathString(
+		encodingHerrGott = new File(StringTools.getPathString(
 			Arrays.asList(ep, "thesis-int", "4vv")) + "ochsenkun-1558_5-herr_gott.tbp"
 		);
-		midiLasOn = new File(CLInterface.getPathString(
+		midiLasOn = new File(StringTools.getPathString(
 			Arrays.asList(mp, "thesis-int", "4vv")) + "phalese-1563_12-las_on.mid"
 		);
-		midiElslein = new File(CLInterface.getPathString(
+		midiElslein = new File(StringTools.getPathString(
 			Arrays.asList(mp, "thesis-int","3vv")) + "judenkuenig-1523_2-elslein_liebes.mid"
 		);
-		midiHerrGott = new File(CLInterface.getPathString(
+		midiHerrGott = new File(StringTools.getPathString(
 			Arrays.asList(mp, "thesis-int", "4vv")) + "ochsenkun-1558_5-herr_gott.mid"
 		);
 //		midiBWV846 = new File(s + "data/annotated/MIDI/bach-WTC/thesis/4vv/" + "bach-WTC1-fuga_12-BWV_857.mid");
 
-		midiTestpiece = new File(CLInterface.getPathString(
+		midiTestpiece = new File(StringTools.getPathString(
 			Arrays.asList(mp, td)) + "testpiece.mid"
 		);
-		midiTestGetMeterKeyInfo = new File(CLInterface.getPathString(
+		midiTestGetMeterKeyInfo = new File(StringTools.getPathString(
 			Arrays.asList(mp, td)) + "test_get_meter_key_info.mid"
 		);
 //		midiTestGetMeterKeyInfoDiminuted = new File(mp + "test/" + "test_get_meter_key_info_diminuted.mid");
@@ -1887,7 +1888,7 @@ public class TranscriptionTest {
 	@Test
 	public void testGetMirrorPoint() {
 		// Tablature/non-tablature case
-		String path = CLInterface.getPathString(Arrays.asList(
+		String path = StringTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-WTC",
 			"thesis"
@@ -2395,7 +2396,7 @@ public class TranscriptionTest {
 		expected.add(bwv858n2avg);
 
 		List<List<List<Double>>> actual = new ArrayList<List<List<Double>>>();
-		String prefix = CLInterface.getPathString(Arrays.asList(
+		String prefix = StringTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-WTC",
 			"thesis",
@@ -2506,7 +2507,7 @@ public class TranscriptionTest {
 		expected.add(bwv858n2avg);
 
 		List<List<List<Double>>> actual = new ArrayList<List<List<Double>>>();
-		String prefix = CLInterface.getPathString(Arrays.asList(
+		String prefix = StringTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-WTC",
 			"thesis",
@@ -3159,7 +3160,7 @@ public class TranscriptionTest {
 
 	@Test
 	public void testGetVoiceEntriesOLDER_EXT() {
-		String prefix = CLInterface.getPathString(Arrays.asList(
+		String prefix = StringTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-inv",
 			"thesis"
@@ -3198,11 +3199,11 @@ public class TranscriptionTest {
 
 	@Test
 	public void testGetImitativeVoiceEntries() {
-		String prefixTab = CLInterface.getPathString(Arrays.asList(
+		String prefixTab = StringTools.getPathString(Arrays.asList(
 			paths.get("ENCODINGS_PATH"),
 			"thesis-int"
 		));
-		String prefix = CLInterface.getPathString(Arrays.asList(
+		String prefix = StringTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"thesis-int"
 		));
@@ -3287,7 +3288,7 @@ public class TranscriptionTest {
 
 	@Test
 	public void testGetImitativeVoiceEntriesNonTab() {
-		String prefix = CLInterface.getPathString(Arrays.asList(
+		String prefix = StringTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-WTC",
 			"thesis"
@@ -3437,11 +3438,11 @@ public class TranscriptionTest {
 	// WTC 4vv --> n=3: all imitative (all correct)
 	@Test
 	public void testGetNonImitativeVoiceEntries() {
-		String prefixTab = CLInterface.getPathString(Arrays.asList(
+		String prefixTab = StringTools.getPathString(Arrays.asList(
 			paths.get("ENCODINGS_PATH"),
 			"thesis-int"
 		));
-		String prefix = CLInterface.getPathString(Arrays.asList(
+		String prefix = StringTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"thesis-int"
 		));
@@ -3618,7 +3619,7 @@ public class TranscriptionTest {
 
 	@Test
 	public void testGetNonImitativeVoiceEntriesNonTab() {
-		String prefix = CLInterface.getPathString(Arrays.asList(
+		String prefix = StringTools.getPathString(Arrays.asList(
 			paths.get("MIDI_PATH"),
 			"bach-inv",
 			"thesis"
@@ -3813,7 +3814,7 @@ public class TranscriptionTest {
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3});
 		for (int i = 0; i < fileNames.size(); i++) {
 			if (fileNames.get(i).contains("WTC")) {
-				prefix = CLInterface.getPathString(Arrays.asList(
+				prefix = StringTools.getPathString(Arrays.asList(
 					paths.get("MIDI_PATH"),
 					"bach-WTC",
 					"thesis"

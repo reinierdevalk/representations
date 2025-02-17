@@ -20,6 +20,7 @@ import internal.structure.Event;
 import tbp.symbols.Symbol;
 import tbp.symbols.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
+import tools.text.StringTools;
 
 public class EncodingTest {
 
@@ -38,10 +39,10 @@ public class EncodingTest {
 		String ep = paths.get("ENCODINGS_PATH");
 		String td = "test/5vv/";
 		
-		encodingTestpiece = new File(CLInterface.getPathString(
+		encodingTestpiece = new File(StringTools.getPathString(
 			Arrays.asList(ep, td)) + "testpiece.tbp"
 		);
-		encodingTestGetMeterInfo = new File(CLInterface.getPathString(
+		encodingTestGetMeterInfo = new File(StringTools.getPathString(
 			Arrays.asList(ep, td)) + "test_get_meter_info.tbp"
 		);
 //		encodingNewsidler = new File(
@@ -1300,7 +1301,7 @@ public class EncodingTest {
 
 		Encoding encoding1 = new Encoding(encodingTestpiece);	
 		Encoding encoding2 = new Encoding(
-			new File(CLInterface.getPathString(Arrays.asList(erp, "thesis-int", "3vv")) + "newsidler-1536_7-disant_adiu.tbp")
+			new File(StringTools.getPathString(Arrays.asList(erp, "thesis-int", "3vv")) + "newsidler-1536_7-disant_adiu.tbp")
 		);
 
 		List<List<Integer>> expected = new ArrayList<>();
@@ -1438,7 +1439,7 @@ public class EncodingTest {
 		
 		Encoding encoding1 = new Encoding(encodingTestpiece);
 		Encoding encoding2 = new Encoding(
-			new File(CLInterface.getPathString(Arrays.asList(epj)) + "5254_03_benedicta_es_coelorum_desprez-1.tbp")
+			new File(StringTools.getPathString(Arrays.asList(epj)) + "5254_03_benedicta_es_coelorum_desprez-1.tbp")
 		);
 
 		List<Boolean> expected = Arrays.asList(new Boolean[]{false, true});
