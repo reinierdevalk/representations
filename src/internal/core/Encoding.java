@@ -2321,10 +2321,12 @@ public class Encoding implements Serializable {
 		String fnNumBuffer = "    ";
 		for (Event currFn : footnotes) {
 			String currFnStr = currFn.getFootnote().trim();
-			currFnStr = 
-				currFnStr.substring(currFnStr.indexOf(FOOTNOTE_INDICATOR) + 1, currFnStr.length());
-			int currFnNum = 
-				Integer.parseInt(currFn.getFootnoteID().trim().substring("#".length()));
+			currFnStr = currFnStr.substring(
+				currFnStr.indexOf(FOOTNOTE_INDICATOR) + 1, currFnStr.length()
+			);
+			int currFnNum = Integer.parseInt(
+				currFn.getFootnoteID().trim().substring("#".length())
+			);
 			String currFnNumStr = "(" + currFnNum + ")" + (currFnNum < 10 ? " " : "");
 			
 			// Make currFnList, containing the current footnote split up into lines
@@ -2334,8 +2336,9 @@ public class Encoding implements Serializable {
 				// 1. Get the staff part of the footnote
 				String currFnStaffPart = "";
 				// Get the encoding to be visualised
-				String currFnEnc = 
-					currFnStr.substring(currFnStr.indexOf("'") + 1, currFnStr.lastIndexOf("'"));
+				String currFnEnc = currFnStr.substring(
+					currFnStr.indexOf("'") + 1, currFnStr.lastIndexOf("'")
+				);
 				if (!currFnEnc.endsWith(ss)) {
 					currFnEnc += ss;
 				}
