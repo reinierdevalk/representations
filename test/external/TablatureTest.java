@@ -1148,16 +1148,16 @@ public class TablatureTest {
 
 		List<String[]> expected = new ArrayList<>();
 		// t1
-		expected.add(new String[]{"MC\\", "1", "0"});
+		expected.add(new String[]{"MC\\", null, "1", "0"});
 		// t2
-		expected.add(new String[]{"MO.M34", "42", "3936"}); // 41 * 2/2 * Tablature.SRV_DEN
-		expected.add(new String[]{"MC\\", "50", String.valueOf(3936+576)}); // + (8 * 3/4 * Tablature.SRV_DEN) = 3936 + 576
+		expected.add(new String[]{"MO.M34", null, "42", "3936"}); // 41 * 2/2 * Tablature.SRV_DEN
+		expected.add(new String[]{"MC\\", null, "50", String.valueOf(3936+576)}); // + (8 * 3/4 * Tablature.SRV_DEN) = 3936 + 576
 
 		List<String[]> actual = new ArrayList<>();
 		actual.addAll(t1.getMensurationSigns());
 		actual.addAll(t2.getMensurationSigns());
 		
-		t2.getMensurationSigns().forEach(s -> System.out.println(Arrays.asList(s)));
+//		t2.getMensurationSigns().forEach(s -> System.out.println(Arrays.asList(s)));
 
 		assertEquals(expected.size(), actual.size());
 		for (int i = 0; i < expected.size(); i++) {

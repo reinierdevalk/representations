@@ -218,6 +218,10 @@ public class Tablature implements Serializable {
 	}
 
 
+	public static void main(String[] args) {
+	}
+
+
 	///////////////////////////////
 	//
 	//  C O N S T R U C T O R S
@@ -1150,8 +1154,8 @@ public class Tablature implements Serializable {
 	//  meter
 	//
 	/**
-	 * Gets, for each MensurationSign in the Encoding, the sign's encoding, its tab bar, 
-	 * and its onset time (measured in Tablature.SRV_DEN).
+	 * Gets, for each MensurationSign in the Encoding, the sign's encoding, its original encoding
+	 * in any footnote, its tab bar, and its onset time (measured in Tablature.SRV_DEN).
 	 * 
 	 * NB: This method belongs to Tablature and not Timeline: MS are specific to the 
 	 *     tablature and are not always applied consistently (e.g., are left out).
@@ -1177,12 +1181,14 @@ public class Tablature implements Serializable {
 			boolean isRestEvent = Encoding.assertEventType(e, tss, "rest");
 			boolean isMsEvent = Encoding.assertEventType(e, tss, "MensurationSign");
 			boolean isTsEventNoRs = Encoding.assertEventType(e, tss, "TabSymbol") && !isRsEvent;
+			String footnote = event.getFootnote();
 
 			// If the first symbol in the encoded event is a MS
 			if (isMsEvent) {	
 				// Add complete event (which will be a MS event) without trailing SS
 				tabMeters.add(new String[]{
-					e.substring(0, e.lastIndexOf(ss)), 
+					e.substring(0, e.lastIndexOf(ss)),
+					footnote != null ? footnote.substring(footnote.indexOf("'") + 1, footnote.lastIndexOf("'")) : null,
 					String.valueOf(bar),
 					String.valueOf(onset)
 				});
