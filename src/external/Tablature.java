@@ -102,6 +102,8 @@ public class Tablature implements Serializable {
 		// Six courses, drop tuning
 		C6Bb("C6Bb", Tuning.REN, -7, true, Arrays.asList(new String[]{"Bb", "F", "Bb", "D", "G", "C"}), 34,
 			Arrays.asList(new Integer[]{7, 5, 4, 5, 5})),
+		F6Eb("F6Eb", Tuning.REN, -2, true, Arrays.asList(new String[]{"Eb", "Bb", "Eb", "G", "C", "F"}), 39,
+			Arrays.asList(new Integer[]{7, 5, 4, 5, 5})),
 		G6F("G6F", Tuning.REN, 0, true, Arrays.asList(new String[]{"F", "C", "F", "A", "D", "G"}), 41,
 			Arrays.asList(new Integer[]{7, 5, 4, 5, 5})),
 		A6G("A6G", Tuning.REN, 2, true, Arrays.asList(new String[]{"G", "D", "G", "B", "E", "A"}), 43,
