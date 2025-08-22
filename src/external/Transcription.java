@@ -291,7 +291,7 @@ public class Transcription implements Serializable {
 	/**
 	 * Constructor for a <code>Transcription</code> of <code>Type.FROM_FILE</code>, diminuted.
 	 *     
-	 * @param mi The meterInfo that governs the diminution(s). Must be non-<code>null<code> when 
+	 * @param mi The meterInfo that governs the diminution(s). Must be non-<code>null</code> when 
 	 *           this constructor is called.
 	 * @param f A <code>.mid</code> file.
 	 */
