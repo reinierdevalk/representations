@@ -91,7 +91,7 @@ public class Tablature implements Serializable {
 			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
 		F_ENH("F", Tuning.REN, -2, false, Arrays.asList(new String[]{"F", "A#", "D#", "G", "C", "F"}), 41,
 			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
-		Fx("F#", Tuning.REN, -1, false, Arrays.asList(new String[]{"F#", "B", "E", "G#", "C#", "F#"}), 42,
+		Fx("Fx", Tuning.REN, -1, false, Arrays.asList(new String[]{"F#", "B", "E", "G#", "C#", "F#"}), 42,
 			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})), // 5148_51_respice_in_me_deus._F#_lute_T.tbp
 		G("G", Tuning.REN, 0, false, Arrays.asList(new String[]{"G", "C", "F", "A", "D", "G"}), 43,
 			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
