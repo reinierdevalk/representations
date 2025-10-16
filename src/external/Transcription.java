@@ -2428,8 +2428,8 @@ public class Transcription implements Serializable {
 
 
 	/**
-	 * Gets the pitches in the chord. Element 0 of the List represents the lowest note's pitch, element 1 the
-	 * second-lowest note's, etc. Sustained previous notes are NOT included. 
+	 * Gets the pitches in the chord at the given lowest note index. Element 0 of the List represents the lowest note's pitch, element 1 the
+	 * second-lowest note's, etc. Sustained previous notes are not included. 
 	 * 
 	 * NB1: The List will always be in numerical order.
 	 * NB2: This method applies only to the non-tablature case
@@ -2453,7 +2453,7 @@ public class Transcription implements Serializable {
 
 	/**
 	 * Gets the pitches in the given chord. Element 0 of the List represents the lowest note's pitch,
-	 * element 1 the second-lowest note's, etc. Sustained notes are not included. 
+	 * element 1 the second-lowest note's, etc. Sustained previous notes are not included. 
 	 * 
 	 * @param chord
 	 * @return
