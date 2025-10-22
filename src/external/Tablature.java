@@ -1183,14 +1183,15 @@ public class Tablature implements Serializable {
 			boolean isRestEvent = Encoding.assertEventType(e, tss, "rest");
 			boolean isMsEvent = Encoding.assertEventType(e, tss, "MensurationSign");
 			boolean isTsEventNoRs = Encoding.assertEventType(e, tss, "TabSymbol") && !isRsEvent;
-			String footnote = event.getFootnote();
+			String fn = event.getFootnote();
 
 			// If the first symbol in the encoded event is a MS
 			if (isMsEvent) {	
 				// Add complete event (which will be a MS event) without trailing SS
 				tabMeters.add(new String[]{
 					e.substring(0, e.lastIndexOf(ss)),
-					footnote != null ? footnote.substring(footnote.indexOf("'") + 1, footnote.lastIndexOf(".'")) : null,
+					fn != null && fn.contains(".'") ? // the part after the && ensures that the footnote *actually contains* an MS (and not some other text; see e.g. judenkuenig-1523_2-elslein_liebes.tbp) 
+					fn.substring(fn.indexOf("'") + 1, fn.lastIndexOf(".'")) : null,
 					String.valueOf(bar),
 					String.valueOf(onset)
 				});
