@@ -1190,7 +1190,7 @@ public class Tablature implements Serializable {
 				// Add complete event (which will be a MS event) without trailing SS
 				tabMeters.add(new String[]{
 					e.substring(0, e.lastIndexOf(ss)),
-					footnote != null ? footnote.substring(footnote.indexOf("'") + 1, footnote.lastIndexOf("'")) : null,
+					footnote != null ? footnote.substring(footnote.indexOf("'") + 1, footnote.lastIndexOf(".'")) : null,
 					String.valueOf(bar),
 					String.valueOf(onset)
 				});
