@@ -1190,7 +1190,7 @@ public class Tablature implements Serializable {
 				// Add complete event (which will be a MS event) without trailing SS
 				tabMeters.add(new String[]{
 					e.substring(0, e.lastIndexOf(ss)),
-					fn != null && fn.contains(".'") ? // the part after the && ensures that the footnote *actually contains* an MS (and not some other text; see e.g. judenkuenig-1523_2-elslein_liebes.tbp) 
+					fn != null && fn.contains(".'") ? // the part after the && ensures that the footnote *actually contains* an MS, and not some other text (see e.g. judenkuenig-1523_2-elslein_liebes.tbp) 
 					fn.substring(fn.indexOf("'") + 1, fn.lastIndexOf(".'")) : null,
 					String.valueOf(bar),
 					String.valueOf(onset)
