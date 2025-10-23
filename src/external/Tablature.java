@@ -80,48 +80,51 @@ public class Tablature implements Serializable {
 	private List<Integer> numberOfNotesPerChord;
 
 	public static enum Tuning  {		
+		// Five courses, standard tuning
+		G5("G5", Tuning.REN, 0, false, Arrays.asList(new String[]{"C", "F", "A", "D", "G"}), 48,
+			Arrays.asList(new Integer[]{5, 4, 5, 5}), "G5"),
 		// Six courses, standard tuning
 		// NB For use of Tuning.REN before declaration, see 
 		// https://stackoverflow.com/questions/9270313/private-static-final-variable-inside-an-enum
 		D("D", Tuning.REN, -5, false, Arrays.asList(new String[]{"D", "G", "C", "E", "A", "D"}), 38, 
-			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5}), "G"),
 		E("E", Tuning.REN, -3, false, Arrays.asList(new String[]{"E", "A", "D", "F#", "B", "E"}), 40,
-			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5}), "G"),
 		F("F", Tuning.REN, -2, false, Arrays.asList(new String[]{"F", "Bb", "Eb", "G", "C", "F"}), 41,
-			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5}), "G"),
 		F_ENH("F", Tuning.REN, -2, false, Arrays.asList(new String[]{"F", "A#", "D#", "G", "C", "F"}), 41,
-			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5}), "G"),
 		Fx("Fx", Tuning.REN, -1, false, Arrays.asList(new String[]{"F#", "B", "E", "G#", "C#", "F#"}), 42,
-			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})), // 5148_51_respice_in_me_deus._F#_lute_T.tbp
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5}), "G"), // 5148_51_respice_in_me_deus._F#_lute_T.tbp
 		G("G", Tuning.REN, 0, false, Arrays.asList(new String[]{"G", "C", "F", "A", "D", "G"}), 43,
-			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5}), "G"),
 		A("A", Tuning.REN, 2, false, Arrays.asList(new String[]{"A", "D", "G", "B", "E", "A"}), 45,
-			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5}), "G"),
 		C_HIGH("C_HIGH", Tuning.REN, 5, false, Arrays.asList(new String[]{"C", "F", "Bb", "D", "G", "C"}), 48,
-			Arrays.asList(new Integer[]{5, 5, 4, 5, 5})), // 1030_coment_peult_avoir_joye.tbp
+			Arrays.asList(new Integer[]{5, 5, 4, 5, 5}), "G"), // 1030_coment_peult_avoir_joye.tbp
 		// Six courses, drop tuning
 		C6Bb("C6Bb", Tuning.REN, -7, true, Arrays.asList(new String[]{"Bb", "F", "Bb", "D", "G", "C"}), 34,
-			Arrays.asList(new Integer[]{7, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{7, 5, 4, 5, 5}), "G6F"),
 		F6Eb("F6Eb", Tuning.REN, -2, true, Arrays.asList(new String[]{"Eb", "Bb", "Eb", "G", "C", "F"}), 39,
-			Arrays.asList(new Integer[]{7, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{7, 5, 4, 5, 5}), "G6F"),
 		G6F("G6F", Tuning.REN, 0, true, Arrays.asList(new String[]{"F", "C", "F", "A", "D", "G"}), 41,
-			Arrays.asList(new Integer[]{7, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{7, 5, 4, 5, 5}), "G6F"),
 		A6G("A6G", Tuning.REN, 2, true, Arrays.asList(new String[]{"G", "D", "G", "B", "E", "A"}), 43,
-			Arrays.asList(new Integer[]{7, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{7, 5, 4, 5, 5}), "G6F"),
 		// Seven courses
 		G7F("G7F", Tuning.REN, 0, false, Arrays.asList(new String[]{"F", "G", "C", "F", "A", "D", "G"}), 41,
-			Arrays.asList(new Integer[]{2, 5, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{2, 5, 5, 4, 5, 5}), "G7F"),
 		G7D("G7D", Tuning.REN, 0, false, Arrays.asList(new String[]{"D", "G", "C", "F", "A", "D", "G"}), 38,
-			Arrays.asList(new Integer[]{5, 5, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{5, 5, 5, 4, 5, 5}), "G7D"),
 		A7G("A7G", Tuning.REN, 2, false, Arrays.asList(new String[]{"G", "A", "D", "G", "B", "E", "A"}), 43,
-			Arrays.asList(new Integer[]{2, 5, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{2, 5, 5, 4, 5, 5}), "G7F"),
 		A7E("A7E", Tuning.REN, 2, false, Arrays.asList(new String[]{"E", "A", "D", "G", "B", "E", "A"}), 40,
-			Arrays.asList(new Integer[]{5, 5, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{5, 5, 5, 4, 5, 5}), "G7D"),
 		// Eight courses
 		G8("G8", Tuning.REN, 0, false, Arrays.asList(new String[]{"D", "F", "G", "C", "F", "A", "D", "G"}), 38,
-			Arrays.asList(new Integer[]{3, 2, 5, 5, 4, 5, 5})),
+			Arrays.asList(new Integer[]{3, 2, 5, 5, 4, 5, 5}), "G8"),
 		A8("A8", Tuning.REN, 2, false, Arrays.asList(new String[]{"E", "G", "A", "D", "G", "B", "E", "A"}), 40,
-			Arrays.asList(new Integer[]{3, 2, 5, 5, 4, 5, 5}));
+			Arrays.asList(new Integer[]{3, 2, 5, 5, 4, 5, 5}), "G8");
 
 		public static final String REN = "Renaissance";
 		public static final String BAR = "Baroque";
@@ -133,8 +136,9 @@ public class Tablature implements Serializable {
 		private List<String> courses;
 		private int pitchLowestCourse;
 		private List<Integer> intervals;
+		private String normalised;
 		
-		Tuning(String n, String e, int t, boolean d, List<String> c, int p, List<Integer> i) {
+		Tuning(String n, String e, int t, boolean d, List<String> c, int p, List<Integer> i, String no) {
 			name = n;
 			era = e;
 			transposition = t;
@@ -142,6 +146,7 @@ public class Tablature implements Serializable {
 			courses = c;
 			pitchLowestCourse = p;
 			intervals = i;
+			normalised = no;
 		}
 
 		public String getName() {
@@ -170,6 +175,10 @@ public class Tablature implements Serializable {
 
 		public List<Integer> getIntervals() {
 			return intervals;
+		}
+
+		public String getNormalised() {
+			return normalised;
 		}
 
 		public static Tuning getTuning(String s) {
@@ -395,9 +404,11 @@ public class Tablature implements Serializable {
 			Tuning.getTuning(getEncoding().getMetadata().get(Encoding.METADATA_TAGS[Encoding.TUNING_IND]));
 		Tuning[] tuns = new Tuning[NUM_TUNINGS];
 		tuns[ENCODED_TUNING_IND] = encodedTun;
-		tuns[NORMALISED_TUNING_IND] = encodedTun.getIsDrop() ? Tuning.G6F : Tuning.G;
+		tuns[NORMALISED_TUNING_IND] = Tuning.getTuning(encodedTun.getNormalised());
+//		tuns[NORMALISED_TUNING_IND] = encodedTun.getIsDrop() ? Tuning.G6F : Tuning.G;
 //		tuns[NORMALISED_TUNING_IND] = 
 //			!getNormaliseTuning() ? encodedTun : (encodedTun.getIsDrop() ? Tuning.G6F : Tuning.G);
+		
 		return tuns;
 	}
 
