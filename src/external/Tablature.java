@@ -1343,6 +1343,37 @@ public class Tablature implements Serializable {
 	}
 
 
+	/**
+	 * Estimates the number of voices by looking at chord sizes. 
+	 * 
+	 * @return The largest chord size of which there are at least PERC_THRESHOLD%
+	 *         compared to all chords (single-note chords excluded).
+	 */
+	// TESTED
+	public int estimateNumberOfVoices() {
+		int largestChord = getLargestTablatureChord();
+		int[] counts = new int[largestChord];
+
+		int totalNumChords = 0;
+		for (List<TabSymbol> l : getChords()) {
+			if (l.size() > 1) {
+				counts[l.size() - 1]++;
+				totalNumChords++;
+			}
+		}
+
+		double PERC_THRESHOLD = 10.0;
+		for (int i = counts.length - 1; i >= 0; i--) {
+			double currPerc = 100.0 * counts[i] / totalNumChords;
+			if (currPerc >= PERC_THRESHOLD) {
+				return i + 1;
+			}
+		}
+
+		return largestChord;
+	}
+
+
 	// TESTED BUT NOT IN USE -->
 	/**
 	 * Returns the minimum durations for all chords.

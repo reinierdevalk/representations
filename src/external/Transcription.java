@@ -1476,7 +1476,9 @@ public class Transcription implements Serializable {
 			Rational onsetTimeCurrNote = currNote.getMetricTime();
 			onsetTimeCurrNote.reduce();
 			// Compare
-			if (pitchCurrTS != pitchCurrNote || !onsetTimeCurrTS.equals(onsetTimeCurrNote)) {
+			double epsilon = 1e-3;
+			if (pitchCurrTS != pitchCurrNote || (Math.abs(onsetTimeCurrTS.toDouble() - onsetTimeCurrNote.toDouble()) >= epsilon)) {
+//			if (pitchCurrTS != pitchCurrNote || !onsetTimeCurrTS.equals(onsetTimeCurrNote)) {
 				if (alignmentCheck == null) {
 					alignmentCheck = "";
 				}

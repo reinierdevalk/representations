@@ -56,31 +56,33 @@ public class TablatureTest {
 	@Before
 	public void setUp() throws Exception {
 		Map<String, String> paths = CLInterface.getPaths(true);
-		String ep = paths.get("ENCODINGS_PATH");
-		String epj = paths.get("ENCODINGS_PATH_JOSQUINTAB");
-		String mp = paths.get("MIDI_PATH");
-		String td = "test/5vv/";
+		String epTest = paths.get("ENCODINGS_PATH").replace("{dataset}", "test");
+		String epThesisInt = paths.get("ENCODINGS_PATH").replace("{dataset}", "thesis-int");
+		String epJosquinInt = paths.get("ENCODINGS_PATH").replace("{dataset}", "josquin-int");
+//		String epj = paths.get("ENCODINGS_PATH_JOSQUINTAB");
+		String mpTest = paths.get("MIDI_PATH").replace("{dataset}", "test");
+		String vv = "5vv/";
 
 		encodingTestpiece = new File(StringTools.getPathString(
-			Arrays.asList(ep, td)) + "testpiece.tbp"
+			Arrays.asList(epTest, vv)) + "testpiece.tbp"
 		);
 		encodingTestGetMeterInfo = new File(StringTools.getPathString(
-			Arrays.asList(ep, td))	+ "test_get_meter_info.tbp"
+			Arrays.asList(epTest, vv)) + "test_get_meter_info.tbp"
 		);
 		encodingNewsidler = new File(StringTools.getPathString(
-			Arrays.asList(ep, "thesis-int", "3vv")) + "newsidler-1544_2-nun_volget.tbp"
+			Arrays.asList(epThesisInt, "3vv")) + "newsidler-1544_2-nun_volget.tbp"
 		);
 		encodingNewsidlerCumSancto = new File(StringTools.getPathString(
-			Arrays.asList(epj)) + "4471_40_cum_sancto_spiritu.tbp"
+			Arrays.asList(epJosquinInt, "4vv")) + "4471_40_cum_sancto_spiritu.tbp"
 		);
 		encodingBarbetta = new File(StringTools.getPathString(
-			Arrays.asList(ep, "thesis-int", "4vv")) + "barbetta-1582_1-il_nest-corrected.tbp"
+			Arrays.asList(epThesisInt, "4vv")) + "barbetta-1582_1-il_nest-corrected.tbp"
 		);
 		encodingNarvaez = new File(StringTools.getPathString(
-			Arrays.asList(epj)) + "5190_17_cum_spiritu_sanctu_from_missa_sine_nomine.tbp"
+			Arrays.asList(epJosquinInt, "4vv")) + "5190_17_cum_spiritu_sanctu_from_missa_sine_nomine.tbp"
 		);
 		midiTestpiece = new File(StringTools.getPathString(
-			Arrays.asList(mp, td)) + "testpiece.mid"
+			Arrays.asList(mpTest, vv)) + "testpiece.mid"
 		);
 	}
 
@@ -1297,6 +1299,26 @@ public class TablatureTest {
 	public void testGetLargestTablatureChord() {
 		int expected = 5;
 		int actual = new Tablature(encodingTestpiece).getLargestTablatureChord();
+		assertEquals(expected, actual);
+	}
+
+
+	@Test
+	public void testEstimateNumberOfVoices() {
+		List<Integer> expected = Arrays.asList(
+			5, 
+			3, 
+			3, // should be 4!
+			4,
+			4
+		);
+		List<Integer> actual = Arrays.asList(
+			new Tablature(encodingTestpiece).estimateNumberOfVoices(),
+			new Tablature(encodingNewsidler).estimateNumberOfVoices(),
+			new Tablature(encodingNewsidlerCumSancto).estimateNumberOfVoices(),
+			new Tablature(encodingBarbetta).estimateNumberOfVoices(),
+			new Tablature(encodingNarvaez).estimateNumberOfVoices()
+		);
 		assertEquals(expected, actual);
 	}
 

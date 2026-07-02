@@ -117,7 +117,6 @@ public class Timeline implements Serializable {
 	// TESTED
 	List<Integer[]> makeBars(Encoding encoding, boolean isAgnostic) {
 		List<Integer[]> b = new ArrayList<>();
-
 		boolean miProvided = !encoding.getMetadata().get(
 			Encoding.METADATA_TAGS[Encoding.METER_INFO_IND]).equals("");
 
